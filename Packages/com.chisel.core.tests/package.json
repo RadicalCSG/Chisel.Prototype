@@ -1,0 +1,15 @@
+{
+    "description": "Test for the core for the Chisel Editor",
+    "displayName": "Chisel Core TESTS",
+    "name": "com.chisel.core.tests",
+    "keywords": [
+        "level design",
+        "world building",
+        "CSG",
+        "BSP",
+        "Boolean"
+    ],
+    "unity": "2018.3",
+    "version": "0.0.1-preview",
+    "dependencies": {}
+}

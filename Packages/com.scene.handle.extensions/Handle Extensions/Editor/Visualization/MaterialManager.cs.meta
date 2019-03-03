@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 88ee36f0693ac0d4d8118da878a53c59
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - defaultFloorMaterial: {fileID: 2100000, guid: fd99f6d560070a74790b1d47d90637dd,
+      type: 2}
+  - defaultStepMaterial: {fileID: 2100000, guid: d46a258d2f81e1c42bc91a293e9c0ed0,
+      type: 2}
+  - defaultTreadMaterial: {fileID: 2100000, guid: 6060f6e211f81ee4eb7d3f50d73265fc,
+      type: 2}
+  - defaultWallMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+      type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

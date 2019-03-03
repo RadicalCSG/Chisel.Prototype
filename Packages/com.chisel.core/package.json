@@ -1,0 +1,14 @@
+{
+    "description": "The core algorithms for the Chisel Editor",
+    "displayName": "Chisel Core",
+    "name": "com.chisel.core",
+    "keywords": [
+        "level design",
+        "world building",
+        "CSG",
+        "BSP",
+        "Boolean"
+    ],
+    "unity": "2018.3",
+    "version": "0.0.1-preview"
+}

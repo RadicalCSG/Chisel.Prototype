@@ -1,0 +1,15 @@
+{
+    "description": "The Chisel Editor",
+    "displayName": "Chisel Editor",
+    "name": "com.chisel.editor",
+    "keywords": [
+        "level design",
+        "world building",
+        "CSG",
+        "BSP",
+        "Boolean"
+    ],
+    "unity": "2018.3",
+    "version": "0.0.1-preview",
+    "dependencies": {}
+}

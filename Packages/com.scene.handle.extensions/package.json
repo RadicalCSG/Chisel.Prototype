@@ -1,0 +1,14 @@
+{
+    "description": "Extensions to scene handles",
+    "displayName": "Scene Handle Extensions",
+    "name": "com.scene.handle.extensions",
+    "keywords": [
+        "level design",
+        "world building",
+        "CSG",
+        "BSP",
+        "Boolean"
+    ],
+    "unity": "2018.3",
+    "version": "0.0.1-preview"
+}

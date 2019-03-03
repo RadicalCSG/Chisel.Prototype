@@ -1,0 +1,16 @@
+{
+    "name": "com.scene.handle.extensions.editor",
+    "references": [
+        "com.scene.handle.extensions.runtime"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

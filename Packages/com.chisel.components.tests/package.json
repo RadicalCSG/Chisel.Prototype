@@ -1,0 +1,15 @@
+{
+    "description": "Test for the components for the Chisel Editor",
+    "displayName": "Chisel Components TESTS",
+    "name": "com.chisel.components.tests",
+    "keywords": [
+        "level design",
+        "world building",
+        "CSG",
+        "BSP",
+        "Boolean"
+    ],
+    "unity": "2018.3",
+    "version": "0.0.1-preview",
+    "dependencies": {}
+}

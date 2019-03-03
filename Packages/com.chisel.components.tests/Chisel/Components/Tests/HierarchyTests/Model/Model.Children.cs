@@ -1,0 +1,499 @@
+﻿using UnityEngine;
+using UnityEditor;
+using UnityEngine.TestTools;
+using NUnit.Framework;
+using System.Collections;
+using Chisel.Core;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
+
+namespace HierarchyTests
+{
+	public partial class Model_Children
+	{
+		[SetUp] public void Setup() { TestUtility.ClearScene(); }
+
+
+		[UnityTest]
+		public IEnumerator Model_AddTwoChildBrushes_ModelHasChildrenInOrder()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush1				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brush1GameObject	= brush1.gameObject;
+			brush1.transform.parent	= model.transform;
+
+			var brush2				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brush2GameObject	= brush2.gameObject;
+			brush2.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brush1GameObject);
+			Assert.True(brush1);
+			Assert.True(brush2GameObject);
+			Assert.True(brush2);
+
+			Assert.AreEqual(model.transform.GetChild(0), brush1.transform);
+			Assert.AreEqual(model.transform.GetChild(1), brush2.transform);
+
+			yield return null;			
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(2, CSGManager.TreeBrushCount, "Expected 2 TreeBrushes to Exist");
+			Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
+			Assert.AreEqual(2, model.Node.Count);
+			Assert.AreEqual(brush1.TopNode.NodeID, model.Node[0].NodeID);
+			Assert.AreEqual(brush2.TopNode.NodeID, model.Node[1].NodeID);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithTwoChildBrushes_SwapOrder_ModelHasChildrenInOrder()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel("model");
+			var modelGameObject		= model.gameObject;
+
+			var brush1				= TestUtility.CreateUndoableGameObjectWithBrush("brush1");
+			var brush1GameObject	= brush1.gameObject;
+			brush1.transform.parent	= model.transform;
+
+			var brush2				= TestUtility.CreateUndoableGameObjectWithBrush("brush2");
+			var brush2GameObject	= brush2.gameObject;
+			brush2.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brush1GameObject);
+			Assert.True(brush1);
+			Assert.True(brush2GameObject);
+			Assert.True(brush2);
+
+			Assert.AreEqual(model.transform.GetChild(0), brush1.transform);
+			Assert.AreEqual(model.transform.GetChild(1), brush2.transform);
+
+			yield return null;
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(2, CSGManager.TreeBrushCount, "Expected 2 TreeBrushes to Exist");
+			Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
+			Assert.AreEqual(2, model.Node.Count);
+			brush2.transform.SetSiblingIndex(0);
+
+			Assert.AreEqual(model.transform.GetChild(0), brush2.transform);
+			Assert.AreEqual(model.transform.GetChild(1), brush1.transform);
+			yield return null;
+
+			Assert.AreEqual(brush2.TopNode.NodeID, model.Node[0].NodeID);
+			Assert.AreEqual(brush1.TopNode.NodeID, model.Node[1].NodeID);
+		}
+
+		[UnityTest]
+		public IEnumerator Model_AddChildBrush_ModelHasChild()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brushGameObject		= brush.gameObject;
+			brush.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount,		"Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount,	"Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount,	"Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount,		"Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBrushCount,	"Expected 1 TreeBrush to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount,	"Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(brush.TopNode.NodeID, model.Node[0].NodeID);
+		}
+
+		[UnityTest]
+		public IEnumerator Model_AddChildOperation_ModelHasChild()
+		{
+			var model					= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject			= model.gameObject;
+
+			var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
+			var operationGameObject		= operation.gameObject;
+			operation.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(operation.Node.NodeID, model.Node[0].NodeID);
+		}
+
+		[UnityTest]
+		public IEnumerator Model_AddChildModel_ModelHasNoChildren()
+		{
+			var model1				= TestUtility.CreateUndoableGameObjectWithModel();
+			var model1GameObject	= model1.gameObject;
+
+			var model2				= TestUtility.CreateUndoableGameObjectWithModel();
+			var model2GameObject	= model2.gameObject;
+			model2.transform.parent	= model1.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(model1GameObject);
+			Assert.True(model1);
+			Assert.True(model2GameObject);
+			Assert.True(model2);
+			
+			Assert.AreEqual(2, CSGManager.TreeCount, "Expected 2 Trees to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(0, model1.Node.Count);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildBrush_DestroyChildGameObject_ModelHasNoChildren()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brushGameObject		= brush.gameObject;
+			brush.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+			
+			Undo.DestroyObjectImmediate(brushGameObject);
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.False(brushGameObject);
+			Assert.False(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); 
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildOperation_DestroyChildGameObject_ModelHasNoChildren()
+		{
+			var model					= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelameObject			= model.gameObject;
+
+			var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
+			var operationGameObject		= operation.gameObject;
+			operation.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+			
+			Undo.DestroyObjectImmediate(operationGameObject);
+			yield return null;
+			
+			Assert.True(modelameObject);
+			Assert.True(model);
+			Assert.False(operationGameObject);
+			Assert.False(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+		
+		[UnityTest]
+		public IEnumerator ModelWithChildBrush_DestroyChildComponent_ModelHasNoChildren()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brushGameObject		= brush.gameObject;
+			brush.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+			
+			Undo.DestroyObjectImmediate(brush);
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.False(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); 
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildOperation_DestroyChildComponent_ModelHasNoChildren()
+		{
+			var model					= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject			= model.gameObject;
+
+			var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
+			var operationGameObject		= operation.gameObject;
+			operation.transform.parent	= model.transform;
+			
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+			
+			Undo.DestroyObjectImmediate(operation);
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.False(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+		
+		[UnityTest]
+		public IEnumerator ModelWithChildBrush_DisableChildComponent_ModelHasNoChildren()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brushGameObject		= brush.gameObject;
+			brush.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+
+			brush.enabled = false;
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); 
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+			yield return null;
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildOperation_DisableChildComponent_ModelHasNoChildren()
+		{
+			var model					= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject			= model.gameObject;
+
+			var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
+			var operationGameObject		= operation.gameObject;
+			operation.transform.parent	= model.transform;
+			
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+			
+			operation.enabled = false;
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildBrush_DeactivateChildGameObject_ModelHasNoChildren()
+		{
+			var model				= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject		= model.gameObject;
+
+			var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
+			var brushGameObject		= brush.gameObject;
+			brush.transform.parent	= model.transform;
+
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+
+			brushGameObject.SetActive(false);
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(brushGameObject);
+			Assert.True(brush);
+
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); 
+			Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+
+		[UnityTest]
+		public IEnumerator ModelWithChildOperation_DeactivateChildGameObject_ModelHasNoChildren()
+		{
+			var model					= TestUtility.CreateUndoableGameObjectWithModel();
+			var modelGameObject			= model.gameObject;
+
+			var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
+			var operationGameObject		= operation.gameObject;
+			operation.transform.parent	= model.transform;
+			
+			Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
+			Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
+			Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+			Assert.AreEqual(1, model.Node.Count);
+			Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+
+			operationGameObject.SetActive(false);
+			yield return null;
+			
+			Assert.True(modelGameObject);
+			Assert.True(model);
+			Assert.True(operationGameObject);
+			Assert.True(operation);
+			
+			Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
+			Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
+			Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
+			Assert.AreEqual(0, model.Node.Count);
+		}
+	}
+}

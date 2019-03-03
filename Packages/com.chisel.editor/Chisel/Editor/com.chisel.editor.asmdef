@@ -1,0 +1,19 @@
+{
+    "name": "com.chisel.editor",
+    "references": [
+        "com.chisel.core",
+        "com.chisel.components",
+        "com.scene.handle.extensions.editor",
+        "com.scene.handle.extensions.runtime"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

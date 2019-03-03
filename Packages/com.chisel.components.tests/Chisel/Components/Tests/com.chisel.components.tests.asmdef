@@ -1,0 +1,20 @@
+{
+    "name": "com.chisel.components.tests",
+    "references": [
+        "com.chisel.components",
+        "com.chisel.core",
+        "com.scene.handle.extensions.runtime"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

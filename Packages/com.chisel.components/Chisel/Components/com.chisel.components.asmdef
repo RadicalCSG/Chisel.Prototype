@@ -1,0 +1,15 @@
+{
+    "name": "com.chisel.components",
+    "references": [
+        "com.chisel.core",
+        "com.scene.handle.extensions.runtime"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}
