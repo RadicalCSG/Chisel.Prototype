@@ -130,7 +130,7 @@ namespace Chisel.Core
 			/// <value>The index to the twin <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/> of this <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/>.</value>
 			public Int32 twinIndex;
 
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
             // TODO: add description
             public Int32 polygonIndex;
 
@@ -141,8 +141,8 @@ namespace Chisel.Core
 			public override string ToString() { return string.Format("{{ twinIndex = {0}, vertexIndex = {1} }}", twinIndex, vertexIndex); }
 #endif
 		}
-		
-#if USE_INTERNAL_IMPLEMENTATION
+
+#if USE_MANAGED_CSG_IMPLEMENTATION
         // TODO: add descriptions
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Surface
@@ -162,8 +162,8 @@ namespace Chisel.Core
 
 #endif
 
-		/// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
-		public Vector3[]	vertices;
+        /// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
+        public Vector3[]	vertices;
 
 		/// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.</value>
 		public HalfEdge[]	halfEdges;

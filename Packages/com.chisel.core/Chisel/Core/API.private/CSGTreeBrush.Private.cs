@@ -30,12 +30,12 @@ namespace Chisel.Core
 
         private static Bounds GetBrushBounds(Int32 brushNodeID)
         {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
             var	bounds = new Bounds();
             if (GetBrushBounds(brushNodeID, ref bounds))
                 return bounds;
 #else
-            var	aabb = new AABB();
+            var aabb = new AABB();
             if (GetBrushBounds(brushNodeID, ref aabb))
                 return new Bounds(aabb.Center, aabb.Size);
 #endif

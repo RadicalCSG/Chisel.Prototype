@@ -5,7 +5,7 @@ namespace Chisel.Core
 {
     partial struct CSGTreeNode
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         internal static bool	IsNodeDirty(Int32 nodeID)		{ return CSGManager.IsNodeDirty(nodeID); }
         internal static bool	SetDirty(Int32 nodeID)			{ return CSGManager.SetDirty(nodeID); }
 

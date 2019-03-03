@@ -8,9 +8,9 @@ namespace Chisel.Core
 	// TODO: clean up
 	static partial class CSGManager
 	{
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
 
-		internal static bool RayCastMulti(MeshQuery[] meshQuery, // TODO: add meshquery support here
+        internal static bool RayCastMulti(MeshQuery[] meshQuery, // TODO: add meshquery support here
 										  Vector3 worldRayStart,
 										  Vector3 worldRayEnd,
 										  int filterLayerParameter0,
