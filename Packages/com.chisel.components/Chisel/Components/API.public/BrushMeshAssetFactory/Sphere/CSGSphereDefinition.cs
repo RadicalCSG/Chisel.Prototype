@@ -14,8 +14,8 @@ namespace Chisel.Components
 	{
 		public const float				kMinSphereDiameter			= 0.01f;
 		public const float				kDefaultRotation            = 0.0f;
-		public const int				kDefaultHorizontalSegments  = 8;
-		public const int				kVerticalHorizontalSegments = 8;
+		public const int				kDefaultHorizontalSegments  = 12;
+		public const int				kVerticalHorizontalSegments = 12;
 		public static readonly Vector3	kDefaultDiameter			= Vector3.one;
 
 		[DistanceValue] public Vector3	diameterXYZ;
