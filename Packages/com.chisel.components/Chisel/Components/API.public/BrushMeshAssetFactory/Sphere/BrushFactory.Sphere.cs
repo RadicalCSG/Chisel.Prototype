@@ -52,16 +52,19 @@ namespace Chisel.Components
 
             subMesh.HalfEdges = brushMesh.halfEdges;
             subMesh.Vertices = brushMesh.vertices;
-            
-            subMesh.Polygons = brushMesh.polygons.Select((p, i) => new CSGBrushSubMesh.Polygon
-            {
-                surfaceID = i,
-                edgeCount = p.edgeCount,
-                firstEdge = p.firstEdge,
-                surfaceAsset = i < surfaceAssets.Length ? surfaceAssets[i] : surfaceAssets[0],
-                description = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0],
+            subMesh.Polygons = new CSGBrushSubMesh.Polygon[brushMesh.polygons.Length];
 
-            }).ToArray();
+            for (int i = 0; i < brushMesh.polygons.Length; i++)
+            {
+                subMesh.Polygons[i] = new CSGBrushSubMesh.Polygon
+                {
+                    surfaceID = i,
+                    edgeCount = brushMesh.polygons[i].edgeCount,
+                    firstEdge = brushMesh.polygons[i].firstEdge,
+                    surfaceAsset = i < surfaceAssets.Length ? surfaceAssets[i] : surfaceAssets[0],
+                    description = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0],
+                };
+            }
 
             return true;
 		}

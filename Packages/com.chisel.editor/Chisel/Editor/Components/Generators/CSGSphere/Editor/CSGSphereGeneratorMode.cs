@@ -38,7 +38,6 @@ namespace Chisel.Editors
         // TODO: Store/retrieve default settings
         bool generateFromCenter = true;
         bool isEllipsoid = false;
-        int sides = 16;
 
         CSGSphere sphere;
 
@@ -53,7 +52,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                     {
-                        sphere = BrushMeshAssetFactory.Create<CSGSphere>("Cylinder",
+                        sphere = BrushMeshAssetFactory.Create<CSGSphere>("Sphere",
                                                                     BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
                                                                     transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
 
