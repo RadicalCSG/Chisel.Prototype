@@ -148,20 +148,20 @@ namespace Chisel.Editors
 		public void DrawSimpleOutlines(Matrix4x4 transformation, CSGWireframe wireframe, Color color)
 		{
 			if (wireframe == null ||
-				wireframe.vertices == null ||
-				wireframe.vertices.Length == 0 ||
+				wireframe.Vertices == null ||
+				wireframe.Vertices.Length == 0 ||
 
-				(wireframe.visibleOuterLines == null &&
-				 wireframe.invisibleOuterLines == null &&
-				 wireframe.visibleInnerLines == null &&
-				 wireframe.invisibleInnerLines == null &&
-				 wireframe.invalidLines == null))
+				(wireframe.VisibleOuterLines == null &&
+				 wireframe.InvisibleOuterLines == null &&
+				 wireframe.VisibleInnerLines == null &&
+				 wireframe.InvisibleInnerLines == null &&
+				 wireframe.InvalidLines == null))
 				return;
 
 			color.a *= 0.5f;
 
-			var vertices = wireframe.vertices;
-			var indices  = wireframe.visibleOuterLines;
+			var vertices = wireframe.Vertices;
+			var indices  = wireframe.VisibleOuterLines;
 			if (indices != null &&
 				indices.Length > 0 &&
 				(indices.Length & 1) == 0)
@@ -199,39 +199,39 @@ namespace Chisel.Editors
 								 float thickness = -1, bool onlyInnerLines = false, bool showInnerLines = true)
 		{
 			if (wireframe == null || 
-				wireframe.vertices == null ||
-				wireframe.vertices.Length == 0 ||
+				wireframe.Vertices == null ||
+				wireframe.Vertices.Length == 0 ||
 
-				(wireframe.visibleOuterLines	== null &&
-				 wireframe.invisibleOuterLines	== null &&
-				 wireframe.visibleInnerLines	== null &&
-				 wireframe.invisibleInnerLines	== null &&
-				 wireframe.invalidLines			== null))
+				(wireframe.VisibleOuterLines	== null &&
+				 wireframe.InvisibleOuterLines	== null &&
+				 wireframe.VisibleInnerLines	== null &&
+				 wireframe.InvisibleInnerLines	== null &&
+				 wireframe.InvalidLines			== null))
 				return;
 
 			if (thickness <= 0)
 				thickness = GUIConstants.defaultLineScale;
 
-			if (!onlyInnerLines && wireframe.visibleOuterLines != null && wireframe.visibleOuterLines.Length > 0)
-				zTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.visibleOuterLines, outerColor, thickness: thickness);
+			if (!onlyInnerLines && wireframe.VisibleOuterLines != null && wireframe.VisibleOuterLines.Length > 0)
+				zTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.VisibleOuterLines, outerColor, thickness: thickness);
 			
-			if (showInnerLines && wireframe.visibleInnerLines != null && wireframe.visibleInnerLines.Length > 0)
-				zTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.visibleInnerLines, innerColor, thickness: thickness);
+			if (showInnerLines && wireframe.VisibleInnerLines != null && wireframe.VisibleInnerLines.Length > 0)
+				zTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.VisibleInnerLines, innerColor, thickness: thickness);
 			
-			if (!onlyInnerLines && wireframe.invisibleOuterLines != null && wireframe.invisibleOuterLines.Length > 0)
-				zTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.invisibleOuterLines, outerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots, thickness: GUIConstants.defaultLineScale);
+			if (!onlyInnerLines && wireframe.InvisibleOuterLines != null && wireframe.InvisibleOuterLines.Length > 0)
+				zTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.InvisibleOuterLines, outerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots, thickness: GUIConstants.defaultLineScale);
 			
-			if (!onlyInnerLines && wireframe.visibleOuterLines != null && wireframe.visibleOuterLines.Length > 0)
-				noZTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.visibleOuterLines, innerOccludedColor, thickness: thickness, dashSize: GUIConstants.invisibleInnerLineDots);
+			if (!onlyInnerLines && wireframe.VisibleOuterLines != null && wireframe.VisibleOuterLines.Length > 0)
+				noZTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.VisibleOuterLines, innerOccludedColor, thickness: thickness, dashSize: GUIConstants.invisibleInnerLineDots);
 
-			if (showInnerLines && wireframe.visibleInnerLines != null && wireframe.visibleInnerLines.Length > 0)
-				noZTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.visibleInnerLines, innerOccludedColor, thickness: thickness, dashSize: GUIConstants.invisibleInnerLineDots);
+			if (showInnerLines && wireframe.VisibleInnerLines != null && wireframe.VisibleInnerLines.Length > 0)
+				noZTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.VisibleInnerLines, innerOccludedColor, thickness: thickness, dashSize: GUIConstants.invisibleInnerLineDots);
 			
-			if (showInnerLines && !onlyInnerLines && wireframe.invisibleOuterLines != null && wireframe.invisibleOuterLines.Length > 0)
-				noZTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.invisibleOuterLines, outerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots);
+			if (showInnerLines && !onlyInnerLines && wireframe.InvisibleOuterLines != null && wireframe.InvisibleOuterLines.Length > 0)
+				noZTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.InvisibleOuterLines, outerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots);
 
-			if (showInnerLines && wireframe.invisibleInnerLines != null && wireframe.invisibleInnerLines.Length > 0)
-				noZTestLinesManager.DrawLines(transformation, wireframe.vertices, wireframe.invisibleInnerLines, innerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots);
+			if (showInnerLines && wireframe.InvisibleInnerLines != null && wireframe.InvisibleInnerLines.Length > 0)
+				noZTestLinesManager.DrawLines(transformation, wireframe.Vertices, wireframe.InvisibleInnerLines, innerOccludedColor, dashSize: GUIConstants.invisibleInnerLineDots);
 
 #if TEST_ENABLED
 			if (outline.invalidLines != null && outline.invalidLines.Length > 0)

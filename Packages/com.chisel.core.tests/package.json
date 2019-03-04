@@ -11,5 +11,7 @@
     ],
     "unity": "2018.3",
     "version": "0.0.1-preview",
-    "dependencies": {}
+    "dependencies": {
+        "com.chisel.core": "0.0.1-preview"
+    }
 }

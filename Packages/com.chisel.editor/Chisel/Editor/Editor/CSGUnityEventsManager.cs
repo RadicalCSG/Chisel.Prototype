@@ -17,8 +17,6 @@ namespace Chisel.Editors
 		[RuntimeInitializeOnLoadMethod]
 		public static void Initialize()
 		{
-			Editors.NativeLogging.RegisterUnityMethods();
-
 			// Update loop
 			UnityEditor.EditorApplication.update						-= OnEditorApplicationUpdate;
 			UnityEditor.EditorApplication.update						+= OnEditorApplicationUpdate;
@@ -233,13 +231,21 @@ namespace Chisel.Editors
 		{
 			CSGNodeHierarchyManager.OnPrefabInstanceUpdated(instance);
 		}
-		
 
+
+		static bool loggingMethodsRegistered = false;
 
 		private static void OnEditorApplicationUpdate()
 		{
-            //Grid.HoverGrid = null;
-            CSGNodeHierarchyManager.Update();
+			// TODO: remove this once we've moved to managed implementation of CSG algorithm
+			if (!loggingMethodsRegistered)
+			{
+				Editors.NativeLogging.RegisterUnityMethods();
+				loggingMethodsRegistered = true;
+			}
+
+			//Grid.HoverGrid = null;
+			CSGNodeHierarchyManager.Update();
 			CSGGeneratedModelMeshManager.UpdateModels();
 		}
 

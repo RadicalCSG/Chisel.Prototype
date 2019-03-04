@@ -27,7 +27,7 @@ namespace Chisel.Editors
 		[DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)]
 		private static extern void ClearMethods();
 
-		[InitializeOnLoadMethod]
+		[RuntimeInitializeOnLoadMethod]
 		public static void RegisterUnityMethods()
 		{
 			UnityMethods unityMethods;

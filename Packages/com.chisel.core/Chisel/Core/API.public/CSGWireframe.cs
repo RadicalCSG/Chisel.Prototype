@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
 
 namespace Chisel.Core
 {
@@ -21,6 +19,14 @@ namespace Chisel.Core
 		internal UInt64		outlineGeneration		= 0;
 		internal int		originBrushID			= 0;
 		internal int		originSurfaceID			= 0;
+		
+		public Vector3[]	Vertices                { get { return vertices; } }
+		public Int32[]		VisibleOuterLines       { get { return visibleOuterLines; } }
+		public Int32[]		VisibleInnerLines       { get { return visibleInnerLines; } }
+		public Int32[]		VisibleTriangles		{ get { return visibleTriangles; } }
+		public Int32[]		InvisibleOuterLines     { get { return invisibleOuterLines; } }
+		public Int32[]		InvisibleInnerLines     { get { return invisibleInnerLines; } }
+		public Int32[]		InvalidLines            { get { return invalidLines; } }
 
 		public bool	Dirty { get { return outlineGeneration != GetBrushOutlineGeneration(originBrushID); }  }
 
