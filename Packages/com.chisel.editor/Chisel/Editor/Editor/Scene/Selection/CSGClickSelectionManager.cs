@@ -250,6 +250,7 @@ namespace Chisel.Editors
 				s_PreviousPrefixHash = 0;
 			}
 
+			enumerator = null;
 			s_RetainHashes = false;
 		}
 
@@ -465,6 +466,7 @@ namespace Chisel.Editors
 		{
 			if (!dragArea.Contains(mousePosition))
 				return null;
+			ResetHashes();
 			return GetPlaneIntersection(mousePosition);
 		}
 
