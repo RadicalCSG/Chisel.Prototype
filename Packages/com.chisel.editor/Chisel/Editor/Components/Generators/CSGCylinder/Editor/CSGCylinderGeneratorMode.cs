@@ -57,13 +57,13 @@ namespace Chisel.Editors
 					cylinder = BrushMeshAssetFactory.Create<CSGCylinder>("Cylinder",
 																BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor), 
 																transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
-					cylinder.Operation		= forceOperation ?? CSGOperationType.Additive;
-					cylinder.IsEllipsoid	= isEllipsoid;
-					cylinder.Type			= cylinderType;
-					cylinder.Height			= height;
-					cylinder.Sides			= sides;
-					cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X];
-					cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z];
+					cylinder.Operation			= forceOperation ?? CSGOperationType.Additive;
+					cylinder.IsEllipsoid		= isEllipsoid;
+					cylinder.Type				= cylinderType;
+					cylinder.Height				= height;
+					cylinder.Sides				= sides;
+					cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X] * 2.0f;
+					cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z] * 2.0f;
 					cylinder.UpdateGenerator();
 					break;
 				}
@@ -75,8 +75,8 @@ namespace Chisel.Editors
 										CSGOperationType.Subtractive : 
 										CSGOperationType.Additive);
 					cylinder.Height			= height;
-					cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X];
-					cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z];
+					cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X] * 2.0f;
+					cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z] * 2.0f;
 					break;
 				}
 				

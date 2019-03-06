@@ -101,7 +101,10 @@ namespace Chisel.Editors
 				} else
 				{
 					var tempPoint = s_Points[s_Points.Count-1];
+					var oldMatrix = UnityEditor.Handles.matrix;
+					UnityEditor.Handles.matrix = UnityEditor.Handles.matrix * s_Transformation;
 					var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis);
+					UnityEditor.Handles.matrix = oldMatrix;
 					s_Points[s_Points.Count - 1] = tempPoint;
 				
 					switch (extrusionState)

@@ -63,6 +63,7 @@ namespace Chisel.Editors
 			
 		public static ExtrusionState Do(int id, Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
 		{
+			var transformation = UnityEditor.Handles.matrix;
 			var state = ExtrusionState.None;
 			var evt = Event.current;
 			var type = evt.GetTypeForControl(id);
@@ -82,12 +83,12 @@ namespace Chisel.Editors
 					if (GUIUtility.hotControl == 0)
 					{
 						TakeControl(id);
-						s_StartPosition = position; 
+						s_StartPosition = transformation.MultiplyPoint(position); 
 						s_StartMousePosition = evt.mousePosition - evt.delta;
 						s_CurrentMousePosition = s_StartMousePosition;
-						s_Snapping1D.Initialize(evt.mousePosition, 
+						s_Snapping1D.Initialize(evt.mousePosition,
 												s_StartPosition, 
-												((Vector3)Matrix4x4.identity.GetColumn((int)axis)).normalized,
+												((Vector3)transformation.GetColumn((int)axis)).normalized,
 												Snapping.MoveSnappingSteps[(int)axis], axis);
 					}
 
@@ -101,7 +102,7 @@ namespace Chisel.Editors
 					if (!s_Snapping1D.Move(s_CurrentMousePosition))
 						break;
 
-					position = SnappingUtility.Quantize(s_Snapping1D.WorldSnappedPosition);
+					position = transformation.inverse.MultiplyPoint(SnappingUtility.Quantize(s_Snapping1D.WorldSnappedPosition));
 					state = ExtrusionState.Modified;
 					break;
 				}
