@@ -280,10 +280,7 @@ namespace Chisel.Editors
 
                 var focusControl		= UnitySceneExtensions.SceneHandleUtility.focusControl;
                 var color				= UnityEditor.Handles.yAxisColor;
-                //var backfacedColor		= new Color(color.r, color.g, color.b, color.a * UnitySceneExtensions.Handles.backfaceAlphaMultiplier);
                 var isDisabled			= UnitySceneExtensions.SceneHandles.disabled;
-                //var topCircleFocus		= false;
-                //var bottomCircleFocus	= false;
 
                 if (!generator.IsEllipsoid)
                 { tempTop.diameterZ = tempTop.diameterX; tempBottom.diameterZ = tempBottom.diameterX; }
@@ -294,23 +291,14 @@ namespace Chisel.Editors
                     {
                         case CylinderShapeType.Cylinder:
                         {
-                            //var topRotationId		= GUIUtility.GetControlID(s_TopRotationHash,    FocusType.Passive);
-                            //var bottomRotationId	= GUIUtility.GetControlID(s_BottomRotationHash, FocusType.Passive);
                             if (generator.IsEllipsoid)
                             {
-                                //topCircleFocus    = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
-                                //bottomCircleFocus = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
                             } else
                             {
-                                //bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(   topPoint,  normal, bottomXVector, renderDisc: false);
-                                //bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
-
-                                //topCircleFocus    = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
-                                //bottomCircleFocus = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
 
                                 bottomZVector = bottomXVector;
                             }
@@ -322,23 +310,15 @@ namespace Chisel.Editors
                         }
                         case CylinderShapeType.ConicalFrustum:
                         {
-                            //var topRotationId		= GUIUtility.GetControlID(s_TopRotationHash,    FocusType.Passive);
-                            //var bottomRotationId	= GUIUtility.GetControlID(s_BottomRotationHash, FocusType.Passive);
                             if (generator.IsEllipsoid)
                             {
-                                //topCircleFocus    = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref topXVector,    ref topZVector,    renderDisc: false);
-                                //bottomCircleFocus = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref topXVector,    ref topZVector,    renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
                             } else
                             {
-                                //topCircleFocus    = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref topXVector,    ref topXVector,    renderDisc: false);
-                                //bottomCircleFocus = 
-                                    UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref topXVector,    ref topXVector,    renderDisc: false);
+                                UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
 
-                                //topXVector = UnitySceneExtensions.Handles.Radius2DHandle(topPoint, normal, topXVector, renderDisc: false);
-                                //topZVector = topXVector;
                                 bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
                                 bottomZVector = bottomXVector;
                             }
@@ -346,7 +326,6 @@ namespace Chisel.Editors
                         }
                         case CylinderShapeType.Cone:
                         {
-                            //var bottomRotationId	= GUIUtility.GetControlID(s_BottomRotationHash, FocusType.Passive);
                             if (generator.IsEllipsoid)
                             {
                                 UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
@@ -378,16 +357,25 @@ namespace Chisel.Editors
                     Undo.RecordObject(generator, "Modified " + generator.NodeTypeName);
                     if (!generator.IsEllipsoid)
                     {
-                        if (prevBottomXVector != bottomXVector)
-                            bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
-                        if (prevTopXVector != topXVector)
-                            topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
+						if (prevBottomXVector != bottomXVector)
+						{
+							bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
+						}
+						if (prevTopXVector != topXVector)
+						{
+							topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
+						}
                     }
 
-                    if (prevTopXVector != topXVector)
-                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
-                    else if (prevBottomXVector != bottomXVector)
-                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
+					if (prevTopXVector != topXVector)
+					{
+						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
+					}
+					else if (prevBottomXVector != bottomXVector)
+					{
+						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
+					}
+
                     if (generator.IsEllipsoid)
                     {
                         generator.BottomDiameterX = bottomXVector.magnitude * 2.0f;

@@ -49,7 +49,6 @@ namespace Chisel.Editors
                     box = BrushMeshAssetFactory.Create<CSGBox>("Box",
                                                       BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
                                                       transformation);
-
                     box.Operation = forceOperation ?? CSGOperationType.Additive;
                     offset = bounds.center;
                     box.transform.localPosition += box.transform.localToWorldMatrix.MultiplyVector(offset);
@@ -61,8 +60,6 @@ namespace Chisel.Editors
 
                 case BoxExtrusionState.Modified:
                 {
-                    //box.transform.localPosition += box.transform.localToWorldMatrix.MultiplyVector(bounds.center - offset);
-                    //offset = bounds.center;
                     box.Operation = forceOperation ?? 
                                     ((height <= 0 && modelBeneathCursor) ? 
                                         CSGOperationType.Subtractive : 

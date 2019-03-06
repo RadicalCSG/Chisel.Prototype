@@ -66,7 +66,7 @@ namespace Chisel.Editors
 			var transformation = UnityEditor.Handles.matrix;
 			var state = ExtrusionState.None;
 			var evt = Event.current;
-			var type = evt.GetTypeForControl(id); 
+			var type = evt.GetTypeForControl(id);
 			switch (type)
 			{
 				case EventType.ValidateCommand: { if (evt.commandName == PointDrawing.kSoftDeleteCommand) { evt.Use(); break; } break; }
