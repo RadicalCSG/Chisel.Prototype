@@ -222,16 +222,21 @@ namespace UnitySceneExtensions
 			if (GUI.changed)
 			{
 				var moveDelta = (position0 - center);
-				if (noRotation) { radius1 = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta2); }
-				else			{ radius1 = center + moveDelta; }
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta2); }
+				else			{ newRadius = center + moveDelta; }
 
-				delta1 = GeometryUtility.ProjectPointPlane(radius1 - center, plane);
-				delta1Magnitude = delta1.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta1Magnitude = newDelta.magnitude;
 
 				if (!noRotation && delta1Magnitude > Vector3.kEpsilon)
 				{
-					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (delta1 / delta1Magnitude)) * delta2Magnitude);
+					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (newDelta / delta1Magnitude)) * delta2Magnitude);
 				}
+
+				// set this after setting radius2 since both may lead to same variable
+				delta1 = newDelta; 
+				radius1 = newRadius;
 				prevChanged = true;
 			}
 
@@ -241,16 +246,21 @@ namespace UnitySceneExtensions
 			if (GUI.changed)
 			{
 				var moveDelta = (position1 - center);
-				if (noRotation) { radius1 = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta2); }
-				else			{ radius1 = center - moveDelta; }
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta2); }
+				else			{ newRadius = center - moveDelta; }
 
-				delta1 = GeometryUtility.ProjectPointPlane(radius1 - center, plane);
-				delta1Magnitude = delta1.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta1Magnitude = newDelta.magnitude;
 
 				if (!noRotation && delta1Magnitude > Vector3.kEpsilon)
 				{
-					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (delta1 / delta1Magnitude)) * delta2Magnitude);
+					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (newDelta / delta1Magnitude)) * delta2Magnitude);
 				}
+				
+				// set this after setting radius2 since both may lead to same variable
+				delta1 = newDelta; 
+				radius1 = newRadius;
 				prevChanged = true;
 			}
 			
@@ -260,16 +270,21 @@ namespace UnitySceneExtensions
 			if (GUI.changed)
 			{
 				var moveDelta = (position2 - center);
-				if (noRotation) { radius2 = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta1); }
-				else			{ radius2 = center + moveDelta; }
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta1); }
+				else			{ newRadius = center + moveDelta; }
 
-				delta2 = GeometryUtility.ProjectPointPlane(radius2 - center, plane);
-				delta2Magnitude = delta2.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta2Magnitude = newDelta.magnitude;
 
 				if (!noRotation && delta2Magnitude > Vector3.kEpsilon)
 				{
-					radius1 = center + ((Quaternion.AngleAxis(90, up) * (delta2 / delta2Magnitude)) * delta1Magnitude);
+					radius1 = center + ((Quaternion.AngleAxis(90, up) * (newDelta / delta2Magnitude)) * delta1Magnitude);
 				}
+				
+				// set this after setting radius1 since both may lead to same variable
+				delta2 = newDelta; 
+				radius2 = newRadius;
 				prevChanged = true;
 			}
 
@@ -279,22 +294,26 @@ namespace UnitySceneExtensions
 			if (GUI.changed)
 			{
 				var moveDelta = (position3 - center);
-				if (noRotation) { radius2 = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta1); }
-				else			{ radius2 = center - moveDelta; }
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta1); }
+				else			{ newRadius = center - moveDelta; }
 
-				delta2 = GeometryUtility.ProjectPointPlane(radius2 - center, plane);
-				delta2Magnitude = delta2.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta2Magnitude = newDelta.magnitude;
 
 				if (!noRotation && delta2Magnitude > Vector3.kEpsilon)
 				{
-					radius1 = center + ((Quaternion.AngleAxis(90, up) * (delta2 / delta2Magnitude)) * delta1Magnitude);
+					radius1 = center + ((Quaternion.AngleAxis(90, up) * (newDelta / delta2Magnitude)) * delta1Magnitude);
 				}
+				
+				// set this after setting radius1 since both may lead to same variable
+				delta2 = newDelta; 
+				radius2 = newRadius;
 				prevChanged = true;
 			} 
 
 			GUI.changed |= prevChanged;
-
-
+			
 			if (delta1Magnitude < minRadius1 || delta1Magnitude > maxRadius1)
 			{
 				if (delta2Magnitude < minRadius2 || delta2Magnitude > maxRadius2)

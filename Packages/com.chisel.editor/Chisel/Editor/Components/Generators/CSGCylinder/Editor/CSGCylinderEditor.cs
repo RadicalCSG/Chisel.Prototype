@@ -297,9 +297,9 @@ namespace Chisel.Editors
                                 UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
                             } else
                             {
-                                UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
-                                UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomXVector, renderDisc: false);
-
+								bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
+                                bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
+								
                                 bottomZVector = bottomXVector;
                             }
                             topXVector = bottomXVector;
@@ -345,7 +345,6 @@ namespace Chisel.Editors
 
                     // TODO: add cylinder horizon "side-lines"
                 }
-
                 if (EditorGUI.EndChangeCheck())
                 {
                     topZVector.y = 0;
