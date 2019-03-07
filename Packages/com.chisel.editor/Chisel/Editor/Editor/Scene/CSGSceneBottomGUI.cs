@@ -53,7 +53,6 @@ namespace Chisel.Editors
 		static readonly GUIContent increaseContent          = new GUIContent("+");
 		static readonly GUIContent decreaseContent          = new GUIContent("-");
 
-
 		// TODO: put somewhere else
 		// TODO: use "Editor Default Resources" directory?
 		// TODO: make this a scriptable object and just set defaults on script?
@@ -77,10 +76,10 @@ namespace Chisel.Editors
 			CSGEditorSettings.Save();
 		}
 
-		static void ChangeViewOptions(int value)
+		static void ToggleGrid()
 		{
 			CSGEditorSettings.Load();
-			CSGEditorSettings.ViewOptions = (CSGViewOptions)value;
+			CSGEditorSettings.ShowGrid = !CSGEditorSettings.ShowGrid;
 			CSGEditorSettings.Save();
 			SceneView.RepaintAll();
 		}
@@ -470,12 +469,15 @@ namespace Chisel.Editors
 		#region ViewOptions
 		static void ViewOptionsGUI(ref Rect position)
 		{
-			Space(ref position, kButtonSpace);
+			Space(ref position, kFloatFieldWidth);
 
 			//
 			// View Options
 			//
-			MaskField(ref position, viewContent, CSGEditorSettings.ViewOptions, ChangeViewOptions, false);
+			bool toggleGrid = GUI.Toggle(position, CSGEditorSettings.ShowGrid, "Show Grid");
+			if (toggleGrid != CSGEditorSettings.ShowGrid) {
+				ToggleGrid();
+			}
 		}
 
 		static float ViewOptionsWidth()

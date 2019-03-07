@@ -24,7 +24,7 @@ namespace Chisel.Editors
 				case KeyEventType.ToggleBoundsSnappingKey:	CSGEditorSettings.PivotSnapping = !CSGEditorSettings.PivotSnapping; CSGEditorSettings.Save(); break;
 				case KeyEventType.TogglePivotSnappingKey:	CSGEditorSettings.BoundsSnapping = !CSGEditorSettings.BoundsSnapping; CSGEditorSettings.Save(); break;
 
-				case KeyEventType.ToggleShowGridKey:		CSGEditorSettings.ViewOptions ^= CSGViewOptions.ShowGrid; CSGEditorSettings.Save(); break;
+				case KeyEventType.ToggleShowGridKey:		CSGEditorSettings.ShowGrid = !CSGEditorSettings.ShowGrid; CSGEditorSettings.Save(); break;
 			}
 		}
 	}

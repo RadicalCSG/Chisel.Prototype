@@ -7,25 +7,12 @@ using UnityEditor;
 
 namespace Chisel.Editors
 {
-	// TODO: These need to be per SceneView ... ?
-	public enum CSGViewOptions
-	{
-		ShowGrid					= 1,
-		ShowInViewHelpers			= 2,
-		WireframeMode				= 4,
-
-		ShowVisibleSurfaces			= 8,
-		ShowCollidableSurfaces		= 16,
-		ShowShadowCastingSurfaces	= 32,
-		ShowShadowReceivingSurfaces	= 64
-	}
-
 	public static class CSGEditorSettings
 	{
 		const CSGEditMode				kDefaultEditMode        = CSGEditMode.Object;
-		const CSGViewOptions			kDefaultViewOptions		= CSGViewOptions.ShowGrid | CSGViewOptions.ShowVisibleSurfaces | CSGViewOptions.ShowInViewHelpers;
 
-		public static CSGViewOptions	ViewOptions		= kDefaultViewOptions;
+		// View Options
+		public static bool				ShowGrid		= true;
 		
 		public static bool				AxisLockX		{ get { return Snapping.AxisLockX; } set { Snapping.AxisLockX = value; } }
 		public static bool				AxisLockY		{ get { return Snapping.AxisLockY; } set { Snapping.AxisLockY = value; } }
@@ -69,7 +56,8 @@ namespace Chisel.Editors
 			ScaleSnapping	= EditorPrefs.GetBool ("ScaleSnapping",		true);
 			ScaleSnap		= EditorPrefs.GetFloat("ScaleSnap",			0.1f);
 
-			ViewOptions     = (CSGViewOptions)EditorPrefs.GetInt  ("CSGViewOptions",	(int)kDefaultViewOptions);
+			ShowGrid 		= EditorPrefs.GetBool ("ShowGrid",			true);
+
 			EditMode		= (CSGEditMode)EditorPrefs.GetInt	  ("CSGEditMode",		(int)kDefaultEditMode);
 		}
 
@@ -94,7 +82,7 @@ namespace Chisel.Editors
 			EditorPrefs.SetBool("ScaleSnapping",	ScaleSnapping);
 			EditorPrefs.SetFloat("ScaleSnap",		ScaleSnap);
 
-			EditorPrefs.SetInt("CSGViewOptions",   (int)ViewOptions);
+			EditorPrefs.SetBool("ShowGrid",   		ShowGrid);
 			EditorPrefs.SetInt("CSGEditMode",	   (int)EditMode);
 		}
 	};
