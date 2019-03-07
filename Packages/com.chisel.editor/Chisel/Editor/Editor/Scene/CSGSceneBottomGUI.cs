@@ -18,6 +18,9 @@ namespace Chisel.Editors
 		const float kFloatFieldWidth    = 60;
 
 		static readonly int BottomBarGUIHash = typeof(CSGSceneBottomGUI).Name.GetHashCode();
+
+		static GUILayoutOption floatWidthLayout;
+
 		static GUIStyle toolbarStyle;
 		static GUIStyle toggleStyle;
 		static GUIStyle buttonStyle;
@@ -50,7 +53,7 @@ namespace Chisel.Editors
 
 			CSGEditorSettings.ShowGrid = GUILayout.Toggle(CSGEditorSettings.ShowGrid, "Show Grid", toggleStyle);
 
-			CSGEditorSettings.MoveSnapX = CSGEditorSettings.MoveSnapY = CSGEditorSettings.MoveSnapZ = EditorGUILayout.FloatField(CSGEditorSettings.MoveSnapX, GUILayout.Width(kFloatFieldWidth));
+			CSGEditorSettings.MoveSnapX = CSGEditorSettings.MoveSnapY = CSGEditorSettings.MoveSnapZ = EditorGUILayout.FloatField(CSGEditorSettings.MoveSnapX, floatWidthLayout);
 			if (GUILayout.Button("-", EditorStyles.miniButtonLeft)) { 
 				ModifySnapDistance(0.5f);
 			}
@@ -80,6 +83,8 @@ namespace Chisel.Editors
 
 				buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
 				buttonStyle.fixedHeight = kBottomBarHeight;
+
+				floatWidthLayout = GUILayout.Width(kFloatFieldWidth);
 
 				prevSkin = curSkin;
 				CSGEditorSettings.Load();
