@@ -17,8 +17,8 @@ namespace Chisel.Editors
 		{
 			switch (type)
 			{
-				case KeyEventType.HalfGridSizeKey:			CSGSceneBottomGUI.ModifySnapDistance(0.5f); break;
-				case KeyEventType.DoubleGridSizeKey:		CSGSceneBottomGUI.ModifySnapDistance(2.0f); break;	
+				case KeyEventType.HalfGridSizeKey:			CSGSceneBottomGUI.MultiplySnapDistance(0.5f); break;
+				case KeyEventType.DoubleGridSizeKey:		CSGSceneBottomGUI.MultiplySnapDistance(2.0f); break;	
 
 				// TODO: turn this into utility functions that are shared with CSGSceneBottomGUI
 				case KeyEventType.ToggleBoundsSnappingKey:	CSGEditorSettings.PivotSnapping = !CSGEditorSettings.PivotSnapping; CSGEditorSettings.Save(); break;
