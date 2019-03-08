@@ -26,11 +26,6 @@ namespace Chisel.Editors
 		static GUIStyle buttonStyle;
 		static bool     prevSkin = false;
 
-		// UI Element definitions
-		static GUIContent rebuildButton = new GUIContent("Rebuild");
-		static GUIContent doubleSnapDistanceButton = new GUIContent("+", "Double the snapping distance.\nHotkey: ]");
-		static GUIContent halveSnapDistanceButton = new GUIContent("-", "Halve the snapping distance.\nHotkey: [");
-
 		static readonly int bottomBarGuiId					= 21001;
 
 
@@ -39,9 +34,9 @@ namespace Chisel.Editors
 			CSGNodeHierarchyManager.Rebuild();
 		}
 
-		public static void MultiplySnapDistance(float modifier) 
+		public static void ModifySnapDistance(float modifier) 
 		{
-			CSGEditorSettings.UniformSnapDistance = CSGEditorSettings.UniformSnapDistance * modifier;
+			CSGEditorSettings.MoveSnapX = CSGEditorSettings.MoveSnapY = CSGEditorSettings.MoveSnapZ = CSGEditorSettings.MoveSnapX * modifier;
 		}
 
 
@@ -50,8 +45,7 @@ namespace Chisel.Editors
 			EditorGUI.BeginChangeCheck();
 			GUILayout.BeginHorizontal();
 
-			// TODO: assign hotkey to rebuild, and possibly move it elsewhere to avoid it seemingly like a necessary action.
-			if (GUILayout.Button(rebuildButton, buttonStyle)) { 
+			if (GUILayout.Button("Rebuild", buttonStyle)) { 
 				Rebuild();
 			}
 
@@ -60,11 +54,11 @@ namespace Chisel.Editors
 			CSGEditorSettings.ShowGrid = GUILayout.Toggle(CSGEditorSettings.ShowGrid, "Show Grid", toggleStyle);
 
 			CSGEditorSettings.MoveSnapX = CSGEditorSettings.MoveSnapY = CSGEditorSettings.MoveSnapZ = EditorGUILayout.FloatField(CSGEditorSettings.MoveSnapX, floatWidthLayout);
-			if (GUILayout.Button(halveSnapDistanceButton, EditorStyles.miniButtonLeft)) { 
-				MultiplySnapDistance(0.5f);
+			if (GUILayout.Button("-", EditorStyles.miniButtonLeft)) { 
+				ModifySnapDistance(0.5f);
 			}
-			if (GUILayout.Button(doubleSnapDistanceButton, EditorStyles.miniButtonRight)) { 
-				MultiplySnapDistance(2.0f);
+			if (GUILayout.Button("+", EditorStyles.miniButtonRight)) { 
+				ModifySnapDistance(2.0f);
 			}
 
 			GUILayout.EndHorizontal();

@@ -24,9 +24,6 @@ namespace Chisel.Editors
 		public static float				MoveSnapX		{ get { return Grid.defaultGrid.SpacingX; } set { Grid.defaultGrid.SpacingX = value; } }
 		public static float				MoveSnapY		{ get { return Grid.defaultGrid.SpacingY; } set { Grid.defaultGrid.SpacingY = value; } }
 		public static float				MoveSnapZ		{ get { return Grid.defaultGrid.SpacingZ; } set { Grid.defaultGrid.SpacingZ = value; } }
-		public static float				UniformSnapDistance		{ get { return Grid.defaultGrid.SpacingX; } set { Grid.defaultGrid.SpacingX = value;
-																										  Grid.defaultGrid.SpacingY = value;
-																										  Grid.defaultGrid.SpacingZ = value; } } 
 		public static CSGEditMode		EditMode		{ get { return CSGEditModeManager.EditMode; } set { CSGEditModeManager.EditMode = value; } }
 
 		public static bool				ShowAllAxi      = false;
