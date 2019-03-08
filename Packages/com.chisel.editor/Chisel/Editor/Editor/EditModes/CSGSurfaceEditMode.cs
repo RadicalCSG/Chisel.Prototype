@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnitySceneExtensions;
 using Chisel.Utilities;
 
 namespace Chisel.Editors
@@ -341,16 +342,16 @@ namespace Chisel.Editors
             var nodeTransform		= startSurfaceIntersection.surface.node.hierarchyItem.Transform;
             var modelTransform		= CSGNodeHierarchyManager.FindModelTransformOfTransform(nodeTransform);
 
-            worldStartPosition		= modelTransform.localToWorldMatrix.MultiplyPoint(startSurfaceIntersection.intersection.worldIntersection);
+            worldStartPosition		= modelTransform.localToWorldMatrix.MultiplyPoint (startSurfaceIntersection.intersection.worldIntersection);
             worldProjectionPlane	= modelTransform.localToWorldMatrix.TransformPlane(startSurfaceIntersection.intersection.worldPlane);
-
-            // more accurate on small movements
-            //worldDragPlane		= worldProjectionPlane;
             
-            // prevents drag-plane from intersecting near plane (makes movement slow down to a singularity when further away from click position)
-            worldDragPlane			= new Plane(Camera.current.transform.forward, worldStartPosition);
+            // more accurate for small movements
+            worldDragPlane		= worldProjectionPlane;
 
-            // TODO: ideally we'd interpolate the behaviour of the worldPlane between near and far behavior)
+            // (unfinished) prevents drag-plane from intersecting near plane (makes movement slow down to a singularity when further away from click position)
+            //worldDragPlane	= new Plane(Camera.current.transform.forward, worldStartPosition); 
+
+            // TODO: ideally we'd interpolate the behaviour of the worldPlane between near and far behavior
         }
 
         private static Vector3 GetCurrentWorldClick(Vector2 mousePosition)
@@ -360,7 +361,7 @@ namespace Chisel.Editors
             // TODO: snapping?
             var mouseRay = HandleUtility.GUIPointToWorldRay(mousePosition);
             var enter = 0.0f;
-            if (worldDragPlane.Raycast(mouseRay, out enter))
+            if (worldDragPlane.UnsignedRaycast(mouseRay, out enter))
                 currentWorldIntersection = mouseRay.GetPoint(enter);
 
 
@@ -460,13 +461,12 @@ namespace Chisel.Editors
                     var currentWorldIntersection	= GetCurrentWorldClick(jumpedMousePosition);
                     var worldSpaceMovement			= currentWorldIntersection - worldStartPosition;
 
-                    var localNormal = startSurface.node.hierarchyItem.Transform.worldToLocalMatrix.
-                                            MultiplyVector(worldProjectionPlane.normal);
-                    //Debug.Log(localNormal);
+                    var localNormal					= startSurface.node.hierarchyItem.Transform.worldToLocalMatrix.
+                                                        MultiplyVector(worldDragPlane.normal);
 
                     Vector3 tangent;
                     Vector3 biNormal;
-                    MathExtensions.CalculateTangents(worldProjectionPlane.normal, out tangent, out biNormal);
+                    MathExtensions.CalculateTangents(worldDragPlane.normal, out tangent, out biNormal);
 
                     var projectedWorldMovement = tangent  * Vector3.Dot(tangent,  worldSpaceMovement) +
                                                  biNormal * Vector3.Dot(biNormal, worldSpaceMovement);
@@ -487,8 +487,8 @@ namespace Chisel.Editors
                         }
                     } else
                     {
-                        var deltaAngle			= MathExtensions.SignedAngle(startVector, projectedWorldMovement, worldProjectionPlane.normal);
-                        var worldSpaceRotationQ	= Quaternion.AngleAxis(deltaAngle, worldProjectionPlane.normal);
+                        var deltaAngle			= MathExtensions.SignedAngle(startVector, projectedWorldMovement, worldDragPlane.normal);
+                        var worldSpaceRotationQ	= Quaternion.AngleAxis(deltaAngle, worldDragPlane.normal);
                         var worldspaceRotation	= Matrix4x4.TRS( worldStartPosition, Quaternion.identity, Vector3.one) *
                                                   Matrix4x4.TRS(Vector3.zero, worldSpaceRotationQ, Vector3.one) *
                                                   Matrix4x4.TRS(-worldStartPosition, Quaternion.identity, Vector3.one)
@@ -583,7 +583,7 @@ namespace Chisel.Editors
                     
                     Vector3 tangent;
                     Vector3 biNormal;
-                    MathExtensions.CalculateTangents(worldProjectionPlane.normal, out tangent, out biNormal);
+                    MathExtensions.CalculateTangents(worldDragPlane.normal, out tangent, out biNormal);
 
                     var projectedWorldMovement = tangent  * Vector3.Dot(tangent,  worldSpaceMovement) +
                                                  biNormal * Vector3.Dot(biNormal, worldSpaceMovement);
@@ -606,8 +606,8 @@ namespace Chisel.Editors
                         var orientation			= selectedSurfaceReferences[i].Orientation;
                         
                         var uvMatrix			= selectedUVMatrices[i];
-#if false
-                        var worldToPlaneSpace	= polygon.localToPlaneSpace * worldToLocal;
+#if true
+                        var worldToPlaneSpace	= orientation.localToPlaneSpace * worldToLocal;
                         var planeSpaceMovement	= worldToPlaneSpace.MultiplyVector(projectedWorldMovement);
                         uvMatrix.U.w -= Vector3.Dot(uvMatrix.U, planeSpaceMovement);
                         uvMatrix.V.w -= Vector3.Dot(uvMatrix.V, planeSpaceMovement);

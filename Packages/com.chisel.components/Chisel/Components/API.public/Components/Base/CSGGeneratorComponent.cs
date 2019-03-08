@@ -37,10 +37,10 @@ namespace Chisel.Components
             base.OnResetInternal();
         }
 
-		//**Temporary hack to ensure that a BrushMeshAsset remains unique when duplicated so that we can control when we share a BrushMeshAsset**//
-		#region HandleDuplication
+        //**Temporary hack to ensure that a BrushMeshAsset remains unique when duplicated so that we can control when we share a BrushMeshAsset**//
+        #region HandleDuplication
 #if UNITY_EDITOR
-		[SerializeField, HideInInspector] protected int instanceID = 0;
+        [SerializeField, HideInInspector] protected int instanceID = 0;
         [SerializeField, HideInInspector] protected int genGuidHashCode = 0;
 #endif
         void HandleDuplication()
@@ -52,11 +52,11 @@ namespace Chisel.Components
                 else if (instanceID != currentInstanceID)
                 {
                     var prevObject = UnityEditor.EditorUtility.InstanceIDToObject(instanceID) as CSGGeneratorComponent;
-					// if our stored instanceID is the same as an existing generator and has the same guid, 
-					// we can assume we've been duplicated
+                    // if our stored instanceID is the same as an existing generator and has the same guid, 
+                    // we can assume we've been duplicated
                     if (prevObject && prevObject.genGuidHashCode == genGuidHashCode)
                     {
-						if (prevObject.brushMeshAsset == brushMeshAsset)
+                        if (prevObject.brushMeshAsset == brushMeshAsset)
                             brushMeshAsset = Instantiate(brushMeshAsset);
                         genGuidHashCode = Guid.NewGuid().GetHashCode();
                     }
@@ -66,7 +66,7 @@ namespace Chisel.Components
 #endif
         }
         #endregion
-		//**//
+        //**//
 
         protected override void OnValidateInternal()
         {
@@ -148,7 +148,7 @@ namespace Chisel.Components
             {
                 var finalTransformation = localTransformation;
                 if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
-                    finalTransformation *= Matrix4x4.TRS(-pivotOffset, Quaternion.identity, Vector3.one);                
+                    finalTransformation *= Matrix4x4.TRS(pivotOffset, Quaternion.identity, Vector3.one);
                 return finalTransformation;
             }
         }
@@ -656,14 +656,10 @@ namespace Chisel.Components
             }
         }
 
-        public override Vector3 SetPivot(Vector3 newWorldPosition)
+        internal override void AddPivotOffset(Vector3 worldSpaceDelta)
         {
-            var delta = base.SetPivot(newWorldPosition);
-            if (delta.x == 0 && delta.y == 0 && delta.z == 0)
-                return Vector3.zero;
-
-            PivotOffset = PivotOffset + delta;
-            return delta;
+            PivotOffset += this.transform.worldToLocalMatrix.MultiplyVector(worldSpaceDelta);
+            base.AddPivotOffset(worldSpaceDelta);
         }
 
         public virtual void UpdateGenerator()
