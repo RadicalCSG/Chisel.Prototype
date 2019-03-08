@@ -292,16 +292,21 @@ namespace Chisel.Components
 				return Vector3.zero;
 			transform.position = newWorldPosition;
 			var delta = newWorldPosition - currentPosition;
-			for (int c = 0; c < hierarchyItem.Children.Count; c++)
-			{
-				var child = hierarchyItem.Children[c];
-				child.Component.SetPivot(child.Transform.position - delta);
-			}
+			AddPivotOffset(-delta);
 			return delta;
 		}
 
+		internal virtual void AddPivotOffset(Vector3 worldSpaceDelta)
+		{
+			for (int c = 0; c < hierarchyItem.Children.Count; c++)
+			{
+				var child = hierarchyItem.Children[c];
+				child.Component.AddPivotOffset(worldSpaceDelta);
+			}
+		}
+
 #if UNITY_EDITOR
-		// The icon used in the hierarchy
+			// The icon used in the hierarchy
 		public abstract GUIContent Icon { get; }
 
 		public virtual bool ConvertToBrushes()
