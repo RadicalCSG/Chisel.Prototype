@@ -507,7 +507,7 @@ namespace UnitySceneExtensions
 			var worldRay = UnityEditor.HandleUtility.GUIPointToWorldRay(guiPosition);
 			var dist = 0.0f;
 
-			if (!worldSlidePlane.Raycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+			if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
 			worldPlanePosition = worldRay.GetPoint(dist);
 			return true;
 		}
