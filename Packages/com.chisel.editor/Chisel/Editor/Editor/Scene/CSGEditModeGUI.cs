@@ -31,27 +31,30 @@ namespace Chisel.Editors
 			public GUIContent   content;
 		}
 
+		/*
+			Jazz: Removed unfinished tools for the time being 
+		 */
 		static readonly CSGEditModeItem[] editModes = new []
 		{
 			new CSGEditModeItem(CSGEditMode.Object,			new GUIContent("Object")),
 			new CSGEditModeItem(CSGEditMode.Pivot,			new GUIContent("Pivot")),
 			new CSGEditModeItem(CSGEditMode.ShapeEdit,		new GUIContent("Shape Edit")),
-			new CSGEditModeItem(CSGEditMode.SurfaceEdit,	new GUIContent("Surface Edit")),
+			// new CSGEditModeItem(CSGEditMode.SurfaceEdit,	new GUIContent("Surface Edit")),
 			
 			new CSGEditModeItem(CSGEditMode.FreeDraw,		new GUIContent("FreeDraw")),
-			new CSGEditModeItem(CSGEditMode.RevolvedShape,	new GUIContent("Revolved Shape")),
+			// new CSGEditModeItem(CSGEditMode.RevolvedShape,	new GUIContent("Revolved Shape")),
 
 			new CSGEditModeItem(CSGEditMode.Box,			new GUIContent("Box")),
 			new CSGEditModeItem(CSGEditMode.Cylinder,		new GUIContent("Cylinder")),
-			new CSGEditModeItem(CSGEditMode.Torus,          new GUIContent("Torus")),
-			new CSGEditModeItem(CSGEditMode.Hemisphere,		new GUIContent("Hemisphere")),
-			new CSGEditModeItem(CSGEditMode.Sphere,			new GUIContent("Sphere")),
-			new CSGEditModeItem(CSGEditMode.Capsule,        new GUIContent("Capsule")),
-			new CSGEditModeItem(CSGEditMode.Stadium,        new GUIContent("Stadium")),
+			// new CSGEditModeItem(CSGEditMode.Torus,          new GUIContent("Torus")),
+			// new CSGEditModeItem(CSGEditMode.Hemisphere,		new GUIContent("Hemisphere")),
+			// new CSGEditModeItem(CSGEditMode.Sphere,			new GUIContent("Sphere")),
+			// new CSGEditModeItem(CSGEditMode.Capsule,        new GUIContent("Capsule")),
+			// new CSGEditModeItem(CSGEditMode.Stadium,        new GUIContent("Stadium")),
 
-			new CSGEditModeItem(CSGEditMode.PathedStairs,   new GUIContent("Pathed Stairs")),
-			new CSGEditModeItem(CSGEditMode.LinearStairs,	new GUIContent("Linear Stairs")),
-			new CSGEditModeItem(CSGEditMode.SpiralStairs,   new GUIContent("Spiral Stairs"))
+			// new CSGEditModeItem(CSGEditMode.PathedStairs,   new GUIContent("Pathed Stairs")),
+			// new CSGEditModeItem(CSGEditMode.LinearStairs,	new GUIContent("Linear Stairs")),
+			// new CSGEditModeItem(CSGEditMode.SpiralStairs,   new GUIContent("Spiral Stairs"))
 		};
 
 

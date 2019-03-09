@@ -5,28 +5,28 @@ namespace UnitySceneExtensions
 {
 	public sealed partial class SceneHandles
 	{
-        static float Size2DSlider(Vector3 center, Vector3 direction, Vector3 forward, Vector3 up, Vector3 right, float radius, Axes axes = Axes.None, bool renderDisc = true)
-        {
+		static float Size2DSlider(Vector3 center, Vector3 direction, Vector3 forward, Vector3 up, Vector3 right, float radius, Axes axes = Axes.None, bool renderDisc = true)
+		{
 			var id = GUIUtility.GetControlID (s_Slider2DHash, FocusType.Keyboard);
-            return Size2DSlider(id, center, direction, forward, up, right, radius, axes, renderDisc);
-        }
+			return Size2DSlider(id, center, direction, forward, up, right, radius, axes, renderDisc);
+		}
 
-        static float Size2DSlider(int id, Vector3 center, Vector3 direction, Vector3 forward, Vector3 up, Vector3 right, float radius, Axes axes = Axes.None, bool renderDisc = true)
-        {
-            Vector3 position = center + direction * radius;
-            float size = UnityEditor.HandleUtility.GetHandleSize(position);
-            bool temp = GUI.changed;
-            GUI.changed = false;
-            position = Slider2DHandle(id, position, Vector3.zero, forward, up, right, size * 0.05f, OutlinedDotHandleCap, axes, renderDisc);
+		static float Size2DSlider(int id, Vector3 center, Vector3 direction, Vector3 forward, Vector3 up, Vector3 right, float radius, Axes axes = Axes.None, bool renderDisc = true)
+		{
+			Vector3 position = center + direction * radius;
+			float size = UnityEditor.HandleUtility.GetHandleSize(position);
+			bool temp = GUI.changed;
+			GUI.changed = false;
+			position = Slider2DHandle(id, position, Vector3.zero, forward, up, right, size * 0.05f, OutlinedDotHandleCap, axes, renderDisc);
 			
-            if (GUI.changed)
-                radius = Vector3.Dot(position - center, direction);
-            GUI.changed |= temp;
-            return radius;
-        }
+			if (GUI.changed)
+				radius = Vector3.Dot(position - center, direction);
+			GUI.changed |= temp;
+			return radius;
+		}
 
-        public static float Radius2DHandle(Quaternion rotation, Vector3 position, float radius, float minRadius = 0, float maxRadius = float.PositiveInfinity, bool renderDisc = true)
-        {
+		public static float Radius2DHandle(Quaternion rotation, Vector3 position, float radius, float minRadius = 0, float maxRadius = float.PositiveInfinity, bool renderDisc = true)
+		{
 			minRadius = Mathf.Abs(minRadius);
 			maxRadius = Mathf.Abs(maxRadius); if (maxRadius < minRadius) maxRadius = minRadius;
 
@@ -34,28 +34,28 @@ namespace UnitySceneExtensions
 			var prevDisabled	= SceneHandles.disabled;
 			var prevColor		= SceneHandles.color;
 
-            var forward = rotation * Vector3.forward;
-            var up		= rotation * Vector3.up;
-            var right	= rotation * Vector3.right;
+			var forward = rotation * Vector3.forward;
+			var up		= rotation * Vector3.up;
+			var right	= rotation * Vector3.right;
 
-            bool temp = GUI.changed;
-            GUI.changed = false;
+			bool temp = GUI.changed;
+			GUI.changed = false;
 			
 			var isDisabled =  isStatic || prevDisabled || Snapping.AxisLocking[1];
 			SceneHandles.color = SceneHandles.StateColor(prevColor, isDisabled, false);
 
-            radius = Size2DSlider(position,     up, forward, up, right, radius);
-            radius = Size2DSlider(position,    -up, forward, up, right, radius);
+			radius = Size2DSlider(position,     up, forward, up, right, radius);
+			radius = Size2DSlider(position,    -up, forward, up, right, radius);
 			
 			isDisabled =  isStatic || prevDisabled || Snapping.AxisLocking[0];
 			SceneHandles.color = SceneHandles.StateColor(prevColor, isDisabled, false);
 
-            radius = Size2DSlider(position,  right, forward, up, right, radius);
+			radius = Size2DSlider(position,  right, forward, up, right, radius);
 			radius = Size2DSlider(position, -right, forward, up, right, radius);
 			
 			radius = Mathf.Max(minRadius, Mathf.Min(Mathf.Abs(radius), maxRadius)); 
 			
-            GUI.changed |= temp;
+			GUI.changed |= temp;
 			
 			if (radius > 0 && renderDisc)
 			{ 
@@ -67,10 +67,10 @@ namespace UnitySceneExtensions
 				SceneHandles.disabled = prevDisabled;
 				SceneHandles.color = prevColor;
 			}
-            return radius;
-        }
+			return radius;
+		}
 
-        public static Vector3 Radius2DHandle(Vector3 center, Vector3 up, Vector3 radius, float minRadius = 0, float maxRadius = float.PositiveInfinity, bool renderDisc = true)
+		public static Vector3 Radius2DHandle(Vector3 center, Vector3 up, Vector3 radius, float minRadius = 0, float maxRadius = float.PositiveInfinity, bool renderDisc = true)
 		{
 			minRadius = Mathf.Abs(minRadius);
 			maxRadius = Mathf.Abs(maxRadius); if (maxRadius < minRadius) maxRadius = minRadius;
@@ -78,7 +78,7 @@ namespace UnitySceneExtensions
 			var isStatic		= (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
 			var prevDisabled	= SceneHandles.disabled;
 			var prevColor		= SceneHandles.color;
-            var prevChanged		= GUI.changed;
+			var prevChanged		= GUI.changed;
 			var hasChanged		= false;
 
 			
@@ -107,23 +107,23 @@ namespace UnitySceneExtensions
 
 			Vector3 moveDelta = Vector3.zero;
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position0);
-            position0 = Slider2DHandle(position0, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
+			size = UnityEditor.HandleUtility.GetHandleSize(position0);
+			position0 = Slider2DHandle(position0, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed) { moveDelta = position0 - center; hasChanged = true; }
 			
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position1);
-            position1 = Slider2DHandle(position1, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
+			size = UnityEditor.HandleUtility.GetHandleSize(position1);
+			position1 = Slider2DHandle(position1, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed) { moveDelta = -(position1 - center); hasChanged = true; }
 			
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position2);
-            position2 = Slider2DHandle(position2, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
+			size = UnityEditor.HandleUtility.GetHandleSize(position2);
+			position2 = Slider2DHandle(position2, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed) { moveDelta = (Quaternion.AngleAxis(-90, up) * (position2 - center)); hasChanged = true; }
 			
-            GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position3);
-            position3 = Slider2DHandle(position3, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
+			GUI.changed = false;
+			size = UnityEditor.HandleUtility.GetHandleSize(position3);
+			position3 = Slider2DHandle(position3, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed) { moveDelta = -(Quaternion.AngleAxis(-90, up) * (position3 - center)); hasChanged = true; }
 
 			if (hasChanged)
@@ -149,21 +149,21 @@ namespace UnitySceneExtensions
 			}
 
 			
-            GUI.changed |= prevChanged | hasChanged;
+			GUI.changed |= prevChanged | hasChanged;
 			
 			isDisabled =  isStatic || prevDisabled || (Snapping.AxisLocking[0] && Snapping.AxisLocking[1]);
 			SceneHandles.color = SceneHandles.StateColor(prevColor, isDisabled, false);
 
-            
+			
 			float radiusMagnitude = delta1.magnitude;
-            if (radiusMagnitude > 0 && renderDisc)
-                SceneHandles.DrawWireDisc(center, up, radiusMagnitude);
+			if (radiusMagnitude > 0 && renderDisc)
+				SceneHandles.DrawWireDisc(center, up, radiusMagnitude);
 			
 			
 			SceneHandles.disabled = prevDisabled;
 			SceneHandles.color = prevColor;
-            return radius;
-        }
+			return radius;
+		}
 
 		
 		internal static int s_Radius2DHash = "Radius2DHash".GetHashCode();
@@ -183,7 +183,7 @@ namespace UnitySceneExtensions
 			var prevColor		= SceneHandles.color;
 			var prevMatrix		= SceneHandles.matrix;
 			var prevDisabled	= SceneHandles.disabled;
-            var prevChanged		= GUI.changed;
+			var prevChanged		= GUI.changed;
 
 			float size;
 			Vector3 forward;
@@ -217,72 +217,103 @@ namespace UnitySceneExtensions
 			bool noRotation = Event.current.shift;
 
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position0);
+			size = UnityEditor.HandleUtility.GetHandleSize(position0);
 			position0 = Slider2DHandle(positionId0, position0, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed)
 			{
 				var moveDelta = (position0 - center);
-				if (noRotation) radius1 = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta2);
-				else			radius1 = center + moveDelta;
-				
-				delta1 = GeometryUtility.ProjectPointPlane(radius1 - center, plane);
-				delta1Magnitude = delta1.magnitude;
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta2); }
+				else			{ newRadius = center + moveDelta; }
 
-				if (!noRotation && delta1Magnitude > Vector3.kEpsilon) radius2 = center + ((Quaternion.AngleAxis(-90, up) * (delta1 / delta1Magnitude)) * delta2Magnitude);
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta1Magnitude = newDelta.magnitude;
+
+				if (!noRotation && delta1Magnitude > Vector3.kEpsilon)
+				{
+					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (newDelta / delta1Magnitude)) * delta2Magnitude);
+				}
+
+				// set this after setting radius2 since both may lead to same variable
+				delta1 = newDelta; 
+				radius1 = newRadius;
 				prevChanged = true;
 			}
 
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position1);
+			size = UnityEditor.HandleUtility.GetHandleSize(position1);
 			position1 = Slider2DHandle(positionId1, position1, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed)
 			{
 				var moveDelta = (position1 - center);
-				if (noRotation) radius1 = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta2);
-				else			radius1 = center - moveDelta;
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta2); }
+				else			{ newRadius = center - moveDelta; }
 
-				delta1 = GeometryUtility.ProjectPointPlane(radius1 - center, plane);
-				delta1Magnitude = delta1.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta1Magnitude = newDelta.magnitude;
 
-				if (!noRotation && delta1Magnitude > Vector3.kEpsilon) radius2 = center + ((Quaternion.AngleAxis(-90, up) * (delta1 / delta1Magnitude)) * delta2Magnitude);
+				if (!noRotation && delta1Magnitude > Vector3.kEpsilon)
+				{
+					radius2 = center + ((Quaternion.AngleAxis(-90, up) * (newDelta / delta1Magnitude)) * delta2Magnitude);
+				}
+				
+				// set this after setting radius2 since both may lead to same variable
+				delta1 = newDelta; 
+				radius1 = newRadius;
 				prevChanged = true;
 			}
 			
 			GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position2);
+			size = UnityEditor.HandleUtility.GetHandleSize(position2);
 			position2 = Slider2DHandle(positionId2, position2, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed)
 			{
 				var moveDelta = (position2 - center);
-				if (noRotation) radius2 = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta1);
-				else			radius2 = center + moveDelta;
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center + moveDelta, center, rotatedDelta1); }
+				else			{ newRadius = center + moveDelta; }
 
-				delta2 = radius2 - center;
-				delta2Magnitude = delta2.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta2Magnitude = newDelta.magnitude;
 
-				if (!noRotation && delta2Magnitude > Vector3.kEpsilon) radius1 = center + ((Quaternion.AngleAxis(90, up) * (delta2 / delta2Magnitude)) * delta1Magnitude);
+				if (!noRotation && delta2Magnitude > Vector3.kEpsilon)
+				{
+					radius1 = center + ((Quaternion.AngleAxis(90, up) * (newDelta / delta2Magnitude)) * delta1Magnitude);
+				}
+				
+				// set this after setting radius1 since both may lead to same variable
+				delta2 = newDelta; 
+				radius2 = newRadius;
 				prevChanged = true;
 			}
 
-            GUI.changed = false;
-            size = UnityEditor.HandleUtility.GetHandleSize(position3);
+			GUI.changed = false;
+			size = UnityEditor.HandleUtility.GetHandleSize(position3);
 			position3 = Slider2DHandle(positionId3, position3, Vector3.zero, up, forward, right, size * 0.05f, OutlinedDotHandleCap);
 			if (GUI.changed)
 			{
 				var moveDelta = (position3 - center);
-				if (noRotation) radius2 = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta1);
-				else			radius2 = center - moveDelta;
+				Vector3 newRadius;
+				if (noRotation) { newRadius = GeometryUtility.ProjectPointRay(center - moveDelta, center, rotatedDelta1); }
+				else			{ newRadius = center - moveDelta; }
 
-				delta2 = radius2 - center;
-				delta2Magnitude = delta2.magnitude;
+				var newDelta = GeometryUtility.ProjectPointPlane(newRadius - center, plane);
+				delta2Magnitude = newDelta.magnitude;
 
-				if (!noRotation && delta2Magnitude > Vector3.kEpsilon) radius1 = center + ((Quaternion.AngleAxis(90, up) * (delta2 / delta2Magnitude)) * delta1Magnitude);
+				if (!noRotation && delta2Magnitude > Vector3.kEpsilon)
+				{
+					radius1 = center + ((Quaternion.AngleAxis(90, up) * (newDelta / delta2Magnitude)) * delta1Magnitude);
+				}
+				
+				// set this after setting radius1 since both may lead to same variable
+				delta2 = newDelta; 
+				radius2 = newRadius;
 				prevChanged = true;
 			} 
 
 			GUI.changed |= prevChanged;
-
-
+			
 			if (delta1Magnitude < minRadius1 || delta1Magnitude > maxRadius1)
 			{
 				if (delta2Magnitude < minRadius2 || delta2Magnitude > maxRadius2)
@@ -319,14 +350,14 @@ namespace UnitySceneExtensions
 				radius2 = center + delta2;
 				GUI.changed = true;
 			}
-
+			
 
 			if (Event.current.type == EventType.Repaint)
 			{ 
 				isDisabled =  isStatic || prevDisabled || (Snapping.AxisLocking[0] && Snapping.AxisLocking[1]);
 				SceneHandles.color = SceneHandles.StateColor(prevColor, isDisabled, false);
 
-            
+			
 				if (delta1Magnitude > Vector3.kEpsilon && delta2Magnitude > Vector3.kEpsilon)
 				{
 					var ellipsis = Matrix4x4.TRS(center, Quaternion.identity, Vector3.one);
@@ -367,6 +398,6 @@ namespace UnitySceneExtensions
 					(focus == positionId1) ||
 					(focus == positionId2) ||
 					(focus == positionId3);
-        }
+		}
 	}
 }

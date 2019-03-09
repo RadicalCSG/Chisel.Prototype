@@ -74,7 +74,7 @@ namespace Chisel.Editors
 
 			if (s_Points.Count == 2) return bounds;
 			
-			bounds.Encapsulate(s_Points[1] + (GetHeight(Axis.Y) * Vector3.up));
+			bounds.Encapsulate(s_Points[0] + (GetHeight(Axis.Y) * Vector3.up));
 			return bounds;
 		}
 
@@ -100,7 +100,10 @@ namespace Chisel.Editors
 				} else
 				{
 					var tempPoint = s_Points[2];
+					var oldMatrix = UnityEditor.Handles.matrix;
+					UnityEditor.Handles.matrix = UnityEditor.Handles.matrix * s_Transformation;
 					var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis);
+					UnityEditor.Handles.matrix = oldMatrix;
 					s_Points[2] = tempPoint;
 				
 					switch (extrusionState)
