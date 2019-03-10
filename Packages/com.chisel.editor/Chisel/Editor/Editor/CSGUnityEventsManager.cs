@@ -130,7 +130,7 @@ namespace Chisel.Editors
             {
                 ShowUnityGrid = false;
                 CSGEditorSettings.Load();
-                CSGEditorSettings.ViewOptions |= CSGViewOptions.ShowGrid;
+                CSGEditorSettings.ShowGrid = false;
                 CSGEditorSettings.Save();
             }
 
@@ -147,7 +147,7 @@ namespace Chisel.Editors
                 UnitySceneExtensions.Grid.defaultGrid.GridToWorldSpace = Matrix4x4.identity;
             }
 
-			if ((CSGEditorSettings.ViewOptions & CSGViewOptions.ShowGrid) == CSGViewOptions.ShowGrid)
+			if (CSGEditorSettings.ShowGrid)
 			{
 				var grid = UnitySceneExtensions.Grid.HoverGrid;
 				if (grid == null)
