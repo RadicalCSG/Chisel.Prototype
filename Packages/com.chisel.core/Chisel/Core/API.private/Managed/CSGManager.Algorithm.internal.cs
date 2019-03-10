@@ -99,8 +99,6 @@ namespace Chisel.Core
             return loopList;
         }
 
-        static int counter = 0;
-
         internal static void GenerateSurfaceRenderBuffers(int                   brushNodeID, 
                                                           LoopList              loopList, 
                                                           MeshQuery[]           meshQueries,
