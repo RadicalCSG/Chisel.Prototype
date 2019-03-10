@@ -143,9 +143,22 @@ namespace Chisel.Core
 		public static bool operator == (CSGTreeBrush left, CSGTreeBrush right) { return left.brushNodeID == right.brushNodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public static bool operator != (CSGTreeBrush left, CSGTreeBrush right) { return left.brushNodeID != right.brushNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator ==(CSGTreeBrush left, CSGTreeNode right) { return left.brushNodeID == right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator !=(CSGTreeBrush left, CSGTreeNode right) { return left.brushNodeID != right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator ==(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID == right.brushNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator !=(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID != right.brushNodeID; }
 
 		[EditorBrowsable(EditorBrowsableState.Never)]
-		public override bool Equals(object obj) { if (!(obj is CSGTreeBrush)) return false; var other = (CSGTreeBrush)obj; return brushNodeID == other.brushNodeID; }
+		public override bool Equals(object obj)
+		{
+			if (obj is CSGTreeBrush) return brushNodeID == ((CSGTreeBrush)obj).brushNodeID;
+			if (obj is CSGTreeNode) return brushNodeID == ((CSGTreeNode)obj).nodeID;
+			return false;
+		}
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public override int GetHashCode() { return brushNodeID.GetHashCode(); }
 		#endregion

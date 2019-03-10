@@ -99,7 +99,12 @@ namespace Chisel.Core
             return loopList;
         }
 
-        internal static void GenerateSurfaceRenderBuffers(int brushNodeID, LoopList loopList)
+        static int counter = 0;
+
+        internal static void GenerateSurfaceRenderBuffers(int                   brushNodeID, 
+                                                          LoopList              loopList, 
+                                                          MeshQuery[]           meshQueries,
+                                                          VertexChannelFlags    vertexChannelMask)
         {
             var output			= CSGManager.GetBrushOutput(brushNodeID);
             var brushInstance	= CSGManager.GetBrushMeshID(brushNodeID);
@@ -110,8 +115,7 @@ namespace Chisel.Core
             Matrix4x4 worldToLocal = Matrix4x4.identity;
             CSGManager.GetTreeToNodeSpaceMatrix(brushNodeID, out worldToLocal);
 
-            var outputSurfaces = new CSGSurfaceRenderBuffer[loopList.loops.Count]; // TODO: should be same size as brush.surfaces.Length
-            int outputSurfaceCount = 0;
+            var outputSurfaces = new List<CSGSurfaceRenderBuffer>(loopList.loops.Count * meshQueries.Length); // TODO: should be same size as brush.surfaces.Length
             foreach (var loop in loopList.loops)
             {
                 var polygonIndex	= loop.basePlaneIndex;// TODO: fix this
@@ -121,19 +125,51 @@ namespace Chisel.Core
 
                 var localSpaceToPlaneSpace	= MathExtensions.GenerateLocalToPlaneSpaceMatrix(meshSurfaces[surfaceIndex].plane);
                 var uv0Matrix				= meshPolygon.description.UV0.ToMatrix() * (localSpaceToPlaneSpace * worldToLocal);
+                
+                for (int t = 0, tSize = meshQueries.Length; t < tSize; t++)
+                {
+                    var meshQuery = meshQueries[t];
 
-                // TODO: all separate loops on same surface should be put in same OutputSurfaceMesh
-                if (!loop.Triangulate(uv0Matrix, ref outputSurfaces[outputSurfaceCount]))
-                    continue;
+                    var core_surface_flags = loop.layers.layerUsage;
+                    if ((core_surface_flags & meshQuery.LayerQueryMask) != meshQuery.LayerQuery)
+                        continue;
 
-                // TODO: make this work
-//				outputSurfaces[outputSurfaceCount].meshQuery		= loop.layers; //???
-//				outputSurfaces[outputSurfaceCount].surfaceParameter = loop.surfaceParameter; //???
-                outputSurfaces[outputSurfaceCount].surfaceIndex		= surfaceIndex;
-                outputSurfaceCount++;
+                    int surfaceParameter = 0;
+                    if (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                        meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex)
+                    {
+                        // TODO: turn this into array lookup
+                        switch (meshQuery.LayerParameterIndex)
+                        {
+                            case LayerParameterIndex.LayerParameter1: surfaceParameter = loop.layers.layerParameter1; break;
+                            case LayerParameterIndex.LayerParameter2: surfaceParameter = loop.layers.layerParameter2; break;
+                            case LayerParameterIndex.LayerParameter3: surfaceParameter = loop.layers.layerParameter3; break;
+                        }
+                    }
+                    
+                    // TODO: all separate loops on same surface should be put in same OutputSurfaceMesh
+                    // TODO: triangulate only once
+                    var surfaceRenderBuffer = new CSGSurfaceRenderBuffer();
+                    if (!loop.Triangulate(uv0Matrix, ref surfaceRenderBuffer))
+                        continue;
+
+                    var haveUV0     = false;
+                    var haveNormal  = false;
+
+                    var uvHash		= !haveUV0     ? (ulong)0 : (ulong)Hashing.ComputeHashKey(surfaceRenderBuffer.uv0);
+		            var normalHash	= !haveNormal  ? (ulong)0 : (ulong)Hashing.ComputeHashKey(surfaceRenderBuffer.normals);
+		            var vertexHash	=                           (ulong)Hashing.ComputeHashKey(surfaceRenderBuffer.vertices);
+		            var indicesHash	=                           (ulong)Hashing.ComputeHashKey(surfaceRenderBuffer.indices);
+
+                    surfaceRenderBuffer.surfaceHash         = Hashing.XXH64_mergeRound(normalHash, uvHash);
+                    surfaceRenderBuffer.geometryHash        = Hashing.XXH64_mergeRound(vertexHash, indicesHash);
+                    surfaceRenderBuffer.meshQuery	        = meshQuery;
+                    surfaceRenderBuffer.surfaceParameter    = surfaceParameter;
+                    surfaceRenderBuffer.surfaceIndex        = surfaceIndex;
+                    outputSurfaces.Add(surfaceRenderBuffer);
+                }
             }
-            if (outputSurfaceCount != loopList.loops.Count)
-                Array.Resize(ref outputSurfaces, outputSurfaceCount);
+            output.renderBuffers.surfaceRenderBuffers.Clear();
             output.renderBuffers.surfaceRenderBuffers.AddRange(outputSurfaces);
         }
 
@@ -172,20 +208,6 @@ namespace Chisel.Core
             // check if we even have a valid brushMesh
 
             // TODO: update all renderbuffers for all brushes
-            /*
-            var brushMesh = BrushMeshManager.GetBrushMesh(brushOutput.brushMeshInstanceID);
-            if (brushMesh == null)
-                continue;
-            {
-                renderBuffers = new CSGBrushRenderBuffer();
-                if (!brushOutput.triangleMesh.UpdateRenderBuffer(nodeIndex,
-                                                             brushMesh,
-                                                             renderBuffers,
-                                                             meshQueries.Length, meshQueries, vertexChannelMask))
-                    continue;
-                brushOutput.renderBuffers = renderBuffers;
-            }
-            */
 
             // FIXME: surfaceIndex == planeIndex == polygonIndex
 
@@ -221,9 +243,17 @@ namespace Chisel.Core
             for (int b = 0; b < CSGManager.brushes.Count; b++)
             {
                 // TODO: Be able to perform actual csg on brushes
-                var brushNodeID	= CSGManager.brushes[b];
-                var loopList = PerformCSG(brushNodeID, (b & 1) == 0);
-                GenerateSurfaceRenderBuffers(brushNodeID, loopList);
+                var brushNodeID     = CSGManager.brushes[b];
+                var operationType   = CSGManager.nodeFlags[brushNodeID - 1].operationType;
+                var output          = CSGManager.GetBrushOutput(brushNodeID);
+                output.brushLoopList = PerformCSG(brushNodeID, operationType == CSGOperationType.Additive);
+            }
+
+            {
+                var flags = nodeFlags[treeNodeID - 1];
+                flags.UnSetNodeFlag(NodeStatusFlags.TreeNeedsUpdate);
+                flags.SetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
+                nodeFlags[treeNodeID - 1] = flags;
             }
             return true;
         }
@@ -259,16 +289,19 @@ namespace Chisel.Core
             }
         }
 
-        internal static GeneratedMeshDescription[] GetMeshDescriptions(Int32 treeNodeID,
-                                                                       MeshQuery[] meshQueries,
-                                                                       VertexChannelFlags vertexChannelMask)
+        internal static GeneratedMeshDescription[] GetMeshDescriptions(Int32                treeNodeID,
+                                                                       MeshQuery[]          meshQueries,
+                                                                       VertexChannelFlags   vertexChannelMask)
         {
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) return null;
             if (meshQueries == null)
                 throw new ArgumentNullException("meshTypes");
 
             if (meshQueries.Length == 0)
+            {
+                Debug.Log("meshQueries.Length == 0");
                 return null;
+            }
 
             if (!IsValidNodeID(treeNodeID))
             {
@@ -288,24 +321,52 @@ namespace Chisel.Core
             treeInfo.meshDescriptions.Clear();
 
             if (nodeFlags[treeNodeIndex].IsNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate))
+            {
                 UpdateTreeMesh(treeNodeID);
+            }
 
             CombineSubMeshes(treeInfo, meshQueries, vertexChannelMask);
 
+            {
+                var flags = nodeFlags[treeNodeIndex];
+                flags.UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
+                nodeFlags[treeNodeIndex] = flags;
+            }
+
             if (treeInfo.subMeshCounts.Count <= 0)
             {
-                nodeFlags[treeNodeIndex].UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
-                //				Debug.LogWarning("GetMeshDescriptions: No meshes found");
+                Debug.LogWarning("GetMeshDescriptions: No meshes found");
                 return null;
             }
 
-            if (treeInfo.meshDescriptions == null ||
-				treeInfo.meshDescriptions.Count == 0 ||
-				treeInfo.meshDescriptions[0].vertexCount <= 0 ||
-                treeInfo.meshDescriptions[0].indexCount <= 0)
-                return null;
+            for (int i = (int)treeInfo.subMeshCounts.Count - 1; i >= 0; i--)                
+			{
+                var subMesh         = treeInfo.subMeshCounts[i];
+                var description     = new GeneratedMeshDescription();
+			
+				description.meshQuery			= subMesh.meshQuery;
+				description.surfaceParameter    = subMesh.surfaceIdentifier;
+				description.meshQueryIndex      = subMesh.meshIndex;
+				description.subMeshQueryIndex   = subMesh.subMeshIndex;
 
-            nodeFlags[treeNodeIndex].UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
+				description.geometryHashValue   = subMesh.geometryHash;
+				description.surfaceHashValue    = subMesh.surfaceHash;
+
+				description.vertexCount		    = subMesh.vertexCount;
+				description.indexCount			= subMesh.indexCount;
+
+                treeInfo.meshDescriptions.Add(description);
+
+            }
+
+            if (treeInfo.meshDescriptions == null ||
+                treeInfo.meshDescriptions.Count == 0 ||
+                treeInfo.meshDescriptions[0].vertexCount <= 0 ||
+                treeInfo.meshDescriptions[0].indexCount <= 0)
+            {
+                return null;
+            }
+
             return treeInfo.meshDescriptions.ToArray();
         }
 
@@ -316,13 +377,21 @@ namespace Chisel.Core
                 var branchNodeID = branches[i];
                 var branchNodeIndex = branchNodeID - 1;
 
-                nodeFlags[branchNodeIndex].UnSetNodeFlag(NodeStatusFlags.OperationNeedsUpdate);
+                {
+                    var flags = nodeFlags[branchNodeIndex];
+                    flags.UnSetNodeFlag(NodeStatusFlags.OperationNeedsUpdate);
+                    nodeFlags[branchNodeIndex] = flags;
+                }
                 if (!nodeFlags[branchNodeIndex].IsNodeFlagSet(NodeStatusFlags.NeedPreviousSiblingsUpdate))
                     continue;
 
                 // TODO: implement
-                //operation->RebuildPreviousSiblings();
-                nodeFlags[branchNodeIndex].UnSetNodeFlag(NodeStatusFlags.NeedPreviousSiblingsUpdate);
+                //operation.RebuildPreviousSiblings();
+                {
+                    var flags = nodeFlags[branchNodeIndex];
+                    flags.UnSetNodeFlag(NodeStatusFlags.NeedPreviousSiblingsUpdate);
+                    nodeFlags[branchNodeIndex] = flags;
+                }
             }
 
             var foundOperations = new List<int>();
@@ -351,7 +420,11 @@ namespace Chisel.Core
 
                 // TODO: implement
                 //UpdateChildBrushTouching(branchNodeID);
-                nodeFlags[branchNodeIndex].UnSetNodeFlag(NodeStatusFlags.NeedAllTouchingUpdated);
+                {
+                    var flags = nodeFlags[branchNodeIndex];
+                    flags.UnSetNodeFlag(NodeStatusFlags.NeedAllTouchingUpdated);
+                    nodeFlags[branchNodeIndex] = flags;
+                }
             }
         }
 

@@ -584,8 +584,8 @@ namespace Chisel.Core
                         if (holeLoops[l].basePlaneIndex == pI1) { loop1 = holeLoops[l]; if (loop0 != null) break; }
                     }
 
-                    if (loop0 == null) { loop0 = new Loop { localPlane = mesh1.surfaces[pI0].plane, worldPlane = p0, basePlaneIndex = pI0 }; holeLoops.Add(loop0); }
-                    if (loop1 == null) { loop1 = new Loop { localPlane = mesh1.surfaces[pI1].plane, worldPlane = p1, basePlaneIndex = pI1 }; holeLoops.Add(loop1); }
+                    if (loop0 == null) { loop0 = new Loop { localPlane = mesh1.surfaces[pI0].plane, layers = mesh1.polygons[pI0].layers, worldPlane = p0, basePlaneIndex = pI0 }; holeLoops.Add(loop0); }
+                    if (loop1 == null) { loop1 = new Loop { localPlane = mesh1.surfaces[pI1].plane, layers = mesh1.polygons[pI1].layers, worldPlane = p1, basePlaneIndex = pI1 }; holeLoops.Add(loop1); }
                     //if (loop0 != null && loop0.worldPlane.normal == Vector3.zero) Debug.LogError("!");
                     //if (loop1 != null && loop1.worldPlane.normal == Vector3.zero) Debug.LogError("!");
 
@@ -803,7 +803,9 @@ namespace Chisel.Core
             var surfaces                = mesh.surfaces;
             var polygons                = mesh.polygons;
             var surfacesAroundVertex    = mesh.surfacesAroundVertex;
+            var nodeToTreeSpaceMatrix   = brush.NodeToTreeSpaceMatrix;
             basePolygons.Clear();
+
             for (int p = 0; p < polygons.Length; p++)
             {
                 var polygon      = polygons[p];
@@ -813,7 +815,14 @@ namespace Chisel.Core
                 var localPlane   = surfaces[surfaceIndex].plane;
                 var worldPlane   = brush.NodeToTreeSpaceMatrix.TransformPlane(localPlane);
 
-                var loop = new Loop() { localPlane = localPlane, worldPlane = worldPlane, basePlaneIndex = surfaceIndex, holes = new List<Loop>() };
+                var loop = new Loop()
+                {
+                    layers = polygon.layers,
+                    localPlane = localPlane,
+                    worldPlane = worldPlane,
+                    basePlaneIndex = surfaceIndex,
+                    holes = new List<Loop>()
+                };
                 //if (loop != null && loop.worldPlane.normal == Vector3.zero) Debug.LogError("!");
                 for (int e = firstEdge; e < lastEdge; e++)
                 {
@@ -821,7 +830,7 @@ namespace Chisel.Core
                     var vertex      = vertices[vertexIndex];
                     loop.intersections.Add(new Loop.Intersection()
                     {
-                        vertex = brush.NodeToTreeSpaceMatrix.MultiplyPoint(vertex),
+                        vertex = nodeToTreeSpaceMatrix.MultiplyPoint(vertex),
                         planeIndices = new HashSet<int>(surfacesAroundVertex[vertexIndex])
                     });
                 }

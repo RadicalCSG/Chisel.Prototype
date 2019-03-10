@@ -27,6 +27,13 @@ namespace Chisel.Components
         static bool haveUVsToUpdate = false;
 #endif
 
+        public void Clear()
+        {
+            models.Clear();
+            updateMeshRenderers.Clear();
+            updateMeshColliders.Clear();
+        }
+
         public void Register(CSGModel model)
         {
             // Destroy leftover components in model lookups

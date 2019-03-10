@@ -197,14 +197,26 @@ namespace Chisel.Core
 		public static bool operator == (CSGTreeBranch left, CSGTreeBranch right) { return left.branchNodeID == right.branchNodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public static bool operator != (CSGTreeBranch left, CSGTreeBranch right) { return left.branchNodeID != right.branchNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator ==(CSGTreeBranch left, CSGTreeNode right) { return left.branchNodeID == right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator !=(CSGTreeBranch left, CSGTreeNode right) { return left.branchNodeID != right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator ==(CSGTreeNode left, CSGTreeBranch right) { return left.nodeID == right.branchNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator !=(CSGTreeNode left, CSGTreeBranch right) { return left.nodeID != right.branchNodeID; }
 
 		[EditorBrowsable(EditorBrowsableState.Never)]
-		public override bool Equals(object obj) { if (!(obj is CSGTreeBranch)) return false; var other = (CSGTreeBranch)obj; return branchNodeID == other.branchNodeID; }
+		public override bool Equals(object obj)
+		{
+			if (obj is CSGTreeBranch) return branchNodeID == ((CSGTreeBranch)obj).branchNodeID;
+			if (obj is CSGTreeNode) return branchNodeID == ((CSGTreeNode)obj).nodeID;
+			return false;
+		}
 		[EditorBrowsable(EditorBrowsableState.Never)]
 		public override int GetHashCode() { return branchNodeID.GetHashCode(); }
 		#endregion
-		
-		
+	
 		[SerializeField] // Useful to be able to handle selection in history
 		internal Int32 branchNodeID;
 	}

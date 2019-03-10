@@ -435,13 +435,13 @@ namespace Chisel.Core
                 {
                     int treeNodeID = GetTreeOfNode(nodeID);
                     var flags = nodeFlags[nodeID - 1];
-                    flags.SetNodeFlag(NodeStatusFlags.NeedUpdate);
+                    flags.SetNodeFlag(NodeStatusFlags.NeedFullUpdate);
                     nodeFlags[nodeID - 1] = flags;
                     if (IsValidNodeID(treeNodeID))
                     {
-                        var treeNodeFlags = nodeFlags[nodeID - 1];
+                        var treeNodeFlags = nodeFlags[treeNodeID - 1];
                         treeNodeFlags.SetNodeFlag(NodeStatusFlags.TreeNeedsUpdate);
-                        nodeFlags[nodeID - 1] = treeNodeFlags;
+                        nodeFlags[treeNodeID - 1] = treeNodeFlags;
                     }
                     break;
                 }
@@ -453,9 +453,9 @@ namespace Chisel.Core
                     nodeFlags[nodeID - 1] = flags;
                     if (IsValidNodeID(treeNodeID))
                     {
-                        var treeNodeFlags = nodeFlags[nodeID - 1];
+                        var treeNodeFlags = nodeFlags[treeNodeID - 1];
                         treeNodeFlags.SetNodeFlag(NodeStatusFlags.TreeNeedsUpdate);
-                        nodeFlags[nodeID - 1] = treeNodeFlags;
+                        nodeFlags[treeNodeID - 1] = treeNodeFlags;
                     }
                     break;
                 }
@@ -523,7 +523,18 @@ namespace Chisel.Core
 
 
         internal static bool		GetNodeLocalTransformation(Int32 nodeID, out Matrix4x4 localTransformation)		{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) { localTransformation = Matrix4x4.identity; return false; } localTransformation = nodeLocalTransforms[nodeID - 1].localTransformation; return true; }
-        internal static bool		SetNodeLocalTransformation(Int32 nodeID, ref Matrix4x4 localTransformation)		{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) {                                           return false; } var nodeLocalTransfom = nodeLocalTransforms[nodeID - 1]; nodeLocalTransfom.SetLocalTransformation(localTransformation); nodeLocalTransforms[nodeID - 1] = nodeLocalTransfom; DirtySelfAndChildren(nodeID); return true; }
+        internal static bool		SetNodeLocalTransformation(Int32 nodeID, ref Matrix4x4 localTransformation)
+        {
+            if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID))
+                return false;
+
+            var nodeLocalTransform = nodeLocalTransforms[nodeID - 1];
+            nodeLocalTransform.SetLocalTransformation(localTransformation);
+            nodeLocalTransforms[nodeID - 1] = nodeLocalTransform; DirtySelfAndChildren(nodeID);
+
+            SetDirty(nodeID);
+            return true;
+        }
         internal static bool		GetTreeToNodeSpaceMatrix(Int32 nodeID, out Matrix4x4 treeToNodeMatrix)			{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) { treeToNodeMatrix    = Matrix4x4.identity; return false; } treeToNodeMatrix = nodeTransforms[nodeID - 1].treeToNode; return true; }
         internal static bool		GetNodeToTreeSpaceMatrix(Int32 nodeID, out Matrix4x4 nodeToTreeMatrix)			{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) { nodeToTreeMatrix    = Matrix4x4.identity; return false; } nodeToTreeMatrix = nodeTransforms[nodeID - 1].nodeToTree; return true; }
 
@@ -1170,11 +1181,17 @@ namespace Chisel.Core
             if (nodeCount == 0)
                 return allTreeNodeIDs;
 
+            Debug.Assert(nodeUserIDs.Count == nodeHierarchies.Count);
+            Debug.Assert(nodeBounds.Count == nodeHierarchies.Count);
+            Debug.Assert(nodeFlags.Count == nodeHierarchies.Count);
+            Debug.Assert(nodeTransforms.Count == nodeHierarchies.Count);
+            Debug.Assert(nodeLocalTransforms.Count == nodeHierarchies.Count);
+
             int n = 0;
-            for (int i = 0; i < nodeHierarchies.Count; i++)
+            for (int nodeIndex = 0; nodeIndex < nodeHierarchies.Count; nodeIndex++)
             {
-                var nodeID = i;
-                if (!AssertNodeIDValid(nodeID))
+                var nodeID = nodeIndex + 1;
+                if (!IsValidNodeID(nodeID))
                     continue;
                 allTreeNodeIDs[n].nodeID = nodeID;
                 n++;

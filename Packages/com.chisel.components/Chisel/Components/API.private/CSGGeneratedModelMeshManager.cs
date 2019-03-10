@@ -61,11 +61,7 @@ namespace Chisel.Components
         {
             if (PreReset != null) PreReset();
 
-            foreach (var model in registeredModels) 
-            {
-                componentGenerator.RemoveAllGeneratedComponents(model);
-            }
-
+            componentGenerator.Clear();
             registeredNodeLookup.Clear();
             registeredModels.Clear();
             sharedUnityMeshes.Clear();

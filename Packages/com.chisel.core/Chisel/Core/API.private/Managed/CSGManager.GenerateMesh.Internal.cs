@@ -63,6 +63,7 @@ namespace Chisel.Core
         internal sealed class BrushOutput
         {
             public int					brushMeshInstanceID;
+            public LoopList             brushLoopList;
             public OutputLoops			brushOutputLoops	= new OutputLoops();
             public CSGBrushRenderBuffer renderBuffers		= new CSGBrushRenderBuffer();
 
@@ -105,6 +106,7 @@ namespace Chisel.Core
                     )
                     continue;
 
+                GenerateSurfaceRenderBuffers(nodeID, brushOutput.brushLoopList, meshQueries, vertexChannelMask);
 
                 var renderBuffers	= brushOutput.renderBuffers;
                 if (renderBuffers.surfaceRenderBuffers.Count == 0)
@@ -121,7 +123,7 @@ namespace Chisel.Core
                         continue;
 
                     var surfaceParameter	= (brushSurfaceBuffer.meshQuery.LayerParameterIndex == LayerParameterIndex.None) ? 0 : brushSurfaceBuffer.surfaceParameter;
-                    var meshID				= new MeshID (){ meshQuery = brushSurfaceBuffer.meshQuery, surfaceParameter = surfaceParameter };
+                    var meshID				= new MeshID(){ meshQuery = brushSurfaceBuffer.meshQuery, surfaceParameter = surfaceParameter };
 
                     int generatedMeshIndex;
                     if (!uniqueMeshDescriptions.TryGetValue(meshID, out generatedMeshIndex))
@@ -132,8 +134,8 @@ namespace Chisel.Core
                         int meshIndex, subMeshIndex;
                         if (generatedMeshIndex != -1)
                         {
-                            generatedMeshIndex = (int)subMeshCounts.Count;
                             var prevMeshCountIndex = generatedMeshIndex;
+                            generatedMeshIndex = (int)subMeshCounts.Count;
                             subMeshIndex		= subMeshCounts[prevMeshCountIndex].subMeshIndex + 1;
                             meshIndex			= subMeshCounts[prevMeshCountIndex].meshIndex;
                         } else
@@ -144,17 +146,18 @@ namespace Chisel.Core
                         }
 
                         uniqueMeshDescriptions[meshID] = generatedMeshIndex;
-                        SubMeshCounts newSubMesh = new SubMeshCounts();
-                        newSubMesh.meshIndex			= meshIndex;
-                        newSubMesh.subMeshIndex			= subMeshIndex;
-                        newSubMesh.meshQuery			= meshID.meshQuery;
-                        newSubMesh.surfaceIdentifier	= surfaceParameter;
-                        newSubMesh.indexCount			= surfaceIndexCount;
-                        newSubMesh.vertexCount			= surfaceVertexCount;
-                        newSubMesh.surfaceHash			= brushSurfaceBuffer.surfaceHash;
-                        newSubMesh.geometryHash			= brushSurfaceBuffer.geometryHash;
+                        var newSubMesh = new SubMeshCounts
+                        {
+                            meshIndex           = meshIndex,
+                            subMeshIndex        = subMeshIndex,
+                            meshQuery           = meshID.meshQuery,
+                            surfaceIdentifier   = surfaceParameter,
+                            indexCount          = surfaceIndexCount,
+                            vertexCount         = surfaceVertexCount,
+                            surfaceHash         = brushSurfaceBuffer.surfaceHash,
+                            geometryHash        = brushSurfaceBuffer.geometryHash
+                        };
                         newSubMesh.surfaces.Add(brushSurfaceBuffer);
-
                         subMeshCounts.Add(newSubMesh);
                         continue;
                     } 

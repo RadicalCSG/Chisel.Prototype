@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Matrix4x4 = UnityEngine.Matrix4x4;
@@ -146,7 +147,32 @@ namespace Chisel.Core
 		public Matrix4x4			NodeToTreeSpaceMatrix	{ get { return GetNodeToTreeSpaceMatrix(nodeID); } }
 		#endregion
 
-		
+		#region Comparison
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator >(CSGTreeNode left, CSGTreeNode right) { return left.nodeID > right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator <(CSGTreeNode left, CSGTreeNode right) { return left.nodeID < right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator >=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID >= right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator <=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID <= right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator ==(CSGTreeNode left, CSGTreeNode right) { return left.nodeID == right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public static bool operator !=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID != right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public override bool Equals(object obj)
+		{
+			if (obj is CSGTreeNode) return nodeID == ((CSGTreeNode)obj).nodeID;
+			if (obj is CSGTreeBrush) return nodeID == ((CSGTreeBrush)obj).brushNodeID;
+			if (obj is CSGTreeBranch) return nodeID == ((CSGTreeBranch)obj).branchNodeID;
+			if (obj is CSGTree) return nodeID == ((CSGTree)obj).treeNodeID;
+			return false;
+		}
+		[EditorBrowsable(EditorBrowsableState.Never)]
+		public override int GetHashCode() { return nodeID.GetHashCode(); }
+		#endregion
+
 		[SerializeField] // Useful to be able to handle selection in history
 		internal Int32 nodeID;
 	}

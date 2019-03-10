@@ -100,13 +100,15 @@ namespace Chisel.Components
 		// TODO: Clean up API
 		public static void Rebuild()
 		{
-			CSGManager.Clear();
+            CSGManager.Clear();
 			CSGBrushMeshAssetManager.Reset();
 			CSGSurfaceAssetManager.Reset();
+            CSGGeneratedModelMeshManager.Reset();
+            Reset();
 
-			CSGNodeHierarchyManager.FindAndReregisterAllNodes();
-			CSGNodeHierarchyManager.UpdateAllTransformations();
-			CSGNodeHierarchyManager.Update();
+            CSGNodeHierarchyManager.FindAndReregisterAllNodes();
+            CSGNodeHierarchyManager.UpdateAllTransformations();
+      	    CSGNodeHierarchyManager.Update();
 			CSGGeneratedModelMeshManager.UpdateModels();
 		}
 
@@ -641,16 +643,15 @@ namespace Chisel.Components
 
 		static void FindAndReregisterAllNodes()
 		{
-			Reset();
 			for (int s = 0; s < SceneManager.sceneCount; s++)
 			{
 				var scene = SceneManager.GetSceneAt(s);
 				var rootObjects = scene.GetRootGameObjects();
-				for (int r = 0; r < rootObjects.Length; r++)
+				for (int r = rootObjects.Length - 1; r >= 0; r--)
 				{
 					var rootObject	= rootObjects[r];
 					var nodes		= rootObject.GetComponentsInChildren<CSGNode>(includeInactive: false);
-					for (int n = 0; n < nodes.Length; n++)
+					for (int n = nodes.Length - 1; n >= 0; n--)
 					{
 						var node = nodes[n];
 						if (node.isActiveAndEnabled)

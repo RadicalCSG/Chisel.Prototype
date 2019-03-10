@@ -94,8 +94,11 @@ namespace Chisel.Core
 		/// <summary>Find polygons and create a mesh for each unique PhysicMaterial</summary>
 		/// <remarks>alias of <see cref="Chisel.Core.LayerParameterIndex.LayerParameter2"/>.</remarks>
 		/// <seealso cref="Chisel.Core.SurfaceLayers.layerParameter2"/>.
-		PhysicsMaterial = LayerParameter2
-	};
+		PhysicsMaterial = LayerParameter2,
+
+        
+        MaxLayerParameterIndex = LayerParameter3
+    };
 
 	/// <summary>This struct describes what layers a surface is part of, and user set layer indices</summary>
 	/// <remarks>Setting layer indices can be used to, for example, assign things like [Material](https://docs.unity3d.com/ScriptReference/Material.html)s and [PhysicMaterial](https://docs.unity3d.com/ScriptReference/PhysicMaterial.html)s to a surface.
