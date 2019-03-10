@@ -264,8 +264,11 @@ namespace Chisel.Editors
 				if (serializedObject == null || serializedObject.targetObject == null)
 					return false;
 
-				var type = PrefabUtility.GetPrefabType(serializedObject.targetObject);
-				return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+                //var type = PrefabUtility.GetPrefabType(serializedObject.targetObject);
+                //return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+
+                var type = PrefabUtility.GetPrefabAssetType( serializedObject.targetObject );
+                return ( type == PrefabAssetType.Regular || type == PrefabAssetType.Model );
 			}
 		}
 
