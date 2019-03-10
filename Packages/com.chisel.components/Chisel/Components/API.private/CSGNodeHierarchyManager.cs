@@ -862,9 +862,15 @@ namespace Chisel.Components
 					if (component)
 					{
 #if UNITY_EDITOR
-						if (UnityEditor.PrefabUtility.GetPrefabType(component) != UnityEditor.PrefabType.Prefab)
-#endif
-							continue;
+
+#if UNITY_2018_3_OR_NEWER
+                        if( UnityEditor.PrefabUtility.GetPrefabAssetType( component ) != UnityEditor.PrefabAssetType.Regular )
+#else
+                        if (UnityEditor.PrefabUtility.GetPrefabType(component) != UnityEditor.PrefabType.Prefab)
+#endif //UNITY_2018_3_OR_NEWER
+
+#endif //UNITY_EDITOR
+                            continue;
 #if BE_CHATTY
 						Debug.Log("prefab");
 #endif
