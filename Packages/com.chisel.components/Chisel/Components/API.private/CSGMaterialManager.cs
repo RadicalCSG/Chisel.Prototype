@@ -29,11 +29,13 @@ namespace Chisel.Components
 		[SerializeField] public Material defaultStepMaterial;
 		[SerializeField] public Material defaultTreadMaterial;
 		[SerializeField] public Material defaultWallMaterial;
-		
-		public static Material DefaultFloorMaterial		{ get { return Instance.defaultFloorMaterial; } }
-		public static Material DefaultStepMaterial		{ get { return Instance.defaultStepMaterial; } }
-		public static Material DefaultTreadMaterial		{ get { return Instance.defaultTreadMaterial; } }
-		public static Material DefaultWallMaterial		{ get { return Instance.defaultWallMaterial; } }
+        [SerializeField] public PhysicMaterial defaultPhysicsMaterial;
+
+        public static Material DefaultFloorMaterial		        { get { return Instance.defaultFloorMaterial; } }
+		public static Material DefaultStepMaterial		        { get { return Instance.defaultStepMaterial; } }
+		public static Material DefaultTreadMaterial		        { get { return Instance.defaultTreadMaterial; } }
+		public static Material DefaultWallMaterial		        { get { return Instance.defaultWallMaterial; } }
+		public static PhysicMaterial DefaultPhysicsMaterial		{ get { return Instance.defaultPhysicsMaterial; } }
 		
 
 		const string ShaderNameCSGRoot		= "Hidden/CSG/internal/";
@@ -67,17 +69,6 @@ namespace Chisel.Components
 				if (!_defaultMaterial)
 					_defaultMaterial = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
 				return _defaultMaterial;
-			}
-		}
-
-		static PhysicMaterial _defaultPhysicsMaterial;
-		public static PhysicMaterial DefaultPhysicsMaterial
-		{
-			get
-			{
-				if (!_defaultPhysicsMaterial)
-					_defaultPhysicsMaterial = new PhysicMaterial("Default");
-				return _defaultPhysicsMaterial;
 			}
 		}
 
