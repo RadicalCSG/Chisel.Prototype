@@ -264,8 +264,13 @@ namespace Chisel.Editors
 				if (serializedObject == null || serializedObject.targetObject == null)
 					return false;
 
-				var type = PrefabUtility.GetPrefabType(serializedObject.targetObject);
-				return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+#if UNITY_2018_3_OR_NEWER
+                var type = PrefabUtility.GetPrefabAssetType( serializedObject.targetObject );
+                return ( type == PrefabAssetType.Regular || type == PrefabAssetType.Model );                
+#else
+                var type = PrefabUtility.GetPrefabType(serializedObject.targetObject);
+                return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+#endif
 			}
 		}
 
@@ -469,9 +474,9 @@ namespace Chisel.Editors
 					if (!lightProbeUsageProp.hasMultipleDifferentValues)
 					{
 						if (
-						#if UNITY_2018_1_OR_ABOVE
+#if UNITY_2018_1_OR_ABOVE
 							SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes &&
-						#endif
+#endif
 							lightProbeUsageProp.intValue == (int)LightProbeUsage.UseProxyVolume)
 						{
 							EditorGUI.indentLevel++;
@@ -516,10 +521,10 @@ namespace Chisel.Editors
 
 		internal void RenderReflectionProbeUsage(bool isDeferredRenderingPath, bool isDeferredReflections)
 		{
-			#if UNITY_2018_1_OR_ABOVE
+#if UNITY_2018_1_OR_ABOVE
 			if (!SupportedRenderingFeatures.active.rendererSupportsReflectionProbes)
 				return;
-			#endif
+#endif
 
 			using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
 			{
