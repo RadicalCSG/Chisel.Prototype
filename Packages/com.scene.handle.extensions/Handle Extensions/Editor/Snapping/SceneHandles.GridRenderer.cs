@@ -84,10 +84,24 @@ namespace UnitySceneExtensions
 		internal static float	prevOrthoInterpolation	= 0;
 		internal static float	prevSceneViewSize		= 0;
 		internal static Vector3 prevGridSpacing			= Vector3.zero;
-		 
+		internal static Color	prevCenterColor;
+		internal static Color	prevGridColor;
+		internal static Color	centerColor;
+		internal static Color	gridColor;
+		internal static int		counter = 0;
+
 		public static void Render(this Grid grid, SceneView sceneView)
 		{
+			if (Event.current.type != EventType.Repaint)
+				return;
+
 			if (!sceneView)
+				return;
+
+			var renderMode = sceneView.cameraMode.drawMode;
+			if (renderMode != DrawCameraMode.Textured &&
+				renderMode != DrawCameraMode.TexturedWire &&
+				renderMode != DrawCameraMode.Normal)
 				return;
 			 
 			var camera		= sceneView.camera;
@@ -96,19 +110,13 @@ namespace UnitySceneExtensions
 			
 			var gridMaterial	= GridMaterial;
 			var gridMesh		= GridMesh;
+			var gridSpacing		= grid.Spacing;
+			var sceneViewSize	= sceneView.size;
 
-			if (properties == null)
-			{
-				properties = new MaterialPropertyBlock();
-				// TODO: somehow make this updatable
-				var centerColor = ColorUtility.GetPreferenceColor("Scene/Center Axis", new Color(.8f, .8f, .8f, .93f));
-				centerColor.a = 0.5f;
-				var gridColor	= ColorUtility.GetPreferenceColor("Scene/Grid",        new Color(.5f, .5f, .5f, .4f));
-				gridColor.a = 0.5f;
-
-				properties.SetColor("_CenterColor",	centerColor);
-				properties.SetColor("_GridColor",	gridColor);
-			}
+			Vector3 swizzledGridSpacing;
+			swizzledGridSpacing.x = gridSpacing.x;
+			swizzledGridSpacing.y = gridSpacing.z;
+			swizzledGridSpacing.z = gridSpacing.y;
 
 			float orthoInterpolation; // hack to get SceneView.m_Ortho.faded
 			{
@@ -118,32 +126,67 @@ namespace UnitySceneExtensions
 				orthoInterpolation = ((Mathf.Atan(Mathf.Tan(camera.fieldOfView / (2 * Mathf.Rad2Deg)) * Mathf.Sqrt(camera.aspect) / kOneOverSqrt2) / (0.5f * Mathf.Deg2Rad)) / 90.0f);
 				orthoInterpolation = Mathf.Clamp01((orthoInterpolation - kMinOrtho) / (kMaxOrtho - kMinOrtho));
 			}
-			if (prevOrthoInterpolation	!= orthoInterpolation)
+
+			counter--;
+			if (counter <= 0)
+			{ 
+				// this code is slow and creates garbage, but unity doesn't give us a nice efficient mechanism to get these standard colors
+				centerColor = ColorUtility.GetPreferenceColor("Scene/Center Axis", new Color(.8f, .8f, .8f, .93f));
+				centerColor.a = 0.5f;
+				gridColor = ColorUtility.GetPreferenceColor("Scene/Grid", new Color(.5f, .5f, .5f, .4f));
+				gridColor.a = 0.5f;
+				counter = 10;
+			}
+
+			if (renderMode == DrawCameraMode.TexturedWire)
 			{
-				properties.SetFloat("_OrthoInterpolation", orthoInterpolation);
-				prevOrthoInterpolation = orthoInterpolation;
-			}
+				// if we don't use DrawMeshNow Unity will draw the wireframe of the grid :(
 
-			var sceneViewSize	= sceneView.size;
-			if (prevSceneViewSize != sceneViewSize)
+				gridMaterial.SetColor("_GridColor",			 gridColor);
+				gridMaterial.SetColor("_CenterColor",		 centerColor);
+				gridMaterial.SetFloat("_OrthoInterpolation", orthoInterpolation);
+				gridMaterial.SetFloat("_ViewSize",			 sceneViewSize);
+				gridMaterial.SetVector("_GridSpacing",		 swizzledGridSpacing);
+				gridMaterial.SetPass(0);
+				Graphics.DrawMeshNow(gridMesh, grid.GridToWorldSpace, 0);
+			} else
 			{
-				properties.SetFloat("_ViewSize", sceneViewSize);
-				prevSceneViewSize = sceneViewSize;
-			}
+				// TODO: store this for each SceneView
+				if (properties == null)
+					properties = new MaterialPropertyBlock();
 
-			var gridSpacing = grid.Spacing;
-			if (prevGridSpacing != gridSpacing)
-			{ 	
-				Vector3 swizzledGridSpacing;
-				swizzledGridSpacing.x = gridSpacing.x;
-				swizzledGridSpacing.y = gridSpacing.z;
-				swizzledGridSpacing.z = gridSpacing.y;
+				if (prevGridColor != gridColor)
+				{
+					properties.SetColor("_GridColor", gridColor);
+					prevGridColor = gridColor;
+				}
 
-				properties.SetVector("_GridSpacing", swizzledGridSpacing);
-				prevGridSpacing = gridSpacing;
-			}
-			
-			Graphics.DrawMesh(gridMesh, grid.GridToWorldSpace, gridMaterial, 0, camera, 0, properties, false, false);
+				if (prevCenterColor != centerColor)
+				{
+					properties.SetColor("_CenterColor", centerColor);
+					prevCenterColor = centerColor;
+				}
+
+				if (prevOrthoInterpolation != orthoInterpolation)
+				{
+					properties.SetFloat("_OrthoInterpolation", orthoInterpolation);
+					prevOrthoInterpolation = orthoInterpolation;
+				}
+
+				if (prevSceneViewSize != sceneViewSize)
+				{
+					properties.SetFloat("_ViewSize", sceneViewSize);
+					prevSceneViewSize = sceneViewSize;
+				}
+
+				if (prevGridSpacing != gridSpacing)
+				{
+					properties.SetVector("_GridSpacing", swizzledGridSpacing);
+					prevGridSpacing = gridSpacing;
+				}
+
+				Graphics.DrawMesh(gridMesh, grid.GridToWorldSpace, gridMaterial, 0, camera, 0, properties, false, false);
+			} 
 		}
 	}
 }
