@@ -540,11 +540,11 @@ namespace Chisel.Editors
 			}
 		}
 		
-		public static SurfaceReference[] FindSurfaceReference(Vector2 position, bool selectAllSurfaces)
+		public static SurfaceReference[] FindSurfaceReference(Vector2 position, bool selectAllSurfaces, out CSGTreeBrushIntersection intersection)
 		{
+			intersection = CSGTreeBrushIntersection.None;
 			try
 			{
-				CSGTreeBrushIntersection intersection;
 				if (!PickFirstGameObject(position, out intersection))
 					return null;
 

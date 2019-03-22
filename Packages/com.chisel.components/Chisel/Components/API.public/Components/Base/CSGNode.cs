@@ -70,6 +70,51 @@ namespace Chisel.Components
 			}
 		}
 
+		public Matrix4x4 WorldToPlaneSpace
+		{
+			get
+			{
+				if (node == null)
+					return Matrix4x4.identity;
+
+				var orientation			= Orientation;
+				if (orientation == null)
+					return Matrix4x4.identity;
+
+				var worldToLocal		= node.hierarchyItem.LocalToWorldMatrix;
+				return orientation.localToPlaneSpace * worldToLocal;
+			}	
+		}
+
+		public Matrix4x4 PlaneToWorldSpace
+		{
+			get
+			{
+				return Matrix4x4.Inverse(WorldToPlaneSpace);
+			}
+		}
+
+		public Matrix4x4 WorldSpaceToPlaneSpace(in Matrix4x4 worldSpaceTransformation)
+		{
+			var worldToPlaneSpace = WorldToPlaneSpace;
+			var planeToWorldSpace = Matrix4x4.Inverse(worldToPlaneSpace);
+
+			return worldToPlaneSpace * worldSpaceTransformation * planeToWorldSpace;
+		}
+
+		public void WorldSpaceTransformUV(in Matrix4x4 worldSpaceTransformation, in UVMatrix originalMatrix)
+		{
+			var planeSpaceTransformation = WorldSpaceToPlaneSpace(in worldSpaceTransformation);
+			PlaneSpaceTransformUV(in planeSpaceTransformation, in originalMatrix);
+		}
+
+		public void PlaneSpaceTransformUV(in Matrix4x4 planeSpaceTransformation, in UVMatrix originalMatrix)
+		{
+			Polygon.description.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
+			brushMeshAsset.SetDirty();
+		}
+
+
 		#region Equals
 		public bool Equals(SurfaceReference other)
 		{
