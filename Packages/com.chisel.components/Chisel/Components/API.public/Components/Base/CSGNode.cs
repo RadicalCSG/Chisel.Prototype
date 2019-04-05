@@ -1,4 +1,4 @@
-﻿//#define BE_CHATTY
+//#define BE_CHATTY
 using UnityEngine;
 using System.Collections;
 using System;
@@ -45,6 +45,39 @@ namespace Chisel.Components
 			}
 		}
 
+        public CSGBrushSubMesh SubMesh
+        {
+            get
+            {
+                if (!brushMeshAsset)
+                    return null;
+                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                    return null;
+                return brushMeshAsset.SubMeshes[subMeshIndex];
+            }
+        }
+
+        public IEnumerable<Vector3> PolygonVertices
+		{
+			get
+			{
+				if (!brushMeshAsset)
+					yield break;
+				if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+					yield break;
+				var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
+				if (surfaceIndex < 0 || surfaceIndex >= subMesh.Polygons.Length)
+					yield break;
+				var polygon		= subMesh.Polygons[surfaceIndex];
+				var edges		= subMesh.HalfEdges;
+				var vertices	= subMesh.Vertices;
+				var firstEdge	= polygon.firstEdge;
+				var lastEdge	= firstEdge + polygon.edgeCount;
+				for (int e = firstEdge; e < lastEdge; e++)
+					yield return vertices[edges[e].vertexIndex];
+			}
+		}
+
 		public CSGBrushSubMesh.Orientation Orientation
 		{
 			get
@@ -60,13 +93,50 @@ namespace Chisel.Components
 			}
 		}
 
-		public CSGTreeBrush treeBrush
+        public Plane? WorldPlane
+        {
+            get
+            {
+                if (!brushMeshAsset)
+                    return null;
+                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                    return null;
+                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
+                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Orientations.Length)
+                    return null;
+                return LocalToWorldSpace.TransformPlane(subMesh.Orientations[surfaceIndex].localPlane);
+            }
+        }
+
+        public CSGTreeBrush TreeBrush
 		{
 			get
 			{
 				if (node == null)
 					return (CSGTreeBrush)CSGTreeNode.InvalidNode;
 				return (CSGTreeBrush)node.GetTreeNodeByIndex(subNodeIndex);
+			}
+		}
+
+		public Matrix4x4 LocalToWorldSpace
+		{
+			get
+			{
+				if (node == null)
+					return Matrix4x4.identity;
+				
+				return node.hierarchyItem.LocalToWorldMatrix;
+			}
+		}
+
+		public Matrix4x4 WorldToLocalSpace
+		{
+			get
+			{
+				if (node == null)
+					return Matrix4x4.identity;
+				
+				return node.hierarchyItem.WorldToLocalMatrix;
 			}
 		}
 
@@ -81,7 +151,7 @@ namespace Chisel.Components
 				if (orientation == null)
 					return Matrix4x4.identity;
 
-				var worldToLocal		= node.hierarchyItem.LocalToWorldMatrix;
+				var worldToLocal		= node.hierarchyItem.WorldToLocalMatrix;
 				return orientation.localToPlaneSpace * worldToLocal;
 			}	
 		}
@@ -110,6 +180,9 @@ namespace Chisel.Components
 
 		public void PlaneSpaceTransformUV(in Matrix4x4 planeSpaceTransformation, in UVMatrix originalMatrix)
 		{
+            // TODO: We're modifying uv coordinates for the generated brush-meshes, 
+            //       when we should be changing surfaces descriptions in the generators that generate the brush-meshes ..
+            //       Now all UVs are overridden everytime we rebuild the geometry
 			Polygon.description.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
 			brushMeshAsset.SetDirty();
 		}

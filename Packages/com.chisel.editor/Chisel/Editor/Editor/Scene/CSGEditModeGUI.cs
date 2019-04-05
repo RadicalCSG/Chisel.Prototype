@@ -39,7 +39,7 @@ namespace Chisel.Editors
 			new CSGEditModeItem(CSGEditMode.Object,			new GUIContent("Object")),
 			new CSGEditModeItem(CSGEditMode.Pivot,			new GUIContent("Pivot")),
 			new CSGEditModeItem(CSGEditMode.ShapeEdit,		new GUIContent("Shape Edit")),
-			// new CSGEditModeItem(CSGEditMode.SurfaceEdit,	new GUIContent("Surface Edit")),
+			new CSGEditModeItem(CSGEditMode.SurfaceEdit,	new GUIContent("Surface Edit")),
 			
 			new CSGEditModeItem(CSGEditMode.FreeDraw,		new GUIContent("FreeDraw")),
 			// new CSGEditModeItem(CSGEditMode.RevolvedShape,	new GUIContent("Revolved Shape")),
