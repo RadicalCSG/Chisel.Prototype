@@ -286,6 +286,16 @@ namespace UnitySceneExtensions
 		public static bool		AxisLockY { get { return AxisLockingArray[1]; } set { AxisLockingArray[1] = value; } }
 		public static bool		AxisLockZ { get { return AxisLockingArray[2]; } set { AxisLockingArray[2] = value; } }
 		#endregion
+
+		public static Vector3 SnapPoint(Vector3 position, Grid grid, Axes enabledAxes = Axes.XYZ)
+		{
+			return SnappingUtility.SnapPoint3D(position, Grid.defaultGrid.Spacing, Grid.defaultGrid.Right, Grid.defaultGrid.Up, Grid.defaultGrid.Forward, Grid.defaultGrid.Center, enabledAxes);
+		}
+
+		public static Vector3 SnapPoint(Vector3 position, Axes enabledAxes = Axes.XYZ)
+		{
+			return SnapPoint(position, Grid.defaultGrid, enabledAxes);
+		}
 	}
 
 	// TODO: better naming
