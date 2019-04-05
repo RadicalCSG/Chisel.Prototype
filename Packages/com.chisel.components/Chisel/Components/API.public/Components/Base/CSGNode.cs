@@ -267,9 +267,6 @@ namespace Chisel.Components
 
         protected void OnEnable()
         {
-#if BE_CHATTY
-            Debug.Log("OnEnable " + this.name, this);
-#endif
             OnInitialize(); // Awake is not reliable, so we initialize here
             CSGNodeHierarchyManager.UpdateAvailability(this);
         }
@@ -316,9 +313,6 @@ namespace Chisel.Components
 
         protected void OnDisable()
         {
-#if BE_CHATTY
-            Debug.Log("OnDisable " + this.name, this);
-#endif
             // Note: cannot call OnCleanup here
             CSGNodeHierarchyManager.UpdateAvailability(this);
         }
@@ -326,18 +320,12 @@ namespace Chisel.Components
         // Called when the parent property of the transform has changed.
         protected void OnTransformParentChanged()
         {
-#if BE_CHATTY
-            Debug.Log("OnTransformParentChanged " + this.name, this);
-#endif
             CSGNodeHierarchyManager.OnTransformParentChanged(this);
         }
     
         // Called when the list of children of the transform has changed.
         protected void OnTransformChildrenChanged()
         {
-#if BE_CHATTY
-            Debug.Log("OnTransformChildrenChanged " + this.name, this);
-#endif
             CSGNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
     
