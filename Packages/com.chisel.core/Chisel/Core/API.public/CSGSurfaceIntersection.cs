@@ -20,5 +20,15 @@ namespace Chisel.Core
 		public Vector2	surfaceIntersection;
 
 		public float	distance;
+
+		public readonly static CSGSurfaceIntersection None = new CSGSurfaceIntersection()
+		{
+			localPlane			= new Plane(Vector3.zero, 0),
+			modelPlane			= new Plane(Vector3.zero, 0),
+			worldPlane			= new Plane(Vector3.zero, 0),
+			worldIntersection	= Vector3.zero,
+			surfaceIntersection = Vector2.zero,
+			distance			= float.PositiveInfinity
+		};
 	};
 }

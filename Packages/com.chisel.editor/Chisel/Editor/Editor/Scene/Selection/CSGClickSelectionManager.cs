@@ -1,4 +1,4 @@
-﻿using Chisel.Assets;
+using Chisel.Assets;
 using Chisel.Core;
 using Chisel.Components;
 using System;
@@ -540,11 +540,12 @@ namespace Chisel.Editors
 			}
 		}
 		
-		public static SurfaceReference[] FindSurfaceReference(Vector2 position, bool selectAllSurfaces)
+		public static SurfaceReference[] FindSurfaceReference(Vector2 position, bool selectAllSurfaces, out CSGTreeBrushIntersection intersection, out SurfaceReference surfaceReference)
 		{
+			intersection = CSGTreeBrushIntersection.None;
+			surfaceReference = null;
 			try
 			{
-				CSGTreeBrushIntersection intersection;
 				if (!PickFirstGameObject(position, out intersection))
 					return null;
 
@@ -554,13 +555,13 @@ namespace Chisel.Editors
 				if (!node)
 					return null;
 
+				surfaceReference = node.FindSurfaceReference(brush, intersection.surfaceID);
 				if (selectAllSurfaces)
 					return node.GetAllSurfaceReferences(brush);
 
-				var surface = node.FindSurfaceReference(brush, intersection.surfaceID);
-				if (surface == null)
+				if (surfaceReference == null)
 					return null;
-				return new SurfaceReference[] { surface };
+				return new SurfaceReference[] { surfaceReference };
 			}
 			catch (Exception ex)
 			{
