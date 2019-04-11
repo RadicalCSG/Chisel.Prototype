@@ -34,11 +34,11 @@ namespace Chisel.Assets
 			public Orientation() { }
 			public Orientation(Orientation other)
 			{
-				plane = other.plane;
+				localPlane = other.localPlane;
 				localToPlaneSpace = other.localToPlaneSpace;
 				planeToLocalSpace = other.planeToLocalSpace;
 			}
-			[HideInInspector] [SerializeField] public Plane		plane;
+			[HideInInspector] [SerializeField] public Plane		localPlane;
 			[HideInInspector] [SerializeField] public Matrix4x4 localToPlaneSpace;
 			[HideInInspector] [SerializeField] public Matrix4x4 planeToLocalSpace;
 			public Vector3 Tangent { get { return localToPlaneSpace.GetRow(0); } }
@@ -109,7 +109,7 @@ namespace Chisel.Assets
 				if (edgeCount <= 0)
 				{
 					if (orientations[i] == null) orientations[i] = new Orientation();
-					orientations[i].plane = new Plane(Vector3.up, 0);
+					orientations[i].localPlane = new Plane(Vector3.up, 0);
 					orientations[i].localToPlaneSpace = Matrix4x4.identity;
 					orientations[i].planeToLocalSpace = Matrix4x4.identity;
 					continue;
@@ -133,8 +133,8 @@ namespace Chisel.Assets
 				d /= edgeCount;
 				
 				if (orientations[i] == null) orientations[i] = new Orientation();
-				orientations[i].plane = new Plane(normal, d);
-				orientations[i].localToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(orientations[i].plane);
+				orientations[i].localPlane = new Plane(normal, d);
+				orientations[i].localToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(orientations[i].localPlane);
 				orientations[i].planeToLocalSpace = Matrix4x4.Inverse(orientations[i].localToPlaneSpace);
 			}
 		}

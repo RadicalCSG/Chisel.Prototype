@@ -327,8 +327,8 @@ namespace Chisel.Editors
 				{
 					var surface = outline.surface;
 					if (!allSurfaces.Contains(surface) ||
-						!surface.treeBrush.Valid ||
-						surface.treeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
+						!surface.TreeBrush.Valid ||
+						surface.TreeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
 					{
 						removedSurfaces.Add(outline);
 					} else
@@ -351,11 +351,11 @@ namespace Chisel.Editors
 				
 				foreach (var outline in foundSurfaceOutlines)
 				{
-					if (!outline.surface.treeBrush.Valid ||
-						outline.surface.treeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
+					if (!outline.surface.TreeBrush.Valid ||
+						outline.surface.TreeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
 						continue;
 					
-					var wireframe = CSGWireframe.CreateWireframe(outline.surface.treeBrush, outline.surface.surfaceID);
+					var wireframe = CSGWireframe.CreateWireframe(outline.surface.TreeBrush, outline.surface.surfaceID);
 					surfaceOutlines[outline] = wireframe;
 				}
 			}
@@ -424,7 +424,7 @@ namespace Chisel.Editors
 				var wireframe	= pair.Value;
 				var outline		= pair.Key;
 				var surface		= outline.surface;
-				var treeBrush	= surface.treeBrush;
+				var treeBrush	= surface.TreeBrush;
 				if (wireframe == null)
 				{
 					if (treeBrush.Valid &&
@@ -555,7 +555,7 @@ namespace Chisel.Editors
 					if (hovered.Contains(surface))
 						continue;
 
-					var brush			= surface.treeBrush;
+					var brush			= surface.TreeBrush;
 					if (!brush.Valid)
 						continue;
 						
@@ -581,7 +581,7 @@ namespace Chisel.Editors
 					if (!hovered.Contains(surface))
 						continue;
 
-					var brush			= surface.treeBrush;
+					var brush			= surface.TreeBrush;
 					if (!brush.Valid)
 						continue;
 						
