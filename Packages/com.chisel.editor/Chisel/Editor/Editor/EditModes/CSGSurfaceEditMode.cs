@@ -702,11 +702,11 @@ namespace Chisel.Editors
                 }
                 case EventType.MouseDown:
                 {
-                    // we can only use a tool when the mouse cursor is inside the draggable scene area
+                    // We can only use a tool when the mouse cursor is inside the draggable scene area
                     if (!dragArea.Contains(evt.mousePosition))
                         return false;
 
-                    // we can only use a tool when we're hovering over a surfaces
+                    // We can only use a tool when we're hovering over a surfaces
                     if (hoverSurfaces == null || hoverSurfaces.Count == 0)
                         return false;
 
@@ -714,9 +714,9 @@ namespace Chisel.Editors
                         break;
 
                     // We want to be able to tell the difference between dragging and clicking,
-                    // so we don't initialize dragging until we actually do
-                    MouseIsDown = true;
+                    // so we keep track if we dragged or not. In this case we haven't started dragging yet.
                     ToolIsDragging = false;
+                    MouseIsDown = true;
 
                     EnableTool(id); 
                     break;
@@ -725,14 +725,18 @@ namespace Chisel.Editors
                 {
                     if (!IsToolEnabled(id))
                         break;
-                    
+
                     if (!ToolIsDragging)
                     {
-                        // if we haven't dragged the tool yet, check if the surface underneath 
+                        // If we haven't dragged the tool yet, check if the surface underneath 
                         // the mouse is selected or not, if it isn't: select it exclusively
                         if (!CSGSurfaceSelectionManager.IsAnySelected(hoverSurfaces))
                             ClickSelection(dragArea, selectionType);
                     }
+
+                    // In the tool specific code, calling StartToolDragging will set ToolIsDragging to true, 
+                    // which will allow us to tell the difference between clicking and dragging.
+
                     break;
                 }
                 case EventType.MouseUp:
@@ -741,10 +745,12 @@ namespace Chisel.Editors
                         break;
                     
                     MouseIsDown = false;
-                    // We clicked, but didn't actually drag, so we can do a click selection
+
+                    // We want to be able to tell the difference between clicking and dragging, 
+                    // so we use ToolIsDragging here to determine if we clicked.
                     if (!ToolIsDragging)
                     {
-                        // if we clicked on the surface, instead of dragged it, just click select it
+                        // If we clicked on the surface, instead of dragged it, just click select it
                         ClickSelection(dragArea, selectionType);
                     }
 
@@ -784,6 +790,7 @@ namespace Chisel.Editors
                 return false;
             }
 
+            // We set ToolIsDragging to true to be able to tell the difference between dragging and clicking
             ToolIsDragging = true;
 
             // Find the intersecting surfaces
