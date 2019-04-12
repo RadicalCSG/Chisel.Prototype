@@ -41,7 +41,7 @@ namespace Chisel.Editors
 			CSGModel modelBeneathCursor;
 			Matrix4x4 transformation;
 			float height;
-			switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, false, false, Axis.Y))
+			switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical: false, generateFromCenter: false, Axis.Y))
 			{
 				case BoxExtrusionState.Create:
 				{
@@ -83,9 +83,10 @@ namespace Chisel.Editors
 				}
 				case BoxExtrusionState.Cancel:
 				{
-					if (linearStairs)
-						UnityEngine.Object.DestroyImmediate(linearStairs.gameObject);
-					Reset();
+                    Reset();
+                    linearStairs = null;
+                    Undo.RevertAllInCurrentGroup();
+                    EditorGUIUtility.ExitGUI();
 					break;
 				}
 				

@@ -84,9 +84,10 @@ namespace Chisel.Editors
 				}
 				case ShapeExtrusionState.Cancel:
 				{
-					if (extrudedShape)
-						UnityEngine.Object.DestroyImmediate(extrudedShape.gameObject);
-					Reset();
+                    Reset();
+                    extrudedShape = null;
+                    Undo.RevertAllInCurrentGroup();
+                    EditorGUIUtility.ExitGUI();
 					break;
 				}
 				

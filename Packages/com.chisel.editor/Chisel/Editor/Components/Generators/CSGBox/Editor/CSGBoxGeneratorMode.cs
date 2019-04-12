@@ -32,9 +32,12 @@ namespace Chisel.Editors
         }
         
         CSGBox box;
-        Vector3 offset;
         // TODO: Handle forcing operation types
         CSGOperationType? forceOperation = null;
+
+        // TODO: Ability to modify default settings
+        // TODO: Store/retrieve default settings
+        bool generateFromCenterXZ = false;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
@@ -42,17 +45,15 @@ namespace Chisel.Editors
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, false, false, Axis.Y))
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical: false, generateFromCenterXZ, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
                     box = BrushMeshAssetFactory.Create<CSGBox>("Box",
                                                       BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
-                                                      transformation);
+                                                      transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
                     box.Operation = forceOperation ?? CSGOperationType.Additive;
-                    offset = bounds.center;
-                    box.transform.localPosition += box.transform.localToWorldMatrix.MultiplyVector(offset);
-                    bounds.center -= offset;
+                    bounds.center = new Vector3(0, bounds.center.y, 0);
                     box.Bounds = bounds;
                     box.UpdateGenerator();
                     break;
@@ -64,7 +65,7 @@ namespace Chisel.Editors
                                     ((height <= 0 && modelBeneathCursor) ? 
                                         CSGOperationType.Subtractive : 
                                         CSGOperationType.Additive);
-                    bounds.center -= offset;
+                    bounds.center = new Vector3(0, bounds.center.y, 0);
                     box.Bounds = bounds;
                     break;
                 }

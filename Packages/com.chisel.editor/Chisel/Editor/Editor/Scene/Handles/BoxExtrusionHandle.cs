@@ -84,17 +84,21 @@ namespace Chisel.Editors
 			return (s_Points[2] - s_Points[1])[(int)axis];
 		}
 
-		public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, bool isSquare, bool generateFromCenter, Axis axis)
+		public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, bool isSymmetrical, bool generateFromCenter, Axis axis, float? snappingSteps = null)
 		{
 			try
-			{ 
+			{
+                if (Tools.viewTool != ViewTool.None &&
+                    Tools.viewTool != ViewTool.Pan)
+                    return BoxExtrusionState.HoverMode; 
+
 				if (s_Points.Count <= 2)
 				{
 					PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
 
-					if (s_Points.Count <= 1)
-						return BoxExtrusionState.HoverMode;
-
+                    if (s_Points.Count <= 1)
+                        return BoxExtrusionState.HoverMode;
+                    
 					if (s_Points.Count > 2){ s_Points[2] = s_Points[0]; return BoxExtrusionState.Create; }
 					return BoxExtrusionState.SquareMode;
 				} else
@@ -102,7 +106,7 @@ namespace Chisel.Editors
 					var tempPoint = s_Points[2];
 					var oldMatrix = UnityEditor.Handles.matrix;
 					UnityEditor.Handles.matrix = UnityEditor.Handles.matrix * s_Transformation;
-					var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis);
+					var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis, snappingSteps: snappingSteps);
 					UnityEditor.Handles.matrix = oldMatrix;
 					s_Points[2] = tempPoint;
 				
@@ -118,7 +122,7 @@ namespace Chisel.Editors
 			finally
 			{
 				modelBeneathCursor	= s_ModelBeneathCursor;
-				bounds				= GetBounds(isSquare, generateFromCenter);
+				bounds				= GetBounds(isSymmetrical, generateFromCenter);
 				transformation		= s_Transformation;
 				height				= GetHeight(axis);
 			}

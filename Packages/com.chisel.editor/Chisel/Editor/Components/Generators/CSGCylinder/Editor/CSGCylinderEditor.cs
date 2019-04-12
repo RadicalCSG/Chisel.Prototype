@@ -58,20 +58,20 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            surfaceDescriptionProp	= serializedObject.FindProperty("surfaceDescriptions");
-            surfaceAssetProp		= serializedObject.FindProperty("surfaceAssets");
+            surfaceDescriptionProp	= serializedObject.FindProperty("definition.surfaceDescriptions");
+            surfaceAssetProp		= serializedObject.FindProperty("definition.surfaceAssets");
 
-            typeProp				= serializedObject.FindProperty("type");
-            topHeightProp			= serializedObject.FindProperty("top.height");
-            topDiameterXProp		= serializedObject.FindProperty("top.diameterX");
-            topDiameterZProp		= serializedObject.FindProperty("top.diameterZ");
-            bottomHeightProp		= serializedObject.FindProperty("bottom.height");
-            bottomDiameterXProp		= serializedObject.FindProperty("bottom.diameterX");
-            bottomDiameterZProp		= serializedObject.FindProperty("bottom.diameterZ");
-            rotationProp			= serializedObject.FindProperty("rotation");
-            isEllipsoidProp			= serializedObject.FindProperty("isEllipsoid");
-            smoothingGroupProp		= serializedObject.FindProperty("smoothingGroup");
-            sidesProp				= serializedObject.FindProperty("sides");
+            typeProp				= serializedObject.FindProperty("definition.type");
+            topHeightProp			= serializedObject.FindProperty("definition.top.height");
+            topDiameterXProp		= serializedObject.FindProperty("definition.top.diameterX");
+            topDiameterZProp		= serializedObject.FindProperty("definition.top.diameterZ");
+            bottomHeightProp		= serializedObject.FindProperty("definition.bottom.height");
+            bottomDiameterXProp		= serializedObject.FindProperty("definition.bottom.diameterX");
+            bottomDiameterZProp		= serializedObject.FindProperty("definition.bottom.diameterZ");
+            rotationProp			= serializedObject.FindProperty("definition.rotation");
+            isEllipsoidProp			= serializedObject.FindProperty("definition.isEllipsoid");
+            smoothingGroupProp		= serializedObject.FindProperty("definition.smoothingGroup");
+            sidesProp				= serializedObject.FindProperty("definition.sides");
 
             surfacesVisible         = SessionState.GetBool(kSurfacesVisibleKey, false);
         }
@@ -297,9 +297,9 @@ namespace Chisel.Editors
                                 UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
                             } else
                             {
-								bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
+                                bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
                                 bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
-								
+                                
                                 bottomZVector = bottomXVector;
                             }
                             topXVector = bottomXVector;
@@ -356,24 +356,24 @@ namespace Chisel.Editors
                     Undo.RecordObject(generator, "Modified " + generator.NodeTypeName);
                     if (!generator.IsEllipsoid)
                     {
-						if (prevBottomXVector != bottomXVector)
-						{
-							bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
-						}
-						if (prevTopXVector != topXVector)
-						{
-							topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
-						}
+                        if (prevBottomXVector != bottomXVector)
+                        {
+                            bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
+                        }
+                        if (prevTopXVector != topXVector)
+                        {
+                            topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
+                        }
                     }
 
-					if (prevTopXVector != topXVector)
-					{
-						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
-					}
-					else if (prevBottomXVector != bottomXVector)
-					{
-						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
-					}
+                    if (prevTopXVector != topXVector)
+                    {
+                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
+                    }
+                    else if (prevBottomXVector != bottomXVector)
+                    {
+                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
+                    }
 
                     if (generator.IsEllipsoid)
                     {

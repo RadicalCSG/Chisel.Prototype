@@ -19,18 +19,40 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateCylinderAsset(CSGBrushMeshAsset brushMeshAsset, CSGCylinderDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderAsset(CSGBrushMeshAsset brushMeshAsset, CSGCylinderDefinition definition)
         {
-            CSGCylinderDefinition top;
+            definition.Validate();
+
+            var tempTop		= definition.top;
+            var tempBottom	= definition.bottom;
+
+            if (!definition.isEllipsoid)
+            {
+                tempTop.diameterZ = tempTop.diameterX;
+                tempBottom.diameterZ = tempBottom.diameterX;
+            }
+
+            switch (definition.type)
+            {
+                case CylinderShapeType.Cylinder:		return BrushMeshAssetFactory.GenerateCylinderAsset(brushMeshAsset, tempBottom, tempTop.height, definition.rotation, definition.sides, definition.surfaceAssets, definition.surfaceDescriptions); 
+                case CylinderShapeType.ConicalFrustum:	return BrushMeshAssetFactory.GenerateConicalFrustumAsset(brushMeshAsset, tempBottom, tempTop, definition.rotation, definition.sides, definition.surfaceAssets, definition.surfaceDescriptions); 
+                case CylinderShapeType.Cone:			return BrushMeshAssetFactory.GenerateConeAsset(brushMeshAsset, tempBottom, tempTop.height, definition.rotation, definition.sides, definition.surfaceAssets, definition.surfaceDescriptions); 
+            }
+            return false;
+        }
+
+        public static bool GenerateCylinderAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        {
+            CSGCircleDefinition top;
             top.diameterX = bottom.diameterX;
             top.diameterZ = bottom.diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustumAsset(brushMeshAsset, bottom, top, rotation, sides, surfaceAssets, surfaceDescriptions);
         }
 
-        public static bool GenerateConeAsset(CSGBrushMeshAsset brushMeshAsset, CSGCylinderDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConeAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            CSGCylinderDefinition top;
+            CSGCircleDefinition top;
             top.diameterX = 0;
             top.diameterZ = 0;
             top.height = topHeight;
@@ -39,11 +61,11 @@ namespace Chisel.Components
 
         public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, float diameter, float bottomHeight, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            CSGCylinderDefinition bottom;
+            CSGCircleDefinition bottom;
             bottom.diameterX = diameter;
             bottom.diameterZ = diameter;
             bottom.height = bottomHeight;
-            CSGCylinderDefinition top;
+            CSGCircleDefinition top;
             top.diameterX = diameter;
             top.diameterZ = diameter;
             top.height = topHeight;
@@ -52,29 +74,29 @@ namespace Chisel.Components
 
         public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, float diameterX, float diameterZ, float bottomHeight, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            CSGCylinderDefinition bottom;
+            CSGCircleDefinition bottom;
             bottom.diameterX = diameterX;
             bottom.diameterZ = diameterZ;
             bottom.height = bottomHeight;
-            CSGCylinderDefinition top;
+            CSGCircleDefinition top;
             top.diameterX = diameterX;
             top.diameterZ = diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, surfaceAssets, surfaceDescriptions);
         }
 
-        public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, CSGCylinderDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            CSGCylinderDefinition top;
+            CSGCircleDefinition top;
             top.diameterX = bottom.diameterX;
             top.diameterZ = bottom.diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, surfaceAssets, surfaceDescriptions);
         }
 
-        public static bool GenerateConeSubMesh(CSGBrushSubMesh subMesh, CSGCylinderDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConeSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            CSGCylinderDefinition top;
+            CSGCircleDefinition top;
             top.diameterX = 0;
             top.diameterZ = 0;
             top.height = topHeight;
@@ -82,7 +104,7 @@ namespace Chisel.Components
         }
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
-        public static Vector3[] GetConeFrustumVertices(CSGCylinderDefinition definition, float topHeight, float rotation, int segments, ref Vector3[] vertices, bool inverse = false)
+        public static Vector3[] GetConeFrustumVertices(CSGCircleDefinition definition, float topHeight, float rotation, int segments, ref Vector3[] vertices, bool inverse = false)
         {
             var rotate			= Quaternion.AngleAxis(rotation, Vector3.up);
             var bottomAxisX		= rotate * Vector3.right   * definition.diameterX * 0.5f;
@@ -113,7 +135,7 @@ namespace Chisel.Components
         }
 
 
-        public static Vector3[] GetConicalFrustumVertices(CSGCylinderDefinition bottom, CSGCylinderDefinition top, float rotation, int segments, ref Vector3[] vertices)
+        public static Vector3[] GetConicalFrustumVertices(CSGCircleDefinition bottom, CSGCircleDefinition top, float rotation, int segments, ref Vector3[] vertices)
         {
             if (top.height > bottom.height) { var temp = top; top = bottom; bottom = temp; }
 
@@ -150,7 +172,7 @@ namespace Chisel.Components
             return vertices;
         }
 
-        public static bool GenerateConicalFrustumAsset(CSGBrushMeshAsset brushMeshAsset, CSGCylinderDefinition bottom, CSGCylinderDefinition top, float rotation, int segments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConicalFrustumAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition bottom, CSGCircleDefinition top, float rotation, int segments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {
@@ -178,7 +200,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateConicalFrustumSubMesh(CSGBrushSubMesh subMesh, CSGCylinderDefinition bottom, CSGCylinderDefinition top, float rotation, int segments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConicalFrustumSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition bottom, CSGCircleDefinition top, float rotation, int segments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {

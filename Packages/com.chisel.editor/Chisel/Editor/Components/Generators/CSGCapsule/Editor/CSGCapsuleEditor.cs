@@ -139,7 +139,7 @@ namespace Chisel.Editors
 			var focusControl	= UnitySceneExtensions.SceneHandleUtility.focusControl;
 			var normal			= Vector3.up;
 
-			if (!BrushMeshAssetFactory.GenerateCapsuleVertices(generator.definition, ref vertices))
+			if (!BrushMeshAssetFactory.GenerateCapsuleVertices(ref generator.definition, ref vertices))
 				return;
 
 			UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);
@@ -148,11 +148,13 @@ namespace Chisel.Editors
 			UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, true, isDisabled);
 			DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
 			
-
 			var topPoint	= normal * generator.Height;
 			var bottomPoint = normal * 0;
 			var middlePoint	= normal * (generator.Height * 0.5f);
 			var radius2D	= new Vector2(generator.definition.diameterX, generator.definition.diameterZ) * 0.5f;
+
+            if (generator.Height < 0)
+                normal = -normal;
 
 			EditorGUI.BeginChangeCheck();
 			{

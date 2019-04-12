@@ -36,8 +36,7 @@ namespace Chisel.Editors
 			horizontalSegmentsProp	= serializedObject.FindProperty("definition.horizontalSegments");
 			verticalSegmentsProp	= serializedObject.FindProperty("definition.verticalSegments");
 		}
-
-		
+        
 		protected override void OnInspector()
 		{ 
 			EditorGUILayout.PropertyField(diameterXYZProp);
@@ -108,16 +107,30 @@ namespace Chisel.Editors
 
 			UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, true, isDisabled);
 			DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
-			
-			var topPoint	= normal * (generator.DiameterXYZ.y *  0.5f);
-			var bottomPoint = normal * (generator.DiameterXYZ.y * -0.5f);
+
+            Vector3 center, topPoint, bottomPoint;
+            if (!generator.GenerateFromCenter)
+            {
+                center      = normal * (generator.DiameterXYZ.y *  0.5f);
+                topPoint    = normal * generator.DiameterXYZ.y;
+                bottomPoint = Vector3.zero;
+            } else
+            { 
+                center      = Vector3.zero;
+                topPoint    = normal * (generator.DiameterXYZ.y *  0.5f);
+                bottomPoint = normal * (generator.DiameterXYZ.y * -0.5f);
+            }
+
+            if (generator.DiameterXYZ.y < 0)
+                normal = -normal;
+
 			var radius2D	= new Vector2(generator.definition.diameterXYZ.x, generator.definition.diameterXYZ.z) * 0.5f;
 
 			EditorGUI.BeginChangeCheck();
 			{
 				UnityEditor.Handles.color = baseColor;
 				// TODO: make it possible to (optionally) size differently in x & z
-				radius2D.x = UnitySceneExtensions.SceneHandles.RadiusHandle(normal, Vector3.zero, radius2D.x);
+				radius2D.x = UnitySceneExtensions.SceneHandles.RadiusHandle(normal, center, radius2D.x);
 
 				var bottomId = GUIUtility.GetControlID(s_BottomHash, FocusType.Passive);
 				{

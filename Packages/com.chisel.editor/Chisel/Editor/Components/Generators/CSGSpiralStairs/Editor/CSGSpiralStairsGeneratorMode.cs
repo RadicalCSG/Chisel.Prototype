@@ -11,100 +11,96 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-	public sealed class CSGSpiralStairsGeneratorMode : ICSGToolMode
-	{
-		public void OnEnable()
-		{
-			// TODO: shouldn't just always set this param
-			Tools.hidden = true; 
-			Reset();
-		}
+    public sealed class CSGSpiralStairsGeneratorMode : ICSGToolMode
+    {
+        public void OnEnable()
+        {
+            // TODO: shouldn't just always set this param
+            Tools.hidden = true; 
+            Reset();
+        }
 
-		public void OnDisable()
-		{
-			Reset();
-		}
+        public void OnDisable()
+        {
+            Reset();
+        }
 
-		void Reset()
-		{
-			BoxExtrusionHandle.Reset();
-			spiralStairs = null;
-		}
-		
-		CSGSpiralStairs spiralStairs;
-		// TODO: Handle forcing operation types
-		CSGOperationType? forceOperation = null;
+        void Reset()
+        {
+            BoxExtrusionHandle.Reset();
+            spiralStairs = null;
+        }
+        
+        // TODO: Handle forcing operation types
+        CSGOperationType?   forceOperation      = null;
+        
+        // TODO: Ability to modify default settings
+        // TODO: Store/retrieve default settings
+        bool				generateFromCenter	= true;
+        int                 outerSegments       = CSGSpiralStairsDefinition.kDefaultOuterSegments;
+        float               stepHeight          = CSGSpiralStairsDefinition.kDefaultStepHeight;
 
-		public void OnSceneGUI(SceneView sceneView, Rect dragArea)
-		{
-			Bounds bounds;
-			CSGModel modelBeneathCursor;
-			Matrix4x4 transformation;
-			float height;
-			switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, false, false, Axis.Y))
-			{
-				case BoxExtrusionState.Create:
-				{
-					spiralStairs = BrushMeshAssetFactory.Create<CSGSpiralStairs>("Spiral Stairs",
-																		BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
-																		transformation);
-					spiralStairs.Operation		= forceOperation ?? CSGOperationType.Additive;
-					spiralStairs.Origin			= bounds.center;
-					spiralStairs.Height			= bounds.size.y;
-					spiralStairs.OuterDiameter	= bounds.size.x * 0.5f;
-					spiralStairs.UpdateGenerator();
-					break;
-				}
+        CSGSpiralStairs spiralStairs;
 
-				case BoxExtrusionState.Modified:
-				{
-					spiralStairs.Operation = forceOperation ?? 
-									((height <= 0 && modelBeneathCursor) ? 
-										CSGOperationType.Subtractive : 
-										CSGOperationType.Additive);
-					spiralStairs.definition.Reset();
-					spiralStairs.Origin			= bounds.center;
-					spiralStairs.Height			= bounds.size.y;
-					spiralStairs.OuterDiameter	= bounds.size.x * 0.5f;
-					break;
-				}
-				
-				case BoxExtrusionState.Commit:
-				{
-					UnityEditor.Selection.activeGameObject = spiralStairs.gameObject;
+        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
+        {
+            Bounds bounds;
+            CSGModel modelBeneathCursor;
+            Matrix4x4 transformation;
+            float height;
 
-					// Recenter stairs
-					// TODO: turn into method
-					var transform = spiralStairs.transform;
-					Undo.RecordObjects(new UnityEngine.Object[] { spiralStairs, transform }, "Modified Spiral Stairs");
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical: true, generateFromCenter, Axis.Y, snappingSteps: stepHeight))
+            {
+                case BoxExtrusionState.Create:
+                {
+                    spiralStairs = BrushMeshAssetFactory.Create<CSGSpiralStairs>("Spiral Stairs",
+                                                                        BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
+                                                                        transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
+                    spiralStairs.definition.Reset();
+                    spiralStairs.Operation		= forceOperation ?? CSGOperationType.Additive;
+                    spiralStairs.Height			= height;
+                    spiralStairs.StepHeight     = stepHeight;
+                    spiralStairs.OuterDiameter	= bounds.extents[(int)Axis.X] * 2.0f;
+                    spiralStairs.OuterSegments  = outerSegments;
+                    spiralStairs.UpdateGenerator();
+                    break;
+                }
 
-					var center = bounds.center;
-					center.y = bounds.min.y;
+                case BoxExtrusionState.Modified:
+                {
+                    spiralStairs.Operation = forceOperation ?? 
+                                    ((height <= 0 && modelBeneathCursor) ? 
+                                        CSGOperationType.Subtractive : 
+                                        CSGOperationType.Additive);
+                    spiralStairs.Height			= height;
+                    spiralStairs.OuterDiameter	= bounds.extents[(int)Axis.X] * 2.0f;
+                    break;
+                }
+                
+                case BoxExtrusionState.Commit:
+                {
+                    UnityEditor.Selection.activeGameObject = spiralStairs.gameObject;
+                    Reset();
+                    CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    break;
+                }
 
-					transform.localPosition = transform.localToWorldMatrix.MultiplyPoint(center);
-					bounds.center = Vector3.zero;
-					spiralStairs.Origin			= Vector3.zero;
-					spiralStairs.Height			= bounds.size.y;
-					spiralStairs.OuterDiameter	= bounds.size.x * 0.5f;
+                case BoxExtrusionState.Cancel:
+                {
+                    Reset();
+                    spiralStairs = null;
+                    Undo.RevertAllInCurrentGroup();
+                    EditorGUIUtility.ExitGUI();
+                    break;
+                }
+                
+                case BoxExtrusionState.BoxMode:
+                case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
+                case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
 
-					Reset();
-					CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
-					break;
-				}
-				case BoxExtrusionState.Cancel:
-				{
-					if (spiralStairs)
-						UnityEngine.Object.DestroyImmediate(spiralStairs.gameObject);
-					Reset();
-					break;
-				}
-				
-				case BoxExtrusionState.BoxMode:
-				case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-				case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
+            }
 
-			}
-			HandleRendering.RenderBox(transformation, bounds);
-		}
-	}
+            HandleRendering.RenderCylinder(transformation, bounds, (spiralStairs) ? spiralStairs.OuterSegments : outerSegments);
+        }
+    }
 }
