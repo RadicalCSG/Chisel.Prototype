@@ -66,10 +66,10 @@ namespace Chisel.Editors
 
 				case ShapeExtrusionState.Modified:
 				{
-					extrudedShape.Operation = forceOperation ?? 
-									((height <= 0 && modelBeneathCursor) ? 
-										CSGOperationType.Subtractive : 
-										CSGOperationType.Additive);
+					extrudedShape.Operation     = forceOperation ?? 
+									              ((height < 0 && modelBeneathCursor) ? 
+										            CSGOperationType.Subtractive : 
+										            CSGOperationType.Additive);
 					extrudedShape.Path.segments[1].position = new Vector3(0, height, 0);
 					extrudedShape.UpdateGenerator();
 					break;
@@ -82,10 +82,10 @@ namespace Chisel.Editors
 					CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
 					break;
 				}
+
 				case ShapeExtrusionState.Cancel:
 				{
                     Reset();
-                    extrudedShape = null;
                     Undo.RevertAllInCurrentGroup();
                     EditorGUIUtility.ExitGUI();
 					break;
@@ -94,7 +94,6 @@ namespace Chisel.Editors
 				case ShapeExtrusionState.ExtrusionMode:
 				case ShapeExtrusionState.ShapeMode:		{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
 				case ShapeExtrusionState.HoverMode:		{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
 			}
 
 			HandleRendering.RenderShape(transformation, shape, height);

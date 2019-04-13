@@ -49,49 +49,52 @@ namespace Chisel.Editors
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical, generateFromCenterXZ, Axis.Y))
+            
+            var flags = (isSymmetrical        ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
+
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
                     cylinder = BrushMeshAssetFactory.Create<CSGCylinder>("Cylinder",
                                                                 BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor), 
-                                                                transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
-                    //cylinder.definition.Reset();
+                                                                transformation);
+                    cylinder.definition.Reset();
                     cylinder.Operation			= forceOperation ?? CSGOperationType.Additive;
                     cylinder.IsEllipsoid		= !isSymmetrical;
                     cylinder.Type				= cylinderType;
-                    cylinder.Height				= height;
                     cylinder.Sides				= sides;
-                    cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X] * 2.0f;
-                    cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z] * 2.0f;
+                    cylinder.BottomDiameterX	= bounds.size[(int)Axis.X];
+                    cylinder.Height				= height;
+                    cylinder.BottomDiameterZ	= bounds.size[(int)Axis.Z];
                     cylinder.UpdateGenerator();
                     break;
                 }
 
                 case BoxExtrusionState.Modified:
                 {
-                    cylinder.Operation = forceOperation ?? 
-                                    ((height <= 0 && modelBeneathCursor) ? 
-                                        CSGOperationType.Subtractive : 
-                                        CSGOperationType.Additive);
+                    cylinder.Operation          = forceOperation ?? 
+                                                  ((height < 0 && modelBeneathCursor) ? 
+                                                    CSGOperationType.Subtractive : 
+                                                    CSGOperationType.Additive);
+                    cylinder.BottomDiameterX	= bounds.size[(int)Axis.X];
                     cylinder.Height			    = height;
-                    cylinder.BottomDiameterX	= bounds.extents[(int)Axis.X] * 2.0f;
-                    cylinder.BottomDiameterZ	= bounds.extents[(int)Axis.Z] * 2.0f;
+                    cylinder.BottomDiameterZ	= bounds.size[(int)Axis.Z];
                     break;
                 }
                 
                 case BoxExtrusionState.Commit:
                 {
                     UnityEditor.Selection.activeGameObject = cylinder.gameObject;
-                    Reset();
                     CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    Reset();
                     break;
                 }
 
                 case BoxExtrusionState.Cancel:
                 {
                     Reset();
-                    cylinder = null;
                     Undo.RevertAllInCurrentGroup();
                     EditorGUIUtility.ExitGUI();
                     break;
@@ -100,7 +103,6 @@ namespace Chisel.Editors
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
             
             HandleRendering.RenderCylinder(transformation, bounds, (cylinder) ? cylinder.Sides : sides);

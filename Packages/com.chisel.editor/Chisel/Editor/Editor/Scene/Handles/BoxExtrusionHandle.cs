@@ -13,6 +13,7 @@ namespace Chisel.Editors
 {
 	public enum BoxExtrusionState
 	{
+        None,
 		HoverMode,
 		SquareMode,
 		BoxMode,
@@ -21,6 +22,16 @@ namespace Chisel.Editors
 		Create,
 		Modified
 	}
+
+    [Flags]
+    public enum BoxExtrusionFlags
+    {
+        None                    = 0,
+        IsSymmetricalXZ         = 1,
+        GenerateFromCenterXZ    = 2,
+        GenerateFromCenterY     = 4,
+        AlwaysFaceUp            = 8
+    }
 
 	public static class BoxExtrusionHandle
 	{
@@ -35,14 +46,14 @@ namespace Chisel.Editors
 			PointDrawing.Reset();
 		}
 
-		static Bounds GetBounds(bool isSquare, bool generateFromCenter)
+		static Bounds GetBounds(BoxExtrusionFlags flags, Axis axis)
 		{
 			if (s_Points.Count == 0) return new Bounds();
 			
 			var bounds = new Bounds(s_Points[0], Vector3.zero);
 			if (s_Points.Count == 1) return bounds;
 			
-			if (isSquare)
+			if ((flags & BoxExtrusionFlags.IsSymmetricalXZ) == BoxExtrusionFlags.IsSymmetricalXZ)
 			{
 				var pt0 = s_Points[0];
 				var pt1 = s_Points[1];
@@ -64,7 +75,7 @@ namespace Chisel.Editors
 					s_Points[1] = pt1;
 				}
 			}
-			if (generateFromCenter)
+			if ((flags & BoxExtrusionFlags.GenerateFromCenterXZ) == BoxExtrusionFlags.GenerateFromCenterXZ)
 			{
 				var radius = s_Points[1] - s_Points[0];
 				bounds.Encapsulate(s_Points[0] - radius);
@@ -73,9 +84,26 @@ namespace Chisel.Editors
 				bounds.Encapsulate(s_Points[1]);
 
 			if (s_Points.Count == 2) return bounds;
-			
-			bounds.Encapsulate(s_Points[0] + (GetHeight(Axis.Y) * Vector3.up));
+
+            var height = GetHeight(axis);
+
+            var size = bounds.size;
+            size[(int)axis] = height;
+            bounds.size = size;
+            
+            if ((flags & BoxExtrusionFlags.GenerateFromCenterY) != BoxExtrusionFlags.GenerateFromCenterY)
+            {
+                var center = bounds.center;
+                center[(int)axis] += height * 0.5f;
+                bounds.center = center;
+            }
 			return bounds;
+		}
+        
+		static bool Inverted(Axis axis)
+		{
+			if (s_Points.Count <= 2) return false;
+			return (s_Points[2] - s_Points[1])[(int)axis] < 0;
 		}
 
 		static float GetHeight(Axis axis)
@@ -84,22 +112,29 @@ namespace Chisel.Editors
 			return (s_Points[2] - s_Points[1])[(int)axis];
 		}
 
-		public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, bool isSymmetrical, bool generateFromCenter, Axis axis, float? snappingSteps = null)
+		public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, BoxExtrusionFlags flags, Axis axis, float? snappingSteps = null)
 		{
 			try
 			{
                 if (Tools.viewTool != ViewTool.None &&
                     Tools.viewTool != ViewTool.Pan)
-                    return BoxExtrusionState.HoverMode; 
+                    return BoxExtrusionState.None; 
 
 				if (s_Points.Count <= 2)
 				{
 					PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
 
                     if (s_Points.Count <= 1)
+                    {
                         return BoxExtrusionState.HoverMode;
-                    
-					if (s_Points.Count > 2){ s_Points[2] = s_Points[0]; return BoxExtrusionState.Create; }
+                    }
+
+					if (s_Points.Count > 2)
+                    {
+                        s_Points[2] = s_Points[0];
+                        return BoxExtrusionState.Create;
+                    }
+
 					return BoxExtrusionState.SquareMode;
 				} else
 				{
@@ -122,9 +157,19 @@ namespace Chisel.Editors
 			finally
 			{
 				modelBeneathCursor	= s_ModelBeneathCursor;
-				bounds				= GetBounds(isSymmetrical, generateFromCenter);
-				transformation		= s_Transformation;
+				bounds				= GetBounds(flags, axis);
 				height				= GetHeight(axis);
+
+                var center          = bounds.center;
+                if ((flags & BoxExtrusionFlags.GenerateFromCenterY) != BoxExtrusionFlags.GenerateFromCenterY)
+                    center[(int)axis] -= height * 0.5f;
+                
+                transformation		= s_Transformation * Matrix4x4.TRS(center, Quaternion.identity, Vector3.one);
+
+                center = Vector3.zero;
+                if ((flags & BoxExtrusionFlags.GenerateFromCenterY) != BoxExtrusionFlags.GenerateFromCenterY)
+                    center[(int)axis] = height * 0.5f;
+                bounds.center = center;
 			}
 		}
 	}

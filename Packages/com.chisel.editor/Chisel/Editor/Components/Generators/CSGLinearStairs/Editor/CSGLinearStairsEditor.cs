@@ -158,6 +158,9 @@ namespace Chisel.Editors
 
 				var min			= newBounds.min;
 				var max			= newBounds.max;
+                if (min.y > max.y) { var t = min.y; min.y = max.y; max.y = t; }
+                if (min.x > max.x) { var t = min.x; min.x = max.x; max.x = t; }
+                if (min.z > max.z) { var t = min.z; min.z = max.x; max.z = t; }
 
 				var pHeight0	= new Vector3(min.x, min.y + plateauHeight, max.z);
 				var pHeight1	= new Vector3(max.x, min.y + plateauHeight, max.z);

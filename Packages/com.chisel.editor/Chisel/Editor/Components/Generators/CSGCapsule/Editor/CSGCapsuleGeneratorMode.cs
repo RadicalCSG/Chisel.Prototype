@@ -53,24 +53,27 @@ namespace Chisel.Editors
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
+            
+            var flags = (isSymmetrical        ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
 
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical, generateFromCenterXZ, Axis.Y))
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
                     capsule = BrushMeshAssetFactory.Create<CSGCapsule>("Capsule",
                                                                 BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor), 
-                                                                transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
+                                                                transformation);
                     capsule.definition.Reset();
                     capsule.Operation		= forceOperation ?? CSGOperationType.Additive;
-                    capsule.Height			= height;
                     capsule.Sides			= sides;
                     capsule.TopSegments		= topSegments;
                     capsule.BottomSegments	= bottomSegments;
                     capsule.TopHeight       = topHeight;
                     capsule.BottomHeight    = bottomHeight;
-                    capsule.DiameterX	    = bounds.extents[(int)Axis.X] * 2.0f;
-                    capsule.DiameterZ	    = bounds.extents[(int)Axis.Z] * 2.0f;
+                    capsule.DiameterX	    = bounds.size[(int)Axis.X];
+                    capsule.Height			= height;
+                    capsule.DiameterZ	    = bounds.size[(int)Axis.Z];
                     capsule.definition.Validate();
                     capsule.UpdateGenerator();
                     break;
@@ -78,30 +81,29 @@ namespace Chisel.Editors
 
                 case BoxExtrusionState.Modified:
                 {
-                    capsule.Operation = forceOperation ?? 
-                                    ((height <= 0 && modelBeneathCursor) ? 
-                                        CSGOperationType.Subtractive : 
-                                        CSGOperationType.Additive);
-                    capsule.Height		    = height;
+                    capsule.Operation       = forceOperation ?? 
+                                              ((height < 0 && modelBeneathCursor) ? 
+                                                CSGOperationType.Subtractive : 
+                                                CSGOperationType.Additive);
                     capsule.TopHeight       = topHeight;
                     capsule.BottomHeight    = bottomHeight;
-                    capsule.DiameterX	    = bounds.extents[(int)Axis.X] * 2.0f;
-                    capsule.DiameterZ	    = bounds.extents[(int)Axis.Z] * 2.0f;
+                    capsule.DiameterX	    = bounds.size[(int)Axis.X];
+                    capsule.Height		    = height;
+                    capsule.DiameterZ	    = bounds.size[(int)Axis.Z];
                     break;
                 }
                 
                 case BoxExtrusionState.Commit:
                 {
                     UnityEditor.Selection.activeGameObject = capsule.gameObject;
-                    Reset();
                     CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    Reset();
                     break;
                 }
 
                 case BoxExtrusionState.Cancel:
                 {
                     Reset();
-                    capsule = null;
                     Undo.RevertAllInCurrentGroup();
                     EditorGUIUtility.ExitGUI();
                     break;
@@ -110,7 +112,6 @@ namespace Chisel.Editors
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
 
             // TODO: render capsule here

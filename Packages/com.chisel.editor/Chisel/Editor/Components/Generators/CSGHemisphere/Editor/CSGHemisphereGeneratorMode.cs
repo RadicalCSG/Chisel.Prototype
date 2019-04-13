@@ -50,44 +50,47 @@ namespace Chisel.Editors
             Matrix4x4 transformation;
             float height;
 
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical, generateFromCenterXZ, Axis.Y))
+            
+            var flags = (isSymmetrical        ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
+
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
                     hemisphere = BrushMeshAssetFactory.Create<CSGHemisphere>("Hemisphere",
                                                                 BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor), 
-                                                                transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
+                                                                transformation);
                     hemisphere.definition.Reset();
                     hemisphere.Operation			= forceOperation ?? CSGOperationType.Additive;
                     hemisphere.VerticalSegments     = verticalSegments;
                     hemisphere.HorizontalSegments   = horizontalSegments;
-                    hemisphere.DiameterXYZ          = new Vector3(bounds.size[(int)Axis.X], height, bounds.size[(int)Axis.Z]);
+                    hemisphere.DiameterXYZ          = bounds.size;
                     hemisphere.UpdateGenerator();
                     break;
                 }
 
                 case BoxExtrusionState.Modified:
                 {
-                    hemisphere.Operation = forceOperation ?? 
-                                    ((height <= 0 && modelBeneathCursor) ? 
-                                        CSGOperationType.Subtractive : 
-                                        CSGOperationType.Additive);
-                    hemisphere.DiameterXYZ  = new Vector3(bounds.size[(int)Axis.X], height, bounds.size[(int)Axis.Z]);
+                    hemisphere.Operation    = forceOperation ?? 
+                                              ((height < 0 && modelBeneathCursor) ? 
+                                                CSGOperationType.Subtractive : 
+                                                CSGOperationType.Additive);
+                    hemisphere.DiameterXYZ  = bounds.size;
                     break;
                 }
                 
                 case BoxExtrusionState.Commit:
                 {
                     UnityEditor.Selection.activeGameObject = hemisphere.gameObject;
-                    Reset();
                     CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    Reset();
                     break;
                 }
 
                 case BoxExtrusionState.Cancel:
                 {
                     Reset();
-                    hemisphere = null;
                     Undo.RevertAllInCurrentGroup();
                     EditorGUIUtility.ExitGUI();
                     break;
@@ -96,7 +99,6 @@ namespace Chisel.Editors
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
             
             // TODO: render hemisphere here

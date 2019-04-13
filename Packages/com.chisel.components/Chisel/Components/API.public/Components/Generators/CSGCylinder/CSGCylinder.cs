@@ -13,7 +13,7 @@ namespace Chisel.Components
     {
         public override string NodeTypeName { get { return "Cylinder"; } }
 
-        [SerializeField] CSGCylinderDefinition definition = new CSGCylinderDefinition();
+        [SerializeField] public CSGCylinderDefinition definition = new CSGCylinderDefinition();
 
         #region Properties
         public CSGCircleDefinition Top	    { get { return definition.top; } }

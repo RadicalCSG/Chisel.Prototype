@@ -50,47 +50,49 @@ namespace Chisel.Editors
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
+            
+            var flags = (generateFromCenterY  ? BoxExtrusionFlags.GenerateFromCenterY  : BoxExtrusionFlags.None) |
+                        (isSymmetrical        ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
 
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, isSymmetrical, generateFromCenterXZ, Axis.Y))
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
                     sphere = BrushMeshAssetFactory.Create<CSGSphere>("Sphere",
                                                                 BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
-                                                                transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
+                                                                transformation);
                     sphere.definition.Reset();
                     sphere.Operation            = forceOperation ?? CSGOperationType.Additive;
                     sphere.VerticalSegments     = verticalSegments;
                     sphere.HorizontalSegments   = horizontalSegments;
                     sphere.GenerateFromCenter   = generateFromCenterY;
-                    sphere.DiameterXYZ          = new Vector3(bounds.size[(int)Axis.X], height, bounds.size[(int)Axis.Z]);
+                    sphere.DiameterXYZ          = bounds.size;
                     sphere.UpdateGenerator();
                     break;
                 }
 
                 case BoxExtrusionState.Modified:
                 {
-                    sphere.Operation = forceOperation ??
-                                    ((height <= 0 && modelBeneathCursor) ?
-                                        CSGOperationType.Subtractive :
-                                        CSGOperationType.Additive);
-
-                    sphere.DiameterXYZ = new Vector3(bounds.size[(int)Axis.X], height, bounds.size[(int)Axis.Z]);
+                    sphere.Operation    = forceOperation ??
+                                          ((height < 0 && modelBeneathCursor) ?
+                                            CSGOperationType.Subtractive :
+                                            CSGOperationType.Additive);
+                    sphere.DiameterXYZ  = bounds.size;
                     break;
                 }
 
                 case BoxExtrusionState.Commit:
                 {
                     UnityEditor.Selection.activeGameObject = sphere.gameObject;
-                    Reset();
                     CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    Reset();
                     break;
                 }
 
                 case BoxExtrusionState.Cancel:
                 {
                     Reset();
-                    sphere = null;
                     Undo.RevertAllInCurrentGroup();
                     EditorGUIUtility.ExitGUI();
                     break;
@@ -99,18 +101,10 @@ namespace Chisel.Editors
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode:  { CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode:   { CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
 
             // TODO: make a RenderSphere method
-            if (generateFromCenterY)
-            { 
-                var offsetBounds = bounds;
-                var yOffset = height > 0 ? bounds.center.y - bounds.extents.y : bounds.center.y + bounds.extents.y;
-                offsetBounds.center = new Vector3(bounds.center.x, yOffset, bounds.center.z);
-                HandleRendering.RenderCylinder(transformation, offsetBounds, horizontalSegments);
-            } else
-                HandleRendering.RenderCylinder(transformation, bounds, horizontalSegments);
+            HandleRendering.RenderCylinder(transformation, bounds, horizontalSegments);
         }
     }
 }
