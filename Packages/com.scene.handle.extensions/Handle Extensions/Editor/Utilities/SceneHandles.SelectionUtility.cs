@@ -4,10 +4,10 @@ using UnityEngine;
 namespace UnitySceneExtensions
 {
     [Serializable]
-	public enum SelectionType { Normal, Additive, Subtractive };
+    public enum SelectionType { Normal, Additive, Subtractive };
 
-	public static class SelectionUtility
-	{
+    public static class SelectionUtility
+    {
         public static SelectionType GetCurrentSelectionType(Event current)
         {
             var selectionType = SelectionType.Normal;
@@ -15,5 +15,5 @@ namespace UnitySceneExtensions
             if (UnityEditor.EditorGUI.actionKey) { selectionType = SelectionType.Subtractive; }
             return selectionType;
         }
-	}
+    }
 }

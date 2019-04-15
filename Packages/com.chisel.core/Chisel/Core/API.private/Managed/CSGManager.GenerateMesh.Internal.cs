@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Chisel.Core
 {
 #if USE_INTERNAL_IMPLEMENTATION
-	internal struct CSGSurfaceRenderBuffer
+    internal struct CSGSurfaceRenderBuffer
     {
         public Int32[]		indices;
         public Vector3[]	vertices;
@@ -22,7 +22,7 @@ namespace Chisel.Core
     };
 #endif
 
-	static partial class CSGManager
+    static partial class CSGManager
     {
 #if USE_INTERNAL_IMPLEMENTATION
 

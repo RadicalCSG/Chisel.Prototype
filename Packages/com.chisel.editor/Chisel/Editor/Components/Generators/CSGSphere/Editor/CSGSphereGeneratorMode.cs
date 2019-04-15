@@ -11,22 +11,22 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-	public sealed class CSGSphereGeneratorMode : ICSGToolMode
-	{
-		public void OnEnable()
-		{
+    public sealed class CSGSphereGeneratorMode : ICSGToolMode
+    {
+        public void OnEnable()
+        {
             // TODO: shouldn't just always set this param
             Tools.hidden = true;
             Reset();
         }
 
-		public void OnDisable()
-		{
+        public void OnDisable()
+        {
             Reset();
         }
 
-		void Reset()
-		{
+        void Reset()
+        {
             BoxExtrusionHandle.Reset();
             sphere = null;
         }
@@ -42,7 +42,7 @@ namespace Chisel.Editors
         CSGSphere sphere;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
-		{
+        {
             Bounds bounds;
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
@@ -100,5 +100,5 @@ namespace Chisel.Editors
             offsetBounds.center = new Vector3(bounds.center.x, yOffset, bounds.center.z);
             HandleRendering.RenderCylinder(transformation, offsetBounds, 10);
         }
-	}
+    }
 }

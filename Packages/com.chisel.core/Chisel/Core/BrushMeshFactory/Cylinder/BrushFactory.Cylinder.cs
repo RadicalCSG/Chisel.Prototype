@@ -13,9 +13,9 @@ using System.Collections.Generic;
 
 namespace Chisel.Core
 {
-	// TODO: rename
+    // TODO: rename
     public sealed partial class BrushMeshFactory
-	{
-		// TODO: create code from Chisel.Components to build a Cylinder BrushMesh here, and make the BrushMeshAsset version use the method here
-	}
+    {
+        // TODO: create code from Chisel.Components to build a Cylinder BrushMesh here, and make the BrushMeshAsset version use the method here
+    }
 }

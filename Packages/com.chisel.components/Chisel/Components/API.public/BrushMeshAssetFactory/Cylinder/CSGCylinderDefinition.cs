@@ -15,27 +15,27 @@ using System.Collections.Generic;
 
 namespace Chisel.Components
 {
-	[Serializable]
-	public enum CylinderShapeType
-	{
-		Cylinder,
-		Cone,
-		ConicalFrustum
-	}
-	
-	[Serializable]
+    [Serializable]
+    public enum CylinderShapeType
+    {
+        Cylinder,
+        Cone,
+        ConicalFrustum
+    }
+    
+    [Serializable]
     public struct CSGCylinderDefinition
-	{
-		public CSGCylinderDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
-		public CSGCylinderDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
-		[DistanceValue] public float diameterX;
-		[DistanceValue] public float diameterZ;
-		[DistanceValue] public float height;
-		public void Reset()
-		{
-		}
-		public void Validate()
-		{
-		}
-	}
+    {
+        public CSGCylinderDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
+        public CSGCylinderDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
+        [DistanceValue] public float diameterX;
+        [DistanceValue] public float diameterZ;
+        [DistanceValue] public float height;
+        public void Reset()
+        {
+        }
+        public void Validate()
+        {
+        }
+    }
 }

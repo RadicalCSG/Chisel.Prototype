@@ -297,9 +297,9 @@ namespace Chisel.Editors
                                 UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, ref bottomXVector, ref bottomZVector, renderDisc: false);
                             } else
                             {
-								bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
+                                bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
                                 bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
-								
+                                
                                 bottomZVector = bottomXVector;
                             }
                             topXVector = bottomXVector;
@@ -356,24 +356,24 @@ namespace Chisel.Editors
                     Undo.RecordObject(generator, "Modified " + generator.NodeTypeName);
                     if (!generator.IsEllipsoid)
                     {
-						if (prevBottomXVector != bottomXVector)
-						{
-							bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
-						}
-						if (prevTopXVector != topXVector)
-						{
-							topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
-						}
+                        if (prevBottomXVector != bottomXVector)
+                        {
+                            bottomZVector = Vector3.Cross(normal, bottomXVector.normalized) * bottomXVector.magnitude;
+                        }
+                        if (prevTopXVector != topXVector)
+                        {
+                            topZVector = Vector3.Cross(normal, topXVector.normalized) * topXVector.magnitude;
+                        }
                     }
 
-					if (prevTopXVector != topXVector)
-					{
-						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
-					}
-					else if (prevBottomXVector != bottomXVector)
-					{
-						generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
-					}
+                    if (prevTopXVector != topXVector)
+                    {
+                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, topXVector.normalized, Vector3.up);
+                    }
+                    else if (prevBottomXVector != bottomXVector)
+                    {
+                        generator.Rotation = Utilities.GeometryMath.SignedAngle(Vector3.right, bottomXVector.normalized, Vector3.up);
+                    }
 
                     if (generator.IsEllipsoid)
                     {

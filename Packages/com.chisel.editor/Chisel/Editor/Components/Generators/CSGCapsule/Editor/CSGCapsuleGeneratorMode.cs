@@ -10,23 +10,23 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-	// TODO: maybe just bevel top of cylinder instead of separate capsule generator??
-	public sealed class CSGCapsuleGeneratorMode : ICSGToolMode
-	{
-		public void OnEnable()
-		{
-		}
+    // TODO: maybe just bevel top of cylinder instead of separate capsule generator??
+    public sealed class CSGCapsuleGeneratorMode : ICSGToolMode
+    {
+        public void OnEnable()
+        {
+        }
 
-		public void OnDisable()
-		{
-		}
+        public void OnDisable()
+        {
+        }
 
-		void Reset()
-		{
-		}
-		
-		public void OnSceneGUI(SceneView sceneView, Rect dragArea)
-		{
-		}
-	}
+        void Reset()
+        {
+        }
+        
+        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
+        {
+        }
+    }
 }

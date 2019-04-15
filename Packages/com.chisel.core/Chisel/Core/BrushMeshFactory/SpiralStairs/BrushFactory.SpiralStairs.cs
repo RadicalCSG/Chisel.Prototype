@@ -15,7 +15,7 @@ namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
-	{
-		// TODO: create code from Chisel.Components to build a SpiralStairs BrushMesh here, and make the BrushMeshAsset version use the method here
-	}
+    {
+        // TODO: create code from Chisel.Components to build a SpiralStairs BrushMesh here, and make the BrushMeshAsset version use the method here
+    }
 }
