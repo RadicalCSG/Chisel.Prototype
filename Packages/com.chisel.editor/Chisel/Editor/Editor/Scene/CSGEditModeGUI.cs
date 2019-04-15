@@ -120,6 +120,11 @@ namespace Chisel.Editors
 
         public void OnSelectionChanged()
         {
+            // Make sure we're currently in a non-generator, otherwise this makes no sense
+            // We might actually be currently restoring a selection
+            if (CSGEditModeManager.EditMode < CSGEditMode.FirstGenerator)
+                return;
+
             var activeObject = Selection.activeObject;
             // This event is fired when we select or deselect something.
             // We only care if we select something
@@ -129,7 +134,7 @@ namespace Chisel.Editors
             // We just selected something in the editor, so we want to get rid of our 
             // stored selection to avoid restoring an old selection for no reason later on.
             ClearStoredSelection();
-
+            
             var is_generator = activeObject is Components.CSGGeneratorComponent;
             if (!is_generator)
             {
@@ -147,7 +152,7 @@ namespace Chisel.Editors
 
         [SerializeField] UnityEngine.Object[] prevSelection = null;
         [SerializeField] CSGEditMode prevEditMode = CSGEditMode.Object;
-
+        
         internal bool HaveSelection()
         {
             return (prevSelection != null);
@@ -160,9 +165,15 @@ namespace Chisel.Editors
             Selection.activeObject = null;
         }
 
-        void RestoreSelection(bool skipEditMode = true)
+        void RestoreSelection(bool skipEditMode = false)
         {
-            Selection.objects = prevSelection;
+            if (prevSelection != null)
+                Selection.objects = prevSelection;
+            else
+                // Selection.objects doesn't like being set to null, 
+                // it'll generate an error, Selection.activeObject has 
+                // no problem with it however.
+                Selection.activeObject = null;
             if (!skipEditMode)
                 CSGEditModeManager.EditMode = prevEditMode;
             ClearStoredSelection();
