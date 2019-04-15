@@ -19,10 +19,28 @@ namespace Chisel.Editors
     // TODO: add ability to become dockable window?
     // TODO: add scrollbar support
     // TODO: use icons, make this look better
-    public static class CSGEditModeGUI
+    public class CSGEditModeGUI : ScriptableObject
     {
+        #region Instance
+        static CSGEditModeGUI _instance;
+        public static CSGEditModeGUI Instance
+        {
+            get
+            {
+                if (_instance)
+                    return _instance;
+
+                _instance = ScriptableObject.CreateInstance<CSGEditModeGUI>();
+                _instance.hideFlags = HideFlags.HideAndDontSave;
+                return _instance;
+            }
+        }
+        #endregion
+
         const float kSingleLineHeight = 20f;
         const float kSingleSpacing = 0.0f;
+        const float kGeneratorSeparator = 5.0f;
+        const float kExtraBottomSpacing = 2.0f;
 
         sealed class CSGEditModeItem
         {
@@ -31,16 +49,16 @@ namespace Chisel.Editors
             public GUIContent   content;
         }
 
-        /*
-            Jazz: Removed unfinished tools for the time being 
-         */
-        static readonly CSGEditModeItem[] editModes = new []
+        static readonly CSGEditModeItem[] editModes = new[]
         {
-            new CSGEditModeItem(CSGEditMode.Object,			new GUIContent("Object")),
-            new CSGEditModeItem(CSGEditMode.Pivot,			new GUIContent("Pivot")),
-            new CSGEditModeItem(CSGEditMode.ShapeEdit,		new GUIContent("Shape Edit")),
-            new CSGEditModeItem(CSGEditMode.SurfaceEdit,	new GUIContent("Surface Edit")),
-            
+            new CSGEditModeItem(CSGEditMode.Object,         new GUIContent("Object")),
+            new CSGEditModeItem(CSGEditMode.Pivot,          new GUIContent("Pivot")),
+            new CSGEditModeItem(CSGEditMode.ShapeEdit,      new GUIContent("Shape Edit")),
+            new CSGEditModeItem(CSGEditMode.SurfaceEdit,    new GUIContent("Surface Edit")),
+        };
+
+        static readonly CSGEditModeItem[] generatorModes = new[]
+        {
             new CSGEditModeItem(CSGEditMode.FreeDraw,		new GUIContent("FreeDraw")),
             // new CSGEditModeItem(CSGEditMode.RevolvedShape,	new GUIContent("Revolved Shape")),
 
@@ -71,13 +89,92 @@ namespace Chisel.Editors
                 var value = GUI.Toggle(togglePosition, CSGEditModeManager.EditMode == editMode.value, editMode.content, GUI.skin.button);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
+                    // If we're changing edit mode from a generator, we restore our previous selection.
+                    if (Instance.HaveSelection())
+                        Instance.RestoreSelection(skipEditMode: true);
+                    CSGEditModeManager.EditMode = editMode.value;
+                    CSGEditorSettings.Save();
+                }
+                togglePosition.y += kSingleLineHeight + kSingleSpacing;
+            }
+
+            togglePosition.y += kGeneratorSeparator;
+
+            for (int i = 0; i < generatorModes.Length; i++)
+            {
+                var editMode = generatorModes[i];
+                EditorGUI.BeginChangeCheck();
+                var value = GUI.Toggle(togglePosition, CSGEditModeManager.EditMode == editMode.value, editMode.content, GUI.skin.button);
+                if (EditorGUI.EndChangeCheck() && value)
+                {
+                    // When we select a generator, we don't want anything else selected since the combination makes no sense.
+                    // We store the selection, however.
+                    Instance.RememberSelection();
                     CSGEditModeManager.EditMode = editMode.value;
                     CSGEditorSettings.Save();
                 }
                 togglePosition.y += kSingleLineHeight + kSingleSpacing;
             }
         }
-        
+
+        public void OnSelectionChanged()
+        {
+            var activeObject = Selection.activeObject;
+            // This event is fired when we select or deselect something.
+            // We only care if we select something
+            if (activeObject == null)
+                return;
+
+            // We just selected something in the editor, so we want to get rid of our 
+            // stored selection to avoid restoring an old selection for no reason later on.
+            ClearStoredSelection();
+
+            var is_generator = activeObject is Components.CSGGeneratorComponent;
+            if (!is_generator)
+            {
+                var gameObject = activeObject as GameObject;
+                if (gameObject != null)
+                    is_generator = gameObject.GetComponent<Components.CSGGeneratorComponent>() != null;
+            }
+
+            if (is_generator)
+                CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+            else
+                CSGEditModeManager.EditMode = CSGEditMode.Object;
+        }
+
+
+        [SerializeField] UnityEngine.Object[] prevSelection = null;
+        [SerializeField] CSGEditMode prevEditMode = CSGEditMode.Object;
+
+        internal bool HaveSelection()
+        {
+            return (prevSelection != null);
+        }
+
+        void RememberSelection()
+        {
+            prevSelection = Selection.objects;
+            prevEditMode = CSGEditModeManager.EditMode;
+            Selection.activeObject = null;
+        }
+
+        void RestoreSelection(bool skipEditMode = true)
+        {
+            Selection.objects = prevSelection;
+            if (!skipEditMode)
+                CSGEditModeManager.EditMode = prevEditMode;
+            ClearStoredSelection();
+        }
+
+        void ClearStoredSelection()
+        {
+            prevSelection = null;
+            prevEditMode = CSGEditMode.Object;
+        }
+
+
+
         static CSGObjectEditMode		ObjectEditMode			= new CSGObjectEditMode();
         static CSGPivotEditMode			PivotEditMode			= new CSGPivotEditMode();
         static CSGSurfaceEditMode		SurfaceEditMode			= new CSGSurfaceEditMode();
@@ -99,7 +196,7 @@ namespace Chisel.Editors
         static CSGLinearStairsGeneratorMode     LinearStairsGeneratorMode   = new CSGLinearStairsGeneratorMode();
         static CSGSpiralStairsGeneratorMode		SpiralStairsGeneratorMode	= new CSGSpiralStairsGeneratorMode();
 
-        static ICSGToolMode         prevToolMode = null;
+        static ICSGToolMode         prevToolMode    = null;
 
         public static void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
@@ -107,7 +204,7 @@ namespace Chisel.Editors
             {
                 var minWidth	= 80;
                 var minHeight	= 40;
-                var rect		= new Rect(0, 0, 92, 24 + (editModes.Length * (kSingleLineHeight + kSingleSpacing)));
+                var rect		= new Rect(0, 0, 92, 24 + ((editModes.Length + generatorModes.Length) * (kSingleLineHeight + kSingleSpacing)) + kGeneratorSeparator + kExtraBottomSpacing );
                 editModeWindow = new GUIResizableWindow("Tools", rect, minWidth, minHeight, OnWindowGUI);
             }
 
@@ -117,11 +214,13 @@ namespace Chisel.Editors
             ICSGToolMode currentToolMode = null;
             switch (CSGEditModeManager.EditMode)
             {
+                // Edit modes
                 case CSGEditMode.Object:		currentToolMode = ObjectEditMode;	break;
                 case CSGEditMode.Pivot:			currentToolMode = PivotEditMode;	break;
                 case CSGEditMode.SurfaceEdit:	currentToolMode = SurfaceEditMode;	break;
                 case CSGEditMode.ShapeEdit:		currentToolMode = ShapeEditMode;	break;
                 
+                // Generators
                 case CSGEditMode.FreeDraw:		currentToolMode = ExtrudedShapeGeneratorMode; break;
                 case CSGEditMode.RevolvedShape:	currentToolMode = RevolvedShapeGeneratorMode; break;
                 
@@ -154,6 +253,45 @@ namespace Chisel.Editors
 
             if (currentToolMode != null)
             {
+                if (CSGEditModeManager.EditMode >= CSGEditMode.FirstGenerator)
+                {
+                    var evt = Event.current;
+                    switch (evt.type)
+                    {
+                        case EventType.KeyDown:
+                        case EventType.ValidateCommand:
+                        {
+                            if (Tools.current == Tool.View ||
+                                Tools.current == Tool.None ||
+                                (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
+                                GUIUtility.hotControl != 0)
+                                break;
+
+                            if (evt.keyCode == KeyCode.Escape)
+                            {
+                                evt.Use();
+                                break;
+                            }
+                            break;
+                        }
+                        case EventType.KeyUp:
+                        {
+                            if (Tools.current == Tool.View ||
+                                Tools.current == Tool.None ||
+                                (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
+                                GUIUtility.hotControl != 0)
+                                break;
+
+                            if (evt.keyCode == KeyCode.Escape)
+                            {
+                                evt.Use();
+                                Instance.RestoreSelection();
+                                GUIUtility.ExitGUI();
+                            }
+                            break;
+                        }
+                    }
+                }
                 dragArea.x = 0;
                 dragArea.y = 0;
                 currentToolMode.OnSceneGUI(sceneView, dragArea);

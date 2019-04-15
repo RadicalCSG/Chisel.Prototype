@@ -176,7 +176,8 @@ namespace Chisel.Editors
         private static void OnSelectionChanged()
         {
             CSGClickSelectionManager.Instance.OnSelectionChanged();
-            CSGOutlineRenderer.Instance.OnSelectionChanged(); 
+            CSGOutlineRenderer.Instance.OnSelectionChanged();
+            CSGEditModeGUI.Instance.OnSelectionChanged();
             //Editors.CSGManagedHierarchyView.RepaintAll();
             //Editors.CSGNativeHierarchyView.RepaintAll();
         }
