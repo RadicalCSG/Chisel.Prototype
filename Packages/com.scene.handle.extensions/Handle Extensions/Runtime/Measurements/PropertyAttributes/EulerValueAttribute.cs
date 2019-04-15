@@ -2,5 +2,5 @@
 
 namespace UnitySceneExtensions
 {
-	public class EulerValueAttribute : PropertyAttribute {}
+    public class EulerValueAttribute : PropertyAttribute {}
 }

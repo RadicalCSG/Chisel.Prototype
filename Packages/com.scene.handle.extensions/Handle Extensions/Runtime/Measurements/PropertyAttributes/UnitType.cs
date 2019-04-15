@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace UnitySceneExtensions
 {
-	public enum UnitType
-	{
-		World,
-		Pixels
-	}
+    public enum UnitType
+    {
+        World,
+        Pixels
+    }
 }

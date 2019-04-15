@@ -8,27 +8,27 @@ using UnitySceneExtensions;
 
 namespace Chisel.Components
 {
-	[ExecuteInEditMode]
-	public sealed class CSGRevolvedShape : CSGGeneratorComponent
-	{
-		public override string NodeTypeName { get { return "Revolved Shape"; } }
+    [ExecuteInEditMode]
+    public sealed class CSGRevolvedShape : CSGGeneratorComponent
+    {
+        public override string NodeTypeName { get { return "Revolved Shape"; } }
 
-		// TODO: make this private
-		[SerializeField] public CSGRevolvedShapeDefinition definition = new CSGRevolvedShapeDefinition();
+        // TODO: make this private
+        [SerializeField] public CSGRevolvedShapeDefinition definition = new CSGRevolvedShapeDefinition();
 
-		// TODO: implement properties
-		public Curve2D Shape
-		{
-			get { return definition.shape; }
-			set { if (value == definition.shape) return; definition.shape = value; OnValidateInternal(); }
-		}
+        // TODO: implement properties
+        public Curve2D Shape
+        {
+            get { return definition.shape; }
+            set { if (value == definition.shape) return; definition.shape = value; OnValidateInternal(); }
+        }
 
-		protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-		protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
+        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
+        protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
 
-		protected override void UpdateGeneratorInternal()
-		{
-			BrushMeshAssetFactory.GenerateRevolvedShapeAsset(brushMeshAsset, definition);
-		}
-	}
+        protected override void UpdateGeneratorInternal()
+        {
+            BrushMeshAssetFactory.GenerateRevolvedShapeAsset(brushMeshAsset, definition);
+        }
+    }
 }

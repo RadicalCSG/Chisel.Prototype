@@ -5,10 +5,10 @@ using System.Text;
 
 namespace Chisel.Editors
 {
-	public interface IDragAndDropOperation
-	{
-		void UpdateDrag();
-		void PerformDrag();
-		void CancelDrag();
-	}
+    public interface IDragAndDropOperation
+    {
+        void UpdateDrag();
+        void PerformDrag();
+        void CancelDrag();
+    }
 }

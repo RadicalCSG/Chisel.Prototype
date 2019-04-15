@@ -10,13 +10,13 @@ using UnityEngine.SceneManagement;
 
 namespace HierarchyTests
 {
-	public partial class Brush_Transformation
-	{
-		[SetUp] public void Setup() { TestUtility.ClearScene(); }
+    public partial class Brush_Transformation
+    {
+        [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
-		// TODO: create transformation tests
-		// Move brush, generated box is also moved
-		// brush in model, move brush, generated box is also moved
-		// brush in model, move model, generated box is not moved in mesh, but meshrenderer is moved in worldspace
-	}
+        // TODO: create transformation tests
+        // Move brush, generated box is also moved
+        // brush in model, move brush, generated box is also moved
+        // brush in model, move model, generated box is not moved in mesh, but meshrenderer is moved in worldspace
+    }
 }

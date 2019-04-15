@@ -10,11 +10,11 @@ using UnityEngine.SceneManagement;
 
 namespace HierarchyTests
 {
-	public partial class Model_Components
-	{
-		[SetUp] public void Setup() { TestUtility.ClearScene(); }
+    public partial class Model_Components
+    {
+        [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
-		// TODO: create component generation tests
-		// test if components are properly created / updated
-	}
+        // TODO: create component generation tests
+        // test if components are properly created / updated
+    }
 }

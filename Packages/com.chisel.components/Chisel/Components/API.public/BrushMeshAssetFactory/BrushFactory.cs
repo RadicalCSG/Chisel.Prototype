@@ -15,36 +15,36 @@ using System.Collections.Generic;
 
 namespace Chisel.Components
 {
-	// TODO: have concept of active model
-	// TODO: reduce allocations, reuse existing arrays when possible
-	// TODO: make it possible to generate brushes in specific scenes/specific parents
-	// TODO: clean up
+    // TODO: have concept of active model
+    // TODO: reduce allocations, reuse existing arrays when possible
+    // TODO: make it possible to generate brushes in specific scenes/specific parents
+    // TODO: clean up
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
-	{
-		// TODO: make this part of Undo stack ...
-		public static CSGModel ActiveModel
-		{
-			get;
-			set;
-		}
+    {
+        // TODO: make this part of Undo stack ...
+        public static CSGModel ActiveModel
+        {
+            get;
+            set;
+        }
 
-		// TODO: improve naming
-		public static CSGModel GetModelForNode(CSGModel overrideModel = null)
-		{
-			if (overrideModel)
-			{
-				BrushMeshAssetFactory.ActiveModel = overrideModel;
-				return overrideModel;
-			}
+        // TODO: improve naming
+        public static CSGModel GetModelForNode(CSGModel overrideModel = null)
+        {
+            if (overrideModel)
+            {
+                BrushMeshAssetFactory.ActiveModel = overrideModel;
+                return overrideModel;
+            }
 
-			var activeModel = BrushMeshAssetFactory.ActiveModel;
-			if (!activeModel)
-			{
-				activeModel = BrushMeshAssetFactory.Create<CSGModel>("Model");
-				BrushMeshAssetFactory.ActiveModel = activeModel;
-			}
-			return activeModel;
-		}
-	}
+            var activeModel = BrushMeshAssetFactory.ActiveModel;
+            if (!activeModel)
+            {
+                activeModel = BrushMeshAssetFactory.Create<CSGModel>("Model");
+                BrushMeshAssetFactory.ActiveModel = activeModel;
+            }
+            return activeModel;
+        }
+    }
 }
