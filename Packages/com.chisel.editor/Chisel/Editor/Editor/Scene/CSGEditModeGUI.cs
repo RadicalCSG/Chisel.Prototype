@@ -108,8 +108,9 @@ namespace Chisel.Editors
                 if (EditorGUI.EndChangeCheck() && value)
                 {
                     // When we select a generator, we don't want anything else selected since the combination makes no sense.
-                    // We store the selection, however.
-                    Instance.RememberSelection();
+                    // We store the selection, however, if our previous edit mode was not a generator.
+                    if (CSGEditModeManager.EditMode < CSGEditMode.FirstGenerator)
+                        Instance.RememberSelection();
                     CSGEditModeManager.EditMode = editMode.value;
                     CSGEditorSettings.Save();
                 }
@@ -240,7 +241,7 @@ namespace Chisel.Editors
 
             if (currentToolMode != prevToolMode)
             {
-                if (prevToolMode    != null) prevToolMode.OnDisable();
+                if (prevToolMode != null) prevToolMode.OnDisable();
                 
                 // Set defaults
                 CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline;
