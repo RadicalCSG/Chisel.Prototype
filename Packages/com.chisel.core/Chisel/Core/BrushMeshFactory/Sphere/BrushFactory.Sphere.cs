@@ -14,7 +14,7 @@ using static Chisel.Core.BrushMesh;
 namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
-	{
+    {
         public static BrushMesh CreateSphere(Vector3 diameterXYZ, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             var lastVertSegment = vertSegments - 1;

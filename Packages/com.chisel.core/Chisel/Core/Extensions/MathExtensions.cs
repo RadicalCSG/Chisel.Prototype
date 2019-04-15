@@ -31,19 +31,19 @@ namespace Chisel.Core
             return NegativeY;
         }
 
-		public static Matrix4x4 RotateAroundAxis(Vector3 center, Vector3 normal, float angle)
-		{
-			var rotation = Quaternion.AngleAxis(angle, normal);
-			return MathExtensions.RotateAroundPoint(center, rotation);
-		}
+        public static Matrix4x4 RotateAroundAxis(Vector3 center, Vector3 normal, float angle)
+        {
+            var rotation = Quaternion.AngleAxis(angle, normal);
+            return MathExtensions.RotateAroundPoint(center, rotation);
+        }
 
 
-		public static Matrix4x4 RotateAroundPoint(Vector3 center, Quaternion rotation)
-		{
-			return Matrix4x4.TRS(center, Quaternion.identity, Vector3.one) *
-				   Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one) *
-				   Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
-		}
+        public static Matrix4x4 RotateAroundPoint(Vector3 center, Quaternion rotation)
+        {
+            return Matrix4x4.TRS(center, Quaternion.identity, Vector3.one) *
+                   Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one) *
+                   Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
+        }
 
         public static void CalculateTangents(Vector3 normal, out Vector3 tangent, out Vector3 binormal)
         {

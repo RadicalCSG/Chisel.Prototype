@@ -2,5 +2,5 @@
 
 namespace UnitySceneExtensions
 {
-	public class ScaleValueAttribute : PropertyAttribute { }
+    public class ScaleValueAttribute : PropertyAttribute { }
 }

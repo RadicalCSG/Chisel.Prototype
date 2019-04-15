@@ -15,91 +15,91 @@ namespace Chisel.Components
 {
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
-	{
-		public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode
-		{
-			if (string.IsNullOrEmpty(name))
-			{
+    {
+        public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode
+        {
+            if (string.IsNullOrEmpty(name))
+            {
 #if UNITY_EDITOR
-				name = UnityEditor.GameObjectUtility.GetUniqueNameForSibling(parent, typeof(T).Name);
+                name = UnityEditor.GameObjectUtility.GetUniqueNameForSibling(parent, typeof(T).Name);
 #else
-				name = typeof(T).Name;
+                name = typeof(T).Name;
 #endif
-			}
+            }
 
-			var newGameObject = new UnityEngine.GameObject(name);
+            var newGameObject = new UnityEngine.GameObject(name);
 #if UNITY_EDITOR
-			UnityEditor.Undo.RegisterCreatedObjectUndo(newGameObject, "Created " + name);
+            UnityEditor.Undo.RegisterCreatedObjectUndo(newGameObject, "Created " + name);
 #endif
-			newGameObject.SetActive(false);
-			try
-			{
-				var brushTransform = newGameObject.transform;
+            newGameObject.SetActive(false);
+            try
+            {
+                var brushTransform = newGameObject.transform;
 #if UNITY_EDITOR
-				UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
+                UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
 #endif
-				brushTransform.localPosition = position;
-				brushTransform.localRotation = rotation;
-				brushTransform.localScale = scale;
+                brushTransform.localPosition = position;
+                brushTransform.localRotation = rotation;
+                brushTransform.localScale = scale;
 #if UNITY_EDITOR
-				if (parent)
-					UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
-				return UnityEditor.Undo.AddComponent<T>(newGameObject);
+                if (parent)
+                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
+                return UnityEditor.Undo.AddComponent<T>(newGameObject);
 #else
-				if (parent)
-					brushTransform.SetParent(parent, false);
-				return newGameObject.AddComponent<T>();
+                if (parent)
+                    brushTransform.SetParent(parent, false);
+                return newGameObject.AddComponent<T>();
 #endif
-			}
-			finally
-			{
-				newGameObject.SetActive(true);
-			}
-		}
+            }
+            finally
+            {
+                newGameObject.SetActive(true);
+            }
+        }
 
 
-		public static T Create<T>(string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : CSGNode
-		{
-			// TODO: put matrix4x4 -> transform values, into utility method
-			var position = trsMatrix.GetColumn(3);
-			trsMatrix.SetColumn(3, Vector4.zero);
+        public static T Create<T>(string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : CSGNode
+        {
+            // TODO: put matrix4x4 -> transform values, into utility method
+            var position = trsMatrix.GetColumn(3);
+            trsMatrix.SetColumn(3, Vector4.zero);
 
-			var columnX = trsMatrix.GetColumn(0);
-			var columnY = trsMatrix.GetColumn(1);
-			var columnZ = trsMatrix.GetColumn(2);
-			var scaleX = columnX.magnitude;
-			var scaleY = columnY.magnitude;
-			var scaleZ = columnZ.magnitude;
+            var columnX = trsMatrix.GetColumn(0);
+            var columnY = trsMatrix.GetColumn(1);
+            var columnZ = trsMatrix.GetColumn(2);
+            var scaleX = columnX.magnitude;
+            var scaleY = columnY.magnitude;
+            var scaleZ = columnZ.magnitude;
 
-			columnX /= scaleX;
-			columnY /= scaleY;
-			columnZ /= scaleZ;
+            columnX /= scaleX;
+            columnY /= scaleY;
+            columnZ /= scaleZ;
 
-			if (Vector3.Dot(Vector3.Cross(columnZ, columnY), columnX) > 0)
-			{
-				scaleX = -scaleX;
-				columnX = -columnX;
-			}
+            if (Vector3.Dot(Vector3.Cross(columnZ, columnY), columnX) > 0)
+            {
+                scaleX = -scaleX;
+                columnX = -columnX;
+            }
 
-			var scale = new Vector3(scaleX, scaleY, scaleZ);
-			var rotation = Quaternion.LookRotation(columnZ, columnY);
+            var scale = new Vector3(scaleX, scaleY, scaleZ);
+            var rotation = Quaternion.LookRotation(columnZ, columnY);
 
-			//var inverseMatrix = Matrix4x4.TRS(position, rotation, scale).inverse * trsMatrix;
-			//Debug.Log(position + " " + rotation + " " + scale + "\n" + inverseMatrix);
+            //var inverseMatrix = Matrix4x4.TRS(position, rotation, scale).inverse * trsMatrix;
+            //Debug.Log(position + " " + rotation + " " + scale + "\n" + inverseMatrix);
 
-			return Create<T>(name, parent, position, rotation, scale);
-		}
+            return Create<T>(name, parent, position, rotation, scale);
+        }
 
-		public static T Create<T>(string name, UnityEngine.Transform parent = null) where T : CSGNode { return Create<T>(name, parent, Vector3.zero, Quaternion.identity, Vector3.one); }
-		public static T Create<T>(UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, parent, position, rotation, scale); }
-		public static T Create<T>(UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, parent, trsMatrix); }
-		public static T Create<T>(UnityEngine.Transform parent = null) where T : CSGNode { return Create<T>(null, parent, Vector3.zero, Quaternion.identity, Vector3.one); }
-		public static T Create<T>(Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, (UnityEngine.Transform)null, position, rotation, scale); }
-		public static T Create<T>(Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, (UnityEngine.Transform)null, trsMatrix); }
-		public static T Create<T>(CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
-		public static T Create<T>(CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
-		public static T Create<T>(CSGModel model) where T : CSGNode { return Create<T>(null, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
-		public static T Create<T>(string name, CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
-		public static T Create<T>(string name, CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
-	}
+        public static T Create<T>(string name, UnityEngine.Transform parent = null) where T : CSGNode { return Create<T>(name, parent, Vector3.zero, Quaternion.identity, Vector3.one); }
+        public static T Create<T>(UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, parent, position, rotation, scale); }
+        public static T Create<T>(UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, parent, trsMatrix); }
+        public static T Create<T>(UnityEngine.Transform parent = null) where T : CSGNode { return Create<T>(null, parent, Vector3.zero, Quaternion.identity, Vector3.one); }
+        public static T Create<T>(Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, (UnityEngine.Transform)null, position, rotation, scale); }
+        public static T Create<T>(Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, (UnityEngine.Transform)null, trsMatrix); }
+        public static T Create<T>(CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
+        public static T Create<T>(CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
+        public static T Create<T>(CSGModel model) where T : CSGNode { return Create<T>(null, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
+        public static T Create<T>(string name, CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
+        public static T Create<T>(string name, CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
+    }
 }

@@ -10,22 +10,22 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-	public sealed class CSGTorusGeneratorMode : ICSGToolMode
-	{
-		public void OnEnable()
-		{
-		}
+    public sealed class CSGTorusGeneratorMode : ICSGToolMode
+    {
+        public void OnEnable()
+        {
+        }
 
-		public void OnDisable()
-		{
-		}
+        public void OnDisable()
+        {
+        }
 
-		void Reset()
-		{
-		}
-		
-		public void OnSceneGUI(SceneView sceneView, Rect dragArea)
-		{
-		}
-	}
+        void Reset()
+        {
+        }
+        
+        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
+        {
+        }
+    }
 }
