@@ -54,10 +54,14 @@ namespace Chisel.Editors
 
             UnityEditor.Undo.postprocessModifications					-= OnPostprocessModifications;
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
-            
+
+#if UNITY_2019_1_OR_NEWER
+            UnityEditor.SceneView.duringSceneGui					    -= OnSceneGUI;
+            UnityEditor.SceneView.duringSceneGui                        += OnSceneGUI;
+#else
             UnityEditor.SceneView.onSceneGUIDelegate					-= OnSceneGUI;
             UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI;
-            
+#endif            
                 
             CSGNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
             CSGNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
