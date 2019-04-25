@@ -11,12 +11,15 @@ namespace Chisel.Editors
     [Serializable]
     public enum CSGEditMode
     {
+        // Edit modes
         Object,
         Pivot,
         ShapeEdit,
         SurfaceEdit,
 
-        FreeDraw,
+        // Generators
+        FirstGenerator,
+        FreeDraw = FirstGenerator,
         RevolvedShape,
         Box,
         Cylinder,
