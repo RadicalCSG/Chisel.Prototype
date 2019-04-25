@@ -30,6 +30,8 @@ namespace Chisel.Editors
             UnitySceneExtensions.Grid.HoverGrid = null;
         }
 
+        private const float kMaxHandleDistance = 3.0f;
+
         private static PlaneIntersection    s_StartIntersection;			
         private static int					s_CurrentPointIndex = 0;
         private static Matrix4x4            s_Transform;
@@ -161,27 +163,31 @@ namespace Chisel.Editors
                                                   evt.keyCode == kCommitKey) { evt.Use(); break; } break; }
                 case EventType.KeyUp:			{ if (evt.keyCode == kCancelKey) { Cancel(evt, ref points); break; } else 
                                                   if (evt.keyCode == kCommitKey) { Commit(evt, dragArea, ref points); break; } break; }
-
-                case EventType.MouseDrag:
-                case EventType.MouseMove:
-                {
-                    if (GUIUtility.hotControl != 0)
-                        break;
-
-                    UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
-                    break;
-                }
                 case EventType.Layout:
                 {
-                    UnityEditor.HandleUtility.AddControl(id, 0.0f);
+                    if (Tools.current == Tool.View ||
+                        Tools.current == Tool.None ||
+                        evt.alt)
+                        break;
+
+                    if (s_StartIntersection == null)
+                        break;
+
+                    // We set the id at the maximum handle distance so that other things, such as the axis gizmo, 
+                    // will block the click to create a point. If we don't we wouldn't be able to use the axis gizmo.
+                    UnityEditor.HandleUtility.AddControl(id, kMaxHandleDistance);
                     break;
                 }
+
                 case EventType.Repaint:
                 {
                     if (s_StartIntersection == null)
                         break;
 
                     if (points.Count == 0)
+                        break;
+
+                    if (SceneHandleUtility.focusControl != id)
                         break;
 
                     using (new UnityEditor.Handles.DrawingScope(Matrix4x4.identity))
@@ -196,15 +202,6 @@ namespace Chisel.Editors
                             }
                         }
 
-                        /*
-                        if (points.Count == 0)
-                        {
-                            using (new UnityEditor.Handles.DrawingScope(transformation))
-                            {
-                                UnityEditor.Handles.ArrowHandleCap(id, points[0], orientation, UnityEditor.HandleUtility.GetHandleSize(points[0]), evt.type);
-                            }
-                        }*/
-
                         var selectedColor = UnityEditor.Handles.selectedColor;
                         selectedColor.a = 0.5f;
                         using (new UnityEditor.Handles.DrawingScope(selectedColor))
@@ -214,31 +211,58 @@ namespace Chisel.Editors
                     }
                     break;
                 }
+
+                case EventType.MouseMove:
+                {
+                    if (GUIUtility.hotControl != 0 &&
+                        GUIUtility.hotControl != id)
+                        break;
+
+                    UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
+                    break;
+                }
+                case EventType.MouseDrag:
+                {
+                    if (GUIUtility.hotControl != id)
+                        break;
+
+                    UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
+                    GUI.changed = true;
+                    evt.Use();
+                    break;
+                }
                 case EventType.MouseDown:
                 {
+                    if (Tools.current == Tool.View ||
+                        Tools.current == Tool.None ||
+                        evt.alt)
+                        break;
+
                     if (GUIUtility.hotControl != 0)
                         break;
-                    
+
                     if ((UnityEditor.HandleUtility.nearestControl != id || evt.button != 0) &&
                         (GUIUtility.keyboardControl != id || evt.button != 2))
                         break;
                         
                     if (s_StartIntersection == null)
                         break;
-                    
+
                     s_CurrentPointIndex++;
                     GUIUtility.hotControl = GUIUtility.keyboardControl = id;
+                    EditorGUIUtility.SetWantsMouseJumping(1);
                     evt.Use();
                     break;
                 }
                 case EventType.MouseUp:
                 {
-                    if (GUIUtility.hotControl != id || evt.button != 0)
+                    if (GUIUtility.hotControl != id || (evt.button != 0 && evt.button != 2))
                         break;
 
                     GUIUtility.hotControl = 0;
                     GUIUtility.keyboardControl = 0;
                     evt.Use();
+                    EditorGUIUtility.SetWantsMouseJumping(0);
 
                     // reset the starting position
                     UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
