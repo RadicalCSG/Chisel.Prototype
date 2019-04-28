@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -607,25 +607,25 @@ namespace Chisel.Editors
 
         public void OnSceneGUI(SceneView sceneView)
         {
+            var camera = sceneView.camera;
+
             // defer surface updates when it's not currently visible
             if ((VisualizationMode & (VisualizationMode.Outline | VisualizationMode.SimpleOutline)) != VisualizationMode.None)
+            {
                 UpdateBrushState();
+                brushOutlineRenderer.RenderAll(camera);
+            }
 
             if ((VisualizationMode & VisualizationMode.Surface) == VisualizationMode.Surface)
+            {
                 UpdateSurfaceState();
-
-            
-            if ((VisualizationMode & (VisualizationMode.Outline | VisualizationMode.SimpleOutline)) != VisualizationMode.None)
-                brushOutlineRenderer.RenderAll();
-            
-            if ((VisualizationMode & VisualizationMode.Surface) == VisualizationMode.Surface)
-                surfaceOutlineRenderer.RenderAll();
-
+                surfaceOutlineRenderer.RenderAll(camera);
+            }
 
             handleRenderer.End();
-            handleRenderer.RenderAll();
+            handleRenderer.RenderAll(camera);
             handleRenderer.Begin();
-
+            
             var focus = UnitySceneExtensions.SceneHandleUtility.focusControl;
             if (prevFocus != focus)
             {

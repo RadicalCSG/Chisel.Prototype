@@ -25,9 +25,9 @@ namespace UnitySceneExtensions
             public int vertexCount = 0;
             public int pointIndexCount = 0;
             public int lineIndexCount = 0;
-        
-            Mesh pointMesh;
-            Mesh lineMesh;
+
+            internal Mesh pointMesh;
+            internal Mesh lineMesh;
         
             public void Clear()
             {
@@ -95,22 +95,6 @@ namespace UnitySceneExtensions
                     lineMesh.UploadMeshData(true);
                 }
             }
-            
-            public void DrawPoints()
-            {
-                if (vertexCount == 0 ||
-                    pointIndexCount == 0)
-                    return;
-                Graphics.DrawMeshNow(pointMesh, Matrix4x4.identity);
-            }
-
-            public void DrawLines()
-            {
-                if (vertexCount == 0 ||
-                    lineIndexCount == 0)
-                    return;
-                Graphics.DrawMeshNow(lineMesh, Matrix4x4.identity);
-            }
 
             internal void Destroy()
             {
@@ -132,21 +116,30 @@ namespace UnitySceneExtensions
             for (int i = 0; i <= currentPointMesh; i++) pointMeshes[i].CommitMesh();
         }
 
-        public void Render(Material pointMaterial, Material lineMaterial)
+        public void Render(Camera camera, Material pointMaterial, Material lineMaterial)
         {
-            if (!pointMaterial)
+            if (Event.current.type != EventType.Repaint)
                 return;
-            if (pointMaterial &&
-                pointMaterial.SetPass(0))
+
+            if (pointMaterial)
             {
                 for (int i = 0; i <= currentPointMesh; i++)
-                    pointMeshes[i].DrawPoints();
+                {
+                    if (pointMeshes[i].vertexCount == 0 ||
+                        pointMeshes[i].pointIndexCount == 0)
+                        continue;
+                    Graphics.DrawMesh(pointMeshes[i].pointMesh, Matrix4x4.identity, pointMaterial, 0, camera, 0, null, false, false);
+                }
             }
-            if (lineMaterial &&
-                lineMaterial.SetPass(0))
+            if (lineMaterial)
             {
                 for (int i = 0; i <= currentPointMesh; i++)
-                    pointMeshes[i].DrawLines();
+                {
+                    if (pointMeshes[i].vertexCount == 0 ||
+                        pointMeshes[i].lineIndexCount == 0)
+                        continue;
+                    Graphics.DrawMesh(pointMeshes[i].lineMesh, Matrix4x4.identity, lineMaterial, 0, camera, 0, null, false, false);
+                }
             }
         }
 

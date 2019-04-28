@@ -89,7 +89,7 @@ namespace Chisel.Editors
 
             Color c = UnityEditor.Handles.color * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
 
-            var material = CSGMaterialManager.CustomDotMaterial;
+            var material = UnitySceneExtensions.SceneHandleMaterialManager.CustomDotMaterial;
             if (material && material.SetPass(0))
             {
                 GL.Begin(GL.TRIANGLES);
@@ -105,7 +105,7 @@ namespace Chisel.Editors
                 GL.End();
             }
 
-            material = CSGMaterialManager.SurfaceNoDepthMaterial;
+            material = UnitySceneExtensions.SceneHandleMaterialManager.SurfaceNoDepthMaterial;
             if (material && material.SetPass(0))
             {
                 GL.Begin(GL.LINES);
