@@ -8,7 +8,7 @@ namespace Chisel.Core
 {
     static partial class CSGManager
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         // TODO: review flags, might not make sense any more
         enum NodeStatusFlags : UInt16
         {

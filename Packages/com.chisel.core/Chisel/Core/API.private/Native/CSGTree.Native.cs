@@ -13,7 +13,7 @@ namespace Chisel.Core
 {
     partial struct CSGTree
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool	GenerateTree(Int32 userID, out Int32	generatedTreeNodeID);
         
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern Int32	GetNumberOfBrushesInTree(Int32 nodeID);

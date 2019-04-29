@@ -134,7 +134,7 @@ namespace Chisel.Core
             /// <value>The index to the twin <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/> of this <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/>.</value>
             public Int32 twinIndex;
 
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
             // TODO: add description
             public Int32 polygonIndex;
 
@@ -146,7 +146,7 @@ namespace Chisel.Core
 #endif
         }
         
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         // TODO: add descriptions
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Surface

@@ -6,7 +6,7 @@ namespace Chisel.Core
 {
     internal partial class BrushMeshManager
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         static List<BrushMesh>	brushMeshes		= new List<BrushMesh>();
         static List<int>		userIDs			= new List<int>();
         static List<int>		unusedIDs		= new List<int>();
