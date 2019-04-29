@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -680,60 +680,6 @@ namespace Chisel.Components
         protected abstract void UpdateGeneratorInternal();
 
 #if UNITY_EDITOR
-
-        class DefaultOperationIcons
-        {
-            public DefaultOperationIcons(string name)
-            {
-                this.name = name;
-                Update();
-            }
-
-            string name;
-            GUIContent additiveIcon;
-            GUIContent subtractiveIcon;
-            GUIContent intersectingIcon;
-
-            public GUIContent AdditiveIcon      { get { if (additiveIcon     == null || CSGDefaults.Style.AdditiveImage     == null) Update(); return additiveIcon; }  }
-            public GUIContent SubtractiveIcon   { get { if (subtractiveIcon  == null || CSGDefaults.Style.SubtractiveImage  == null) Update(); return subtractiveIcon; }  }
-            public GUIContent IntersectingIcon  { get { if (intersectingIcon == null || CSGDefaults.Style.IntersectingImage == null) Update(); return intersectingIcon; }  }
-
-
-            void Update()
-            {
-                if (additiveIcon     == null) additiveIcon     = new GUIContent("Additive " + name);
-                if (subtractiveIcon  == null) subtractiveIcon  = new GUIContent("Subtractive " + name);
-                if (intersectingIcon == null) intersectingIcon = new GUIContent("Intersecting " + name);
-
-                Texture2D image;
-                image = CSGDefaults.Style.AdditiveImage;     if (image != null && additiveIcon.image != image) additiveIcon.image = image;
-                image = CSGDefaults.Style.SubtractiveImage;  if (image != null && subtractiveIcon.image != image) subtractiveIcon.image = image;
-                image = CSGDefaults.Style.IntersectingImage; if (image != null && intersectingIcon.image != image) intersectingIcon.image = image;
-            }
-        }
-        static Dictionary<string, DefaultOperationIcons> DefaultIcons = new Dictionary<string, DefaultOperationIcons>();
-
-        // The icon used in the hierarchy
-        public override GUIContent Icon
-        {
-            get
-            {
-                DefaultOperationIcons icons;
-                if (!DefaultIcons.TryGetValue(NodeTypeName, out icons))
-                {
-                    icons = new DefaultOperationIcons(NodeTypeName);
-                    DefaultIcons[NodeTypeName] = icons;
-                }
-                switch (this.operation)
-                {
-                    default:
-                    case CSGOperationType.Additive:		return icons.AdditiveIcon;
-                    case CSGOperationType.Subtractive:	return icons.SubtractiveIcon;
-                    case CSGOperationType.Intersecting:	return icons.IntersectingIcon;
-                }
-            }
-        }
-
         public override bool ConvertToBrushes()
         {
             var topGameObject = this.gameObject;

@@ -11,9 +11,19 @@ using UnityEngine.Rendering;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGModelDetails : ChiselNodeDetails<CSGModel>
+    {
+        const string ModelIconName = "csg_addition";
+
+        public override GUIContent GetHierarchyIcon(CSGModel node)
+        {
+            return ChiselEditorResources.GetIconContent(ModelIconName, node.NodeTypeName)[0];
+        }
+    }
+
     [CustomEditor(typeof(CSGModel))]
     [CanEditMultipleObjects]
-    public sealed class CSGModelEditor : Editor
+    public sealed class CSGModelEditor : ChiselNodeEditor<CSGModel>
     {
         const int kSingleLineHeight = 16;
 
@@ -253,8 +263,8 @@ namespace Chisel.Editors
             }
         }
         
-        public Bounds OnGetFrameBounds() { return CSGNodeEditor.CalculateBounds(targets); }
-        public bool HasFrameBounds() { return true; }
+        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
+        public override bool HasFrameBounds() { return true; }
 
 
         bool IsPrefabAsset
@@ -843,7 +853,7 @@ namespace Chisel.Editors
         {
             InitTypes();
 
-            CSGNodeEditor.CheckForTransformationChanges(serializedObject);
+            CheckForTransformationChanges(serializedObject);
 
             if (IsDefaultModel())
                 EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
@@ -888,7 +898,7 @@ namespace Chisel.Editors
             }
             if (EditorGUI.EndChangeCheck())
             {
-                CSGNodeEditor.ForceUpdateNodeContents(serializedObject);
+                ForceUpdateNodeContents(serializedObject);
             }
         }
     }

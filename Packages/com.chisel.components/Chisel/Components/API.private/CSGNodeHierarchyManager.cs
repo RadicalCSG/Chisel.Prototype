@@ -1,5 +1,4 @@
-﻿//#define BE_CHATTY
-using Chisel.Assets;
+﻿using Chisel.Assets;
 using Chisel.Core;
 using System;
 using System.Collections.Generic;
@@ -113,9 +112,6 @@ namespace Chisel.Components
         // TODO: Probably needs to be internal?
         public static void Reset()
         {
-#if BE_CHATTY
-            Debug.Log("Reset");
-#endif
             sceneHierarchies	.Clear();
         
             registeredNodes		.Clear();
@@ -772,9 +768,6 @@ namespace Chisel.Components
             if (!firstStart)
             {
                 firstStart = true;
-#if BE_CHATTY
-                Debug.Log("Start");
-#endif
                 CSGManager.Clear();
                 CSGBrushMeshAssetManager.Reset();
                 CSGSurfaceAssetManager.Reset();
@@ -785,9 +778,6 @@ namespace Chisel.Components
                 FindAndReregisterAllNodes();
                 CSGBrushMeshAssetManager.Update();
                 CSGSurfaceAssetManager.Update();
-#if BE_CHATTY
-                Debug.Log("found " + registerQueue.Count);
-#endif
             }
 
             // *Workaround*
@@ -815,9 +805,6 @@ namespace Chisel.Components
                             defaultChildren[n].Scene == expectedScene)
                             continue;
 
-#if BE_CHATTY
-                        Debug.Log("scene changed");
-#endif
                         var component = defaultChildren[n].Component;
                         updateChildrenQueue.Add(defaultModel.hierarchyItem);
                         OnTransformParentChanged(component);
@@ -841,9 +828,6 @@ namespace Chisel.Components
                             rootItems[n].Scene == expectedScene)
                             continue;
 
-#if BE_CHATTY
-                        Debug.Log("scene changed");
-#endif
                         var component = rootItems[n].Component;
                         OnTransformParentChanged(component);
                     }
@@ -863,21 +847,11 @@ namespace Chisel.Components
                     {
 #if UNITY_EDITOR
 
-#if UNITY_2018_3_OR_NEWER
                         if( UnityEditor.PrefabUtility.GetPrefabAssetType( component ) != UnityEditor.PrefabAssetType.Regular )
-#else
-                        if (UnityEditor.PrefabUtility.GetPrefabType(component) != UnityEditor.PrefabType.Prefab)
-#endif //UNITY_2018_3_OR_NEWER
 
-#endif //UNITY_EDITOR
+#endif
                             continue;
-#if BE_CHATTY
-                        Debug.Log("prefab");
-#endif
                     }
-#if BE_CHATTY
-                    Debug.Log("remove");
-#endif
                     registerQueue.RemoveAt(i);
                 }
 
@@ -888,9 +862,6 @@ namespace Chisel.Components
                     if (knownNode)
                         continue;
 
-#if BE_CHATTY
-                    Debug.Log("force find removed");
-#endif
                     Unregister(knownNode);
                 }
             }
@@ -918,23 +889,6 @@ namespace Chisel.Components
                 return;
             
 
-#if BE_CHATTY
-            Debug.Log("Update " + registerQueue.Count + " " + 
-                                  unregisterQueue.Count + " " + 
-                                  sortChildrenQueue.Count + " " + 
-                                  findChildrenQueue.Count + " " + 
-                                  
-                                  hierarchyUpdateQueue.Count + " " + 
-
-                                  updateChildrenQueue.Count + " " + 
-                                  addToHierarchyQueue.Count + " " + 
-
-                                  updateTransformationNodes.Count + " " + 
-                                  destroyNodesList.Count + " " +
-
-                                  rebuildTreeNodes.Count);
-#endif
-
             __registerNodes   .Clear();
             __unregisterNodes .Clear();
 
@@ -946,9 +900,6 @@ namespace Chisel.Components
 
             if (unregisterQueue.Count > 0)
             {
-#if BE_CHATTY
-                Debug.Log("unregisterQueue " + unregisterQueue.Count);
-#endif
                 for (int i = 0; i < unregisterQueue.Count; i++)
                 {
                     var node = unregisterQueue[i];
@@ -1032,9 +983,6 @@ namespace Chisel.Components
             
             if (registerQueue.Count > 0)
             {
-#if BE_CHATTY
-                Debug.Log("registerQueue " + registerQueue.Count);
-#endif
                 for (int i = 0; i < registerQueue.Count; i++)
                 {
                     var node = registerQueue[i];
@@ -1117,7 +1065,6 @@ namespace Chisel.Components
 
             if (findChildrenQueue.Count > 0)
             {
-                //Debug.Log("findChildrenQueue " +findChildrenQueue.Count);
                 for (int i = 0; i < findChildrenQueue.Count; i++)
                 {
                     var hierarchyItem = findChildrenQueue[i];
@@ -1128,7 +1075,6 @@ namespace Chisel.Components
         
             if (hierarchyUpdateQueue.Count > 0)
             {
-                //Debug.Log("hierarchyUpdateQueue " + hierarchyUpdateQueue.Count);
                 var prevQueue = hierarchyUpdateQueue.ToArray();
                 for (int i = 0; i < prevQueue.Length; i++)
                 {
@@ -1208,7 +1154,6 @@ namespace Chisel.Components
             
             if (addToHierarchyQueue.Count > 0)
             {
-                //Debug.Log("addToHierarchyQueue " + addToHierarchyQueue.Count);
                 for (int i = 0; i < addToHierarchyQueue.Count; i++)
                 { 
                     var hierarchyItem = addToHierarchyQueue[i];
@@ -1292,7 +1237,6 @@ namespace Chisel.Components
              
             if (sortChildrenQueue.Count > 0)
             {
-                //Debug.Log("sortChildrenQueue " + sortChildrenQueue.Count);
                 foreach (var items in sortChildrenQueue)
                 {
                     if (items.Count == 0)
@@ -1317,7 +1261,6 @@ namespace Chisel.Components
             
             if (updateChildrenQueue.Count > 0)
             {
-                //Debug.Log("updateChildrenQueue " + updateChildrenQueue.Count);
                 foreach (var item in updateChildrenQueue)
                 {
                     if (!item.Component)
@@ -1351,9 +1294,7 @@ namespace Chisel.Components
             }
         
             if (destroyNodesList.Count > 0)
-            {
-                //Debug.Log("destroyNodesList " + destroyNodesList.Count);
-                
+            {                
                 // Destroy all old nodes after we created new nodes, to make sure we don't get conflicting IDs
                 CSGManager.Destroy(destroyNodesList.ToArray());
                 destroyNodesList.Clear();
@@ -1361,7 +1302,6 @@ namespace Chisel.Components
         
             if (updateChildrenQueue.Count > 0)
             {
-                //Debug.Log("updateChildrenQueue " + updateChildrenQueue.Count);
                 foreach (var item in updateChildrenQueue)
                 {
                     if (!item.Component)

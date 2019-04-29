@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGSpiralStairsDetails : ChiselGeneratorDetails<CSGSpiralStairs>
+    {
+    }
+
     [CustomEditor(typeof(CSGSpiralStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGSpiralStairsEditor : GeneratorEditor<CSGSpiralStairs> 
+    public sealed class CSGSpiralStairsEditor : ChiselGeneratorEditor<CSGSpiralStairs> 
     {
         SerializedProperty heightProp;
         SerializedProperty outerDiameterProp;

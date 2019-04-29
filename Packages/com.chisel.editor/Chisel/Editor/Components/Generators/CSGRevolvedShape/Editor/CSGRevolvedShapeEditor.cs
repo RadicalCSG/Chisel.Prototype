@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGRevolvedShapeDetails : ChiselGeneratorDetails<CSGRevolvedShape>
+    {
+    }
+
     [CustomEditor(typeof(CSGRevolvedShape))]
     [CanEditMultipleObjects]
-    public sealed class CSGRevolvedShapeEditor : GeneratorEditor<CSGRevolvedShape>
+    public sealed class CSGRevolvedShapeEditor : ChiselGeneratorEditor<CSGRevolvedShape>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
 

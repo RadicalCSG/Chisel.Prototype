@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGPathedStairsDetails : ChiselGeneratorDetails<CSGPathedStairs>
+    {
+    }
+
     [CustomEditor(typeof(CSGPathedStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGPathedStairsEditor : GeneratorEditor<CSGPathedStairs>
+    public sealed class CSGPathedStairsEditor : ChiselGeneratorEditor<CSGPathedStairs>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
         

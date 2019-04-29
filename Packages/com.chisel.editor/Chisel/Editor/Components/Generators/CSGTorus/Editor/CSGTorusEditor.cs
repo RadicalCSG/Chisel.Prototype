@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGTorusDetails : ChiselGeneratorDetails<CSGTorus>
+    {
+    }
+
     [CustomEditor(typeof(CSGTorus))]
     [CanEditMultipleObjects]
-    public sealed class CSGTorusEditor : GeneratorEditor<CSGTorus>
+    public sealed class CSGTorusEditor : ChiselGeneratorEditor<CSGTorus>
     {
         static GUIContent   InnerDiameterContent = new GUIContent("Inner Diameter");
 

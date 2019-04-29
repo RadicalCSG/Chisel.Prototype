@@ -11,14 +11,13 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(CSGNode), isFallback = true)]
-    [CanEditMultipleObjects]
-    public sealed class CSGNodeEditor : Editor
+    public abstract class ChiselNodeEditor<T> : Editor
+        where T : CSGNode
     {
-        static readonly GUIContent  DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explictly add this node to a model.");
+        static readonly GUIContent DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
 
-        public Bounds OnGetFrameBounds() { return CSGNodeEditor.CalculateBounds(targets); }
-        public bool HasFrameBounds() { if (targets == null) return false; return true; }
+        public virtual Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
+        public virtual bool HasFrameBounds() { if (targets == null) return false; return true; }
 
         public static Bounds CalculateBounds(UnityEngine.Object[] targets)
         {
@@ -127,8 +126,8 @@ namespace Chisel.Editors
             }
         }
 
-        static readonly GUIContent convertToBrushesContent  = new GUIContent("Convert to Brushes");
-        static readonly GUIContent convertToBrushContent    = new GUIContent("Convert to Brush");
+        static readonly GUIContent convertToBrushesContent = new GUIContent("Convert to Brushes");
+        static readonly GUIContent convertToBrushContent = new GUIContent("Convert to Brush");
 
 
         // TODO: put somewhere else
@@ -149,12 +148,14 @@ namespace Chisel.Editors
             {
                 if (!GUILayout.Button(convertToBrushesContent))
                     return;
-            } else
+            }
+            else
             if (singular)
             {
-                if (!GUILayout.Button(convertToBrushContent))
+                if (!GUILayout.Button(convertToBrushContent, GUILayout.ExpandHeight(true)))
                     return;
-            } else
+            }
+            else
                 return;
 
             bool modified = false;
@@ -173,48 +174,27 @@ namespace Chisel.Editors
 
         class Styles
         {
-            const string AdditiveIconTooltip = "Additive CSG Operation";
-            const string SubtractiveIconTooltip = "Subtractive CSG Operation";
-            const string IntersectingIconTooltip = "Intersecting CSG Operation";
-
-            public readonly GUIContent[] AdditiveIcon;
-            public readonly GUIContent[] SubtractiveIcon;
-            public readonly GUIContent[] IntersectingIcon;
-
-            public GUIStyle[]	leftButton	= new GUIStyle[2];
-            public GUIStyle[]	midButton	= new GUIStyle[2];
-            public GUIStyle[]	rightButton = new GUIStyle[2];
+            public GUIStyle[] leftButton = new GUIStyle[2];
+            public GUIStyle[] midButton = new GUIStyle[2];
+            public GUIStyle[] rightButton = new GUIStyle[2];
 
             public Styles()
             {
-                AdditiveIcon = new[] {
-                    CSGDefaults.Style.AdditiveImages[0] == null ? new GUIContent(AdditiveIconTooltip) : new GUIContent(CSGDefaults.Style.AdditiveImages[0], AdditiveIconTooltip),
-                    CSGDefaults.Style.AdditiveImages[1] == null ? new GUIContent(AdditiveIconTooltip) : new GUIContent(CSGDefaults.Style.AdditiveImages[1], AdditiveIconTooltip)
-                };
-                SubtractiveIcon = new[] {
-                    CSGDefaults.Style.SubtractiveImages[0] == null ? new GUIContent(SubtractiveIconTooltip) : new GUIContent(CSGDefaults.Style.SubtractiveImages[0], SubtractiveIconTooltip),
-                    CSGDefaults.Style.SubtractiveImages[0] == null ? new GUIContent(SubtractiveIconTooltip) : new GUIContent(CSGDefaults.Style.SubtractiveImages[1], SubtractiveIconTooltip)
-                };
-                IntersectingIcon = new[] {
-                    CSGDefaults.Style.IntersectingImages[0] == null ? new GUIContent(IntersectingIconTooltip) : new GUIContent(CSGDefaults.Style.IntersectingImages[0], IntersectingIconTooltip),
-                    CSGDefaults.Style.IntersectingImages[0] == null ? new GUIContent(IntersectingIconTooltip) : new GUIContent(CSGDefaults.Style.IntersectingImages[1], IntersectingIconTooltip)
-                };
-
-                leftButton[0] = new GUIStyle(EditorStyles.miniButtonLeft) { stretchWidth  = false, stretchHeight = false };
-                leftButton[0].padding.top    += 1;
-                leftButton[0].padding.bottom += 2;
+                leftButton[0] = new GUIStyle(EditorStyles.miniButtonLeft) { stretchWidth = false, stretchHeight = false };
+                leftButton[0].padding.top += 1;
+                leftButton[0].padding.bottom += 3;
                 leftButton[1] = new GUIStyle(leftButton[0]);
                 leftButton[1].normal.background = leftButton[0].active.background;
 
                 midButton[0] = new GUIStyle(EditorStyles.miniButtonMid) { stretchWidth = false, stretchHeight = false };
                 midButton[0].padding.top += 1;
-                midButton[0].padding.bottom += 2;
+                midButton[0].padding.bottom += 3;
                 midButton[1] = new GUIStyle(midButton[0]);
                 midButton[1].normal.background = midButton[0].active.background;
 
                 rightButton[0] = new GUIStyle(EditorStyles.miniButtonRight) { stretchWidth = false, stretchHeight = false };
                 rightButton[0].padding.top += 1;
-                rightButton[0].padding.bottom += 2;
+                rightButton[0].padding.bottom += 3;
                 rightButton[1] = new GUIStyle(rightButton[0]);
                 rightButton[1].normal.background = rightButton[0].active.background;
             }
@@ -224,50 +204,139 @@ namespace Chisel.Editors
 
         static bool Toggle(bool selected, GUIContent[] content, GUIStyle[] style)
         {
-            return GUILayout.Button(selected ? content[1] : content[0], selected ? style[1] : style[0]);
+            var selectedContent = selected ? content[1] : content[0];
+            var selectedStyle = selected ? style[1] : style[0];
+
+            return GUILayout.Button(selectedContent, selectedStyle);
+        }
+
+        public static void ShowOperationChoices(SerializedProperty operationProp)
+        {
+            EditorGUILayout.BeginHorizontal();
+            ShowOperationChoicesInternal(operationProp);
+            EditorGUILayout.EndHorizontal();
         }
 
         // TODO: put somewhere else
-        internal static void ShowOperationChoices(SerializedProperty operationProp)
+        public static void ShowOperationChoicesInternal(SerializedProperty operationProp)
         {
             if (styles == null)
                 styles = new Styles();
-            EditorGUILayout.BeginHorizontal();
-            var operation = operationProp.hasMultipleDifferentValues ? ((CSGOperationType)255) : ((CSGOperationType)operationProp.enumValueIndex);
-            if (Toggle((operation == CSGOperationType.Additive)     , styles.AdditiveIcon, styles.leftButton))
-                operationProp.enumValueIndex = (int)CSGOperationType.Additive;
-            if (Toggle((operation == CSGOperationType.Subtractive)	, styles.SubtractiveIcon , styles.midButton))
-                operationProp.enumValueIndex = (int)CSGOperationType.Subtractive;
-            if (Toggle((operation == CSGOperationType.Intersecting) , styles.IntersectingIcon, styles.rightButton))
-                operationProp.enumValueIndex = (int)CSGOperationType.Intersecting;
-            //EditorGUILayout.PropertyField(operationProp);
-            EditorGUILayout.EndHorizontal();
+
+            const string AdditiveIconName = "csg_addition";
+            const string SubtractiveIconName = "csg_subtraction";
+            const string IntersectingIconName = "csg_intersection";
+
+            const string AdditiveIconTooltip = "Additive CSG Operation";
+            const string SubtractiveIconTooltip = "Subtractive CSG Operation";
+            const string IntersectingIconTooltip = "Intersecting CSG Operation";
+
+            var additiveIcon = ChiselEditorResources.GetIconContent(AdditiveIconName, AdditiveIconTooltip);
+            var subtractiveIcon = ChiselEditorResources.GetIconContent(SubtractiveIconName, SubtractiveIconTooltip);
+            var intersectingIcon = ChiselEditorResources.GetIconContent(IntersectingIconName, IntersectingIconTooltip);
+
+            using (new EditorGUIUtility.IconSizeScope(new Vector2(16, 16)))     // This ensures that the icons will be the same size on regular displays and HDPI displays
+                                                                                // Note that the loaded images are different sizes on different displays
+            {
+                var operation = operationProp.hasMultipleDifferentValues ? ((CSGOperationType)255) : ((CSGOperationType)operationProp.enumValueIndex);
+                if (Toggle((operation == CSGOperationType.Additive), additiveIcon, styles.leftButton))
+                    operationProp.enumValueIndex = (int)CSGOperationType.Additive;
+                if (Toggle((operation == CSGOperationType.Subtractive), subtractiveIcon, styles.midButton))
+                    operationProp.enumValueIndex = (int)CSGOperationType.Subtractive;
+                if (Toggle((operation == CSGOperationType.Intersecting), intersectingIcon, styles.rightButton))
+                    operationProp.enumValueIndex = (int)CSGOperationType.Intersecting;
+            }
         }
 
         public override void OnInspectorGUI()
         {
-            CSGNodeEditor.CheckForTransformationChanges(serializedObject);
+            CheckForTransformationChanges(serializedObject);
             ShowDefaultModelMessage(serializedObject.targetObjects);
         }
+    }
 
+    public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
+        where T : CSGGeneratorComponent
+    {
+        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
+        public override bool HasFrameBounds() { return true; }
 
-        // TODO: put in it's own class
-        public static void HierarchyWindowItemOnGUI(CSGNode node, Rect selectionRect)
+        protected abstract void ResetInspector();
+        protected abstract void InitInspector();
+
+        protected abstract void OnInspector();
+        protected virtual void OnSceneInit(T generator) { }
+        protected abstract void OnScene(T generator);
+
+        SerializedProperty operationProp;
+        void Reset() { operationProp = null; ResetInspector(); }
+        void OnDisable() { Reset(); }
+
+        void OnEnable()
         {
-            // TODO: implement material drag & drop support
+            if (!target)
+            {
+                Reset();
+                return;
+            }
 
-            var icon = node.Icon;
-            if (icon == null)
+            operationProp = serializedObject.FindProperty("operation");
+            InitInspector();
+        }
+
+        public override void OnInspectorGUI()
+        {
+            if (!target)
+                return;
+            base.OnInspectorGUI();
+            try
+            {
+                EditorGUI.BeginChangeCheck();
+                {
+                    GUILayout.BeginHorizontal();
+                    ShowOperationChoicesInternal(operationProp);
+                    ConvertIntoBrushesButton(serializedObject);
+                    GUILayout.EndHorizontal();
+
+                    OnInspector();
+                }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    serializedObject.ApplyModifiedProperties();
+                }
+            }
+            catch (ExitGUIException) { }
+            catch (Exception ex) { Debug.LogException(ex); }
+        }
+
+        public void OnSceneGUI()
+        {
+            if (!target || CSGEditModeManager.EditMode != CSGEditMode.ShapeEdit)
                 return;
 
-            const float iconSize = 32;
-            const float indent	 = 4;
-            var max = selectionRect.xMax;
-            selectionRect.width  = iconSize;
-            selectionRect.height = iconSize;
-            selectionRect.x      = max - (iconSize + indent);
-            selectionRect.y--;
-            GUI.Label(selectionRect, icon);
+            using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor))
+            {
+                var generator = target as T;
+                if (!generator.isActiveAndEnabled)
+                    return;
+
+                OnSceneInit(generator);
+
+                var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
+                var brush = generator.TopNode;
+                //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
+                //foreach (var brush in generator.Node.AllSynchronizedVariants) // <-- this fails when brushes have failed to be created
+                {
+                    //var directSelect = CSGSyncSelection.IsBrushVariantSelected(brush);
+                    //if (!directSelect)
+                    //	continue;
+
+                    UnityEditor.Handles.matrix = modelMatrix * brush.NodeToTreeSpaceMatrix;
+                    UnityEditor.Handles.color = UnityEditor.Handles.yAxisColor;
+
+                    OnScene(generator);
+                }
+            }
         }
     }
 }

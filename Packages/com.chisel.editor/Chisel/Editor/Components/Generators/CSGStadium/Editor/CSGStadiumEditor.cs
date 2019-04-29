@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGStadiumDetails : ChiselGeneratorDetails<CSGStadium>
+    {
+    }
+    
     [CustomEditor(typeof(CSGStadium))]
     [CanEditMultipleObjects]
-    public sealed class CSGStadiumEditor : GeneratorEditor<CSGStadium>
+    public sealed class CSGStadiumEditor : ChiselGeneratorEditor<CSGStadium>
     {
         SerializedProperty heightProp;
         SerializedProperty lengthProp;

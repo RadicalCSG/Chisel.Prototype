@@ -12,11 +12,15 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGCylinderDetails : ChiselGeneratorDetails<CSGCylinder>
+    {
+    }
+    
     // TODO: why did resetting this generator not work?
     // TODO: make drag & drop of materials on generator side work
     [CustomEditor(typeof(CSGCylinder))]
     [CanEditMultipleObjects]
-    public sealed class CSGCylinderEditor : GeneratorEditor<CSGCylinder>
+    public sealed class CSGCylinderEditor : ChiselGeneratorEditor<CSGCylinder>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
         const string        SurfaceFormat           = "Surface {0}";

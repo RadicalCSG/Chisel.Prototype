@@ -5,9 +5,14 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGCapsuleDetails : ChiselGeneratorDetails<CSGCapsule>
+    {
+    }
+
+
     [CustomEditor(typeof(CSGCapsule))]
     [CanEditMultipleObjects]
-    public sealed class CSGCapsuleEditor : GeneratorEditor<CSGCapsule>
+    public sealed class CSGCapsuleEditor : ChiselGeneratorEditor<CSGCapsule>
     {
         SerializedProperty heightProp;
         SerializedProperty topHeightProp;

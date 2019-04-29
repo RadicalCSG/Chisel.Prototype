@@ -272,38 +272,7 @@ namespace Chisel.Components
         }
 
 
-        public abstract Bounds CalculateBounds();/*
-        {
-            CSGBrushMeshAsset[] assets = GetUsedBrushMeshAssets();
-            if (assets == null || assets.Length == 0)
-                return CSGHierarchyItem.EmptyBounds;
-
-            if (assets.Length == 1)
-            {
-                if (!assets[0])
-                    return CSGHierarchyItem.EmptyBounds;
-            }
-            
-            var modelTransform		= CSGNodeHierarchyManager.FindModelTransformOfTransform(hierarchyItem.Transform);
-            var localToWorldMatrix	= hierarchyItem.Transform.localToWorldMatrix;
-            var bounds = CSGHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            foreach (var asset in assets)
-            {
-                if (!asset)
-                    continue;
-                var assetBounds = asset.CalculateBounds(localToWorldMatrix);
-                if (assetBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = assetBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(assetBounds);
-            }
-            return bounds;
-        }*/
+        public abstract Bounds CalculateBounds();
 
         public bool EncapsulateBounds(ref Bounds outBounds)
         {
@@ -411,9 +380,6 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-            // The icon used in the hierarchy
-        public abstract GUIContent Icon { get; }
-
         public virtual bool ConvertToBrushes()
         {
             return false;

@@ -12,9 +12,14 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGHemisphereDetails : ChiselGeneratorDetails<CSGHemisphere>
+    {
+    }
+
+
     [CustomEditor(typeof(CSGHemisphere))]
     [CanEditMultipleObjects]
-    public sealed class CSGHemisphereEditor : GeneratorEditor<CSGHemisphere>
+    public sealed class CSGHemisphereEditor : ChiselGeneratorEditor<CSGHemisphere>
     {
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;

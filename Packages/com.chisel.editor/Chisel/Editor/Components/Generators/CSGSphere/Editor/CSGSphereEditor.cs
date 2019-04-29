@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGSphereDetails : ChiselGeneratorDetails<CSGSphere>
+    {
+    }
+
     [CustomEditor(typeof(CSGSphere))]
     [CanEditMultipleObjects]
-    public sealed class CSGSphereEditor : GeneratorEditor<CSGSphere>
+    public sealed class CSGSphereEditor : ChiselGeneratorEditor<CSGSphere>
     {
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;

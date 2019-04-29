@@ -10,9 +10,13 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGBrushDetails : ChiselGeneratorDetails<CSGBrush>
+    {
+    }
+
     [CustomEditor(typeof(CSGBrush))]
     [CanEditMultipleObjects]
-    public sealed class CSGBrushEditor : Editor
+    public sealed class CSGBrushEditor : ChiselNodeEditor<CSGBrush>
     {
         SerializedProperty operationProp;
         SerializedProperty brushMeshAssetProp;
@@ -36,19 +40,18 @@ namespace Chisel.Editors
             brushMeshAssetProp = null;
         }
 
-        public Bounds OnGetFrameBounds() { return CSGNodeEditor.CalculateBounds(targets); }
-        public bool HasFrameBounds() { return true; }
+        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
+        public override bool HasFrameBounds() { return true; }
 
 
         public override void OnInspectorGUI()
         {
-            CSGNodeEditor.CheckForTransformationChanges(serializedObject);
-            CSGNodeEditor.ShowDefaultModelMessage(serializedObject.targetObjects);
+            base.OnInspectorGUI();
             try
             {
                 EditorGUI.BeginChangeCheck();
                 {
-                    CSGNodeEditor.ShowOperationChoices(operationProp);
+                    ShowOperationChoices(operationProp);
                     EditorGUILayout.PropertyField(brushMeshAssetProp);
                 }
                 if (EditorGUI.EndChangeCheck())
