@@ -35,20 +35,28 @@ namespace Chisel.Components
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateSphereSubMesh(subMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceAssets, definition.surfaceDescriptions);
+            return GenerateSphereSubMesh(subMesh, definition.diameterXYZ, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceAssets, definition.surfaceDescriptions);
         }
 
         public static bool GenerateSphereVertices(CSGSphereDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.horizontalSegments, definition.verticalSegments, ref vertices);
+            BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.generateFromCenter, definition.horizontalSegments, definition.verticalSegments, ref vertices);
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
-            var brushMesh = BrushMeshFactory.CreateSphere(diameterXYZ, horzSegments, vertSegments);
+            if (diameterXYZ.x == 0 ||
+                diameterXYZ.y == 0 ||
+                diameterXYZ.z == 0)
+            {
+                subMesh.Clear();
+                return false;
+            }
+
+            var brushMesh = BrushMeshFactory.CreateSphere(diameterXYZ, generateFromCenter, horzSegments, vertSegments);
 
             subMesh.HalfEdges = brushMesh.halfEdges;
             subMesh.Vertices = brushMesh.vertices;

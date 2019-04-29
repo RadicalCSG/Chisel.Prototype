@@ -217,6 +217,10 @@ namespace Chisel.Components
             var boundsMin			= definition.bounds.min;
             var boundsMax			= definition.bounds.max;
 
+            if (boundsMin.y > boundsMax.y) { var t = boundsMin.y; boundsMin.y = boundsMax.y; boundsMax.y = t; }
+            if (boundsMin.x > boundsMax.x) { var t = boundsMin.x; boundsMin.x = boundsMax.x; boundsMax.x = t; }
+            if (boundsMin.z > boundsMax.z) { var t = boundsMin.z; boundsMin.z = boundsMax.z; boundsMax.z = t; }
+
             var haveRiser			= riserType != StairsRiserType.None;
             var haveLeftSideDown	= riserType != StairsRiserType.FillDown &&
                                       (leftSideType == StairsSideType.Down || leftSideType == StairsSideType.DownAndUp);
@@ -231,8 +235,6 @@ namespace Chisel.Components
             var thickRiser			= riserType == StairsRiserType.ThickRiser || riserType == StairsRiserType.Smooth;
             var riserDepth			= (haveRiser && !thickRiser) ? definition.riserDepth : 0;
 
-
-            //var bounds			= definition.bounds;
             var stepCount			= definition.StepCount;
             var offsetZ				= (definition.StepDepthOffset < kEpsilon) ? 0 : definition.StepDepthOffset;
             var offsetY				= definition.plateauHeight;	
@@ -259,8 +261,8 @@ namespace Chisel.Components
             {
                 if (haveRiser)
                 {
-                    var min = definition.bounds.min;
-                    var max = definition.bounds.max;
+                    var min = boundsMin;
+                    var max = boundsMax;
                     max.z = min.z + definition.StepDepthOffset + definition.stepDepth;
                     if (riserType != StairsRiserType.FillDown)
                     {
@@ -395,23 +397,23 @@ namespace Chisel.Components
                     }
                     //if (!haveLeftSideDown)
                     {
-                        var height		= definition.stepHeight;
+                        var stepHeight = definition.stepHeight;
                         Vector3[] vertices;
                         if (riserType == StairsRiserType.FillDown)
                         {
                             vertices = new[] {
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z),	// 0
-                                            new Vector3( min.x, boundsMin.y + height, boundsMin.z), // 1
-                                            new Vector3( min.x, boundsMin.y         , boundsMin.z), // 2
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z),	// 3
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z),	// 0
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMin.z), // 1
+                                            new Vector3( min.x, boundsMin.y             , boundsMin.z), // 2
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z),	// 3
                                         };
                         } else
                         {
                             vertices = new[] {
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z),		// 0
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z - extraDepth),  // 1
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z - extraDepth),  // 2
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z),		// 3
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z),		// 0
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z - extraDepth),  // 1
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z - extraDepth),  // 2
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z),		// 3
                                         };
                         }
 
@@ -447,23 +449,23 @@ namespace Chisel.Components
                     }
                     //if (!haveRightSideDown)
                     {
-                        var height		= definition.stepHeight;
+                        var stepHeight = definition.stepHeight;
                         Vector3[] vertices;
                         if (riserType == StairsRiserType.FillDown)
                         {
                             vertices = new[] {
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z),		// 0
-                                            new Vector3( min.x, boundsMin.y + height, boundsMin.z),  // 1
-                                            new Vector3( min.x, boundsMin.y         , boundsMin.z),  // 2
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z),		// 3
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z),		// 0
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMin.z),  // 1
+                                            new Vector3( min.x, boundsMin.y             , boundsMin.z),  // 2
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z),		// 3
                                         };
                         } else
                         {
                             vertices = new[] {
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z),		// 0
-                                            new Vector3( min.x, boundsMin.y + height, boundsMax.z - extraDepth),  // 1
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z - extraDepth),  // 2
-                                            new Vector3( min.x, boundsMin.y         , boundsMax.z),		// 3
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z),		// 0
+                                            new Vector3( min.x, boundsMin.y + stepHeight, boundsMax.z - extraDepth),  // 1
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z - extraDepth),  // 2
+                                            new Vector3( min.x, boundsMin.y             , boundsMax.z),		// 3
                                         };
                         }
 

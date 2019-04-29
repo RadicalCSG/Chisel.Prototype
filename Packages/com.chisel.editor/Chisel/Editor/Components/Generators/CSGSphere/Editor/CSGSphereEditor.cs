@@ -23,18 +23,18 @@ namespace Chisel.Editors
 
         protected override void ResetInspector()
         { 
-            diameterXYZProp			= null;
-            rotationProp			= null;
-            horizontalSegmentsProp	= null;
-            verticalSegmentsProp	= null;
+            diameterXYZProp		    = null;
+            rotationProp		    = null;
+            horizontalSegmentsProp  = null;
+            verticalSegmentsProp    = null;
         }
         
         protected override void InitInspector()
         { 
-            diameterXYZProp			= serializedObject.FindProperty("definition.diameterXYZ");
-            rotationProp			= serializedObject.FindProperty("definition.rotation");
-            horizontalSegmentsProp	= serializedObject.FindProperty("definition.horizontalSegments");
-            verticalSegmentsProp	= serializedObject.FindProperty("definition.verticalSegments");
+            diameterXYZProp		    = serializedObject.FindProperty("definition.diameterXYZ");
+            rotationProp		    = serializedObject.FindProperty("definition.rotation");
+            horizontalSegmentsProp  = serializedObject.FindProperty("definition.horizontalSegments");
+            verticalSegmentsProp    = serializedObject.FindProperty("definition.verticalSegments");
         }
 
         
@@ -48,10 +48,10 @@ namespace Chisel.Editors
         
         protected override void OnSceneInit(CSGSphere generator) {}
         
-        const float kLineDash					= 2.0f;
-        const float kVertLineThickness			= 0.75f;
-        const float kHorzLineThickness			= 1.0f;
-        const float kCapLineThickness			= 2.0f;
+        const float kLineDash				    = 2.0f;
+        const float kVertLineThickness		    = 0.75f;
+        const float kHorzLineThickness		    = 1.0f;
+        const float kCapLineThickness		    = 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
         static void DrawOutline(CSGSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
@@ -108,10 +108,24 @@ namespace Chisel.Editors
 
             UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, true, isDisabled);
             DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
-            
-            var topPoint	= normal * (generator.DiameterXYZ.y *  0.5f);
-            var bottomPoint = normal * (generator.DiameterXYZ.y * -0.5f);
-            var radius2D	= new Vector2(generator.definition.diameterXYZ.x, generator.definition.diameterXYZ.z) * 0.5f;
+
+            Vector3 center, topPoint, bottomPoint;
+            if (!generator.GenerateFromCenter)
+            {
+                center      = normal * (generator.DiameterXYZ.y * 0.5f);
+                topPoint    = normal * generator.DiameterXYZ.y;
+                bottomPoint = Vector3.zero;
+            } else
+            {
+                center      = Vector3.zero;
+                topPoint    = normal * (generator.DiameterXYZ.y * 0.5f);
+                bottomPoint = normal * (generator.DiameterXYZ.y * -0.5f);
+            }
+
+            if (generator.DiameterXYZ.y < 0)
+                normal = -normal;
+
+            var radius2D = new Vector2(generator.definition.diameterXYZ.x, generator.definition.diameterXYZ.z) * 0.5f;
 
             EditorGUI.BeginChangeCheck();
             {

@@ -11,9 +11,9 @@ namespace Chisel.Components
     [Serializable]
     public struct CSGTorusDefinition
     {
-        public const float kMinTubeDiameter			= 0.1f;
+        public const float kMinTubeDiameter			   = 0.1f;
         public const int   kDefaultHorizontalSegments  = 8;
-        public const int   kVerticalHorizontalSegments = 8;
+        public const int   kDefaultVerticalSegments    = 8;
 
         // TODO: add scale the tube in y-direction (use transform instead?)
         // TODO: add start/total angle of tube
@@ -55,7 +55,7 @@ namespace Chisel.Components
             startAngle			= 0.0f;
             totalAngle			= 360.0f;
             horizontalSegments	= kDefaultHorizontalSegments;
-            verticalSegments	= kVerticalHorizontalSegments;
+            verticalSegments	= kDefaultVerticalSegments;
 
             fitCircle			= true;
 

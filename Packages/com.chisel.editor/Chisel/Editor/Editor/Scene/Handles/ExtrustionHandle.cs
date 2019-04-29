@@ -21,10 +21,10 @@ namespace Chisel.Editors
     public static class ExtrusionHandle
     {
         internal static int s_HeightSizingHash = "HeightSizingHash".GetHashCode();
-        public static ExtrusionState DoHandle(Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction = null)
+        public static ExtrusionState DoHandle(Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction = null, float? snappingSteps = null)
         {
             var id = GUIUtility.GetControlID(s_HeightSizingHash, FocusType.Keyboard);
-            return ExtrusionHandle.Do(id, dragArea, ref position, axis, capFunction);
+            return ExtrusionHandle.Do(id, dragArea, ref position, axis, capFunction, snappingSteps);
         }
 
         static Vector3 s_StartPosition;
@@ -61,12 +61,19 @@ namespace Chisel.Editors
             return ExtrusionState.Commit;
         }
             
-        public static ExtrusionState Do(int id, Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        public static ExtrusionState Do(int id, Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction, float? snappingSteps = null)
         {
-            var transformation = UnityEditor.Handles.matrix;
-            var state = ExtrusionState.None;
-            var evt = Event.current;
-            var type = evt.GetTypeForControl(id);
+            if (!snappingSteps.HasValue)
+                snappingSteps = Snapping.MoveSnappingSteps[(int)axis];
+            return Do(id, dragArea, ref position, axis, snappingSteps.Value, capFunction);
+        }
+
+        static ExtrusionState Do(int id, Rect dragArea, ref Vector3 position, Axis axis, float snappingSteps, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        {
+            var transformation  = UnityEditor.Handles.matrix;
+            var state           = ExtrusionState.None;
+            var evt             = Event.current;
+            var type            = evt.GetTypeForControl(id);
             switch (type)
             {
                 case EventType.ValidateCommand: { if (evt.commandName == PointDrawing.kSoftDeleteCommand) { evt.Use(); break; } break; }
@@ -89,7 +96,7 @@ namespace Chisel.Editors
                         s_Snapping1D.Initialize(evt.mousePosition,
                                                 s_StartPosition, 
                                                 ((Vector3)transformation.GetColumn((int)axis)).normalized,
-                                                Snapping.MoveSnappingSteps[(int)axis], axis);
+                                                snappingSteps, axis);
                     }
 
                     // If another control is hot, don't do anything

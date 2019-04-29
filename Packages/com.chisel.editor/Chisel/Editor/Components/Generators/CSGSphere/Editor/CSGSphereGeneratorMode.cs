@@ -36,69 +36,77 @@ namespace Chisel.Editors
 
         // TODO: Ability to modify default settings
         // TODO: Store/retrieve default settings
-        bool generateFromCenter = true;
-        bool isEllipsoid = false;
+        bool generateFromCenterXZ   = true;
+        bool generateFromCenterY    = CSGSphereDefinition.kDefaultGenerateFromCenter;
+        bool isSymmetrical          = true;
+        int verticalSegments        = CSGSphereDefinition.kDefaultVerticalSegments;
+        int horizontalSegments      = CSGSphereDefinition.kDefaultHorizontalSegments;
+
 
         CSGSphere sphere;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            Bounds bounds;
-            CSGModel modelBeneathCursor;
+            Bounds    bounds;
+            CSGModel  modelBeneathCursor;
             Matrix4x4 transformation;
-            float height;
+            float     height;
 
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, !isEllipsoid, generateFromCenter, Axis.Y))
+            var flags = (generateFromCenterY  ? BoxExtrusionFlags.GenerateFromCenterY  : BoxExtrusionFlags.None) |
+                        (isSymmetrical        ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
+
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
-                    {
-                        sphere = BrushMeshAssetFactory.Create<CSGSphere>("Sphere",
-                                                                    BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
-                                                                    transformation * Matrix4x4.TRS(bounds.center, Quaternion.identity, Vector3.one));
+                {
+                    sphere = BrushMeshAssetFactory.Create<CSGSphere>("Sphere",
+                                                                BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
+                                                                transformation);
 
-                        sphere.Operation = forceOperation ?? CSGOperationType.Additive;
-                        sphere.DiameterXYZ = new Vector3(bounds.size[(int)Axis.X], Math.Abs(height), bounds.size[(int)Axis.Z]);
-                        sphere.UpdateGenerator();
-                        break;
-                    }
+                    sphere.definition.Reset();
+                    sphere.Operation            = forceOperation ?? CSGOperationType.Additive;
+                    sphere.VerticalSegments     = verticalSegments;
+                    sphere.HorizontalSegments   = horizontalSegments;
+                    sphere.GenerateFromCenter   = generateFromCenterY;
+                    sphere.DiameterXYZ          = bounds.size;
+                    sphere.UpdateGenerator();
+                    break;
+                }
 
                 case BoxExtrusionState.Modified:
-                    {
-                        sphere.Operation = forceOperation ??
-                                        ((height <= 0 && modelBeneathCursor) ?
+                {
+                    sphere.Operation    = forceOperation ??
+                                          ((height < 0 && modelBeneathCursor) ?
                                             CSGOperationType.Subtractive :
                                             CSGOperationType.Additive);
-
-                        sphere.DiameterXYZ = new Vector3(bounds.size[(int)Axis.X], Math.Abs(height), bounds.size[(int)Axis.Z]);
-                        break;
-                    }
+                    sphere.DiameterXYZ  = bounds.size;
+                    break;
+                }
 
                 case BoxExtrusionState.Commit:
-                    {
-                        UnityEditor.Selection.activeGameObject = sphere.gameObject;
-                        Reset();
-                        CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
-                        break;
-                    }
+                {
+                    UnityEditor.Selection.activeGameObject = sphere.gameObject;
+                    CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
+                    Reset();
+                    break;
+                }
+
                 case BoxExtrusionState.Cancel:
-                    {
-                        if (sphere)
-                            UnityEngine.Object.DestroyImmediate(sphere.gameObject);
-                        Reset();
-                        break;
-                    }
+                {
+                    Reset();
+                    Undo.RevertAllInCurrentGroup();
+                    EditorGUIUtility.ExitGUI();
+                    break;
+                }
 
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode: { CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode: { CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
 
-            // Todo make a RenderSphere method
-            var offsetBounds = bounds;
-            var yOffset = height > 0 ? bounds.center.y - bounds.extents.y : bounds.center.y + bounds.extents.y;
-            offsetBounds.center = new Vector3(bounds.center.x, yOffset, bounds.center.z);
-            HandleRendering.RenderCylinder(transformation, offsetBounds, 10);
+            // TODO: Make a RenderSphere method
+            HandleRendering.RenderCylinder(transformation, bounds, horizontalSegments);
         }
     }
 }

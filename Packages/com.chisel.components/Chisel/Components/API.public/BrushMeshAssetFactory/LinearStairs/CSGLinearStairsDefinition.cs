@@ -97,13 +97,13 @@ namespace Chisel.Components
             {
                 const float kSmudgeValue = 0.0001f;
                 return Mathf.Max(1,
-                          Mathf.FloorToInt((height - plateauHeight + kSmudgeValue) / stepHeight));
+                          Mathf.FloorToInt((Mathf.Abs(height) - plateauHeight + kSmudgeValue) / stepHeight));
             }
         }
 
         public float StepDepthOffset
         {
-            get { return Mathf.Max(0, depth - (StepCount * stepDepth)); }
+            get { return Mathf.Max(0, Mathf.Abs(depth) - (StepCount * stepDepth)); }
         }
 
         public void Reset()
@@ -180,30 +180,29 @@ namespace Chisel.Components
 
 
             stepHeight		= Mathf.Max(kMinStepHeight, stepHeight);
-            stepDepth		= Mathf.Clamp(stepDepth, kMinStepDepth, depth);			
+            stepDepth		= Mathf.Clamp(stepDepth, kMinStepDepth, Mathf.Abs(depth));
             treadHeight		= Mathf.Max(0, treadHeight);
             nosingDepth		= Mathf.Max(0, nosingDepth);
             nosingWidth		= Mathf.Max(0, nosingWidth);
 
-            width			= Mathf.Max(kMinWidth,  width);
-            height			= Mathf.Max(stepHeight, height);
-            depth			= Mathf.Max(stepDepth,  depth);
+            width			= Mathf.Max(kMinWidth, Mathf.Abs(width)) * (width < 0 ? -1 : 1);
+            depth			= Mathf.Max(stepDepth, Mathf.Abs(depth)) * (depth < 0 ? -1 : 1);
 
             riserDepth		= Mathf.Max(kMinRiserDepth, riserDepth);
             sideDepth		= Mathf.Max(0, sideDepth);
             sideWidth		= Mathf.Max(kMinSideWidth, sideWidth);
             sideHeight		= Mathf.Max(0, sideHeight);
-            
-            var maxPlateauHeight = height - stepHeight;
+
+            var absHeight        = Mathf.Max(stepHeight, Mathf.Abs(height));
+            var maxPlateauHeight = absHeight - stepHeight;
 
             plateauHeight		= Mathf.Clamp(plateauHeight, 0, maxPlateauHeight);
 
-            var totalSteps		= Mathf.Max(1, Mathf.FloorToInt((height - plateauHeight) / stepHeight));
+            var totalSteps		= Mathf.Max(1, Mathf.FloorToInt((absHeight - plateauHeight) / stepHeight));
             var totalStepHeight = totalSteps * stepHeight;
 
-            plateauHeight		= Mathf.Max(0, height - totalStepHeight);
-
-            stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, depth / totalSteps);
+            plateauHeight		= Mathf.Max(0, absHeight - totalStepHeight);
+            stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, Mathf.Abs(depth) / totalSteps);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Vector2 = UnityEngine.Vector2;
@@ -22,7 +22,7 @@ namespace Chisel.Components
         //	capsule with top OR bottom set to 0 height
         //	capsule with both top AND bottom set to 0 height
         //	capsule with height equal to top and bottom height
-        public static bool GenerateCapsuleVertices(CSGCapsuleDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateCapsuleVertices(ref CSGCapsuleDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             var haveTopHemisphere		= definition.haveRoundedTop;
@@ -40,9 +40,6 @@ namespace Chisel.Components
             var cylinderHeight		= definition.cylinderHeight;
             
             var sides				= definition.sides;
-            //var topSegments			= haveTopHemisphere    ? definition.topSegments    : 0;
-            //var bottomSegments		= haveBottomHemisphere ? definition.bottomSegments : 0;
-            
             
             var extraVertices		= definition.extraVertexCount;
 
@@ -55,14 +52,14 @@ namespace Chisel.Components
             var topVertex			= definition.topVertex;
 
             var topOffset			= definition.topOffset;
-            var bottomOffset		= definition.bottomOffset - bottomHeight;
+            var bottomOffset		= definition.bottomOffset;
             
             if (vertices == null ||
                 vertices.Length != vertexCount)
                 vertices = new Vector3[vertexCount];
 
-            if (haveBottomHemisphere	) vertices[bottomVertex] = Vector3.up * 0;				// bottom
-            if (haveTopHemisphere		) vertices[topVertex   ] = Vector3.up * totalHeight;	// top
+            if (haveBottomHemisphere) vertices[bottomVertex] = Vector3.up * (bottomOffset - bottomHeight); // bottom
+            if (haveTopHemisphere   ) vertices[topVertex   ] = Vector3.up * (topOffset    + topHeight   ); // top
 
             var degreePerSegment	= (360.0f / sides) * Mathf.Deg2Rad;
             var angleOffset			= definition.rotation + (((sides & 1) == 1) ? 0.0f : 0.5f * degreePerSegment);
@@ -101,7 +98,7 @@ namespace Chisel.Components
                 for (int h = 0; h < sides; h++, vertexIndex++)
                 {
                     vertices[vertexIndex] = new Vector3(vertices[h + unitCircleOffset].x,  
-                                                        bottomOffset + bottomHeight, 
+                                                        bottomOffset, 
                                                         vertices[h + unitCircleOffset].z);
                 }
             }
@@ -109,7 +106,7 @@ namespace Chisel.Components
             {
                 var segmentFactor	= ((v - (bottomRings * 0.5f)) / bottomRings) + 0.5f;	// [0.0f ... 1.0f]
                 var segmentDegree	= (segmentFactor * 90);									// [0 .. 90]
-                var segmentHeight	= bottomOffset + 
+                var segmentHeight	= bottomOffset - bottomHeight + 
                                         ((1-Mathf.Sin(segmentDegree * Mathf.Deg2Rad)) * 
                                             bottomHeight);
                 var segmentRadius	= Mathf.Cos(segmentDegree * Mathf.Deg2Rad);				// [0 .. 0.707 .. 1 .. 0.707 .. 0]
@@ -129,10 +126,10 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateCapsuleAsset(CSGBrushMeshAsset brushMeshAsset, CSGCapsuleDefinition definition)
+        public static bool GenerateCapsuleAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGCapsuleDefinition definition)
         {
             Vector3[] vertices = null;
-            if (!GenerateCapsuleVertices(definition, ref vertices))
+            if (!GenerateCapsuleVertices(ref definition, ref vertices))
             {
                 brushMeshAsset.Clear();
                 return false;

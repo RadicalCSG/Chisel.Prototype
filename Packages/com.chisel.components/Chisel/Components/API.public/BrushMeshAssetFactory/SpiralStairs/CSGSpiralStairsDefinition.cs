@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
+using Chisel.Core;
+using Chisel.Assets;
 using UnitySceneExtensions;
 
 namespace Chisel.Components
@@ -64,28 +66,31 @@ namespace Chisel.Components
         
         [DistanceValue] public Vector3  origin;
         [DistanceValue] public float	height;
-        [DistanceValue] public float	outerDiameter;
-        [DistanceValue] public float	innerDiameter;
-        [DistanceValue] public float	stepHeight;
-        [DistanceValue] public float	treadHeight;
-        [DistanceValue] public float	nosingDepth;
-        [DistanceValue] public float	nosingWidth;
-        [DistanceValue] public float	riserDepth;
-        [AngleValue   ] public float	startAngle;
-        [AngleValue   ] public float	rotation; // can be >360 degrees
-        public int						innerSegments;
-        public int						outerSegments;
-        public StairsRiserType			riserType;
+        [DistanceValue] public float    outerDiameter;
+        [DistanceValue] public float    innerDiameter;
+        [DistanceValue] public float    stepHeight;
+        [DistanceValue] public float    treadHeight;
+        [DistanceValue] public float    nosingDepth;
+        [DistanceValue] public float    nosingWidth;
+        [DistanceValue] public float    riserDepth;
+        [AngleValue   ] public float    startAngle;
+        [AngleValue   ] public float    rotation; // can be >360 degrees
+        public int					    innerSegments;
+        public int					    outerSegments;
+        public StairsRiserType		    riserType;
 
-        public uint						bottomSmoothingGroup;
-                
+        public uint					    bottomSmoothingGroup;
+
+        public CSGSurfaceAsset[]        surfaceAssets;
+        public SurfaceDescription[]     surfaceDescriptions;
+
         public int StepCount
         {
             get
             {
                 const float kSmudgeValue = 0.0001f;
                 return Mathf.Max(1,
-                          Mathf.FloorToInt((height + kSmudgeValue) / stepHeight));
+                          Mathf.FloorToInt((Mathf.Abs(height) + kSmudgeValue) / stepHeight));
             }
         }
         
@@ -99,28 +104,30 @@ namespace Chisel.Components
 
         public void Reset()
         {
-            origin			= Vector3.zero;
+            origin		    = Vector3.zero;
 
-            stepHeight		= kDefaultStepHeight;
+            stepHeight	    = kDefaultStepHeight;
         
-            treadHeight		= kDefaultTreadHeight;
-            nosingDepth		= kDefaultNosingDepth;
-            nosingWidth		= kDefaultNosingWidth;
+            treadHeight     = kDefaultTreadHeight;
+            nosingDepth	    = kDefaultNosingDepth;
+            nosingWidth	    = kDefaultNosingWidth;
                     
-            innerDiameter		= kDefaultInnerDiameter;
-            outerDiameter		= kDefaultOuterDiameter;
-            height			= kDefaultHeight;
+            innerDiameter   = kDefaultInnerDiameter;
+            outerDiameter   = kDefaultOuterDiameter;
+            height		    = kDefaultHeight;
 
-            startAngle		= kDefaultStartAngle;
-            rotation		= kDefaultRotation;
+            startAngle	    = kDefaultStartAngle;
+            rotation	    = kDefaultRotation;
             
-            innerSegments	= kDefaultInnerSegments;
-            outerSegments	= kDefaultOuterSegments;
+            innerSegments   = kDefaultInnerSegments;
+            outerSegments   = kDefaultOuterSegments;
 
-            riserType		= StairsRiserType.ThickRiser;
-            riserDepth		= kDefaultRiserDepth;
+            riserType	    = StairsRiserType.ThickRiser;
+            riserDepth	    = kDefaultRiserDepth;
 
-            bottomSmoothingGroup = 0;
+            bottomSmoothingGroup    = 0;
+            surfaceAssets           = null;
+            surfaceDescriptions     = null;
         }
 
         public void Validate()
@@ -131,7 +138,7 @@ namespace Chisel.Components
             innerDiameter	= Mathf.Max(kMinInnerDiameter,  innerDiameter);
             outerDiameter	= Mathf.Max(innerDiameter + kMinStairsDepth,  outerDiameter);
             outerDiameter	= Mathf.Max(kMinOuterDiameter,  outerDiameter);
-            height			= Mathf.Max(stepHeight, height);
+            height			= Mathf.Max(stepHeight, Mathf.Abs(height)) * (height < 0 ? -1 : 1);
             treadHeight		= Mathf.Max(0, treadHeight);
             nosingDepth		= Mathf.Max(0, nosingDepth);
             nosingWidth		= Mathf.Max(0, nosingWidth);
@@ -142,6 +149,33 @@ namespace Chisel.Components
 
             innerSegments	= Mathf.Max(kMinSegments, innerSegments);
             outerSegments	= Mathf.Max(kMinSegments, outerSegments);
+            
+            if (surfaceAssets == null ||
+                surfaceAssets.Length != 6)
+            {
+                var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
+                var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
+                surfaceAssets = new CSGSurfaceAsset[6];
+                for (int i = 0; i < 6; i++) // Note: sides share same material
+                    surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+            }
+
+            if (surfaceDescriptions == null ||
+                surfaceDescriptions.Length != 6)
+            {
+                var surfaceFlags = CSGDefaults.SurfaceFlags;
+                surfaceDescriptions = new SurfaceDescription[6];
+                for (int i = 0; i < 6; i++)
+                {
+                    surfaceDescriptions[i] = new SurfaceDescription { surfaceFlags = surfaceFlags, UV0 = UVMatrix.centered, smoothingGroup = bottomSmoothingGroup };
+                }
+            } else
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    surfaceDescriptions[i].smoothingGroup = bottomSmoothingGroup;
+                }
+            }
         }
     }
 }
