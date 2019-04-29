@@ -50,8 +50,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(verticalSegmentsProp);
         }
         
-        protected override void OnSceneInit(CSGSphere generator) {}
-        
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;

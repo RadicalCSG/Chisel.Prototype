@@ -95,11 +95,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(totalAngleProp);
         }
 
-        
-        
-        protected override void OnSceneInit(CSGTorus generator) { }
-
-        
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;

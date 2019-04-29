@@ -148,14 +148,12 @@ namespace Chisel.Editors
             {
                 if (!GUILayout.Button(convertToBrushesContent))
                     return;
-            }
-            else
+            } else
             if (singular)
             {
                 if (!GUILayout.Button(convertToBrushContent, GUILayout.ExpandHeight(true)))
                     return;
-            }
-            else
+            } else
                 return;
 
             bool modified = false;
@@ -262,12 +260,15 @@ namespace Chisel.Editors
         protected abstract void InitInspector();
 
         protected abstract void OnInspector();
-        protected virtual void OnSceneInit(T generator) { }
+        protected virtual void OnGeneratorSelected(T generator) { }
+        protected virtual void OnGeneratorDeselected(T generator) { }
         protected abstract void OnScene(T generator);
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
         void OnDisable() { Reset(); }
+
+        private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
 
         void OnEnable()
         {
@@ -278,6 +279,28 @@ namespace Chisel.Editors
             }
 
             operationProp = serializedObject.FindProperty("operation");
+
+            foreach (var target in targets)
+            {
+                if (knownTargets.Add(target))
+                    OnGeneratorSelected(target as T);
+            }
+            if (targets.Length != knownTargets.Count)
+            {
+                var removeTargets = new HashSet<T>();
+                foreach (var knownTarget in knownTargets)
+                {
+                    if (targets.Contains(knownTarget))
+                    {
+                        var removeTarget = target as T;
+                        OnGeneratorDeselected(removeTarget);
+                        removeTargets.Add(removeTarget);
+                    }
+                }
+                foreach (var removeTarget in removeTargets)
+                    knownTargets.Remove(removeTarget);
+            }
+
             InitInspector();
         }
 
@@ -292,7 +315,7 @@ namespace Chisel.Editors
                 {
                     GUILayout.BeginHorizontal();
                     ShowOperationChoicesInternal(operationProp);
-                    ConvertIntoBrushesButton(serializedObject);
+                    if (typeof(T) != typeof(CSGBrush)) ConvertIntoBrushesButton(serializedObject);
                     GUILayout.EndHorizontal();
 
                     OnInspector();
@@ -316,8 +339,6 @@ namespace Chisel.Editors
                 var generator = target as T;
                 if (!generator.isActiveAndEnabled)
                     return;
-
-                OnSceneInit(generator);
 
                 var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
                 var brush = generator.TopNode;

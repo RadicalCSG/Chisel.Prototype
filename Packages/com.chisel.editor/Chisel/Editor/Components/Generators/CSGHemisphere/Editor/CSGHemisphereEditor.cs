@@ -50,8 +50,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(horizontalSegmentsProp);
             EditorGUILayout.PropertyField(verticalSegmentsProp);
         }
-        
-        protected override void OnSceneInit(CSGHemisphere generator) {}
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

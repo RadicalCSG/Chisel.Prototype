@@ -160,15 +160,6 @@ namespace Chisel.Editors
             }
         }
 
-
-
-        //Bounds originalBounds;
-
-        protected override void OnSceneInit(CSGPathedStairs generator)
-        {
-            //originalBounds = generator.Bounds;
-        }
-
         public static bool Intersect(Vector2 p1, Vector2 d1, 
                                      Vector2 p2, Vector2 d2, out Vector2 intersection)
         {

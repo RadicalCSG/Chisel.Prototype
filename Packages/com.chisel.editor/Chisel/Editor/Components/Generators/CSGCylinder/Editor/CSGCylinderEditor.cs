@@ -494,7 +494,7 @@ namespace Chisel.Editors
         static CylinderHandle cylinderHandle = new CylinderHandle();
 
         // TODO: prevent "outer" outlines from being rendered
-        protected override void OnSceneInit(CSGCylinder generator)
+        protected override void OnGeneratorSelected(CSGCylinder generator)
         {
             cylinderHandle.Init(generator);
         }

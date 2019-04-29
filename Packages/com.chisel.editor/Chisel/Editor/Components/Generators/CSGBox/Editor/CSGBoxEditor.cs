@@ -126,19 +126,13 @@ namespace Chisel.Editors
                 EditorGUI.indentLevel--;
             }
         }
-
-        Bounds originalBounds;
-        
-        protected override void OnSceneInit(CSGBox generator)
-        {
-            originalBounds = generator.Bounds;
-        }
         
         protected override void OnScene(CSGBox generator)
         {
             EditorGUI.BeginChangeCheck();
 
-            var newBounds = UnitySceneExtensions.SceneHandles.BoundsHandle(originalBounds, Quaternion.identity);
+            var newBounds = generator.Bounds;
+            newBounds = UnitySceneExtensions.SceneHandles.BoundsHandle(newBounds, Quaternion.identity);
             
             if (EditorGUI.EndChangeCheck())
             {

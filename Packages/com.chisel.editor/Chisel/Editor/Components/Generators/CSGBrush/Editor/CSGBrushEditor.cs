@@ -16,70 +16,49 @@ namespace Chisel.Editors
 
     [CustomEditor(typeof(CSGBrush))]
     [CanEditMultipleObjects]
-    public sealed class CSGBrushEditor : ChiselNodeEditor<CSGBrush>
+    public sealed class CSGBrushEditor : ChiselGeneratorEditor<CSGBrush>
     {
-        SerializedProperty operationProp;
         SerializedProperty brushMeshAssetProp;
 
-        internal void OnEnable()
+        protected override void ResetInspector()
         {
-            if (!target)
-            {
-                operationProp = null;
-                brushMeshAssetProp = null;
-                return;
-            }
-            // Fetch the objects from the GameObject script to display in the inspector
-            operationProp		= serializedObject.FindProperty("operation");
-            brushMeshAssetProp	= serializedObject.FindProperty("brushMeshAsset");
-        }
-
-        internal void OnDisable()
-        {
-            operationProp = null;
             brushMeshAssetProp = null;
         }
 
-
-        public override void OnInspectorGUI()
+        protected override void InitInspector()
         {
-            base.OnInspectorGUI();
-            try
+            brushMeshAssetProp	= serializedObject.FindProperty("brushMeshAsset");
+        }
+        
+        protected override void OnInspector()
+        {
+            EditorGUI.BeginChangeCheck();
             {
-                EditorGUI.BeginChangeCheck();
-                {
-                    ShowOperationChoices(operationProp);
-                    EditorGUILayout.PropertyField(brushMeshAssetProp);
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serializedObject.ApplyModifiedProperties();
-                }
+                EditorGUILayout.PropertyField(brushMeshAssetProp);
             }
-            catch (ExitGUIException) { }
-            catch (Exception ex) { Debug.LogException(ex); }
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+            }
         }
 
-        public void OnSceneGUI()
+        protected override void OnScene(CSGBrush generator)
         {
-            if (!target || CSGEditModeManager.EditMode != CSGEditMode.ShapeEdit)
-                return;
-
-            var targetBrush				= target as CSGBrush;
-            var targetBrushMeshAsset	= targetBrush.BrushMeshAsset;
+            var targetBrushMeshAsset	= generator.BrushMeshAsset;
             if (!targetBrushMeshAsset)
                 return;
             
             EditorGUI.BeginChangeCheck();
 
-            var modelMatrix		= CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(targetBrush.hierarchyItem.Transform);
+            var modelMatrix		= CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             var vertices		= targetBrushMeshAsset.Vertices;
             var halfEdges		= targetBrushMeshAsset.HalfEdges;
 
             //HashSet<CSGTreeBrush> foundBrushes = new HashSet<CSGTreeBrush>();
             //targetBrush.GetAllTreeBrushes(foundBrushes, false)
-            foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)targetBrush.TopNode))
+            //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
             {
+                var brush = (CSGTreeBrush)generator.TopNode;
                 var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
                 for (int e = 0; e < halfEdges.Length; e++)
                 {
@@ -88,7 +67,7 @@ namespace Chisel.Editors
 
                     var from	= vertices[vertexIndex1];
                     var to		= vertices[vertexIndex2];
-                    CSGOutlineRenderer.DrawLine(transformation, from, to, UnityEditor.Handles.yAxisColor, thickness: 2.5f);
+                    CSGOutlineRenderer.DrawLine(transformation, from, to, UnityEditor.Handles.yAxisColor, thickness: 1.0f);
                 }
             }
 

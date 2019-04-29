@@ -70,10 +70,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(bottomSidesProp);
         }
 
-
-
-        protected override void OnSceneInit(CSGStadium generator) { }
-
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kSideLineThickness			= 1.0f;

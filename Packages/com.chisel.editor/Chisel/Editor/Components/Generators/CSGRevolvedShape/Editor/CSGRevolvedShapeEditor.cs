@@ -64,8 +64,6 @@ namespace Chisel.Editors
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        protected override void OnSceneInit(CSGRevolvedShape generator) { }
-
         protected override void OnScene(CSGRevolvedShape generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
