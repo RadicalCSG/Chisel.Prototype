@@ -6,7 +6,7 @@ namespace Chisel.Core
 {
     partial struct CSGTree
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         private static bool	    GenerateTree(Int32 userID, out Int32 generatedTreeNodeID)
         {
             return CSGManager.GenerateTree(userID, out generatedTreeNodeID);

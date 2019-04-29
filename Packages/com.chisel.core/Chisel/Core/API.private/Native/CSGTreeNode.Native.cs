@@ -6,7 +6,7 @@ namespace Chisel.Core
 {
     partial struct CSGTreeNode
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] internal static extern bool	ClearDirty(Int32 nodeID);
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] internal static extern bool	IsNodeDirty(Int32 nodeID);
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] internal static extern bool	SetDirty(Int32 nodeID);

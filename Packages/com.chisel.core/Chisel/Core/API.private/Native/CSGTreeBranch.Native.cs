@@ -5,7 +5,7 @@ namespace Chisel.Core
 {
     partial struct CSGTreeBranch
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool	GenerateBranch(Int32 userID, out Int32 generatedBranchNodeID);
 #endif
     }

@@ -9,7 +9,7 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMesh
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         private static void ConvertTo(Mesh mesh, BrushMesh[] brushMeshes)
         {
             var totalVertices	= new List<Vector3>();
