@@ -17,7 +17,7 @@ namespace Chisel.Editors
         static readonly GUIContent DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
 
         public virtual Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
-        public virtual bool HasFrameBounds() { if (targets == null) return false; return true; }
+        public virtual bool HasFrameBounds() { if (!target) return false; return true; }
 
         public static Bounds CalculateBounds(UnityEngine.Object[] targets)
         {
@@ -258,9 +258,6 @@ namespace Chisel.Editors
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : CSGGeneratorComponent
     {
-        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
-        public override bool HasFrameBounds() { return true; }
-
         protected abstract void ResetInspector();
         protected abstract void InitInspector();
 

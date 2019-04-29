@@ -53,9 +53,6 @@ namespace Chisel.Editors
             operationProp = null;
             passThroughProp = null;
         }
-
-        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
-        public override bool HasFrameBounds() { if (targets == null) return false; return true; }
         
         public override void OnInspectorGUI()
         {

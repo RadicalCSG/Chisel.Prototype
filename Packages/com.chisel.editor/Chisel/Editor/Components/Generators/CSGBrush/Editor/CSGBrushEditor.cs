@@ -40,9 +40,6 @@ namespace Chisel.Editors
             brushMeshAssetProp = null;
         }
 
-        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
-        public override bool HasFrameBounds() { return true; }
-
 
         public override void OnInspectorGUI()
         {

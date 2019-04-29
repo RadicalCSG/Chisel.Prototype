@@ -262,9 +262,6 @@ namespace Chisel.Editors
                     modelTarget.OnInitialize();
             }
         }
-        
-        public override Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
-        public override bool HasFrameBounds() { return true; }
 
 
         bool IsPrefabAsset
