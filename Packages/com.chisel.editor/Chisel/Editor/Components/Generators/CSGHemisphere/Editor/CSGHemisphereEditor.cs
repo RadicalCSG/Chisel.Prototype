@@ -121,6 +121,9 @@ namespace Chisel.Editors
             var topPoint	= normal * generator.DiameterXYZ.y;
             var radius2D	= new Vector2(generator.definition.diameterXYZ.x, generator.definition.diameterXYZ.z) * 0.5f;
 
+            if (generator.DiameterXYZ.y < 0)
+                normal = -normal;
+
             EditorGUI.BeginChangeCheck();
             {
                 UnityEditor.Handles.color = baseColor;

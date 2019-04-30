@@ -60,19 +60,23 @@ namespace Chisel.Editors
         static readonly CSGEditModeItem[] generatorModes = new[]
         {
             new CSGEditModeItem(CSGEditMode.FreeDraw,		new GUIContent("FreeDraw")),
-            // new CSGEditModeItem(CSGEditMode.RevolvedShape,	new GUIContent("Revolved Shape")),
 
             new CSGEditModeItem(CSGEditMode.Box,			new GUIContent("Box")),
             new CSGEditModeItem(CSGEditMode.Cylinder,		new GUIContent("Cylinder")),
-            // new CSGEditModeItem(CSGEditMode.Torus,          new GUIContent("Torus")),
-            // new CSGEditModeItem(CSGEditMode.Hemisphere,		new GUIContent("Hemisphere")),
-            // new CSGEditModeItem(CSGEditMode.Sphere,			new GUIContent("Sphere")),
-            // new CSGEditModeItem(CSGEditMode.Capsule,        new GUIContent("Capsule")),
-            // new CSGEditModeItem(CSGEditMode.Stadium,        new GUIContent("Stadium")),
 
-            // new CSGEditModeItem(CSGEditMode.PathedStairs,   new GUIContent("Pathed Stairs")),
-            // new CSGEditModeItem(CSGEditMode.LinearStairs,	new GUIContent("Linear Stairs")),
-            // new CSGEditModeItem(CSGEditMode.SpiralStairs,   new GUIContent("Spiral Stairs"))
+            new CSGEditModeItem(CSGEditMode.Capsule,        new GUIContent("Capsule")),
+            new CSGEditModeItem(CSGEditMode.Hemisphere,     new GUIContent("Hemisphere")),
+            new CSGEditModeItem(CSGEditMode.Sphere,         new GUIContent("Sphere")),
+
+//          new CSGEditModeItem(CSGEditMode.Torus,          new GUIContent("Torus")),
+//          new CSGEditModeItem(CSGEditMode.Stadium,        new GUIContent("Stadium")),
+
+//          new CSGEditModeItem(CSGEditMode.RevolvedShape,   new GUIContent("Revolved Shape")),
+
+ //         new CSGEditModeItem(CSGEditMode.PathedStairs,   new GUIContent("Pathed Stairs")),
+
+            new CSGEditModeItem(CSGEditMode.LinearStairs,   new GUIContent("Linear Stairs")),
+            new CSGEditModeItem(CSGEditMode.SpiralStairs,   new GUIContent("Spiral Stairs"))
         };
 
 
@@ -198,10 +202,10 @@ namespace Chisel.Editors
 
         static CSGBoxGeneratorMode				BoxGeneratorMode			= new CSGBoxGeneratorMode();
         static CSGCylinderGeneratorMode			CylinderGeneratorMode		= new CSGCylinderGeneratorMode();
-        static CSGTorusGeneratorMode			TorusGeneratorMode			= new CSGTorusGeneratorMode();
         static CSGHemisphereGeneratorMode       HemisphereGeneratorMode     = new CSGHemisphereGeneratorMode();
         static CSGSphereGeneratorMode           SphereGeneratorMode         = new CSGSphereGeneratorMode();
         static CSGCapsuleGeneratorMode          CapsuleGeneratorMode        = new CSGCapsuleGeneratorMode();
+        static CSGTorusGeneratorMode			TorusGeneratorMode			= new CSGTorusGeneratorMode();
         static CSGStadiumGeneratorMode          StadiumGeneratorMode        = new CSGStadiumGeneratorMode();
 
         static CSGPathedStairsGeneratorMode     PathedStairsGeneratorMode   = new CSGPathedStairsGeneratorMode();
@@ -237,12 +241,12 @@ namespace Chisel.Editors
                 case CSGEditMode.RevolvedShape:	currentToolMode = RevolvedShapeGeneratorMode; break;
                 
                 case CSGEditMode.Box:			currentToolMode = BoxGeneratorMode; break;
+                case CSGEditMode.Stadium:		currentToolMode = StadiumGeneratorMode; break;
                 case CSGEditMode.Cylinder:		currentToolMode = CylinderGeneratorMode; break;
-                case CSGEditMode.Torus:			currentToolMode = TorusGeneratorMode; break;
                 case CSGEditMode.Hemisphere:	currentToolMode = HemisphereGeneratorMode; break;
                 case CSGEditMode.Sphere:		currentToolMode = SphereGeneratorMode; break;
                 case CSGEditMode.Capsule:		currentToolMode = CapsuleGeneratorMode; break;
-                case CSGEditMode.Stadium:		currentToolMode = StadiumGeneratorMode; break;
+                case CSGEditMode.Torus:			currentToolMode = TorusGeneratorMode; break;
                 
                 case CSGEditMode.PathedStairs:	currentToolMode = PathedStairsGeneratorMode; break;
                 case CSGEditMode.LinearStairs:	currentToolMode = LinearStairsGeneratorMode; break;

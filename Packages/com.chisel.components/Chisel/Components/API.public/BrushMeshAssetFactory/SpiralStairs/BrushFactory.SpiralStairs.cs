@@ -21,9 +21,16 @@ namespace Chisel.Components
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
 
+        public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition)
+        {
+            return GenerateSpiralStairsAsset(brushMeshAsset, ref definition, definition.surfaceAssets, ref definition.surfaceDescriptions);
+        }
+
         public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition, CSGSurfaceAsset[] surfaceAssets, ref SurfaceDescription[] surfaceDescriptions)
         {
-            if (surfaceAssets.Length != 6 ||
+            if (surfaceAssets == null ||
+                surfaceDescriptions == null ||
+                surfaceAssets.Length != 6 ||
                 surfaceDescriptions.Length != 6)
             {
                 brushMeshAsset.Clear();
@@ -51,13 +58,13 @@ namespace Chisel.Components
             }
             
 
-            var ctr				= definition.origin;
+            var origin		    = definition.origin;
 
-            var startAngle		= definition.startAngle * Mathf.Deg2Rad;
-            var anglePerStep	= definition.AnglePerStep * Mathf.Deg2Rad;
+            var startAngle	    = definition.startAngle   * Mathf.Deg2Rad;
+            var anglePerStep    = definition.AnglePerStep * Mathf.Deg2Rad;
 
-            var nosingWidth		= definition.nosingWidth;
-            var outerDiameter	= definition.outerDiameter;
+            var nosingWidth	    = definition.nosingWidth;
+            var outerDiameter   = definition.outerDiameter;
 
             var p0 = new Vector2(Mathf.Sin(0                  ), Mathf.Cos(0                  ));
             var p1 = new Vector2(Mathf.Sin(anglePerStep       ), Mathf.Cos(anglePerStep       ));
@@ -70,6 +77,12 @@ namespace Chisel.Components
             var stepHeight				= definition.stepHeight;
             var height					= definition.height;
             var stepCount				= definition.StepCount;
+
+            if (height < 0)
+            {
+                origin.y += height;
+                height = -height;
+            }
 
             // TODO: expose this to user
             var smoothSubDivisions		= 3;
@@ -100,8 +113,8 @@ namespace Chisel.Components
             {
                 if (riserType == StairsRiserType.ThinRiser)
                 {
-                    var minY = ctr.y;
-                    var maxY = ctr.y + stepHeight - treadHeight;
+                    var minY = origin.y;
+                    var maxY = origin.y + stepHeight - treadHeight;
                     Vector2 o0, o1;
                     float angle = startAngle;
                     var c1 = Mathf.Sin(angle) * stepOuterRadius;
@@ -114,8 +127,8 @@ namespace Chisel.Components
                         c1 = Mathf.Sin(angle) * stepOuterRadius;
                         s1 = Mathf.Cos(angle) * stepOuterRadius;
 
-                        o0 = new Vector2(ctr.x + c0, ctr.z + s0);
-                        o1 = new Vector2(ctr.x     , ctr.z     );
+                        o0 = new Vector2(origin.x + c0, origin.z + s0);
+                        o1 = new Vector2(origin.x     , origin.z     );
 
                         var riserVector = (new Vector2((c0 - c1), (s0 - s1)).normalized) * riserDepth;
 
@@ -152,9 +165,9 @@ namespace Chisel.Components
                 if (riserType == StairsRiserType.Smooth)
                 {
                     //var stepY = stepHeight;
-                    var minY  = ctr.y;
-                    var maxY  = ctr.y + stepHeight - treadHeight;
-                    var maxY2 = ctr.y + (stepHeight * 2) - treadHeight;
+                    var minY  = origin.y;
+                    var maxY  = origin.y + stepHeight - treadHeight;
+                    var maxY2 = origin.y + (stepHeight * 2) - treadHeight;
                     float angle = startAngle;
                     var c1 = Mathf.Sin(angle);
                     var s1 = Mathf.Cos(angle);
@@ -177,8 +190,8 @@ namespace Chisel.Components
                         var s0o = s0 * stepOuterRadius;
                         var s1o = s1 * stepOuterRadius;
                         
-                        var o0 = new Vector2(ctr.x + c0o, ctr.z + s0o);
-                        var o1 = new Vector2(ctr.x + c1o, ctr.z + s1o);
+                        var o0 = new Vector2(origin.x + c0o, origin.z + s0o);
+                        var o1 = new Vector2(origin.x + c1o, origin.z + s1o);
 
                         var i0 = o0;
                         var i1 = o1;
@@ -200,8 +213,8 @@ namespace Chisel.Components
                             var s0i = s0 * stepMidRadius;
                             var s1i = s1 * stepMidRadius;
 
-                            i0 = new Vector2(ctr.x + c0i, ctr.z + s0i);
-                            i1 = new Vector2(ctr.x + c1i, ctr.z + s1i);
+                            i0 = new Vector2(origin.x + c0i, origin.z + s0i);
+                            i1 = new Vector2(origin.x + c1i, origin.z + s1i);
 
                             {
                                 var vertices = new[] {
@@ -256,7 +269,7 @@ namespace Chisel.Components
                                                     new Vector3(  i1.x, maxY,  i1.y), // 2
                                                     new Vector3(  i0.x, minY,  i0.y), // 1
 
-                                                    new Vector3( ctr.x, minY, ctr.y), // 3
+                                                    new Vector3( origin.x, minY, origin.y), // 3
                                                 };
                             
                             if (i == 0)
@@ -275,9 +288,9 @@ namespace Chisel.Components
                             var vertices = new[] {
                                                     new Vector3(  i1.x, maxY,  i1.y), // 2
                                                     new Vector3(  i0.x, maxY,  i0.y), // 0
-                                                    new Vector3( ctr.x, maxY, ctr.y), // 1
+                                                    new Vector3( origin.x, maxY, origin.y), // 1
 
-                                                    new Vector3( ctr.x, minY, ctr.y), // 3
+                                                    new Vector3( origin.x, minY, origin.y), // 3
                                                 };
                             
                             if (i == 0)
@@ -301,8 +314,8 @@ namespace Chisel.Components
                     }
                 } else
                 {
-                    var minY = ctr.y;
-                    var maxY = ctr.y + stepHeight - treadHeight;
+                    var minY = origin.y;
+                    var maxY = origin.y + stepHeight - treadHeight;
                     Vector2 o0, o1;
                     float angle = startAngle;
                     var c1 = Mathf.Sin(angle) * stepOuterRadius;
@@ -315,14 +328,14 @@ namespace Chisel.Components
                         c1 = Mathf.Sin(angle) * stepOuterRadius;
                         s1 = Mathf.Cos(angle) * stepOuterRadius;
 
-                        o0 = new Vector2(ctr.x + c0, ctr.z + s0);
-                        o1 = new Vector2(ctr.x + c1, ctr.z + s1);
+                        o0 = new Vector2(origin.x + c0, origin.z + s0);
+                        o1 = new Vector2(origin.x + c1, origin.z + s1);
                         var vertices = new[] {
-                                                new Vector3( ctr.x, maxY, ctr.z), // 0
+                                                new Vector3( origin.x, maxY, origin.z), // 0
                                                 new Vector3(  o1.x, maxY,  o1.y), // 1
                                                 new Vector3(  o0.x, maxY,  o0.y), // 2  
 
-                                                new Vector3( ctr.x, minY, ctr.z), // 3
+                                                new Vector3( origin.x, minY, origin.z), // 3
                                                 new Vector3(  o1.x, minY,  o1.y), // 4
                                                 new Vector3(  o0.x, minY,  o0.y), // 5
                                             };
@@ -352,7 +365,7 @@ namespace Chisel.Components
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < outerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter, ctr.y, ctr.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
                     subMeshes[subMeshIndex].Operation = CSGOperationType.Intersecting;
                 }
 
@@ -365,7 +378,7 @@ namespace Chisel.Components
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < innerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter, ctr.y, ctr.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
                     subMeshes[subMeshIndex].Operation = CSGOperationType.Subtractive;
                 }
 
@@ -373,8 +386,8 @@ namespace Chisel.Components
 
             if (haveTread)
             {
-                var minY = ctr.y + stepHeight - treadHeight;
-                var maxY = ctr.y + stepHeight;
+                var minY = origin.y + stepHeight - treadHeight;
+                var maxY = origin.y + stepHeight;
                 Vector2 i0, i1, o0, o1;
                 float angle = startAngle;
                 var c1 = Mathf.Sin(angle);
@@ -388,10 +401,10 @@ namespace Chisel.Components
                     c1 = Mathf.Sin(angle);
                     s1 = Mathf.Cos(angle);
 
-                    i0 = new Vector2(ctr.x + (c0 * (stepInnerRadius              )), ctr.z + (s0 * (stepInnerRadius              )));
-                    i1 = new Vector2(ctr.x + (c1 * (stepInnerRadius              )), ctr.z + (s1 * (stepInnerRadius              )));
-                    o0 = new Vector2(ctr.x + (c0 * (stepOuterRadius + nosingWidth)), ctr.z + (s0 * (stepOuterRadius + nosingWidth)));
-                    o1 = new Vector2(ctr.x + (c1 * (stepOuterRadius + nosingWidth)), ctr.z + (s1 * (stepOuterRadius + nosingWidth)));
+                    i0 = new Vector2(origin.x + (c0 * (stepInnerRadius              )), origin.z + (s0 * (stepInnerRadius              )));
+                    i1 = new Vector2(origin.x + (c1 * (stepInnerRadius              )), origin.z + (s1 * (stepInnerRadius              )));
+                    o0 = new Vector2(origin.x + (c0 * (stepOuterRadius + nosingWidth)), origin.z + (s0 * (stepOuterRadius + nosingWidth)));
+                    o1 = new Vector2(origin.x + (c1 * (stepOuterRadius + nosingWidth)), origin.z + (s1 * (stepOuterRadius + nosingWidth)));
 
                     var noseSizeDeep = (new Vector2((c0 - c1), (s0 - s1)).normalized) * nosingDepth;
                     i0 += noseSizeDeep;
@@ -432,7 +445,7 @@ namespace Chisel.Components
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < outerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter + nosingWidth, ctr.y, ctr.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
                 subMeshes[subMeshIndex].Operation = CSGOperationType.Intersecting;
             }
 
@@ -445,7 +458,7 @@ namespace Chisel.Components
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < innerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter - nosingWidth, ctr.y, ctr.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
                 subMeshes[subMeshIndex].Operation = CSGOperationType.Subtractive;
             }
 

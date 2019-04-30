@@ -24,7 +24,7 @@ namespace Chisel.Core
             if (vertexCount < 4)
                 return 0;
             
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
             var result = CreateBrushMesh(userID,
                                          brushMesh.vertices,
                                          brushMesh.halfEdges,
@@ -58,7 +58,7 @@ namespace Chisel.Core
                 return false;
             
             var vertexCount = brushMesh.vertices.Length;
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
             var result = UpdateBrushMesh(brushMeshIndex,
                                          brushMesh.vertices,
                                          brushMesh.halfEdges,

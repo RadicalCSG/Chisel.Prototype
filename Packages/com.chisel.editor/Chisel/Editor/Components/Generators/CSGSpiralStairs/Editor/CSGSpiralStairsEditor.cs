@@ -190,8 +190,8 @@ namespace Chisel.Editors
             var originalRotation		= generator.Rotation;
             var originalHeight			= generator.Height;
             var originalOrigin			= generator.Origin;
-            var cylinderTop				= new CSGCylinderDefinition(1, originalOrigin.y + originalHeight);
-            var cylinderLow				= new CSGCylinderDefinition(1, originalOrigin.y);
+            var cylinderTop				= new CSGCircleDefinition (1, originalOrigin.y + originalHeight);
+            var cylinderLow				= new CSGCircleDefinition (1, originalOrigin.y);
             var originalTopPoint		= normal * cylinderTop.height;
             var originalLowPoint		= normal * cylinderLow.height;
             var originalMidPoint		= (originalTopPoint + originalLowPoint) * 0.5f;

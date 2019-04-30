@@ -26,6 +26,7 @@ namespace Chisel.Components
         public float                height;
         public float                topHeight;
         public float                bottomHeight;
+        public float                offsetY;
 
         public float                diameterX;
         public float                diameterZ;
@@ -41,7 +42,7 @@ namespace Chisel.Components
         public bool					haveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
         public bool					haveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
         public bool					haveCylinder		{ get { return cylinderHeight > kHeightEpsilon; } }
-        public float				cylinderHeight		{ get { return height - (bottomHeight + topHeight); } }
+        public float				cylinderHeight		{ get { return Mathf.Abs(height - (bottomHeight + topHeight)); } }
 
 
         public int					bottomRingCount		{ get { return haveRoundedBottom ? bottomSegments : 1; } }
@@ -68,9 +69,9 @@ namespace Chisel.Components
         public int					bottomRing			{ get { return (haveRoundedBottom) ? (ringCount - bottomSegments) : ringCount - 1; } }
         public int					topRing				{ get { return (haveRoundedTop   ) ? (topSegments - 1) : 0; } }
         
-        public float				topOffset			{ get { return height - topHeight; } }
+        public float				topOffset			{ get { if (height < 0) return -topHeight; return height - topHeight; } }
 
-        public float				bottomOffset		{ get { return bottomHeight; } }
+        public float				bottomOffset		{ get { if (height < 0) return height + bottomHeight; return bottomHeight; } }
         
         public int					topVertexOffset		{ get { return extraVertexCount + ((topRingCount - 1) * sides); } }
         public int					bottomVertexOffset	{ get { return extraVertexCount + ((ringCount - bottomRingCount) * sides); } }
@@ -80,6 +81,7 @@ namespace Chisel.Components
             height				= kDefaultHeight;
             topHeight			= kDefaultHemisphereHeight;
             bottomHeight		= kDefaultHemisphereHeight;
+            offsetY             = 0;
             diameterX			= kDefaultDiameterX;
             diameterZ			= kDefaultDiameterZ;
             rotation			= kDefaultRotation;
@@ -96,7 +98,7 @@ namespace Chisel.Components
         {
             topHeight			= Mathf.Max(topHeight, 0);
             bottomHeight		= Mathf.Max(bottomHeight, 0);
-            height				= Mathf.Max(height, topHeight + bottomHeight);
+            height				= Mathf.Max(topHeight + bottomHeight, Mathf.Abs(height)) * (height < 0 ? -1 : 1);
 
             diameterX			= Mathf.Max(Mathf.Abs(diameterX), kMinDiameter);
             diameterZ			= Mathf.Max(Mathf.Abs(diameterZ), kMinDiameter);
@@ -105,25 +107,25 @@ namespace Chisel.Components
             bottomSegments		= Mathf.Max(bottomSegments, 0);
             sides				= Mathf.Max(sides, 3);
             
-            int kMinSurfaceAssets = 2 + sides;
+            var minSurfaceAssets = 2 + sides;
             if (surfaceAssets == null ||
-                surfaceAssets.Length != kMinSurfaceAssets)
+                surfaceAssets.Length != minSurfaceAssets )
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[kMinSurfaceAssets];
-                for (int a = 0; a < kMinSurfaceAssets; a++)
+                surfaceAssets = new CSGSurfaceAsset[minSurfaceAssets ];
+                for (int a = 0; a < minSurfaceAssets ; a++)
                     surfaceAssets[a] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
-            int kMinSurfaceDescriptions = 2 + sides;
+            var minSurfaceDescriptions = 2 + sides;
             if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != kMinSurfaceDescriptions)
+                surfaceDescriptions.Length != minSurfaceDescriptions)
             {
                 // TODO: make this independent on plane position somehow
                 var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[kMinSurfaceDescriptions];
-                for (int s = 0; s < kMinSurfaceDescriptions; s++)
+                surfaceDescriptions = new SurfaceDescription[minSurfaceDescriptions];
+                for (int s = 0; s < minSurfaceDescriptions; s++)
                     surfaceDescriptions[s] = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 };
             }
         }

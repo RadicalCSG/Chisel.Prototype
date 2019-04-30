@@ -14,13 +14,9 @@ namespace Chisel.Components
     {
         public override string NodeTypeName { get { return "Spiral Stairs"; } }
 
-        public CSGSpiralStairs() : base() { }
-
         [SerializeField] public CSGSpiralStairsDefinition definition = new CSGSpiralStairsDefinition();
 
-        [SerializeField] CSGSurfaceAsset[]		surfaceAssets;
-        [SerializeField] SurfaceDescription[]	surfaceDescriptions;
-        
+        #region Properties
         public Vector3 Origin
         {
             get { return definition.origin; }
@@ -109,53 +105,14 @@ namespace Chisel.Components
         {
             get { return definition.StepCount; }
         }
+        #endregion
 
-        protected override void OnValidateInternal()
-        {
-            definition.Validate();
-
-            base.OnValidateInternal();
-        }
-
-        protected override void OnResetInternal()
-        {
-            definition.Reset();
-
-            surfaceAssets		= null;
-            surfaceDescriptions = null;
-            base.OnResetInternal();
-        }
+        protected override void OnValidateInternal()    { definition.Validate(); base.OnValidateInternal(); }
+        protected override void OnResetInternal()       { definition.Reset(); base.OnResetInternal(); }
 
         protected override void UpdateGeneratorInternal()
         {
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != 6)
-            {
-                var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[6];
-                for (int i = 0; i < 6; i++) // Note: sides share same material
-                    surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                var surfaceFlags = CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[6];
-                for (int i = 0; i < 6; i++)
-                {
-                    surfaceDescriptions[i] = new SurfaceDescription { surfaceFlags = surfaceFlags, UV0 = UVMatrix.centered, smoothingGroup = BottomSmoothingGroup };
-                }
-            } else
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    surfaceDescriptions[i].smoothingGroup = BottomSmoothingGroup;
-                }
-            }
-
-            BrushMeshAssetFactory.GenerateSpiralStairsAsset(brushMeshAsset, ref definition, surfaceAssets, ref surfaceDescriptions);
+            BrushMeshAssetFactory.GenerateSpiralStairsAsset(brushMeshAsset, ref definition);
         }
     }
 }

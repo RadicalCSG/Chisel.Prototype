@@ -139,7 +139,7 @@ namespace Chisel.Editors
             var focusControl	= UnitySceneExtensions.SceneHandleUtility.focusControl;
             var normal			= Vector3.up;
 
-            if (!BrushMeshAssetFactory.GenerateCapsuleVertices(generator.definition, ref vertices))
+            if (!BrushMeshAssetFactory.GenerateCapsuleVertices(ref generator.definition, ref vertices))
                 return;
 
             UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);
@@ -149,10 +149,13 @@ namespace Chisel.Editors
             DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
             
 
-            var topPoint	= normal * generator.Height;
-            var bottomPoint = normal * 0;
-            var middlePoint	= normal * (generator.Height * 0.5f);
+            var topPoint	= normal * (generator.definition.offsetY + generator.Height);
+            var bottomPoint = normal * (generator.definition.offsetY);
+            var middlePoint	= normal * (generator.definition.offsetY + (generator.Height * 0.5f));
             var radius2D	= new Vector2(generator.definition.diameterX, generator.definition.diameterZ) * 0.5f;
+
+            if (generator.Height < 0)
+                normal = -normal;
 
             EditorGUI.BeginChangeCheck();
             {
@@ -203,9 +206,10 @@ namespace Chisel.Editors
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, "Modified " + generator.NodeTypeName);
-                generator.definition.height = topPoint.y - bottomPoint.y;
-                generator.definition.diameterX = radius2D.x * 2.0f;
-                generator.definition.diameterZ = radius2D.x * 2.0f;
+                generator.definition.diameterX  = radius2D.x * 2.0f;
+                generator.definition.height     = topPoint.y - bottomPoint.y;
+                generator.definition.diameterZ  = radius2D.x * 2.0f;
+                generator.definition.offsetY    = bottomPoint.y;
                 generator.OnValidate();
                 // TODO: handle sizing down (needs to modify transformation?)
             }

@@ -99,7 +99,7 @@ namespace Chisel.Components
         public static T Create<T>(CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
         public static T Create<T>(CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
         public static T Create<T>(CSGModel model) where T : CSGNode { return Create<T>(null, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
-        public static T Create<T>(string name, CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
-        public static T Create<T>(string name, CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
+        public static T Create<T>(string name, CSGModel model, Matrix4x4 trsMatrix) where T : CSGNode { return Create<T>(name, model ? model.transform : null, trsMatrix); }
+        public static T Create<T>(string name, CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode { return Create<T>(name, model ? model.transform : null, position, rotation, scale); }
     }
 }

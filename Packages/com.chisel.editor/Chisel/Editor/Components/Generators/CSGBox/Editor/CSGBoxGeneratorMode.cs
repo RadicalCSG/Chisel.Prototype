@@ -32,9 +32,13 @@ namespace Chisel.Editors
         }
         
         CSGBox box;
-        Vector3 offset;
+
         // TODO: Handle forcing operation types
         CSGOperationType? forceOperation = null;
+        
+        // TODO: Ability to modify default settings
+        // TODO: Store/retrieve default settings
+        bool generateFromCenterXZ = false;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
@@ -42,7 +46,10 @@ namespace Chisel.Editors
             CSGModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, false, false, Axis.Y))
+
+            var flags = (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
+
+            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
@@ -50,9 +57,6 @@ namespace Chisel.Editors
                                                       BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
                                                       transformation);
                     box.Operation = forceOperation ?? CSGOperationType.Additive;
-                    offset = bounds.center;
-                    box.transform.localPosition += box.transform.localToWorldMatrix.MultiplyVector(offset);
-                    bounds.center -= offset;
                     box.Bounds = bounds;
                     box.UpdateGenerator();
                     break;
@@ -60,11 +64,10 @@ namespace Chisel.Editors
 
                 case BoxExtrusionState.Modified:
                 {
-                    box.Operation = forceOperation ?? 
-                                    ((height <= 0 && modelBeneathCursor) ? 
+                    box.Operation = forceOperation ??
+                                    ((height < 0 && modelBeneathCursor) ?
                                         CSGOperationType.Subtractive : 
                                         CSGOperationType.Additive);
-                    bounds.center -= offset;
                     box.Bounds = bounds;
                     break;
                 }
@@ -76,19 +79,20 @@ namespace Chisel.Editors
                     CSGEditModeManager.EditMode = CSGEditMode.ShapeEdit;
                     break;
                 }
+
                 case BoxExtrusionState.Cancel:
                 {
-                    if (box)
-                        UnityEngine.Object.DestroyImmediate(box.gameObject);
                     Reset();
+                    Undo.RevertAllInCurrentGroup();
+                    EditorGUIUtility.ExitGUI();
                     break;
                 }
                 
                 case BoxExtrusionState.BoxMode:
                 case BoxExtrusionState.SquareMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case BoxExtrusionState.HoverMode:	{ CSGOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-
             }
+
             HandleRendering.RenderBox(transformation, bounds);
         }
     }

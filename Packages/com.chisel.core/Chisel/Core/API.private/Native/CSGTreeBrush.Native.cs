@@ -8,7 +8,7 @@ namespace Chisel.Core
 {
     partial struct CSGTreeBrush
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool	GenerateBrush(Int32 userID, out Int32 generatedNodeID);
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern CSGTreeBrushFlags GetBrushFlags(Int32 brushNodeID);
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool	SetBrushFlags(Int32 brushNodeID, CSGTreeBrushFlags flags);

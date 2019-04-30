@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
     public enum Category : byte
     {
         None,

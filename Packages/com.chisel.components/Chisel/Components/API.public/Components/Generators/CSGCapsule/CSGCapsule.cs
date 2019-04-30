@@ -15,7 +15,7 @@ namespace Chisel.Components
         // TODO: make this private
         [SerializeField] public CSGCapsuleDefinition definition = new CSGCapsuleDefinition();
         
-
+        #region Properties
         public float Height
         {
             get { return definition.height; }
@@ -64,13 +64,14 @@ namespace Chisel.Components
         {
             get { return definition.haveRoundedBottom; }
         }
+        #endregion
 
         protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
         protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateCapsuleAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateCapsuleAsset(brushMeshAsset, ref definition);
         }
     }
 }

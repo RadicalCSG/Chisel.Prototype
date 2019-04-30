@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
     internal struct CSGSurfaceRenderBuffer
     {
         public Int32[]		indices;
@@ -24,7 +24,7 @@ namespace Chisel.Core
 
     static partial class CSGManager
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
 
         const int kMaxVertexCount = 65000;
         internal sealed class CSGBrushRenderBuffer

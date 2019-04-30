@@ -8,7 +8,7 @@ namespace Chisel.Core
     // TODO: clean up
     static partial class CSGManager
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         internal const int kDefaultUserID = 0;
 
         struct NodeFlags

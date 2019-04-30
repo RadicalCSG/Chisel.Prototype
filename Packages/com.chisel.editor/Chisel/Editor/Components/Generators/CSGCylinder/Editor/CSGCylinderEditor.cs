@@ -62,20 +62,20 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            surfaceDescriptionProp	= serializedObject.FindProperty("surfaceDescriptions");
-            surfaceAssetProp		= serializedObject.FindProperty("surfaceAssets");
+            surfaceDescriptionProp  = serializedObject.FindProperty("definition.surfaceDescriptions");
+            surfaceAssetProp	    = serializedObject.FindProperty("definition.surfaceAssets");
 
-            typeProp				= serializedObject.FindProperty("type");
-            topHeightProp			= serializedObject.FindProperty("top.height");
-            topDiameterXProp		= serializedObject.FindProperty("top.diameterX");
-            topDiameterZProp		= serializedObject.FindProperty("top.diameterZ");
-            bottomHeightProp		= serializedObject.FindProperty("bottom.height");
-            bottomDiameterXProp		= serializedObject.FindProperty("bottom.diameterX");
-            bottomDiameterZProp		= serializedObject.FindProperty("bottom.diameterZ");
-            rotationProp			= serializedObject.FindProperty("rotation");
-            isEllipsoidProp			= serializedObject.FindProperty("isEllipsoid");
-            smoothingGroupProp		= serializedObject.FindProperty("smoothingGroup");
-            sidesProp				= serializedObject.FindProperty("sides");
+            typeProp			    = serializedObject.FindProperty("definition.type");
+            topHeightProp		    = serializedObject.FindProperty("definition.top.height");
+            topDiameterXProp	    = serializedObject.FindProperty("definition.top.diameterX");
+            topDiameterZProp	    = serializedObject.FindProperty("definition.top.diameterZ");
+            bottomHeightProp	    = serializedObject.FindProperty("definition.bottom.height");
+            bottomDiameterXProp	    = serializedObject.FindProperty("definition.bottom.diameterX");
+            bottomDiameterZProp	    = serializedObject.FindProperty("definition.bottom.diameterZ");
+            rotationProp		    = serializedObject.FindProperty("definition.rotation");
+            isEllipsoidProp		    = serializedObject.FindProperty("definition.isEllipsoid");
+            smoothingGroupProp	    = serializedObject.FindProperty("definition.smoothingGroup");
+            sidesProp			    = serializedObject.FindProperty("definition.sides");
 
             surfacesVisible         = SessionState.GetBool(kSurfacesVisibleKey, false);
         }

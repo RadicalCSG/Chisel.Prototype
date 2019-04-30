@@ -8,7 +8,7 @@ namespace Chisel.Core
 {
     partial struct BrushMeshInstance
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)]
         static extern Int32 CreateBrushMesh(Int32 userID,
                                             Int32 vertexCount,	 [In] IntPtr vertices,												    
