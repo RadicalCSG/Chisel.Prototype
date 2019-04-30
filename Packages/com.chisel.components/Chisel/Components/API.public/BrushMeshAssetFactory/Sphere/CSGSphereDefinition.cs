@@ -12,37 +12,42 @@ namespace Chisel.Components
     [Serializable]
     public struct CSGSphereDefinition
     {
-        public const float				kMinSphereDiameter			= 0.01f;
-        public const float				kDefaultRotation            = 0.0f;
-        public const int				kDefaultHorizontalSegments  = 12;
-        public const int				kVerticalHorizontalSegments = 12;
-        public static readonly Vector3	kDefaultDiameter			= Vector3.one;
+        public const float              kMinSphereDiameter          = 0.01f;
+        public const float              kDefaultRotation            = 0.0f;
+        public const int                kDefaultHorizontalSegments  = 12;
+        public const int                kDefaultVerticalSegments    = 12;
+        public const bool               kDefaultGenerateFromCenter  = false;
+        public static readonly Vector3  kDefaultDiameter            = Vector3.one;
 
         [DistanceValue] public Vector3	diameterXYZ;
-        public float                rotation; // TODO: useless?
-        public int					horizontalSegments;
-        public int					verticalSegments;
+        public float    offsetY;
+        public bool     generateFromCenter;
+        public float    rotation; // TODO: useless?
+        public int	    horizontalSegments;
+        public int	    verticalSegments;
         
         public CSGSurfaceAsset[]	surfaceAssets;
         public SurfaceDescription[]	surfaceDescriptions;
 
         public void Reset()
         {
-            diameterXYZ			= kDefaultDiameter;
-            rotation			= kDefaultRotation;
-            horizontalSegments	= kDefaultHorizontalSegments;
-            verticalSegments	= kVerticalHorizontalSegments;
-            surfaceAssets		= null;
+            diameterXYZ		    = kDefaultDiameter;
+            offsetY             = 0;
+            rotation		    = kDefaultRotation;
+            horizontalSegments  = kDefaultHorizontalSegments;
+            verticalSegments    = kDefaultVerticalSegments;
+            generateFromCenter  = kDefaultGenerateFromCenter;
+            surfaceAssets       = null;
             surfaceDescriptions = null;
         }
 
         public void Validate()
         {
-            diameterXYZ.x = Mathf.Max(diameterXYZ.x, kMinSphereDiameter);
-            diameterXYZ.y = Mathf.Max(diameterXYZ.y, kMinSphereDiameter);
-            diameterXYZ.z = Mathf.Max(diameterXYZ.z, kMinSphereDiameter);
-            
-            horizontalSegments	= Mathf.Max(horizontalSegments, 3);
+            diameterXYZ.x = Mathf.Max(kMinSphereDiameter, Mathf.Abs(diameterXYZ.x));
+            diameterXYZ.y = Mathf.Max(0,                  Mathf.Abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
+            diameterXYZ.z = Mathf.Max(kMinSphereDiameter, Mathf.Abs(diameterXYZ.z));
+
+            horizontalSegments = Mathf.Max(horizontalSegments, 3);
             verticalSegments	= Mathf.Max(verticalSegments, 2);
 
             if (surfaceAssets == null ||

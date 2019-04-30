@@ -254,6 +254,14 @@ namespace Chisel.Components
 
         public static bool GenerateHemisphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
         {
+            if (diameterXYZ.x == 0 ||
+                diameterXYZ.y == 0 ||
+                diameterXYZ.z == 0)
+            {
+                subMesh.Clear();
+                return false;
+            }
+
             var bottomCap		= true;
             var topCap			= false;
             var extraVertices	= ((!bottomCap) ? 1 : 0) + ((!topCap) ? 1 : 0);
@@ -267,12 +275,34 @@ namespace Chisel.Components
                                               diameterXYZ.y, 
                                               diameterXYZ.z * 0.5f);
 
+            var heightY = radius.y;
+            float topY, bottomY;
+            if (heightY < 0)
+            {
+                topY = 0;
+                bottomY = heightY;
+            } else
+            {
+                topY = heightY;
+                bottomY = 0;
+            }
+
             var vertices = new Vector3[vertexCount];
-            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * radius.y);  // top
-            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.zero);					 // bottom
+            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * topY);    // top
+            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.up * bottomY); // bottom
             var degreePerSegment	= (360.0f / horzSegments) * Mathf.Deg2Rad;
             var angleOffset			= ((horzSegments & 1) == 1) ? 0.0f : 0.5f * degreePerSegment;
             var vertexIndex			= extraVertices;
+            if (heightY < 0)
+            {
+                for (int h = horzSegments - 1; h >= 0; h--, vertexIndex++)
+                {
+                    var hRad = (h * degreePerSegment) + angleOffset;
+                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(Mathf.Cos(hRad) * radius.x,
+                                                                                0.0f,
+                                                                                Mathf.Sin(hRad) * radius.z));
+                }
+            } else
             {
                 for (int h = 0; h < horzSegments; h++, vertexIndex++)
                 {
@@ -286,7 +316,7 @@ namespace Chisel.Components
             {
                 var segmentFactor	= ((v - (rings / 2.0f)) / rings) + 0.5f;			// [0.0f ... 1.0f]
                 var segmentDegree	= (segmentFactor * 90);								// [0 .. 90]
-                var segmentHeight	= Mathf.Sin(segmentDegree * Mathf.Deg2Rad) * radius.y;
+                var segmentHeight	= Mathf.Sin(segmentDegree * Mathf.Deg2Rad) * heightY;
                 var segmentRadius	= Mathf.Cos(segmentDegree * Mathf.Deg2Rad);		// [0 .. 0.707 .. 1 .. 0.707 .. 0]
                 for (int h = 0; h < horzSegments; h++, vertexIndex++)
                 {

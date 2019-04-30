@@ -15,7 +15,7 @@ namespace Chisel.Components
         public const float				kMinDiameter				= 0.01f;
         public const float              kDefaultRotation            = 0.0f;
         public const int				kDefaultHorizontalSegments  = 8;
-        public const int				kVerticalHorizontalSegments = 8;
+        public const int				kDefaultVerticalSegments    = 8;
         public static readonly Vector3	kDefaultDiameter			= new Vector3(1.0f, 0.5f, 1.0f);
 
         [DistanceValue] public Vector3	diameterXYZ;
@@ -31,17 +31,17 @@ namespace Chisel.Components
             diameterXYZ			= kDefaultDiameter;
             rotation			= kDefaultRotation;
             horizontalSegments	= kDefaultHorizontalSegments;
-            verticalSegments	= kVerticalHorizontalSegments;
+            verticalSegments	= kDefaultVerticalSegments;
             surfaceAssets		= null;
             surfaceDescriptions = null;
         }
 
         public void Validate()
         {
-            diameterXYZ.x = Mathf.Max(diameterXYZ.x, kMinDiameter);
-            diameterXYZ.y = Mathf.Max(diameterXYZ.y, kMinDiameter);
-            diameterXYZ.z = Mathf.Max(diameterXYZ.z, kMinDiameter);
-            
+            diameterXYZ.x = Mathf.Max(kMinDiameter, Mathf.Abs(diameterXYZ.x));
+            diameterXYZ.y = Mathf.Max(0,            Mathf.Abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
+            diameterXYZ.z = Mathf.Max(kMinDiameter, Mathf.Abs(diameterXYZ.z));
+
             horizontalSegments	= Mathf.Max(horizontalSegments, 3);
             verticalSegments	= Mathf.Max(verticalSegments, 1);
 
