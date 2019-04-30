@@ -26,6 +26,7 @@ namespace Chisel.Components
         public float                height;
         public float                topHeight;
         public float                bottomHeight;
+        public float                offsetY;
 
         public float                diameterX;
         public float                diameterZ;
@@ -80,6 +81,7 @@ namespace Chisel.Components
             height				= kDefaultHeight;
             topHeight			= kDefaultHemisphereHeight;
             bottomHeight		= kDefaultHemisphereHeight;
+            offsetY             = 0;
             diameterX			= kDefaultDiameterX;
             diameterZ			= kDefaultDiameterZ;
             rotation			= kDefaultRotation;

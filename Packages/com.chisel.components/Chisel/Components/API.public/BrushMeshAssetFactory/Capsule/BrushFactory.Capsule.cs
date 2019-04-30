@@ -51,8 +51,8 @@ namespace Chisel.Components
             var bottomVertex		= definition.bottomVertex;
             var topVertex			= definition.topVertex;
 
-            var topOffset			= definition.topOffset;
-            var bottomOffset		= definition.bottomOffset;
+            var topOffset			= definition.topOffset    + definition.offsetY;
+            var bottomOffset		= definition.bottomOffset + definition.offsetY;
             
             if (vertices == null ||
                 vertices.Length != vertexCount)

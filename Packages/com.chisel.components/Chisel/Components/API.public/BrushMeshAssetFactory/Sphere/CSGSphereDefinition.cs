@@ -20,6 +20,7 @@ namespace Chisel.Components
         public static readonly Vector3  kDefaultDiameter            = Vector3.one;
 
         [DistanceValue] public Vector3	diameterXYZ;
+        public float    offsetY;
         public bool     generateFromCenter;
         public float    rotation; // TODO: useless?
         public int	    horizontalSegments;
@@ -31,6 +32,7 @@ namespace Chisel.Components
         public void Reset()
         {
             diameterXYZ		    = kDefaultDiameter;
+            offsetY             = 0;
             rotation		    = kDefaultRotation;
             horizontalSegments  = kDefaultHorizontalSegments;
             verticalSegments    = kDefaultVerticalSegments;

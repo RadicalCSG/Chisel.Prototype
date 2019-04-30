@@ -112,14 +112,14 @@ namespace Chisel.Editors
             Vector3 center, topPoint, bottomPoint;
             if (!generator.GenerateFromCenter)
             {
-                center      = normal * (generator.DiameterXYZ.y * 0.5f);
-                topPoint    = normal * generator.DiameterXYZ.y;
-                bottomPoint = Vector3.zero;
+                center      = normal * (generator.definition.offsetY + (generator.DiameterXYZ.y * 0.5f));
+                topPoint    = normal * (generator.definition.offsetY + generator.DiameterXYZ.y);
+                bottomPoint = normal * (generator.definition.offsetY);
             } else
             {
-                center      = Vector3.zero;
-                topPoint    = normal * (generator.DiameterXYZ.y * 0.5f);
-                bottomPoint = normal * (generator.DiameterXYZ.y * -0.5f);
+                center      = normal * (generator.definition.offsetY);
+                topPoint    = normal * (generator.definition.offsetY + (generator.DiameterXYZ.y *  0.5f));
+                bottomPoint = normal * (generator.definition.offsetY + (generator.DiameterXYZ.y * -0.5f));
             }
 
             if (generator.DiameterXYZ.y < 0)
@@ -131,7 +131,7 @@ namespace Chisel.Editors
             {
                 UnityEditor.Handles.color = baseColor;
                 // TODO: make it possible to (optionally) size differently in x & z
-                radius2D.x = UnitySceneExtensions.SceneHandles.RadiusHandle(normal, Vector3.zero, radius2D.x);
+                radius2D.x = UnitySceneExtensions.SceneHandles.RadiusHandle(normal, center, radius2D.x);
 
                 var bottomId = GUIUtility.GetControlID(s_BottomHash, FocusType.Passive);
                 {
@@ -158,6 +158,7 @@ namespace Chisel.Editors
                 diameter.y = topPoint.y - bottomPoint.y;
                 diameter.x = radius2D.x * 2.0f;
                 diameter.z = radius2D.x * 2.0f;
+                generator.definition.offsetY    = bottomPoint.y;
                 generator.DiameterXYZ = diameter;
                 // TODO: handle sizing down (needs to modify transformation?)
             }

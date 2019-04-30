@@ -74,7 +74,6 @@ namespace Chisel.Editors
                     capsule.DiameterX       = bounds.size[(int)Axis.X];
                     capsule.Height          = height;
                     capsule.DiameterZ       = bounds.size[(int)Axis.Z];
-                    capsule.definition.Validate();
                     capsule.UpdateGenerator();
                     break;
                 }

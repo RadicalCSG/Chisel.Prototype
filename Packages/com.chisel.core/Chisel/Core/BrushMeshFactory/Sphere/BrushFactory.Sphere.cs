@@ -15,7 +15,7 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static BrushMesh CreateSphere(Vector3 diameterXYZ, bool generateFromCenter, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static BrushMesh CreateSphere(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             var lastVertSegment = vertSegments - 1;
 
@@ -25,7 +25,7 @@ namespace Chisel.Core
             int halfEdgeCount   = (triangleCount * 3) + (quadCount * 4);
 
             Vector3[] vertices = null;
-            CreateSphereVertices(diameterXYZ, generateFromCenter, horzSegments, vertSegments, ref vertices);
+            CreateSphereVertices(diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments, ref vertices);
 
             var polygons    = new Polygon[polygonCount];
             var halfEdges   = new HalfEdge[halfEdgeCount];
@@ -119,7 +119,7 @@ namespace Chisel.Core
             };
         }
 
-        public static void CreateSphereVertices(Vector3 diameterXYZ, bool generateFromCenter, int horzSegments, int vertSegments, ref Vector3[] vertices)
+        public static void CreateSphereVertices(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ref Vector3[] vertices)
         {
             //var lastVertSegment	= vertSegments - 1;
             int vertexCount = (horzSegments * (vertSegments - 1)) + 2;
@@ -130,7 +130,7 @@ namespace Chisel.Core
 
             var radius = 0.5f * diameterXYZ;
 
-            var offset = generateFromCenter ? 0.0f : radius.y;
+            var offset = generateFromCenter ? offsetY : radius.y + offsetY;
             vertices[0] = Vector3.down * radius.y;
             vertices[1] = Vector3.up   * radius.y;
 
