@@ -130,8 +130,8 @@ namespace Chisel.Components
         [HideInInspector, NonSerialized]
         public readonly Dictionary<PhysicMaterial, List<CSGColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<CSGColliderComponents>>();
         [HideInInspector, NonSerialized]
-        public readonly HashSet<Transform>              generatedComponents = new HashSet<Transform>();
-        [SerializeField] internal CSGGeneratedModelMesh[]    generatedMeshes     = new CSGGeneratedModelMesh[0];
+        public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
+        [SerializeField] internal CSGGeneratedModelMesh[]   generatedMeshes     = new CSGGeneratedModelMesh[0];
 
         // TODO: make these private + properties, these show up as settable default settings when selecting CSGModel.cs in unity
         public GameObject GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
@@ -239,18 +239,5 @@ namespace Chisel.Components
             }
             return bounds;
         }
-        
-        
-#if UNITY_EDITOR
-
-        // The icon used in the hierarchy
-        public override GUIContent Icon
-        {
-            get
-            {
-                return CSGDefaults.Style.ModelIcon;
-            }
-        }
-#endif
     }
 }

@@ -105,22 +105,5 @@ namespace Chisel.Components
             }
             return bounds;
         }
-
-#if UNITY_EDITOR
-        // The icon used in the hierarchy
-        public override GUIContent Icon
-        {
-            get
-            {
-                switch (this.operation)
-                {
-                    default:
-                    case CSGOperationType.Additive:		return CSGDefaults.Style.AdditiveIcon;
-                    case CSGOperationType.Subtractive:	return CSGDefaults.Style.SubtractiveIcon;
-                    case CSGOperationType.Intersecting:	return CSGDefaults.Style.IntersectingIcon;
-                }
-            }
-        }
-#endif
     }
 }

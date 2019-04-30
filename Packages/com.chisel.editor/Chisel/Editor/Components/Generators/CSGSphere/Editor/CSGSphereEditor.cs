@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGSphereDetails : ChiselGeneratorDetails<CSGSphere>
+    {
+    }
+
     [CustomEditor(typeof(CSGSphere))]
     [CanEditMultipleObjects]
-    public sealed class CSGSphereEditor : GeneratorEditor<CSGSphere>
+    public sealed class CSGSphereEditor : ChiselGeneratorEditor<CSGSphere>
     {
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;
@@ -46,12 +50,10 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(verticalSegmentsProp);
         }
         
-        protected override void OnSceneInit(CSGSphere generator) {}
-        
-        const float kLineDash				    = 2.0f;
-        const float kVertLineThickness		    = 0.75f;
-        const float kHorzLineThickness		    = 1.0f;
-        const float kCapLineThickness		    = 2.0f;
+        const float kLineDash					= 2.0f;
+        const float kVertLineThickness			= 0.75f;
+        const float kHorzLineThickness			= 1.0f;
+        const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
         static void DrawOutline(CSGSphereDefinition definition, Vector3[] vertices, LineMode lineMode)

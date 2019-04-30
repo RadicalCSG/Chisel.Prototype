@@ -12,9 +12,14 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGHemisphereDetails : ChiselGeneratorDetails<CSGHemisphere>
+    {
+    }
+
+
     [CustomEditor(typeof(CSGHemisphere))]
     [CanEditMultipleObjects]
-    public sealed class CSGHemisphereEditor : GeneratorEditor<CSGHemisphere>
+    public sealed class CSGHemisphereEditor : ChiselGeneratorEditor<CSGHemisphere>
     {
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;
@@ -45,8 +50,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(horizontalSegmentsProp);
             EditorGUILayout.PropertyField(verticalSegmentsProp);
         }
-        
-        protected override void OnSceneInit(CSGHemisphere generator) {}
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

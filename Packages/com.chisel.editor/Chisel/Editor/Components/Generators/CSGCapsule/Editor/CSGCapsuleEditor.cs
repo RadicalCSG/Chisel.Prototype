@@ -5,9 +5,14 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGCapsuleDetails : ChiselGeneratorDetails<CSGCapsule>
+    {
+    }
+
+
     [CustomEditor(typeof(CSGCapsule))]
     [CanEditMultipleObjects]
-    public sealed class CSGCapsuleEditor : GeneratorEditor<CSGCapsule>
+    public sealed class CSGCapsuleEditor : ChiselGeneratorEditor<CSGCapsule>
     {
         SerializedProperty heightProp;
         SerializedProperty topHeightProp;
@@ -66,11 +71,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(topSegmentsProp);
             EditorGUILayout.PropertyField(bottomSegmentsProp);
         }
-
-        
-        
-        protected override void OnSceneInit(CSGCapsule generator) { }
-
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

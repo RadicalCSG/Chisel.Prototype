@@ -12,10 +12,14 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGBoxDetails : ChiselGeneratorDetails<CSGBox>
+    {
+    }
+
     // TODO: why did resetting this generator not work?
     [CustomEditor(typeof(CSGBox))]
     [CanEditMultipleObjects]
-    public sealed class CSGBoxEditor : GeneratorEditor<CSGBox>
+    public sealed class CSGBoxEditor : ChiselGeneratorEditor<CSGBox>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static GUIContent   surfacesContent         = new GUIContent("Surfaces");
@@ -122,19 +126,13 @@ namespace Chisel.Editors
                 EditorGUI.indentLevel--;
             }
         }
-
-        Bounds originalBounds;
-        
-        protected override void OnSceneInit(CSGBox generator)
-        {
-            originalBounds = generator.Bounds;
-        }
         
         protected override void OnScene(CSGBox generator)
         {
             EditorGUI.BeginChangeCheck();
 
-            var newBounds = UnitySceneExtensions.SceneHandles.BoundsHandle(originalBounds, Quaternion.identity);
+            var newBounds = generator.Bounds;
+            newBounds = UnitySceneExtensions.SceneHandles.BoundsHandle(newBounds, Quaternion.identity);
             
             if (EditorGUI.EndChangeCheck())
             {

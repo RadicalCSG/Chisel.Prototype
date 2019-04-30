@@ -5,13 +5,32 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Chisel;
+using Chisel.Core;
 using Chisel.Components;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGOperationDetails : ChiselNodeDetails<CSGOperation>
+    {
+        const string AdditiveIconName		= "csg_addition";
+        const string SubtractiveIconName	= "csg_subtraction";
+        const string IntersectingIconName	= "csg_intersection";
+
+        public override GUIContent GetHierarchyIcon(CSGOperation node)
+        {
+            switch (node.Operation)
+            {
+                default:
+                case CSGOperationType.Additive:     return ChiselEditorResources.GetIconContent(AdditiveIconName,     $"Additive {node.NodeTypeName}")[0];
+                case CSGOperationType.Subtractive:  return ChiselEditorResources.GetIconContent(SubtractiveIconName,  $"Subtractive {node.NodeTypeName}")[0];
+                case CSGOperationType.Intersecting: return ChiselEditorResources.GetIconContent(IntersectingIconName, $"Intersecting {node.NodeTypeName}")[0];
+            }
+        }
+    }
+
     [CustomEditor(typeof(CSGOperation))]
     [CanEditMultipleObjects]
-    public sealed class CSGOperationEditor : Editor
+    public sealed class CSGOperationEditor : ChiselNodeEditor<CSGOperation>
     {
         SerializedProperty operationProp;
         SerializedProperty passThroughProp;
@@ -34,14 +53,10 @@ namespace Chisel.Editors
             operationProp = null;
             passThroughProp = null;
         }
-
-        public Bounds OnGetFrameBounds() { return CSGNodeEditor.CalculateBounds(targets); }
-        public bool HasFrameBounds() { if (targets == null) return false; return true; }
         
         public override void OnInspectorGUI()
         {
-            CSGNodeEditor.CheckForTransformationChanges(serializedObject);
-            CSGNodeEditor.ShowDefaultModelMessage(serializedObject.targetObjects);
+            base.OnInspectorGUI();
             try
             {
                 bool passThroughChanged = false;

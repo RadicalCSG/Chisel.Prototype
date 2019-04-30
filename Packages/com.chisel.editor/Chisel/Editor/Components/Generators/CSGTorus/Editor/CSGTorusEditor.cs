@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGTorusDetails : ChiselGeneratorDetails<CSGTorus>
+    {
+    }
+
     [CustomEditor(typeof(CSGTorus))]
     [CanEditMultipleObjects]
-    public sealed class CSGTorusEditor : GeneratorEditor<CSGTorus>
+    public sealed class CSGTorusEditor : ChiselGeneratorEditor<CSGTorus>
     {
         static GUIContent   InnerDiameterContent = new GUIContent("Inner Diameter");
 
@@ -91,11 +95,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(totalAngleProp);
         }
 
-        
-        
-        protected override void OnSceneInit(CSGTorus generator) { }
-
-        
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;

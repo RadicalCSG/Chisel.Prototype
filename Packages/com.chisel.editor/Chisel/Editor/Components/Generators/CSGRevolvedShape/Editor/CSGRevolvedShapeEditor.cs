@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGRevolvedShapeDetails : ChiselGeneratorDetails<CSGRevolvedShape>
+    {
+    }
+
     [CustomEditor(typeof(CSGRevolvedShape))]
     [CanEditMultipleObjects]
-    public sealed class CSGRevolvedShapeEditor : GeneratorEditor<CSGRevolvedShape>
+    public sealed class CSGRevolvedShapeEditor : ChiselGeneratorEditor<CSGRevolvedShape>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
 
@@ -59,8 +63,6 @@ namespace Chisel.Editors
         const float kHorzLineThickness			= 1.0f;
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
-
-        protected override void OnSceneInit(CSGRevolvedShape generator) { }
 
         protected override void OnScene(CSGRevolvedShape generator)
         {

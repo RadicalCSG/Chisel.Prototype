@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGPathedStairsDetails : ChiselGeneratorDetails<CSGPathedStairs>
+    {
+    }
+
     [CustomEditor(typeof(CSGPathedStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGPathedStairsEditor : GeneratorEditor<CSGPathedStairs>
+    public sealed class CSGPathedStairsEditor : ChiselGeneratorEditor<CSGPathedStairs>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
         
@@ -154,15 +158,6 @@ namespace Chisel.Editors
                 EditorGUILayout.PropertyField(surfaceSideStepProp);
                 EditorGUI.indentLevel--;
             }
-        }
-
-
-
-        //Bounds originalBounds;
-
-        protected override void OnSceneInit(CSGPathedStairs generator)
-        {
-            //originalBounds = generator.Bounds;
         }
 
         public static bool Intersect(Vector2 p1, Vector2 d1, 

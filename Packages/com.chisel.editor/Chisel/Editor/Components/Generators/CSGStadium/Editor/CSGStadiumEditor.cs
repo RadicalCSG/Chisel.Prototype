@@ -12,9 +12,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
+    public sealed class CSGStadiumDetails : ChiselGeneratorDetails<CSGStadium>
+    {
+    }
+    
     [CustomEditor(typeof(CSGStadium))]
     [CanEditMultipleObjects]
-    public sealed class CSGStadiumEditor : GeneratorEditor<CSGStadium>
+    public sealed class CSGStadiumEditor : ChiselGeneratorEditor<CSGStadium>
     {
         SerializedProperty heightProp;
         SerializedProperty lengthProp;
@@ -65,10 +69,6 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(topSidesProp);
             EditorGUILayout.PropertyField(bottomSidesProp);
         }
-
-
-
-        protected override void OnSceneInit(CSGStadium generator) { }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

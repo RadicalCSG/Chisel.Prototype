@@ -266,7 +266,7 @@ namespace Chisel.Editors
             var component = gameObject.GetComponent<CSGNode>();
             if (!component)
                 return;
-            Editors.CSGNodeEditor.HierarchyWindowItemOnGUI(component, selectionRect);
+            Editors.ChiselHierarchyWindowManager.OnHierarchyWindowItemGUI(component, selectionRect);
         }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
