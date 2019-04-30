@@ -19,7 +19,7 @@ namespace UnitySceneExtensions
             public int				vertexCount	= 0;
             public int				indexCount	= 0;
         
-            Mesh mesh;
+            internal Mesh mesh;
 
             public TriangleMesh() { Clear(); }
         
@@ -160,13 +160,6 @@ namespace UnitySceneExtensions
                 mesh.RecalculateBounds();
                 mesh.UploadMeshData(true);
             }
-            
-            public void Draw()
-            {
-                if (vertexCount == 0 || mesh == null)
-                    return;
-                Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-            }
 
             internal void Destroy()
             {
@@ -199,16 +192,22 @@ namespace UnitySceneExtensions
                 triangleMeshes[i].CommitMesh();
         }
 
-        public void Render(Material genericMaterial)
+        public void Render(Camera camera, Material polygonMaterial)
         {
-            if (triangleMeshes == null || triangleMeshes.Count == 0)
+            if (Event.current.type != EventType.Repaint)
                 return;
-            if (genericMaterial &&
-                genericMaterial.SetPass(0))
+
+            if (triangleMeshes == null || triangleMeshes.Count == 0 || !polygonMaterial)
+                return;
+
+            var max = Mathf.Min(currentTriangleMesh, triangleMeshes.Count - 1);
+            for (int i = 0; i <= max; i++)
             {
-                var max = Mathf.Min(currentTriangleMesh, triangleMeshes.Count - 1);
-                for (int i = 0; i <= max; i++)
-                    triangleMeshes[i].Draw();
+                var mesh = triangleMeshes[i].mesh;
+                if (triangleMeshes[i].vertexCount == 0 || !mesh)
+                    continue;
+                Graphics.DrawMesh(mesh, Matrix4x4.identity, polygonMaterial, 0, camera, 0, null, false, false);
+                Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
             }
         }
 

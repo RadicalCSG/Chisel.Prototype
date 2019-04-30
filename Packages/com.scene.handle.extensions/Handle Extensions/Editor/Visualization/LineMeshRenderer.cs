@@ -18,11 +18,10 @@ namespace UnitySceneExtensions
             public Color32[]	colors			= new Color32[MaxVertexCount];
             public int			vertexCount		= 0;
             int[]				indices			= null;
-            float               pixelsPerPoint	= 1.0f;
         
-            Mesh mesh;
+            internal Mesh mesh;
 
-            public LineMesh() { Clear(); pixelsPerPoint = UnityEditor.EditorGUIUtility.pixelsPerPoint; }
+            public LineMesh() { Clear(); }
         
             public void Clear()
             {
@@ -37,7 +36,7 @@ namespace UnitySceneExtensions
                     float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
                     return;
 
-                thickness *= pixelsPerPoint;
+                thickness *= LineMeshManager.pixelsPerPoint;
                 
                 int n = vertexCount;
 
@@ -56,7 +55,7 @@ namespace UnitySceneExtensions
                     float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
                     return dashOffset;
 
-                thickness *= pixelsPerPoint;
+                thickness *= LineMeshManager.pixelsPerPoint;
 
                 var dashLength	= (B - A).magnitude;
                 var dashOffset2 = dashOffset + dashLength; 
@@ -135,13 +134,6 @@ namespace UnitySceneExtensions
                 mesh.RecalculateBounds();
                 mesh.UploadMeshData(true);
             }
-            
-            public void Draw()
-            {
-                if (vertexCount == 0 || mesh == null)
-                    return;
-                Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-            }
 
             internal void Destroy()
             {
@@ -169,24 +161,33 @@ namespace UnitySceneExtensions
                 lineMeshes[i].CommitMesh();
         }
 
-        public void Render(Material genericLineMaterial)
+        public void Render(Camera camera, Material lineMaterial)
         {
-            if (lineMeshes == null || lineMeshes.Count == 0 || !genericLineMaterial)
+            if (Event.current.type != EventType.Repaint)
                 return;
-            SceneHandleMaterialManager.InitGenericLineMaterial(genericLineMaterial);
-            if (genericLineMaterial.SetPass(0))
+
+            if (lineMeshes == null || lineMeshes.Count == 0 || !lineMaterial)
+                return;
+
+            SceneHandleMaterialManager.InitGenericLineMaterial(lineMaterial);
+            var max = Mathf.Min(currentLineMesh, lineMeshes.Count - 1);
+            for (int i = 0; i <= max; i++)
             {
-                var max = Mathf.Min(currentLineMesh, lineMeshes.Count - 1);
-                for (int i = 0; i <= max; i++)
-                    lineMeshes[i].Draw();
+                var mesh = lineMeshes[i].mesh;
+                if (lineMeshes[i].vertexCount == 0 || !mesh)
+                    continue;
+
+                Graphics.DrawMesh(mesh, Matrix4x4.identity, lineMaterial, 0, camera, 0, null, false, false);
             }
         }
 
         List<LineMesh> lineMeshes = new List<LineMesh>();
         int currentLineMesh = 0;
+        static float pixelsPerPoint = 1.0f;
         
         public LineMeshManager()
         {
+            pixelsPerPoint = UnityEditor.EditorGUIUtility.pixelsPerPoint;
             lineMeshes.Add(new LineMesh());
         }
 
@@ -209,10 +210,11 @@ namespace UnitySceneExtensions
         //*
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
-            var corner1 = new Vector4(thickness, -1, dashSize);
-            var corner2 = new Vector4(thickness, +1, dashSize);
-            var corner3 = new Vector4(thickness, +1, dashSize);
-            var corner4 = new Vector4(thickness, -1, dashSize);
+            thickness *= pixelsPerPoint;
+            var corner1 = new Vector4(-thickness, dashSize, 0);
+            var corner2 = new Vector4( thickness, dashSize, 0);
+            var corner3 = new Vector4(-thickness, dashSize, 0);
+            var corner4 = new Vector4( thickness, dashSize, 0);
 
             var lineMeshIndex = currentLineMesh;
             while (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh());
@@ -221,9 +223,9 @@ namespace UnitySceneExtensions
                 var lineMesh	= lineMeshes[lineMeshIndex];
                 var vertices1	= lineMesh.vertices1;
                 var vertices2	= lineMesh.vertices2;
-                var offsets		= lineMesh.lineParams;
+                var lineParams	= lineMesh.lineParams;
                 var colors		= lineMesh.colors;
-                
+
                 var n = lineMesh.vertexCount;
                 for (int i = 0; i < indices.Length; i += 2)
                 {
@@ -236,37 +238,38 @@ namespace UnitySceneExtensions
                         float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
                         continue;
 
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner1; colors[n] = color; n++;
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner2; colors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner3; colors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner4; colors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner1; colors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner2; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner3; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner4; colors[n] = color; n++;
                 }
                 lineMesh.vertexCount = n;
             } else
-            {  
+            {
                 for (int i = 0; i < indices.Length; i += 2)
                 {
                     var lineMesh	= lineMeshes[lineMeshIndex];
                     var vertexCount = lineMesh.vertexCount;
                     if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { lineMeshIndex++; if (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[lineMeshIndex]; vertexCount = lineMesh.vertexCount; }
+
                     var vertices1	= lineMesh.vertices1;
                     var vertices2	= lineMesh.vertices2;
-                    var offsets		= lineMesh.lineParams;
+                    var lineParams  = lineMesh.lineParams;
                     var colors		= lineMesh.colors;
 
                     var A = matrix.MultiplyPoint(vertices[indices[i + 0]]);
                     var B = matrix.MultiplyPoint(vertices[indices[i + 1]]);
-                                        
+
                     if (float.IsInfinity(A.x) || float.IsInfinity(A.y) || float.IsInfinity(A.z) ||
                         float.IsInfinity(B.x) || float.IsInfinity(B.y) || float.IsInfinity(B.z) ||
                         float.IsNaN(A.x) || float.IsNaN(A.y) || float.IsNaN(A.z) ||
                         float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
                         continue;
 
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner1; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner2; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner3; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner4; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner1; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner2; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner3; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner4; colors[vertexCount] = color; vertexCount++;
                     
                     lineMesh.vertexCount += 4;
                 }
@@ -276,10 +279,11 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Vector3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f) //2
         {
-            var corner1 = new Vector4(thickness, -1, dashSize);
-            var corner2 = new Vector4(thickness, +1, dashSize);
-            var corner3 = new Vector4(thickness, +1, dashSize);
-            var corner4 = new Vector4(thickness, -1, dashSize);
+            thickness *= pixelsPerPoint;
+            var corner1 = new Vector4(-thickness, dashSize, 0);
+            var corner2 = new Vector4( thickness, dashSize, 0);
+            var corner3 = new Vector4(-thickness, dashSize, 0);
+            var corner4 = new Vector4( thickness, dashSize, 0);
 
             var lineMeshIndex = currentLineMesh;
             while (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh());
@@ -288,7 +292,7 @@ namespace UnitySceneExtensions
                 var lineMesh	= lineMeshes[lineMeshIndex];
                 var vertices1	= lineMesh.vertices1;
                 var vertices2	= lineMesh.vertices2;
-                var offsets		= lineMesh.lineParams;
+                var lineParams  = lineMesh.lineParams;
                 var colors		= lineMesh.colors;
                 
                 int n = lineMesh.vertexCount;
@@ -309,10 +313,10 @@ namespace UnitySceneExtensions
                         float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
                         continue;
                     
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner1; colors[n] = color; n++;
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner2; colors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner3; colors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner4; colors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner1; colors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner2; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner3; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner4; colors[n] = color; n++;
                 }
                 
                 lineMesh.vertexCount = n;
@@ -340,13 +344,13 @@ namespace UnitySceneExtensions
                     if (vertexCount + 4 >= LineMesh.MaxVertexCount) {  lineMeshIndex++; if (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh	= lineMeshes[lineMeshIndex]; lineMesh.Clear(); vertexCount = lineMesh.vertexCount; }
                     var vertices1	= lineMesh.vertices1;
                     var vertices2	= lineMesh.vertices2;
-                    var offsets		= lineMesh.lineParams;
+                    var lineParams  = lineMesh.lineParams;
                     var colors		= lineMesh.colors;
 
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner1; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner2; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner3; colors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner4; colors[vertexCount] = color; vertexCount++;					
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner1; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner2; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner3; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner4; colors[vertexCount] = color; vertexCount++;					
                     lineMesh.vertexCount = vertexCount;
                 }
                 currentLineMesh = lineMeshIndex;
@@ -355,10 +359,11 @@ namespace UnitySceneExtensions
         
         public void DrawLines(Vector3[] vertices, int[] indices, Color32[] colors, float thickness = 1.0f, float dashSize = 0.0f) //1
         {
-            var corner1 = new Vector4(thickness, -1, dashSize);
-            var corner2 = new Vector4(thickness, +1, dashSize);
-            var corner3 = new Vector4(thickness, +1, dashSize);
-            var corner4 = new Vector4(thickness, -1, dashSize);
+            thickness *= pixelsPerPoint;
+            var corner1 = new Vector4(-thickness, dashSize, 0);
+            var corner2 = new Vector4( thickness, dashSize, 0);
+            var corner3 = new Vector4(-thickness, dashSize, 0);
+            var corner4 = new Vector4( thickness, dashSize, 0);
 
             var lineMeshIndex = currentLineMesh;
             while (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh());
@@ -368,7 +373,7 @@ namespace UnitySceneExtensions
                 var lineMesh	= lineMeshes[lineMeshIndex];
                 var vertices1	= lineMesh.vertices1;
                 var vertices2	= lineMesh.vertices2;
-                var offsets		= lineMesh.lineParams;
+                var lineParams  = lineMesh.lineParams;
                 var meshColors	= lineMesh.colors;
                 
                 int n = lineMesh.vertexCount;
@@ -391,10 +396,10 @@ namespace UnitySceneExtensions
 
                     var color = colors[c];
                     
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner1; meshColors[n] = color; n++;
-                    vertices1[n] = B; vertices2[n] = A; offsets[n] = corner2; meshColors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner3; meshColors[n] = color; n++;
-                    vertices1[n] = A; vertices2[n] = B; offsets[n] = corner4; meshColors[n] = color; n++;		
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner1; meshColors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner2; meshColors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner3; meshColors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner4; meshColors[n] = color; n++;		
                 }			
                 lineMesh.vertexCount = n;
             } else
@@ -423,13 +428,13 @@ namespace UnitySceneExtensions
                     if (vertexCount + 4 >= LineMesh.MaxVertexCount) {  lineMeshIndex++; if (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh	= lineMeshes[lineMeshIndex]; lineMesh.Clear(); vertexCount = lineMesh.vertexCount; }
                     var vertices1	= lineMesh.vertices1;
                     var vertices2	= lineMesh.vertices2;
-                    var offsets		= lineMesh.lineParams;
+                    var lineParams  = lineMesh.lineParams;
                     var meshColors	= lineMesh.colors;
                     
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner1; meshColors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; offsets[vertexCount] = corner2; meshColors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner3; meshColors[vertexCount] = color; vertexCount++;
-                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; offsets[vertexCount] = corner4; meshColors[vertexCount] = color; vertexCount++;					
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner1; meshColors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner2; meshColors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner3; meshColors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner4; meshColors[vertexCount] = color; vertexCount++;					
                     lineMesh.vertexCount = vertexCount;
                 }
             }
@@ -444,8 +449,7 @@ namespace UnitySceneExtensions
             float dashOffset = 0;
             for (int j = last - 1, i = startIndex; i < last; j = i, i ++)
             {
-                if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount)
-                { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; lineMesh.Clear(); }
+                if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; lineMesh.Clear(); }
                 var p0 = matrix.MultiplyPoint(vertices[j]);
                 var p1 = matrix.MultiplyPoint(vertices[i]);	
                 dashOffset = lineMesh.AddLine(p0, p1, thickness, dashSize, color, dashOffset);

@@ -263,27 +263,27 @@ namespace Chisel.Editors
             polygonManager.Clear();
         }
         
-        public void RenderAll()
+        public void RenderAll(Camera camera)
         {
-            var zTestGenericLineMaterial    = CSGMaterialManager.ZTestGenericLine;
-            var noZTestGenericLineMaterial  = CSGMaterialManager.NoZTestGenericLine;
-            var coloredPolygonMaterial		= CSGMaterialManager.ColoredPolygonMaterial;
-            var customDotMaterial			= CSGMaterialManager.CustomDotMaterial;
-            var surfaceNoDepthMaterial		= CSGMaterialManager.SurfaceNoDepthMaterial;
+            var zTestGenericLineMaterial    = UnitySceneExtensions.SceneHandleMaterialManager.ZTestGenericLine;
+            var noZTestGenericLineMaterial  = UnitySceneExtensions.SceneHandleMaterialManager.NoZTestGenericLine;
+            var coloredPolygonMaterial		= UnitySceneExtensions.SceneHandleMaterialManager.ColoredPolygonMaterial;
+            var customDotMaterial			= UnitySceneExtensions.SceneHandleMaterialManager.CustomDotMaterial;
+            var surfaceNoDepthMaterial		= UnitySceneExtensions.SceneHandleMaterialManager.SurfaceNoDepthMaterial;
 
-            polygonManager.Render(coloredPolygonMaterial);
-             
-            CSGMaterialManager.LineDashMultiplier = 1.0f;
-            CSGMaterialManager.LineThicknessMultiplier = GUIConstants.defaultLineScale;
-            noZTestLinesManager.Render(noZTestGenericLineMaterial);
+            polygonManager.Render(camera, coloredPolygonMaterial);
 
-            CSGMaterialManager.LineDashMultiplier = 1.0f;
-            CSGMaterialManager.LineThicknessMultiplier = GUIConstants.defaultLineScale;
-            zTestLinesManager.Render(zTestGenericLineMaterial);
+            UnitySceneExtensions.SceneHandleMaterialManager.LineDashMultiplier = 1.0f;
+            UnitySceneExtensions.SceneHandleMaterialManager.LineThicknessMultiplier = GUIConstants.defaultLineScale;
+            noZTestLinesManager.Render(camera, noZTestGenericLineMaterial);
 
-            CSGMaterialManager.LineAlphaMultiplier = 1.0f;
+            UnitySceneExtensions.SceneHandleMaterialManager.LineDashMultiplier = 1.0f;
+            UnitySceneExtensions.SceneHandleMaterialManager.LineThicknessMultiplier = GUIConstants.defaultLineScale;
+            zTestLinesManager.Render(camera, zTestGenericLineMaterial);
 
-            pointManager.Render(customDotMaterial, surfaceNoDepthMaterial);
+            UnitySceneExtensions.SceneHandleMaterialManager.LineAlphaMultiplier = 1.0f;
+
+            pointManager.Render(camera, customDotMaterial, surfaceNoDepthMaterial);
         }
     }
 }
