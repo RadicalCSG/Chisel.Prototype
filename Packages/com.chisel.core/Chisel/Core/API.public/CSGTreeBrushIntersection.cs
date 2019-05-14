@@ -11,10 +11,9 @@ namespace Chisel.Core
     {
         public CSGTree		tree;
         public CSGTreeBrush	brush;
-
-        public Int32        brushUserID;
+        
         public Int32        surfaceID;
-        public Int32        surfaceIndex;
+        public Int32        brushUserID;
 
         public CSGSurfaceIntersection surfaceIntersection;
 
@@ -24,7 +23,6 @@ namespace Chisel.Core
             brush				= (CSGTreeBrush)CSGTreeNode.InvalidNode,
             brushUserID			= 0,
             surfaceID			= -1,
-            surfaceIndex		= -1,
             surfaceIntersection	= CSGSurfaceIntersection.None
         };
     };

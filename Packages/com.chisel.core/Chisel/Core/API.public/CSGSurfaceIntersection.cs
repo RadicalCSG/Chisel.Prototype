@@ -14,7 +14,7 @@ namespace Chisel.Core
     {
         public Plane	localPlane;
         public Plane	modelPlane;
-        public Plane	worldPlane;	// TODO: is not in worldSpace???
+        public Plane	worldPlane;
 
         public Vector3	worldIntersection;
         public Vector2	surfaceIntersection;

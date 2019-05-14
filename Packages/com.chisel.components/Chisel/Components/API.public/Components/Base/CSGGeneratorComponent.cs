@@ -226,7 +226,7 @@ namespace Chisel.Components
                 return true;
             } else
             {
-                bool needRebuild = Nodes != null && Nodes.Length != requiredNodeLength;
+                bool needRebuild = (Nodes != null && instances != null && instances.Length > 0) && Nodes.Length != requiredNodeLength;
                 if (Nodes.Length <= 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;

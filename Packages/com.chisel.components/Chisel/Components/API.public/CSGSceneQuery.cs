@@ -107,7 +107,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, filterLayerParameter0);
+                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
                 if (treeIntersections == null)
                     continue;
 
@@ -209,7 +209,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, filterLayerParameter0);
+                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
                 if (treeIntersections == null)
                     continue;
 
@@ -288,7 +288,7 @@ namespace Chisel.Components
                         filterInstanceIDs.Add(node.GetInstanceID());
                 }
             }
-
+            
 
             var tree	= model.Node;
             if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
@@ -299,7 +299,7 @@ namespace Chisel.Components
 
             if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                 return false;
-
+            
             var query = CSGMeshQueryManager.GetMeshQuery(model);
 
             // We only accept RayCasts into this model if it's visible
@@ -320,8 +320,8 @@ namespace Chisel.Components
                 treeRayStart	= worldRayStart;
                 treeRayEnd		= worldRayEnd;
             }
-
-            var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, filterLayerParameter0, ignoreBrushes);
+            
+            var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0, ignoreBrushes);
             if (treeIntersections == null)
                 return false;
             
