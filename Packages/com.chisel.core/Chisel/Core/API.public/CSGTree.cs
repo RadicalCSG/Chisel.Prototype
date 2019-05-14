@@ -170,11 +170,12 @@ namespace Chisel.Core
         public CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]		meshQuery, 
                                                        Vector3			worldRayStart,
                                                        Vector3			worldRayEnd, 
+                                                       Matrix4x4        treeLocalToWorldMatrix,
                                                        int				filterLayerParameter0 = 0,
                                                        CSGTreeNode[]	ignoreNodes = null)
         {
             CSGTreeBrushIntersection[] intersections;
-            if (!RayCastMulti(meshQuery, worldRayStart, worldRayEnd, filterLayerParameter0, out intersections, ignoreNodes))
+            if (!RayCastMulti(meshQuery, worldRayStart, worldRayEnd, treeLocalToWorldMatrix, filterLayerParameter0, out intersections, ignoreNodes))
                 return null;
             return intersections;
         }
