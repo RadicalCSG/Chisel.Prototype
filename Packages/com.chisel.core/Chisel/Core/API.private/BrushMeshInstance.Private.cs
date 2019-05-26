@@ -23,7 +23,7 @@ namespace Chisel.Core
             var vertexCount = brushMesh.vertices.Length;
             if (vertexCount < 4)
                 return 0;
-            
+
 #if USE_MANAGED_CSG_IMPLEMENTATION
             var result = CreateBrushMesh(userID,
                                          brushMesh.vertices,
@@ -52,11 +52,11 @@ namespace Chisel.Core
             var edgeCount = brushMesh.halfEdges.Length;
             if (edgeCount < 12)
                 return false;
-            
+
             var polygonCount = brushMesh.polygons.Length;
-            if (polygonCount < 5)
+            if (polygonCount < 4)
                 return false;
-            
+
             var vertexCount = brushMesh.vertices.Length;
 #if USE_MANAGED_CSG_IMPLEMENTATION
             var result = UpdateBrushMesh(brushMeshIndex,
