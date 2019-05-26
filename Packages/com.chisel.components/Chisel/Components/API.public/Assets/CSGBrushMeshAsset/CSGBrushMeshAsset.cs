@@ -142,7 +142,7 @@ namespace Chisel.Assets
         internal BrushMesh CreateOrUpdateBrushMesh()
         {
             if (brushMesh == null)
-                brushMesh = new BrushMesh(); 
+                brushMesh = new BrushMesh();
 
             // In case a user sets "polygons" to null, for consistency
             if (polygons == null ||
@@ -165,10 +165,10 @@ namespace Chisel.Assets
                     Clear();
                     return brushMesh;
                 }
-                dstPolygons[i].firstEdge = polygons[i].firstEdge;
-                dstPolygons[i].edgeCount = polygons[i].edgeCount;
-                dstPolygons[i].surfaceID = polygons[i].surfaceID;
-                dstPolygons[i].description   = polygons[i].description;
+                dstPolygons[i].firstEdge    = polygons[i].firstEdge;
+                dstPolygons[i].edgeCount    = polygons[i].edgeCount;
+                dstPolygons[i].surfaceID    = polygons[i].surfaceID;
+                dstPolygons[i].description  = polygons[i].description;
 
                 var surfaceAsset = polygons[i].surfaceAsset;
                 if (surfaceAsset == null)
@@ -182,11 +182,53 @@ namespace Chisel.Assets
                 dstPolygons[i].layers.layerParameter1 = surfaceAsset.RenderMaterialInstanceID;
                 dstPolygons[i].layers.layerParameter2 = surfaceAsset.PhysicsMaterialInstanceID;
             }
-            
+
             if (!Validate())
                 Clear(); 
 
             return brushMesh;
+        }
+
+        internal void CreateOrUpdateBrushMeshInverse()
+        {
+            if (brushMesh == null)
+                return;
+
+            // In case a user sets "polygons" to null, for consistency
+            if (brushMesh.polygons == null ||
+                brushMesh.polygons.Length == 0)
+            {
+                polygons = null;
+                return;
+            }
+
+            if (polygons == null)
+            {
+                polygons = new Polygon[brushMesh.polygons.Length];
+                for (int i = 0; i < polygons.Length; i++)
+                    polygons[i] = new Polygon();
+            } else
+            if (polygons.Length != brushMesh.polygons.Length)
+            {
+                var newPolygons = new Polygon[brushMesh.polygons.Length];
+                var minLength = Mathf.Min(brushMesh.polygons.Length, polygons.Length);
+                Array.Copy(polygons, newPolygons, minLength);
+                for (int i = minLength; i < newPolygons.Length; i++)
+                    newPolygons[i] = new Polygon();
+                polygons = newPolygons;
+            }
+
+            for (int i = 0; i < brushMesh.polygons.Length; i++)
+            {
+                polygons[i].firstEdge    = brushMesh.polygons[i].firstEdge;
+                polygons[i].edgeCount    = brushMesh.polygons[i].edgeCount;
+                polygons[i].surfaceID    = brushMesh.polygons[i].surfaceID;
+                polygons[i].description  = brushMesh.polygons[i].description;
+
+                var renderMaterial  = (brushMesh.polygons[i].layers.layerParameter1 == 0) ? null : CSGSurfaceAssetManager.GetRenderMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter1);
+                var physicsMaterial = (brushMesh.polygons[i].layers.layerParameter2 == 0) ? null : CSGSurfaceAssetManager.GetPhysicsMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter2);
+                polygons[i].surfaceAsset = CSGSurfaceAsset.CreateInstance(renderMaterial, physicsMaterial, brushMesh.polygons[i].layers.layerUsage);
+            }
         }
         
         public void ExtendBounds(Matrix4x4 transformation, ref Vector3 min, ref Vector3 max)
@@ -207,6 +249,11 @@ namespace Chisel.Assets
                     max.z = Mathf.Max(max.z, point.z);
                 }
             }
+        }
+
+        public bool Cut(Plane cuttingPlane, SurfaceDescription description, SurfaceLayers layers)
+        {
+            return brushMesh.Cut(cuttingPlane, description, layers);
         }
     }
 
@@ -301,6 +348,47 @@ namespace Chisel.Assets
                     subMeshes[i].ExtendBounds(transformation, ref min, ref max);
             }
             return new Bounds { min = min, max = max };
+        }
+
+        public void Cut(Plane cutPlane, CSGSurfaceAsset asset, UVMatrix uv0)
+        {
+            // TODO: improve design of surfaceAsset usage
+            var surfaceDescription = new SurfaceDescription()
+            {
+                smoothingGroup  = 0,
+                surfaceFlags    = SurfaceFlags.None,
+                UV0             = uv0
+            };
+            var surfaceLayers = new SurfaceLayers()
+            {
+                layerUsage      = asset.LayerUsage,
+                layerParameter1 = (asset.RenderMaterial  == null) ? 0 : asset.RenderMaterial .GetInstanceID(),
+                layerParameter2 = (asset.PhysicsMaterial == null) ? 0 : asset.PhysicsMaterial.GetInstanceID(),
+            };
+            Cut(cutPlane, surfaceDescription, surfaceLayers);
+        }
+        
+        public void Cut(Plane cutPlane, SurfaceDescription surfaceDescription, SurfaceLayers surfaceLayers)
+        {
+            for (int i = SubMeshes.Length - 1; i >= 0; i--)
+            {
+                SubMeshes[i].CreateOrUpdateBrushMesh();
+                if (!SubMeshes[i].Cut(cutPlane, surfaceDescription, surfaceLayers))
+                {
+                    if (SubMeshes.Length > 1)
+                    {
+                        var newSubMeshes = new List<CSGBrushSubMesh>(subMeshes);
+                        newSubMeshes.RemoveAt(i);
+                        subMeshes = newSubMeshes.ToArray();
+                    } else
+                        subMeshes = null;
+                    continue;
+                }
+                SubMeshes[i].CreateOrUpdateBrushMeshInverse();
+            }
+            if (subMeshes == null ||
+                subMeshes.Length == 0)
+                Clear();
         }
     }
 }
