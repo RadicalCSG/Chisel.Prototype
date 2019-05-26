@@ -83,12 +83,12 @@ namespace Chisel.Core
                     if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge + ", but there are " + halfEdges.Length + " edges.");
                     fail = true;
                 }
-                if (count <= 0)
+                if (count <= 2)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].edgeCount is " + count);
                     fail = true;
                 } else
-                if (firstEdge + count > halfEdges.Length)
+                if (firstEdge + count - 1 >= halfEdges.Length)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount is " + (firstEdge + count) + ", but there are " + halfEdges.Length + " edges.");
                     fail = true;
@@ -100,16 +100,19 @@ namespace Chisel.Core
                     fail = true;
                 }
 
-                for (int i1 = 0, i0 = count - 1; i1 < count; i0 = i1, i1++)
-                {
-                    var h0 = halfEdges[i0 + firstEdge];	// curr
-                    var h1 = halfEdges[i1 + firstEdge]; // curr.prev
-                    var t1 = halfEdges[h1.twinIndex];	// curr.prev.twin
-                    
-                    if (h0.vertexIndex != t1.vertexIndex)
+                if (!fail)
+                { 
+                    for (int i1 = 0, i0 = count - 1; i1 < count; i0 = i1, i1++)
                     {
-                        if (logErrors) Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[" + h1.twinIndex + "].vertexIndex (" + t1.vertexIndex + ").");
-                        fail = true;
+                        var h0 = halfEdges[i0 + firstEdge];	// curr
+                        var h1 = halfEdges[i1 + firstEdge]; // curr.prev
+                        var t1 = halfEdges[h1.twinIndex];	// curr.prev.twin
+                    
+                        if (h0.vertexIndex != t1.vertexIndex)
+                        {
+                            if (logErrors) Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[" + h1.twinIndex + "].vertexIndex (" + t1.vertexIndex + ").");
+                            fail = true;
+                        }
                     }
                 }
             }
