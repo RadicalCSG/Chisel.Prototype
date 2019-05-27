@@ -81,7 +81,7 @@ namespace Chisel.Components
 
         public uint					    bottomSmoothingGroup;
 
-        public CSGSurfaceAsset[]        surfaceAssets;
+        public ChiselBrushMaterial[]    brushMaterials;
         public SurfaceDescription[]     surfaceDescriptions;
 
         public int StepCount
@@ -126,7 +126,7 @@ namespace Chisel.Components
             riserDepth	    = kDefaultRiserDepth;
 
             bottomSmoothingGroup    = 0;
-            surfaceAssets           = null;
+            brushMaterials           = null;
             surfaceDescriptions     = null;
         }
 
@@ -150,14 +150,14 @@ namespace Chisel.Components
             innerSegments	= Mathf.Max(kMinSegments, innerSegments);
             outerSegments	= Mathf.Max(kMinSegments, outerSegments);
             
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != 6)
+            if (brushMaterials == null ||
+                brushMaterials.Length != 6)
             {
                 var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[6];
+                brushMaterials = new ChiselBrushMaterial[6];
                 for (int i = 0; i < 6; i++) // Note: sides share same material
-                    surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
             if (surfaceDescriptions == null ||

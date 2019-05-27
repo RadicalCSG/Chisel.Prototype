@@ -5,10 +5,10 @@ using Chisel.Assets;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(CSGSurfaceAsset)), CustomPreview(typeof(CSGSurfaceAsset)), CanEditMultipleObjects]
-    public sealed class CSGSurfaceAssetEditor : Editor
+    [CustomEditor(typeof(ChiselBrushMaterial)), CustomPreview(typeof(ChiselBrushMaterial)), CanEditMultipleObjects]
+    public sealed class ChiselBrushMaterialsEditor : Editor
     {
-        static readonly int SurfaceEditorHashCode =  typeof(CSGSurfaceAssetEditor).Name.GetHashCode();
+        static readonly int SurfaceEditorHashCode =  typeof(ChiselBrushMaterialsEditor).Name.GetHashCode();
 
         static readonly GUIContent RenderMaterialContents	= new GUIContent("Render Material");
         static readonly GUIContent LayerUsageContents		= new GUIContent("Layer Usage");

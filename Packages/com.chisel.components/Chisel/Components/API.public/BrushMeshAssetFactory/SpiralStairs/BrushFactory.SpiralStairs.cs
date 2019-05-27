@@ -23,14 +23,14 @@ namespace Chisel.Components
 
         public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition)
         {
-            return GenerateSpiralStairsAsset(brushMeshAsset, ref definition, definition.surfaceAssets, ref definition.surfaceDescriptions);
+            return GenerateSpiralStairsAsset(brushMeshAsset, ref definition, definition.brushMaterials, ref definition.surfaceDescriptions);
         }
 
-        public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition, CSGSurfaceAsset[] surfaceAssets, ref SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
         {
-            if (surfaceAssets == null ||
+            if (brushMaterials == null ||
                 surfaceDescriptions == null ||
-                surfaceAssets.Length != 6 ||
+                brushMaterials.Length != 6 ||
                 surfaceDescriptions.Length != 6)
             {
                 brushMeshAsset.Clear();
@@ -149,7 +149,7 @@ namespace Chisel.Components
 
                         if (i == 0)
                         {
-                            subMeshes[i].Polygons = CreateBoxAssetPolygons(surfaceAssets, surfaceDescriptions);
+                            subMeshes[i].Polygons = CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
                             minY -= treadHeight;
                         } else
                         {
@@ -228,7 +228,7 @@ namespace Chisel.Components
 
                                 if (i == 0)
                                 {
-                                    subMeshes[subMeshIndex].Polygons = CreateSquarePyramidAssetPolygons(surfaceAssets, surfaceDescriptions);
+                                    subMeshes[subMeshIndex].Polygons = CreateSquarePyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                                 } else
                                 {
                                     subMeshes[subMeshIndex].Polygons = subMeshes[subMeshIndex - i].Polygons.ToArray();
@@ -249,7 +249,7 @@ namespace Chisel.Components
 
                                 if (i == 0)
                                 {
-                                    subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(surfaceAssets, surfaceDescriptions);
+                                    subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                                 } else
                                 {
                                     subMeshes[subMeshIndex].Polygons = subMeshes[subMeshIndex - i].Polygons.ToArray();
@@ -274,7 +274,7 @@ namespace Chisel.Components
                             
                             if (i == 0)
                             {
-                                subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(surfaceAssets, surfaceDescriptions);
+                                subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                             } else
                             {
                                 subMeshes[subMeshIndex].Polygons = subMeshes[subMeshIndex - i].Polygons.ToArray();
@@ -295,7 +295,7 @@ namespace Chisel.Components
                             
                             if (i == 0)
                             {
-                                subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(surfaceAssets, surfaceDescriptions);
+                                subMeshes[subMeshIndex].Polygons = CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                             } else
                             {
                                 subMeshes[subMeshIndex].Polygons = subMeshes[subMeshIndex - i].Polygons.ToArray();
@@ -342,7 +342,7 @@ namespace Chisel.Components
 
                         if (i == 0)
                         {
-                            subMeshes[i].Polygons = CreateWedgeAssetPolygons(surfaceAssets, surfaceDescriptions);
+                            subMeshes[i].Polygons = CreateWedgeAssetPolygons(brushMaterials, surfaceDescriptions);
                             minY -= treadHeight;
                         } else
                         {
@@ -359,26 +359,26 @@ namespace Chisel.Components
                 
                 {
                     var subMeshIndex = treadStart - cylinderSubMeshCount;
-                    var cylinderSurfaceAssets		= new CSGSurfaceAsset[3] { surfaceAssets[0], surfaceAssets[1], surfaceAssets[2] };
+                    var cylinderBrushMaterials		= new ChiselBrushMaterial[3] { brushMaterials[0], brushMaterials[1], brushMaterials[2] };
                     var cylinderSurfaceDescriptions = new SurfaceDescription[outerSides + 2]; //surfaceDescriptions[0]
                     cylinderSurfaceDescriptions[0] = surfaceDescriptions[0];
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < outerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
                     subMeshes[subMeshIndex].Operation = CSGOperationType.Intersecting;
                 }
 
                 if (haveInnerCyl)
                 {
                     var subMeshIndex = treadStart - 1;
-                    var cylinderSurfaceAssets		= new CSGSurfaceAsset[3] { surfaceAssets[0], surfaceAssets[1], surfaceAssets[2] };
+                    var cylinderBrushMaterials		= new ChiselBrushMaterial[3] { brushMaterials[0], brushMaterials[1], brushMaterials[2] };
                     var cylinderSurfaceDescriptions = new SurfaceDescription[innerSides + 2]; //surfaceDescriptions[0]
                     cylinderSurfaceDescriptions[0] = surfaceDescriptions[0];
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < innerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                    GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
                     subMeshes[subMeshIndex].Operation = CSGOperationType.Subtractive;
                 }
 
@@ -424,7 +424,7 @@ namespace Chisel.Components
 
                     if (n == 0)
                     {
-                        subMeshes[i].Polygons = CreateBoxAssetPolygons(surfaceAssets, surfaceDescriptions);
+                        subMeshes[i].Polygons = CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
                     } else
                         subMeshes[i].Polygons = subMeshes[startIndex].Polygons.ToArray();
                     
@@ -439,26 +439,26 @@ namespace Chisel.Components
 
             {
                 var subMeshIndex = subMeshCount - cylinderSubMeshCount;
-                var cylinderSurfaceAssets		= new CSGSurfaceAsset[3] { surfaceAssets[0], surfaceAssets[1], surfaceAssets[2] };
+                var cylinderBrushMaterials		= new ChiselBrushMaterial[3] { brushMaterials[0], brushMaterials[1], brushMaterials[2] };
                 var cylinderSurfaceDescriptions = new SurfaceDescription[outerSides + 2]; //surfaceDescriptions[0]
                 cylinderSurfaceDescriptions[0] = surfaceDescriptions[0];
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < outerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                GenerateCylinderSubMesh(subMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
                 subMeshes[subMeshIndex].Operation = CSGOperationType.Intersecting;
             }
 
             if (haveInnerCyl)
             {
                 var subMeshIndex = subMeshCount - 1;
-                var cylinderSurfaceAssets		= new CSGSurfaceAsset[3] { surfaceAssets[0], surfaceAssets[1], surfaceAssets[2] };
+                var cylinderBrushMaterials		= new ChiselBrushMaterial[3] { brushMaterials[0], brushMaterials[1], brushMaterials[2] };
                 var cylinderSurfaceDescriptions = new SurfaceDescription[innerSides + 2]; //surfaceDescriptions[0]
                 cylinderSurfaceDescriptions[0] = surfaceDescriptions[0];
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < innerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, cylinderSurfaceAssets, cylinderSurfaceDescriptions);
+                GenerateCylinderSubMesh(subMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
                 subMeshes[subMeshIndex].Operation = CSGOperationType.Subtractive;
             }
 

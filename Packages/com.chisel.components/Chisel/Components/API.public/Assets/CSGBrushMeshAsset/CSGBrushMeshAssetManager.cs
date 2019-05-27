@@ -21,21 +21,21 @@ namespace Chisel.Assets
         static readonly HashSet<CSGBrushMeshAsset>  updateQueueLookup       = new HashSet<CSGBrushMeshAsset>();
         static readonly List<CSGBrushMeshAsset>     updateQueue             = new List<CSGBrushMeshAsset>();
 
-        // Dictionaries used to keep track which surfaces are used by which brushMeshes, which is necessary to update the right brushMeshes when a used surfaceAsset has been changed
-        static readonly Dictionary<CSGBrushMeshAsset, HashSet<CSGSurfaceAsset>> brushMeshSurfaces  = new Dictionary<CSGBrushMeshAsset, HashSet<CSGSurfaceAsset>>();
-        static readonly Dictionary<CSGSurfaceAsset, HashSet<CSGBrushMeshAsset>> surfaceBrushMeshes = new Dictionary<CSGSurfaceAsset, HashSet<CSGBrushMeshAsset>>();
+        // Dictionaries used to keep track which surfaces are used by which brushMeshes, which is necessary to update the right brushMeshes when a used brushMaterial has been changed
+        static readonly Dictionary<CSGBrushMeshAsset, HashSet<ChiselBrushMaterial>> brushMeshSurfaces  = new Dictionary<CSGBrushMeshAsset, HashSet<ChiselBrushMaterial>>();
+        static readonly Dictionary<ChiselBrushMaterial, HashSet<CSGBrushMeshAsset>> surfaceBrushMeshes = new Dictionary<ChiselBrushMaterial, HashSet<CSGBrushMeshAsset>>();
         
 
         static CSGBrushMeshAssetManager()
         {
-            CSGSurfaceAssetManager.OnSurfaceAssetChanged -= OnSurfaceAssetChanged;
-            CSGSurfaceAssetManager.OnSurfaceAssetChanged += OnSurfaceAssetChanged;
+            ChiselBrushMaterialManager.OnBrushMaterialChanged -= OnChiselBrushMaterialChanged;
+            ChiselBrushMaterialManager.OnBrushMaterialChanged += OnChiselBrushMaterialChanged;
 
-            CSGSurfaceAssetManager.OnSurfaceAssetRemoved -= OnSurfaceAssetRemoved;
-            CSGSurfaceAssetManager.OnSurfaceAssetRemoved += OnSurfaceAssetRemoved;
+            ChiselBrushMaterialManager.OnBrushMaterialRemoved -= OnChiselBrushMaterialRemoved;
+            ChiselBrushMaterialManager.OnBrushMaterialRemoved += OnChiselBrushMaterialRemoved;
 
-            CSGSurfaceAssetManager.OnSurfaceAssetsReset -= OnSurfaceAssetsReset;
-            CSGSurfaceAssetManager.OnSurfaceAssetsReset += OnSurfaceAssetsReset;
+            ChiselBrushMaterialManager.OnBrushMaterialsReset -= OnChiselBrushMaterialsReset;
+            ChiselBrushMaterialManager.OnBrushMaterialsReset += OnChiselBrushMaterialsReset;
         }
 
         static void Clear()
@@ -93,7 +93,7 @@ namespace Chisel.Assets
                     continue;
                 foreach (var polygon in subMesh.Polygons)
                 {
-                    CSGSurfaceAssetManager.Unregister(polygon.surfaceAsset);
+                    ChiselBrushMaterialManager.Unregister(polygon.brushMaterial);
                 }
             }
         }
@@ -108,7 +108,7 @@ namespace Chisel.Assets
                     continue;
                 foreach (var polygon in subMesh.Polygons)
                 {
-                    CSGSurfaceAssetManager.Register(polygon.surfaceAsset);
+                    ChiselBrushMaterialManager.Register(polygon.brushMaterial);
                 }
             }
         }
@@ -121,44 +121,6 @@ namespace Chisel.Assets
             }
         }
 
-            /*
-        public static bool IsSurfaceUnique(CSGSurfaceAsset currentSurface)
-        {
-            return true;
-            if (currentSurface == null)
-                return false;
-#if UNITY_EDITOR
-            var path = UnityEditor.AssetDatabase.GetAssetPath(currentSurface.GetInstanceID());
-            if (!string.IsNullOrEmpty(path))
-                return false;
-#endif
-            HashSet<CSGBrushMeshAsset> brushMeshAssetLookup;
-            if (!surfaceBrushMeshes.TryGetValue(currentSurface, out brushMeshAssetLookup))
-                return true;
-
-            if (brushMeshAssetLookup.Count == 0)
-                return true;
-            
-            if (brushMeshAssetLookup.Count > 1)
-                return false;
-
-            var brushMeshAsset = brushMeshAssetLookup.First();
-            var counter = 0;
-            for (int p = 0; p < brushMeshAsset.Polygons.Length; p++)
-            {
-                var polygon = brushMeshAsset.Polygons[p];
-                if (polygon.surfaceAsset == currentSurface)
-                {
-                    counter++;
-                    if (counter > 1)
-                        return false;
-                }
-            }
-
-            return true;
-            
-        }
-*/
         public static bool IsBrushMeshUnique(CSGBrushMeshAsset currentBrushMesh)
         {
 #if UNITY_EDITOR
@@ -208,18 +170,18 @@ namespace Chisel.Assets
             updateQueue.Add(brushMeshAsset);
         }
 
-        static void OnSurfaceAssetsReset()
+        static void OnChiselBrushMaterialsReset()
         {
             CSGBrushMeshAssetManager.RegisterAllSurfaces();
         }
 
-        static void OnSurfaceAssetChanged(CSGSurfaceAsset surfaceAsset)
+        static void OnChiselBrushMaterialChanged(ChiselBrushMaterial brushMaterial)
         {
-            if (surfaceAsset == null)
+            if (brushMaterial == null)
                 return;
 
             HashSet<CSGBrushMeshAsset> brushMeshAssets;
-            if (!surfaceBrushMeshes.TryGetValue(surfaceAsset, out brushMeshAssets))
+            if (!surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                 return;
             
             foreach (var brushMeshAsset in brushMeshAssets)
@@ -229,62 +191,62 @@ namespace Chisel.Assets
             }
         }
 
-        static void OnSurfaceAssetRemoved(CSGSurfaceAsset surfaceAsset)
+        static void OnChiselBrushMaterialRemoved(ChiselBrushMaterial brushMaterial)
         {
             HashSet<CSGBrushMeshAsset> brushMeshAssets;
-            if (surfaceBrushMeshes.TryGetValue(surfaceAsset, out brushMeshAssets))
+            if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
             {
                 foreach (var brushMeshAsset in brushMeshAssets)
                 {
-                    HashSet<CSGSurfaceAsset> uniqueSurfaces;
+                    HashSet<ChiselBrushMaterial> uniqueSurfaces;
                     if (brushMeshSurfaces.TryGetValue(brushMeshAsset, out uniqueSurfaces))
                     {
-                        uniqueSurfaces.Remove(surfaceAsset);
+                        uniqueSurfaces.Remove(brushMaterial);
                         if (brushMeshAsset)
                             updateQueue.Add(brushMeshAsset);
                     }
                 } 
             }
-            surfaceBrushMeshes.Remove(surfaceAsset);
+            surfaceBrushMeshes.Remove(brushMaterial);
         }
 
         // TODO: shouldn't be public
         public static void UpdateSurfaces(CSGBrushMeshAsset brushMeshAsset)
         {
-            HashSet<CSGSurfaceAsset> uniqueSurfaces;
+            HashSet<ChiselBrushMaterial> uniqueSurfaces;
             if (brushMeshSurfaces.TryGetValue(brushMeshAsset, out uniqueSurfaces))
             {
                 // Remove previously set surfaces for this brushMesh
-                foreach (var surfaceAsset in uniqueSurfaces)
+                foreach (var brushMaterial in uniqueSurfaces)
                 {
-                    if (Equals(null, surfaceAsset))
+                    if (Equals(null, brushMaterial))
                         continue;
 
                     HashSet<CSGBrushMeshAsset> brushMeshAssets;
-                    if (surfaceBrushMeshes.TryGetValue(surfaceAsset, out brushMeshAssets))
+                    if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         brushMeshAssets.Remove(brushMeshAsset);
                 }
                 uniqueSurfaces.Clear();
             } else
-                uniqueSurfaces = new HashSet<CSGSurfaceAsset>();
+                uniqueSurfaces = new HashSet<ChiselBrushMaterial>();
             
             var polygons		= brushMeshAsset.Polygons;
             if (polygons != null)
             {
                 for (int i = 0; i < polygons.Length; i++)
                 {
-                    var surfaceAsset = polygons[i].surfaceAsset;
-                    if (Equals(null, surfaceAsset))
+                    var brushMaterial = polygons[i].brushMaterial;
+                    if (Equals(null, brushMaterial))
                         continue;
 
                     // Add current surfaces of this brushMesh
-                    if (uniqueSurfaces.Add(surfaceAsset))
+                    if (uniqueSurfaces.Add(brushMaterial))
                     {
                         HashSet<CSGBrushMeshAsset> brushMeshAssets;
-                        if (!surfaceBrushMeshes.TryGetValue(surfaceAsset, out brushMeshAssets))
+                        if (!surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         {
                             brushMeshAssets = new HashSet<CSGBrushMeshAsset>();
-                            surfaceBrushMeshes[surfaceAsset] = brushMeshAssets;
+                            surfaceBrushMeshes[brushMaterial] = brushMeshAssets;
                         }
                         brushMeshAssets.Add(brushMeshAsset);
                     }
@@ -297,14 +259,14 @@ namespace Chisel.Assets
         {
             // NOTE: brushMeshAsset is likely destroyed at this point, it can still be used as a lookup key however.
             
-            HashSet<CSGSurfaceAsset> uniqueSurfaces;
+            HashSet<ChiselBrushMaterial> uniqueSurfaces;
             if (brushMeshSurfaces.TryGetValue(brushMeshAsset, out uniqueSurfaces))
             {
                 // Remove previously set surfaces for this brushMesh
-                foreach (var surfaceAsset in uniqueSurfaces)
+                foreach (var brushMaterial in uniqueSurfaces)
                 {
                     HashSet<CSGBrushMeshAsset> brushMeshAssets;
-                    if (surfaceBrushMeshes.TryGetValue(surfaceAsset, out brushMeshAssets))
+                    if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         brushMeshAssets.Remove(brushMeshAsset);
                 }
                 uniqueSurfaces.Clear();

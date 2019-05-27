@@ -93,7 +93,7 @@ namespace Chisel.Components
         public static bool GenerateRevolvedShapeAsset(CSGBrushMeshAsset brushMeshAsset, CSGRevolvedShapeDefinition definition)
         {
             definition.Validate();
-            var surfaces		= definition.surfaceAssets;
+            var surfaces		= definition.brushMaterials;
             var descriptions	= definition.surfaceDescriptions;
         
             

@@ -6,14 +6,14 @@ using System;
 
 namespace Chisel.Assets
 {
-    public delegate void OnSurfaceAssetDelegate(CSGSurfaceAsset surfaceAsset);
+    public delegate void OnBrushMaterialDelegate(ChiselBrushMaterial brushMaterial);
     
-    public static class CSGSurfaceAssetManager
+    public static class ChiselBrushMaterialManager
     {
-        public static event OnSurfaceAssetDelegate OnSurfaceAssetChanged;
-        public static event OnSurfaceAssetDelegate OnSurfaceAssetRemoved;
-        public static event OnSurfaceAssetDelegate OnSurfaceAssetAdded;
-        public static event Action OnSurfaceAssetsReset;
+        public static event OnBrushMaterialDelegate OnBrushMaterialChanged;
+        public static event OnBrushMaterialDelegate OnBrushMaterialRemoved;
+        public static event OnBrushMaterialDelegate OnBrushMaterialAdded;
+        public static event Action OnBrushMaterialsReset;
 
         class RenderMaterialInstance
         {
@@ -29,13 +29,13 @@ namespace Chisel.Assets
             public int			  refCount;
         }
 
-        static Dictionary<int, RenderMaterialInstance>  renderMaterialLookup    = new Dictionary<int, RenderMaterialInstance>();
-        static Dictionary<int, PhysicsMaterialInstance> physicsMaterialLookup	= new Dictionary<int, PhysicsMaterialInstance>();
+        static Dictionary<int, RenderMaterialInstance>  instanceIdToRenderMaterialLookup    = new Dictionary<int, RenderMaterialInstance>();
+        static Dictionary<int, PhysicsMaterialInstance> instanceIdToPhysicsMaterialLookup	= new Dictionary<int, PhysicsMaterialInstance>();
         
-        static Dictionary<CSGSurfaceAsset, RenderMaterialInstance>  surfaceRenderMaterialLookup		= new Dictionary<CSGSurfaceAsset, RenderMaterialInstance>();
-        static Dictionary<CSGSurfaceAsset, PhysicsMaterialInstance> surfacePhysicsMaterialLookup	= new Dictionary<CSGSurfaceAsset, PhysicsMaterialInstance>();
+        static Dictionary<ChiselBrushMaterial, RenderMaterialInstance>  brushMaterialToRenderMaterialLookup		= new Dictionary<ChiselBrushMaterial, RenderMaterialInstance>();
+        static Dictionary<ChiselBrushMaterial, PhysicsMaterialInstance> brushMaterialToPhysicsMaterialLookup	= new Dictionary<ChiselBrushMaterial, PhysicsMaterialInstance>();
 
-        static readonly HashSet<CSGSurfaceAsset> registeredLookup       = new HashSet<CSGSurfaceAsset>();
+        static readonly HashSet<ChiselBrushMaterial> registeredLookup       = new HashSet<ChiselBrushMaterial>();
         
         static readonly HashSet<int> removeRenderMaterials  = new HashSet<int>();
         static readonly HashSet<int> removePhysicsMaterials = new HashSet<int>();
@@ -46,10 +46,10 @@ namespace Chisel.Assets
 
         static void Clear()
         {
-            renderMaterialLookup.Clear();
-            physicsMaterialLookup.Clear();
-            surfaceRenderMaterialLookup.Clear();
-            surfacePhysicsMaterialLookup.Clear();
+            instanceIdToRenderMaterialLookup.Clear();
+            instanceIdToPhysicsMaterialLookup.Clear();
+            brushMaterialToRenderMaterialLookup.Clear();
+            brushMaterialToPhysicsMaterialLookup.Clear();
             registeredLookup.Clear();
             removeRenderMaterials.Clear();
             removePhysicsMaterials.Clear();
@@ -58,14 +58,14 @@ namespace Chisel.Assets
         public static void Reset()
         {
             Clear();
-            OnSurfaceAssetsReset?.Invoke();
+            OnBrushMaterialsReset?.Invoke();
         }
 
 
         public static Material GetRenderMaterialByInstanceID(int instanceID, bool reregisterAllIfNotFound = true)
         {
             RenderMaterialInstance renderMaterialInstance;
-            if (renderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
+            if (instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
                 return renderMaterialInstance.renderMaterial;
             
             // See if we already, unsuccessfully, tried finding this instanceID
@@ -76,17 +76,17 @@ namespace Chisel.Assets
             }
 
             // See if we've, somehow, passed the instanceID of a PhysicMaterial (we're expecting a Material)
-            if (physicsMaterialLookup.ContainsKey(instanceID))
+            if (instanceIdToPhysicsMaterialLookup.ContainsKey(instanceID))
             {
                 Debug.LogError("Trying to use PhysicMaterial with instanceID " + instanceID + " as a Material.");
                 return null;
             } else
             if (reregisterAllIfNotFound)
             {
-                // This should never happen, but just in case it does, we try finding all surface assets and reregister all of them (slow)
+                // This should never happen, but just in case it does, we try finding all brush materials and reregister all of them (slow)
                 Reset();
-                Debug.LogWarning("Performance warning: Could not find Material with instanceID " + instanceID + ". Reregistering all surfaces to find it.");
-                if (renderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
+                Debug.LogWarning("Performance warning: Could not find Material with instanceID " + instanceID + ". Reregistering all brush materials to find it.");
+                if (instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
                     return renderMaterialInstance.renderMaterial;
             }
             unknownRenderMaterialInstanceIDs.Add(instanceID);
@@ -97,7 +97,7 @@ namespace Chisel.Assets
         public static PhysicMaterial GetPhysicsMaterialByInstanceID(int instanceID, bool reregisterAllIfNotFound = true)
         {
             PhysicsMaterialInstance physicsMaterialInstance;
-            if (physicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
+            if (instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
                 return physicsMaterialInstance.physicsMaterial;
             
             // See if we already, unsuccessfully, tried finding this instanceID
@@ -108,17 +108,17 @@ namespace Chisel.Assets
             }
 
             // See if we've, somehow, passed the instanceID of a Material (we're expecting a PhysicMaterial)
-            if (renderMaterialLookup.ContainsKey(instanceID))
+            if (instanceIdToRenderMaterialLookup.ContainsKey(instanceID))
             {
                 Debug.LogError("Trying to use Material with instanceID " + instanceID + " as a PhysicMaterial.");
                 return null;
             } else
             if (reregisterAllIfNotFound)
             {
-                // This should never happen, but just in case it does, we try finding all surface assets and reregister all of them (slow)
+                // This should never happen, but just in case it does, we try finding all brush materials and reregister all of them (slow)
                 Reset();
-                Debug.LogWarning("Performance warning: Could not find PhysicMaterial with instanceID " + instanceID + ". Reregistering all surfaces to find it.");
-                if (physicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
+                Debug.LogWarning("Performance warning: Could not find PhysicMaterial with instanceID " + instanceID + ". Reregistering all brush materials to find it.");
+                if (instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
                     return physicsMaterialInstance.physicsMaterial;
             }
 
@@ -130,7 +130,7 @@ namespace Chisel.Assets
         public static int? GetRenderMaterialRefCountByInstanceID(int instanceID)
         {
             RenderMaterialInstance renderMaterialInstance;
-            if (!renderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
+            if (!instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out renderMaterialInstance))
                 return null;
             return renderMaterialInstance.refCount;
         }
@@ -138,39 +138,39 @@ namespace Chisel.Assets
         public static int? GetPhysicsMaterialRefCountByInstanceID(int instanceID)
         {
             PhysicsMaterialInstance physicsMaterialInstance;
-            if (!physicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
+            if (!instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out physicsMaterialInstance))
                 return null;
             return physicsMaterialInstance.refCount;
         }
 
-        public static bool IsRegistered(CSGSurfaceAsset surfaceAsset)
+        public static bool IsRegistered(ChiselBrushMaterial brushMaterial)
         {
-            if (surfaceAsset == null)
+            if (brushMaterial == null)
                 return false;
-            return registeredLookup.Contains(surfaceAsset);
+            return registeredLookup.Contains(brushMaterial);
         }
 
-        public static void Register(CSGSurfaceAsset surfaceAsset)
+        public static void Register(ChiselBrushMaterial brushMaterial)
         {
-            if (surfaceAsset == null || !registeredLookup.Add(surfaceAsset)) return;
+            if (brushMaterial == null || !registeredLookup.Add(brushMaterial)) return;
 
-            surfaceRenderMaterialLookup [surfaceAsset] = IncRefCount(surfaceAsset.RenderMaterial);
-            surfacePhysicsMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.PhysicsMaterial);
+            brushMaterialToRenderMaterialLookup [brushMaterial] = IncRefCount(brushMaterial.RenderMaterial);
+            brushMaterialToPhysicsMaterialLookup[brushMaterial] = IncRefCount(brushMaterial.PhysicsMaterial);
 
-            OnSurfaceAssetAdded?.Invoke(surfaceAsset);
+            OnBrushMaterialAdded?.Invoke(brushMaterial);
         }
 
-        public static void Unregister(CSGSurfaceAsset surfaceAsset)
+        public static void Unregister(ChiselBrushMaterial brushMaterial)
         {
-            if (!registeredLookup.Remove(surfaceAsset)) return;
+            if (!registeredLookup.Remove(brushMaterial)) return;
 
-            surfaceRenderMaterialLookup .Remove(surfaceAsset);
-            surfacePhysicsMaterialLookup.Remove(surfaceAsset);
+            brushMaterialToRenderMaterialLookup .Remove(brushMaterial);
+            brushMaterialToPhysicsMaterialLookup.Remove(brushMaterial);
 
-            DecRefCount(surfaceAsset.RenderMaterial);
-            DecRefCount(surfaceAsset.PhysicsMaterial);
+            DecRefCount(brushMaterial.RenderMaterial);
+            DecRefCount(brushMaterial.PhysicsMaterial);
 
-            OnSurfaceAssetRemoved?.Invoke(surfaceAsset);
+            OnBrushMaterialRemoved?.Invoke(brushMaterial);
         }
 
         static RenderMaterialInstance IncRefCount(Material renderMaterial)
@@ -179,10 +179,10 @@ namespace Chisel.Assets
                 return null;
             var instanceID = renderMaterial.GetInstanceID();
             RenderMaterialInstance instance;
-            if (!renderMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out instance))
             {
                 instance = new RenderMaterialInstance(renderMaterial);
-                renderMaterialLookup[instanceID] = instance;
+                instanceIdToRenderMaterialLookup[instanceID] = instance;
                 unknownRenderMaterialInstanceIDs.Remove(instanceID);
             }
             instance.refCount++;
@@ -195,10 +195,10 @@ namespace Chisel.Assets
                 return null;
             var instanceID = physicsMaterial.GetInstanceID();
             PhysicsMaterialInstance instance;
-            if (!physicsMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out instance))
             {
                 instance = new PhysicsMaterialInstance(physicsMaterial);
-                physicsMaterialLookup[instanceID] = instance;
+                instanceIdToPhysicsMaterialLookup[instanceID] = instance;
                 unknownPhysicsMaterialInstanceIDs.Remove(instanceID);
             }
             instance.refCount++;
@@ -211,7 +211,7 @@ namespace Chisel.Assets
                 return;
             var instanceID = renderMaterial.GetInstanceID();
             RenderMaterialInstance instance;
-            if (!renderMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out instance))
                 return;
             instance.refCount--;
             if (instance.refCount <= 0)
@@ -224,7 +224,7 @@ namespace Chisel.Assets
                 return;
             var instanceID = physicsMaterial.GetInstanceID();
             PhysicsMaterialInstance instance;
-            if (!physicsMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out instance))
                 return;
             instance.refCount--;
             if (instance.refCount <= 0)
@@ -233,65 +233,65 @@ namespace Chisel.Assets
             }
         }
 
-        public static void OnLayerUsageFlagsChanged(CSGSurfaceAsset surfaceAsset, LayerUsageFlags prevValue, LayerUsageFlags value)
+        public static void OnLayerUsageFlagsChanged(ChiselBrushMaterial brushMaterial, LayerUsageFlags prevValue, LayerUsageFlags value)
         {
-            if (!registeredLookup.Contains(surfaceAsset) || (prevValue == value))
+            if (!registeredLookup.Contains(brushMaterial) || (prevValue == value))
                 return;
 
-            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
+            OnBrushMaterialChanged?.Invoke(brushMaterial);
         }
 
-        public static void OnRenderMaterialChanged(CSGSurfaceAsset surfaceAsset, Material prevValue, Material value)
+        public static void OnRenderMaterialChanged(ChiselBrushMaterial brushMaterial, Material prevValue, Material value)
         {
-            if (!registeredLookup.Contains(surfaceAsset) || (prevValue == value))
+            if (!registeredLookup.Contains(brushMaterial) || (prevValue == value))
                 return;
             
             DecRefCount(prevValue);
             IncRefCount(value);
 
-            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
+            OnBrushMaterialChanged?.Invoke(brushMaterial);
         }
 
-        public static void OnPhysicsMaterialChanged(CSGSurfaceAsset surfaceAsset, PhysicMaterial prevValue, PhysicMaterial value)
+        public static void OnPhysicsMaterialChanged(ChiselBrushMaterial brushMaterial, PhysicMaterial prevValue, PhysicMaterial value)
         {
-            if (!registeredLookup.Contains(surfaceAsset) || (prevValue == value))
+            if (!registeredLookup.Contains(brushMaterial) || (prevValue == value))
                 return;
 
             DecRefCount(prevValue);
             IncRefCount(value);
 
-            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
+            OnBrushMaterialChanged?.Invoke(brushMaterial);
         }
 
-        public static void NotifyContentsModified(CSGSurfaceAsset surfaceAsset)
+        public static void NotifyContentsModified(ChiselBrushMaterial brushMaterial)
         {
-            if (surfaceAsset == null || !registeredLookup.Contains(surfaceAsset))
+            if (brushMaterial == null || !registeredLookup.Contains(brushMaterial))
                 return;
 
             RenderMaterialInstance renderMaterialInstance;
-            if (surfaceRenderMaterialLookup.TryGetValue(surfaceAsset, out renderMaterialInstance))
+            if (brushMaterialToRenderMaterialLookup.TryGetValue(brushMaterial, out renderMaterialInstance))
             {
-                if ((renderMaterialInstance == null && surfaceAsset.RenderMaterial) ||
-                    (renderMaterialInstance != null && renderMaterialInstance.renderMaterial != surfaceAsset.RenderMaterial))
+                if ((renderMaterialInstance == null && brushMaterial.RenderMaterial) ||
+                    (renderMaterialInstance != null && renderMaterialInstance.renderMaterial != brushMaterial.RenderMaterial))
                 {
                     if (renderMaterialInstance != null)
                         DecRefCount(renderMaterialInstance.renderMaterial);
-                    surfaceRenderMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.RenderMaterial);
+                    brushMaterialToRenderMaterialLookup[brushMaterial] = IncRefCount(brushMaterial.RenderMaterial);
                 }
             }
             PhysicsMaterialInstance physicsMaterialInstance;
-            if (surfacePhysicsMaterialLookup.TryGetValue(surfaceAsset, out physicsMaterialInstance))
+            if (brushMaterialToPhysicsMaterialLookup.TryGetValue(brushMaterial, out physicsMaterialInstance))
             {
-                if ((physicsMaterialInstance == null && surfaceAsset.PhysicsMaterial) ||
-                    (physicsMaterialInstance != null && physicsMaterialInstance.physicsMaterial != surfaceAsset.PhysicsMaterial))
+                if ((physicsMaterialInstance == null && brushMaterial.PhysicsMaterial) ||
+                    (physicsMaterialInstance != null && physicsMaterialInstance.physicsMaterial != brushMaterial.PhysicsMaterial))
                 {
                     if (physicsMaterialInstance != null)
                         DecRefCount(physicsMaterialInstance.physicsMaterial);
-                    surfacePhysicsMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.PhysicsMaterial);
+                    brushMaterialToPhysicsMaterialLookup[brushMaterial] = IncRefCount(brushMaterial.PhysicsMaterial);
                 }
             }
 
-            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
+            OnBrushMaterialChanged?.Invoke(brushMaterial);
         }
 
         public static void Update()
@@ -303,10 +303,10 @@ namespace Chisel.Assets
             foreach(var instanceID in removeRenderMaterials)
             {
                 RenderMaterialInstance instance;
-                if (renderMaterialLookup.TryGetValue(instanceID, out instance))
+                if (instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out instance))
                 {
                     if (instance.refCount <= 0) // it might have been re-added in the meantime
-                        renderMaterialLookup.Remove(instanceID);
+                        instanceIdToRenderMaterialLookup.Remove(instanceID);
                 }
             }
             removeRenderMaterials.Clear();
@@ -314,10 +314,10 @@ namespace Chisel.Assets
             foreach (var instanceID in removePhysicsMaterials)
             {
                 PhysicsMaterialInstance instance;
-                if (physicsMaterialLookup.TryGetValue(instanceID, out instance))
+                if (instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out instance))
                 {
                     if (instance.refCount <= 0) // it might have been re-added in the meantime
-                        physicsMaterialLookup.Remove(instanceID);
+                        instanceIdToPhysicsMaterialLookup.Remove(instanceID);
                 }
             }
             removePhysicsMaterials.Clear();

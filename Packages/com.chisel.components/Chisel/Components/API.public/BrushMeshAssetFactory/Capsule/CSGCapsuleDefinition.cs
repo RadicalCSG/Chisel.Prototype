@@ -36,8 +36,8 @@ namespace Chisel.Components
         public int                  topSegments;
         public int                  bottomSegments;
         
-        public CSGSurfaceAsset[]	surfaceAssets;
-        public SurfaceDescription[]	surfaceDescriptions;
+        public ChiselBrushMaterial[] brushMaterials;
+        public SurfaceDescription[]	 surfaceDescriptions;
 
         public bool					haveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
         public bool					haveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
@@ -90,7 +90,7 @@ namespace Chisel.Components
             topSegments			= kDefaultTopSegments;
             bottomSegments		= kDefaultBottomSegments;
 
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
         }
 
@@ -107,15 +107,15 @@ namespace Chisel.Components
             bottomSegments		= Mathf.Max(bottomSegments, 0);
             sides				= Mathf.Max(sides, 3);
             
-            var minSurfaceAssets = 2 + sides;
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != minSurfaceAssets )
+            var minBrushMaterials = 2 + sides;
+            if (brushMaterials == null ||
+                brushMaterials.Length != minBrushMaterials )
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[minSurfaceAssets ];
-                for (int a = 0; a < minSurfaceAssets ; a++)
-                    surfaceAssets[a] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                brushMaterials = new ChiselBrushMaterial[minBrushMaterials ];
+                for (int a = 0; a < minBrushMaterials ; a++)
+                    brushMaterials[a] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
             var minSurfaceDescriptions = 2 + sides;

@@ -30,8 +30,8 @@ namespace Chisel.Components
 
         public bool                 fitCircle;
 
-        public CSGSurfaceAsset[]	surfaceAssets;
-        public SurfaceDescription[]	surfaceDescriptions;
+        public ChiselBrushMaterial[] brushMaterials;
+        public SurfaceDescription[]	 surfaceDescriptions;
 
         public static float CalcInnerDiameter(float outerDiameter, float tubeWidth)
         {
@@ -59,7 +59,7 @@ namespace Chisel.Components
 
             fitCircle			= true;
 
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
         }
 
@@ -75,19 +75,19 @@ namespace Chisel.Components
             totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
 
 
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != 6)
+            if (brushMaterials == null ||
+                brushMaterials.Length != 6)
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[6]
+                brushMaterials = new ChiselBrushMaterial[6]
                 {
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
                 };
             }
 

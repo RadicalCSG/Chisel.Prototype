@@ -20,7 +20,7 @@ namespace Chisel.Components
         [SerializeField] Path					path			= null;
         [SerializeField] Curve2D				shape			= null;
         [SerializeField] public int             curveSegments   = 8;
-        [SerializeField] CSGSurfaceAsset[]		surfaceAssets;
+        [SerializeField] ChiselBrushMaterial[]	brushMaterials;
         [SerializeField] SurfaceDescription[]	surfaceDescriptions;
         
         public static readonly Curve2D DefaultShape = new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
@@ -35,7 +35,7 @@ namespace Chisel.Components
             path				= new Path(Path.Default);
             shape				= new Curve2D(DefaultShape);
             curveSegments		= 8;
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
             base.OnResetInternal();
         }
@@ -71,14 +71,14 @@ namespace Chisel.Components
         
         protected override void UpdateGeneratorInternal()
         {
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != 3)
+            if (brushMaterials == null ||
+                brushMaterials.Length != 3)
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[3];
+                brushMaterials = new ChiselBrushMaterial[3];
                 for (int i = 0; i < 3; i++) // Note: sides share same material
-                    surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
             if (Shape == null)
@@ -96,7 +96,7 @@ namespace Chisel.Components
                 }
             }
 
-            BrushMeshAssetFactory.GenerateExtrudedShapeAsset(brushMeshAsset, shape, path, curveSegments, surfaceAssets, ref surfaceDescriptions);
+            BrushMeshAssetFactory.GenerateExtrudedShapeAsset(brushMeshAsset, shape, path, curveSegments, brushMaterials, ref surfaceDescriptions);
         }
     }
 }

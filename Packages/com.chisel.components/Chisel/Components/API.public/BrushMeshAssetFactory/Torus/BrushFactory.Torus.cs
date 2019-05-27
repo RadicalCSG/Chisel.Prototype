@@ -20,7 +20,7 @@ namespace Chisel.Components
         public static bool GenerateTorusVertices(CSGTorusDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
-            //var surfaces		= definition.surfaceAssets;
+            //var surfaces		= definition.brushMaterials;
             //var descriptions	= definition.surfaceDescriptions;
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);
@@ -93,7 +93,7 @@ namespace Chisel.Components
             }
 
             definition.Validate();
-            var surfaces		= definition.surfaceAssets;
+            var brushMaterials	= definition.brushMaterials;
             var descriptions	= definition.surfaceDescriptions;
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);
@@ -157,7 +157,7 @@ namespace Chisel.Components
                 }
                 
                 var subMesh = new CSGBrushSubMesh();
-                CreateExtrudedSubMesh(subMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions);
+                CreateExtrudedSubMesh(subMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
                 if (!subMesh.Validate())
                 {
                     brushMeshAsset.Clear();

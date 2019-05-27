@@ -17,17 +17,17 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Bounds bounds, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Bounds bounds, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
-            return GenerateBoxAsset(brushMeshAsset, bounds.min, bounds.max, surfaceAssets, surfaceDescriptions);
+            return GenerateBoxAsset(brushMeshAsset, bounds.min, bounds.max, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateBoxSubMesh(CSGBrushSubMesh subMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBoxSubMesh(CSGBrushSubMesh subMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return false;
 
-            if (surfaceAssets.Length != 6 ||
+            if (brushMaterials.Length != 6 ||
                 surfaceDescriptions.Length != 6)
                 return false;
 
@@ -35,13 +35,13 @@ namespace Chisel.Components
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
-            subMesh.Polygons	= CreateBoxAssetPolygons(surfaceAssets, surfaceDescriptions);
+            subMesh.Polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
             subMesh.HalfEdges	= boxHalfEdges.ToArray();
             subMesh.Vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
             return true;
         }
 
-        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (!BoundsExtensions.IsValid(min, max))
             {
@@ -57,10 +57,10 @@ namespace Chisel.Components
                 return false;
             }
             
-            if (surfaceAssets == null || surfaceAssets.Length != 6)
+            if (brushMaterials == null || brushMaterials.Length != 6)
             {
                 brushMeshAsset.Clear();
-                Debug.LogError("surfaceAssets needs to be an array of length 6");
+                Debug.LogError("brushMaterials needs to be an array of length 6");
                 return false;
             }
 
@@ -68,7 +68,7 @@ namespace Chisel.Components
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
             
-            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(surfaceAssets, surfaceDescriptions);
+            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
             brushMeshAsset.HalfEdges	= boxHalfEdges.ToArray();
             brushMeshAsset.Vertices		= BrushMeshFactory.CreateBoxVertices(min, max);
             brushMeshAsset.CalculatePlanes();
@@ -76,7 +76,7 @@ namespace Chisel.Components
             return true;
         }
         
-        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset[] surfaceAssets, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool GenerateBoxAsset(CSGBrushMeshAsset brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             if (!BoundsExtensions.IsValid(min, max))
             {
@@ -84,7 +84,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            if (surfaceAssets.Length != 6)
+            if (brushMaterials.Length != 6)
             {
                 brushMeshAsset.Clear();
                 return false;
@@ -94,7 +94,7 @@ namespace Chisel.Components
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
             
-            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(surfaceAssets, surfaceFlags);
+            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(brushMaterials, surfaceFlags);
             brushMeshAsset.HalfEdges	= boxHalfEdges.ToArray();
             brushMeshAsset.Vertices		= BrushMeshFactory.CreateBoxVertices(min, max);
             brushMeshAsset.CalculatePlanes();
@@ -102,33 +102,33 @@ namespace Chisel.Components
             return true;
         }
         
-        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (min.x == max.x || min.y == max.y || min.z == max.z)
                 return null;
 
-            if (surfaceAssets.Length != 6 ||
+            if (brushMaterials.Length != 6 ||
                 surfaceDescriptions.Length != 6)
                 return null;
             
             var brushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<CSGBrushMeshAsset>();
             brushMeshAsset.name = "Box";
-            if (!GenerateBoxAsset(brushMeshAsset, min, max, surfaceAssets, surfaceDescriptions))
+            if (!GenerateBoxAsset(brushMeshAsset, min, max, brushMaterials, surfaceDescriptions))
                 CSGObjectUtility.SafeDestroy(brushMeshAsset);
             return brushMeshAsset;
         }
 
-        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset[] surfaceAssets, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             if (min.x == max.x || min.y == max.y || min.z == max.z)
                 return null;
 
-            if (surfaceAssets.Length != 6)
+            if (brushMaterials.Length != 6)
                 return null;
 
             var brushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<CSGBrushMeshAsset>();
             brushMeshAsset.name = "Box";
-            if (!GenerateBoxAsset(brushMeshAsset, min, max, surfaceAssets, surfaceFlags))
+            if (!GenerateBoxAsset(brushMeshAsset, min, max, brushMaterials, surfaceFlags))
                 CSGObjectUtility.SafeDestroy(brushMeshAsset);
             return brushMeshAsset;
         }
@@ -139,21 +139,21 @@ namespace Chisel.Components
         /// <param name="size">The size of the box</param>
         /// <param name="material">The [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html) that will be set to all surfaces of the box (optional)</param>
         /// <returns>A <see cref="Chisel.Core.BrushMesh"/> on success, null on failure</returns>
-        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 size, CSGSurfaceAsset[] surfaceAssets, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 size, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             var halfSize = size * 0.5f;
-            return CreateBoxAsset(-halfSize, halfSize, surfaceAssets, surfaceFlags);
+            return CreateBoxAsset(-halfSize, halfSize, brushMaterials, surfaceFlags);
         }
 
-        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 size, CSGSurfaceAsset surfaceAsset, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 size, ChiselBrushMaterial brushMaterial, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             var halfSize = size * 0.5f;
-            return CreateBoxAsset(-halfSize, halfSize, surfaceAsset, surfaceFlags);
+            return CreateBoxAsset(-halfSize, halfSize, brushMaterial, surfaceFlags);
         }
 
-        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, CSGSurfaceAsset surfaceAsset, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static CSGBrushMeshAsset CreateBoxAsset(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial brushMaterial, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
-            return CreateBoxAsset(min, max, new CSGSurfaceAsset[] { surfaceAsset, surfaceAsset, surfaceAsset, surfaceAsset, surfaceAsset, surfaceAsset }, surfaceFlags);
+            return CreateBoxAsset(min, max, new ChiselBrushMaterial[] { brushMaterial, brushMaterial, brushMaterial, brushMaterial, brushMaterial, brushMaterial }, surfaceFlags);
         }
     }
 }

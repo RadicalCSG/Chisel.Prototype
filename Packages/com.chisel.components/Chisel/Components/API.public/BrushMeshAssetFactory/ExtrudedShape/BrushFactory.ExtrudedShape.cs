@@ -83,7 +83,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateExtrudedShapeAsset(CSGBrushMeshAsset brushMeshAsset, Curve2D shape, Path path, int curveSegments, CSGSurfaceAsset[] surfaceAssets, ref SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateExtrudedShapeAsset(CSGBrushMeshAsset brushMeshAsset, Curve2D shape, Path path, int curveSegments, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
         {
             var shapeVertices = new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
@@ -154,7 +154,7 @@ namespace Chisel.Components
                             continue;
 
                         var subMesh = new CSGBrushSubMesh();
-                        CreateExtrudedSubMesh(subMesh, shapeSegments, segmentIndices, 0, 1, vertices, surfaceAssets, surfaceDescriptions);
+                        CreateExtrudedSubMesh(subMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
                         subMeshes.Add(subMesh);
                     }
                 }
@@ -168,9 +168,9 @@ namespace Chisel.Components
         }
 
 
-        static bool CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        static bool CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
-            return CreateExtrudedSubMesh(subMesh, segments, segmentDescriptionIndices, null, segmentTopIndex, segmentBottomIndex, vertices, surfaceAssets, surfaceDescriptions);
+            return CreateExtrudedSubMesh(subMesh, segments, segmentDescriptionIndices, null, segmentTopIndex, segmentBottomIndex, vertices, brushMaterials, surfaceDescriptions);
         }
 
         enum SegmentTopology : sbyte
@@ -183,7 +183,7 @@ namespace Chisel.Components
             None = 3
         }
 
-        static bool CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, int[] segmentAssetIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        static bool CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, int[] segmentAssetIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (vertices.Length < 3)
                 return false;
@@ -279,11 +279,11 @@ namespace Chisel.Components
 
             var surfaceDescription0 = surfaceDescriptions[segmentTopIndex];
             var surfaceDescription1 = surfaceDescriptions[segmentBottomIndex];
-            var surfaceAsset0 = surfaceAssets[segmentTopIndex];
-            var surfaceAsset1 = surfaceAssets[segmentBottomIndex];
+            var brushMaterial0 = brushMaterials[segmentTopIndex];
+            var brushMaterial1 = brushMaterials[segmentBottomIndex];
 
-            polygons[0] = new CSGBrushSubMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, description = surfaceDescription0, surfaceAsset = surfaceAsset0 };
-            polygons[1] = new CSGBrushSubMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, surfaceAsset = surfaceAsset1 };
+            polygons[0] = new CSGBrushSubMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
+            polygons[1] = new CSGBrushSubMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, brushMaterial = brushMaterial1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -294,7 +294,7 @@ namespace Chisel.Components
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                        polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                         polygons[surfaceID].description.smoothingGroup = (uint)0;
                         surfaceID++;
                         break;
@@ -305,9 +305,9 @@ namespace Chisel.Components
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                        polygons[surfaceID + 0] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                         polygons[surfaceID + 0].description.smoothingGroup = (uint)smoothingGroup;
-                        polygons[surfaceID + 1] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                        polygons[surfaceID + 1] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                         polygons[surfaceID + 1].description.smoothingGroup = (uint)smoothingGroup;
                         surfaceID += 2;
                         break;
@@ -315,7 +315,7 @@ namespace Chisel.Components
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                        polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                         polygons[surfaceID].description.smoothingGroup = (uint)0;
                         surfaceID++;
                         break;
@@ -576,7 +576,7 @@ namespace Chisel.Components
             return true;
         }
 
-        static void CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, Vector3[] sideVertices, Vector3 extrusion, int[] segmentDescriptionIndices, int[] segmentAssetIndices, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        static void CreateExtrudedSubMesh(CSGBrushSubMesh subMesh, Vector3[] sideVertices, Vector3 extrusion, int[] segmentDescriptionIndices, int[] segmentAssetIndices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             const float distanceEpsilon = 0.0000001f;
             for (int i = sideVertices.Length - 1; i >= 0; i--)
@@ -656,11 +656,11 @@ namespace Chisel.Components
             var assetIndex1		  = (segmentAssetIndices       == null) ? 1 : (segmentAssetIndices[1]);
             var surfaceDescription0 = surfaceDescriptions[descriptionIndex0];
             var surfaceDescription1 = surfaceDescriptions[descriptionIndex1];
-            var surfaceAsset0 = surfaceAssets[assetIndex0];
-            var surfaceAsset1 = surfaceAssets[assetIndex1];
+            var brushMaterial0 = brushMaterials[assetIndex0];
+            var brushMaterial1 = brushMaterials[assetIndex1];
 
-            polygons[0] = new CSGBrushSubMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, description = surfaceDescription0, surfaceAsset = surfaceAsset0 };
-            polygons[1] = new CSGBrushSubMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, surfaceAsset = surfaceAsset1 };
+            polygons[0] = new CSGBrushSubMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
+            polygons[1] = new CSGBrushSubMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, brushMaterial = brushMaterial1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -669,7 +669,7 @@ namespace Chisel.Components
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                    polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                     polygons[surfaceID].description.smoothingGroup = (uint)0;
                     surfaceID++;
                 } else
@@ -677,9 +677,9 @@ namespace Chisel.Components
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                    polygons[surfaceID + 0] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                     polygons[surfaceID + 0].description.smoothingGroup = (uint)smoothingGroup;
-                    polygons[surfaceID + 1] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], surfaceAsset = surfaceAssets[assetIndex] };
+                    polygons[surfaceID + 1] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                     polygons[surfaceID + 1].description.smoothingGroup = (uint)smoothingGroup;
                     surfaceID += 2;
                 }

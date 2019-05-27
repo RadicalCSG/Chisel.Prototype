@@ -36,13 +36,13 @@ namespace Chisel.Assets
                 edgeCount = other.edgeCount;
                 surfaceID = other.surfaceID;
                 description = other.description;
-                surfaceAsset = other.surfaceAsset;
+                brushMaterial = other.brushMaterial;
             }
             [HideInInspector] [SerializeField] public Int32 firstEdge;
             [HideInInspector] [SerializeField] public Int32 edgeCount;
             [HideInInspector] [SerializeField] public Int32 surfaceID;
             public SurfaceDescription description;
-            public CSGSurfaceAsset surfaceAsset;    // this is an unfortunate consequence of the native dll, since we can't pass this along to 
+            public ChiselBrushMaterial brushMaterial;    // this is an unfortunate consequence of the native dll, since we can't pass this along to 
                                                     // the native side, it was "translated" to an integer using it's uniqueID, this created a 
                                                     // lot of boiler plate/management code that we can probably do away with once the CSG algorithm 
                                                     // is moved to managed code ..
@@ -120,17 +120,17 @@ namespace Chisel.Assets
                 dstPolygons[i].surfaceID    = polygons[i].surfaceID;
                 dstPolygons[i].description  = polygons[i].description;
 
-                var surfaceAsset = polygons[i].surfaceAsset;
-                if (surfaceAsset == null)
+                var brushMaterial = polygons[i].brushMaterial;
+                if (brushMaterial == null)
                 {
                     dstPolygons[i].layers.layerUsage = LayerUsageFlags.None;
                     dstPolygons[i].layers.layerParameter1 = 0;
                     dstPolygons[i].layers.layerParameter2 = 0;
                     continue;
                 } 
-                dstPolygons[i].layers.layerUsage      = surfaceAsset.LayerUsage;
-                dstPolygons[i].layers.layerParameter1 = surfaceAsset.RenderMaterialInstanceID;
-                dstPolygons[i].layers.layerParameter2 = surfaceAsset.PhysicsMaterialInstanceID;
+                dstPolygons[i].layers.layerUsage      = brushMaterial.LayerUsage;
+                dstPolygons[i].layers.layerParameter1 = brushMaterial.RenderMaterialInstanceID;
+                dstPolygons[i].layers.layerParameter2 = brushMaterial.PhysicsMaterialInstanceID;
             }
 
             if (!Validate())
@@ -175,9 +175,9 @@ namespace Chisel.Assets
                 polygons[i].surfaceID    = brushMesh.polygons[i].surfaceID;
                 polygons[i].description  = brushMesh.polygons[i].description;
 
-                var renderMaterial  = (brushMesh.polygons[i].layers.layerParameter1 == 0) ? null : CSGSurfaceAssetManager.GetRenderMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter1);
-                var physicsMaterial = (brushMesh.polygons[i].layers.layerParameter2 == 0) ? null : CSGSurfaceAssetManager.GetPhysicsMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter2);
-                polygons[i].surfaceAsset = CSGSurfaceAsset.CreateInstance(renderMaterial, physicsMaterial, brushMesh.polygons[i].layers.layerUsage);
+                var renderMaterial  = (brushMesh.polygons[i].layers.layerParameter1 == 0) ? null : ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter1);
+                var physicsMaterial = (brushMesh.polygons[i].layers.layerParameter2 == 0) ? null : ChiselBrushMaterialManager.GetPhysicsMaterialByInstanceID(brushMesh.polygons[i].layers.layerParameter2);
+                polygons[i].brushMaterial = ChiselBrushMaterial.CreateInstance(renderMaterial, physicsMaterial, brushMesh.polygons[i].layers.layerUsage);
             }
         }
         
@@ -203,10 +203,7 @@ namespace Chisel.Assets
 
         public bool Cut(Plane cuttingPlane, SurfaceDescription description, SurfaceLayers layers)
         {
-            if (brushMesh == null)
-                return false;
-
-            return brushMesh.Cut(cuttingPlane, description, layers);
+            return BrushMesh.Cut(cuttingPlane, description, layers);
         }
     }
 }

@@ -23,14 +23,14 @@ namespace Chisel.Editors
     public sealed class CSGCylinderEditor : ChiselGeneratorEditor<CSGCylinder>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
-        const string        SurfaceFormat           = "Surface {0}";
-        static GUIContent   surfacesContent         = new GUIContent("Surfaces");
+        const string        BrushMaterialFormat     = "Surface {0}";
+        static GUIContent   surfacesMaterialContent = new GUIContent("Surfaces");
         static GUIContent   descriptionContent      = new GUIContent("Description");
-        static GUIContent   surfaceAssetContent     = new GUIContent("Surface Asset");
-        static GUIContent[] surfacePropertyContent  = null;
+        static GUIContent   brushMaterialContent    = new GUIContent("Brush Material");
+        static GUIContent[] brushMaterialPropertyContent = null;
         
         SerializedProperty surfaceDescriptionProp;
-        SerializedProperty surfaceAssetProp;
+        SerializedProperty brushMaterialsProp;
         SerializedProperty typeProp;
         SerializedProperty topHeightProp;
         SerializedProperty topDiameterXProp;
@@ -46,7 +46,7 @@ namespace Chisel.Editors
         protected override void ResetInspector()
         { 
             surfaceDescriptionProp	= null;
-            surfaceAssetProp		= null;
+            brushMaterialsProp		= null;
 
             typeProp				= null;
             topHeightProp			= null;
@@ -63,7 +63,7 @@ namespace Chisel.Editors
         protected override void InitInspector()
         { 
             surfaceDescriptionProp  = serializedObject.FindProperty("definition.surfaceDescriptions");
-            surfaceAssetProp	    = serializedObject.FindProperty("definition.surfaceAssets");
+            brushMaterialsProp	    = serializedObject.FindProperty("definition.brushMaterials");
 
             typeProp			    = serializedObject.FindProperty("definition.type");
             topHeightProp		    = serializedObject.FindProperty("definition.top.height");
@@ -124,7 +124,7 @@ namespace Chisel.Editors
 
 
             EditorGUI.BeginChangeCheck();
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, surfacesContent);
+            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, surfacesMaterialContent);
             if (EditorGUI.EndChangeCheck())
                 SessionState.SetBool(kSurfacesVisibleKey, surfacesVisible);
             if (surfacesVisible)
@@ -132,13 +132,13 @@ namespace Chisel.Editors
                 EditorGUI.indentLevel++;
                 SerializedProperty elementProperty;
 
-                if (surfacePropertyContent == null ||
-                    surfacePropertyContent.Length < surfaceDescriptionProp.arraySize)
+                if (brushMaterialPropertyContent == null ||
+                    brushMaterialPropertyContent.Length < surfaceDescriptionProp.arraySize)
                 {
-                    surfacePropertyContent	= new GUIContent[surfaceDescriptionProp.arraySize];
+                    brushMaterialPropertyContent	= new GUIContent[surfaceDescriptionProp.arraySize];
                     for (int i = 0; i < surfaceDescriptionProp.arraySize; i++)
                     {
-                        surfacePropertyContent[i] = new GUIContent(string.Format(SurfaceFormat, i));
+                        brushMaterialPropertyContent[i] = new GUIContent(string.Format(BrushMaterialFormat, i));
                     }
                 }
                         
@@ -161,15 +161,15 @@ namespace Chisel.Editors
                         // TODO: unset hover over surface? how to handle that? register somewhere & check in scenegui update?
                     surfacePropertyVisible[i] = EditorGUI.Foldout(r, surfacePropertyVisible[i], surfacePropertyContent[i], false, EditorStyles.foldout);
                     */
-                    surfacePropertyVisible[i] = EditorGUILayout.Foldout(surfacePropertyVisible[i], surfacePropertyContent[i]);
+                    surfacePropertyVisible[i] = EditorGUILayout.Foldout(surfacePropertyVisible[i], brushMaterialPropertyContent[i]);
                     EditorGUI.indentLevel++;
                     if (surfacePropertyVisible[i])
                     {
                         elementProperty = surfaceDescriptionProp.GetArrayElementAtIndex(i);
                         EditorGUILayout.PropertyField(elementProperty, descriptionContent, true);
 
-                        elementProperty = surfaceAssetProp.GetArrayElementAtIndex((i>2)?2:i);
-                        EditorGUILayout.PropertyField(elementProperty, surfaceAssetContent, true);
+                        elementProperty = brushMaterialsProp.GetArrayElementAtIndex((i>2)?2:i);
+                        EditorGUILayout.PropertyField(elementProperty, brushMaterialContent, true);
                     }
                     EditorGUI.indentLevel--;
                 }

@@ -58,8 +58,8 @@ namespace Chisel.Components
         [AngleValue]
         public float rotation;
 
-        public CSGSurfaceAsset[]    surfaceAssets;
-        public SurfaceDescription[] surfaceDescriptions;
+        public ChiselBrushMaterial[] brushMaterials;
+        public SurfaceDescription[]  surfaceDescriptions;
 
         public float TopDiameterX
         {
@@ -204,7 +204,7 @@ namespace Chisel.Components
             sides = 16;
             smoothingGroup = 1;
             type = CylinderShapeType.Cylinder;
-            surfaceAssets = null;
+            brushMaterials = null;
             surfaceDescriptions = null;
         }
 
@@ -216,14 +216,14 @@ namespace Chisel.Components
             sides = Mathf.Max(3, sides);
 
 
-            if (surfaceAssets == null ||
-               surfaceAssets.Length != 3)
+            if (brushMaterials == null ||
+               brushMaterials.Length != 3)
             {
                 var defaultRenderMaterial = CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[3];
+                brushMaterials = new ChiselBrushMaterial[3];
                 for (int i = 0; i < 3; i++) // Note: sides share same material
-                    surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
             // TODO: handle existing surfaces better

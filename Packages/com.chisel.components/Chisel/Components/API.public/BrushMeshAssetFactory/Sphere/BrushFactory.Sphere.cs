@@ -35,7 +35,7 @@ namespace Chisel.Components
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateSphereSubMesh(subMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceAssets, definition.surfaceDescriptions);
+            return GenerateSphereSubMesh(subMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
         }
 
         public static bool GenerateSphereVertices(CSGSphereDefinition definition, ref Vector3[] vertices)
@@ -46,7 +46,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, CSGSurfaceAsset[] surfaceAssets, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||
@@ -69,7 +69,7 @@ namespace Chisel.Components
                     surfaceID = i,
                     edgeCount = brushMesh.polygons[i].edgeCount,
                     firstEdge = brushMesh.polygons[i].firstEdge,
-                    surfaceAsset = i < surfaceAssets.Length ? surfaceAssets[i] : surfaceAssets[0],
+                    brushMaterial = i < brushMaterials.Length ? brushMaterials[i] : brushMaterials[0],
                     description = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0],
                 };
             }

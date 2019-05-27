@@ -10,7 +10,7 @@ namespace Chisel.Assets
     // (when, for example, they're repeated or mirrored) 
     // they will all automatically update when one is modified.
 
-    // TODO: make sure this all works well with Polygon CSGSurfaceAssets 
+    // TODO: make sure this all works well with Polygon ChiselBrushMaterial 
     // TODO: when not unique, on modification make a copy first and modify that (unless it's an asset in the project?)
     [Serializable, PreferBinarySerialization]
     public sealed class CSGBrushMeshAsset : ScriptableObject
@@ -103,9 +103,9 @@ namespace Chisel.Assets
             return new Bounds { min = min, max = max };
         }
 
-        public void Cut(Plane cutPlane, CSGSurfaceAsset asset, UVMatrix uv0)
+        public void Cut(Plane cutPlane, ChiselBrushMaterial asset, UVMatrix uv0)
         {
-            // TODO: improve design of surfaceAsset usage
+            // TODO: improve design of brushMaterial usage
             var surfaceDescription = new SurfaceDescription()
             {
                 smoothingGroup  = 0,

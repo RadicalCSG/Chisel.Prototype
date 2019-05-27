@@ -17,6 +17,6 @@ namespace HierarchyTests
         // TODO: create generated meshes tests (CSGGeneratedMeshManager / CSGSharedUnityMeshManager)
         // TODO: test if setting a brushMesh on a brush will get the brushMesh/node combo registered in CSGNodeHierarchyManager
         // TODO: test brushmeshasset changes changing brushes etc.
-        // TODO: test surfaceasset changes changing brushes/brushmeshes etc.
+        // TODO: test brushMaterials changes changing brushes/brushmeshes etc.
     }
 }

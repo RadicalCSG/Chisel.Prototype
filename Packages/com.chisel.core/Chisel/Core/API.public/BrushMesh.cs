@@ -129,7 +129,7 @@ namespace Chisel.Core
             public Int32 edgeCount;
             
             /// <value>An ID that can be used to identify the <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
-            public Int32 surfaceID; // TODO: replace with surfaceID (leading to SurfaceAsset uniqueID) and polygonIndex on
+            public Int32 surfaceID; // TODO: replace with surfaceID (leading to BrushMaterial uniqueID) and polygonIndex
             
             /// <value>Describes how normals and texture coordinates are created.</value>
             public SurfaceDescription description;

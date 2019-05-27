@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -24,7 +24,7 @@ namespace Chisel.Editors
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static GUIContent   surfacesContent         = new GUIContent("Surfaces");
         static GUIContent   descriptionContent      = new GUIContent("Description");
-        static GUIContent   surfaceAssetContent     = new GUIContent("Surface Asset");
+        static GUIContent   brushMaterialContent    = new GUIContent("Brush Material");
         static GUIContent[] surfacePropertyContent  = new[]
         {
             new GUIContent("Surface 0"),
@@ -37,20 +37,21 @@ namespace Chisel.Editors
         
         SerializedProperty boundsProp;
         SerializedProperty surfaceDescriptionProp;
-        SerializedProperty surfaceAssetProp;
+        SerializedProperty brushMaterialProp;
         
+
         protected override void ResetInspector()
         { 
             boundsProp				= null;
             surfaceDescriptionProp	= null;
-            surfaceAssetProp		= null;
+            brushMaterialProp		= null;
         }
         
         protected override void InitInspector()
         { 
             boundsProp				= serializedObject.FindProperty("bounds");
             surfaceDescriptionProp	= serializedObject.FindProperty("surfaceDescriptions");
-            surfaceAssetProp		= serializedObject.FindProperty("surfaceAssets");
+            brushMaterialProp		= serializedObject.FindProperty("brushMaterialss");
 
             surfacesVisible = SessionState.GetBool(kSurfacesVisibleKey, false);
         }
@@ -118,8 +119,8 @@ namespace Chisel.Editors
                         elementProperty = surfaceDescriptionProp.GetArrayElementAtIndex(i);
                         EditorGUILayout.PropertyField(elementProperty, descriptionContent, true);
 
-                        elementProperty = surfaceAssetProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, surfaceAssetContent, true);
+                        elementProperty = brushMaterialProp.GetArrayElementAtIndex(i);
+                        EditorGUILayout.PropertyField(elementProperty, brushMaterialContent, true);
                     }
                     EditorGUI.indentLevel--;
                 }

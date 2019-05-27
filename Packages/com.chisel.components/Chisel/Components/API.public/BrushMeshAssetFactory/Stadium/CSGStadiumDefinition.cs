@@ -47,8 +47,8 @@ namespace Chisel.Components
         public bool					haveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
         public bool					haveCenter			{ get { return (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
         
-        public CSGSurfaceAsset[]	surfaceAssets;
-        public SurfaceDescription[]	surfaceDescriptions;
+        public ChiselBrushMaterial[] brushMaterials;
+        public SurfaceDescription[]	 surfaceDescriptions;
 
         public void Reset()
         {
@@ -63,7 +63,7 @@ namespace Chisel.Components
             topSides			= kDefaultTopSides;
             bottomSides			= SidesVertices;
 
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
         }
 
@@ -81,15 +81,15 @@ namespace Chisel.Components
             bottomSides			= Mathf.Max(bottomSides, 1);
 
             var sides			= 2 + Mathf.Max(topSides,1) + Mathf.Max(bottomSides,1);
-            int kMinSurfaceAssets = 2 + sides;
-            if (surfaceAssets == null ||
-                surfaceAssets.Length != kMinSurfaceAssets)
+            int kMinBrushMaterials = 2 + sides;
+            if (brushMaterials == null ||
+                brushMaterials.Length != kMinBrushMaterials)
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[kMinSurfaceAssets];
-                for (int a = 0; a < kMinSurfaceAssets; a++)
-                    surfaceAssets[a] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                brushMaterials = new ChiselBrushMaterial[kMinBrushMaterials];
+                for (int a = 0; a < kMinBrushMaterials; a++)
+                    brushMaterials[a] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
 
             int kMinSurfaceDescriptions = 2 + sides;

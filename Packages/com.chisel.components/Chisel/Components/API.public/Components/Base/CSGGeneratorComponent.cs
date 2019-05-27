@@ -439,7 +439,7 @@ namespace Chisel.Components
             }
         }
 
-        public override CSGSurfaceAsset FindSurfaceAsset(CSGTreeBrush brush, int surfaceID)
+        public override ChiselBrushMaterial FindBrushMaterial(CSGTreeBrush brush, int surfaceID)
         {
             if (!brushMeshAsset)
                 return null;
@@ -465,7 +465,7 @@ namespace Chisel.Components
                     if (surfaceIndex < 0 || surfaceIndex >= subMesh.Polygons.Length)
                         return null;
 
-                    return subMesh.Polygons[surfaceIndex].surfaceAsset;
+                    return subMesh.Polygons[surfaceIndex].brushMaterial;
                 }
                 return null;
             } else
@@ -488,11 +488,11 @@ namespace Chisel.Components
                 if (surfaceIndex < 0 || surfaceIndex >= subMesh.Polygons.Length)
                     return null;
 
-                return subMesh.Polygons[surfaceIndex].surfaceAsset;
+                return subMesh.Polygons[surfaceIndex].brushMaterial;
             }
         }
 
-        public override CSGSurfaceAsset[] GetAllSurfaceAssets(CSGTreeBrush brush)
+        public override ChiselBrushMaterial[] GetAllBrushMaterials(CSGTreeBrush brush)
         {
             if (!brushMeshAsset)
                 return null;
@@ -504,9 +504,9 @@ namespace Chisel.Components
                         continue;
 
                     var subMesh		= brushMeshAsset.SubMeshes[n - 1];
-                    var surfaces	= new HashSet<CSGSurfaceAsset>();
+                    var surfaces	= new HashSet<ChiselBrushMaterial>();
                     for (int i = 0; i < subMesh.Polygons.Length; i++)
-                        surfaces.Add(subMesh.Polygons[i].surfaceAsset);
+                        surfaces.Add(subMesh.Polygons[i].brushMaterial);
 
                     return surfaces.ToArray();
                 }
@@ -516,9 +516,9 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
 
-                var surfaces = new HashSet<CSGSurfaceAsset>();
+                var surfaces = new HashSet<ChiselBrushMaterial>();
                 for (int i = 0; i < brushMeshAsset.Polygons.Length; i++)
-                    surfaces.Add(brushMeshAsset.Polygons[i].surfaceAsset);
+                    surfaces.Add(brushMeshAsset.Polygons[i].brushMaterial);
 
                 return surfaces.ToArray();
             }

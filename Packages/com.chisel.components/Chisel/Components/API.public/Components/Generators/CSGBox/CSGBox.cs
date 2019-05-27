@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using Chisel.Assets;
 
 namespace Chisel.Components
 {
-    // TODO: add properties for SurfaceDescription/SurfaceAssets
+    // TODO: add properties for SurfaceDescription/BrushMaterials
     // TODO: beveled edges
     [ExecuteInEditMode]
     public sealed class CSGBox : CSGGeneratorComponent
@@ -17,7 +17,7 @@ namespace Chisel.Components
         public CSGBox() : base() {  }
         
         [SerializeField] Bounds					bounds				= new Bounds(Vector3.zero, Vector3.one);
-        [SerializeField] CSGSurfaceAsset[]		surfaceAssets;
+        [SerializeField] ChiselBrushMaterial[]	brushMaterials;
         [SerializeField] SurfaceDescription[]	surfaceDescriptions;
         
         public Bounds Bounds
@@ -37,25 +37,25 @@ namespace Chisel.Components
         protected override void OnResetInternal()
         {
             bounds				= new Bounds(Vector3.zero, Vector3.one);
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
             base.OnResetInternal();
         }
 
         protected override void UpdateGeneratorInternal()
         {
-            if (surfaceAssets == null)
+            if (brushMaterials == null)
             {
                 var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[6]
+                brushMaterials = new ChiselBrushMaterial[6]
                 {
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
+                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
                 };
             }
 
@@ -76,8 +76,9 @@ namespace Chisel.Components
             }
 
             if (BoundsExtensions.IsValid(bounds.min, bounds.max))
-                BrushMeshAssetFactory.GenerateBoxAsset(brushMeshAsset, bounds, surfaceAssets, surfaceDescriptions);
-            else
+            {
+                BrushMeshAssetFactory.GenerateBoxAsset(brushMeshAsset, bounds, brushMaterials, surfaceDescriptions);
+            } else
                 brushMeshAsset.Clear();
         }
     }

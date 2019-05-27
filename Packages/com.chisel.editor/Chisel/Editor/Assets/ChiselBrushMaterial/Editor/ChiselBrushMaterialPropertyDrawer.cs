@@ -10,13 +10,13 @@ using Chisel.Assets;
 
 namespace Chisel.Editors
 {
-    [CustomPropertyDrawer(typeof(CSGSurfaceAsset))]
-    public sealed class CSGSurfaceAssetPropertyDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(ChiselBrushMaterial))]
+    public sealed class ChiselBrushMaterialPropertyDrawer : PropertyDrawer
     {
-        static readonly int SurfaceEditorHashCode			= typeof(CSGSurfaceAssetPropertyDrawer).Name.GetHashCode();
-        static readonly GUIContent	RenderMaterialContents  = new GUIContent("Render Material");
-        //static readonly GUIContent	LayerUsageContents      = new GUIContent("Layer Usage");
-        const float					spacing					= 2;
+        static readonly int         BurshMaterialEditorHashCode	= typeof(ChiselBrushMaterialPropertyDrawer).Name.GetHashCode();
+        static readonly GUIContent	RenderMaterialContents      = new GUIContent("Render Material");
+        //static readonly GUIContent LayerUsageContents         = new GUIContent("Layer Usage");
+        const float					spacing					    = 2;
 
         class Styles
         {
@@ -162,7 +162,7 @@ namespace Chisel.Editors
 
                             // Calculate rects	
                             var materialPart		= EditorGUILayout.GetControlRect(GUILayout.Height(materialSize));
-                            var materialLabelID		= EditorGUIUtility.GetControlID(SurfaceEditorHashCode, FocusType.Keyboard, materialPart);
+                            var materialLabelID		= EditorGUIUtility.GetControlID(BurshMaterialEditorHashCode, FocusType.Keyboard, materialPart);
                             var materialPropRect	= EditorGUI.PrefixLabel(materialPart, materialLabelID, RenderMaterialContents);
                             var materialPreviewRect = materialPropRect;
                             var showMaterial		= (CSGEditorUtility.GetContextWidth() > 320);

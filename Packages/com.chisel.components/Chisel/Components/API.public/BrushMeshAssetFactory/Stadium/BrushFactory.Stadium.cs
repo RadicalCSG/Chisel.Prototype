@@ -108,7 +108,7 @@ namespace Chisel.Components
 
             var subMeshes		= new[] { new CSGBrushSubMesh() };
             var surfaceIndices	= new int[vertices.Length + 2];
-            CreateExtrudedSubMesh(subMeshes[0], definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.surfaceAssets, definition.surfaceDescriptions);
+            CreateExtrudedSubMesh(subMeshes[0], definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.brushMaterials, definition.surfaceDescriptions);
 
             brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();

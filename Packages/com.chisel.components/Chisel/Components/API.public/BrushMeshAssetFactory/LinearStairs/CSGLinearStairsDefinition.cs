@@ -73,17 +73,17 @@ namespace Chisel.Components
         public StairsSideType           rightSide;
         
         [NonSerialized]
-        public CSGSurfaceAsset[]		surfaceAssets;
+        public ChiselBrushMaterial[]	brushMaterials;
         public SurfaceDescription[]		surfaceDescriptions;
         
-        public CSGSurfaceAsset			topSurface;
-        public CSGSurfaceAsset			bottomSurface;
-        public CSGSurfaceAsset			leftSurface;
-        public CSGSurfaceAsset			rightSurface;
-        public CSGSurfaceAsset			forwardSurface;
-        public CSGSurfaceAsset			backSurface;
-        public CSGSurfaceAsset			treadSurface;
-        public CSGSurfaceAsset			stepSurface;
+        public ChiselBrushMaterial		topSurface;
+        public ChiselBrushMaterial		bottomSurface;
+        public ChiselBrushMaterial		leftSurface;
+        public ChiselBrushMaterial		rightSurface;
+        public ChiselBrushMaterial		forwardSurface;
+        public ChiselBrushMaterial		backSurface;
+        public ChiselBrushMaterial		treadSurface;
+        public ChiselBrushMaterial		stepSurface;
 
         
         public float	width  { get { return bounds.size.x; } set { var size = bounds.size; size.x = value; bounds.size = size; } }
@@ -108,7 +108,7 @@ namespace Chisel.Components
 
         public void Reset()
         {
-            surfaceAssets		= null;
+            brushMaterials		= null;
             surfaceDescriptions = null;
 
             // TODO: set defaults using attributes?
@@ -135,36 +135,36 @@ namespace Chisel.Components
 
         public void Validate()
         {
-            if (surfaceAssets == null ||
+            if (brushMaterials == null ||
                 surfaceDescriptions.Length != (int)SurfaceSides.TotalSides)
             {
                 var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaceAssets = new CSGSurfaceAsset[(int)SurfaceSides.TotalSides];
+                brushMaterials = new ChiselBrushMaterial[(int)SurfaceSides.TotalSides];
 
-                surfaceAssets[(int)SurfaceSides.Top    ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Bottom ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Left   ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Right  ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Forward] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Back   ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Tread  ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
-                surfaceAssets[(int)SurfaceSides.Step   ] = CSGSurfaceAsset.CreateInstance(CSGMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Top    ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Bottom ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Left   ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Right  ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Forward] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Back   ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Tread  ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
+                brushMaterials[(int)SurfaceSides.Step   ] = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);
 
-                for (int i = 0; i < surfaceAssets.Length; i++)
+                for (int i = 0; i < brushMaterials.Length; i++)
                 {
-                    if (surfaceAssets[i] == null)
-                        surfaceAssets[i] = CSGSurfaceAsset.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
+                    if (brushMaterials[i] == null)
+                        brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
                 }
                 
-                topSurface		= surfaceAssets[(int)SurfaceSides.Top    ];
-                bottomSurface	= surfaceAssets[(int)SurfaceSides.Bottom ];
-                leftSurface		= surfaceAssets[(int)SurfaceSides.Left   ];
-                rightSurface	= surfaceAssets[(int)SurfaceSides.Right  ];
-                forwardSurface	= surfaceAssets[(int)SurfaceSides.Forward];
-                backSurface		= surfaceAssets[(int)SurfaceSides.Back   ];
-                treadSurface	= surfaceAssets[(int)SurfaceSides.Tread  ];
-                stepSurface		= surfaceAssets[(int)SurfaceSides.Step   ];
+                topSurface		= brushMaterials[(int)SurfaceSides.Top    ];
+                bottomSurface	= brushMaterials[(int)SurfaceSides.Bottom ];
+                leftSurface		= brushMaterials[(int)SurfaceSides.Left   ];
+                rightSurface	= brushMaterials[(int)SurfaceSides.Right  ];
+                forwardSurface	= brushMaterials[(int)SurfaceSides.Forward];
+                backSurface		= brushMaterials[(int)SurfaceSides.Back   ];
+                treadSurface	= brushMaterials[(int)SurfaceSides.Tread  ];
+                stepSurface		= brushMaterials[(int)SurfaceSides.Step   ];
             }
 
             if (surfaceDescriptions == null ||

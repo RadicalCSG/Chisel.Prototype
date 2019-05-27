@@ -95,16 +95,16 @@ namespace Chisel.Editors
             }
         }
         
-        public static HashSet<CSGSurfaceAsset> SelectedSurfaceAssets	
+        public static HashSet<ChiselBrushMaterial> SelectedBrushMaterials	
         {
             get
             {
                 var selectedSurfaces = Data.selectedSurfaces;
-                var uniqueSurfaceAssets = new HashSet<CSGSurfaceAsset>();
+                var uniqueBrushMaterials = new HashSet<ChiselBrushMaterial>();
 
                 foreach (var selectedSurface in selectedSurfaces)
-                    uniqueSurfaceAssets.Add(selectedSurface.Polygon.surfaceAsset);
-                return uniqueSurfaceAssets;
+                    uniqueBrushMaterials.Add(selectedSurface.Polygon.brushMaterial);
+                return uniqueBrushMaterials;
             }
         }
 
@@ -114,22 +114,22 @@ namespace Chisel.Editors
             return Data.selectedSurfaces.Contains(surface);
         }
 
-        public static bool IsSelected(CSGSurfaceAsset surfaceAsset)
+        public static bool IsSelected(ChiselBrushMaterial brushMaterial)
         {
             var selectedSurfaces = Data.selectedSurfaces;
             foreach(var selectedSurface in selectedSurfaces)
             {
-                if (selectedSurface.Polygon.surfaceAsset == surfaceAsset)
+                if (selectedSurface.Polygon.brushMaterial == brushMaterial)
                     return true;
             }
             return false;
         }
 
-        public static bool IsAnySelected(CSGSurfaceAsset[] surfaceAssets)
+        public static bool IsAnySelected(ChiselBrushMaterial[] brushMaterials)
         {
-            foreach(var surfaceAsset in surfaceAssets)
+            foreach(var brushMaterial in brushMaterials)
             {
-                if (SelectedSurfaceAssets.Contains(surfaceAsset))
+                if (SelectedBrushMaterials.Contains(brushMaterial))
                     return true;
             }
             return false;

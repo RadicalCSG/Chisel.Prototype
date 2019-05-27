@@ -324,12 +324,12 @@ namespace Chisel.Components
         // Get all brushes directly contained by this CSGNode
         public abstract void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes);
 
-        public virtual CSGSurfaceAsset FindSurfaceAsset(CSGTreeBrush brush, int surfaceID)
+        public virtual ChiselBrushMaterial FindBrushMaterial(CSGTreeBrush brush, int surfaceID)
         {
             return null;
         }
 
-        public virtual CSGSurfaceAsset[] GetAllSurfaceAssets(CSGTreeBrush brush)
+        public virtual ChiselBrushMaterial[] GetAllBrushMaterials(CSGTreeBrush brush)
         {
             return null;
         }

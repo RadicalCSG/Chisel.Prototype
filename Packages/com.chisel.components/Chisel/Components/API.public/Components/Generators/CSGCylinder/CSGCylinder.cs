@@ -7,7 +7,7 @@ using Chisel.Assets;
 
 namespace Chisel.Components
 {
-    // TODO: add properties for SurfaceDescription/SurfaceAssets
+    // TODO: add properties for SurfaceDescription/BrushMaterials
     // TODO: beveled edges (for top and/or bottom)
     //			-> makes this a capsule
     [ExecuteInEditMode] 

@@ -305,8 +305,8 @@ namespace Chisel.Components
                 var parameter	= generatedMesh.meshDescription.surfaceParameter;
                 switch (type)
                 {
-                    case LayerParameterIndex.LayerParameter1: renderMaterial  = CSGSurfaceAssetManager.GetRenderMaterialByInstanceID(parameter);  break;
-                    case LayerParameterIndex.LayerParameter2: physicsMaterial = CSGSurfaceAssetManager.GetPhysicsMaterialByInstanceID(parameter); break;
+                    case LayerParameterIndex.LayerParameter1: renderMaterial  = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(parameter);  break;
+                    case LayerParameterIndex.LayerParameter2: physicsMaterial = ChiselBrushMaterialManager.GetPhysicsMaterialByInstanceID(parameter); break;
                 }
             } else
             {

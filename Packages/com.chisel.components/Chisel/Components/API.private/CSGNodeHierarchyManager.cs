@@ -101,7 +101,7 @@ namespace Chisel.Components
         {
             CSGManager.Clear();
             CSGBrushMeshAssetManager.Reset();
-            CSGSurfaceAssetManager.Reset();
+            ChiselBrushMaterialManager.Reset();
 
             CSGNodeHierarchyManager.FindAndReregisterAllNodes();
             CSGNodeHierarchyManager.UpdateAllTransformations();
@@ -665,7 +665,7 @@ namespace Chisel.Components
             try
             {
                 CSGBrushMeshAssetManager.Update();
-                CSGSurfaceAssetManager.Update();
+                ChiselBrushMaterialManager.Update();
                 UpdateTrampoline();
             }
             // If we get an exception we don't want to end up infinitely spawning this exception ..
@@ -770,14 +770,14 @@ namespace Chisel.Components
                 firstStart = true;
                 CSGManager.Clear();
                 CSGBrushMeshAssetManager.Reset();
-                CSGSurfaceAssetManager.Reset();
+                ChiselBrushMaterialManager.Reset();
 
                 // Prefabs can fire events that look like objects have been loaded/created ..
                 // Also, starting up in the editor can swallow up events and cause some nodes to not be registered properly
                 // So to ensure that the first state is correct, we get it explicitly
                 FindAndReregisterAllNodes();
                 CSGBrushMeshAssetManager.Update();
-                CSGSurfaceAssetManager.Update();
+                ChiselBrushMaterialManager.Update();
             }
 
             // *Workaround*

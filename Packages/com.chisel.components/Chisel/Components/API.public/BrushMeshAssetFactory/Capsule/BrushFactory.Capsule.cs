@@ -149,7 +149,7 @@ namespace Chisel.Components
                                           vertices, 
                                           topCap, bottomCap,  
                                           topVertex, bottomVertex, 
-                                          definition.surfaceAssets, definition.surfaceDescriptions))
+                                          definition.brushMaterials, definition.surfaceDescriptions))
             {
                 brushMeshAsset.Clear();
                 return false;
