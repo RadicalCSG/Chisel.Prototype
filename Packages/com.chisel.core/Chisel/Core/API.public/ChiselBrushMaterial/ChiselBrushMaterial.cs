@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
-using Chisel.Core;
 using System.Collections.Generic;
 using System;
 
-namespace Chisel.Assets
+namespace Chisel.Core
 {
     // TODO: create real Asset that contains this so we can drag & drop a complete "material" onto a brush
     [Serializable]

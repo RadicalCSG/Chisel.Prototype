@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System;
-using Chisel.Assets;
+using Chisel.Core;
 
 namespace Chisel.Editors
 {

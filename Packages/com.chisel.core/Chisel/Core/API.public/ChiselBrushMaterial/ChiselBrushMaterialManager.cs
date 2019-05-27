@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
-using Chisel.Core;
 using System.Collections.Generic;
 using System;
 
-namespace Chisel.Assets
+namespace Chisel.Core
 {
     public delegate void OnBrushMaterialDelegate(ChiselBrushMaterial brushMaterial);
     
