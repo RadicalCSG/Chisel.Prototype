@@ -94,10 +94,20 @@ namespace Chisel.Core
                 halfEdges = new HalfEdge[other.halfEdges.Length];
                 Array.Copy(other.halfEdges, this.halfEdges, other.halfEdges.Length);
             }
+            if (other.halfEdgePolygonIndices != null)
+            {
+                halfEdgePolygonIndices = new int[other.halfEdgePolygonIndices.Length];
+                Array.Copy(other.halfEdgePolygonIndices, this.halfEdgePolygonIndices, other.halfEdgePolygonIndices.Length);
+            }
             if (other.polygons != null)
             {
                 polygons = new Polygon[other.polygons.Length];
                 Array.Copy(other.polygons, this.polygons, other.polygons.Length);
+            }
+            if (other.surfaces != null)
+            {
+                surfaces = new Surface[other.surfaces.Length];
+                Array.Copy(other.surfaces, this.surfaces, other.surfaces.Length);
             }
         }
 
