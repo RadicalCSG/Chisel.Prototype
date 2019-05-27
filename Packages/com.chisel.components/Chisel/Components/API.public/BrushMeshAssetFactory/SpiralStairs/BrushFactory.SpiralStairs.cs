@@ -100,12 +100,12 @@ namespace Chisel.Components
             var outerSides		= definition.outerSegments;
             var riserDepth		= definition.riserDepth;
 
-            CSGBrushSubMesh[] subMeshes;
+            CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes;
             if (brushMeshAsset.SubMeshCount != subMeshCount)
             {
-                subMeshes = new CSGBrushSubMesh[subMeshCount];
+                subMeshes = new CSGBrushMeshAsset.CSGBrushSubMesh[subMeshCount];
                 for (int i = 0; i < subMeshCount; i++)
-                    subMeshes[i] = new CSGBrushSubMesh();
+                    subMeshes[i] = new CSGBrushMeshAsset.CSGBrushSubMesh();
             } else
                 subMeshes = brushMeshAsset.SubMeshes;
 

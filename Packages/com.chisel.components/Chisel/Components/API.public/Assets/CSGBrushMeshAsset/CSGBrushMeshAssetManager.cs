@@ -228,7 +228,7 @@ namespace Chisel.Assets
             }
         }
 
-        static void UpdateSurfaces(CSGBrushSubMesh subMesh, CSGBrushMeshAsset brushMeshAsset)
+        static void UpdateSurfaces(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, CSGBrushMeshAsset brushMeshAsset)
         {
             ref var brushMesh = ref subMesh.brushMesh;
 

@@ -143,7 +143,7 @@ namespace Chisel.Components
             var bottomVertex	= definition.bottomVertex;
             var topVertex		= definition.topVertex;
             
-            var subMeshes = new[] { new CSGBrushSubMesh() };
+            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
             if (!GenerateSegmentedSubMesh(ref subMeshes[0].brushMesh, 
                                           sides, segments, 
                                           vertices, 

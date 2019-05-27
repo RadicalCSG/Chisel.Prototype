@@ -744,7 +744,7 @@ namespace Chisel.Components
                     for (int i = 0; i < brushMeshAsset.SubMeshCount; i++)
                     {
                         var newBrushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<CSGBrushMeshAsset>();
-                        newBrushMeshAsset.SubMeshes = new[] { new CSGBrushSubMesh(brushMeshAsset.SubMeshes[i]) };
+                        newBrushMeshAsset.SubMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh(brushMeshAsset.SubMeshes[i]) };
                         var brushGameObject = new GameObject("Brush (" + (i + 1) + ")");
                         UnityEditor.Undo.RegisterCreatedObjectUndo(brushGameObject, "Created GameObject");
                         brushGameObject.SetActive(false);

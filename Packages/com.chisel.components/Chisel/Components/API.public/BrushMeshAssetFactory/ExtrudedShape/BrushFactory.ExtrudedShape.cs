@@ -111,7 +111,7 @@ namespace Chisel.Components
 
 
 
-            var subMeshes = new List<CSGBrushSubMesh>();
+            var subMeshes = new List<CSGBrushMeshAsset.CSGBrushSubMesh>();
             for (int p = 0; p < polygonVerticesArray.Length; p++)
             {
                 var polygonVertices = polygonVerticesArray[p];
@@ -153,7 +153,7 @@ namespace Chisel.Components
                         if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
                             continue;
 
-                        var subMesh = new CSGBrushSubMesh();
+                        var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
                         CreateExtrudedSubMesh(ref subMesh.brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
                         subMeshes.Add(subMesh);
                     }

@@ -187,14 +187,14 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMesh = new CSGBrushSubMesh();
-            if (!GenerateConicalFrustumSubMesh(ref subMesh.brushMesh, bottom, top, rotation, segments, brushMaterials, surfaceDescriptions))
+            var subMeshes = new [] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            if (!GenerateConicalFrustumSubMesh(ref subMeshes[0].brushMesh, bottom, top, rotation, segments, brushMaterials, surfaceDescriptions))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = new CSGBrushSubMesh[] { subMesh };
+            brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

@@ -67,7 +67,7 @@ namespace Chisel.Components
             }
         }
 
-        public CSGBrushSubMesh SubMesh
+        public CSGBrushMeshAsset.CSGBrushSubMesh SubMesh
         {
             get
             {

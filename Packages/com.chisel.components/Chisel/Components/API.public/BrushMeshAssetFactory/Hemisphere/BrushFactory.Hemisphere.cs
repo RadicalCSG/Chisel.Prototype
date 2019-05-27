@@ -19,14 +19,14 @@ namespace Chisel.Components
     {
         public static bool GenerateHemisphereAsset(CSGBrushMeshAsset brushMeshAsset, CSGHemisphereDefinition definition)
         {
-            var subMesh = new CSGBrushSubMesh();
-            if (!GenerateHemisphereSubMesh(ref subMesh.brushMesh, definition))
+            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            if (!GenerateHemisphereSubMesh(ref subMeshes[0].brushMesh, definition))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = new[] { subMesh };
+            brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

@@ -141,7 +141,7 @@ namespace Chisel.Components
                 }
             }
 
-            var subMeshes	= new CSGBrushSubMesh[horzSegments];
+            var subMeshes	= new CSGBrushMeshAsset.CSGBrushSubMesh[horzSegments];
             var horzOffset	= definition.startAngle;
             for (int h = 1, p = 0; h < horzSegments + 1; p = h, h++)
             {
@@ -156,7 +156,7 @@ namespace Chisel.Components
                     subMeshVertices[v] = rotation1 * circleVertices[v];
                 }
                 
-                var subMesh = new CSGBrushSubMesh();
+                var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
                 CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
                 if (!subMesh.brushMesh.Validate())
                 {

@@ -106,7 +106,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes		= new[] { new CSGBrushSubMesh() };
+            var subMeshes		= new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
             var surfaceIndices	= new int[vertices.Length + 2];
             CreateExtrudedSubMesh(ref subMeshes[0].brushMesh, definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.brushMaterials, definition.surfaceDescriptions);
 

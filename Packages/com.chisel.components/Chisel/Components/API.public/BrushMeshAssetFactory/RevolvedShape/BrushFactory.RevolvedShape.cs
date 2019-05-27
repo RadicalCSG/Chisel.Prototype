@@ -119,7 +119,7 @@ namespace Chisel.Components
                 SplitPolygon(polygonVerticesList, i);
             }
 
-            var subMeshes				= new List<CSGBrushSubMesh>();
+            var subMeshes				= new List<CSGBrushMeshAsset.CSGBrushSubMesh>();
     
             var horzSegments			= definition.revolveSegments;//horizontalSegments;
             var horzDegreePerSegment	= definition.totalAngle / horzSegments;
@@ -161,7 +161,7 @@ namespace Chisel.Components
                         subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
                     }
 
-                    var subMesh = new CSGBrushSubMesh();
+                    var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
                     if (!CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
                         continue;
 

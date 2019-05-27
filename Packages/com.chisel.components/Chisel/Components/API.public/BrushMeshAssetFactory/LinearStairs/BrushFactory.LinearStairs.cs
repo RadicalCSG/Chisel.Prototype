@@ -19,7 +19,7 @@ namespace Chisel.Components
     public sealed partial class BrushMeshAssetFactory
     {
         // TODO: remove all stairs specific parameters
-        static void GenerateBottomRamp(CSGBrushSubMesh[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        static void GenerateBottomRamp(CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             for (int i = 0, j = startIndex; i < stepCount; i++, j++)
             {
@@ -64,7 +64,7 @@ namespace Chisel.Components
         }
 
         // TODO: remove all stairs specific parameters
-        static void GenerateTopRamp(CSGBrushSubMesh[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        static void GenerateTopRamp(CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             //var diffY			= (max.y - min.y);
             //var diffZ			= (max.z - min.z);
@@ -170,7 +170,7 @@ namespace Chisel.Components
             return subMeshCount;
         }
 
-        public static bool GenerateLinearStairsSubMeshes(CSGBrushSubMesh[] subMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
+        public static bool GenerateLinearStairsSubMeshes(CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
             // TODO: properly assign all materials
 
@@ -489,12 +489,12 @@ namespace Chisel.Components
                 return false;
             }
 
-            CSGBrushSubMesh[] subMeshes;
+            CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes;
             if (brushMeshAsset.SubMeshCount != subMeshCount)
             {
-                subMeshes = new CSGBrushSubMesh[subMeshCount];
+                subMeshes = new CSGBrushMeshAsset.CSGBrushSubMesh[subMeshCount];
                 for (int i = 0; i < subMeshCount; i++)
-                    subMeshes[i] = new CSGBrushSubMesh();
+                    subMeshes[i] = new CSGBrushMeshAsset.CSGBrushSubMesh();
             } else
                 subMeshes = brushMeshAsset.SubMeshes;
 

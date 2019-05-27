@@ -82,7 +82,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes = new[] { new CSGBrushSubMesh() };
+            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
             GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceDescriptions);
             brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
@@ -104,7 +104,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes = new[] { new CSGBrushSubMesh() };
+            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
             GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceFlags);
             brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();

@@ -62,15 +62,15 @@ namespace Chisel.Components
                 return false;
             }
 
-//			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
+            //			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
 
             // TODO: use list instead?
-            CSGBrushSubMesh[] subMeshes;
+            CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes;
             if (brushMeshAsset.SubMeshCount != totalSubMeshCount)
             {
-                subMeshes = new CSGBrushSubMesh[totalSubMeshCount];
+                subMeshes = new CSGBrushMeshAsset.CSGBrushSubMesh[totalSubMeshCount];
                 for (int i = 0; i < totalSubMeshCount; i++)
-                    subMeshes[i] = new CSGBrushSubMesh();
+                    subMeshes[i] = new CSGBrushMeshAsset.CSGBrushSubMesh();
             } else
                 subMeshes = brushMeshAsset.SubMeshes;
 

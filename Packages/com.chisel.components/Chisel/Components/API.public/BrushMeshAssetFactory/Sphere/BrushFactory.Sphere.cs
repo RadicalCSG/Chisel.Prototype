@@ -18,20 +18,20 @@ namespace Chisel.Components
     {
         public static bool GenerateSphereAsset(CSGBrushMeshAsset brushMeshAsset, CSGSphereDefinition definition)
         {
-            var subMesh = new CSGBrushSubMesh();
-            if (!GenerateSphereSubMesh(subMesh, definition))
+            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            if (!GenerateSphereSubMesh(subMeshes[0], definition))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = new[] { subMesh };
+            brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, CSGSphereDefinition definition)
+        public static bool GenerateSphereSubMesh(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, CSGSphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
@@ -46,7 +46,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSphereSubMesh(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||

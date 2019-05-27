@@ -15,6 +15,21 @@ namespace Chisel.Assets
     [Serializable, PreferBinarySerialization]
     public sealed class CSGBrushMeshAsset : ScriptableObject
     {
+        [Serializable]
+        public sealed class CSGBrushSubMesh
+        {
+            public CSGBrushSubMesh() { }
+
+            public CSGBrushSubMesh(CSGBrushSubMesh other)
+            {
+                this.brushMesh = new BrushMesh(other.brushMesh);
+                this.operation = other.operation;
+            }
+
+            [SerializeField] public BrushMesh brushMesh = new BrushMesh() { version = BrushMesh.CurrentVersion };
+            [SerializeField] public CSGOperationType operation = CSGOperationType.Additive;
+        }
+
         internal void OnEnable()	{ CSGBrushMeshAssetManager.Register(this); }
         internal void OnDisable()	{ CSGBrushMeshAssetManager.Unregister(this); }
         internal void OnValidate()	{ CSGBrushMeshAssetManager.NotifyContentsModified(this); }
