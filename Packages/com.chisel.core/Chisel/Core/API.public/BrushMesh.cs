@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -81,9 +81,14 @@ namespace Chisel.Core
     [Serializable]
     public sealed partial class BrushMesh
     {
+        public const int CurrentVersion = 1;
+
+        public int version = 0;
+
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)
         {
+            version = other.version;
             if (other.vertices != null)
             {
                 vertices = new Vector3[other.vertices.Length];

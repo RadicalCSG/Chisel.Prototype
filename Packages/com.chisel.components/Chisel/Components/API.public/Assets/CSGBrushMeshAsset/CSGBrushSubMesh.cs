@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -64,7 +64,7 @@ namespace Chisel.Assets
         public void Clear()
         {
             if (brushMesh == null)
-                brushMesh = new BrushMesh();
+                brushMesh = new BrushMesh() { version = BrushMesh.CurrentVersion };
             polygons = null;
         }
 
@@ -92,7 +92,7 @@ namespace Chisel.Assets
         internal BrushMesh CreateOrUpdateBrushMesh()
         {
             if (brushMesh == null)
-                brushMesh = new BrushMesh();
+                brushMesh = new BrushMesh() { version = BrushMesh.CurrentVersion };
 
             // In case a user sets "polygons" to null, for consistency
             if (polygons == null ||
