@@ -33,6 +33,9 @@ namespace Chisel.Assets
 
             CSGSurfaceAssetManager.OnSurfaceAssetRemoved -= OnSurfaceAssetRemoved;
             CSGSurfaceAssetManager.OnSurfaceAssetRemoved += OnSurfaceAssetRemoved;
+
+            CSGSurfaceAssetManager.OnSurfaceAssetsReset -= OnSurfaceAssetsReset;
+            CSGSurfaceAssetManager.OnSurfaceAssetsReset += OnSurfaceAssetsReset;
         }
 
         static void Clear()
@@ -205,6 +208,10 @@ namespace Chisel.Assets
             updateQueue.Add(brushMeshAsset);
         }
 
+        static void OnSurfaceAssetsReset()
+        {
+            CSGBrushMeshAssetManager.RegisterAllSurfaces();
+        }
 
         static void OnSurfaceAssetChanged(CSGSurfaceAsset surfaceAsset)
         {

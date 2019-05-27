@@ -13,6 +13,7 @@ namespace Chisel.Assets
         public static event OnSurfaceAssetDelegate OnSurfaceAssetChanged;
         public static event OnSurfaceAssetDelegate OnSurfaceAssetRemoved;
         public static event OnSurfaceAssetDelegate OnSurfaceAssetAdded;
+        public static event Action OnSurfaceAssetsReset;
 
         class RenderMaterialInstance
         {
@@ -57,7 +58,7 @@ namespace Chisel.Assets
         public static void Reset()
         {
             Clear();
-            CSGBrushMeshAssetManager.RegisterAllSurfaces();
+            OnSurfaceAssetsReset?.Invoke();
         }
 
 
@@ -156,8 +157,7 @@ namespace Chisel.Assets
             surfaceRenderMaterialLookup [surfaceAsset] = IncRefCount(surfaceAsset.RenderMaterial);
             surfacePhysicsMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.PhysicsMaterial);
 
-            if (OnSurfaceAssetAdded != null)
-                OnSurfaceAssetAdded(surfaceAsset);
+            OnSurfaceAssetAdded?.Invoke(surfaceAsset);
         }
 
         public static void Unregister(CSGSurfaceAsset surfaceAsset)
@@ -168,10 +168,9 @@ namespace Chisel.Assets
             surfacePhysicsMaterialLookup.Remove(surfaceAsset);
 
             DecRefCount(surfaceAsset.RenderMaterial);
-            DecRefCount(surfaceAsset.PhysicsMaterial);		
+            DecRefCount(surfaceAsset.PhysicsMaterial);
 
-            if (OnSurfaceAssetRemoved != null)
-                OnSurfaceAssetRemoved(surfaceAsset);
+            OnSurfaceAssetRemoved?.Invoke(surfaceAsset);
         }
 
         static RenderMaterialInstance IncRefCount(Material renderMaterial)
@@ -238,9 +237,8 @@ namespace Chisel.Assets
         {
             if (!registeredLookup.Contains(surfaceAsset) || (prevValue == value))
                 return;
-            
-            if (OnSurfaceAssetChanged != null)
-                OnSurfaceAssetChanged(surfaceAsset);
+
+            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
         }
 
         public static void OnRenderMaterialChanged(CSGSurfaceAsset surfaceAsset, Material prevValue, Material value)
@@ -251,8 +249,7 @@ namespace Chisel.Assets
             DecRefCount(prevValue);
             IncRefCount(value);
 
-            if (OnSurfaceAssetChanged != null)
-                OnSurfaceAssetChanged(surfaceAsset);
+            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
         }
 
         public static void OnPhysicsMaterialChanged(CSGSurfaceAsset surfaceAsset, PhysicMaterial prevValue, PhysicMaterial value)
@@ -263,8 +260,7 @@ namespace Chisel.Assets
             DecRefCount(prevValue);
             IncRefCount(value);
 
-            if (OnSurfaceAssetChanged != null)
-                OnSurfaceAssetChanged(surfaceAsset);
+            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
         }
 
         public static void NotifyContentsModified(CSGSurfaceAsset surfaceAsset)
@@ -294,9 +290,8 @@ namespace Chisel.Assets
                     surfacePhysicsMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.PhysicsMaterial);
                 }
             }
-            
-            if (OnSurfaceAssetChanged != null)
-                OnSurfaceAssetChanged(surfaceAsset);
+
+            OnSurfaceAssetChanged?.Invoke(surfaceAsset);
         }
 
         public static void Update()
