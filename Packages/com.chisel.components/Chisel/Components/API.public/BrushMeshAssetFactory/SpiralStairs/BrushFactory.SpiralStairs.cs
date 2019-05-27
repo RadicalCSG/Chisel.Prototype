@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Chisel.Assets;
 using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -21,12 +20,12 @@ namespace Chisel.Components
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
 
-        public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition)
+        public static bool GenerateSpiralStairsAsset(ChiselGeneratedBrushes brushMeshAsset, ref CSGSpiralStairsDefinition definition)
         {
             return GenerateSpiralStairsAsset(brushMeshAsset, ref definition, definition.brushMaterials, ref definition.surfaceDescriptions);
         }
 
-        public static bool GenerateSpiralStairsAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGSpiralStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSpiralStairsAsset(ChiselGeneratedBrushes brushMeshAsset, ref CSGSpiralStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
         {
             if (brushMaterials == null ||
                 surfaceDescriptions == null ||
@@ -100,12 +99,12 @@ namespace Chisel.Components
             var outerSides		= definition.outerSegments;
             var riserDepth		= definition.riserDepth;
 
-            CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes;
+            ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes;
             if (brushMeshAsset.SubMeshCount != subMeshCount)
             {
-                subMeshes = new CSGBrushMeshAsset.CSGBrushSubMesh[subMeshCount];
+                subMeshes = new ChiselGeneratedBrushes.ChiselGeneratedBrush[subMeshCount];
                 for (int i = 0; i < subMeshCount; i++)
-                    subMeshes[i] = new CSGBrushMeshAsset.CSGBrushSubMesh();
+                    subMeshes[i] = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
             } else
                 subMeshes = brushMeshAsset.SubMeshes;
 

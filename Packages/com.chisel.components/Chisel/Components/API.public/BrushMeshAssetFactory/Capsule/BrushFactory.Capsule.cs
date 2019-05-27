@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -126,7 +125,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateCapsuleAsset(CSGBrushMeshAsset brushMeshAsset, ref CSGCapsuleDefinition definition)
+        public static bool GenerateCapsuleAsset(ChiselGeneratedBrushes brushMeshAsset, ref CSGCapsuleDefinition definition)
         {
             Vector3[] vertices = null;
             if (!GenerateCapsuleVertices(ref definition, ref vertices))
@@ -143,7 +142,7 @@ namespace Chisel.Components
             var bottomVertex	= definition.bottomVertex;
             var topVertex		= definition.topVertex;
             
-            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
             if (!GenerateSegmentedSubMesh(ref subMeshes[0].brushMesh, 
                                           sides, segments, 
                                           vertices, 

@@ -4,7 +4,6 @@ using System;
 using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using Chisel.Assets;
 
 namespace Chisel.Components
 {
@@ -13,13 +12,13 @@ namespace Chisel.Components
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
         public CSGNode				node;
-        public CSGBrushMeshAsset	brushMeshAsset;
+        public ChiselGeneratedBrushes	brushMeshAsset;
         public int                  subNodeIndex;
         public int                  subMeshIndex;
         public int					surfaceID;
         public int					surfaceIndex;
 
-        public SurfaceReference(CSGNode node, CSGBrushMeshAsset brushMeshAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
+        public SurfaceReference(CSGNode node, ChiselGeneratedBrushes brushMeshAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
         {
             this.node = node;
             this.brushMeshAsset = brushMeshAsset;
@@ -67,7 +66,7 @@ namespace Chisel.Components
             }
         }
 
-        public CSGBrushMeshAsset.CSGBrushSubMesh SubMesh
+        public ChiselGeneratedBrushes.ChiselGeneratedBrush SubMesh
         {
             get
             {
@@ -349,7 +348,7 @@ namespace Chisel.Components
 
         internal virtual void CollectChildNodesForParent(List<CSGTreeNode> childNodes) { }
 
-        public virtual CSGBrushMeshAsset[] GetUsedBrushMeshAssets() { return null; }
+        public virtual ChiselGeneratedBrushes[] GetUsedBrushMeshAssets() { return null; }
         
         public abstract int GetAllTreeBrushCount();
 

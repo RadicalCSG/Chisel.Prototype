@@ -6,12 +6,11 @@ using System.Linq;
 using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
-using Chisel.Assets;
 using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    [CustomPropertyDrawer(typeof(CSGBrushMeshAsset))]
+    [CustomPropertyDrawer(typeof(ChiselGeneratedBrushes))]
     public sealed class CSGBrushMeshAssetPropertyDrawer : PropertyDrawer
     {
         static readonly GUIContent CreateBoxButtonContent = new GUIContent("Create Box");

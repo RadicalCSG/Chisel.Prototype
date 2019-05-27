@@ -1,26 +1,24 @@
-﻿using UnityEngine;
-using System.Collections;
-using Chisel.Core;
+﻿using System;
 using System.Collections.Generic;
-using System;
+using UnityEngine;
+using Chisel.Core;
 
-namespace Chisel.Assets
+namespace Chisel.Components
 {
-    // This is an asset so that when brushes share the same brush 
+    // This is an asset so that when generators share the same output
     // (when, for example, they're repeated or mirrored) 
     // they will all automatically update when one is modified.
 
-    // TODO: make sure this all works well with Polygon ChiselBrushMaterial 
     // TODO: when not unique, on modification make a copy first and modify that (unless it's an asset in the project?)
     [Serializable, PreferBinarySerialization]
-    public sealed class CSGBrushMeshAsset : ScriptableObject
+    public sealed class ChiselGeneratedBrushes : ScriptableObject
     {
         [Serializable]
-        public sealed class CSGBrushSubMesh
+        public sealed class ChiselGeneratedBrush
         {
-            public CSGBrushSubMesh() { }
+            public ChiselGeneratedBrush() { }
 
-            public CSGBrushSubMesh(CSGBrushSubMesh other)
+            public ChiselGeneratedBrush(ChiselGeneratedBrush other)
             {
                 this.brushMesh = new BrushMesh(other.brushMesh);
                 this.operation = other.operation;
@@ -30,22 +28,22 @@ namespace Chisel.Assets
             [SerializeField] public CSGOperationType operation = CSGOperationType.Additive;
         }
 
-        internal void OnEnable()	{ CSGBrushMeshAssetManager.Register(this); }
-        internal void OnDisable()	{ CSGBrushMeshAssetManager.Unregister(this); }
-        internal void OnValidate()	{ CSGBrushMeshAssetManager.NotifyContentsModified(this); }
+        internal void OnEnable()	{ ChiselGeneratedBrushesManager.Register(this); }
+        internal void OnDisable()	{ ChiselGeneratedBrushesManager.Unregister(this); }
+        internal void OnValidate()	{ ChiselGeneratedBrushesManager.NotifyContentsModified(this); }
 
         // returns false if it was already dirty
-        public new bool SetDirty()	{ return CSGBrushMeshAssetManager.SetDirty(this); }
-        public bool Dirty			{ get { return CSGBrushMeshAssetManager.IsDirty(this); } }
+        public new bool SetDirty()	{ return ChiselGeneratedBrushesManager.SetDirty(this); }
+        public bool Dirty			{ get { return ChiselGeneratedBrushesManager.IsDirty(this); } }
 
-        [SerializeField] private CSGBrushSubMesh[]	subMeshes;
+        [SerializeField] private ChiselGeneratedBrush[]	subMeshes;
         [NonSerialized] private BrushMeshInstance[] instances;
 
         public bool					Valid			{ get { return subMeshes != null; } }
 
         public bool					Empty			{ get { if (subMeshes == null) return true; return subMeshes.Length == 0; } }
         public int					SubMeshCount	{ get { if (subMeshes == null) return 0; return subMeshes.Length; } }
-        public CSGBrushSubMesh[]	SubMeshes		{ get { return subMeshes; } set { subMeshes = value; OnValidate(); } }
+        public ChiselGeneratedBrush[]	SubMeshes		{ get { return subMeshes; } set { subMeshes = value; OnValidate(); } }
         public BrushMeshInstance[]	Instances		{ get { if (HasInstances) return instances; return null; } }
 
 
@@ -140,7 +138,7 @@ namespace Chisel.Assets
             return new Bounds { min = min, max = max };
         }
 
-        public void Cut(Plane cutPlane, ChiselBrushMaterial asset, UVMatrix uv0)
+        public void Cut(Plane cutPlane, ChiselBrushMaterial brushMaterial, UVMatrix uv0)
         {
             // TODO: improve design of brushMaterial usage
             var surfaceDescription = new SurfaceDescription()
@@ -149,7 +147,7 @@ namespace Chisel.Assets
                 surfaceFlags    = SurfaceFlags.None,
                 UV0             = uv0
             };
-            Cut(cutPlane, asset, surfaceDescription);
+            Cut(cutPlane, brushMaterial, surfaceDescription);
         }
         
         public void Cut(Plane cutPlane, ChiselBrushMaterial brushMaterial, SurfaceDescription surfaceDescription)
@@ -163,7 +161,7 @@ namespace Chisel.Assets
                 {
                     if (SubMeshes.Length > 1)
                     {
-                        var newSubMeshes = new List<CSGBrushSubMesh>(subMeshes);
+                        var newSubMeshes = new List<ChiselGeneratedBrush>(subMeshes);
                         newSubMeshes.RemoveAt(i);
                         subMeshes = newSubMeshes.ToArray();
                     } else

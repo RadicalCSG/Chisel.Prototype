@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Chisel.Assets;
 using Chisel.Core;
 using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;

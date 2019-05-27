@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Chisel.Assets;
 using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;

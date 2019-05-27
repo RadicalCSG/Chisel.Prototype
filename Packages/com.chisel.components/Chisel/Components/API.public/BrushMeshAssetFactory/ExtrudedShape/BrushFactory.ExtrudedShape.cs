@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Chisel.Assets;
 using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -83,7 +82,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateExtrudedShapeAsset(CSGBrushMeshAsset brushMeshAsset, Curve2D shape, Path path, int curveSegments, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateExtrudedShapeAsset(ChiselGeneratedBrushes brushMeshAsset, Curve2D shape, Path path, int curveSegments, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
         {
             var shapeVertices = new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
@@ -111,7 +110,7 @@ namespace Chisel.Components
 
 
 
-            var subMeshes = new List<CSGBrushMeshAsset.CSGBrushSubMesh>();
+            var subMeshes = new List<ChiselGeneratedBrushes.ChiselGeneratedBrush>();
             for (int p = 0; p < polygonVerticesArray.Length; p++)
             {
                 var polygonVertices = polygonVerticesArray[p];
@@ -153,7 +152,7 @@ namespace Chisel.Components
                         if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
                             continue;
 
-                        var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
+                        var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
                         CreateExtrudedSubMesh(ref subMesh.brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
                         subMeshes.Add(subMesh);
                     }

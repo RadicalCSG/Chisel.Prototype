@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -97,7 +96,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateStadiumAsset(CSGBrushMeshAsset brushMeshAsset, CSGStadiumDefinition definition)
+        public static bool GenerateStadiumAsset(ChiselGeneratedBrushes brushMeshAsset, CSGStadiumDefinition definition)
         {
             Vector3[] vertices = null;
             if (!GenerateStadiumVertices(definition, ref vertices))
@@ -106,7 +105,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes		= new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            var subMeshes		= new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
             var surfaceIndices	= new int[vertices.Length + 2];
             CreateExtrudedSubMesh(ref subMeshes[0].brushMesh, definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.brushMaterials, definition.surfaceDescriptions);
 

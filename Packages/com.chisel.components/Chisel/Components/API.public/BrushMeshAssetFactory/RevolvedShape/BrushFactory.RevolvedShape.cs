@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -90,7 +89,7 @@ namespace Chisel.Components
             polygons.Insert(index, positivePolygon.ToArray());
         }
 
-        public static bool GenerateRevolvedShapeAsset(CSGBrushMeshAsset brushMeshAsset, CSGRevolvedShapeDefinition definition)
+        public static bool GenerateRevolvedShapeAsset(ChiselGeneratedBrushes brushMeshAsset, CSGRevolvedShapeDefinition definition)
         {
             definition.Validate();
             var surfaces		= definition.brushMaterials;
@@ -119,7 +118,7 @@ namespace Chisel.Components
                 SplitPolygon(polygonVerticesList, i);
             }
 
-            var subMeshes				= new List<CSGBrushMeshAsset.CSGBrushSubMesh>();
+            var subMeshes				= new List<ChiselGeneratedBrushes.ChiselGeneratedBrush>();
     
             var horzSegments			= definition.revolveSegments;//horizontalSegments;
             var horzDegreePerSegment	= definition.totalAngle / horzSegments;
@@ -161,7 +160,7 @@ namespace Chisel.Components
                         subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
                     }
 
-                    var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
+                    var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
                     if (!CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
                         continue;
 

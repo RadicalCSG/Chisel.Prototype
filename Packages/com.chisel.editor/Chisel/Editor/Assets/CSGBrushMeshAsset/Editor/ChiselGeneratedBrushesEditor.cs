@@ -6,11 +6,11 @@ using System.Linq;
 using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
-using Chisel.Assets;
+using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(CSGBrushMeshAsset))]
+    [CustomEditor(typeof(ChiselGeneratedBrushes))]
     [CanEditMultipleObjects]
     public sealed class CSGBrushMeshAssetEditor : Editor
     {

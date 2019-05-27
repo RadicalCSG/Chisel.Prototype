@@ -10,7 +10,7 @@ using Chisel.Core;
 namespace Chisel.Editors
 {
     [CustomPropertyDrawer(typeof(LayerUsageFlags))]
-    public sealed class CSGLayerUsageFlagsPropertyDrawer : PropertyDrawer
+    public sealed class LayerUsageFlagsPropertyDrawer : PropertyDrawer
     {
         readonly static GUIContent	VisibleContent			= new GUIContent("Visible", "When set, the surface will be visible, otherwise it will not be rendered.");
         readonly static GUIContent	CollidableContent		= new GUIContent("Collidable", "When set, the surface will be part of the generated collider, otherwise it will not be part of the collider.");

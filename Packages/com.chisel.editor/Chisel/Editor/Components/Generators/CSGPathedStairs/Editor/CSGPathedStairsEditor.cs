@@ -6,7 +6,6 @@ using System.Linq;
 using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
-using Chisel.Assets;
 using Chisel.Components;
 using UnitySceneExtensions;
 

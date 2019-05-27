@@ -1,4 +1,3 @@
-using Chisel.Assets;
 using Chisel.Core;
 using Chisel.Components;
 using System;
@@ -472,7 +471,7 @@ namespace Chisel.Editors
         }
 
 
-        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, out CSGBrushMeshAsset[] brushMeshAssets, bool selectAllSurfaces)
+        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, out ChiselGeneratedBrushes[] brushMeshAssets, bool selectAllSurfaces)
         {
             brushMaterials = null;
             brushMeshAssets = null;

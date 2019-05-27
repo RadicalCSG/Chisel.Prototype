@@ -1,5 +1,4 @@
-﻿using Chisel.Assets;
-using Chisel.Core;
+﻿using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -69,8 +68,8 @@ namespace Chisel.Components
         static readonly HashSet<CSGNode>                        hierarchyUpdateQueue        = new HashSet<CSGNode>();
 
         // Dictionaries used to keep track which brushMeshAssets are used by which nodes, which is necessary to update the right nodes when a brushMeshAsset has been changed
-        static readonly Dictionary<CSGBrushMeshAsset, HashSet<CSGNode>> brushMeshAssetNodes	= new Dictionary<CSGBrushMeshAsset, HashSet<CSGNode>>();
-        static readonly Dictionary<CSGNode, HashSet<CSGBrushMeshAsset>> nodeBrushMeshAssets	= new Dictionary<CSGNode, HashSet<CSGBrushMeshAsset>>();
+        static readonly Dictionary<ChiselGeneratedBrushes, HashSet<CSGNode>> brushMeshAssetNodes	= new Dictionary<ChiselGeneratedBrushes, HashSet<CSGNode>>();
+        static readonly Dictionary<CSGNode, HashSet<ChiselGeneratedBrushes>> nodeBrushMeshAssets	= new Dictionary<CSGNode, HashSet<ChiselGeneratedBrushes>>();
 
 
         public static bool  ignoreNextChildrenChanged	= false;
@@ -89,18 +88,18 @@ namespace Chisel.Components
         {
             CSGNodeHierarchyManager.firstStart = false;
 
-            CSGBrushMeshAssetManager.OnBrushMeshInstanceChanged -= OnBrushMeshInstanceChanged;
-            CSGBrushMeshAssetManager.OnBrushMeshInstanceChanged += OnBrushMeshInstanceChanged;
+            ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= OnBrushMeshInstanceChanged;
+            ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged += OnBrushMeshInstanceChanged;
 
-            CSGBrushMeshAssetManager.OnBrushMeshInstanceDestroyed -= OnBrushMeshInstanceDestroyed;
-            CSGBrushMeshAssetManager.OnBrushMeshInstanceDestroyed += OnBrushMeshInstanceDestroyed;
+            ChiselGeneratedBrushesManager.OnBrushMeshInstanceDestroyed -= OnBrushMeshInstanceDestroyed;
+            ChiselGeneratedBrushesManager.OnBrushMeshInstanceDestroyed += OnBrushMeshInstanceDestroyed;
         }
         
         // TODO: Clean up API
         public static void Rebuild()
         {
             CSGManager.Clear();
-            CSGBrushMeshAssetManager.Reset();
+            ChiselGeneratedBrushesManager.Reset();
             ChiselBrushMaterialManager.Reset();
 
             CSGNodeHierarchyManager.FindAndReregisterAllNodes();
@@ -290,7 +289,7 @@ namespace Chisel.Components
         }
         
 
-        private static void OnBrushMeshInstanceChanged(CSGBrushMeshAsset brushMeshAsset)
+        private static void OnBrushMeshInstanceChanged(ChiselGeneratedBrushes brushMeshAsset)
         {
             HashSet<CSGNode> nodes;
             if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
@@ -307,7 +306,7 @@ namespace Chisel.Components
             }
         }
 
-        private static void OnBrushMeshInstanceDestroyed(CSGBrushMeshAsset brushMeshAsset)
+        private static void OnBrushMeshInstanceDestroyed(ChiselGeneratedBrushes brushMeshAsset)
         {
             HashSet<CSGNode> nodes;
             if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
@@ -317,7 +316,7 @@ namespace Chisel.Components
                     if (!node)
                         continue;
 
-                    HashSet<CSGBrushMeshAsset> uniqueBrushMeshAssets;
+                    HashSet<ChiselGeneratedBrushes> uniqueBrushMeshAssets;
                     if (nodeBrushMeshAssets.TryGetValue(node, out uniqueBrushMeshAssets))
                         uniqueBrushMeshAssets.Remove(brushMeshAsset);
                 }
@@ -327,7 +326,7 @@ namespace Chisel.Components
 
         static void UpdateBrushMeshAssets(CSGNode node)
         {
-            HashSet<CSGBrushMeshAsset> uniqueBrushMeshAssets;
+            HashSet<ChiselGeneratedBrushes> uniqueBrushMeshAssets;
             if (nodeBrushMeshAssets.TryGetValue(node, out uniqueBrushMeshAssets))
             {
                 // Remove previously set brushMeshes for this node
@@ -339,7 +338,7 @@ namespace Chisel.Components
                 }
                 uniqueBrushMeshAssets.Clear();
             } else
-                uniqueBrushMeshAssets = new HashSet<CSGBrushMeshAsset>();
+                uniqueBrushMeshAssets = new HashSet<ChiselGeneratedBrushes>();
 
             if (!node)
                 return;
@@ -374,7 +373,7 @@ namespace Chisel.Components
         {
             // NOTE: node is likely destroyed at this point, it can still be used as a lookup key however.
 
-            HashSet<CSGBrushMeshAsset> brushMeshAssets;
+            HashSet<ChiselGeneratedBrushes> brushMeshAssets;
             if (nodeBrushMeshAssets.TryGetValue(node, out brushMeshAssets))
             {
                 // Remove previously set brushMeshes for this node
@@ -664,7 +663,7 @@ namespace Chisel.Components
 
             try
             {
-                CSGBrushMeshAssetManager.Update();
+                ChiselGeneratedBrushesManager.Update();
                 ChiselBrushMaterialManager.Update();
                 UpdateTrampoline();
             }
@@ -769,14 +768,14 @@ namespace Chisel.Components
             {
                 firstStart = true;
                 CSGManager.Clear();
-                CSGBrushMeshAssetManager.Reset();
+                ChiselGeneratedBrushesManager.Reset();
                 ChiselBrushMaterialManager.Reset();
 
                 // Prefabs can fire events that look like objects have been loaded/created ..
                 // Also, starting up in the editor can swallow up events and cause some nodes to not be registered properly
                 // So to ensure that the first state is correct, we get it explicitly
                 FindAndReregisterAllNodes();
-                CSGBrushMeshAssetManager.Update();
+                ChiselGeneratedBrushesManager.Update();
                 ChiselBrushMaterialManager.Update();
             }
 

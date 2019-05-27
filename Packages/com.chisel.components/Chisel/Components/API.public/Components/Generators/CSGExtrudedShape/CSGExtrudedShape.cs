@@ -4,7 +4,6 @@ using Chisel.Core;
 using System.Collections.Generic;
 using System;
 using UnitySceneExtensions;
-using Chisel.Assets;
 using System.Linq;
 
 namespace Chisel.Components

@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -37,7 +36,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GeneratePathedStairsAsset(CSGBrushMeshAsset brushMeshAsset, CSGPathedStairsDefinition definition)
+        public static bool GeneratePathedStairsAsset(ChiselGeneratedBrushes brushMeshAsset, CSGPathedStairsDefinition definition)
         {
             definition.Validate();
 
@@ -65,12 +64,12 @@ namespace Chisel.Components
             //			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
 
             // TODO: use list instead?
-            CSGBrushMeshAsset.CSGBrushSubMesh[] subMeshes;
+            ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes;
             if (brushMeshAsset.SubMeshCount != totalSubMeshCount)
             {
-                subMeshes = new CSGBrushMeshAsset.CSGBrushSubMesh[totalSubMeshCount];
+                subMeshes = new ChiselGeneratedBrushes.ChiselGeneratedBrush[totalSubMeshCount];
                 for (int i = 0; i < totalSubMeshCount; i++)
-                    subMeshes[i] = new CSGBrushMeshAsset.CSGBrushSubMesh();
+                    subMeshes[i] = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
             } else
                 subMeshes = brushMeshAsset.SubMeshes;
 

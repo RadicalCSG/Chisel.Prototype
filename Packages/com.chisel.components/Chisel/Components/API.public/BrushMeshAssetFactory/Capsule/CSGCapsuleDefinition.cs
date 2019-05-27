@@ -1,5 +1,4 @@
 ﻿using System;
-using Chisel.Assets;
 using Chisel.Core;
 using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;

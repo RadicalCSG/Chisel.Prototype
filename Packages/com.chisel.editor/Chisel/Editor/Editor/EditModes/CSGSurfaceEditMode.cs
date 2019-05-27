@@ -1,4 +1,3 @@
-using Chisel.Assets;
 using Chisel.Core;
 using Chisel.Components;
 using System;
@@ -759,7 +758,7 @@ namespace Chisel.Editors
 
         static SurfaceReference     startSurfaceReference;
         static SurfaceReference[]	selectedSurfaceReferences;
-        static CSGBrushMeshAsset[]	selectedBrushMeshAsset;
+        static ChiselGeneratedBrushes[]	selectedBrushMeshAsset;
         static UVMatrix[]			selectedUVMatrices;
         static Plane                worldDragPlane;
         static Plane                worldProjectionPlane;

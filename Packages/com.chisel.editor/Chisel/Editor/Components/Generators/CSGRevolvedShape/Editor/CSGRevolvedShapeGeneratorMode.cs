@@ -1,5 +1,4 @@
-﻿using Chisel.Assets;
-using Chisel.Core;
+﻿using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

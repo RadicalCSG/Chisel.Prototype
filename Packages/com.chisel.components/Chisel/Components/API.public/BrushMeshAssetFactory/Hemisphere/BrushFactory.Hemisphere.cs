@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -17,9 +16,9 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateHemisphereAsset(CSGBrushMeshAsset brushMeshAsset, CSGHemisphereDefinition definition)
+        public static bool GenerateHemisphereAsset(ChiselGeneratedBrushes brushMeshAsset, CSGHemisphereDefinition definition)
         {
-            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
             if (!GenerateHemisphereSubMesh(ref subMeshes[0].brushMesh, definition))
             {
                 brushMeshAsset.Clear();

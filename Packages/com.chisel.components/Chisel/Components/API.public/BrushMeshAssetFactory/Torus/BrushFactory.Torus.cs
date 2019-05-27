@@ -9,7 +9,6 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -83,7 +82,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateTorusAsset(CSGBrushMeshAsset brushMeshAsset, CSGTorusDefinition definition)
+        public static bool GenerateTorusAsset(ChiselGeneratedBrushes brushMeshAsset, CSGTorusDefinition definition)
         {
             Vector3[] vertices = null;
             if (!GenerateTorusVertices(definition, ref vertices))
@@ -141,7 +140,7 @@ namespace Chisel.Components
                 }
             }
 
-            var subMeshes	= new CSGBrushMeshAsset.CSGBrushSubMesh[horzSegments];
+            var subMeshes	= new ChiselGeneratedBrushes.ChiselGeneratedBrush[horzSegments];
             var horzOffset	= definition.startAngle;
             for (int h = 1, p = 0; h < horzSegments + 1; p = h, h++)
             {
@@ -156,7 +155,7 @@ namespace Chisel.Components
                     subMeshVertices[v] = rotation1 * circleVertices[v];
                 }
                 
-                var subMesh = new CSGBrushMeshAsset.CSGBrushSubMesh();
+                var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
                 CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
                 if (!subMesh.brushMesh.Validate())
                 {

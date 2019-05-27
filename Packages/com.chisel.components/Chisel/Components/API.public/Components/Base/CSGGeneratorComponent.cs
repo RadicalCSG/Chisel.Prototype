@@ -3,7 +3,6 @@ using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
 using System;
-using Chisel.Assets;
 using System.Linq;
 
 namespace Chisel.Components
@@ -24,7 +23,7 @@ namespace Chisel.Components
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };
 
         [SerializeField,HideInInspector] protected CSGOperationType		operation;		// NOTE: do not rename, name is directly used in editors
-        [SerializeField,HideInInspector] protected CSGBrushMeshAsset	brushMeshAsset;	// NOTE: do not rename, name is directly used in editors
+        [SerializeField,HideInInspector] protected ChiselGeneratedBrushes	brushMeshAsset;	// NOTE: do not rename, name is directly used in editors
         [SerializeField,HideInInspector] protected Matrix4x4			localTransformation = Matrix4x4.identity;
         [SerializeField,HideInInspector] protected Vector3				pivotOffset			= Vector3.zero;
 
@@ -161,7 +160,7 @@ namespace Chisel.Components
             Nodes[0].LocalTransformation = TopTransformation;
         }
 
-        public CSGBrushMeshAsset BrushMeshAsset
+        public ChiselGeneratedBrushes BrushMeshAsset
         {
             get { return brushMeshAsset; }
             set
@@ -363,9 +362,9 @@ namespace Chisel.Components
             childNodes.Add(TopNode);
         }
 
-        public override CSGBrushMeshAsset[] GetUsedBrushMeshAssets()
+        public override ChiselGeneratedBrushes[] GetUsedBrushMeshAssets()
         {
-            return new CSGBrushMeshAsset[] { brushMeshAsset };
+            return new ChiselGeneratedBrushes[] { brushMeshAsset };
         }
 
         // TODO: clean this up
@@ -706,9 +705,9 @@ namespace Chisel.Components
         {
             // BrushMeshes of generators must always be unique
             if (!brushMeshAsset ||
-                !CSGBrushMeshAssetManager.IsBrushMeshUnique(brushMeshAsset))
+                !ChiselGeneratedBrushesManager.IsBrushMeshUnique(brushMeshAsset))
             {
-                brushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<CSGBrushMeshAsset>();
+                brushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
                 brushMeshAsset.name = "Generated " + NodeTypeName;
             }
 
@@ -743,8 +742,8 @@ namespace Chisel.Components
                     var parentTransform = topGameObject.transform;
                     for (int i = 0; i < brushMeshAsset.SubMeshCount; i++)
                     {
-                        var newBrushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<CSGBrushMeshAsset>();
-                        newBrushMeshAsset.SubMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh(brushMeshAsset.SubMeshes[i]) };
+                        var newBrushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
+                        newBrushMeshAsset.SubMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush(brushMeshAsset.SubMeshes[i]) };
                         var brushGameObject = new GameObject("Brush (" + (i + 1) + ")");
                         UnityEditor.Undo.RegisterCreatedObjectUndo(brushGameObject, "Created GameObject");
                         brushGameObject.SetActive(false);

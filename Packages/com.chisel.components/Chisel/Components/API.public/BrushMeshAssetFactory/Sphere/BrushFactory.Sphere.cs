@@ -9,16 +9,15 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using Chisel.Assets;
 using Chisel.Core;
 
 namespace Chisel.Components
 {
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateSphereAsset(CSGBrushMeshAsset brushMeshAsset, CSGSphereDefinition definition)
+        public static bool GenerateSphereAsset(ChiselGeneratedBrushes brushMeshAsset, CSGSphereDefinition definition)
         {
-            var subMeshes = new[] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
             if (!GenerateSphereSubMesh(subMeshes[0], definition))
             {
                 brushMeshAsset.Clear();
@@ -31,7 +30,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, CSGSphereDefinition definition)
+        public static bool GenerateSphereSubMesh(ChiselGeneratedBrushes.ChiselGeneratedBrush subMesh, CSGSphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
@@ -46,7 +45,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateSphereSubMesh(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSphereSubMesh(ChiselGeneratedBrushes.ChiselGeneratedBrush subMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||

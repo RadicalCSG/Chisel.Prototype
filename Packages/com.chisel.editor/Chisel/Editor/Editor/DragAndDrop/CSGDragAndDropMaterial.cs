@@ -4,7 +4,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using Chisel.Core;
-using Chisel.Assets;
 using Chisel.Components;
 
 namespace Chisel.Editors
@@ -22,7 +21,7 @@ namespace Chisel.Editors
         ChiselBrushMaterial[]	prevBrushMaterials		= null;
         Material[]			    prevMaterials			= null;
 
-        CSGBrushMeshAsset[]     prevBrushMeshAssets	= null;
+        ChiselGeneratedBrushes[]     prevBrushMeshAssets	= null;
 
         public static IDragAndDropOperation AcceptDrag()
         {
@@ -52,7 +51,7 @@ namespace Chisel.Editors
             prevBrushMeshAssets = null;
         }
 
-        void ApplyMaterialToSurface(CSGBrushMeshAsset[] brushMeshAssets, ChiselBrushMaterial[] surface)
+        void ApplyMaterialToSurface(ChiselGeneratedBrushes[] brushMeshAssets, ChiselBrushMaterial[] surface)
         {
             if (surface == null)
                 return;
@@ -116,7 +115,7 @@ namespace Chisel.Editors
         public void UpdateDrag()
         {
             var selectAllSurfaces = UnityEngine.Event.current.shift;
-            CSGBrushMeshAsset[] brushMeshAssets;
+            ChiselGeneratedBrushes[] brushMeshAssets;
             ChiselBrushMaterial[]	surfaces;
             CSGClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, out surfaces, out brushMeshAssets, selectAllSurfaces);
             if (!Equals(prevBrushMaterials, surfaces))

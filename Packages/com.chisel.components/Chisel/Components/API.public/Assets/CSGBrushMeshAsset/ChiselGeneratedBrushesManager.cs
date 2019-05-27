@@ -1,32 +1,31 @@
-﻿using Chisel.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
+using Chisel.Core;
 
-namespace Chisel.Assets
+namespace Chisel.Components
 {
-    public delegate void OnBrushMeshAssetDelegate(CSGBrushMeshAsset brushMeshAsset);
+    public delegate void OnBrushMeshAssetDelegate(ChiselGeneratedBrushes brushMeshAsset);
  
-    public static class CSGBrushMeshAssetManager
+    public static class ChiselGeneratedBrushesManager
     {
         public static event OnBrushMeshAssetDelegate OnBrushMeshInstanceChanged;
         public static event OnBrushMeshAssetDelegate OnBrushMeshInstanceDestroyed;
 
-        static readonly HashSet<CSGBrushMeshAsset>  registeredLookup        = new HashSet<CSGBrushMeshAsset>();
+        static readonly HashSet<ChiselGeneratedBrushes>  registeredLookup        = new HashSet<ChiselGeneratedBrushes>();
 
-        static readonly HashSet<CSGBrushMeshAsset>  unregisterQueueLookup   = new HashSet<CSGBrushMeshAsset>();
-        static readonly List<CSGBrushMeshAsset>     unregisterQueue         = new List<CSGBrushMeshAsset>();
+        static readonly HashSet<ChiselGeneratedBrushes>  unregisterQueueLookup   = new HashSet<ChiselGeneratedBrushes>();
+        static readonly List<ChiselGeneratedBrushes>     unregisterQueue         = new List<ChiselGeneratedBrushes>();
 
-        static readonly HashSet<CSGBrushMeshAsset>  updateQueueLookup       = new HashSet<CSGBrushMeshAsset>();
-        static readonly List<CSGBrushMeshAsset>     updateQueue             = new List<CSGBrushMeshAsset>();
+        static readonly HashSet<ChiselGeneratedBrushes>  updateQueueLookup       = new HashSet<ChiselGeneratedBrushes>();
+        static readonly List<ChiselGeneratedBrushes>     updateQueue             = new List<ChiselGeneratedBrushes>();
 
         // Dictionaries used to keep track which surfaces are used by which brushMeshes, which is necessary to update the right brushMeshes when a used brushMaterial has been changed
-        static readonly Dictionary<CSGBrushMeshAsset, HashSet<ChiselBrushMaterial>> brushMeshSurfaces  = new Dictionary<CSGBrushMeshAsset, HashSet<ChiselBrushMaterial>>();
-        static readonly Dictionary<ChiselBrushMaterial, HashSet<CSGBrushMeshAsset>> surfaceBrushMeshes = new Dictionary<ChiselBrushMaterial, HashSet<CSGBrushMeshAsset>>();
+        static readonly Dictionary<ChiselGeneratedBrushes, HashSet<ChiselBrushMaterial>> brushMeshSurfaces  = new Dictionary<ChiselGeneratedBrushes, HashSet<ChiselBrushMaterial>>();
+        static readonly Dictionary<ChiselBrushMaterial, HashSet<ChiselGeneratedBrushes>> surfaceBrushMeshes = new Dictionary<ChiselBrushMaterial, HashSet<ChiselGeneratedBrushes>>();
         
 
-        static CSGBrushMeshAssetManager()
+        static ChiselGeneratedBrushesManager()
         {
             ChiselBrushMaterialManager.OnBrushMaterialChanged -= OnChiselBrushMaterialChanged;
             ChiselBrushMaterialManager.OnBrushMaterialChanged += OnChiselBrushMaterialChanged;
@@ -56,7 +55,7 @@ namespace Chisel.Assets
         public static void Reset()
         {
             Clear();
-            var brushMeshAssets = Resources.FindObjectsOfTypeAll<CSGBrushMeshAsset>();
+            var brushMeshAssets = Resources.FindObjectsOfTypeAll<ChiselGeneratedBrushes>();
             foreach (var brushMeshAsset in brushMeshAssets)
             {
                 Register(brushMeshAsset);
@@ -65,7 +64,7 @@ namespace Chisel.Assets
         }
 
         #region Lifetime
-        public static bool SetDirty(CSGBrushMeshAsset brushMeshAsset)
+        public static bool SetDirty(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!registeredLookup    .Contains(brushMeshAsset) ||
                 unregisterQueueLookup.Contains(brushMeshAsset))
@@ -76,14 +75,14 @@ namespace Chisel.Assets
             return true;
         }
 
-        public static bool IsDirty(CSGBrushMeshAsset brushMeshAsset)
+        public static bool IsDirty(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset)
                 return false;
             return updateQueueLookup.Contains(brushMeshAsset);
         }
 
-        public static void UnregisterAllSurfaces(CSGBrushMeshAsset brushMeshAsset)
+        public static void UnregisterAllSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset || brushMeshAsset.SubMeshes == null)
                 return;
@@ -99,7 +98,7 @@ namespace Chisel.Assets
             }
         }
 
-        public static void RegisterAllSurfaces(CSGBrushMeshAsset brushMeshAsset)
+        public static void RegisterAllSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset || brushMeshAsset.SubMeshes == null)
                 return;
@@ -123,7 +122,7 @@ namespace Chisel.Assets
             }
         }
 
-        public static bool IsBrushMeshUnique(CSGBrushMeshAsset currentBrushMesh)
+        public static bool IsBrushMeshUnique(ChiselGeneratedBrushes currentBrushMesh)
         {
 #if UNITY_EDITOR
             var path = UnityEditor.AssetDatabase.GetAssetPath(currentBrushMesh.GetInstanceID());
@@ -135,7 +134,7 @@ namespace Chisel.Assets
             return true;
         }
 
-        public static void Register(CSGBrushMeshAsset brushMeshAsset)
+        public static void Register(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset)
                 return;
@@ -147,7 +146,7 @@ namespace Chisel.Assets
             if (unregisterQueueLookup.Remove(brushMeshAsset)) unregisterQueue.Remove(brushMeshAsset);
         }
 
-        public static void Unregister(CSGBrushMeshAsset brushMeshAsset)
+        public static void Unregister(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!registeredLookup.Remove(brushMeshAsset))
                 return;
@@ -156,7 +155,7 @@ namespace Chisel.Assets
             if (unregisterQueueLookup.Add   (brushMeshAsset)) unregisterQueue.Add   (brushMeshAsset);
         }
 
-        public static bool IsRegistered(CSGBrushMeshAsset brushMeshAsset)
+        public static bool IsRegistered(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset)
                 return false;
@@ -164,7 +163,7 @@ namespace Chisel.Assets
         }
         #endregion
 
-        public static void NotifyContentsModified(CSGBrushMeshAsset brushMeshAsset)
+        public static void NotifyContentsModified(ChiselGeneratedBrushes brushMeshAsset)
         {
             if (!brushMeshAsset || !registeredLookup.Contains(brushMeshAsset))
                 return;
@@ -174,7 +173,7 @@ namespace Chisel.Assets
 
         static void OnChiselBrushMaterialsReset()
         {
-            CSGBrushMeshAssetManager.RegisterAllSurfaces();
+            ChiselGeneratedBrushesManager.RegisterAllSurfaces();
         }
 
         static void OnChiselBrushMaterialChanged(ChiselBrushMaterial brushMaterial)
@@ -182,7 +181,7 @@ namespace Chisel.Assets
             if (brushMaterial == null)
                 return;
 
-            HashSet<CSGBrushMeshAsset> brushMeshAssets;
+            HashSet<ChiselGeneratedBrushes> brushMeshAssets;
             if (!surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                 return;
             
@@ -195,7 +194,7 @@ namespace Chisel.Assets
 
         static void OnChiselBrushMaterialRemoved(ChiselBrushMaterial brushMaterial)
         {
-            HashSet<CSGBrushMeshAsset> brushMeshAssets;
+            HashSet<ChiselGeneratedBrushes> brushMeshAssets;
             if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
             {
                 foreach (var brushMeshAsset in brushMeshAssets)
@@ -213,7 +212,7 @@ namespace Chisel.Assets
         }
 
         // TODO: shouldn't be public
-        public static void UpdateSurfaces(CSGBrushMeshAsset brushMeshAsset)
+        public static void UpdateSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
             var subMeshes = brushMeshAsset.SubMeshes;
             if (subMeshes == null)
@@ -228,7 +227,7 @@ namespace Chisel.Assets
             }
         }
 
-        static void UpdateSurfaces(CSGBrushMeshAsset.CSGBrushSubMesh subMesh, CSGBrushMeshAsset brushMeshAsset)
+        static void UpdateSurfaces(ChiselGeneratedBrushes.ChiselGeneratedBrush subMesh, ChiselGeneratedBrushes brushMeshAsset)
         {
             ref var brushMesh = ref subMesh.brushMesh;
 
@@ -241,7 +240,7 @@ namespace Chisel.Assets
                     if (Equals(null, brushMaterial))
                         continue;
 
-                    HashSet<CSGBrushMeshAsset> brushMeshAssets;
+                    HashSet<ChiselGeneratedBrushes> brushMeshAssets;
                     if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         brushMeshAssets.Remove(brushMeshAsset);
                 }
@@ -261,10 +260,10 @@ namespace Chisel.Assets
                     // Add current surfaces of this brushMesh
                     if (uniqueSurfaces.Add(brushMaterial))
                     {
-                        HashSet<CSGBrushMeshAsset> brushMeshAssets;
+                        HashSet<ChiselGeneratedBrushes> brushMeshAssets;
                         if (!surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         {
-                            brushMeshAssets = new HashSet<CSGBrushMeshAsset>();
+                            brushMeshAssets = new HashSet<ChiselGeneratedBrushes>();
                             surfaceBrushMeshes[brushMaterial] = brushMeshAssets;
                         }
                         brushMeshAssets.Add(brushMeshAsset);
@@ -274,7 +273,7 @@ namespace Chisel.Assets
             brushMeshSurfaces[brushMeshAsset] = uniqueSurfaces;
         }
 
-        static void RemoveSurfaces(CSGBrushMeshAsset brushMeshAsset)
+        static void RemoveSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
             // NOTE: brushMeshAsset is likely destroyed at this point, it can still be used as a lookup key however.
             
@@ -284,7 +283,7 @@ namespace Chisel.Assets
                 // Remove previously set surfaces for this brushMesh
                 foreach (var brushMaterial in uniqueSurfaces)
                 {
-                    HashSet<CSGBrushMeshAsset> brushMeshAssets;
+                    HashSet<ChiselGeneratedBrushes> brushMeshAssets;
                     if (surfaceBrushMeshes.TryGetValue(brushMaterial, out brushMeshAssets))
                         brushMeshAssets.Remove(brushMeshAsset);
                 }

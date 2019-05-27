@@ -1,5 +1,4 @@
 ﻿using Chisel.Core;
-using Chisel.Assets;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -83,12 +82,12 @@ namespace Chisel.Editors
             }
         }
         
-        public static HashSet<CSGBrushMeshAsset> SelectedBrushMeshes
+        public static HashSet<ChiselGeneratedBrushes> SelectedBrushMeshes
         {
             get
             {
                 var selectedSurfaces		= Data.selectedSurfaces;
-                var uniqueBrushMeshAssets	= new HashSet<CSGBrushMeshAsset>();
+                var uniqueBrushMeshAssets	= new HashSet<ChiselGeneratedBrushes>();
 
                 foreach (var selectedSurface in selectedSurfaces)
                     uniqueBrushMeshAssets.Add(selectedSurface.brushMeshAsset);

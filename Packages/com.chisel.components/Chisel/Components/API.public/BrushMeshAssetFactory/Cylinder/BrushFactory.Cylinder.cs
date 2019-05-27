@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Chisel.Assets;
 using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -19,7 +18,7 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateCylinderAsset(CSGBrushMeshAsset brushMeshAsset, CSGCylinderDefinition definition)
+        public static bool GenerateCylinderAsset(ChiselGeneratedBrushes brushMeshAsset, CSGCylinderDefinition definition)
         {
             definition.Validate();
 
@@ -41,7 +40,7 @@ namespace Chisel.Components
             return false;
         }
 
-        public static bool GenerateCylinderAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderAsset(ChiselGeneratedBrushes brushMeshAsset, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  top;
             top.diameterX = bottom.diameterX;
@@ -50,7 +49,7 @@ namespace Chisel.Components
             return GenerateConicalFrustumAsset(brushMeshAsset, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateConeAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConeAsset(ChiselGeneratedBrushes brushMeshAsset, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  top;
             top.diameterX = 0;
@@ -172,7 +171,7 @@ namespace Chisel.Components
             return vertices;
         }
 
-        public static bool GenerateConicalFrustumAsset(CSGBrushMeshAsset brushMeshAsset, CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConicalFrustumAsset(ChiselGeneratedBrushes brushMeshAsset, CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {
@@ -187,7 +186,7 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes = new [] { new CSGBrushMeshAsset.CSGBrushSubMesh() };
+            var subMeshes = new [] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
             if (!GenerateConicalFrustumSubMesh(ref subMeshes[0].brushMesh, bottom, top, rotation, segments, brushMaterials, surfaceDescriptions))
             {
                 brushMeshAsset.Clear();

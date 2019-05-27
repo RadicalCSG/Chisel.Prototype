@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using Chisel.Core;
-using Chisel.Assets;
 
 namespace Chisel.Components
 {

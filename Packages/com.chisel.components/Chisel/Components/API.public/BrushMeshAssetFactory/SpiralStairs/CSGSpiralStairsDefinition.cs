@@ -5,7 +5,6 @@ using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
 using Chisel.Core;
-using Chisel.Assets;
 using UnitySceneExtensions;
 
 namespace Chisel.Components

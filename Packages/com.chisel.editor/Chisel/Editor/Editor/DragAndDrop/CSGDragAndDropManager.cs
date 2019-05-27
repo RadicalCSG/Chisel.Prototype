@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
-using Chisel.Assets;
 
 namespace Chisel.Editors
 {

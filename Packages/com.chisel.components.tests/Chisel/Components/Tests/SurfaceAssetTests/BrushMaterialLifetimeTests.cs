@@ -5,7 +5,6 @@ using NUnit.Framework;
 using System.Collections;
 using Chisel;
 using Chisel.Core;
-using Chisel.Assets;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.Text.RegularExpressions;
