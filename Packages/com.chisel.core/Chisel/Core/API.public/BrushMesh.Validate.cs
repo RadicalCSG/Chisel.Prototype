@@ -73,46 +73,56 @@ namespace Chisel.Core
             {
                 var firstEdge = polygons[p].firstEdge;
                 var count     = polygons[p].edgeCount;
+                var polygonFail = false;
                 if (firstEdge < 0)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge);
-                    fail = true;
+                    polygonFail = true;
                 } else
                 if (firstEdge >= halfEdges.Length)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge + ", but there are " + halfEdges.Length + " edges.");
-                    fail = true;
+                    polygonFail = true;
                 }
                 if (count <= 2)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].edgeCount is " + count);
-                    fail = true;
+                    polygonFail = true;
                 } else
                 if (firstEdge + count - 1 >= halfEdges.Length)
                 {
                     if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount is " + (firstEdge + count) + ", but there are " + halfEdges.Length + " edges.");
-                    fail = true;
+                    polygonFail = true;
                 } else
                 if (p < polygons.Length - 1 &&
                     polygons[p + 1].firstEdge != firstEdge + count)
                 {
                     if (logErrors) Debug.LogError("polygons[" + (p + 1) + "].firstEdge does not equal polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount.");
-                    fail = true;
+                    polygonFail = true;
                 }
 
-                if (!fail)
-                { 
-                    for (int i1 = 0, i0 = count - 1; i1 < count; i0 = i1, i1++)
+                fail = fail || polygonFail;
+                if (polygonFail)
+                    continue;
+                
+                for (int i0 = count - 1, i1 = 0; i1 < count; i0 = i1, i1++)
+                {
+                    var h0 = halfEdges[i0 + firstEdge];	// curr
+                    var h1 = halfEdges[i1 + firstEdge]; // curr.next
+                    if (h1.twinIndex < 0 || h1.twinIndex >= halfEdges.Length)
                     {
-                        var h0 = halfEdges[i0 + firstEdge];	// curr
-                        var h1 = halfEdges[i1 + firstEdge]; // curr.prev
-                        var t1 = halfEdges[h1.twinIndex];	// curr.prev.twin
-                    
-                        if (h0.vertexIndex != t1.vertexIndex)
+                        fail = true;
+                        continue;
+                    }
+                    var t1 = halfEdges[h1.twinIndex];   // curr.next.twin
+
+                    if (h0.vertexIndex != t1.vertexIndex)
+                    {
+                        if (logErrors)
                         {
-                            if (logErrors) Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[" + h1.twinIndex + "].vertexIndex (" + t1.vertexIndex + ").");
-                            fail = true;
+                            Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[halfEdges[" + (i1 + firstEdge) + "].twinIndex(" + h1.twinIndex + ")].vertexIndex (" + t1.vertexIndex + ").");
                         }
+                        fail = true;
                     }
                 }
             }
