@@ -51,7 +51,7 @@ namespace Chisel.Editors
         { 
             boundsProp				= serializedObject.FindProperty("bounds");
             surfaceDescriptionProp	= serializedObject.FindProperty("surfaceDescriptions");
-            brushMaterialProp		= serializedObject.FindProperty("brushMaterialss");
+            brushMaterialProp		= serializedObject.FindProperty("brushMaterials");
 
             surfacesVisible = SessionState.GetBool(kSurfacesVisibleKey, false);
         }
