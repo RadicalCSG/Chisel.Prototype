@@ -89,9 +89,10 @@ namespace Chisel.Assets
                 return;
             foreach (var subMesh in brushMeshAsset.SubMeshes)
             {
-                if (subMesh.Polygons == null)
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (brushMesh.polygons == null)
                     continue;
-                foreach (var polygon in subMesh.Polygons)
+                foreach (var polygon in brushMesh.polygons)
                 {
                     ChiselBrushMaterialManager.Unregister(polygon.brushMaterial);
                 }
@@ -104,9 +105,10 @@ namespace Chisel.Assets
                 return;
             foreach (var subMesh in brushMeshAsset.SubMeshes)
             {
-                if (subMesh.Polygons == null)
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (brushMesh.polygons == null)
                     continue;
-                foreach (var polygon in subMesh.Polygons)
+                foreach (var polygon in brushMesh.polygons)
                 {
                     ChiselBrushMaterialManager.Register(polygon.brushMaterial);
                 }
@@ -213,6 +215,23 @@ namespace Chisel.Assets
         // TODO: shouldn't be public
         public static void UpdateSurfaces(CSGBrushMeshAsset brushMeshAsset)
         {
+            var subMeshes = brushMeshAsset.SubMeshes;
+            if (subMeshes == null)
+                return;
+
+            for (int m = 0; m < subMeshes.Length; m++)
+            {
+                var subMesh = subMeshes[m];
+                if (subMesh == null)
+                    continue;
+                UpdateSurfaces(subMesh, brushMeshAsset);
+            }
+        }
+
+        static void UpdateSurfaces(CSGBrushSubMesh subMesh, CSGBrushMeshAsset brushMeshAsset)
+        {
+            ref var brushMesh = ref subMesh.brushMesh;
+
             HashSet<ChiselBrushMaterial> uniqueSurfaces;
             if (brushMeshSurfaces.TryGetValue(brushMeshAsset, out uniqueSurfaces))
             {
@@ -229,8 +248,8 @@ namespace Chisel.Assets
                 uniqueSurfaces.Clear();
             } else
                 uniqueSurfaces = new HashSet<ChiselBrushMaterial>();
-            
-            var polygons		= brushMeshAsset.Polygons;
+
+            var polygons = brushMesh.polygons;
             if (polygons != null)
             {
                 for (int i = 0; i < polygons.Length; i++)

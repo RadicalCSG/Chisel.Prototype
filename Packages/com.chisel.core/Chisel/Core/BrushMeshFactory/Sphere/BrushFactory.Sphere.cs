@@ -15,7 +15,7 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static BrushMesh CreateSphere(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static BrushMesh CreateSphere(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ChiselBrushMaterial brushMaterial = null, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             var lastVertSegment = vertSegments - 1;
 
@@ -101,7 +101,7 @@ namespace Chisel.Core
                         firstEdge = edgeIndex,
                         edgeCount = polygonEdgeCount,
                         description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                        layers = layers
+                        brushMaterial = brushMaterial
                     };
                     
                     edgeIndex += polygonEdgeCount;

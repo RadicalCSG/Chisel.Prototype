@@ -144,7 +144,7 @@ namespace Chisel.Components
             var topVertex		= definition.topVertex;
             
             var subMeshes = new[] { new CSGBrushSubMesh() };
-            if (!GenerateSegmentedSubMesh(subMeshes[0], 
+            if (!GenerateSegmentedSubMesh(ref subMeshes[0].brushMesh, 
                                           sides, segments, 
                                           vertices, 
                                           topCap, bottomCap,  

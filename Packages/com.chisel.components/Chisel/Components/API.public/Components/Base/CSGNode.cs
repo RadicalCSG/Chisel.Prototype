@@ -29,7 +29,7 @@ namespace Chisel.Components
             this.surfaceID = surfaceID;
         }
 
-        public CSGBrushSubMesh.Polygon Polygon
+        public ChiselBrushMaterial BrushMaterial
         {
             get
             {
@@ -38,9 +38,32 @@ namespace Chisel.Components
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
                 var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Polygons.Length)
+                if (subMesh == null)
                     return null;
-                return subMesh.Polygons[surfaceIndex];
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
+                    return null;
+                return brushMesh.polygons[surfaceIndex].brushMaterial;
+            }
+        }
+
+        // A default polygon to return when we actually can't return a polygon
+        static BrushMesh.Polygon s_DefaultPolygon = new BrushMesh.Polygon();
+        public ref BrushMesh.Polygon Polygon
+        {
+            get
+            {
+                if (!brushMeshAsset)
+                    return ref s_DefaultPolygon;
+                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                    return ref s_DefaultPolygon;
+                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
+                if (subMesh == null)
+                    return ref s_DefaultPolygon;
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
+                    return ref s_DefaultPolygon;
+                return ref brushMesh.polygons[surfaceIndex];
             }
         }
 
@@ -65,11 +88,13 @@ namespace Chisel.Components
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     yield break;
                 var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Polygons.Length)
+                if (subMesh == null)
                     yield break;
-                var polygon		= subMesh.Polygons[surfaceIndex];
-                var edges		= subMesh.HalfEdges;
-                var vertices	= subMesh.Vertices;
+                if (surfaceIndex < 0 || surfaceIndex >= subMesh.brushMesh.polygons.Length)
+                    yield break;
+                var polygon		= subMesh.brushMesh.polygons[surfaceIndex];
+                var edges		= subMesh.brushMesh.halfEdges;
+                var vertices	= subMesh.brushMesh.vertices;
                 var firstEdge	= polygon.firstEdge;
                 var lastEdge	= firstEdge + polygon.edgeCount;
                 for (int e = firstEdge; e < lastEdge; e++)
@@ -86,9 +111,12 @@ namespace Chisel.Components
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
                 var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Surfaces.Length)
+                if (subMesh == null)
                     return null;
-                return LocalToWorldSpace.TransformPlane(subMesh.Surfaces[surfaceIndex].localPlane);
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
+                    return null;
+                return LocalToWorldSpace.TransformPlane(brushMesh.surfaces[surfaceIndex].localPlane);
             }
         }
 
@@ -138,10 +166,14 @@ namespace Chisel.Components
                     return Matrix4x4.identity;
 
                 var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Surfaces.Length)
+                if (subMesh == null)
                     return Matrix4x4.identity;
 
-                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(subMesh.Surfaces[surfaceIndex].localPlane);
+                ref var brushMesh = ref subMesh.brushMesh;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
+                    return Matrix4x4.identity;
+
+                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(brushMesh.surfaces[surfaceIndex].localPlane);
                 var worldToLocal        = node.hierarchyItem.WorldToLocalMatrix;
                 return localToPlaneSpace * worldToLocal;
             }	

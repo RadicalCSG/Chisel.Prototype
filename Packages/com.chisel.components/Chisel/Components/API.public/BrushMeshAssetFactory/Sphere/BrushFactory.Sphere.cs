@@ -52,25 +52,27 @@ namespace Chisel.Components
                 diameterXYZ.y == 0 ||
                 diameterXYZ.z == 0)
             {
-                subMesh.Clear();
+                subMesh.brushMesh.Clear();
                 return false;
             }
 
             var brushMesh = BrushMeshFactory.CreateSphere(diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments);
 
-            subMesh.HalfEdges = brushMesh.halfEdges;
-            subMesh.Vertices = brushMesh.vertices;
-            subMesh.Polygons = new CSGBrushSubMesh.Polygon[brushMesh.polygons.Length];
+            ref var dstBrushMesh = ref subMesh.brushMesh;
+
+            dstBrushMesh.halfEdges = brushMesh.halfEdges;
+            dstBrushMesh.vertices = brushMesh.vertices;
+            dstBrushMesh.polygons = new BrushMesh.Polygon[brushMesh.polygons.Length];
 
             for (int i = 0; i < brushMesh.polygons.Length; i++)
             {
-                subMesh.Polygons[i] = new CSGBrushSubMesh.Polygon
+                dstBrushMesh.polygons[i] = new BrushMesh.Polygon
                 {
-                    surfaceID = i,
-                    edgeCount = brushMesh.polygons[i].edgeCount,
-                    firstEdge = brushMesh.polygons[i].firstEdge,
-                    brushMaterial = i < brushMaterials.Length ? brushMaterials[i] : brushMaterials[0],
-                    description = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0],
+                    surfaceID       = i,
+                    edgeCount       = brushMesh.polygons[i].edgeCount,
+                    firstEdge       = brushMesh.polygons[i].firstEdge,
+                    brushMaterial   = i < brushMaterials.Length ? brushMaterials[i] : brushMaterials[0],
+                    description     = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0],
                 };
             }
 

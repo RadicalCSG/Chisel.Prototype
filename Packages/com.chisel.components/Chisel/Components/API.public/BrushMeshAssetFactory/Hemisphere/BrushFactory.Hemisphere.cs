@@ -20,7 +20,7 @@ namespace Chisel.Components
         public static bool GenerateHemisphereAsset(CSGBrushMeshAsset brushMeshAsset, CSGHemisphereDefinition definition)
         {
             var subMesh = new CSGBrushSubMesh();
-            if (!GenerateHemisphereSubMesh(subMesh, definition))
+            if (!GenerateHemisphereSubMesh(ref subMesh.brushMesh, definition))
             {
                 brushMeshAsset.Clear();
                 return false;
@@ -32,15 +32,15 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateHemisphereSubMesh(CSGBrushSubMesh subMesh, CSGHemisphereDefinition definition)
+        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, CSGHemisphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateHemisphereSubMesh(subMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
+            return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
         }
 
         // TODO: clean up
-        public static bool GenerateSegmentedSubMesh(CSGBrushSubMesh subMesh, int horzSegments, int vertSegments, Vector3[] segmentVertices, bool topCap, bool bottomCap, int topVertex, int bottomVertex, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSegmentedSubMesh(ref BrushMesh brushMesh, int horzSegments, int vertSegments, Vector3[] segmentVertices, bool topCap, bool bottomCap, int topVertex, int bottomVertex, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             // FIXME: hack, to fix math below .. 
             vertSegments++;
@@ -80,12 +80,12 @@ namespace Chisel.Components
             if (segmentVertices.Length != vertexCount)
             {
                 Debug.LogError("segmentVertices.Length (" + segmentVertices.Length + ") != expectedVertexCount (" + vertexCount + ")");
-                subMesh.Clear();
+                brushMesh.Clear();
                 return false;
             }
 
             var vertices		= segmentVertices;
-            var	polygons		= new CSGBrushSubMesh.Polygon[assetPolygonCount];
+            var	polygons		= new BrushMesh.Polygon[assetPolygonCount];
             var halfEdges		= new BrushMesh.HalfEdge[halfEdgeCount];
 
             var twins			= new int[horzSegments];
@@ -106,7 +106,7 @@ namespace Chisel.Components
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new CSGBrushSubMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -172,7 +172,7 @@ namespace Chisel.Components
                         halfEdges[edgeIndex + 3] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new CSGBrushSubMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
+                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -188,12 +188,12 @@ namespace Chisel.Components
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new CSGBrushSubMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDescriptions[0], brushMaterial = brushMaterials[0] };
             }
             
-            subMesh.Polygons	= polygons;
-            subMesh.HalfEdges	= halfEdges;
-            subMesh.Vertices	= vertices;
+            brushMesh.polygons	= polygons;
+            brushMesh.halfEdges	= halfEdges;
+            brushMesh.vertices	= vertices;
             return true;
         }
 
@@ -252,13 +252,13 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateHemisphereSubMesh(CSGBrushSubMesh subMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||
                 diameterXYZ.z == 0)
             {
-                subMesh.Clear();
+                brushMesh.Clear();
                 return false;
             }
 
@@ -326,7 +326,7 @@ namespace Chisel.Components
                 }
             }
 
-            return GenerateSegmentedSubMesh(subMesh, horzSegments, vertSegments, vertices, bottomCap, topCap, bottomVertex, topVertex, brushMaterials, surfaceDescriptions);
+            return GenerateSegmentedSubMesh(ref brushMesh, horzSegments, vertSegments, vertices, bottomCap, topCap, bottomVertex, topVertex, brushMaterials, surfaceDescriptions);
         }
     }
 }

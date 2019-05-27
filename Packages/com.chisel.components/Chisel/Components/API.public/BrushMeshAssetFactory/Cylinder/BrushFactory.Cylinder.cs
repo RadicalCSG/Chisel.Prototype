@@ -59,7 +59,7 @@ namespace Chisel.Components
             return GenerateConicalFrustumAsset(brushMeshAsset, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, float diameter, float bottomHeight, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameter, float bottomHeight, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  bottom;
             bottom.diameterX = diameter;
@@ -69,10 +69,10 @@ namespace Chisel.Components
             top.diameterX = diameter;
             top.diameterZ = diameter;
             top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
+            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, float diameterX, float diameterZ, float bottomHeight, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameterX, float diameterZ, float bottomHeight, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  bottom;
             bottom.diameterX = diameterX;
@@ -82,25 +82,25 @@ namespace Chisel.Components
             top.diameterX = diameterX;
             top.diameterZ = diameterZ;
             top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
+            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateCylinderSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  top;
             top.diameterX = bottom.diameterX;
             top.diameterZ = bottom.diameterZ;
             top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
+            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateConeSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConeSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             CSGCircleDefinition  top;
             top.diameterX = 0;
             top.diameterZ = 0;
             top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
+            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, brushMaterials, surfaceDescriptions);
         }
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
@@ -188,7 +188,7 @@ namespace Chisel.Components
             }
 
             var subMesh = new CSGBrushSubMesh();
-            if (!GenerateConicalFrustumSubMesh(subMesh, bottom, top, rotation, segments, brushMaterials, surfaceDescriptions))
+            if (!GenerateConicalFrustumSubMesh(ref subMesh.brushMesh, bottom, top, rotation, segments, brushMaterials, surfaceDescriptions))
             {
                 brushMeshAsset.Clear();
                 return false;
@@ -200,18 +200,18 @@ namespace Chisel.Components
             return true;
         }
 
-        public static bool GenerateConicalFrustumSubMesh(CSGBrushSubMesh subMesh, CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateConicalFrustumSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {
-                subMesh.Clear();
+                brushMesh.Clear();
                 return false;
             }
             
             if (brushMaterials.Length < 3 ||
                 surfaceDescriptions.Length < segments + 2)
             {
-                subMesh.Clear();
+                brushMesh.Clear();
                 return false;
             }
             // TODO: handle situation where diameterX & diameterZ are 0 (only create one vertex)
@@ -222,7 +222,7 @@ namespace Chisel.Components
                 GetConeFrustumVertices(bottom, top.height, rotation, segments, ref vertices, inverse: false);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(subMesh, segments, null, vertices, brushMaterials, surfaceDescriptions);
+                CreateConeSubMesh(ref brushMesh, segments, null, vertices, brushMaterials, surfaceDescriptions);
             } else
             if (bottom.diameterX == 0)
             {
@@ -230,7 +230,7 @@ namespace Chisel.Components
                 GetConeFrustumVertices(top, bottom.height, rotation, segments, ref vertices, inverse: true);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(subMesh, segments, null, vertices, brushMaterials, surfaceDescriptions);
+                CreateConeSubMesh(ref brushMesh, segments, null, vertices, brushMaterials, surfaceDescriptions);
             } else
             {
 
@@ -241,30 +241,30 @@ namespace Chisel.Components
                 GetConicalFrustumVertices(bottom, top, rotation, segments, ref vertices);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateExtrudedSubMesh(subMesh, segments, null, 0, 1, vertices, brushMaterials, surfaceDescriptions);
+                CreateExtrudedSubMesh(ref brushMesh, segments, null, 0, 1, vertices, brushMaterials, surfaceDescriptions);
             }
 
             return true;
         }
 
-        static void CreateConeSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
-            CreateConeSubMesh(subMesh, segments, segmentDescriptionIndices, null, vertices, brushMaterials, surfaceDescriptions);
+            CreateConeSubMesh(ref brushMesh, segments, segmentDescriptionIndices, null, vertices, brushMaterials, surfaceDescriptions);
         }
 
-        static void CreateConeSubMesh(CSGBrushSubMesh subMesh, int segments, int[] segmentDescriptionIndices, int[] segmentAssetIndices, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
-        {			
+        static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int[] segmentAssetIndices, Vector3[] vertices, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        {
             var surfaceDescription0 = surfaceDescriptions[0];
             var brushMaterial0		= brushMaterials[0];
 
-            var polygons = new CSGBrushSubMesh.Polygon[segments + 1];
-            polygons[0] = new CSGBrushSubMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
+            var polygons = new BrushMesh.Polygon[segments + 1];
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
 
             for (int s = 0, surfaceID = 1; s < segments; s++)
             {
                 var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
                 var assetIndex       = (segmentAssetIndices       == null) ?     2 : (segmentAssetIndices      [s + 2]);
-                polygons[surfaceID] = new CSGBrushSubMesh.Polygon { surfaceID = surfaceID, firstEdge = segments + (s * 3), edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
+                polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = segments + (s * 3), edgeCount = 3, description = surfaceDescriptions[descriptionIndex], brushMaterial = brushMaterials[assetIndex] };
                 polygons[surfaceID].description.smoothingGroup = (uint)0;
                 surfaceID++;
             }
@@ -308,10 +308,11 @@ namespace Chisel.Components
                 halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = v1, twinIndex = t2 };
             }
 
-            subMesh.Polygons	= polygons;
-            subMesh.HalfEdges	= halfEdges;
-            subMesh.Vertices	= vertices;
-            subMesh.CreateOrUpdateBrushMesh();
+            brushMesh.polygons	= polygons;
+            brushMesh.halfEdges	= halfEdges;
+            brushMesh.vertices	= vertices;
+            if (!brushMesh.Validate(logErrors: true))
+                brushMesh.Clear();
         }
     }
 }

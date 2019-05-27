@@ -104,7 +104,7 @@ namespace Chisel.Editors
                 var uniqueBrushMaterials = new HashSet<ChiselBrushMaterial>();
 
                 foreach (var selectedSurface in selectedSurfaces)
-                    uniqueBrushMaterials.Add(selectedSurface.Polygon.brushMaterial);
+                    uniqueBrushMaterials.Add(selectedSurface.BrushMaterial);
                 return uniqueBrushMaterials;
             }
         }
@@ -120,7 +120,7 @@ namespace Chisel.Editors
             var selectedSurfaces = Data.selectedSurfaces;
             foreach(var selectedSurface in selectedSurfaces)
             {
-                if (selectedSurface.Polygon.brushMaterial == brushMaterial)
+                if (selectedSurface.BrushMaterial == brushMaterial)
                     return true;
             }
             return false;

@@ -22,7 +22,7 @@ namespace Chisel.Components
             return GenerateBoxAsset(brushMeshAsset, bounds.min, bounds.max, brushMaterials, surfaceDescriptions);
         }
 
-        public static bool GenerateBoxSubMesh(CSGBrushSubMesh subMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return false;
@@ -35,9 +35,27 @@ namespace Chisel.Components
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
-            subMesh.Polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
-            subMesh.HalfEdges	= boxHalfEdges.ToArray();
-            subMesh.Vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
+            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
+            brushMesh.halfEdges	= boxHalfEdges.ToArray();
+            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
+            return true;
+        }
+
+        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        {
+            if (!BoundsExtensions.IsValid(min, max))
+                return false;
+
+            if (brushMaterials.Length != 6)
+                return false;
+
+            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
+            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
+            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
+
+            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceFlags);
+            brushMesh.halfEdges	= boxHalfEdges.ToArray();
+            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
             return true;
         }
 
@@ -64,13 +82,9 @@ namespace Chisel.Components
                 return false;
             }
 
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-            
-            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
-            brushMeshAsset.HalfEdges	= boxHalfEdges.ToArray();
-            brushMeshAsset.Vertices		= BrushMeshFactory.CreateBoxVertices(min, max);
+            var subMeshes = new[] { new CSGBrushSubMesh() };
+            GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceDescriptions);
+            brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;
@@ -89,14 +103,10 @@ namespace Chisel.Components
                 brushMeshAsset.Clear();
                 return false;
             }
-            
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-            
-            brushMeshAsset.Polygons		= CreateBoxAssetPolygons(brushMaterials, surfaceFlags);
-            brushMeshAsset.HalfEdges	= boxHalfEdges.ToArray();
-            brushMeshAsset.Vertices		= BrushMeshFactory.CreateBoxVertices(min, max);
+
+            var subMeshes = new[] { new CSGBrushSubMesh() };
+            GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceFlags);
+            brushMeshAsset.SubMeshes = subMeshes;
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

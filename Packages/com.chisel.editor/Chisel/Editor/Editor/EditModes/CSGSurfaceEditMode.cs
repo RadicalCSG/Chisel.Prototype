@@ -164,11 +164,14 @@ namespace Chisel.Editors
 
             var localToWorldSpace	= surfaceReference.LocalToWorldSpace;
             var subMesh             = surfaceReference.SubMesh;
-            Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < subMesh.Polygons.Length);
+            if (subMesh == null)
+                return;
+            ref var brushMesh       = ref subMesh.brushMesh;
+            Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < brushMesh.polygons.Length);
 
-            var polygon             = subMesh.Polygons[surfaceReference.surfaceIndex];
-            var edges               = subMesh.HalfEdges;
-            var vertices            = subMesh.Vertices;
+            var polygon             = brushMesh.polygons[surfaceReference.surfaceIndex];
+            var edges               = brushMesh.halfEdges;
+            var vertices            = brushMesh.vertices;
             var firstEdge           = polygon.firstEdge;
             var lastEdge            = firstEdge + polygon.edgeCount;
             
@@ -206,7 +209,10 @@ namespace Chisel.Editors
 
             var localToWorldSpace	= surfaceReference.LocalToWorldSpace;
             var subMesh             = surfaceReference.SubMesh;
-            Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < subMesh.Polygons.Length);
+            if (subMesh == null)
+                return;
+            ref var brushMesh       = ref subMesh.brushMesh;
+            Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < brushMesh.polygons.Length);
 
             var grid        = UnitySceneExtensions.Grid.defaultGrid;
             var xAxis       = grid.Right;
@@ -219,11 +225,11 @@ namespace Chisel.Editors
             if (Mathf.Abs(Vector3.Dot(yAxis, intersectionPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Y;
             if (Mathf.Abs(Vector3.Dot(zAxis, intersectionPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Z;
 
-            var polygons                = subMesh.Polygons;
+            var polygons                = brushMesh.polygons;
             var polygon                 = polygons[surfaceReference.surfaceIndex];
-            var halfEdges               = subMesh.HalfEdges;
-            var halfEdgePolygonIndices  = subMesh.HalfEdgePolygonIndices;
-            var vertices                = subMesh.Vertices;
+            var halfEdges               = brushMesh.halfEdges;
+            var halfEdgePolygonIndices  = brushMesh.halfEdgePolygonIndices;
+            var vertices                = brushMesh.vertices;
             var firstEdge               = polygon.firstEdge;
             var lastEdge                = firstEdge + polygon.edgeCount;
 
@@ -234,7 +240,7 @@ namespace Chisel.Editors
 
                 var surfaceIndex    = polygonIndex; // FIXME: throughout the code we're making assumptions about polygonIndices being the same as surfaceIndices, 
                                                     //         this needs to be fixed
-                var localPlane      = subMesh.Surfaces[surfaceIndex].localPlane;
+                var localPlane      = brushMesh.surfaces[surfaceIndex].localPlane;
                 var worldPlane      = localToWorldSpace.TransformPlane(localPlane);
 
                 if ((CurrentSnapSettings & UVSnapSettings.GeometryGrid) != UVSnapSettings.None)

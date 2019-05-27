@@ -25,16 +25,12 @@ namespace Chisel.Assets
 
         [SerializeField] private CSGBrushSubMesh[]	subMeshes;
         [NonSerialized] private BrushMeshInstance[] instances;
-        
-        public Vector3[]			Vertices		{ get { if (Empty) return null; return subMeshes[0].Vertices;  } set { if (Empty) { subMeshes = new []{ new CSGBrushSubMesh() }; }; subMeshes[0].Vertices  = value; } }
-        public BrushMesh.HalfEdge[]	HalfEdges		{ get { if (Empty) return null; return subMeshes[0].HalfEdges; } set { if (Empty) { subMeshes = new []{ new CSGBrushSubMesh() }; }; subMeshes[0].HalfEdges = value; } }
-        public CSGBrushSubMesh.Polygon[]	Polygons		{ get { if (Empty) return null; return subMeshes[0].Polygons;  } set { if (Empty) { subMeshes = new []{ new CSGBrushSubMesh() }; }; subMeshes[0].Polygons  = value; } }
+
         public bool					Valid			{ get { return subMeshes != null; } }
 
         public bool					Empty			{ get { if (subMeshes == null) return true; return subMeshes.Length == 0; } }
         public int					SubMeshCount	{ get { if (subMeshes == null) return 0; return subMeshes.Length; } }
         public CSGBrushSubMesh[]	SubMeshes		{ get { return subMeshes; } set { subMeshes = value; OnValidate(); } }
-
         public BrushMeshInstance[]	Instances		{ get { if (HasInstances) return instances; return null; } }
 
 
@@ -53,7 +49,12 @@ namespace Chisel.Assets
 
             var userID = GetInstanceID();
             for (int i = 0; i < instances.Length; i++)
-                instances[i] = BrushMeshInstance.Create(subMeshes[i].CreateOrUpdateBrushMesh(), userID: userID);
+            {
+                ref var brushMesh = ref subMeshes[i].brushMesh;
+                if (!brushMesh.Validate(logErrors: true))
+                    brushMesh.Clear();
+                instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+            }
         }
 
         internal void UpdateInstances()
@@ -63,7 +64,12 @@ namespace Chisel.Assets
             if (instances.Length != subMeshes.Length) { CreateInstances(); return; }
 
             for (int i = 0; i < instances.Length; i++)
-                instances[i].Set(subMeshes[i].CreateOrUpdateBrushMesh());
+            {
+                ref var brushMesh = ref subMeshes[i].brushMesh;
+                if (!brushMesh.Validate(logErrors: true))
+                    brushMesh.Clear();
+                instances[i].Set(brushMesh);
+            }
         }
 
         internal void DestroyInstances()
@@ -83,7 +89,9 @@ namespace Chisel.Assets
             {
                 if (subMeshes[i] == null)
                     throw new NullReferenceException("SubMeshes[" + i + "] is null");
-                subMeshes[i].CalculatePlanes();
+                var brushMesh = subMeshes[i].brushMesh;
+                brushMesh.CalculatePlanes();
+                brushMesh.UpdateHalfEdgePolygonIndices();
             }
         }
 
@@ -97,8 +105,22 @@ namespace Chisel.Assets
 
             if (subMeshes != null)
             {
-                for (int i = 0; i < subMeshes.Length; i++)
-                    subMeshes[i].ExtendBounds(transformation, ref min, ref max);
+                for (int m = 0; m < subMeshes.Length; m++)
+                {
+                    var vertices = subMeshes[m].brushMesh.vertices;
+                    for (int i = 0; i < vertices.Length; i++)
+                    {
+                        var point = transformation.MultiplyPoint(vertices[i]);
+
+                        min.x = Mathf.Min(min.x, point.x);
+                        min.y = Mathf.Min(min.y, point.y);
+                        min.z = Mathf.Min(min.z, point.z);
+
+                        max.x = Mathf.Max(max.x, point.x);
+                        max.y = Mathf.Max(max.y, point.y);
+                        max.z = Mathf.Max(max.z, point.z);
+                    }
+                }
             }
             return new Bounds { min = min, max = max };
         }
@@ -112,21 +134,17 @@ namespace Chisel.Assets
                 surfaceFlags    = SurfaceFlags.None,
                 UV0             = uv0
             };
-            var surfaceLayers = new SurfaceLayers()
-            {
-                layerUsage      = asset.LayerUsage,
-                layerParameter1 = (asset.RenderMaterial  == null) ? 0 : asset.RenderMaterial .GetInstanceID(),
-                layerParameter2 = (asset.PhysicsMaterial == null) ? 0 : asset.PhysicsMaterial.GetInstanceID(),
-            };
-            Cut(cutPlane, surfaceDescription, surfaceLayers);
+            Cut(cutPlane, asset, surfaceDescription);
         }
         
-        public void Cut(Plane cutPlane, SurfaceDescription surfaceDescription, SurfaceLayers surfaceLayers)
+        public void Cut(Plane cutPlane, ChiselBrushMaterial brushMaterial, SurfaceDescription surfaceDescription)
         {
+            if (SubMeshes == null)
+                return;
+
             for (int i = SubMeshes.Length - 1; i >= 0; i--)
             {
-                SubMeshes[i].CreateOrUpdateBrushMesh();
-                if (!SubMeshes[i].Cut(cutPlane, surfaceDescription, surfaceLayers))
+                if (!SubMeshes[i].brushMesh.Cut(cutPlane, surfaceDescription, brushMaterial))
                 {
                     if (SubMeshes.Length > 1)
                     {
@@ -137,7 +155,6 @@ namespace Chisel.Assets
                         subMeshes = null;
                     continue;
                 }
-                SubMeshes[i].CreateOrUpdateBrushMeshInverse();
             }
             if (subMeshes == null ||
                 subMeshes.Length == 0)

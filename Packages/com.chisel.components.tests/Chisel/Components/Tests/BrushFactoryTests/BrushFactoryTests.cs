@@ -17,11 +17,7 @@ namespace BrushFactoryTests
         [UnityTest]
         public IEnumerator CreateBrushMeshAsset_IsPartOfManager()
         {
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.None
-            };
-            var box = BrushMeshFactory.CreateBox(Vector3.one, layers, SurfaceFlags.None);
+            var box = BrushMeshFactory.CreateBox(Vector3.one, null, SurfaceFlags.None);
             yield return null;
 
             var instance = BrushMeshInstance.Create(box);

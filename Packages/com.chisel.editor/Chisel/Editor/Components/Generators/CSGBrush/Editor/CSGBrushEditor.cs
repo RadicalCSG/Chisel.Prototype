@@ -47,36 +47,50 @@ namespace Chisel.Editors
             var targetBrushMeshAsset	= generator.BrushMeshAsset;
             if (!targetBrushMeshAsset)
                 return;
-            
-            EditorGUI.BeginChangeCheck();
 
-            var modelMatrix		= CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var vertices		= targetBrushMeshAsset.Vertices;
-            var halfEdges		= targetBrushMeshAsset.HalfEdges;
+            var subMeshes = targetBrushMeshAsset.SubMeshes;
+            if (subMeshes == null)
+                return;
 
-            //HashSet<CSGTreeBrush> foundBrushes = new HashSet<CSGTreeBrush>();
-            //targetBrush.GetAllTreeBrushes(foundBrushes, false)
-            //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
-            {
-                var brush = (CSGTreeBrush)generator.TopNode;
-                var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
-                for (int e = 0; e < halfEdges.Length; e++)
+            for (int m = 0; m < subMeshes.Length; m++)
+            { 
+                var subMesh = subMeshes[m];
+                if (subMesh == null)
+                    continue;
+
+                ref var brushMesh = ref subMesh.brushMesh;
+
+                EditorGUI.BeginChangeCheck();
+
+                var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
+
+                var vertices		= brushMesh.vertices;
+                var halfEdges		= brushMesh.halfEdges;
+
+                //HashSet<CSGTreeBrush> foundBrushes = new HashSet<CSGTreeBrush>();
+                //targetBrush.GetAllTreeBrushes(foundBrushes, false)
+                //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
                 {
-                    var vertexIndex1 = halfEdges[e].vertexIndex;
-                    var vertexIndex2 = halfEdges[halfEdges[e].twinIndex].vertexIndex;
+                    var brush = (CSGTreeBrush)generator.TopNode;
+                    var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
+                    for (int e = 0; e < halfEdges.Length; e++)
+                    {
+                        var vertexIndex1 = halfEdges[e].vertexIndex;
+                        var vertexIndex2 = halfEdges[halfEdges[e].twinIndex].vertexIndex;
 
-                    var from	= vertices[vertexIndex1];
-                    var to		= vertices[vertexIndex2];
-                    CSGOutlineRenderer.DrawLine(transformation, from, to, UnityEditor.Handles.yAxisColor, thickness: 1.0f);
+                        var from	= vertices[vertexIndex1];
+                        var to		= vertices[vertexIndex2];
+                        CSGOutlineRenderer.DrawLine(transformation, from, to, UnityEditor.Handles.yAxisColor, thickness: 1.0f);
+                    }
                 }
-            }
 
-            //var newBounds = CSGHandles.BoundsHandle(originalBounds, Quaternion.identity, CSGHandles.DotHandleCap);
+                //var newBounds = CSGHandles.BoundsHandle(originalBounds, Quaternion.identity, CSGHandles.DotHandleCap);
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                //Undo.RecordObject(target, "Changed shape of Brush");
-                //brush.Bounds = newBounds;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    //Undo.RecordObject(target, "Changed shape of Brush");
+                    //brush.Bounds = newBounds;
+                }
             }
         }
     }	

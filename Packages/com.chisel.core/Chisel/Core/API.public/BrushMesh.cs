@@ -134,9 +134,9 @@ namespace Chisel.Core
             /// <value>Describes how normals and texture coordinates are created.</value>
             public SurfaceDescription description;
 
-            /// <value>Describes the surface layers that this <see cref="Chisel.Core.BrushMesh.Polygon"/> is part of, and, for example, what Materials it uses.</value>
-            /// <seealso cref="Chisel.Core.MeshQuery"/>
-            public SurfaceLayers layers;
+            /// <value>Describes the Material and PhysicMaterial that this <see cref="Chisel.Core.BrushMesh.Polygon"/> uses.</value>
+            /// <seealso cref="ChiselBrushMaterial"/>
+            public ChiselBrushMaterial brushMaterial;
 
             [EditorBrowsable(EditorBrowsableState.Never)]
             public override string ToString() { return string.Format("{{ firstEdge = {0}, edgeCount = {1}, surfaceID = {2} }}", firstEdge, edgeCount, surfaceID); }
@@ -180,13 +180,17 @@ namespace Chisel.Core
         /// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
         public Vector3[]	vertices;
 
-        /// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.</value>
+        /// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.
+        /// This array must be equal in length to <see cref="halfEdgePolygonIndices"/>s.</value>
         public HalfEdge[]	halfEdges;
 
-        /// <value>An array of indices to <see cref="polygons"/>s that define which <see cref="Chisel.Core.BrushMesh.Polygon"/> each <see cref="halfEdges">halfEdge</see> belongs to.</value>
+        /// <value>An array of indices to <see cref="polygons"/>s that define which <see cref="Chisel.Core.BrushMesh.Polygon"/> each <see cref="halfEdges">halfEdge</see> belongs to.
+        /// This array must be equal in length to <see cref="halfEdges"/>s.</value>
         public int[]        halfEdgePolygonIndices;
-        
-        /// <value>An array of <see cref="Chisel.Core.BrushMesh.Polygon"/> that define the polygons of a <see cref="Chisel.Core.BrushMesh"/>.</value>
+
+        /// <value>An array of <see cref="Chisel.Core.BrushMesh.Polygon"/> that define the polygons of a <see cref="Chisel.Core.BrushMesh"/>.
+        /// This array must be equal in length to <see cref="brushMaterials"/>s.</value>
+        /// <seealso cref="Chisel.Core.BrushMesh.BrushMaterial"/>
         public Polygon[]	polygons;
 
         /// <value>The surfaces of this <see cref="Chisel.Core.BrushMesh"/>.</value> 

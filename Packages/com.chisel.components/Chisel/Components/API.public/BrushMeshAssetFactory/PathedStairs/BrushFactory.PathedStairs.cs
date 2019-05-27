@@ -147,7 +147,7 @@ namespace Chisel.Components
                 var halfWidth = maxWidth1 * 0.5f;
                 for (int m = 0; m < subMeshCount; m++)
                 {
-                    var vertices = subMeshes[subMeshIndex + m].Vertices;
+                    var vertices = subMeshes[subMeshIndex + m].brushMesh.vertices;
                     for (int v = 0; v < vertices.Length; v++)
                     {
                         // TODO: is it possible to put all of this in a single matrix?

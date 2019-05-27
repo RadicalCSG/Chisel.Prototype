@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Chisel.Core
 {
@@ -33,7 +34,7 @@ namespace Chisel.Core
             var result = CreateBrushMesh(userID,
                                          vertexCount,  brushMesh.vertices,
                                          edgeCount,    brushMesh.halfEdges,
-                                         polygonCount, brushMesh.polygons);
+                                         polygonCount, ConvertToNative(brushMesh.polygons));
 #endif
             if (result <= 0)
                 result = 0;
@@ -67,7 +68,7 @@ namespace Chisel.Core
             var result = UpdateBrushMesh(brushMeshIndex,
                                          vertexCount,  brushMesh.vertices,
                                          edgeCount,    brushMesh.halfEdges,
-                                         polygonCount, brushMesh.polygons);
+                                         polygonCount, ConvertToNative(brushMesh.polygons));
 #endif
             return result;
         }

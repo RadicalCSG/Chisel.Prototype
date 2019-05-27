@@ -162,10 +162,10 @@ namespace Chisel.Components
                     }
 
                     var subMesh = new CSGBrushSubMesh();
-                    if (!CreateExtrudedSubMesh(subMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
+                    if (!CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
                         continue;
 
-                    if (!subMesh.Validate())
+                    if (!subMesh.brushMesh.Validate())
                     {
                         brushMeshAsset.Clear();
                         return false;
