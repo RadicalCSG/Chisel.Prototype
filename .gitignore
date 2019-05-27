@@ -40,3 +40,13 @@ Logs/
 ProjectSettings/ProjectVersion\.txt
 
 ProjectSettings/
+
+*.exp
+
+*.lib
+
+Packages/com\.chisel\.core/Chisel/Core/API\.private/Native/Plugin/x64/Chisel\[TEST\]\.exp\.meta
+
+Packages/com\.chisel\.core/Chisel/Core/API\.private/Native/Plugin/x64/Chisel\[TEST\]\.exp\.meta
+
+Packages/com\.chisel\.core/Chisel/Core/API\.private/Native/Plugin/x64/Chisel\[TEST\]\.exp\.meta
