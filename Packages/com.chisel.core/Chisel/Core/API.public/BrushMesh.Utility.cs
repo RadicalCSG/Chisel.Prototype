@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -1179,6 +1179,27 @@ namespace Chisel.Core
 
             Validate(logErrors: true);
             return true;
+        }
+
+        public Vector3 GetPolygonCenter(int polygonIndex)
+        {
+            if (polygonIndex < 0 || polygonIndex >= polygons.Length)
+                throw new IndexOutOfRangeException();
+
+            var edgeCount = polygons[polygonIndex].edgeCount;
+            var firstEdge = polygons[polygonIndex].firstEdge;
+            var lastEdge = firstEdge + edgeCount;
+
+            var center = Vector3.zero;
+            for (int e = firstEdge; e < lastEdge; e++)
+            {
+                var vertexIndex = halfEdges[e].vertexIndex;
+                center += vertices[vertexIndex];
+            }
+            center.x /= edgeCount;
+            center.y /= edgeCount;
+            center.z /= edgeCount;
+            return center;
         }
     }
 }
