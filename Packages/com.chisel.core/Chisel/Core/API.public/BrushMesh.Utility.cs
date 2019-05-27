@@ -91,7 +91,78 @@ namespace Chisel.Core
             }
         }
 
-        public void Compact()
+        public void RemoveRedundantVertices()
+        {
+            if (halfEdges == null ||
+                vertices == null ||
+                vertices.Length == 0)
+                return;
+
+            var newVertexPosition = new int[vertices.Length];
+            for (int v = 0; v < newVertexPosition.Length; v++)
+                newVertexPosition[v] = -1;
+
+            for (int e = 0; e < halfEdges.Length; e++)
+            {
+                var vertexIndex = halfEdges[e].vertexIndex;
+                newVertexPosition[vertexIndex] = vertexIndex;
+            }
+
+            for (int v = 0; v < vertices.Length; v++)
+            {
+                if (newVertexPosition[v] != -1)
+                    continue;
+                vertices[v].x = float.NaN;
+                vertices[v].y = float.NaN;
+                vertices[v].z = float.NaN;
+            }
+
+            int from    = -1;
+            int to      = 0;
+            int count   = 0;            
+            for (int v = 0; v < newVertexPosition.Length; v++)
+            {
+                if (newVertexPosition[v] != -1)
+                {
+                    if (from == -1)
+                        from = v;
+                    count++;
+                    continue;
+                }
+
+                if (from == -1)
+                    continue;
+
+                if (from != to)
+                {
+                    Array.Copy(vertices, from, vertices, to, count);
+                    for (int n = 0; n < count; n++)
+                        newVertexPosition[from + n] = to + n;
+                }
+                to += count;
+                count = 0;
+                from = -1;
+            }
+            if (from != -1 &&
+                from != to)
+            {
+                Array.Copy(vertices, from, vertices, to, count);
+                for (int n = 0; n < count; n++)
+                    newVertexPosition[from + n] = to + n;
+            }
+            to += count;
+            if (to != vertices.Length)
+                Array.Resize(ref vertices, to);
+
+            for (int e = 0; e < halfEdges.Length; e++)
+            {
+                var vertexIndex = halfEdges[e].vertexIndex;
+                vertexIndex = newVertexPosition[vertexIndex];
+                halfEdges[e].vertexIndex = vertexIndex;
+            }
+        }
+
+        public void CompactHalfEdges()
         {
             if (halfEdges == null ||
                 polygons  == null ||
@@ -595,7 +666,7 @@ namespace Chisel.Core
 
 
             //Debug.Log("compact");
-            Compact();
+            CompactHalfEdges();
             CalculatePlanes();
             //Debug.Log("validate");
             Validate(logErrors: true);
@@ -898,7 +969,7 @@ namespace Chisel.Core
             if (polygons == null)
                 return false;
 
-            Compact();
+            CompactHalfEdges();
 
             if (surfaces == null)
                 CalculatePlanes();
@@ -1101,7 +1172,8 @@ namespace Chisel.Core
                 polygons[p].edgeCount = 0;
             }
 
-            Compact();
+            CompactHalfEdges();
+            RemoveRedundantVertices();
             CalculatePlanes();
             UpdateHalfEdgePolygonIndices();
 
