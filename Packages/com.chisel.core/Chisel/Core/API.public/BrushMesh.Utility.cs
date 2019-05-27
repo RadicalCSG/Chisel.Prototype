@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -68,7 +68,7 @@ namespace Chisel.Core
                 surfaces = new Surface[polygons.Length];
 
             for (int p = 0; p < polygons.Length; p++)
-                surfaces[p].plane = CalculatePlane(in polygons[p]);
+                surfaces[p].localPlane = CalculatePlane(in polygons[p]);
         }
 
         public void UpdateHalfEdgePolygonIndices()

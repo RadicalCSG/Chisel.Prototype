@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -26,26 +26,6 @@ namespace Chisel.Assets
             this.brushMesh = new BrushMesh(other.brushMesh);
         }
 
-
-        [Serializable]
-        // TODO: find a better name
-        public sealed class Orientation
-        {
-            public Orientation() { }
-            public Orientation(Orientation other)
-            {
-                localPlane = other.localPlane;
-                localToPlaneSpace = other.localToPlaneSpace;
-                planeToLocalSpace = other.planeToLocalSpace;
-            }
-            [HideInInspector] [SerializeField] public Plane		localPlane;
-            [HideInInspector] [SerializeField] public Matrix4x4 localToPlaneSpace;
-            [HideInInspector] [SerializeField] public Matrix4x4 planeToLocalSpace;
-            public Vector3 Tangent { get { return localToPlaneSpace.GetRow(0); } }
-            public Vector3 BiNormal { get { return localToPlaneSpace.GetRow(1); } }
-        }
-
-
         [Serializable]
         public sealed class Polygon
         {
@@ -68,14 +48,15 @@ namespace Chisel.Assets
                                                     // is moved to managed code ..
         }
 
+        private ref BrushMesh BrushMesh { get { if (brushMesh == null) Clear(); return ref brushMesh; } }
 
-        public Vector3[]					Vertices		{ get { if (brushMesh == null) brushMesh = new BrushMesh(); return brushMesh.vertices;  } set { if (brushMesh == null) brushMesh = new BrushMesh(); brushMesh.vertices  = value; } }
-        public BrushMesh.HalfEdge[]			HalfEdges		{ get { if (brushMesh == null) brushMesh = new BrushMesh(); return brushMesh.halfEdges; } set { if (brushMesh == null) brushMesh = new BrushMesh(); brushMesh.halfEdges = value; } }
-        public Polygon[]					Polygons		{ get { return polygons; } set { polygons = value; } }
-        public Orientation[]				Orientations	{ get { return orientations; } set { orientations = value; } }
-        public CSGOperationType				Operation		{ get { return operation; } set { operation = value; } }
+        public Vector3[]					Vertices		       { get { return BrushMesh.vertices;  } set { BrushMesh.vertices  = value; } }
+        public BrushMesh.HalfEdge[]			HalfEdges		       { get { return BrushMesh.halfEdges; } set { BrushMesh.halfEdges = value; } }
+        public BrushMesh.Surface[]          Surfaces               { get { return BrushMesh.surfaces; } set { BrushMesh.surfaces = value; } }
+        public int[]                        HalfEdgePolygonIndices { get { return BrushMesh.halfEdgePolygonIndices; } set { BrushMesh.halfEdgePolygonIndices = value; } }
+        public Polygon[]					Polygons		       { get { return polygons; } set { polygons = value; } }
+        public CSGOperationType				Operation		       { get { return operation; } set { operation = value; } }
         
-        [SerializeField] private Orientation[]			orientations;
         [SerializeField] private Polygon[]				polygons;
         [SerializeField] private BrushMesh				brushMesh;
         [SerializeField] private CSGOperationType		operation = CSGOperationType.Additive;
@@ -91,52 +72,21 @@ namespace Chisel.Assets
         {
             if (brushMesh == null)
                 return false;
+
             return brushMesh.Validate(logErrors: true);
         }
         
-        internal void	CalculatePlanes()
+        internal void CalculatePlanes()
         {
-            if (orientations == null ||
-                orientations.Length != polygons.Length)
-                orientations = new Orientation[polygons.Length];
+            if (brushMesh == null)
+                return;
 
-            var vertices  = brushMesh.vertices;
-            var halfEdges = brushMesh.halfEdges;
-            for (int i = 0; i < polygons.Length; i++)
-            {
-                var firstEdge = polygons[i].firstEdge;
-                var edgeCount = polygons[i].edgeCount;
-                if (edgeCount <= 0)
-                {
-                    if (orientations[i] == null) orientations[i] = new Orientation();
-                    orientations[i].localPlane = new Plane(Vector3.up, 0);
-                    orientations[i].localToPlaneSpace = Matrix4x4.identity;
-                    orientations[i].planeToLocalSpace = Matrix4x4.identity;
-                    continue;
-                }
-                var lastEdge	= firstEdge + edgeCount;
-                var normal		= Vector3.zero;
-                var prevVertex	= vertices[halfEdges[lastEdge - 1].vertexIndex];
-                for (int n = firstEdge; n < lastEdge; n++)
-                {
-                    var currVertex = vertices[halfEdges[n].vertexIndex];
-                    normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
-                    normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
-                    normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-                    prevVertex = currVertex;
-                }
-                normal = normal.normalized;
+            if (brushMesh.polygons == null ||
+                brushMesh.polygons.Length != polygons.Length)
+                CreateOrUpdateBrushMesh();
 
-                var d = 0.0f;
-                for (int n = firstEdge; n < lastEdge; n++)
-                    d -= Vector3.Dot(normal, vertices[halfEdges[n].vertexIndex]);
-                d /= edgeCount;
-                
-                if (orientations[i] == null) orientations[i] = new Orientation();
-                orientations[i].localPlane = new Plane(normal, d);
-                orientations[i].localToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(orientations[i].localPlane);
-                orientations[i].planeToLocalSpace = Matrix4x4.Inverse(orientations[i].localToPlaneSpace);
-            }
+            brushMesh.CalculatePlanes();
+            brushMesh.UpdateHalfEdgePolygonIndices();
         }
 
         internal BrushMesh CreateOrUpdateBrushMesh()
@@ -148,7 +98,7 @@ namespace Chisel.Assets
             if (polygons == null ||
                 polygons.Length == 0)
             {
-                brushMesh.polygons = null;
+                Clear();
                 return brushMesh;
             }
 
@@ -198,7 +148,7 @@ namespace Chisel.Assets
             if (brushMesh.polygons == null ||
                 brushMesh.polygons.Length == 0)
             {
-                polygons = null;
+                Clear();
                 return;
             }
 
@@ -233,26 +183,29 @@ namespace Chisel.Assets
         
         public void ExtendBounds(Matrix4x4 transformation, ref Vector3 min, ref Vector3 max)
         {
-            if (brushMesh != null)
+            if (brushMesh == null)
+                return;
+            
+            var vertices = brushMesh.vertices;
+            for (int i = 0; i < vertices.Length; i++)
             {
-                var vertices = brushMesh.vertices;
-                for (int i = 0; i < vertices.Length; i++)
-                {
-                    var point = transformation.MultiplyPoint(vertices[i]);
+                var point = transformation.MultiplyPoint(vertices[i]);
 
-                    min.x = Mathf.Min(min.x, point.x);
-                    min.y = Mathf.Min(min.y, point.y);
-                    min.z = Mathf.Min(min.z, point.z);
+                min.x = Mathf.Min(min.x, point.x);
+                min.y = Mathf.Min(min.y, point.y);
+                min.z = Mathf.Min(min.z, point.z);
 
-                    max.x = Mathf.Max(max.x, point.x);
-                    max.y = Mathf.Max(max.y, point.y);
-                    max.z = Mathf.Max(max.z, point.z);
-                }
+                max.x = Mathf.Max(max.x, point.x);
+                max.y = Mathf.Max(max.y, point.y);
+                max.z = Mathf.Max(max.z, point.z);
             }
         }
 
         public bool Cut(Plane cuttingPlane, SurfaceDescription description, SurfaceLayers layers)
         {
+            if (brushMesh == null)
+                return false;
+
             return brushMesh.Cut(cuttingPlane, description, layers);
         }
     }
