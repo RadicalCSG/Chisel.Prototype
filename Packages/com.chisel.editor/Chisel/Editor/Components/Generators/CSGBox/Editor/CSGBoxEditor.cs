@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
 using Chisel.Components;
-using Chisel.Assets;
 using UnitySceneExtensions;
 
 namespace Chisel.Editors
