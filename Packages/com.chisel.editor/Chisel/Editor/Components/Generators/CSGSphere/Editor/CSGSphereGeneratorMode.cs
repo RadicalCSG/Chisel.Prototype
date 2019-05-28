@@ -59,8 +59,8 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    sphere = BrushMeshAssetFactory.Create<CSGSphere>("Sphere",
-                                                                BrushMeshAssetFactory.GetModelForNode(modelBeneathCursor),
+                    sphere = ChiselModelManager.Create<CSGSphere>("Sphere",
+                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
 
                     sphere.definition.Reset();

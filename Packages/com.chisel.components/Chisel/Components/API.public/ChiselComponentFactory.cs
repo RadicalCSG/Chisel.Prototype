@@ -14,7 +14,7 @@ using System.Collections.Generic;
 namespace Chisel.Components
 {
     // TODO: rename
-    public sealed partial class BrushMeshAssetFactory
+    public sealed partial class ChiselModelManager
     {
         public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : CSGNode
         {

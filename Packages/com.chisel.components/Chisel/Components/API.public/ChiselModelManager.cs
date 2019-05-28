@@ -19,7 +19,7 @@ namespace Chisel.Components
     // TODO: make it possible to generate brushes in specific scenes/specific parents
     // TODO: clean up
     // TODO: rename
-    public sealed partial class BrushMeshAssetFactory
+    public sealed partial class ChiselModelManager
     {
         // TODO: make this part of Undo stack ...
         public static CSGModel ActiveModel
@@ -33,15 +33,15 @@ namespace Chisel.Components
         {
             if (overrideModel)
             {
-                BrushMeshAssetFactory.ActiveModel = overrideModel;
+                ChiselModelManager.ActiveModel = overrideModel;
                 return overrideModel;
             }
 
-            var activeModel = BrushMeshAssetFactory.ActiveModel;
+            var activeModel = ChiselModelManager.ActiveModel;
             if (!activeModel)
             {
-                activeModel = BrushMeshAssetFactory.Create<CSGModel>("Model");
-                BrushMeshAssetFactory.ActiveModel = activeModel;
+                activeModel = ChiselModelManager.Create<CSGModel>("Model");
+                ChiselModelManager.ActiveModel = activeModel;
             }
             return activeModel;
         }

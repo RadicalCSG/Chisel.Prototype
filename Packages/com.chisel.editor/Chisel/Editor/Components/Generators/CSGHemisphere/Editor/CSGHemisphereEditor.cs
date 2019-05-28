@@ -106,7 +106,7 @@ namespace Chisel.Editors
             var focusControl	= UnitySceneExtensions.SceneHandleUtility.focusControl;
             var normal			= Vector3.up;
 
-            if (!BrushMeshFactory.GenerateHemisphereVertices(generator.definition, ref vertices))
+            if (!BrushMeshFactory.GenerateHemisphereVertices(ref generator.definition, ref vertices))
                 return;
             
             
