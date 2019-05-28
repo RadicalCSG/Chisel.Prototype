@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Chisel.Core;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Vector4 = UnityEngine.Vector4;
@@ -12,7 +11,7 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     [Serializable]
     public enum CylinderShapeType

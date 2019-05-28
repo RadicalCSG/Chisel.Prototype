@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System;
 using UnityEditor;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     public class CSGMaterialManager : ScriptableObject
     {

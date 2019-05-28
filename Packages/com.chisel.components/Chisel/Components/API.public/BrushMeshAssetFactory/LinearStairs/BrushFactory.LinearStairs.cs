@@ -50,7 +50,7 @@ namespace Chisel.Components
                                     };
                 }
 
-                CreateExtrudedSubMesh(ref subMeshes[j].brushMesh, vertices, extrusion,
+                BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[j].brushMesh, vertices, extrusion,
                                 new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                 new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                 brushMaterials, surfaceDescriptions);
@@ -98,7 +98,7 @@ namespace Chisel.Components
                                     new Vector3( min.x, topY,    leftZ),   // 4
                                 };
 
-                CreateExtrudedSubMesh(ref subMeshes[j + 0].brushMesh, vertices, extrusion, 
+                BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[j + 0].brushMesh, vertices, extrusion, 
                                 new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
                                 new int[] { 0, 1, 2, 2, 2, 2, 2 }, // TODO: fix this
                                 brushMaterials, surfaceDescriptions);
@@ -309,7 +309,7 @@ namespace Chisel.Components
                                             };
                         }
 
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + i].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + i].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { Left, Right, Step, Tread, Step, Tread }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);						
@@ -340,7 +340,7 @@ namespace Chisel.Components
                                                 new Vector3( min.x, max.y, min.z),	// 3
                                             };
                         var extrusion	= new Vector3(max.x - min.x, 0, 0);
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startTread + i].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startTread + i].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         new int[] { Left, Right, Tread, Tread, Tread, Tread }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -389,7 +389,7 @@ namespace Chisel.Components
                                             new Vector3( min.x, max.y									   , min.z),		// 3
                                         };
 
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -416,7 +416,7 @@ namespace Chisel.Components
                                         };
                         }
 
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + stepCount].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + stepCount].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -441,7 +441,7 @@ namespace Chisel.Components
                                             new Vector3( min.x, max.y									   , min.z),		// 3
                                         };
 
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -468,7 +468,7 @@ namespace Chisel.Components
                                         };
                         }
 
-                        CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + stepCount].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + stepCount].brushMesh, vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);

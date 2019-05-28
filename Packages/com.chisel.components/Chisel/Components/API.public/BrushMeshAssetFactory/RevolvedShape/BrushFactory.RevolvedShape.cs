@@ -161,7 +161,7 @@ namespace Chisel.Components
                     }
 
                     var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
-                    if (!CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
                         continue;
 
                     if (!subMesh.brushMesh.Validate())

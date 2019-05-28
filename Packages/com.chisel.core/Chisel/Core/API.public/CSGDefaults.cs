@@ -6,7 +6,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     public static class CSGDefaults
     {

@@ -31,7 +31,7 @@ namespace Chisel.Core
         //      2           4
         //
 
-        static BrushMesh.Polygon[] CreateSquarePyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateSquarePyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
         {
             return new[]
             {
@@ -88,7 +88,7 @@ namespace Chisel.Core
         //      2           0
         //
 
-        static BrushMesh.Polygon[] CreateTriangularPyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateTriangularPyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
         {
             return new[]
             {
@@ -145,7 +145,7 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  3, vertexIndex = 0 },	// 11 (0-3)
         };
 
-        static BrushMesh.Polygon[] CreateWedgeAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateWedgeAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
         {
             return new[]
             {
@@ -297,7 +297,7 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  9, vertexIndex = 3 }	// 23 (3-7)
         };
 
-        static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceFlags surfaceFlags)
+        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceFlags surfaceFlags)
         {
             return new[]
             {
@@ -315,7 +315,7 @@ namespace Chisel.Core
             };
         }
 
-        static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
         {
             return new[]
             {
