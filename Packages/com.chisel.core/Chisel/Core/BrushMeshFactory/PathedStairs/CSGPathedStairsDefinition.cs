@@ -4,9 +4,8 @@ using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
 using Mathf = UnityEngine.Mathf;
 using UnitySceneExtensions;
-using Chisel.Core;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     [Serializable]
     public class CSGPathedStairsDefinition // TODO: make this a struct
