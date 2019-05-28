@@ -16,98 +16,61 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateBoxAsset(ChiselGeneratedBrushes brushMeshAsset, UnityEngine.Bounds bounds, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBoxAsset(ChiselGeneratedBrushes generatedBrushes, UnityEngine.Bounds bounds, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
-            return GenerateBoxAsset(brushMeshAsset, bounds.min, bounds.max, brushMaterials, surfaceDescriptions);
+            return GenerateBoxAsset(generatedBrushes, bounds.min, bounds.max, brushMaterials, surfaceDescriptions);
         }
-
-        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
-        {
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            if (brushMaterials.Length != 6 ||
-                surfaceDescriptions.Length != 6)
-                return false;
-
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-
-            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
-            brushMesh.halfEdges	= boxHalfEdges.ToArray();
-            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
-            return true;
-        }
-
-        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
-        {
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            if (brushMaterials.Length != 6)
-                return false;
-
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-
-            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceFlags);
-            brushMesh.halfEdges	= boxHalfEdges.ToArray();
-            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
-            return true;
-        }
-
-        public static bool GenerateBoxAsset(ChiselGeneratedBrushes brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        
+        public static bool GenerateBoxAsset(ChiselGeneratedBrushes generatedBrushes, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (!BoundsExtensions.IsValid(min, max))
             {
-                brushMeshAsset.Clear();
+                generatedBrushes.Clear();
                 Debug.LogError("bounds is of an invalid size " + (max - min));
                 return false;
             }
 
             if (surfaceDescriptions == null || surfaceDescriptions.Length != 6)
             {
-                brushMeshAsset.Clear();
+                generatedBrushes.Clear();
                 Debug.LogError("surfaceDescriptions needs to be an array of length 6");
                 return false;
             }
             
             if (brushMaterials == null || brushMaterials.Length != 6)
             {
-                brushMeshAsset.Clear();
+                generatedBrushes.Clear();
                 Debug.LogError("brushMaterials needs to be an array of length 6");
                 return false;
             }
 
             var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceDescriptions);
-            brushMeshAsset.SubMeshes = subMeshes;
-            brushMeshAsset.CalculatePlanes();
-            brushMeshAsset.SetDirty();
+            BrushMeshFactory.GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceDescriptions);
+            generatedBrushes.SubMeshes = subMeshes;
+            generatedBrushes.CalculatePlanes();
+            generatedBrushes.SetDirty();
             return true;
         }
         
-        public static bool GenerateBoxAsset(ChiselGeneratedBrushes brushMeshAsset, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool GenerateBoxAsset(ChiselGeneratedBrushes generatedBrushes, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             if (!BoundsExtensions.IsValid(min, max))
             {
-                brushMeshAsset.Clear();
+                generatedBrushes.Clear();
                 return false;
             }
 
             if (brushMaterials.Length != 6)
             {
-                brushMeshAsset.Clear();
+                generatedBrushes.Clear();
                 return false;
             }
 
             var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceFlags);
-            brushMeshAsset.SubMeshes = subMeshes;
-            brushMeshAsset.CalculatePlanes();
-            brushMeshAsset.SetDirty();
+            BrushMeshFactory.GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceFlags);
+            generatedBrushes.SubMeshes = subMeshes;
+            generatedBrushes.CalculatePlanes();
+            generatedBrushes.SetDirty();
             return true;
         }
         

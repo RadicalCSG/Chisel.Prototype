@@ -12,10 +12,10 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     // TODO: rename
-    public sealed partial class BrushMeshAssetFactory
+    public sealed partial class BrushMeshFactory
     {
         //
         //
