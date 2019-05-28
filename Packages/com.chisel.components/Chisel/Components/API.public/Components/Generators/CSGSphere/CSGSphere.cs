@@ -62,7 +62,16 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateSphere(generatedBrushes, ref definition);
+            var brushMesh = new[] { new BrushMesh() };
+            if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], ref definition))
+            {
+                generatedBrushes.Clear();
+                return;
+            }
+
+            generatedBrushes.SetSubMeshes(brushMesh);
+            generatedBrushes.CalculatePlanes();
+            generatedBrushes.SetDirty();
         }
     }
 }

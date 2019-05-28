@@ -135,7 +135,16 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateLinearStairs(generatedBrushes, ref definition);
+            var brushMeshes = generatedBrushes.BrushMeshes;
+            if (!BrushMeshFactory.GenerateLinearStairs(ref brushMeshes, ref definition))
+            {
+                generatedBrushes.Clear();
+                return;
+            }
+
+            generatedBrushes.SetSubMeshes(brushMeshes);
+            generatedBrushes.CalculatePlanes();
+            generatedBrushes.SetDirty();
         }
     }
 }
