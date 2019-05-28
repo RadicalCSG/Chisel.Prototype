@@ -5,9 +5,8 @@ using Vector4 = UnityEngine.Vector4;
 using Quaternion = UnityEngine.Quaternion;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 using UnitySceneExtensions;
-using Chisel.Core;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     [Serializable]
     public struct PathPoint

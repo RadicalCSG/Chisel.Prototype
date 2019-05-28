@@ -83,7 +83,7 @@ namespace Chisel.Editors
             
             var shapeVertices		= new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
-            BrushMeshAssetFactory.GetPathVertices(generator.definition.shape, generator.definition.curveSegments, shapeVertices, shapeSegmentIndices);
+            BrushMeshFactory.GetPathVertices(generator.definition.shape, generator.definition.curveSegments, shapeVertices, shapeSegmentIndices);
 
             
             var horzSegments			= generator.definition.revolveSegments;

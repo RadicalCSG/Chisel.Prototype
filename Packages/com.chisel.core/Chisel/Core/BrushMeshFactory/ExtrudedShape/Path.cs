@@ -4,7 +4,7 @@ using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Quaternion = UnityEngine.Quaternion;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     // TODO: turn into an asset so we can share it between multiple generators??
     [Serializable]

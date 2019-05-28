@@ -98,7 +98,7 @@ namespace Chisel.Components
             
             var shapeVertices		= new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
-            GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
+            BrushMeshFactory.GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
             
             Vector2[][] polygonVerticesArray;
             int[][] polygonIndicesArray;

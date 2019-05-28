@@ -95,7 +95,7 @@ namespace Chisel.Components
                 }
             }
 
-            BrushMeshAssetFactory.GenerateExtrudedShapeAsset(brushMeshAsset, shape, path, curveSegments, brushMaterials, ref surfaceDescriptions);
+            BrushMeshAssetFactory.GenerateExtrudedShape(brushMeshAsset, shape, path, curveSegments, brushMaterials, ref surfaceDescriptions);
         }
     }
 }
