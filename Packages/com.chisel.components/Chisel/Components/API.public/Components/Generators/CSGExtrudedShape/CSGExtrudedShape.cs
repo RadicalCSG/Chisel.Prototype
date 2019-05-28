@@ -10,7 +10,7 @@ namespace Chisel.Components
 {
     // TODO: change name
     [ExecuteInEditMode]
-    public sealed class CSGExtrudedShape : CSGGeneratorComponent
+    public sealed class CSGExtrudedShape : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Extruded Shape"; } }
         

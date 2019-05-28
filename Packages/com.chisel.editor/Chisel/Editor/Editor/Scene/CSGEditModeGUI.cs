@@ -139,12 +139,12 @@ namespace Chisel.Editors
             // stored selection to avoid restoring an old selection for no reason later on.
             ClearStoredSelection();
             
-            var is_generator = activeObject is Components.CSGGeneratorComponent;
+            var is_generator = activeObject is Components.ChiselGeneratorComponent;
             if (!is_generator)
             {
                 var gameObject = activeObject as GameObject;
                 if (gameObject != null)
-                    is_generator = gameObject.GetComponent<Components.CSGGeneratorComponent>() != null;
+                    is_generator = gameObject.GetComponent<Components.ChiselGeneratorComponent>() != null;
             }
 
             if (is_generator)

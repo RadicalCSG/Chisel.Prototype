@@ -12,19 +12,7 @@ using System.Runtime.InteropServices;
 
 namespace Chisel.Components
 {
-    [Serializable]
-    public sealed class Frustum
-    {
-        public readonly Plane[] Planes = new Plane[6];
-    }
-    
-    public class CSGBrushIntersection
-    {
-        public CSGNode		node;
-        public CSGTreeBrushIntersection intersection;
-    };
-
-    public static class CSGSceneQuery
+    public static class ChiselSceneQuery
     {
 #if UNITY_EDITOR
         public static GameObject GetContainerGameObject(GameObject gameObject)
@@ -53,7 +41,7 @@ namespace Chisel.Components
                 ignoreInstanceIDs = new HashSet<int>();
                 foreach (var go in ignore)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                         ignoreInstanceIDs.Add(node.GetInstanceID());
                 }
@@ -63,7 +51,7 @@ namespace Chisel.Components
                 filterInstanceIDs = new HashSet<int>();
                 foreach (var go in filter)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                         filterInstanceIDs.Add(node.GetInstanceID());
                 }
@@ -155,7 +143,7 @@ namespace Chisel.Components
                 ignoreInstanceIDs = new HashSet<int>();
                 foreach (var go in ignore)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                         ignoreInstanceIDs.Add(node.GetInstanceID());
                 }
@@ -165,7 +153,7 @@ namespace Chisel.Components
                 filterInstanceIDs = new HashSet<int>();
                 foreach (var go in filter)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                         filterInstanceIDs.Add(node.GetInstanceID());
                 }
@@ -258,7 +246,7 @@ namespace Chisel.Components
                 ignoreInstanceIDs = new HashSet<int>();
                 foreach (var go in ignore)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
                         //node.GetAllTreeBrushes(ignoreBrushList);
@@ -283,7 +271,7 @@ namespace Chisel.Components
                 filterInstanceIDs = new HashSet<int>();
                 foreach (var go in filter)
                 {
-                    var node = go.GetComponent<CSGNode>();
+                    var node = go.GetComponent<ChiselNode>();
                     if (node)
                         filterInstanceIDs.Add(node.GetInstanceID());
                 }

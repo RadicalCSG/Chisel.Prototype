@@ -10,7 +10,7 @@ namespace Chisel.Components
     // TODO: beveled edges (for top and/or bottom)
     //			-> makes this a capsule
     [ExecuteInEditMode] 
-    public sealed class CSGCylinder : CSGGeneratorComponent
+    public sealed class CSGCylinder : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Cylinder"; } }
 

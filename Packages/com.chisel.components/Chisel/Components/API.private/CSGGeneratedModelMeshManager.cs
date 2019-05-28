@@ -49,7 +49,7 @@ namespace Chisel.Components
         
         const int MaxVertexCount = 65000;
 
-        static HashSet<CSGNode>				registeredNodeLookup	= new HashSet<CSGNode>();
+        static HashSet<ChiselNode>			registeredNodeLookup	= new HashSet<ChiselNode>();
         static List<CSGModel>				registeredModels		= new List<CSGModel>();
 
         static CSGSharedUnityMeshManager	sharedUnityMeshes		= new CSGSharedUnityMeshManager();
@@ -75,7 +75,7 @@ namespace Chisel.Components
             if (PostReset != null) PostReset();
         }
 
-        internal static void Unregister(CSGNode node)
+        internal static void Unregister(ChiselNode node)
         {
             if (!registeredNodeLookup.Remove(node))
                 return;
@@ -89,7 +89,7 @@ namespace Chisel.Components
             }
         }
 
-        internal static void Register(CSGNode node)
+        internal static void Register(ChiselNode node)
         {
             if (!registeredNodeLookup.Add(node))
                 return;

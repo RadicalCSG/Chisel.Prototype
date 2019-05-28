@@ -259,7 +259,7 @@ namespace Chisel.Editors
                             var frustum = CSGCameraUtility.GetCameraSubFrustum(Camera.current, rect);
                             
                             // Find all the brushes (and it's gameObjects) that are inside the frustum
-                            if (!CSGSceneQuery.GetNodesInFrustum(frustum, UnityEditor.Tools.visibleLayers, ref rectFoundTreeNodes))
+                            if (!ChiselSceneQuery.GetNodesInFrustum(frustum, UnityEditor.Tools.visibleLayers, ref rectFoundTreeNodes))
                             {
                                 if (rectFoundGameObjects != null &&
                                     rectFoundGameObjects.Count > 0)
@@ -537,7 +537,7 @@ namespace Chisel.Editors
             var gameobject = CSGClickSelectionManager.PickClosestGameObject(Event.current.mousePosition, out intersection);
             
             // If we're a child of an operation that has a "handle as one" flag set, return that instead
-            gameobject = CSGSceneQuery.GetContainerGameObject(gameobject); 
+            gameobject = ChiselSceneQuery.GetContainerGameObject(gameobject); 
             
             var selectionType = GetCurrentSelectionType();
 

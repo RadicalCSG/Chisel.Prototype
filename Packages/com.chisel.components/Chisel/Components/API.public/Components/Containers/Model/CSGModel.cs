@@ -102,7 +102,7 @@ namespace Chisel.Components
 
     // TODO: give model an icon
     [ExecuteInEditMode]
-    public sealed class CSGModel : CSGNode
+    public sealed class CSGModel : ChiselNode
     {
         public override string NodeTypeName { get { return "Model"; } }
 

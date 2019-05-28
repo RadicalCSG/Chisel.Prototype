@@ -12,7 +12,7 @@ namespace Chisel.Components
     // TODO: add reset method, use default box
     [ExecuteInEditMode]
     [HelpURL("http://example.com/docs/MyComponent.html")] // TODO: put these on every asset / component
-    public sealed class CSGBrush : CSGGeneratorComponent
+    public sealed class CSGBrush : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Brush"; } }
 

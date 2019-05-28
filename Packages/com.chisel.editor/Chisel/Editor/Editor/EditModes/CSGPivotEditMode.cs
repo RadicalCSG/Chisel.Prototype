@@ -154,20 +154,20 @@ namespace Chisel.Editors
                 var objs = Selection.objects;
                 if (objs != null && objs.Length > 0)
                 {
-                    var nodes = new List<CSGNode>();
+                    var nodes = new List<ChiselNode>();
                     for (int i = 0; i < objs.Length; i++)
                     {
                         var gameObject = objs[i] as GameObject;
                         if (gameObject)
                         {
-                            var node = gameObject.GetComponent<CSGNode>();
+                            var node = gameObject.GetComponent<ChiselNode>();
                             if (node) nodes.Add(node);
                         }
 
                         var component = objs[i] as Component;
                         if (component)
                         {
-                            var node = component.GetComponent<CSGNode>();
+                            var node = component.GetComponent<ChiselNode>();
                             if (node) nodes.Add(node);
                         }
                     }
@@ -178,12 +178,12 @@ namespace Chisel.Editors
             }
         }
 
-        public static void MovePivotTo(List<CSGNode> nodes, Vector3 newPosition)
+        public static void MovePivotTo(List<ChiselNode> nodes, Vector3 newPosition)
         {
             var nodesWithChildren = new HashSet<UnityEngine.Object>();
             foreach (var node in nodes)
             {
-                var children = node.GetComponentsInChildren<CSGNode>();
+                var children = node.GetComponentsInChildren<ChiselNode>();
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);

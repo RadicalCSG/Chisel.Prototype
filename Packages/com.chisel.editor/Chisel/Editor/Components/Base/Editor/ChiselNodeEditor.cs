@@ -12,7 +12,7 @@ using Chisel.Components;
 namespace Chisel.Editors
 {
     public abstract class ChiselNodeEditor<T> : Editor
-        where T : CSGNode
+        where T : ChiselNode
     {
         static readonly GUIContent DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
 
@@ -24,7 +24,7 @@ namespace Chisel.Editors
             var bounds = new Bounds();
             foreach (var target in targets)
             {
-                var node = target as CSGNode;
+                var node = target as ChiselNode;
                 if (!node)
                     continue;
 
@@ -38,7 +38,7 @@ namespace Chisel.Editors
             serializedObject.ApplyModifiedProperties();
             foreach (var target in serializedObject.targetObjects)
             {
-                var node = target as CSGNode;
+                var node = target as ChiselNode;
                 if (!node)
                     continue;
                 CSGNodeHierarchyManager.NotifyContentsModified(node);
@@ -53,12 +53,12 @@ namespace Chisel.Editors
 
             for (int i = 0; i < targetObjects.Length; i++)
             {
-                CSGNode node = targetObjects[i] as CSGNode;
+                ChiselNode node = targetObjects[i] as ChiselNode;
                 if (Equals(node, null))
                 {
                     var gameObject = targetObjects[i] as GameObject;
                     if (gameObject)
-                        node = gameObject.GetComponent<CSGNode>();
+                        node = gameObject.GetComponent<ChiselNode>();
                 }
                 if (node)
                 {
@@ -77,7 +77,7 @@ namespace Chisel.Editors
             EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
         }
 
-        static HashSet<CSGNode> modifiedNodes = new HashSet<CSGNode>();
+        static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
         public static void CheckForTransformationChanges(SerializedObject serializedObject)
         {
             if (Event.current.type == EventType.Layout)
@@ -85,7 +85,7 @@ namespace Chisel.Editors
                 modifiedNodes.Clear();
                 foreach (var target in serializedObject.targetObjects)
                 {
-                    var node = target as CSGNode;
+                    var node = target as ChiselNode;
                     if (!node)
                         continue;
                     var transform = node.transform;
@@ -137,7 +137,7 @@ namespace Chisel.Editors
             bool multiple = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as CSGNode;
+                var node = targetObject as ChiselNode;
                 if (!node)
                     continue;
                 var count = node.GetAllTreeBrushCount();
@@ -159,7 +159,7 @@ namespace Chisel.Editors
             bool modified = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as CSGNode;
+                var node = targetObject as ChiselNode;
                 if (!node)
                     continue;
 
@@ -254,7 +254,7 @@ namespace Chisel.Editors
     }
 
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
-        where T : CSGGeneratorComponent
+        where T : ChiselGeneratorComponent
     {
         protected abstract void ResetInspector();
         protected abstract void InitInspector();

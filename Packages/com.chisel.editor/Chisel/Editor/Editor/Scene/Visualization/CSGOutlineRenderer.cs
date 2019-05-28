@@ -227,17 +227,17 @@ namespace Chisel.Editors
                 for (int i = 0; i < objects.Length; i++)
                 {
                     var obj = objects[i];
-                    CSGNode[] nodes = null;
+                    ChiselNode[] nodes = null;
                     var gameObject = obj as GameObject;
                     if (!Equals(null, gameObject))
                     {
-                        nodes = gameObject.GetComponentsInChildren<CSGNode>();
+                        nodes = gameObject.GetComponentsInChildren<ChiselNode>();
                     } else
                     {
                         var behaviour = obj as Behaviour;
                         if (!Equals(null, behaviour))
                         {
-                            nodes = behaviour.GetComponents<CSGNode>();
+                            nodes = behaviour.GetComponents<ChiselNode>();
                         }
                     }
 

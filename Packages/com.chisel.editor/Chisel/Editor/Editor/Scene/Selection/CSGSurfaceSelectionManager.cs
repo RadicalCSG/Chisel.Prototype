@@ -56,12 +56,12 @@ namespace Chisel.Editors
             get { return Data.hoverSurfaces; }
         }
 
-        public static HashSet<CSGNode> SelectedNodes 
+        public static HashSet<ChiselNode> SelectedNodes 
         {
             get
             {
                 var selectedSurfaces	= Data.selectedSurfaces;
-                var uniqueNodes			= new HashSet<CSGNode>();
+                var uniqueNodes			= new HashSet<ChiselNode>();
 
                 foreach (var selectedSurface in selectedSurfaces)
                     uniqueNodes.Add(selectedSurface.node);
@@ -283,7 +283,7 @@ namespace Chisel.Editors
                 if (usedGameObjects.Contains(gameObject))
                     continue;
 
-                var node = gameObject.GetComponent<CSGNode>();
+                var node = gameObject.GetComponent<ChiselNode>();
                 if (!node)
                     continue;
 

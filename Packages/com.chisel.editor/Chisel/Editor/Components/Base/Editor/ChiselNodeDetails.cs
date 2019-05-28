@@ -13,19 +13,19 @@ namespace Chisel.Editors
 {
     public interface IChiselNodeDetails
     {
-        GUIContent GetHierarchyIconForGenericNode(CSGNode node);
+        GUIContent GetHierarchyIconForGenericNode(ChiselNode node);
     }
 
     public abstract class ChiselNodeDetails<T> : IChiselNodeDetails
-        where T : CSGNode
+        where T : ChiselNode
     {
-        GUIContent IChiselNodeDetails.GetHierarchyIconForGenericNode(CSGNode node) { return GetHierarchyIcon((T)node); }
+        GUIContent IChiselNodeDetails.GetHierarchyIconForGenericNode(ChiselNode node) { return GetHierarchyIcon((T)node); }
 
         public abstract GUIContent GetHierarchyIcon(T node);
     }
 
     public abstract class ChiselGeneratorDetails<T> : ChiselNodeDetails<T>
-        where T : CSGGeneratorComponent
+        where T : ChiselGeneratorComponent
     {
         const string AdditiveIconName		= "csg_addition";
         const string SubtractiveIconName	= "csg_subtraction";

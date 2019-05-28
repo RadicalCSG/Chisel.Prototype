@@ -9,7 +9,7 @@ using System.Linq;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGLinearStairs : CSGGeneratorComponent
+    public sealed class CSGLinearStairs : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Linear Stairs"; } }
 

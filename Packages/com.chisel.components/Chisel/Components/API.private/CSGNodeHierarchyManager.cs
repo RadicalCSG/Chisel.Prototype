@@ -28,48 +28,48 @@ namespace Chisel.Components
 { 
     public static class CSGNodeHierarchyManager
     {
-        public static readonly Dictionary<Scene, CSGSceneHierarchy> sceneHierarchies        = new Dictionary<Scene, CSGSceneHierarchy>();
+        public static readonly Dictionary<Scene, CSGSceneHierarchy> sceneHierarchies            = new Dictionary<Scene, CSGSceneHierarchy>();
 
-        static readonly HashSet<CSGNode>                        registeredNodes             = new HashSet<CSGNode>();
-        static readonly Dictionary<int, CSGNode>                instanceIDToNodeLookup      = new Dictionary<int, CSGNode>();
-        static readonly Dictionary<CSGNode, int>                nodeToinstanceIDLookup      = new Dictionary<CSGNode, int>();
+        static readonly HashSet<ChiselNode>                         registeredNodes             = new HashSet<ChiselNode>();
+        static readonly Dictionary<int, ChiselNode>                 instanceIDToNodeLookup      = new Dictionary<int, ChiselNode>();
+        static readonly Dictionary<ChiselNode, int>                 nodeToinstanceIDLookup      = new Dictionary<ChiselNode, int>();
         
         // Note: keep in mind that these work even when components have already been destroyed
-        static readonly Dictionary<Transform, CSGNode>          componentLookup             = new Dictionary<Transform, CSGNode>();
-        static readonly Dictionary<CSGNode, CSGHierarchyItem>   hierarchyItemLookup         = new Dictionary<CSGNode, CSGHierarchyItem>();
-        static readonly Dictionary<CSGNode, CSGTreeNode[]>      treeNodeLookup              = new Dictionary<CSGNode, CSGTreeNode[]>();
+        static readonly Dictionary<Transform, ChiselNode>           componentLookup             = new Dictionary<Transform, ChiselNode>();
+        static readonly Dictionary<ChiselNode, CSGHierarchyItem>    hierarchyItemLookup         = new Dictionary<ChiselNode, CSGHierarchyItem>();
+        static readonly Dictionary<ChiselNode, CSGTreeNode[]>       treeNodeLookup              = new Dictionary<ChiselNode, CSGTreeNode[]>();
 
-        static readonly HashSet<CSGNode>                        registerQueueLookup         = new HashSet<CSGNode>();
-        static readonly List<CSGNode>                           registerQueue               = new List<CSGNode>();
-        static readonly HashSet<CSGNode>                        unregisterQueueLookup       = new HashSet<CSGNode>();
-        static readonly List<CSGNode>                           unregisterQueue             = new List<CSGNode>();
+        static readonly HashSet<ChiselNode>                         registerQueueLookup         = new HashSet<ChiselNode>();
+        static readonly List<ChiselNode>                            registerQueue               = new List<ChiselNode>();
+        static readonly HashSet<ChiselNode>                         unregisterQueueLookup       = new HashSet<ChiselNode>();
+        static readonly List<ChiselNode>                            unregisterQueue             = new List<ChiselNode>();
         
-        static readonly HashSet<CSGSceneHierarchy>				createDefaultModels			= new HashSet<CSGSceneHierarchy>();
+        static readonly HashSet<CSGSceneHierarchy>				    createDefaultModels			= new HashSet<CSGSceneHierarchy>();
         
         // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
         // so we remember them, and re-register at the end.
-        static readonly List<CSGModel>							reregisterModelQueue		= new List<CSGModel>();
+        static readonly List<CSGModel>							    reregisterModelQueue		= new List<CSGModel>();
 
-        static readonly List<CSGHierarchyItem>                  findChildrenQueue           = new List<CSGHierarchyItem>();
+        static readonly List<CSGHierarchyItem>                      findChildrenQueue           = new List<CSGHierarchyItem>();
 
-        static readonly HashSet<CSGTreeNode>                    destroyNodesList            = new HashSet<CSGTreeNode>();
+        static readonly HashSet<CSGTreeNode>                        destroyNodesList            = new HashSet<CSGTreeNode>();
 
-        static readonly Dictionary<CSGNode, CSGHierarchyItem>   addToHierarchyLookup        = new Dictionary<CSGNode, CSGHierarchyItem>();
-        static readonly List<CSGHierarchyItem>                  addToHierarchyQueue         = new List<CSGHierarchyItem>();
-        static readonly List<CSGHierarchyItem>                  deferAddToHierarchyQueue    = new List<CSGHierarchyItem>();
+        static readonly Dictionary<ChiselNode, CSGHierarchyItem>    addToHierarchyLookup        = new Dictionary<ChiselNode, CSGHierarchyItem>();
+        static readonly List<CSGHierarchyItem>                      addToHierarchyQueue         = new List<CSGHierarchyItem>();
+        static readonly List<CSGHierarchyItem>                      deferAddToHierarchyQueue    = new List<CSGHierarchyItem>();
 
-        static readonly HashSet<CSGNode>                        rebuildTreeNodes            = new HashSet<CSGNode>();
+        static readonly HashSet<ChiselNode>                         rebuildTreeNodes            = new HashSet<ChiselNode>();
 
-        static readonly HashSet<CSGNode>						updateTransformationNodes   = new HashSet<CSGNode>();
+        static readonly HashSet<ChiselNode>						    updateTransformationNodes   = new HashSet<ChiselNode>();
 
-        static readonly HashSet<CSGHierarchyItem>               updateChildrenQueue         = new HashSet<CSGHierarchyItem>();
-        static readonly HashSet<List<CSGHierarchyItem>>         sortChildrenQueue           = new HashSet<List<CSGHierarchyItem>>();
+        static readonly HashSet<CSGHierarchyItem>                   updateChildrenQueue         = new HashSet<CSGHierarchyItem>();
+        static readonly HashSet<List<CSGHierarchyItem>>             sortChildrenQueue           = new HashSet<List<CSGHierarchyItem>>();
 
-        static readonly HashSet<CSGNode>                        hierarchyUpdateQueue        = new HashSet<CSGNode>();
+        static readonly HashSet<ChiselNode>                         hierarchyUpdateQueue        = new HashSet<ChiselNode>();
 
         // Dictionaries used to keep track which brushMeshAssets are used by which nodes, which is necessary to update the right nodes when a brushMeshAsset has been changed
-        static readonly Dictionary<ChiselGeneratedBrushes, HashSet<CSGNode>> brushMeshAssetNodes	= new Dictionary<ChiselGeneratedBrushes, HashSet<CSGNode>>();
-        static readonly Dictionary<CSGNode, HashSet<ChiselGeneratedBrushes>> nodeBrushMeshAssets	= new Dictionary<CSGNode, HashSet<ChiselGeneratedBrushes>>();
+        static readonly Dictionary<ChiselGeneratedBrushes, HashSet<ChiselNode>> brushMeshAssetNodes	= new Dictionary<ChiselGeneratedBrushes, HashSet<ChiselNode>>();
+        static readonly Dictionary<ChiselNode, HashSet<ChiselGeneratedBrushes>> nodeBrushMeshAssets	= new Dictionary<ChiselNode, HashSet<ChiselGeneratedBrushes>>();
 
 
         public static bool  ignoreNextChildrenChanged	= false;
@@ -161,7 +161,7 @@ namespace Chisel.Components
         // so we need to go through all the nodes and assume they've changed
         public static void OnPrefabInstanceUpdated(GameObject instance)
         {
-            var nodes = instance.GetComponentsInChildren<CSGNode>();
+            var nodes = instance.GetComponentsInChildren<ChiselNode>();
             for (int i = 0; i < nodes.Length; i++)
             {
                 var node = nodes[i];
@@ -183,7 +183,7 @@ namespace Chisel.Components
             return hierarchy.RootItems.Count;
         }
         
-        public static bool IsNodeDirty(CSGNode component)
+        public static bool IsNodeDirty(ChiselNode component)
         {
             if (!component)
                 return false;
@@ -195,7 +195,7 @@ namespace Chisel.Components
                     hierarchyUpdateQueue.Contains(component);
         }
 
-        public static void Register(CSGNode component)
+        public static void Register(ChiselNode component)
         {
             if (!component)
                 return;
@@ -215,7 +215,7 @@ namespace Chisel.Components
             component.hierarchyItem.Registered = true;
         }
 
-        public static void Unregister(CSGNode component)
+        public static void Unregister(ChiselNode component)
         {
             // NOTE: this method is called from destructor and cannot use Debug.Log, get Transforms etc.
 
@@ -252,7 +252,7 @@ namespace Chisel.Components
             component.hierarchyItem.Registered = false;
         }
 
-        public static void UpdateAvailability(CSGNode node)
+        public static void UpdateAvailability(ChiselNode node)
         {
             if (node.SkipThisNode)
             {
@@ -263,7 +263,7 @@ namespace Chisel.Components
             }
         }
 
-        public static void OnTransformParentChanged(CSGNode node)
+        public static void OnTransformParentChanged(ChiselNode node)
         {
             if (!node ||
                 !node.hierarchyItem.Registered || 
@@ -274,15 +274,15 @@ namespace Chisel.Components
 
 
         // Let the hierarchy manager know that this/these node(s) has/have moved, so we can regenerate meshes
-        public static void RebuildTreeNodes(CSGNode node) { rebuildTreeNodes.Add(node); }
-        public static void UpdateTreeNodeTranformation(CSGNode node) { updateTransformationNodes.Add(node); }
-        public static void NotifyTransformationChanged(HashSet<CSGNode> nodes) { foreach (var node in nodes) updateTransformationNodes.Add(node); }
+        public static void RebuildTreeNodes(ChiselNode node) { rebuildTreeNodes.Add(node); }
+        public static void UpdateTreeNodeTranformation(ChiselNode node) { updateTransformationNodes.Add(node); }
+        public static void NotifyTransformationChanged(HashSet<ChiselNode> nodes) { foreach (var node in nodes) updateTransformationNodes.Add(node); }
         public static void UpdateAllTransformations() { foreach (var node in registeredNodes) updateTransformationNodes.Add(node); }
 
 
         // Let the hierarchy manager know that the contents of this node has been modified
         //	so we can rebuild/update sub-trees and regenerate meshes
-        public static void NotifyContentsModified(CSGNode node)
+        public static void NotifyContentsModified(ChiselNode node)
         {
             node.hierarchyItem.SetBoundsDirty();
             UpdateBrushMeshAssets(node);
@@ -291,7 +291,7 @@ namespace Chisel.Components
 
         private static void OnBrushMeshInstanceChanged(ChiselGeneratedBrushes brushMeshAsset)
         {
-            HashSet<CSGNode> nodes;
+            HashSet<ChiselNode> nodes;
             if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
             {
                 foreach(var node in nodes)
@@ -308,7 +308,7 @@ namespace Chisel.Components
 
         private static void OnBrushMeshInstanceDestroyed(ChiselGeneratedBrushes brushMeshAsset)
         {
-            HashSet<CSGNode> nodes;
+            HashSet<ChiselNode> nodes;
             if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
             {
                 foreach (var node in nodes)
@@ -324,7 +324,7 @@ namespace Chisel.Components
             brushMeshAssetNodes.Remove(brushMeshAsset);
         }
 
-        static void UpdateBrushMeshAssets(CSGNode node)
+        static void UpdateBrushMeshAssets(ChiselNode node)
         {
             HashSet<ChiselGeneratedBrushes> uniqueBrushMeshAssets;
             if (nodeBrushMeshAssets.TryGetValue(node, out uniqueBrushMeshAssets))
@@ -332,7 +332,7 @@ namespace Chisel.Components
                 // Remove previously set brushMeshes for this node
                 foreach (var brushMeshAsset in uniqueBrushMeshAssets)
                 {
-                    HashSet<CSGNode> nodes;
+                    HashSet<ChiselNode> nodes;
                     if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
                         nodes.Remove(node);
                 }
@@ -356,10 +356,10 @@ namespace Chisel.Components
                 // Add current brushMesh of this node
                 if (uniqueBrushMeshAssets.Add(brushMeshAsset))
                 {
-                    HashSet<CSGNode> nodes;
+                    HashSet<ChiselNode> nodes;
                     if (!brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
                     {
-                        nodes = new HashSet<CSGNode>();
+                        nodes = new HashSet<ChiselNode>();
                         brushMeshAssetNodes[brushMeshAsset] = nodes;
                     }
                     nodes.Add(node);
@@ -369,7 +369,7 @@ namespace Chisel.Components
             node.UpdateBrushMeshInstances();
         }
 
-        static void RemoveBrushMeshAssets(CSGNode node)
+        static void RemoveBrushMeshAssets(ChiselNode node)
         {
             // NOTE: node is likely destroyed at this point, it can still be used as a lookup key however.
 
@@ -379,7 +379,7 @@ namespace Chisel.Components
                 // Remove previously set brushMeshes for this node
                 foreach (var brushMeshAsset in brushMeshAssets)
                 {
-                    HashSet<CSGNode> nodes;
+                    HashSet<ChiselNode> nodes;
                     if (brushMeshAssetNodes.TryGetValue(brushMeshAsset, out nodes))
                         nodes.Remove(node);
                 }
@@ -388,7 +388,7 @@ namespace Chisel.Components
             nodeBrushMeshAssets.Remove(node);
         }
 
-        public static void OnTransformChildrenChanged(CSGNode component)
+        public static void OnTransformChildrenChanged(ChiselNode component)
         {
             if (ignoreNextChildrenChanged)
             {
@@ -413,7 +413,7 @@ namespace Chisel.Components
         }
 
         // Find parent node & update siblingIndices for each level
-        static CSGNode UpdateSiblingIndices(CSGSceneHierarchy sceneHierarchy, CSGHierarchyItem hierarchyItem)
+        static ChiselNode UpdateSiblingIndices(CSGSceneHierarchy sceneHierarchy, CSGHierarchyItem hierarchyItem)
         {
             var transform	= hierarchyItem.Transform;
             if (!transform)
@@ -428,7 +428,7 @@ namespace Chisel.Components
                 return null;
             
             // Find siblingIndexs up the parents, until we find a CSGNode
-            CSGNode parentComponent;
+            ChiselNode parentComponent;
             if (componentLookup.TryGetValue(parent, out parentComponent) &&
                 !parentComponent.CanHaveChildNodes)
                 parentComponent = null;
@@ -465,7 +465,7 @@ namespace Chisel.Components
                 for (int i = 0; i < __rootGameObjects.Count; i++)
                 {
                     var childTransform	= __rootGameObjects[i].transform;
-                    var childNode		= childTransform.GetComponentInChildren<CSGNode>();
+                    var childNode		= childTransform.GetComponentInChildren<ChiselNode>();
                     if (!childNode)
                         continue;
                     if (childNode is CSGModel)
@@ -482,7 +482,7 @@ namespace Chisel.Components
                 for (int i = 0; i < transform.childCount; i++)
                 {
                     var childTransform = transform.GetChild(i);
-                    var childNode = childTransform.GetComponent<CSGNode>();
+                    var childNode = childTransform.GetComponent<ChiselNode>();
                     if (!childNode || childNode.SkipThisNode)
                     {
                         __transforms.Enqueue(childTransform);
@@ -523,7 +523,7 @@ namespace Chisel.Components
             __hierarchyQueueLists.Clear();
         }
 
-        static void AddChildNodesToHashSet(HashSet<CSGNode> allFoundChildren)
+        static void AddChildNodesToHashSet(HashSet<ChiselNode> allFoundChildren)
         {
             __hierarchyQueueLists.Clear();
             foreach(var node in allFoundChildren)
@@ -543,7 +543,7 @@ namespace Chisel.Components
             __hierarchyQueueLists.Clear();
         }
 
-        static void RegisterInternal(CSGNode component)
+        static void RegisterInternal(ChiselNode component)
         {
             if (!component)
                 return;
@@ -572,11 +572,11 @@ namespace Chisel.Components
                 parent = parent.parent;
                 if (parent == null)
                     break;
-                parentComponent = parent.GetComponent<CSGNode>();
+                parentComponent = parent.GetComponent<ChiselNode>();
             } while (true);
         }
         
-        static bool RemoveFromHierarchy(List<CSGHierarchyItem> rootItems, CSGNode component)
+        static bool RemoveFromHierarchy(List<CSGHierarchyItem> rootItems, ChiselNode component)
         {
             __hierarchyQueueLists.Clear();
             __hierarchyQueueLists.Enqueue(rootItems);
@@ -610,7 +610,7 @@ namespace Chisel.Components
             return false;
         }
 
-        static void UnregisterInternal(CSGNode component)
+        static void UnregisterInternal(ChiselNode component)
         {
             if (!registeredNodes.Remove(component))
                 return;
@@ -644,7 +644,7 @@ namespace Chisel.Components
                 for (int r = 0; r < rootObjects.Length; r++)
                 {
                     var rootObject	= rootObjects[r];
-                    var nodes		= rootObject.GetComponentsInChildren<CSGNode>(includeInactive: false);
+                    var nodes		= rootObject.GetComponentsInChildren<ChiselNode>(includeInactive: false);
                     for (int n = 0; n < nodes.Length; n++)
                     {
                         var node = nodes[n];
@@ -712,7 +712,7 @@ namespace Chisel.Components
             }
         }
 
-        static void CreateTreeNodes(CSGNode node)
+        static void CreateTreeNodes(ChiselNode node)
         {
             // Create the treeNodes for this node
             node.ClearTreeNodes(clearCaches: false);
@@ -724,8 +724,8 @@ namespace Chisel.Components
         }
 
 
-        static readonly HashSet<CSGNode>	__registerNodes			= new HashSet<CSGNode>();	// static to avoid allocations
-        static readonly HashSet<CSGNode>	__unregisterNodes		= new HashSet<CSGNode>();	// static to avoid allocations
+        static readonly HashSet<ChiselNode>	__registerNodes			= new HashSet<ChiselNode>();	// static to avoid allocations
+        static readonly HashSet<ChiselNode>	__unregisterNodes		= new HashSet<ChiselNode>();	// static to avoid allocations
         static readonly List<CSGTreeNode>	__childNodes			= new List<CSGTreeNode>();  // static to avoid allocations
 
         internal static bool prevPlaying = false;
@@ -1423,14 +1423,14 @@ namespace Chisel.Components
             } while (true);
         }
 
-        public static CSGNode FindCSGNodeByInstanceID(int instanceID)
+        public static ChiselNode FindCSGNodeByInstanceID(int instanceID)
         {
-            CSGNode node = null;
+            ChiselNode node = null;
             instanceIDToNodeLookup.TryGetValue(instanceID, out node);
             return node;
         }
 
-        public static CSGNode FindCSGNodeByTreeNode(CSGTreeNode node)
+        public static ChiselNode FindCSGNodeByTreeNode(CSGTreeNode node)
         {
             return FindCSGNodeByInstanceID(node.UserID);
         }

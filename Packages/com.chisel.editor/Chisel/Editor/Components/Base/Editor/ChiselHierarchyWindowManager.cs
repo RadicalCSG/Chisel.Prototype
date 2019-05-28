@@ -25,7 +25,7 @@ namespace Chisel.Editors
             GUI.Label(selectionRect, icon);
         }
 
-        internal static void OnHierarchyWindowItemGUI(CSGNode node, Rect selectionRect)
+        internal static void OnHierarchyWindowItemGUI(ChiselNode node, Rect selectionRect)
         {
             // TODO: implement material drag & drop support on hierarchy items
 

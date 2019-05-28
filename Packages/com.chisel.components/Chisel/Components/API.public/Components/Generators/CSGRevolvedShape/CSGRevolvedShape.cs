@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGRevolvedShape : CSGGeneratorComponent
+    public sealed class CSGRevolvedShape : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Revolved Shape"; } }
 

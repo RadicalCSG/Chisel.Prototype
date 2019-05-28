@@ -88,7 +88,7 @@ namespace Chisel.Editors
             CSGOutlineRenderer.Instance.OnReset();
 
             // TODO: clean this up
-            CSGGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf;
+            ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf;
         }
 
         static void OnTransformationChanged()
@@ -263,7 +263,7 @@ namespace Chisel.Editors
 
             // TODO: implement material drag & drop support for meshes
 
-            var component = gameObject.GetComponent<CSGNode>();
+            var component = gameObject.GetComponent<ChiselNode>();
             if (!component)
                 return;
             Editors.ChiselHierarchyWindowManager.OnHierarchyWindowItemGUI(component, selectionRect);
@@ -280,7 +280,7 @@ namespace Chisel.Editors
             CSGOutlineRenderer.Instance.OnTransformationChanged();
         }
 
-        static HashSet<CSGNode>		modifiedNodes		= new HashSet<CSGNode>();
+        static HashSet<ChiselNode>		modifiedNodes		= new HashSet<ChiselNode>();
         static HashSet<Transform>	processedTransforms = new HashSet<Transform>();
         
         private static UnityEditor.UndoPropertyModification[] OnPostprocessModifications(UnityEditor.UndoPropertyModification[] modifications)
@@ -305,7 +305,7 @@ namespace Chisel.Editors
 
                 processedTransforms.Add(transform);
 
-                var nodes = transform.GetComponentsInChildren<CSGNode>();
+                var nodes = transform.GetComponentsInChildren<ChiselNode>();
                 if (nodes.Length == 0)
                     continue;
                 if (nodes[0] is CSGModel)

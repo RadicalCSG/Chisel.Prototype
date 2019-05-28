@@ -11,7 +11,7 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(CSGNode), isFallback = true)]
+    [CustomEditor(typeof(ChiselNode), isFallback = true)]
     [CanEditMultipleObjects]
     public sealed class CSGNodeEditor : ChiselNodeEditor<CSGModel>
     {

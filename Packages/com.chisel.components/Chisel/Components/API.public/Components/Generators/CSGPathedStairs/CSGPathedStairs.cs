@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGPathedStairs : CSGGeneratorComponent
+    public sealed class CSGPathedStairs : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Pathed Stairs"; } }
 

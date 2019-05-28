@@ -7,7 +7,7 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGSphere : CSGGeneratorComponent
+    public sealed class CSGSphere : ChiselGeneratorComponent
     {
         public override string NodeTypeName { get { return "Sphere"; } }
 

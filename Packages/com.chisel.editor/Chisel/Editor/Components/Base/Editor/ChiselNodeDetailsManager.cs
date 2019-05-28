@@ -32,7 +32,7 @@ namespace Chisel.Editors
 
 
 
-        public static IChiselNodeDetails GetNodeDetails(CSGNode node)
+        public static IChiselNodeDetails GetNodeDetails(ChiselNode node)
         {
             IChiselNodeDetails someInterface;
             if (nodeDetailsLookup.TryGetValue(node.GetType(), out someInterface))
@@ -49,7 +49,7 @@ namespace Chisel.Editors
         }
 
 
-        public static GUIContent GetHierarchyIcon(CSGNode node)
+        public static GUIContent GetHierarchyIcon(ChiselNode node)
         {
             IChiselNodeDetails someInterface;
             if (nodeDetailsLookup.TryGetValue(node.GetType(), out someInterface))

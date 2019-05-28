@@ -7,7 +7,7 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGOperation : CSGNode
+    public sealed class CSGOperation : ChiselNode
     {
         public override string NodeTypeName { get { return "Operation"; } }
 
