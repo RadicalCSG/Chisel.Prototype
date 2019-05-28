@@ -15,8 +15,42 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static BrushMesh CreateSphere(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ChiselBrushMaterial brushMaterial = null, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, CSGSphereDefinition definition)
         {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
+        }
+
+        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        {
+            if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments))
+            {
+                brushMesh.Clear();
+                return false;
+            }
+            
+            ref var dstBrushMesh = ref brushMesh;
+
+            for (int i = 0; i < dstBrushMesh.polygons.Length; i++)
+            {
+                dstBrushMesh.polygons[i].brushMaterial = i < brushMaterials.Length ? brushMaterials[i] : brushMaterials[0];
+                dstBrushMesh.polygons[i].description   = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0];
+            }
+
+            return true;
+        }
+
+        public static bool CreateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ChiselBrushMaterial brushMaterial = null, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        {
+            if (diameterXYZ.x == 0 ||
+                diameterXYZ.y == 0 ||
+                diameterXYZ.z == 0)
+            {
+                brushMesh.Clear();
+                return false;
+            }
+
             var lastVertSegment = vertSegments - 1;
 
             var triangleCount   = horzSegments + horzSegments;    // top & bottom
@@ -111,12 +145,18 @@ namespace Chisel.Core
                     startVertex += horzSegments;
             }
 
-            return new BrushMesh
-            {
-                polygons = polygons,
-                halfEdges = halfEdges,
-                vertices = vertices
-            };
+            brushMesh.polygons  = polygons;
+            brushMesh.halfEdges = halfEdges;
+            brushMesh.vertices  = vertices;
+            return true;
+        }
+
+        public static bool GenerateSphereVertices(CSGSphereDefinition definition, ref Vector3[] vertices)
+        {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, definition.horizontalSegments, definition.verticalSegments, ref vertices);
+            return true;
         }
 
         public static void CreateSphereVertices(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ref Vector3[] vertices)
