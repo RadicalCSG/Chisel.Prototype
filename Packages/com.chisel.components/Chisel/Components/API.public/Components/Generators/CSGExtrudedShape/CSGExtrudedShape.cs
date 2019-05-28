@@ -13,42 +13,19 @@ namespace Chisel.Components
     public sealed class CSGExtrudedShape : CSGGeneratorComponent
     {
         public override string NodeTypeName { get { return "Extruded Shape"; } }
-
-        public CSGExtrudedShape() : base() { }
         
-        [SerializeField] Path					path			= null;
-        [SerializeField] Curve2D				shape			= null;
-        [SerializeField] public int             curveSegments   = 8;
-        [SerializeField] ChiselBrushMaterial[]	brushMaterials;
-        [SerializeField] SurfaceDescription[]	surfaceDescriptions;
-        
-        public static readonly Curve2D DefaultShape = new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
+        [SerializeField] public CSGExtrudedShapeDefinition definition = new CSGExtrudedShapeDefinition();
 
-        protected override void OnValidateInternal()
-        {
-            base.OnValidateInternal();
-        }
-
-        protected override void OnResetInternal()
-        {
-            path				= new Path(Path.Default);
-            shape				= new Curve2D(DefaultShape);
-            curveSegments		= 8;
-            brushMaterials		= null;
-            surfaceDescriptions = null;
-            base.OnResetInternal();
-        }
-
-
+        #region Properties
         public Path Path
         {
-            get { return path; }
+            get { return definition.path; }
             set
             {
-                if (value == path)
+                if (value == definition.path)
                     return;
-                
-                path = value;
+
+                definition.path = value;
 
                 OnValidateInternal();
             }
@@ -56,46 +33,26 @@ namespace Chisel.Components
         
         public Curve2D Shape
         {
-            get { return shape; }
+            get { return definition.shape; }
             set
             {
-                if (value == shape)
+                if (value == definition.shape)
                     return;
-                
-                shape = value;
+
+                definition.shape = value;
 
                 OnValidateInternal();
             }
         }
+        #endregion
+
+        protected override void OnResetInternal()    { definition.Reset(); base.OnResetInternal(); }
+        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
         
+
         protected override void UpdateGeneratorInternal()
         {
-            if (brushMaterials == null ||
-                brushMaterials.Length != 3)
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[3];
-                for (int i = 0; i < 3; i++) // Note: sides share same material
-                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
-            if (Shape == null)
-                Shape = new Curve2D(DefaultShape);
-
-            int sides = Shape.controlPoints.Length;
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 2 + sides)
-            {
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[2 + sides];
-                for (int i = 0; i < 2 + sides; i++) 
-                {
-                    surfaceDescriptions[i] = new SurfaceDescription { surfaceFlags = surfaceFlags, UV0 = UVMatrix.centered };
-                }
-            }
-
-            BrushMeshAssetFactory.GenerateExtrudedShape(brushMeshAsset, shape, path, curveSegments, brushMaterials, ref surfaceDescriptions);
+            BrushMeshAssetFactory.GenerateExtrudedShape(brushMeshAsset, ref definition);
         }
     }
 }

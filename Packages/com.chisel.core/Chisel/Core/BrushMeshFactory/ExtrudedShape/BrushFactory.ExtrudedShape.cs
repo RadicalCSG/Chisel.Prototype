@@ -81,6 +81,12 @@ namespace Chisel.Core
             return true;
         }
 
+        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, ref CSGExtrudedShapeDefinition definition)
+        {
+            definition.Validate();
+            return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.brushMaterials, ref definition.surfaceDescriptions);
+        }
+
         public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
         {
             var shapeVertices       = new List<Vector2>();
