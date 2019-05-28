@@ -6,79 +6,51 @@ using System;
 
 namespace Chisel.Components
 {
-    // TODO: add properties for SurfaceDescription/BrushMaterials
-    // TODO: beveled edges
     [ExecuteInEditMode]
     public sealed class CSGBox : CSGGeneratorComponent
     {
         public override string NodeTypeName { get { return "Box"; } }
+        
+        [SerializeField] public CSGBoxDefinition definition = new CSGBoxDefinition();
 
-        public CSGBox() : base() {  }
-        
-        [SerializeField] Bounds					bounds				= new Bounds(Vector3.zero, Vector3.one);
-        [SerializeField] ChiselBrushMaterial[]	brushMaterials;
-        [SerializeField] SurfaceDescription[]	surfaceDescriptions;
-        
+        #region Properties
         public Bounds Bounds
         {
-            get { return bounds; }
-            set
-            {
-                if (value == bounds)
-                    return;
-
-                bounds = value;
-
-                OnValidateInternal();
-            }
+            get { return definition.bounds; }
+            set { if (value == definition.bounds) return; definition.bounds = value; OnValidateInternal(); }
         }
 
-        protected override void OnResetInternal()
+        public Vector3 Min
         {
-            bounds				= new Bounds(Vector3.zero, Vector3.one);
-            brushMaterials		= null;
-            surfaceDescriptions = null;
-            base.OnResetInternal();
+            get { return definition.min; }
+            set { if (value == definition.min) return; definition.min = value; OnValidateInternal(); }
         }
 
+        public Vector3 Max
+        {
+            get { return definition.max; }
+            set { if (value == definition.max) return; definition.max = value; OnValidateInternal(); }
+        }
+
+        public Vector3 Center
+        {
+            get { return definition.center; }
+            set { if (value == definition.center) return; definition.center = value; OnValidateInternal(); }
+        }
+
+        public Vector3 Size
+        {
+            get { return definition.size; }
+            set { if (value == definition.size) return; definition.size = value; OnValidateInternal(); }
+        }
+        #endregion
+
+        protected override void OnResetInternal()    { definition.Reset(); base.OnResetInternal(); }
+        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
+        
         protected override void UpdateGeneratorInternal()
         {
-            if (brushMaterials == null)
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[6]
-                {
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
-                };
-            }
-
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                // TODO: make this independent on plane position somehow
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[6]
-                {
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }
-                };
-            }
-
-            if (BoundsExtensions.IsValid(bounds.min, bounds.max))
-            {
-                BrushMeshAssetFactory.GenerateBoxAsset(brushMeshAsset, bounds, brushMaterials, surfaceDescriptions);
-            } else
-                brushMeshAsset.Clear();
+            BrushMeshAssetFactory.GenerateBox(brushMeshAsset, ref definition);
         }
     }
 }

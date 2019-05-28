@@ -297,7 +297,7 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  9, vertexIndex = 3 }	// 23 (3-7)
         };
 
-        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceFlags surfaceFlags)
+        public static BrushMesh.Polygon[] CreateBoxPolygons(ChiselBrushMaterial[] surfaces, SurfaceFlags surfaceFlags)
         {
             return new[]
             {

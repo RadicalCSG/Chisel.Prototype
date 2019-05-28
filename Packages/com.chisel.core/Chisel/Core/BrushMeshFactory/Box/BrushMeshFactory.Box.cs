@@ -8,6 +8,21 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static bool GenerateBox(ref BrushMesh brushMesh, ref CSGBoxDefinition definition)
+        {
+            definition.Validate();
+
+            var min = definition.min;
+            var max = definition.max;
+            if (!BoundsExtensions.IsValid(min, max))
+            {
+                brushMesh.Clear();
+                return false;
+            }
+
+            return BrushMeshFactory.GenerateBox(ref brushMesh, definition.min, definition.max, definition.brushMaterials, definition.surfaceDescriptions);
+        }
+
         public static void CreateBoxVertices(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ref Vector3[] vertices)
         {
             if (vertices == null ||
@@ -80,7 +95,7 @@ namespace Chisel.Core
             };
         }
 
-        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return false;
@@ -99,7 +114,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateBoxSubMesh(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return false;
@@ -111,7 +126,7 @@ namespace Chisel.Core
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
-            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceFlags);
+            brushMesh.polygons	= CreateBoxPolygons(brushMaterials, surfaceFlags);
             brushMesh.halfEdges	= boxHalfEdges.ToArray();
             brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
             return true;

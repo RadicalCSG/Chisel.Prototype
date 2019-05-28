@@ -48,9 +48,9 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            boundsProp				= serializedObject.FindProperty("bounds");
-            surfaceDescriptionProp	= serializedObject.FindProperty("surfaceDescriptions");
-            brushMaterialProp		= serializedObject.FindProperty("brushMaterials");
+            boundsProp				= serializedObject.FindProperty("definition.bounds");
+            surfaceDescriptionProp	= serializedObject.FindProperty("definition.surfaceDescriptions");
+            brushMaterialProp		= serializedObject.FindProperty("definition.brushMaterials");
 
             surfacesVisible = SessionState.GetBool(kSurfacesVisibleKey, false);
         }
@@ -63,43 +63,6 @@ namespace Chisel.Editors
         protected override void OnInspector()
         { 
             EditorGUILayout.PropertyField(boundsProp);
-            /*
-            var bounds = boundsProp.boundsValue;
-            var min = bounds.min;
-            var max = bounds.max;
-                    
-            EditorGUI.showMixedValue = boundsProp.hasMultipleDifferentValues;
-            using (new EditorGUI.DisabledGroupScope(EditorGUI.showMixedValue)) // TODO: see if we can make this work with mixed values eventually
-            { 
-                var originalSize		= (max - min);
-                var originalCenter		= (max + min) * 0.5f;
-                
-                Vector3 size			= originalSize;
-                Vector3 center			= originalCenter;
-
-                EditorGUI.BeginChangeCheck();
-                {
-                    var sizeRect		= EditorGUILayout.GetControlRect();
-                    int sizeId			= EditorGUIUtility.GetControlID(sizeHashCode, FocusType.Keyboard, sizeRect);
-                    var sizePropRect	= EditorGUI.PrefixLabel(sizeRect, sizeId, sizeContent);
-                    size = EditorGUI.Vector3Field(sizePropRect, GUIContent.none, size);
-
-                    var centerRect		= EditorGUILayout.GetControlRect();
-                    int centerId		= EditorGUIUtility.GetControlID(centerHashCode, FocusType.Keyboard, centerRect);
-                    var centerPropRect	= EditorGUI.PrefixLabel(centerRect, centerId, centerContent);
-                    center = EditorGUI.Vector3Field(centerPropRect, GUIContent.none, center);
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    var halfSize = size * 0.5f;
-                    bounds.SetMinMax()
-                    boundsProp.bounds = center - halfSize;
-                    boundsProp.vector3Value = center + halfSize;
-                }
-            }
-
-            EditorGUI.showMixedValue = false;*/
-
 
             EditorGUI.BeginChangeCheck();
             surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, surfacesContent);

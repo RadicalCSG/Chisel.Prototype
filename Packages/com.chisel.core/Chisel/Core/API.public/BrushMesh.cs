@@ -69,6 +69,13 @@ namespace Chisel.Core
 
 
         // .. more UVMatrices can be added when more UV channels are supported
+
+        public static readonly SurfaceDescription Default = new SurfaceDescription()
+        {
+            smoothingGroup  = 0,
+            surfaceFlags    = CSGDefaults.SurfaceFlags,
+            UV0             = UVMatrix.centered
+        };
     }
 
     /// <summary>Contains a shape that can be used to initialize and update a <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
