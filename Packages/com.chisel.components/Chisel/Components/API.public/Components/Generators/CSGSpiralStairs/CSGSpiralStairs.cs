@@ -111,7 +111,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateSpiralStairs(brushMeshAsset, ref definition);
+            BrushMeshAssetFactory.GenerateSpiralStairs(generatedBrushes, ref definition);
         }
     }
 }

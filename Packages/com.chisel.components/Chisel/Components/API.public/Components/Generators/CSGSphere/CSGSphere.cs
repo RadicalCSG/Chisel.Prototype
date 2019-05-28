@@ -62,7 +62,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateSphereAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateSphere(generatedBrushes, ref definition);
         }
     }
 }

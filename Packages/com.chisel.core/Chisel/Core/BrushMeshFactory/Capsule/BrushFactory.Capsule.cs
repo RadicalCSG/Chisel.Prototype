@@ -15,7 +15,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateCapsuleAsset(ref BrushMesh brushMesh, ref CSGCapsuleDefinition definition)
+        public static bool GenerateCapsule(ref BrushMesh brushMesh, ref CSGCapsuleDefinition definition)
         {
             Vector3[] vertices = null;
             if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))

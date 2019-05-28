@@ -70,7 +70,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateCapsuleAsset(brushMeshAsset, ref definition);
+            BrushMeshAssetFactory.GenerateCapsule(generatedBrushes, ref definition);
         }
     }
 }

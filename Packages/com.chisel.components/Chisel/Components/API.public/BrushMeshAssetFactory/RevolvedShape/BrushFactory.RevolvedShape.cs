@@ -16,10 +16,10 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateRevolvedShape(ChiselGeneratedBrushes generatedBrushes, CSGRevolvedShapeDefinition definition)
+        public static bool GenerateRevolvedShape(ChiselGeneratedBrushes generatedBrushes, ref CSGRevolvedShapeDefinition definition)
         {
             var brushMeshes = generatedBrushes.BrushMeshes;
-            if (!BrushMeshFactory.GenerateRevolvedShape(ref brushMeshes, definition))
+            if (!BrushMeshFactory.GenerateRevolvedShape(ref brushMeshes, ref definition))
             {
                 generatedBrushes.Clear();
                 return false;

@@ -16,10 +16,10 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateTorus(ChiselGeneratedBrushes generatedBrushes, CSGTorusDefinition definition)
+        public static bool GenerateTorus(ChiselGeneratedBrushes generatedBrushes, ref CSGTorusDefinition definition)
         {
             var brushMeshes = generatedBrushes.BrushMeshes;
-            if (!BrushMeshFactory.GenerateTorus(ref brushMeshes, definition))
+            if (!BrushMeshFactory.GenerateTorus(ref brushMeshes, ref definition))
             {
                 generatedBrushes.Clear();
                 return false;

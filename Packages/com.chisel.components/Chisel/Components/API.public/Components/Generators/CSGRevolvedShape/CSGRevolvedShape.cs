@@ -27,7 +27,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateRevolvedShape(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateRevolvedShape(generatedBrushes, ref definition);
         }
     }
 }

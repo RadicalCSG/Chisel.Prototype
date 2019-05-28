@@ -15,7 +15,7 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateSphere(ref BrushMesh brushMesh, CSGSphereDefinition definition)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, ref CSGSphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);

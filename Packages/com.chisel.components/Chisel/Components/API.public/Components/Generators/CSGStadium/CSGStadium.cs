@@ -21,7 +21,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateStadiumAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateStadium(generatedBrushes, ref definition);
         }
     }
 }

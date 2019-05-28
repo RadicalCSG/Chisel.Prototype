@@ -16,10 +16,10 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GeneratePathedStairs(ChiselGeneratedBrushes generatedBrushes, CSGPathedStairsDefinition definition)
+        public static bool GeneratePathedStairs(ChiselGeneratedBrushes generatedBrushes, ref CSGPathedStairsDefinition definition)
         {
             var brushMeshes = generatedBrushes.BrushMeshes;
-            if (!BrushMeshFactory.GeneratePathedStairs(ref brushMeshes, definition))
+            if (!BrushMeshFactory.GeneratePathedStairs(ref brushMeshes, ref definition))
             {
                 generatedBrushes.Clear();
                 return false;

@@ -96,8 +96,9 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateStadium(ref BrushMesh brushMesh, CSGStadiumDefinition definition)
+        public static bool GenerateStadium(ref BrushMesh brushMesh, ref CSGStadiumDefinition definition)
         {
+            definition.Validate();
             Vector3[] vertices = null;
             if (!GenerateStadiumVertices(definition, ref vertices))
             {

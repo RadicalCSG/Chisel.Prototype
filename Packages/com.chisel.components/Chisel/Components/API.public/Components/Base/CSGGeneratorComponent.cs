@@ -9,6 +9,8 @@ namespace Chisel.Components
 {
     public abstract class CSGGeneratorComponent : CSGNode
     {
+        public const string kGeneratedBrushesName = nameof(generatedBrushes);
+
         public CSGGeneratorComponent() : base() {  }
 
         public CSGTreeNode	TopNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Nodes[0]; } }
@@ -22,8 +24,8 @@ namespace Chisel.Components
 
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };
 
-        [SerializeField,HideInInspector] protected CSGOperationType		operation;		// NOTE: do not rename, name is directly used in editors
-        [SerializeField,HideInInspector] protected ChiselGeneratedBrushes	brushMeshAsset;	// NOTE: do not rename, name is directly used in editors
+        [SerializeField,HideInInspector] protected CSGOperationType		operation;		    // NOTE: do not rename, name is directly used in editors
+        [SerializeField,HideInInspector] protected ChiselGeneratedBrushes generatedBrushes;	// NOTE: do not rename, name is directly used in editors
         [SerializeField,HideInInspector] protected Matrix4x4			localTransformation = Matrix4x4.identity;
         [SerializeField,HideInInspector] protected Vector3				pivotOffset			= Vector3.zero;
 
@@ -55,8 +57,8 @@ namespace Chisel.Components
                     // we can assume we've been duplicated
                     if (prevObject && prevObject.genGuidHashCode == genGuidHashCode)
                     {
-                        if (prevObject.brushMeshAsset == brushMeshAsset)
-                            brushMeshAsset = Instantiate(brushMeshAsset);
+                        if (prevObject.generatedBrushes == generatedBrushes)
+                            generatedBrushes = Instantiate(generatedBrushes);
                         genGuidHashCode = Guid.NewGuid().GetHashCode();
                     }
                     instanceID = currentInstanceID;
@@ -162,14 +164,14 @@ namespace Chisel.Components
 
         public ChiselGeneratedBrushes BrushMeshAsset
         {
-            get { return brushMeshAsset; }
+            get { return generatedBrushes; }
             set
             {
-                if (value == brushMeshAsset)
+                if (value == generatedBrushes)
                     return;
 
                 // Set the new BrushMeshAsset as current
-                brushMeshAsset = value;
+                generatedBrushes = value;
 
                 UpdateBrushMeshInstances();
 
@@ -186,16 +188,16 @@ namespace Chisel.Components
 
         bool InitializeBrushMeshInstances()
         {
-            var instances			= brushMeshAsset ? brushMeshAsset.Instances : null;
+            var instances			= generatedBrushes ? generatedBrushes.Instances : null;
 
             // TODO: figure out why this can happen (mess around with spiral stairs)
             // TODO: does this have anything to do with spiral stairs not updating all submeshes when being modified?
             if (instances != null &&
                 instances.Length !=
-                brushMeshAsset.SubMeshCount)
+                generatedBrushes.SubMeshCount)
             {
-                brushMeshAsset.UpdateInstances();
-                instances = brushMeshAsset ? brushMeshAsset.Instances : null;
+                generatedBrushes.UpdateInstances();
+                instances = generatedBrushes ? generatedBrushes.Instances : null;
             }
 
             var requiredNodeLength	= RequiredNodeLength(instances);
@@ -211,15 +213,15 @@ namespace Chisel.Components
                 if (Nodes.Length == 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;
-                    brush.BrushMesh = brushMeshAsset.Instances[0];
-                    brush.Operation = brushMeshAsset.Operations[0];
+                    brush.BrushMesh = generatedBrushes.Instances[0];
+                    brush.Operation = generatedBrushes.Operations[0];
                 } else
                 {
                     for (int i = 0; i < instances.Length; i++)
                     {
                         var brush = (CSGTreeBrush)Nodes[i + 1];
-                        brush.BrushMesh = brushMeshAsset.Instances[i];
-                        brush.Operation = brushMeshAsset.Operations[i];
+                        brush.BrushMesh = generatedBrushes.Instances[i];
+                        brush.Operation = generatedBrushes.Operations[i];
                     }
                 }
                 return true;
@@ -255,7 +257,7 @@ namespace Chisel.Components
         public void GenerateAllTreeNodes()
         {
             var instanceID			= GetInstanceID();
-            var instances			= brushMeshAsset ? brushMeshAsset.Instances : null;
+            var instances			= generatedBrushes ? generatedBrushes.Instances : null;
             var requiredNodeLength	= RequiredNodeLength(instances);
 
             if (requiredNodeLength == 0)
@@ -364,7 +366,7 @@ namespace Chisel.Components
 
         public override ChiselGeneratedBrushes[] GetUsedBrushMeshAssets()
         {
-            return new ChiselGeneratedBrushes[] { brushMeshAsset };
+            return new ChiselGeneratedBrushes[] { generatedBrushes };
         }
 
         // TODO: clean this up
@@ -373,7 +375,7 @@ namespace Chisel.Components
 
         public override Bounds CalculateBounds()
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return CSGHierarchyItem.EmptyBounds;
 
             var modelMatrix		= CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
@@ -384,7 +386,7 @@ namespace Chisel.Components
             foreach (var brush in foundBrushes)
             {
                 var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
-                var assetBounds = brushMeshAsset.CalculateBounds(transformation);
+                var assetBounds = generatedBrushes.CalculateBounds(transformation);
                 var magnitude = assetBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
                     float.IsNaN(magnitude))
@@ -440,7 +442,7 @@ namespace Chisel.Components
 
         public override ChiselBrushMaterial FindBrushMaterial(CSGTreeBrush brush, int surfaceID)
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return null;
             if (Nodes.Length > 1)
             {
@@ -449,7 +451,7 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
                     
-                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    var brushMesh = generatedBrushes.BrushMeshes[n - 1];
                     if (brushMesh == null)
                         return null;
                     
@@ -474,7 +476,7 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
                 
-                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
                 
@@ -497,7 +499,7 @@ namespace Chisel.Components
 
         public override ChiselBrushMaterial[] GetAllBrushMaterials(CSGTreeBrush brush)
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return null;
             if (Nodes.Length > 1)
             {
@@ -506,7 +508,7 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
 
-                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    var brushMesh = generatedBrushes.BrushMeshes[n - 1];
                     if (brushMesh == null)
                         continue;
                     
@@ -523,7 +525,7 @@ namespace Chisel.Components
                     return null;
 
                 var surfaces = new HashSet<ChiselBrushMaterial>();
-                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
                 
@@ -536,7 +538,7 @@ namespace Chisel.Components
 
         public override SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return null;
             if (Nodes.Length > 1)
             {
@@ -545,7 +547,7 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
                     
-                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    var brushMesh = generatedBrushes.BrushMeshes[n - 1];
                     if (brushMesh == null)
                         continue;
                     
@@ -562,7 +564,7 @@ namespace Chisel.Components
                     if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                         return null;
 
-                    return new SurfaceReference(this, brushMeshAsset, n, n - 1, surfaceIndex, surfaceID);
+                    return new SurfaceReference(this, generatedBrushes, n, n - 1, surfaceIndex, surfaceID);
                 }
                 return null;
             } else
@@ -570,10 +572,10 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
 
-                if (brushMeshAsset.SubMeshCount == 0)
+                if (generatedBrushes.SubMeshCount == 0)
                     return null;
 
-                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
                 
@@ -590,37 +592,37 @@ namespace Chisel.Components
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return null;
                 
-                return new SurfaceReference(this, brushMeshAsset, 0, 0, surfaceIndex, surfaceID);
+                return new SurfaceReference(this, generatedBrushes, 0, 0, surfaceIndex, surfaceID);
             }
         }
 
         public override SurfaceReference[] GetAllSurfaceReferences()
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return null;
             if (Nodes.Length > 1)
             {
                 var surfaces	= new HashSet<SurfaceReference>();
                 for (int n = 1; n < Nodes.Length; n++)
                 {
-                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    var brushMesh = generatedBrushes.BrushMeshes[n - 1];
                     if (brushMesh == null)
                         continue;
                     
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
                     {
                         var surfaceID	= brushMesh.polygons[i].surfaceID;
-                        surfaces.Add(new SurfaceReference(this, brushMeshAsset, n, n - 1, i, surfaceID));
+                        surfaces.Add(new SurfaceReference(this, generatedBrushes, n, n - 1, i, surfaceID));
                     }
 
                 }
                 return surfaces.ToArray();
             } else
             {
-                if (brushMeshAsset.SubMeshCount == 0)
+                if (generatedBrushes.SubMeshCount == 0)
                     return null;
 
-                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
                 
@@ -628,7 +630,7 @@ namespace Chisel.Components
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
                 {
                     var surfaceID = brushMesh.polygons[i].surfaceID;
-                    surfaces.Add(new SurfaceReference(this, brushMeshAsset, 0, 0, i, surfaceID));
+                    surfaces.Add(new SurfaceReference(this, generatedBrushes, 0, 0, i, surfaceID));
                 }
                 return surfaces.ToArray();
             }
@@ -636,7 +638,7 @@ namespace Chisel.Components
 
         public override SurfaceReference[] GetAllSurfaceReferences(CSGTreeBrush brush)
         {
-            if (!brushMeshAsset)
+            if (!generatedBrushes)
                 return null;
             if (Nodes.Length > 1)
             {
@@ -645,7 +647,7 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
 
-                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    var brushMesh = generatedBrushes.BrushMeshes[n - 1];
                     if (brushMesh == null)
                         continue;
 
@@ -654,7 +656,7 @@ namespace Chisel.Components
                     {
                         var surfaceID	= brushMesh.polygons[i].surfaceID;
                         surfaces.Add(new SurfaceReference(this, //(CSGTreeBrush)Nodes[n], 
-                                                            brushMeshAsset, n, n - 1, i, surfaceID));
+                                                            generatedBrushes, n, n - 1, i, surfaceID));
                     }
 
                     return surfaces.ToArray();
@@ -665,7 +667,7 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
                 
-                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
 
@@ -674,7 +676,7 @@ namespace Chisel.Components
                 {
                     var surfaceID = brushMesh.polygons[i].surfaceID;
                     surfaces.Add(new SurfaceReference(this, //(CSGTreeBrush)TopNode, 
-                                                        brushMeshAsset, 0, 0, i, surfaceID));
+                                                        generatedBrushes, 0, 0, i, surfaceID));
                 }
 
                 return surfaces.ToArray();
@@ -690,11 +692,11 @@ namespace Chisel.Components
         public virtual void UpdateGenerator()
         {
             // BrushMeshes of generators must always be unique
-            if (!brushMeshAsset ||
-                !ChiselGeneratedBrushesManager.IsBrushMeshUnique(brushMeshAsset))
+            if (!generatedBrushes ||
+                !ChiselGeneratedBrushesManager.IsBrushMeshUnique(generatedBrushes))
             {
-                brushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
-                brushMeshAsset.name = "Generated " + NodeTypeName;
+                generatedBrushes = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
+                generatedBrushes.name = "Generated " + NodeTypeName;
             }
 
             UpdateGeneratorInternal();
@@ -713,11 +715,11 @@ namespace Chisel.Components
             bool success = false;
             try
             {
-                if (brushMeshAsset.SubMeshCount == 1)
+                if (generatedBrushes.SubMeshCount == 1)
                 {
                     var brush = UnityEditor.Undo.AddComponent<CSGBrush>(topGameObject);
                     brush.Operation = this.operation;
-                    brush.BrushMeshAsset = brushMeshAsset;
+                    brush.BrushMeshAsset = generatedBrushes;
                     brush.LocalTransformation = localTransformation;
                     brush.PivotOffset = pivotOffset;
                     UnityEditor.Undo.SetCurrentGroupName("Converted Shape to Brush");
@@ -726,10 +728,10 @@ namespace Chisel.Components
                     var operationComponent = UnityEditor.Undo.AddComponent<CSGOperation>(topGameObject);
                     operationComponent.Operation = this.operation;
                     var parentTransform = topGameObject.transform;
-                    for (int i = 0; i < brushMeshAsset.SubMeshCount; i++)
+                    for (int i = 0; i < generatedBrushes.SubMeshCount; i++)
                     {
                         var newBrushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
-                        newBrushMeshAsset.SetSubMeshes(new[] { new BrushMesh(brushMeshAsset.BrushMeshes[i]) });
+                        newBrushMeshAsset.SetSubMeshes(new[] { new BrushMesh(generatedBrushes.BrushMeshes[i]) });
                         var brushGameObject = new GameObject("Brush (" + (i + 1) + ")");
                         UnityEditor.Undo.RegisterCreatedObjectUndo(brushGameObject, "Created GameObject");
                         brushGameObject.SetActive(false);
@@ -746,7 +748,7 @@ namespace Chisel.Components
                             brush.BrushMeshAsset = newBrushMeshAsset;
                             brush.LocalTransformation = localTransformation;
                             brush.PivotOffset = pivotOffset;
-                            brush.Operation = brushMeshAsset.Operations[i];
+                            brush.Operation = generatedBrushes.Operations[i];
                         }
                         finally
                         {

@@ -16,10 +16,10 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateCapsuleAsset(ChiselGeneratedBrushes brushMeshAsset, ref CSGCapsuleDefinition definition)
+        public static bool GenerateCapsule(ChiselGeneratedBrushes brushMeshAsset, ref CSGCapsuleDefinition definition)
         {
             var brushMeshes = new[] { new BrushMesh() };
-            if (BrushMeshFactory.GenerateCapsuleAsset(ref brushMeshes[0], ref definition))
+            if (BrushMeshFactory.GenerateCapsule(ref brushMeshes[0], ref definition))
             {
                 brushMeshAsset.Clear();
                 return false;

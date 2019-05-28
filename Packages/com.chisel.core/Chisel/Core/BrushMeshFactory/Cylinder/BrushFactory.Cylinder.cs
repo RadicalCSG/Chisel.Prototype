@@ -16,7 +16,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateCylinder(ref BrushMesh brushMesh, CSGCylinderDefinition definition)
+        public static bool GenerateCylinder(ref BrushMesh brushMesh, ref CSGCylinderDefinition definition)
         {
             definition.Validate();
 

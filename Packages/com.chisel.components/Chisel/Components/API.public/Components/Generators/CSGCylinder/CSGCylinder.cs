@@ -116,7 +116,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateCylinderAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateCylinderAsset(generatedBrushes, ref definition);
         }
     }
 }

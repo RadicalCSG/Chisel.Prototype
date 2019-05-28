@@ -21,7 +21,7 @@ namespace Chisel.Components
         {
             var brushMeshes = generatedBrushes.BrushMeshes;
             var operations  = generatedBrushes.Operations;
-            if (!BrushMeshFactory.GenerateSpiralStairs(ref brushMeshes, ref operations, ref definition, definition.brushMaterials, ref definition.surfaceDescriptions))
+            if (!BrushMeshFactory.GenerateSpiralStairs(ref brushMeshes, ref operations, ref definition))
             {
                 generatedBrushes.Clear();
                 return false;

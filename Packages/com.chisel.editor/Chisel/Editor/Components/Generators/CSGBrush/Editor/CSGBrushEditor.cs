@@ -18,23 +18,23 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGBrushEditor : ChiselGeneratorEditor<CSGBrush>
     {
-        SerializedProperty brushMeshAssetProp;
+        SerializedProperty generatedBrushesProp;
 
         protected override void ResetInspector()
         {
-            brushMeshAssetProp = null;
+            generatedBrushesProp = null;
         }
 
         protected override void InitInspector()
         {
-            brushMeshAssetProp	= serializedObject.FindProperty("brushMeshAsset");
+            generatedBrushesProp = serializedObject.FindProperty(CSGGeneratorComponent.kGeneratedBrushesName);
         }
         
         protected override void OnInspector()
         {
             EditorGUI.BeginChangeCheck();
             {
-                EditorGUILayout.PropertyField(brushMeshAssetProp);
+                EditorGUILayout.PropertyField(generatedBrushesProp);
             }
             if (EditorGUI.EndChangeCheck())
             {

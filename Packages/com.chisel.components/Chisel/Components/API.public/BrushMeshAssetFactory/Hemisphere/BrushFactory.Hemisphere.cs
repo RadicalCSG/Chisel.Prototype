@@ -16,10 +16,10 @@ namespace Chisel.Components
     // TODO: rename
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateHemisphereAsset(ChiselGeneratedBrushes brushMeshAsset, CSGHemisphereDefinition definition)
+        public static bool GenerateHemisphere(ChiselGeneratedBrushes brushMeshAsset, ref CSGHemisphereDefinition definition)
         {
             var brushMeshes = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateHemisphereSubMesh(ref brushMeshes[0], definition))
+            if (!BrushMeshFactory.GenerateHemisphere(ref brushMeshes[0], ref definition))
             {
                 brushMeshAsset.Clear();
                 return false;

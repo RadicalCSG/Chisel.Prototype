@@ -135,7 +135,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateLinearStairsAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateLinearStairs(generatedBrushes, ref definition);
         }
     }
 }

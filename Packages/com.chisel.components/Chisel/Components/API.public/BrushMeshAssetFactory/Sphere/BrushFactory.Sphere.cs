@@ -15,10 +15,10 @@ namespace Chisel.Components
 {
     public sealed partial class BrushMeshAssetFactory
     {
-        public static bool GenerateSphereAsset(ChiselGeneratedBrushes brushMeshAsset, CSGSphereDefinition definition)
+        public static bool GenerateSphere(ChiselGeneratedBrushes brushMeshAsset, ref CSGSphereDefinition definition)
         {
             var brushMesh = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], definition))
+            if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], ref definition))
             {
                 brushMeshAsset.Clear();
                 return false;

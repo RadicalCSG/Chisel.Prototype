@@ -168,7 +168,12 @@ namespace Chisel.Core
             return subMeshCount;
         }
 
-        public static bool GenerateLinearStairsSubMeshes(ref BrushMesh[] brushMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
+        public static bool GenerateLinearStairs(ref BrushMesh[] brushMeshes, ref CSGLinearStairsDefinition definition)
+        {
+            return BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushMeshes, ref definition, definition.leftSide, definition.rightSide, 0);
+        }
+
+        public static bool GenerateLinearStairsSubMeshes(ref BrushMesh[] brushMeshes, ref CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
             definition.Validate();
             int requiredSubMeshCount = BrushMeshFactory.GetLinearStairsSubMeshCount(definition, definition.leftSide, definition.rightSide);

@@ -29,7 +29,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GeneratePathedStairs(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GeneratePathedStairs(generatedBrushes, ref definition);
         }
     }
 }

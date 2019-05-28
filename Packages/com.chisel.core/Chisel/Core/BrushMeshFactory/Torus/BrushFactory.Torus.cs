@@ -81,8 +81,9 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateTorus(ref BrushMesh[] brushMeshes, CSGTorusDefinition definition)
+        public static bool GenerateTorus(ref BrushMesh[] brushMeshes, ref CSGTorusDefinition definition)
         {
+            definition.Validate();
             Vector3[] vertices = null;
             if (!GenerateTorusVertices(definition, ref vertices))
             {
@@ -90,7 +91,6 @@ namespace Chisel.Core
                 return false;
             }
 
-            definition.Validate();
             var brushMaterials	= definition.brushMaterials;
             var descriptions	= definition.surfaceDescriptions;
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
