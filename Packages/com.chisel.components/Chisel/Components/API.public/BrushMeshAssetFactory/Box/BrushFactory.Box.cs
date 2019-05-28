@@ -44,9 +44,9 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            BrushMeshFactory.GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceDescriptions);
-            generatedBrushes.SubMeshes = subMeshes;
+            var brushMeshes = new[] { new BrushMesh() };
+            BrushMeshFactory.GenerateBoxSubMesh(ref brushMeshes[0], min, max, brushMaterials, surfaceDescriptions);
+            generatedBrushes.SetSubMeshes(brushMeshes);
             generatedBrushes.CalculatePlanes();
             generatedBrushes.SetDirty();
             return true;
@@ -66,9 +66,9 @@ namespace Chisel.Components
                 return false;
             }
 
-            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            BrushMeshFactory.GenerateBoxSubMesh(ref subMeshes[0].brushMesh, min, max, brushMaterials, surfaceFlags);
-            generatedBrushes.SubMeshes = subMeshes;
+            var brushMeshes = new[] { new BrushMesh() };
+            BrushMeshFactory.GenerateBoxSubMesh(ref brushMeshes[0], min, max, brushMaterials, surfaceFlags);
+            generatedBrushes.SetSubMeshes(brushMeshes);
             generatedBrushes.CalculatePlanes();
             generatedBrushes.SetDirty();
             return true;

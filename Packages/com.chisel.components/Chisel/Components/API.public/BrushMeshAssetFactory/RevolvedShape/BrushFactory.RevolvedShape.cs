@@ -118,8 +118,7 @@ namespace Chisel.Components
                 SplitPolygon(polygonVerticesList, i);
             }
 
-            var subMeshes				= new List<ChiselGeneratedBrushes.ChiselGeneratedBrush>();
-    
+            var brushMeshes				= new List<BrushMesh>();
             var horzSegments			= definition.revolveSegments;//horizontalSegments;
             var horzDegreePerSegment	= definition.totalAngle / horzSegments;
 
@@ -160,21 +159,20 @@ namespace Chisel.Components
                         subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
                     }
 
-                    var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
+                    var brushMesh = new BrushMesh();
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
                         continue;
 
-                    if (!subMesh.brushMesh.Validate())
+                    if (!brushMesh.Validate())
                     {
                         brushMeshAsset.Clear();
                         return false;
                     }
-                    subMeshes.Add(subMesh);
+                    brushMeshes.Add(brushMesh);
                 }
             }
             
-            brushMeshAsset.SubMeshes = subMeshes.ToArray();
-
+            brushMeshAsset.SetSubMeshes(brushMeshes.ToArray());
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

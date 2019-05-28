@@ -36,10 +36,9 @@ namespace Chisel.Components
                     return null;
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
                     return null;
-                ref var brushMesh = ref subMesh.brushMesh;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return null;
                 return brushMesh.polygons[surfaceIndex].brushMaterial;
@@ -56,17 +55,16 @@ namespace Chisel.Components
                     return ref s_DefaultPolygon;
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return ref s_DefaultPolygon;
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
                     return ref s_DefaultPolygon;
-                ref var brushMesh = ref subMesh.brushMesh;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return ref s_DefaultPolygon;
                 return ref brushMesh.polygons[surfaceIndex];
             }
         }
 
-        public ChiselGeneratedBrushes.ChiselGeneratedBrush SubMesh
+        public BrushMesh BrushMesh
         {
             get
             {
@@ -74,7 +72,10 @@ namespace Chisel.Components
                     return null;
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
-                return brushMeshAsset.SubMeshes[subMeshIndex];
+                var brushMeshes = brushMeshAsset.BrushMeshes;
+                if (brushMeshes == null)
+                    return null;
+                return brushMeshes[subMeshIndex];
             }
         }
 
@@ -86,14 +87,14 @@ namespace Chisel.Components
                     yield break;
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     yield break;
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
                     yield break;
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.brushMesh.polygons.Length)
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     yield break;
-                var polygon		= subMesh.brushMesh.polygons[surfaceIndex];
-                var edges		= subMesh.brushMesh.halfEdges;
-                var vertices	= subMesh.brushMesh.vertices;
+                var polygon		= brushMesh.polygons[surfaceIndex];
+                var edges		= brushMesh.halfEdges;
+                var vertices	= brushMesh.vertices;
                 var firstEdge	= polygon.firstEdge;
                 var lastEdge	= firstEdge + polygon.edgeCount;
                 for (int e = firstEdge; e < lastEdge; e++)
@@ -109,10 +110,9 @@ namespace Chisel.Components
                     return null;
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
                     return null;
-                ref var brushMesh = ref subMesh.brushMesh;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
                     return null;
                 return LocalToWorldSpace.TransformPlane(brushMesh.surfaces[surfaceIndex].localPlane);
@@ -164,11 +164,10 @@ namespace Chisel.Components
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return Matrix4x4.identity;
 
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
                     return Matrix4x4.identity;
-
-                ref var brushMesh = ref subMesh.brushMesh;
+                
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
                     return Matrix4x4.identity;
 

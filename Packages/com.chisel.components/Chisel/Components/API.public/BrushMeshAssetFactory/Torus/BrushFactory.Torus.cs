@@ -140,7 +140,7 @@ namespace Chisel.Components
                 }
             }
 
-            var subMeshes	= new ChiselGeneratedBrushes.ChiselGeneratedBrush[horzSegments];
+            var brushMeshes	= new BrushMesh[horzSegments];
             var horzOffset	= definition.startAngle;
             for (int h = 1, p = 0; h < horzSegments + 1; p = h, h++)
             {
@@ -155,18 +155,17 @@ namespace Chisel.Components
                     subMeshVertices[v] = rotation1 * circleVertices[v];
                 }
                 
-                var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
-                BrushMeshFactory.CreateExtrudedSubMesh(ref subMesh.brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
-                if (!subMesh.brushMesh.Validate())
+                var brushMesh = new BrushMesh();
+                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
+                if (!brushMesh.Validate())
                 {
                     brushMeshAsset.Clear();
                     return false;
                 }
-                subMeshes[h-1] = subMesh;
+                brushMeshes[h-1] = brushMesh;
             }
             
-            brushMeshAsset.SubMeshes = subMeshes;
-
+            brushMeshAsset.SetSubMeshes(brushMeshes);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

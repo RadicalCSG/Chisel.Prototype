@@ -64,14 +64,14 @@ namespace Chisel.Components
             //			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
 
             // TODO: use list instead?
-            ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes;
+            BrushMesh[] brushMeshes;
             if (brushMeshAsset.SubMeshCount != totalSubMeshCount)
             {
-                subMeshes = new ChiselGeneratedBrushes.ChiselGeneratedBrush[totalSubMeshCount];
+                brushMeshes = new BrushMesh[totalSubMeshCount];
                 for (int i = 0; i < totalSubMeshCount; i++)
-                    subMeshes[i] = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
+                    brushMeshes[i] = new BrushMesh();
             } else
-                subMeshes = brushMeshAsset.SubMeshes;
+                brushMeshes = brushMeshAsset.BrushMeshes;
 
             var depth		= definition.stairs.depth;
             var height		= definition.stairs.height;
@@ -137,7 +137,7 @@ namespace Chisel.Components
                 if (subMeshCount == 0)
                     continue;
 
-                if (!GenerateLinearStairsSubMeshes(subMeshes, definition.stairs, leftSide, rightSide, subMeshIndex))
+                if (!GenerateLinearStairsSubMeshes(brushMeshes, definition.stairs, leftSide, rightSide, subMeshIndex))
                 {
                     brushMeshAsset.Clear();
                     return false;
@@ -146,7 +146,7 @@ namespace Chisel.Components
                 var halfWidth = maxWidth1 * 0.5f;
                 for (int m = 0; m < subMeshCount; m++)
                 {
-                    var vertices = subMeshes[subMeshIndex + m].brushMesh.vertices;
+                    var vertices = brushMeshes[subMeshIndex + m].vertices;
                     for (int v = 0; v < vertices.Length; v++)
                     {
                         // TODO: is it possible to put all of this in a single matrix?
@@ -166,7 +166,7 @@ namespace Chisel.Components
                 subMeshIndex += subMeshCount;
             }
 
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMeshes);
 
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();

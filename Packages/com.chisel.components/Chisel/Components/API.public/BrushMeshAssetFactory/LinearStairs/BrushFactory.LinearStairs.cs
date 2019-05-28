@@ -18,7 +18,7 @@ namespace Chisel.Components
     public sealed partial class BrushMeshAssetFactory
     {
         // TODO: remove all stairs specific parameters
-        static void GenerateBottomRamp(ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        static void GenerateBottomRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             for (int i = 0, j = startIndex; i < stepCount; i++, j++)
             {
@@ -50,7 +50,7 @@ namespace Chisel.Components
                                     };
                 }
 
-                BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[j].brushMesh, vertices, extrusion,
+                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[j], vertices, extrusion,
                                 new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                 new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                 brushMaterials, surfaceDescriptions);
@@ -63,7 +63,7 @@ namespace Chisel.Components
         }
 
         // TODO: remove all stairs specific parameters
-        static void GenerateTopRamp(ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        static void GenerateTopRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
         {
             //var diffY			= (max.y - min.y);
             //var diffZ			= (max.z - min.z);
@@ -98,7 +98,7 @@ namespace Chisel.Components
                                     new Vector3( min.x, topY,    leftZ),   // 4
                                 };
 
-                BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[j + 0].brushMesh, vertices, extrusion, 
+                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[j + 0], vertices, extrusion, 
                                 new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
                                 new int[] { 0, 1, 2, 2, 2, 2, 2 }, // TODO: fix this
                                 brushMaterials, surfaceDescriptions);
@@ -169,7 +169,7 @@ namespace Chisel.Components
             return subMeshCount;
         }
 
-        public static bool GenerateLinearStairsSubMeshes(ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
+        public static bool GenerateLinearStairsSubMeshes(BrushMesh[] brushMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
             // TODO: properly assign all materials
 
@@ -309,7 +309,7 @@ namespace Chisel.Components
                                             };
                         }
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + i].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + i], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { Left, Right, Step, Tread, Step, Tread }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);						
@@ -340,7 +340,7 @@ namespace Chisel.Components
                                                 new Vector3( min.x, max.y, min.z),	// 3
                                             };
                         var extrusion	= new Vector3(max.x - min.x, 0, 0);
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startTread + i].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startTread + i], vertices, extrusion,
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         new int[] { Left, Right, Tread, Tread, Tread, Tread }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -357,7 +357,7 @@ namespace Chisel.Components
                     var extraDepth	= (thickRiser ? definition.stepDepth : riserDepth) + leftSideDepth;
                     var maxDepth	= boundsMin.z;
 
-                    GenerateBottomRamp(subMeshes, subMeshOffset + startLeftSideDown, stepCount, min, max, extrusion, riserType, definition.stepDepth - riserDepth, extraDepth, maxDepth, definition, brushMaterials, surfaceDescriptions);
+                    GenerateBottomRamp(brushMeshes, subMeshOffset + startLeftSideDown, stepCount, min, max, extrusion, riserType, definition.stepDepth - riserDepth, extraDepth, maxDepth, definition, brushMaterials, surfaceDescriptions);
                 } 
                 if (haveRightSideDown)
                 {
@@ -368,7 +368,7 @@ namespace Chisel.Components
                     var extraDepth	= (thickRiser ? definition.stepDepth : riserDepth) + rightSideDepth;
                     var maxDepth	= boundsMin.z;
 
-                    GenerateBottomRamp(subMeshes, subMeshOffset + startRightSideDown, stepCount, min, max, extrusion, riserType, definition.stepDepth - riserDepth, extraDepth, maxDepth, definition, brushMaterials, surfaceDescriptions);
+                    GenerateBottomRamp(brushMeshes, subMeshOffset + startRightSideDown, stepCount, min, max, extrusion, riserType, definition.stepDepth - riserDepth, extraDepth, maxDepth, definition, brushMaterials, surfaceDescriptions);
                 } 
                 if (haveLeftSideUp)
                 {
@@ -378,7 +378,7 @@ namespace Chisel.Components
                     var extraDepth	= (thickRiser ? definition.stepDepth : riserDepth) + leftSideDepth;
                     var maxDepth	= boundsMin.z;
                     
-                    GenerateTopRamp(subMeshes, subMeshOffset + startLeftSideUp, stepCount - 1, min, max, extrusion, sideHeight, extraDepth, maxDepth, riserType, definition, brushMaterials, surfaceDescriptions);
+                    GenerateTopRamp(brushMeshes, subMeshOffset + startLeftSideUp, stepCount - 1, min, max, extrusion, sideHeight, extraDepth, maxDepth, riserType, definition, brushMaterials, surfaceDescriptions);
 
                     if (haveTopSide)
                     {
@@ -389,7 +389,7 @@ namespace Chisel.Components
                                             new Vector3( min.x, max.y									   , min.z),		// 3
                                         };
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startLeftSideUp + (stepCount - 1)], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -416,7 +416,7 @@ namespace Chisel.Components
                                         };
                         }
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startLeftSideUp + stepCount].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startLeftSideUp + stepCount], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -430,7 +430,7 @@ namespace Chisel.Components
                     var extraDepth	= (thickRiser ? definition.stepDepth : riserDepth) + rightSideDepth;
                     var maxDepth	= boundsMin.z;
                     
-                    GenerateTopRamp(subMeshes, subMeshOffset + startRightSideUp, stepCount - 1, min, max, extrusion, sideHeight, extraDepth, maxDepth, riserType, definition, brushMaterials, surfaceDescriptions);
+                    GenerateTopRamp(brushMeshes, subMeshOffset + startRightSideUp, stepCount - 1, min, max, extrusion, sideHeight, extraDepth, maxDepth, riserType, definition, brushMaterials, surfaceDescriptions);
 
                     if (haveTopSide)
                     {
@@ -441,7 +441,7 @@ namespace Chisel.Components
                                             new Vector3( min.x, max.y									   , min.z),		// 3
                                         };
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + (stepCount - 1)].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startRightSideUp + (stepCount - 1)], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -468,7 +468,7 @@ namespace Chisel.Components
                                         };
                         }
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMeshes[subMeshOffset + startRightSideUp + stepCount].brushMesh, vertices, extrusion,
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startRightSideUp + stepCount], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         brushMaterials, surfaceDescriptions);
@@ -488,23 +488,22 @@ namespace Chisel.Components
                 return false;
             }
 
-            ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes;
+            BrushMesh[] brushMeshes;
             if (brushMeshAsset.SubMeshCount != subMeshCount)
             {
-                subMeshes = new ChiselGeneratedBrushes.ChiselGeneratedBrush[subMeshCount];
+                brushMeshes = new BrushMesh[subMeshCount];
                 for (int i = 0; i < subMeshCount; i++)
-                    subMeshes[i] = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
+                    brushMeshes[i] = new BrushMesh();
             } else
-                subMeshes = brushMeshAsset.SubMeshes;
+                brushMeshes = brushMeshAsset.BrushMeshes;
 
-            if (!GenerateLinearStairsSubMeshes(subMeshes, definition, definition.leftSide, definition.rightSide, 0))
+            if (!GenerateLinearStairsSubMeshes(brushMeshes, definition, definition.leftSide, definition.rightSide, 0))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
-             
-            brushMeshAsset.SubMeshes = subMeshes;
 
+            brushMeshAsset.SetSubMeshes(brushMeshes);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

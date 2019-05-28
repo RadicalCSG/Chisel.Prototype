@@ -18,14 +18,14 @@ namespace Chisel.Components
     {
         public static bool GenerateStadiumAsset(ChiselGeneratedBrushes brushMeshAsset, CSGStadiumDefinition definition)
         {
-            var subMeshes		= new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            if (BrushMeshFactory.GenerateStadium(ref subMeshes[0].brushMesh, definition))
+            var brushMeshes = new[] { new BrushMesh() };
+            if (BrushMeshFactory.GenerateStadium(ref brushMeshes[0], definition))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
             
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMeshes);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

@@ -99,14 +99,19 @@ namespace Chisel.Components
             var outerSides		= definition.outerSegments;
             var riserDepth		= definition.riserDepth;
 
-            ChiselGeneratedBrushes.ChiselGeneratedBrush[] subMeshes;
+            BrushMesh[] brushMeshes;
+            CSGOperationType[] operations;
             if (brushMeshAsset.SubMeshCount != subMeshCount)
             {
-                subMeshes = new ChiselGeneratedBrushes.ChiselGeneratedBrush[subMeshCount];
+                operations = new CSGOperationType[subMeshCount];
+                brushMeshes = new BrushMesh[subMeshCount];
                 for (int i = 0; i < subMeshCount; i++)
-                    subMeshes[i] = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
+                    brushMeshes[i] = new BrushMesh();
             } else
-                subMeshes = brushMeshAsset.SubMeshes;
+            {
+                operations = brushMeshAsset.Operations;
+                brushMeshes = brushMeshAsset.BrushMeshes;
+            }
 
             if (haveRiser)
             {
@@ -146,14 +151,14 @@ namespace Chisel.Components
                                                 new Vector3( o0.x, minY, o0.y), // 7
                                             };
 
-                        ref var brushMesh = ref subMeshes[i].brushMesh;
+                        ref var brushMesh = ref brushMeshes[i];
                         if (i == 0)
                         {
                             brushMesh.polygons = BrushMeshFactory.CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
                             minY -= treadHeight;
                         } else
                         {
-                            brushMesh.polygons = subMeshes[0].brushMesh.polygons.ToArray();
+                            brushMesh.polygons = brushMeshes[0].polygons.ToArray();
                         }
                         brushMesh.halfEdges	= (anglePerStep > 0) ? invertedBoxHalfEdges.ToArray() : boxHalfEdges.ToArray();
                         brushMesh.vertices	= vertices;
@@ -226,13 +231,13 @@ namespace Chisel.Components
                                                         new Vector3(  o1.x, maxY,  o1.y), // 4
                                                     };
 
-                                ref var brushMesh = ref subMeshes[subMeshIndex].brushMesh;
+                                ref var brushMesh = ref brushMeshes[subMeshIndex];
                                 if (i == 0)
                                 {
                                     brushMesh.polygons = BrushMeshFactory.CreateSquarePyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                                 } else
                                 {
-                                    brushMesh.polygons = subMeshes[subMeshIndex - i].brushMesh.polygons.ToArray();
+                                    brushMesh.polygons = brushMeshes[subMeshIndex - i].polygons.ToArray();
                                 }
                                 brushMesh.halfEdges = (anglePerStep > 0) ? invertedSquarePyramidHalfEdges.ToArray() : squarePyramidHalfEdges.ToArray();
                                 brushMesh.vertices = vertices;
@@ -248,13 +253,13 @@ namespace Chisel.Components
                                                         new Vector3(  o1.x, maxY,  o1.y), // 3
                                                     };
 
-                                ref var brushMesh = ref subMeshes[subMeshIndex].brushMesh;
+                                ref var brushMesh = ref brushMeshes[subMeshIndex];
                                 if (i == 0)
                                 {
                                     brushMesh.polygons = BrushMeshFactory.CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                                 } else
                                 {
-                                    brushMesh.polygons = subMeshes[subMeshIndex - i].brushMesh.polygons.ToArray();
+                                    brushMesh.polygons = brushMeshes[subMeshIndex - i].polygons.ToArray();
                                 }
                                 brushMesh.halfEdges = (anglePerStep > 0) ? invertedTriangularPyramidHalfEdges.ToArray() : triangularPyramidHalfEdges.ToArray();
                                 brushMesh.vertices = vertices;
@@ -274,13 +279,13 @@ namespace Chisel.Components
                                                     new Vector3( origin.x, minY, origin.y), // 3
                                                 };
 
-                            ref var brushMesh = ref subMeshes[subMeshIndex].brushMesh;
+                            ref var brushMesh = ref brushMeshes[subMeshIndex];
                             if (i == 0)
                             {
                                 brushMesh.polygons = BrushMeshFactory.CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                             } else
                             {
-                                brushMesh.polygons = subMeshes[subMeshIndex - i].brushMesh.polygons.ToArray();
+                                brushMesh.polygons = brushMeshes[subMeshIndex - i].polygons.ToArray();
                             }
                             brushMesh.halfEdges = (anglePerStep > 0) ? invertedTriangularPyramidHalfEdges.ToArray() : triangularPyramidHalfEdges.ToArray();
                             brushMesh.vertices = vertices;
@@ -296,13 +301,13 @@ namespace Chisel.Components
                                                     new Vector3( origin.x, minY, origin.y), // 3
                                                 };
 
-                            ref var brushMesh = ref subMeshes[subMeshIndex].brushMesh;
+                            ref var brushMesh = ref brushMeshes[subMeshIndex];
                             if (i == 0)
                             {
                                 brushMesh.polygons = BrushMeshFactory.CreateTriangularPyramidAssetPolygons(brushMaterials, surfaceDescriptions);
                             } else
                             {
-                                brushMesh.polygons = subMeshes[subMeshIndex - i].brushMesh.polygons.ToArray();
+                                brushMesh.polygons = brushMeshes[subMeshIndex - i].polygons.ToArray();
                             }
                             brushMesh.halfEdges = (anglePerStep > 0) ? invertedTriangularPyramidHalfEdges.ToArray() : triangularPyramidHalfEdges.ToArray();
                             brushMesh.vertices = vertices;
@@ -344,14 +349,14 @@ namespace Chisel.Components
                                                 new Vector3(  o0.x, minY,  o0.y), // 5
                                             };
 
-                        ref var brushMesh = ref subMeshes[i].brushMesh;
+                        ref var brushMesh = ref brushMeshes[i];
                         if (i == 0)
                         {
                             brushMesh.polygons = BrushMeshFactory.CreateWedgeAssetPolygons(brushMaterials, surfaceDescriptions);
                             minY -= treadHeight;
                         } else
                         {
-                            brushMesh.polygons = subMeshes[0].brushMesh.polygons.ToArray();
+                            brushMesh.polygons = brushMeshes[0].polygons.ToArray();
                         }
                         brushMesh.halfEdges = (anglePerStep > 0) ? invertedWedgeHalfEdges.ToArray() : wedgeHalfEdges.ToArray();
                         brushMesh.vertices = vertices;
@@ -370,8 +375,8 @@ namespace Chisel.Components
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < outerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    BrushMeshFactory.GenerateCylinderSubMesh(ref subMeshes[subMeshIndex].brushMesh, outerDiameter, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
-                    subMeshes[subMeshIndex].operation = CSGOperationType.Intersecting;
+                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
+                    operations[subMeshIndex] = CSGOperationType.Intersecting;
                 }
 
                 if (haveInnerCyl)
@@ -383,8 +388,8 @@ namespace Chisel.Components
                     cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                     for (int i = 0; i < innerSides; i++)
                         cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                    BrushMeshFactory.GenerateCylinderSubMesh(ref subMeshes[subMeshIndex].brushMesh, innerDiameter, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
-                    subMeshes[subMeshIndex].operation = CSGOperationType.Subtractive;
+                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
+                    operations[subMeshIndex] = CSGOperationType.Subtractive;
                 }
 
             }
@@ -426,12 +431,12 @@ namespace Chisel.Components
                                             new Vector3( o0.x, minY, o0.y), // 7
                                             new Vector3( o1.x, minY, o1.y), // 6
                                         };
-                    ref var brushMesh = ref subMeshes[i].brushMesh;
+                    ref var brushMesh = ref brushMeshes[i];
                     if (n == 0)
                     {
                         brushMesh.polygons = BrushMeshFactory.CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
                     } else
-                        brushMesh.polygons = subMeshes[startIndex].brushMesh.polygons.ToArray();
+                        brushMesh.polygons = brushMeshes[startIndex].polygons.ToArray();
 
                     brushMesh.halfEdges = (anglePerStep > 0) ? invertedBoxHalfEdges.ToArray() : boxHalfEdges.ToArray();
                     brushMesh.vertices  = vertices;
@@ -450,8 +455,8 @@ namespace Chisel.Components
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < outerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                BrushMeshFactory.GenerateCylinderSubMesh(ref subMeshes[subMeshIndex].brushMesh, outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
-                subMeshes[subMeshIndex].operation = CSGOperationType.Intersecting;
+                BrushMeshFactory.GenerateCylinderSubMesh(ref brushMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
+                operations[subMeshIndex] = CSGOperationType.Intersecting;
             }
 
             if (haveInnerCyl)
@@ -463,12 +468,12 @@ namespace Chisel.Components
                 cylinderSurfaceDescriptions[1] = surfaceDescriptions[1];
                 for (int i = 0; i < innerSides; i++)
                     cylinderSurfaceDescriptions[i + 2] = surfaceDescriptions[2];
-                BrushMeshFactory.GenerateCylinderSubMesh(ref subMeshes[subMeshIndex].brushMesh, innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
-                subMeshes[subMeshIndex].operation = CSGOperationType.Subtractive;
+                BrushMeshFactory.GenerateCylinderSubMesh(ref brushMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, cylinderBrushMaterials, cylinderSurfaceDescriptions);
+                operations[subMeshIndex] = CSGOperationType.Subtractive;
             }
 
 
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMeshes, operations);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

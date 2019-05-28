@@ -20,14 +20,14 @@ namespace Chisel.Components
     {
         public static bool GenerateCylinderAsset(ChiselGeneratedBrushes brushMeshAsset, CSGCylinderDefinition definition)
         {
-            var subMeshes = new [] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            if (!BrushMeshFactory.GenerateCylinder(ref subMeshes[0].brushMesh, definition))
+            var brushMeshes = new [] { new BrushMesh() };
+            if (!BrushMeshFactory.GenerateCylinder(ref brushMeshes[0], definition))
             { 
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMeshes);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

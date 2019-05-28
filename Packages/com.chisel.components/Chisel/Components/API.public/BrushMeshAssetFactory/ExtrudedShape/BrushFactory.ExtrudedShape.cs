@@ -110,7 +110,7 @@ namespace Chisel.Components
 
 
 
-            var subMeshes = new List<ChiselGeneratedBrushes.ChiselGeneratedBrush>();
+            var brushMeshes = new List<BrushMesh>();
             for (int p = 0; p < polygonVerticesArray.Length; p++)
             {
                 var polygonVertices = polygonVerticesArray[p];
@@ -152,14 +152,14 @@ namespace Chisel.Components
                         if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
                             continue;
 
-                        var subMesh = new ChiselGeneratedBrushes.ChiselGeneratedBrush();
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref subMesh.brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
-                        subMeshes.Add(subMesh);
+                        var brushMesh = new BrushMesh();
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
+                        brushMeshes.Add(brushMesh);
                     }
                 }
             }
 
-            brushMeshAsset.SubMeshes = subMeshes.ToArray();
+            brushMeshAsset.SetSubMeshes(brushMeshes.ToArray());
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.OnValidate();
             brushMeshAsset.SetDirty();

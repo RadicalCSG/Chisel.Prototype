@@ -18,14 +18,14 @@ namespace Chisel.Components
     {
         public static bool GenerateCapsuleAsset(ChiselGeneratedBrushes brushMeshAsset, ref CSGCapsuleDefinition definition)
         {
-            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            if (BrushMeshFactory.GenerateCapsuleAsset(ref subMeshes[0].brushMesh, ref definition))
+            var brushMeshes = new[] { new BrushMesh() };
+            if (BrushMeshFactory.GenerateCapsuleAsset(ref brushMeshes[0], ref definition))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMeshes);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

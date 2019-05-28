@@ -17,14 +17,14 @@ namespace Chisel.Components
     {
         public static bool GenerateSphereAsset(ChiselGeneratedBrushes brushMeshAsset, CSGSphereDefinition definition)
         {
-            var subMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush() };
-            if (!BrushMeshFactory.GenerateSphere(ref subMeshes[0].brushMesh, definition))
+            var brushMesh = new[] { new BrushMesh() };
+            if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], definition))
             {
                 brushMeshAsset.Clear();
                 return false;
             }
 
-            brushMeshAsset.SubMeshes = subMeshes;
+            brushMeshAsset.SetSubMeshes(brushMesh);
             brushMeshAsset.CalculatePlanes();
             brushMeshAsset.SetDirty();
             return true;

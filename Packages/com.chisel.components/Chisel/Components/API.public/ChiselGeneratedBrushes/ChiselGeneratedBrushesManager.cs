@@ -84,11 +84,10 @@ namespace Chisel.Components
 
         public static void UnregisterAllSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
-            if (!brushMeshAsset || brushMeshAsset.SubMeshes == null)
+            if (!brushMeshAsset || brushMeshAsset.SubMeshCount == 0)
                 return;
-            foreach (var subMesh in brushMeshAsset.SubMeshes)
+            foreach (var brushMesh in brushMeshAsset.BrushMeshes)
             {
-                ref var brushMesh = ref subMesh.brushMesh;
                 if (brushMesh.polygons == null)
                     continue;
                 foreach (var polygon in brushMesh.polygons)
@@ -100,11 +99,10 @@ namespace Chisel.Components
 
         public static void RegisterAllSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
-            if (!brushMeshAsset || brushMeshAsset.SubMeshes == null)
+            if (!brushMeshAsset || brushMeshAsset.SubMeshCount == 0)
                 return;
-            foreach (var subMesh in brushMeshAsset.SubMeshes)
+            foreach (var brushMesh in brushMeshAsset.BrushMeshes)
             {
-                ref var brushMesh = ref subMesh.brushMesh;
                 if (brushMesh.polygons == null)
                     continue;
                 foreach (var polygon in brushMesh.polygons)
@@ -214,23 +212,23 @@ namespace Chisel.Components
         // TODO: shouldn't be public
         public static void UpdateSurfaces(ChiselGeneratedBrushes brushMeshAsset)
         {
-            var subMeshes = brushMeshAsset.SubMeshes;
-            if (subMeshes == null)
+            var brushMeshes = brushMeshAsset.BrushMeshes;
+            if (brushMeshes == null)
                 return;
 
-            for (int m = 0; m < subMeshes.Length; m++)
+            for (int m = 0; m < brushMeshes.Length; m++)
             {
-                var subMesh = subMeshes[m];
-                if (subMesh == null)
+                ref var brushMesh = ref brushMeshes[m];
+                if (brushMesh == null)
                     continue;
-                UpdateSurfaces(subMesh, brushMeshAsset);
+                UpdateSurfaces(ref brushMesh, brushMeshAsset);
             }
         }
 
-        static void UpdateSurfaces(ChiselGeneratedBrushes.ChiselGeneratedBrush subMesh, ChiselGeneratedBrushes brushMeshAsset)
+        static void UpdateSurfaces(ref BrushMesh brushMesh, ChiselGeneratedBrushes brushMeshAsset)
         {
-            ref var brushMesh = ref subMesh.brushMesh;
-
+            if (brushMesh == null)
+                return;
             HashSet<ChiselBrushMaterial> uniqueSurfaces;
             if (brushMeshSurfaces.TryGetValue(brushMeshAsset, out uniqueSurfaces))
             {

@@ -212,14 +212,14 @@ namespace Chisel.Components
                 {
                     var brush = (CSGTreeBrush)TopNode;
                     brush.BrushMesh = brushMeshAsset.Instances[0];
-                    brush.Operation = brushMeshAsset.SubMeshes[0].operation;
+                    brush.Operation = brushMeshAsset.Operations[0];
                 } else
                 {
                     for (int i = 0; i < instances.Length; i++)
                     {
                         var brush = (CSGTreeBrush)Nodes[i + 1];
                         brush.BrushMesh = brushMeshAsset.Instances[i];
-                        brush.Operation = brushMeshAsset.SubMeshes[i].operation;
+                        brush.Operation = brushMeshAsset.Operations[i];
                     }
                 }
                 return true;
@@ -449,12 +449,10 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
                     
-                    var subMesh		= brushMeshAsset.SubMeshes[n - 1];
-                    if (subMesh == null)
+                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    if (brushMesh == null)
                         return null;
-
-                    ref var brushMesh = ref subMesh.brushMesh;
-
+                    
                     var surfaceIndex = -1;
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
                     {
@@ -476,12 +474,10 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
                 
-                var subMesh		= brushMeshAsset.SubMeshes[0];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                if (brushMesh == null)
                     return null;
-
-                ref var brushMesh = ref subMesh.brushMesh;
-
+                
                 var surfaceIndex = -1;
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
                 {
@@ -510,11 +506,10 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
 
-                    var subMesh		= brushMeshAsset.SubMeshes[n - 1];
-                    if (subMesh == null)
+                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    if (brushMesh == null)
                         continue;
-
-                    ref var brushMesh = ref subMesh.brushMesh;
+                    
                     var surfaces	= new HashSet<ChiselBrushMaterial>();
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
                         surfaces.Add(brushMesh.polygons[i].brushMaterial);
@@ -528,11 +523,10 @@ namespace Chisel.Components
                     return null;
 
                 var surfaces = new HashSet<ChiselBrushMaterial>();
-                var subMesh  = brushMeshAsset.SubMeshes[0];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                if (brushMesh == null)
                     return null;
-
-                ref var brushMesh = ref subMesh.brushMesh;
+                
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
                     surfaces.Add(brushMesh.polygons[i].brushMaterial);
 
@@ -551,14 +545,12 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
                     
-                    var subMesh = brushMeshAsset.SubMeshes[n - 1];
-                    if (subMesh == null)
+                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    if (brushMesh == null)
                         continue;
-
-                    ref var brushMesh = ref subMesh.brushMesh;
-
+                    
                     var surfaceIndex = -1;
-                    for (int i=0;i< brushMesh.polygons.Length;i++)
+                    for (int i = 0; i < brushMesh.polygons.Length; i++)
                     {
                         if (brushMesh.polygons[i].surfaceID == surfaceID)
                         {
@@ -581,13 +573,12 @@ namespace Chisel.Components
                 if (brushMeshAsset.SubMeshCount == 0)
                     return null;
 
-                var subMesh = brushMeshAsset.SubMeshes[0];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                if (brushMesh == null)
                     return null;
-
-                ref var brushMesh = ref subMesh.brushMesh;
+                
                 var surfaceIndex = -1;
-                for (int i=0;i< brushMesh.polygons.Length;i++)
+                for (int i = 0; i < brushMesh.polygons.Length; i++)
                 {
                     if (brushMesh.polygons[i].surfaceID == surfaceID)
                     {
@@ -612,11 +603,10 @@ namespace Chisel.Components
                 var surfaces	= new HashSet<SurfaceReference>();
                 for (int n = 1; n < Nodes.Length; n++)
                 {
-                    var subMesh		= brushMeshAsset.SubMeshes[n - 1];
-                    if (subMesh == null)
+                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    if (brushMesh == null)
                         continue;
-
-                    ref var brushMesh = ref subMesh.brushMesh;
+                    
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
                     {
                         var surfaceID	= brushMesh.polygons[i].surfaceID;
@@ -627,15 +617,13 @@ namespace Chisel.Components
                 return surfaces.ToArray();
             } else
             {
-                if (brushMeshAsset.SubMeshes == null ||
-                    brushMeshAsset.SubMeshes.Length == 0)
+                if (brushMeshAsset.SubMeshCount == 0)
                     return null;
 
-                var subMesh		= brushMeshAsset.SubMeshes[0];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                if (brushMesh == null)
                     return null;
-
-                ref var brushMesh = ref subMesh.brushMesh;
+                
                 var surfaces	= new HashSet<SurfaceReference>();
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
                 {
@@ -657,11 +645,10 @@ namespace Chisel.Components
                     if (brush.NodeID != Nodes[n].NodeID)
                         continue;
 
-                    var subMesh		= brushMeshAsset.SubMeshes[n - 1];
-                    if (subMesh == null)
+                    var brushMesh = brushMeshAsset.BrushMeshes[n - 1];
+                    if (brushMesh == null)
                         continue;
 
-                    ref var brushMesh = ref subMesh.brushMesh;
                     var surfaces	= new HashSet<SurfaceReference>();
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
                     {
@@ -678,11 +665,10 @@ namespace Chisel.Components
                 if (brush.NodeID != TopNode.NodeID)
                     return null;
                 
-                var subMesh		= brushMeshAsset.SubMeshes[0];
-                if (subMesh == null)
+                var brushMesh = brushMeshAsset.BrushMeshes[0];
+                if (brushMesh == null)
                     return null;
 
-                ref var brushMesh = ref subMesh.brushMesh;
                 var surfaces	= new HashSet<SurfaceReference>();
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
                 {
@@ -743,7 +729,7 @@ namespace Chisel.Components
                     for (int i = 0; i < brushMeshAsset.SubMeshCount; i++)
                     {
                         var newBrushMeshAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselGeneratedBrushes>();
-                        newBrushMeshAsset.SubMeshes = new[] { new ChiselGeneratedBrushes.ChiselGeneratedBrush(brushMeshAsset.SubMeshes[i]) };
+                        newBrushMeshAsset.SetSubMeshes(new[] { new BrushMesh(brushMeshAsset.BrushMeshes[i]) });
                         var brushGameObject = new GameObject("Brush (" + (i + 1) + ")");
                         UnityEditor.Undo.RegisterCreatedObjectUndo(brushGameObject, "Created GameObject");
                         brushGameObject.SetActive(false);
@@ -760,7 +746,7 @@ namespace Chisel.Components
                             brush.BrushMeshAsset = newBrushMeshAsset;
                             brush.LocalTransformation = localTransformation;
                             brush.PivotOffset = pivotOffset;
-                            brush.Operation = brushMeshAsset.SubMeshes[i].operation;
+                            brush.Operation = brushMeshAsset.Operations[i];
                         }
                         finally
                         {
