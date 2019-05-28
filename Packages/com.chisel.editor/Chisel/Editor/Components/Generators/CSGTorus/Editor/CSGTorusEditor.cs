@@ -147,7 +147,7 @@ namespace Chisel.Editors
             var normal			= Vector3.up;
 
             Vector3[] vertices = null;
-            if (!BrushMeshAssetFactory.GenerateTorusVertices(generator.definition, ref vertices))
+            if (!BrushMeshFactory.GenerateTorusVertices(generator.definition, ref vertices))
                 return;
             
             UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);

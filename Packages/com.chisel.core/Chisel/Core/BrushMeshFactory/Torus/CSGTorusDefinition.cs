@@ -1,11 +1,10 @@
 ﻿using System;
-using Chisel.Core;
 using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     [Serializable]
     public struct CSGTorusDefinition

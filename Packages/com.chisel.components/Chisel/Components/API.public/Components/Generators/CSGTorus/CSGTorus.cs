@@ -21,7 +21,7 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            BrushMeshAssetFactory.GenerateTorusAsset(brushMeshAsset, definition);
+            BrushMeshAssetFactory.GenerateTorus(brushMeshAsset, definition);
         }
     }
 }
