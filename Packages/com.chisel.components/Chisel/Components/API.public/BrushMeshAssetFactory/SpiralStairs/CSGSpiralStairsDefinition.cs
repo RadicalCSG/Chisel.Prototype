@@ -9,27 +9,6 @@ using UnitySceneExtensions;
 
 namespace Chisel.Components
 {
-    [Serializable]
-    public enum StairsRiserType
-    {
-        None,
-        ThinRiser,
-        ThickRiser,
-//		Pyramid,
-        Smooth,
-        FillDown
-    }
-
-    [Serializable]
-    public enum StairsSideType
-    {
-        None,
-        // TODO: better names
-        Down,
-        Up,
-        DownAndUp
-    }
-
     // https://www.archdaily.com/896537/how-to-calculate-spiral-staircase-dimensions-and-designs
     // http://www.zhitov.ru/en/spiral_stairs/
     // https://easystair.net/en/spiral-staircase.php

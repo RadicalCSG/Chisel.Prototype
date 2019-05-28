@@ -1,14 +1,34 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Chisel.Core;
 using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
 using UnitySceneExtensions;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
+    [Serializable]
+    public enum StairsRiserType
+    {
+        None,
+        ThinRiser,
+        ThickRiser,
+//		Pyramid,
+        Smooth,
+        FillDown
+    }
+
+    [Serializable]
+    public enum StairsSideType
+    {
+        None,
+        // TODO: better names
+        Down,
+        Up,
+        DownAndUp
+    }
+
     // https://www.archdaily.com/892647/how-to-make-calculations-for-staircase-designs
     // https://inspectapedia.com/Stairs/2024s.jpg
     // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/

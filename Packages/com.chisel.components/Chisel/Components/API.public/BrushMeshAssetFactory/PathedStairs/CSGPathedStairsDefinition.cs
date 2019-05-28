@@ -4,6 +4,7 @@ using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
 using Mathf = UnityEngine.Mathf;
 using UnitySceneExtensions;
+using Chisel.Core;
 
 namespace Chisel.Components
 {

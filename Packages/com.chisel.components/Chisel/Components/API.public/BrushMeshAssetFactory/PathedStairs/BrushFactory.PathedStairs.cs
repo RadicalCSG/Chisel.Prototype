@@ -53,7 +53,7 @@ namespace Chisel.Components
                 var leftSide  = (!definition.shape.closed && i ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
                 var rightSide = (!definition.shape.closed && i == shapeVertices.Count - 1) ? definition.stairs.rightSide : StairsSideType.None;
 
-                totalSubMeshCount += GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
+                totalSubMeshCount += BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
             }
             if (totalSubMeshCount == 0)
             {
@@ -133,11 +133,11 @@ namespace Chisel.Components
 
                 var leftSide  = (!definition.shape.closed && vi2 ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
                 var rightSide = (!definition.shape.closed && vi2 == shapeVertices.Count - 1) ? definition.stairs.rightSide : StairsSideType.None;
-                var subMeshCount = GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
+                var subMeshCount = BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
                 if (subMeshCount == 0)
                     continue;
 
-                if (!GenerateLinearStairsSubMeshes(brushMeshes, definition.stairs, leftSide, rightSide, subMeshIndex))
+                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, definition.stairs, leftSide, rightSide, subMeshIndex))
                 {
                     brushMeshAsset.Clear();
                     return false;
