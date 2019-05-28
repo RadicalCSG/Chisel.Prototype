@@ -4,10 +4,9 @@ using System.Collections.Generic;
 using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
-using Chisel.Core;
 using UnitySceneExtensions;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     // https://www.archdaily.com/896537/how-to-calculate-spiral-staircase-dimensions-and-designs
     // http://www.zhitov.ru/en/spiral_stairs/
