@@ -231,10 +231,10 @@ namespace Chisel.Editors
 
                 // TODO: somehow put this into a separate renderer
                 cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalInnerDiameter;
-                BrushMeshAssetFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, generator.InnerSegments, ref innerVertices);
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, generator.InnerSegments, ref innerVertices);
 
                 cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalOuterDiameter;
-                BrushMeshAssetFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, generator.OuterSegments, ref outerVertices);
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, generator.OuterSegments, ref outerVertices);
                 
                 var originalColor	= UnityEditor.Handles.yAxisColor;
                 var color			= Color.Lerp(originalColor, UnitySceneExtensions.SceneHandles.staticColor, UnitySceneExtensions.SceneHandles.staticBlend);

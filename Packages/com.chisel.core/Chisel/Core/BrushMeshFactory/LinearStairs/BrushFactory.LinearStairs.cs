@@ -178,7 +178,8 @@ namespace Chisel.Core
                 return false;
             }
 
-            if (brushMeshes.Length != requiredSubMeshCount)
+            if (brushMeshes == null ||
+                brushMeshes.Length != requiredSubMeshCount)
             {
                 brushMeshes = new BrushMesh[requiredSubMeshCount];
                 for (int i = 0; i < requiredSubMeshCount; i++)

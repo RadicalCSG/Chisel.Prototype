@@ -48,18 +48,16 @@ namespace Chisel.Editors
             if (!targetBrushMeshAsset)
                 return;
 
-            var subMeshes = targetBrushMeshAsset.SubMeshes;
-            if (subMeshes == null)
+            var brushMeshes = targetBrushMeshAsset.BrushMeshes;
+            if (brushMeshes == null)
                 return;
 
-            for (int m = 0; m < subMeshes.Length; m++)
+            for (int m = 0; m < brushMeshes.Length; m++)
             { 
-                var subMesh = subMeshes[m];
-                if (subMesh == null)
+                var brushMesh = brushMeshes[m];
+                if (brushMesh == null)
                     continue;
-
-                ref var brushMesh = ref subMesh.brushMesh;
-
+                
                 EditorGUI.BeginChangeCheck();
 
                 var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);

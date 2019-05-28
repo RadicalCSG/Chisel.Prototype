@@ -420,7 +420,7 @@ namespace Chisel.Editors
                 
                 var baseColor				= UnityEditor.Handles.yAxisColor;
                 
-                BrushMeshAssetFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, sides, ref vertices);
+                BrushMeshFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, sides, ref vertices);
 
                 if (generator.TopHeight < generator.BottomHeight)
                     normal = -normal;
@@ -458,7 +458,7 @@ namespace Chisel.Editors
                 int outlineSides =  kMaxOutlineSides;
                 if (sides <= kMinimumSides)
                 {
-                    BrushMeshAssetFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, outlineSides, ref dottedVertices);
+                    BrushMeshFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, outlineSides, ref dottedVertices);
 
                     UnityEditor.Handles.color = GetColorForState(baseColor, topHasFocus, false, isDisabled);
                     CSGOutlineRenderer.DrawLineLoop(dottedVertices, outlineSides, outlineSides, lineMode: LineMode.ZTest,   thickness: kCircleThickness, dashSize: kLineDash);

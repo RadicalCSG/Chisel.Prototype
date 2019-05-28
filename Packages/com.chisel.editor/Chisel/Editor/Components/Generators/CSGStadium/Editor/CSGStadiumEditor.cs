@@ -128,7 +128,7 @@ namespace Chisel.Editors
             var forwardVector	= Vector3.forward;
 
             Vector3[] vertices = null;
-            if (!BrushMeshAssetFactory.GenerateStadiumVertices(generator.definition, ref vertices))
+            if (!BrushMeshFactory.GenerateStadiumVertices(generator.definition, ref vertices))
                 return;
 
 

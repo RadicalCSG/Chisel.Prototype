@@ -101,7 +101,7 @@ namespace Chisel.Editors
             var focusControl	= UnitySceneExtensions.SceneHandleUtility.focusControl;
             var normal			= Vector3.up;
 
-            if (!BrushMeshAssetFactory.GenerateSphereVertices(generator.definition, ref vertices))
+            if (!BrushMeshFactory.GenerateSphereVertices(generator.definition, ref vertices))
                 return;
 
             UnityEditor.Handles.color = CSGCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);

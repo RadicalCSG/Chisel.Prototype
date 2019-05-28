@@ -162,10 +162,9 @@ namespace Chisel.Editors
                 return;
 
             var localToWorldSpace	= surfaceReference.LocalToWorldSpace;
-            var subMesh             = surfaceReference.SubMesh;
-            if (subMesh == null)
+            var brushMesh           = surfaceReference.BrushMesh;
+            if (brushMesh == null)
                 return;
-            ref var brushMesh       = ref subMesh.brushMesh;
             Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < brushMesh.polygons.Length);
 
             var polygon             = brushMesh.polygons[surfaceReference.surfaceIndex];
@@ -207,10 +206,10 @@ namespace Chisel.Editors
                 return;
 
             var localToWorldSpace	= surfaceReference.LocalToWorldSpace;
-            var subMesh             = surfaceReference.SubMesh;
-            if (subMesh == null)
+            var brushMesh           = surfaceReference.BrushMesh;
+            if (brushMesh == null)
                 return;
-            ref var brushMesh       = ref subMesh.brushMesh;
+
             Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < brushMesh.polygons.Length);
 
             var grid        = UnitySceneExtensions.Grid.defaultGrid;
