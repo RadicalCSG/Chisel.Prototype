@@ -16,6 +16,39 @@ namespace BrushMeshAssetTests
         [SetUp] public void Setup() {  }
 
 
+        public static ChiselGeneratedBrushes CreateBox(Vector3 size, ChiselBrushMaterial material)
+        {
+            var boxDefinition = new CSGBoxDefinition()
+            {
+                bounds = new Bounds(Vector3.zero, size),
+                brushMaterials = new []
+                {
+                    material, material, material,
+                    material, material, material
+                },
+                surfaceDescriptions = new[]
+                {
+                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default,
+                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default
+                }
+            };
+            boxDefinition.Validate();
+
+            var generatedBrushes    = new ChiselGeneratedBrushes();
+            var brushMeshes         = new[] { new BrushMesh() };
+            if (!BrushMeshFactory.GenerateBox(ref brushMeshes[0], ref boxDefinition))
+            {
+                generatedBrushes.Clear();
+            } else
+            {
+                generatedBrushes.SetSubMeshes(brushMeshes);
+                generatedBrushes.CalculatePlanes();
+                generatedBrushes.SetDirty();
+            }
+            return generatedBrushes;
+        }
+
+
         [UnityTest]
         public IEnumerator CreateBrushMeshAsset_IsPartOfManager()
         {
@@ -86,7 +119,7 @@ namespace BrushMeshAssetTests
         {
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 Assert.IsFalse(newBrushMeshAsset.Instances != null && newBrushMeshAsset.Instances[0].Valid);
                 yield return null;
                 ChiselGeneratedBrushesManager.Update();
@@ -102,7 +135,7 @@ namespace BrushMeshAssetTests
         {
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 Assert.IsFalse(newBrushMeshAsset.Instances != null && newBrushMeshAsset.Instances[0].Valid);
                 yield return null;
                 ChiselGeneratedBrushesManager.Update();
@@ -127,7 +160,7 @@ namespace BrushMeshAssetTests
 
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceDestroyed -= localDelegate;
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceDestroyed += localDelegate;
                 UnityEngine.Object.DestroyImmediate(newBrushMeshAsset);
@@ -151,7 +184,7 @@ namespace BrushMeshAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 newBrushMaterial.LayerUsage = LayerUsageFlags.None;
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 yield return null;
 
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= localDelegate;
@@ -180,7 +213,7 @@ namespace BrushMeshAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 newBrushMaterial.RenderMaterial = null;
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 yield return null;
 
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= localDelegate;
@@ -210,7 +243,7 @@ namespace BrushMeshAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 newBrushMaterial.PhysicsMaterial = null;
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 yield return null;
 
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= localDelegate;
@@ -232,7 +265,7 @@ namespace BrushMeshAssetTests
         {
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset	= BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
                 var brush				= brushGameObject.AddComponent<CSGBrush>();
                 brush.BrushMeshAsset = newBrushMeshAsset;
@@ -258,7 +291,7 @@ namespace BrushMeshAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 newBrushMaterial.LayerUsage = LayerUsageFlags.None;
-                var newBrushMeshAsset	= BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
                 var brush				= brushGameObject.AddComponent<CSGBrush>();
                 brush.BrushMeshAsset = newBrushMeshAsset;
@@ -284,7 +317,7 @@ namespace BrushMeshAssetTests
         {
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset	= BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
                 var brush				= brushGameObject.AddComponent<CSGBrush>();
                 brush.BrushMeshAsset = newBrushMeshAsset;
@@ -312,7 +345,7 @@ namespace BrushMeshAssetTests
             {
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= localDelegate;
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged += localDelegate;
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 yield return null;
 
 
@@ -333,7 +366,7 @@ namespace BrushMeshAssetTests
 
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
-                var newBrushMeshAsset = BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, newBrushMaterial);
+                var newBrushMeshAsset = CreateBox(Vector3.one, newBrushMaterial);
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged -= localDelegate;
                 ChiselGeneratedBrushesManager.OnBrushMeshInstanceChanged += localDelegate;
                 yield return null;

@@ -16,6 +16,31 @@ namespace Chisel.Editors
         static readonly GUIContent CreateBoxButtonContent = new GUIContent("Create Box");
         CSGBrushMeshAssetEditor editor;
 
+        static ChiselGeneratedBrushes s_DefaultBrush;
+        static ChiselGeneratedBrushes DefaultBrush
+        {
+            get
+            {
+                if (s_DefaultBrush != null)
+                    return s_DefaultBrush;
+
+                s_DefaultBrush   = new ChiselGeneratedBrushes();
+                var brushMeshes  = new[] { new BrushMesh() };
+                var definition   = new CSGBoxDefinition();
+                definition.Validate();
+                if (!BrushMeshFactory.GenerateBox(ref brushMeshes[0], ref definition))
+                {
+                    s_DefaultBrush.Clear();
+                } else
+                {
+                    s_DefaultBrush.SetSubMeshes(brushMeshes);
+                    s_DefaultBrush.CalculatePlanes();
+                    s_DefaultBrush.SetDirty();
+                }
+                return s_DefaultBrush;
+            }
+        }
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -34,9 +59,7 @@ namespace Chisel.Editors
                 {
                     if (GUI.Button(position, CreateBoxButtonContent))
                     {
-                        var brushMaterial	= ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial, CSGMaterialManager.DefaultPhysicsMaterial);
-                        var asset			= BrushMeshAssetFactory.CreateBoxAsset(Vector3.one, brushMaterial);
-                        property.objectReferenceValue = asset;
+                        property.objectReferenceValue = DefaultBrush;
                         property.serializedObject.ApplyModifiedProperties();
                         GUI.changed = true;
                     }
