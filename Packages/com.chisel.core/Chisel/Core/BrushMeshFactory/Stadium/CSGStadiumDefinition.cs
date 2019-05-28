@@ -1,11 +1,10 @@
 ﻿using System;
-using Chisel.Core;
 using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
 using Mathf = UnityEngine.Mathf;
 
-namespace Chisel.Components
+namespace Chisel.Core
 {
     [Serializable]
     public struct CSGStadiumDefinition
