@@ -21,15 +21,18 @@ namespace BrushMeshAssetTests
             var boxDefinition = new CSGBoxDefinition()
             {
                 bounds = new Bounds(Vector3.zero, size),
-                brushMaterials = new []
+                surfaceDefinition = new ChiselSurfaceDefinition()
                 {
-                    material, material, material,
-                    material, material, material
-                },
-                surfaceDescriptions = new[]
-                {
-                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default,
-                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default
+                    surfaces = new ChiselSurface[]
+                    {
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default },
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default },
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default },
+
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default },
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default },
+                        new ChiselSurface(){ brushMaterial = material, surfaceDescription = SurfaceDescription.Default }
+                    }
                 }
             };
             boxDefinition.Validate();

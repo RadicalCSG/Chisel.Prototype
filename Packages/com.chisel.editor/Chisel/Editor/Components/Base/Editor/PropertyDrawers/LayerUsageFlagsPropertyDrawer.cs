@@ -16,15 +16,26 @@ namespace Chisel.Editors
         readonly static GUIContent	CollidableContent		= new GUIContent("Collidable", "When set, the surface will be part of the generated collider, otherwise it will not be part of the collider.");
         readonly static GUIContent  CastShadowsContent		= new GUIContent("Cast Shadows", "When set, the surface cast shadows on other surfaces, otherwise light will pass through it. Note that the surface does not need to be visible to block light.");
         readonly static GUIContent  ReceiveShadowsContent	= new GUIContent("Receive Shadows", "When set, the surface have shadows cast onto it, as long as the surface is visible. This cannot be disabled in deferred rendering modes.");
+        
+        public static float DefaultHeight
+        {
+            get
+            {
+                return (EditorGUI.GetPropertyHeight(SerializedPropertyType.Boolean, GUIContent.none) * 2);
+            }
+        }
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return DefaultHeight;
+        }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            // Using BeginProperty / EndProperty on the parent property means that
-            // prefab override logic works on the entire property.
             EditorGUI.BeginProperty(position, label, property);
             bool prevShowMixedValue			= EditorGUI.showMixedValue;
             bool deferredRenderingPath		= CSGEditorUtility.IsUsingDeferredRenderingPath();
-            //bool hasMultipleDifferentValues = prevShowMixedValue || property.hasMultipleDifferentValues;
+            EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
             try
             { 
                 var layerUsage = (LayerUsageFlags)property.intValue;
@@ -43,10 +54,26 @@ namespace Chisel.Editors
                     var indent = EditorGUI.indentLevel;
                     EditorGUI.indentLevel = 0;
 
+                    var toggleStyle     = EditorStyles.label;
+
+                    var halfWidth       = position.width / 2.0f;
+                    var textWidthRight  = toggleStyle.CalcSize(ReceiveShadowsContent).x;
+                    var textWidthLeft   = toggleStyle.CalcSize(CollidableContent).x;
+                    var offset      = (position.width - (textWidthRight + textWidthLeft)) / 2;
+                    if (offset < 0)
+                    {
+                        textWidthRight = position.width - textWidthLeft;
+                    } else
+                    {
+                        textWidthLeft += offset;
+                        textWidthRight += offset;
+                    }
+
                     var button1 = position;
                     var button2 = position;
                     button1.height = button2.height = EditorGUIUtility.singleLineHeight;
-                    button1.width = button2.width = position.width / 2.0f;
+                    button1.width = textWidthLeft;
+                    button2.width = textWidthRight;
                     button2.x += button1.width;
 
                     var button3 = button1;
@@ -54,14 +81,14 @@ namespace Chisel.Editors
                     button3.y += button1.height;
                     button4.y += button2.height;
 
-                    isRenderable		= EditorGUI.ToggleLeft(button1, VisibleContent,		isRenderable);
-                    isCollidable		= EditorGUI.ToggleLeft(button2, CollidableContent,	isCollidable);
+                    isRenderable		= EditorGUI.ToggleLeft(button1, VisibleContent, isRenderable, toggleStyle);
                     EditorGUI.BeginDisabledGroup(!deferredRenderingPath || !isRenderable);
-                    if	    (!isRenderable        ) EditorGUI.ToggleLeft(button3, ReceiveShadowsContent, false);
-                    else if (deferredRenderingPath) EditorGUI.ToggleLeft(button3, ReceiveShadowsContent, true);
-                    else		 isReceiveShadows = EditorGUI.ToggleLeft(button3, ReceiveShadowsContent, isReceiveShadows);
+                    if	    (!isRenderable        ) EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, false, toggleStyle);
+                    else if (deferredRenderingPath) EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, true,  toggleStyle);
+                    else		 isReceiveShadows = EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, isReceiveShadows, toggleStyle);
                     EditorGUI.EndDisabledGroup();
-                    isCastShadows		= EditorGUI.ToggleLeft(button4, CastShadowsContent,	isCastShadows);
+                    isCollidable		= EditorGUI.ToggleLeft(button3, CollidableContent,	isCollidable,  toggleStyle);
+                    isCastShadows		= EditorGUI.ToggleLeft(button4, CastShadowsContent,	isCastShadows, toggleStyle);
 
                     // Set indent back to what it was
                     EditorGUI.indentLevel = indent;

@@ -19,10 +19,10 @@ namespace Chisel.Core
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
+            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselSurfaceDefinition surfaceDefinition)
         {
             if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments))
             {
@@ -34,8 +34,8 @@ namespace Chisel.Core
 
             for (int i = 0; i < dstBrushMesh.polygons.Length; i++)
             {
-                dstBrushMesh.polygons[i].brushMaterial = i < brushMaterials.Length ? brushMaterials[i] : brushMaterials[0];
-                dstBrushMesh.polygons[i].description   = i < surfaceDescriptions.Length ? surfaceDescriptions[i] : surfaceDescriptions[0];
+                dstBrushMesh.polygons[i].brushMaterial = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i].brushMaterial      : surfaceDefinition.surfaces[0].brushMaterial;
+                dstBrushMesh.polygons[i].description   = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i].surfaceDescription : surfaceDefinition.surfaces[0].surfaceDescription;
             }
 
             return true;

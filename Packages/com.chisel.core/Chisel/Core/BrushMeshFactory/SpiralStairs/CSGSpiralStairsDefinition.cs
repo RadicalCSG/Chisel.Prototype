@@ -57,9 +57,8 @@ namespace Chisel.Core
         public StairsRiserType		    riserType;
 
         public uint					    bottomSmoothingGroup;
-
-        public ChiselBrushMaterial[]    brushMaterials;
-        public SurfaceDescription[]     surfaceDescriptions;
+        
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         public int StepCount
         {
@@ -103,12 +102,14 @@ namespace Chisel.Core
             riserDepth	    = kDefaultRiserDepth;
 
             bottomSmoothingGroup    = 0;
-            brushMaterials           = null;
-            surfaceDescriptions     = null;
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+
             stepHeight		= Mathf.Max(kMinStepHeight, stepHeight);
             
             innerDiameter	= Mathf.Min(outerDiameter - kMinStairsDepth,  innerDiameter);
@@ -127,32 +128,7 @@ namespace Chisel.Core
             innerSegments	= Mathf.Max(kMinSegments, innerSegments);
             outerSegments	= Mathf.Max(kMinSegments, outerSegments);
             
-            if (brushMaterials == null ||
-                brushMaterials.Length != 6)
-            {
-                var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[6];
-                for (int i = 0; i < 6; i++) // Note: sides share same material
-                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                var surfaceFlags = CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[6];
-                for (int i = 0; i < 6; i++)
-                {
-                    surfaceDescriptions[i] = new SurfaceDescription { surfaceFlags = surfaceFlags, UV0 = UVMatrix.centered, smoothingGroup = bottomSmoothingGroup };
-                }
-            } else
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    surfaceDescriptions[i].smoothingGroup = bottomSmoothingGroup;
-                }
-            }
+            surfaceDefinition.EnsureSize(6);
         }
     }
 }

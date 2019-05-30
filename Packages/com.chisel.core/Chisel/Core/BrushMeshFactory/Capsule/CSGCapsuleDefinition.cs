@@ -34,8 +34,7 @@ namespace Chisel.Core
         public int                  topSegments;
         public int                  bottomSegments;
         
-        public ChiselBrushMaterial[] brushMaterials;
-        public SurfaceDescription[]	 surfaceDescriptions;
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         public bool					haveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
         public bool					haveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
@@ -87,13 +86,15 @@ namespace Chisel.Core
             sides				= kDefaultSides;
             topSegments			= kDefaultTopSegments;
             bottomSegments		= kDefaultBottomSegments;
-
-            brushMaterials		= null;
-            surfaceDescriptions = null;
+            
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+
             topHeight			= Mathf.Max(topHeight, 0);
             bottomHeight		= Mathf.Max(bottomHeight, 0);
             height				= Mathf.Max(topHeight + bottomHeight, Mathf.Abs(height)) * (height < 0 ? -1 : 1);
@@ -105,27 +106,7 @@ namespace Chisel.Core
             bottomSegments		= Mathf.Max(bottomSegments, 0);
             sides				= Mathf.Max(sides, 3);
             
-            var minBrushMaterials = 2 + sides;
-            if (brushMaterials == null ||
-                brushMaterials.Length != minBrushMaterials )
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[minBrushMaterials ];
-                for (int a = 0; a < minBrushMaterials ; a++)
-                    brushMaterials[a] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
-            var minSurfaceDescriptions = 2 + sides;
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != minSurfaceDescriptions)
-            {
-                // TODO: make this independent on plane position somehow
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[minSurfaceDescriptions];
-                for (int s = 0; s < minSurfaceDescriptions; s++)
-                    surfaceDescriptions[s] = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 };
-            }
+            surfaceDefinition.EnsureSize(2 + sides);
         }
     }
 }

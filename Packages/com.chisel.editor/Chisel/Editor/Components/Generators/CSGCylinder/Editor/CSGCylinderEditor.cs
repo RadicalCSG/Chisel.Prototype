@@ -22,14 +22,14 @@ namespace Chisel.Editors
     public sealed class CSGCylinderEditor : ChiselGeneratorEditor<CSGCylinder>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
-        const string        BrushMaterialFormat     = "Surface {0}";
-        static GUIContent   surfacesMaterialContent = new GUIContent("Surfaces");
-        static GUIContent   descriptionContent      = new GUIContent("Description");
-        static GUIContent   brushMaterialContent    = new GUIContent("Brush Material");
-        static GUIContent[] brushMaterialPropertyContent = null;
+        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
+        static readonly GUIContent  kTopContent             = new GUIContent("Top");
+        static readonly GUIContent  kBottomContent          = new GUIContent("Bottom");
+        static readonly GUIContent  kSideContent            = new GUIContent("Side");
+        const string                kSurfacePropertyName    = "Side {0}";
+        const string                kSurfacePathName        = "{0}[{1}]";
+        static GUIContent           surfacePropertyContent  = new GUIContent();
         
-        SerializedProperty surfaceDescriptionProp;
-        SerializedProperty brushMaterialsProp;
         SerializedProperty typeProp;
         SerializedProperty topHeightProp;
         SerializedProperty topDiameterXProp;
@@ -41,12 +41,10 @@ namespace Chisel.Editors
         SerializedProperty isEllipsoidProp;
         SerializedProperty smoothingGroupProp;
         SerializedProperty sidesProp;
+        SerializedProperty surfacesProp;
         
         protected override void ResetInspector()
         { 
-            surfaceDescriptionProp	= null;
-            brushMaterialsProp		= null;
-
             typeProp				= null;
             topHeightProp			= null;
             topDiameterXProp		= null;
@@ -57,31 +55,41 @@ namespace Chisel.Editors
             isEllipsoidProp			= null;
             smoothingGroupProp		= null;
             sidesProp				= null;
+
+            surfacesProp            = null;
         }
         
         protected override void InitInspector()
         { 
-            surfaceDescriptionProp  = serializedObject.FindProperty("definition.surfaceDescriptions");
-            brushMaterialsProp	    = serializedObject.FindProperty("definition.brushMaterials");
+            var definitionProp      = serializedObject.FindProperty(nameof(CSGCylinder.definition));
+            { 
+                typeProp			    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.type));
 
-            typeProp			    = serializedObject.FindProperty("definition.type");
-            topHeightProp		    = serializedObject.FindProperty("definition.top.height");
-            topDiameterXProp	    = serializedObject.FindProperty("definition.top.diameterX");
-            topDiameterZProp	    = serializedObject.FindProperty("definition.top.diameterZ");
-            bottomHeightProp	    = serializedObject.FindProperty("definition.bottom.height");
-            bottomDiameterXProp	    = serializedObject.FindProperty("definition.bottom.diameterX");
-            bottomDiameterZProp	    = serializedObject.FindProperty("definition.bottom.diameterZ");
-            rotationProp		    = serializedObject.FindProperty("definition.rotation");
-            isEllipsoidProp		    = serializedObject.FindProperty("definition.isEllipsoid");
-            smoothingGroupProp	    = serializedObject.FindProperty("definition.smoothingGroup");
-            sidesProp			    = serializedObject.FindProperty("definition.sides");
+                var topProp             = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.top));
+                { 
+                    topHeightProp	    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.height));
+                    topDiameterXProp    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.diameterX));
+                    topDiameterZProp    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.diameterZ));
+                }
+            
+                var bottomProp          = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom));
+                { 
+                    bottomHeightProp    = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.height));
+                    bottomDiameterXProp = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.diameterX));
+                    bottomDiameterZProp = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.diameterZ));
+                }
 
-            surfacesVisible         = SessionState.GetBool(kSurfacesVisibleKey, false);
+                rotationProp		    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.rotation));
+                isEllipsoidProp		    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.isEllipsoid));
+                smoothingGroupProp	    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.smoothingGroup));
+                sidesProp			    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.sides));
+                
+                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition));
+                {
+                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition.surfaces));
+                }
+            }
         }
-
-        const string kSurfacesVisibleKey = "CSGLinearStairsEditor.SubmeshesVisible";
-        bool	surfacesVisible;
-        bool[]  surfacePropertyVisible = new bool[0];
         
         protected override void OnInspector()
         { 
@@ -121,58 +129,37 @@ namespace Chisel.Editors
             }
             EditorGUILayout.Space();
 
-
+            
             EditorGUI.BeginChangeCheck();
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, surfacesMaterialContent);
+            var path                = surfacesProp.propertyPath;
+            var surfacesVisible     = SessionState.GetBool(path, false);
+            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
             if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(kSurfacesVisibleKey, surfacesVisible);
-            if (surfacesVisible)
+                SessionState.SetBool(path, surfacesVisible);
+            if (surfacesVisible && surfacesProp.arraySize >= 3)
             {
                 EditorGUI.indentLevel++;
                 SerializedProperty elementProperty;
+                
+                elementProperty = surfacesProp.GetArrayElementAtIndex(0);
+                EditorGUILayout.PropertyField(elementProperty, kTopContent, true);
+                
+                elementProperty = surfacesProp.GetArrayElementAtIndex(1);
+                EditorGUILayout.PropertyField(elementProperty, kBottomContent, true);
 
-                if (brushMaterialPropertyContent == null ||
-                    brushMaterialPropertyContent.Length < surfaceDescriptionProp.arraySize)
+                if (surfacesProp.arraySize == 3)
                 {
-                    brushMaterialPropertyContent	= new GUIContent[surfaceDescriptionProp.arraySize];
-                    for (int i = 0; i < surfaceDescriptionProp.arraySize; i++)
+                    elementProperty = surfacesProp.GetArrayElementAtIndex(2);
+                    EditorGUILayout.PropertyField(elementProperty, kSideContent, true);
+                } else
+                {
+                    for (int i = 2; i < surfacesProp.arraySize; i++)
                     {
-                        brushMaterialPropertyContent[i] = new GUIContent(string.Format(BrushMaterialFormat, i));
+                        surfacePropertyContent.text = string.Format(kSurfacePropertyName, (i - 2));
+                        elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                        EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
                     }
                 }
-                        
-                if (surfaceDescriptionProp.arraySize > surfacePropertyVisible.Length)
-                {
-                    var oldSize = surfacePropertyVisible.Length;
-                    Array.Resize(ref surfacePropertyVisible, surfaceDescriptionProp.arraySize);
-                    for (int i = oldSize; i < surfaceDescriptionProp.arraySize; i++)
-                        surfacePropertyVisible[i] = true;
-                }
-                for (int i = 0; i < surfaceDescriptionProp.arraySize; i++)
-                {
-                    /*
-                    const float kSingleLineHeight = 16f;
-                    Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, EditorGUIUtility.fieldWidth, kSingleLineHeight, kSingleLineHeight, EditorStyles.foldout);
-                    if (r.Contains(Event.current.mousePosition)) // NOTE: This doesn't work well since the inspector is not redrawn all the time
-                    {
-                        // TODO: set hover over surface
-                    } else
-                        // TODO: unset hover over surface? how to handle that? register somewhere & check in scenegui update?
-                    surfacePropertyVisible[i] = EditorGUI.Foldout(r, surfacePropertyVisible[i], surfacePropertyContent[i], false, EditorStyles.foldout);
-                    */
-                    surfacePropertyVisible[i] = EditorGUILayout.Foldout(surfacePropertyVisible[i], brushMaterialPropertyContent[i]);
-                    EditorGUI.indentLevel++;
-                    if (surfacePropertyVisible[i])
-                    {
-                        elementProperty = surfaceDescriptionProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, descriptionContent, true);
-
-                        elementProperty = brushMaterialsProp.GetArrayElementAtIndex((i>2)?2:i);
-                        EditorGUILayout.PropertyField(elementProperty, brushMaterialContent, true);
-                    }
-                    EditorGUI.indentLevel--;
-                }
-
                 EditorGUI.indentLevel--;
             }
         }

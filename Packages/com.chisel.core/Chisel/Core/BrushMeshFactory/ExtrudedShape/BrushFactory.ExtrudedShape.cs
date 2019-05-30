@@ -84,10 +84,10 @@ namespace Chisel.Core
         public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, ref CSGExtrudedShapeDefinition definition)
         {
             definition.Validate();
-            return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.brushMaterials, ref definition.surfaceDescriptions);
+            return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, ChiselBrushMaterial[] brushMaterials, ref SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, ChiselSurfaceDefinition surfaceDefinition)
         {
             var shapeVertices       = new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
@@ -158,7 +158,7 @@ namespace Chisel.Core
                             continue;
 
                         var brushMesh = new BrushMesh();
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, brushMaterials, surfaceDescriptions);
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, surfaceDefinition);
                         brushMeshesList.Add(brushMesh);
                     }
                 }

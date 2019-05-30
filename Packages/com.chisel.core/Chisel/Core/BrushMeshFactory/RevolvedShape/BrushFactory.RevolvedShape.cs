@@ -91,8 +91,6 @@ namespace Chisel.Core
         public static bool GenerateRevolvedShape(ref BrushMesh[] brushMeshes, ref CSGRevolvedShapeDefinition definition)
         {
             definition.Validate();
-            var surfaces		= definition.brushMaterials;
-            var descriptions	= definition.surfaceDescriptions;
         
             
             var shapeVertices		= new List<Vector2>();
@@ -159,7 +157,7 @@ namespace Chisel.Core
                     }
 
                     var brushMesh = new BrushMesh();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, surfaces, descriptions))
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, definition.surfaceDefinition))
                         continue;
 
                     if (!brushMesh.Validate())

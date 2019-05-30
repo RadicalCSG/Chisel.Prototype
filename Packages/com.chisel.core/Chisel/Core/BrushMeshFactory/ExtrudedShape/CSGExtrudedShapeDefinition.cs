@@ -22,46 +22,28 @@ namespace Chisel.Core
         public Curve2D                  shape;
         public Path                     path;
         public int                      curveSegments   = kDefaultCurveSegments;
-
-        public ChiselBrushMaterial[]    brushMaterials;
-        public SurfaceDescription[]     surfaceDescriptions;
+        
+        public ChiselSurfaceDefinition  surfaceDefinition;
         
         public void Reset()
         {
             curveSegments   = kDefaultCurveSegments;
             path			= new Path(Path.Default);
             shape			= new Curve2D(kDefaultShape);
-
-            brushMaterials      = null;
-            surfaceDescriptions = null;
+            
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
-            if (brushMaterials == null ||
-                brushMaterials.Length != 3)
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[3];
-                for (int i = 0; i < 3; i++) // Note: sides share same material
-                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+            
             if (shape == null)
                 shape = new Curve2D(kDefaultShape);
 
             int sides = shape.controlPoints.Length;
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 2 + sides)
-            {
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[2 + sides];
-                for (int i = 0; i < 2 + sides; i++) 
-                {
-                    surfaceDescriptions[i] = new SurfaceDescription { surfaceFlags = surfaceFlags, UV0 = UVMatrix.centered };
-                }
-            }
+            surfaceDefinition.EnsureSize(2 + sides);
         }
     }
 }

@@ -12,8 +12,7 @@ namespace Chisel.Core
         public static readonly Bounds   kDefaultBounds = new UnityEngine.Bounds(Vector3.zero, Vector3.one);
 
         public UnityEngine.Bounds       bounds;
-        public ChiselBrushMaterial[]    brushMaterials;
-        public SurfaceDescription[]     surfaceDescriptions;
+        public ChiselSurfaceDefinition  surfaceDefinition;
         
         public Vector3                  min		{ get { return bounds.min; } set { bounds.min = value; } }
         public Vector3			        max	    { get { return bounds.max; } set { bounds.max = value; } }
@@ -22,40 +21,15 @@ namespace Chisel.Core
 
         public void Reset()
         {
-            bounds              = kDefaultBounds;
-
-            brushMaterials		= null;
-            surfaceDescriptions = null;
+            bounds = kDefaultBounds;
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
-            if (brushMaterials == null ||
-                brushMaterials.Length != 6)
-            {
-                var defaultRenderMaterial  = CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new []
-                {
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                };
-            }
-
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                surfaceDescriptions = new[]
-                {
-                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default,
-                    SurfaceDescription.Default, SurfaceDescription.Default, SurfaceDescription.Default
-                };
-            }
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+            surfaceDefinition.EnsureSize(6);
         }
     }
 

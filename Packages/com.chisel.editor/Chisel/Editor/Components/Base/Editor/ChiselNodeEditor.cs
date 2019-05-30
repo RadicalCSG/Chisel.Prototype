@@ -256,6 +256,7 @@ namespace Chisel.Editors
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselGeneratorComponent
     {
+
         protected abstract void ResetInspector();
         protected abstract void InitInspector();
 
@@ -266,7 +267,7 @@ namespace Chisel.Editors
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
-        void OnDisable() { Reset(); }
+        void OnDisable() { PreviewTextureManager.CleanUp(); Reset(); }
 
         private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
 
@@ -308,6 +309,9 @@ namespace Chisel.Editors
         {
             if (!target)
                 return;
+            if (PreviewTextureManager.Update())
+                Repaint();
+
             base.OnInspectorGUI();
             try
             {
@@ -341,7 +345,7 @@ namespace Chisel.Editors
                     return;
 
                 var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-                var brush = generator.TopNode;
+                var brush       = generator.TopNode;
                 //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
                 //foreach (var brush in generator.Node.AllSynchronizedVariants) // <-- this fails when brushes have failed to be created
                 {

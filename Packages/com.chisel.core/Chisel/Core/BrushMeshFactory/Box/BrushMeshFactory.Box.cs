@@ -20,7 +20,25 @@ namespace Chisel.Core
                 return false;
             }
 
-            return BrushMeshFactory.GenerateBox(ref brushMesh, definition.min, definition.max, definition.brushMaterials, definition.surfaceDescriptions);
+            return GenerateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition.surfaces);
+        }
+
+        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselSurface[] surfaces)
+        {
+            if (!BoundsExtensions.IsValid(min, max))
+                return false;
+
+            if (surfaces.Length != 6)
+                return false;
+
+            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
+            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
+            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
+
+            brushMesh.polygons  = CreateBoxAssetPolygons(surfaces);
+            brushMesh.halfEdges = boxHalfEdges.ToArray();
+            brushMesh.vertices  = BrushMeshFactory.CreateBoxVertices(min, max);
+            return true;
         }
 
         public static void CreateBoxVertices(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ref Vector3[] vertices)
@@ -93,43 +111,6 @@ namespace Chisel.Core
                 new BrushMesh.Polygon{ surfaceID = 4, firstEdge = 16, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
                 new BrushMesh.Polygon{ surfaceID = 5, firstEdge = 20, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial }
             };
-        }
-
-        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
-        {
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            if (brushMaterials.Length != 6 ||
-                surfaceDescriptions.Length != 6)
-                return false;
-
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-
-            brushMesh.polygons	= CreateBoxAssetPolygons(brushMaterials, surfaceDescriptions);
-            brushMesh.halfEdges	= boxHalfEdges.ToArray();
-            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
-            return true;
-        }
-
-        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial[] brushMaterials, SurfaceFlags surfaceFlags = SurfaceFlags.None)
-        {
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            if (brushMaterials.Length != 6)
-                return false;
-
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-
-            brushMesh.polygons	= CreateBoxPolygons(brushMaterials, surfaceFlags);
-            brushMesh.halfEdges	= boxHalfEdges.ToArray();
-            brushMesh.vertices	= BrushMeshFactory.CreateBoxVertices(min, max);
-            return true;
         }
     }
 }

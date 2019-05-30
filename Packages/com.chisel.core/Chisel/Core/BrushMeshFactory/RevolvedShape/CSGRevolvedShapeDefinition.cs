@@ -19,9 +19,8 @@ namespace Chisel.Core
         public int					revolveSegments;
         public float				startAngle;
         public float				totalAngle;
-
-        public ChiselBrushMaterial[]	brushMaterials;
-        public SurfaceDescription[]	surfaceDescriptions;
+        
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()
         {
@@ -31,49 +30,21 @@ namespace Chisel.Core
             totalAngle			= 360.0f;
             curveSegments		= kDefaultCurveSegments;
             revolveSegments		= kDefaultRevolveSegments;
-
-            brushMaterials		= null;
-            surfaceDescriptions = null;
+            
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+
             curveSegments		= Mathf.Max(curveSegments, 2);
             revolveSegments		= Mathf.Max(revolveSegments, 1);
 
             totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
-            
-            if (brushMaterials == null ||
-                brushMaterials.Length != 6)
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[6]
-                {
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
-                };
-            }
 
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                // TODO: make this independent on plane position somehow
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[6]
-                {
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }
-                };
-            }
+            surfaceDefinition.EnsureSize(6);
         }
     }
 }

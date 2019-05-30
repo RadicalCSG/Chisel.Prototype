@@ -48,6 +48,16 @@ namespace Chisel.Core
         public static readonly UVMatrix identity = new UVMatrix(new Vector4(1,0,0,0.0f), new Vector4(0,1,0,0.0f));
         public static readonly UVMatrix centered = new UVMatrix(new Vector4(1,0,0,0.5f), new Vector4(0,1,0,0.5f));
     }
+    
+    // Separate struct so that we can create a property drawer for it
+    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct SmoothingGroup
+    {
+        public UInt32           value;
+
+        public static implicit operator uint(SmoothingGroup smoothingGroup) { return smoothingGroup.value; }
+        public static implicit operator SmoothingGroup(uint smoothingGroup) { return new SmoothingGroup() { value = smoothingGroup }; }
+    }
 
     /// <summary>Describes how the texture coordinates and normals are generated and if a surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</summary>
     /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
@@ -57,7 +67,7 @@ namespace Chisel.Core
     {
         /// <value>The current normal smoothing group, 0 means that the surface doesn't do any smoothing</value>
         /// <remarks><note>This is only used when normals are set to be generated using the <see cref="Chisel.Core.VertexChannelFlags"/>.</note></remarks>
-        public UInt32           smoothingGroup;
+        public SmoothingGroup   smoothingGroup;
 
         /// <value>Surface specific flags</value>
         [UnityEngine.HideInInspector]

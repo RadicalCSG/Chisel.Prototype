@@ -19,7 +19,7 @@ namespace Chisel.Core
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.brushMaterials, definition.surfaceDescriptions);
+            return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
         }
 
         public static bool GenerateHemisphereVertices(ref CSGHemisphereDefinition definition, ref Vector3[] vertices)
@@ -77,7 +77,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselBrushMaterial[] brushMaterials, SurfaceDescription[] surfaceDescriptions)
+        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselSurfaceDefinition surfaceDefinition)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||
@@ -151,7 +151,7 @@ namespace Chisel.Core
                 }
             }
 
-            return BrushMeshFactory.GenerateSegmentedSubMesh(ref brushMesh, horzSegments, vertSegments, vertices, bottomCap, topCap, bottomVertex, topVertex, brushMaterials, surfaceDescriptions);
+            return BrushMeshFactory.GenerateSegmentedSubMesh(ref brushMesh, horzSegments, vertSegments, vertices, bottomCap, topCap, bottomVertex, topVertex, surfaceDefinition);
         }
     }
 }

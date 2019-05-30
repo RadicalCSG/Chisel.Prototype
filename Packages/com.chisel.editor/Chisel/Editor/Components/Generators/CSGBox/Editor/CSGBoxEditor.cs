@@ -8,6 +8,8 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace Chisel.Editors
 {
@@ -21,75 +23,61 @@ namespace Chisel.Editors
     public sealed class CSGBoxEditor : ChiselGeneratorEditor<CSGBox>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
-        static GUIContent   surfacesContent         = new GUIContent("Surfaces");
-        static GUIContent   descriptionContent      = new GUIContent("Description");
-        static GUIContent   brushMaterialContent    = new GUIContent("Brush Material");
-        static GUIContent[] surfacePropertyContent  = new[]
+        static readonly GUIContent      kSurfacesContent        = new GUIContent("Surfaces");
+        static readonly GUIContent[]    kSurfaceNames           = new []
         {
-            new GUIContent("Surface 0"),
-            new GUIContent("Surface 1"),
-            new GUIContent("Surface 2"),
-            new GUIContent("Surface 3"),
-            new GUIContent("Surface 4"),
-            new GUIContent("Surface 5")
+            new GUIContent("Top"),
+            new GUIContent("Bottom"),
+            new GUIContent("Right"),
+            new GUIContent("Left"),
+            new GUIContent("Front"),
+            new GUIContent("Back")
         };
         
         SerializedProperty boundsProp;
-        SerializedProperty surfaceDescriptionProp;
-        SerializedProperty brushMaterialProp;
+        SerializedProperty surfacesProp;
         
-
         protected override void ResetInspector()
         { 
-            boundsProp				= null;
-            surfaceDescriptionProp	= null;
-            brushMaterialProp		= null;
+            boundsProp		        = null;
+            surfacesProp   = null;
         }
         
         protected override void InitInspector()
         { 
-            boundsProp				= serializedObject.FindProperty("definition.bounds");
-            surfaceDescriptionProp	= serializedObject.FindProperty("definition.surfaceDescriptions");
-            brushMaterialProp		= serializedObject.FindProperty("definition.brushMaterials");
-
-            surfacesVisible = SessionState.GetBool(kSurfacesVisibleKey, false);
+            var definitionProp      = serializedObject.FindProperty(nameof(CSGCylinder.definition));
+            { 
+                boundsProp	        = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.bounds));
+                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition));
+                {
+                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition.surfaces));
+                }
+            }
         }
 
-        const string kSurfacesVisibleKey = "CSGLinearStairsEditor.SubmeshesVisible";
-        bool surfacesVisible;
-        bool[]  surfacePropertyVisible = new bool[6]{ true,true,true,true,true,true };
-
-        
         protected override void OnInspector()
-        { 
+        {
             EditorGUILayout.PropertyField(boundsProp);
-
+            
             EditorGUI.BeginChangeCheck();
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, surfacesContent);
+            var path                = surfacesProp.propertyPath;
+            var surfacesVisible     = SessionState.GetBool(path, false);
+            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
             if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(kSurfacesVisibleKey, surfacesVisible);
-            if (surfacesVisible)
+                SessionState.SetBool(path, surfacesVisible);
+            if (surfacesVisible && surfacesProp.arraySize == 6)
             {
                 EditorGUI.indentLevel++;
                 SerializedProperty elementProperty;
-                for (int i = 0; i < surfaceDescriptionProp.arraySize; i++)
+                for (int i = 0; i < 6; i++)
                 {
-                    surfacePropertyVisible[i] = EditorGUILayout.Foldout(surfacePropertyVisible[i], surfacePropertyContent[i]);
-                    EditorGUI.indentLevel++;
-                    if (surfacePropertyVisible[i])
-                    {
-                        elementProperty = surfaceDescriptionProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, descriptionContent, true);
-
-                        elementProperty = brushMaterialProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, brushMaterialContent, true);
-                    }
-                    EditorGUI.indentLevel--;
+                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                    EditorGUILayout.PropertyField(elementProperty, kSurfaceNames[i], true);
                 }
                 EditorGUI.indentLevel--;
             }
         }
-        
+
         protected override void OnScene(CSGBox generator)
         {
             EditorGUI.BeginChangeCheck();

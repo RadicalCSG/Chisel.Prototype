@@ -27,9 +27,8 @@ namespace Chisel.Core
         public int                  horizontalSegments;
 
         public bool                 fitCircle;
-
-        public ChiselBrushMaterial[] brushMaterials;
-        public SurfaceDescription[]	 surfaceDescriptions;
+        
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         public static float CalcInnerDiameter(float outerDiameter, float tubeWidth)
         {
@@ -57,12 +56,14 @@ namespace Chisel.Core
 
             fitCircle			= true;
 
-            brushMaterials		= null;
-            surfaceDescriptions = null;
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+
             tubeWidth			= Mathf.Max(tubeWidth,  kMinTubeDiameter);
             tubeHeight			= Mathf.Max(tubeHeight, kMinTubeDiameter);
             outerDiameter		= Mathf.Max(outerDiameter, tubeWidth * 2);
@@ -71,39 +72,8 @@ namespace Chisel.Core
             verticalSegments	= Mathf.Max(verticalSegments, 3);
 
             totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
-
-
-            if (brushMaterials == null ||
-                brushMaterials.Length != 6)
-            {
-                var defaultRenderMaterial	= CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial	= CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[6]
-                {
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial),
-                    ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
-                };
-            }
-
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != 6)
-            {
-                // TODO: make this independent on plane position somehow
-                var surfaceFlags	= CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[6]
-                {
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                    new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }
-                };
-            }
+            
+            surfaceDefinition.EnsureSize(6);
         }
     }
 }

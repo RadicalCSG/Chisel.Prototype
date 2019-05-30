@@ -31,15 +31,15 @@ namespace Chisel.Core
         //      2           4
         //
 
-        public static BrushMesh.Polygon[] CreateSquarePyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateSquarePyramidAssetPolygons(ChiselSurfaceDefinition surfaceDefinition)
         {
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = surfaceDescriptions[0], brushMaterial = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 3, description = surfaceDescriptions[1], brushMaterial = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  7, edgeCount = 3, description = surfaceDescriptions[2], brushMaterial = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 3, description = surfaceDescriptions[3], brushMaterial = surfaces[3] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 13, edgeCount = 3, description = surfaceDescriptions[3], brushMaterial = surfaces[3] }
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 3, description = surfaceDefinition.surfaces[1].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[1].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  7, edgeCount = 3, description = surfaceDefinition.surfaces[2].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[2].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 3, description = surfaceDefinition.surfaces[3].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[3].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 13, edgeCount = 3, description = surfaceDefinition.surfaces[3].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[3].brushMaterial }
             };
         }
         
@@ -88,14 +88,14 @@ namespace Chisel.Core
         //      2           0
         //
 
-        public static BrushMesh.Polygon[] CreateTriangularPyramidAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateTriangularPyramidAssetPolygons(ChiselSurfaceDefinition surfaceDefinition)
         {
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, description = surfaceDescriptions[0], brushMaterial = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, description = surfaceDescriptions[1], brushMaterial = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 3, description = surfaceDescriptions[2], brushMaterial = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge =  9, edgeCount = 3, description = surfaceDescriptions[3], brushMaterial = surfaces[3] }
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, description = surfaceDefinition.surfaces[1].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[1].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 3, description = surfaceDefinition.surfaces[2].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[2].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge =  9, edgeCount = 3, description = surfaceDefinition.surfaces[3].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[3].brushMaterial }
             };
         }
         
@@ -145,15 +145,15 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  3, vertexIndex = 0 },	// 11 (0-3)
         };
 
-        public static BrushMesh.Polygon[] CreateWedgeAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateWedgeAssetPolygons(ChiselSurfaceDefinition surfaceDefinition)
         {
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, description = surfaceDescriptions[0], brushMaterial = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, description = surfaceDescriptions[1], brushMaterial = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 4, description = surfaceDescriptions[2], brushMaterial = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 4, description = surfaceDescriptions[3], brushMaterial = surfaces[3] },
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, description = surfaceDescriptions[4], brushMaterial = surfaces[4] }
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, description = surfaceDefinition.surfaces[1].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[1].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 4, description = surfaceDefinition.surfaces[2].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[2].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 4, description = surfaceDefinition.surfaces[3].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[3].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[4].brushMaterial }
             };
         }
 
@@ -297,39 +297,39 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  9, vertexIndex = 3 }	// 23 (3-7)
         };
 
-        public static BrushMesh.Polygon[] CreateBoxPolygons(ChiselBrushMaterial[] surfaces, SurfaceFlags surfaceFlags)
+        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselSurface[] surfaces)
         {
             return new[]
             {
                 // left/right
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[1] },
-                 
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = surfaces[0].surfaceDescription, brushMaterial = surfaces[0].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, description = surfaces[1].surfaceDescription, brushMaterial = surfaces[1].brushMaterial },
+                
                 // front/back
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[3] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, description = surfaces[2].surfaceDescription, brushMaterial = surfaces[2].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, description = surfaces[3].surfaceDescription, brushMaterial = surfaces[3].brushMaterial },
                 
                 // top/down
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[4] },
-                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = surfaces[5] }
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, description = surfaces[4].surfaceDescription, brushMaterial = surfaces[4].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, description = surfaces[5].surfaceDescription, brushMaterial = surfaces[5].brushMaterial }
             };
         }
 
-        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselBrushMaterial[] surfaces, SurfaceDescription[] surfaceDescriptions)
+        public static BrushMesh.Polygon[] CreateBoxAssetPolygons(ChiselSurfaceDefinition surfaceDefinition)
         {
             return new[]
             {
                 // left/right
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = surfaceDescriptions[0], brushMaterial = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, description = surfaceDescriptions[1], brushMaterial = surfaces[1] },
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, description = surfaceDefinition.surfaces[1].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[1].brushMaterial },
                 
                 // front/back
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, description = surfaceDescriptions[2], brushMaterial = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, description = surfaceDescriptions[3], brushMaterial = surfaces[3] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, description = surfaceDefinition.surfaces[2].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[2].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, description = surfaceDefinition.surfaces[3].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[3].brushMaterial },
                 
                 // top/down
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, description = surfaceDescriptions[4], brushMaterial = surfaces[4] },
-                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, description = surfaceDescriptions[5], brushMaterial = surfaces[5] }
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, description = surfaceDefinition.surfaces[4].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[4].brushMaterial },
+                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, description = surfaceDefinition.surfaces[5].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[5].brushMaterial }
             };
         }
 

@@ -37,7 +37,7 @@ namespace Chisel.Core
                                                            vertices, 
                                                            topCap, bottomCap,  
                                                            topVertex, bottomVertex, 
-                                                           definition.brushMaterials, definition.surfaceDescriptions))
+                                                           definition.surfaceDefinition))
             {
                 brushMesh.Clear();
                 return false;

@@ -9,6 +9,10 @@ namespace Chisel.Core
     [Serializable]
     public sealed class ChiselBrushMaterial : IDisposable
     {
+        public const string kLayerUsageName      = nameof(layerUsage);
+        public const string kRenderMaterialName  = nameof(renderMaterial);
+        public const string kPhysicsMaterialName = nameof(physicsMaterial);
+
         public ChiselBrushMaterial()    { ChiselBrushMaterialManager.Register(this); }
         public void Dispose()           { ChiselBrushMaterialManager.Unregister(this); }
         ~ChiselBrushMaterial()          { Dispose(); }

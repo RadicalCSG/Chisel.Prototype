@@ -43,17 +43,17 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            heightProp			= serializedObject.FindProperty("definition.height");
-            topHeightProp		= serializedObject.FindProperty("definition.topHeight");
-            bottomHeightProp	= serializedObject.FindProperty("definition.bottomHeight");
+            heightProp			= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.height)}");
+            topHeightProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.topHeight)}");
+            bottomHeightProp	= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.bottomHeight)}");
 
-            diameterXProp		= serializedObject.FindProperty("definition.diameterX");
-            diameterZProp		= serializedObject.FindProperty("definition.diameterZ");
-            rotationProp		= serializedObject.FindProperty("definition.rotation");
+            diameterXProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.diameterX)}");
+            diameterZProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.diameterZ)}");
+            rotationProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.rotation)}");
 
-            sidesProp			= serializedObject.FindProperty("definition.sides");
-            topSegmentsProp		= serializedObject.FindProperty("definition.topSegments");
-            bottomSegmentsProp	= serializedObject.FindProperty("definition.bottomSegments");
+            sidesProp			= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.sides)}");
+            topSegmentsProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.topSegments)}");
+            bottomSegmentsProp	= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.bottomSegments)}");
         }
 
         

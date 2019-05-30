@@ -55,9 +55,8 @@ namespace Chisel.Core
 
         [AngleValue]
         public float rotation;
-
-        public ChiselBrushMaterial[] brushMaterials;
-        public SurfaceDescription[]  surfaceDescriptions;
+        
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         public float TopDiameterX
         {
@@ -202,49 +201,28 @@ namespace Chisel.Core
             sides = 16;
             smoothingGroup = 1;
             type = CylinderShapeType.Cylinder;
-            brushMaterials = null;
-            surfaceDescriptions = null;
+
+            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate()
         {
+            if (surfaceDefinition == null)
+                surfaceDefinition = new ChiselSurfaceDefinition();
+
             top.Validate();
             bottom.Validate();
 
             sides = Mathf.Max(3, sides);
 
-
-            if (brushMaterials == null ||
-               brushMaterials.Length != 3)
+            if (surfaceDefinition.EnsureSize(2 + sides))
             {
-                var defaultRenderMaterial = CSGMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                brushMaterials = new ChiselBrushMaterial[3];
-                for (int i = 0; i < 3; i++) // Note: sides share same material
-                    brushMaterials[i] = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-            }
-
-            // TODO: handle existing surfaces better
-            if (surfaceDescriptions == null ||
-                surfaceDescriptions.Length != (2 + sides))
-            {
-                var surfaceFlags = CSGDefaults.SurfaceFlags;
-                surfaceDescriptions = new SurfaceDescription[2 + sides];
-
-                UVMatrix uv0;
                 // Top plane
-                uv0 = UVMatrix.identity;
-                uv0.U.w = 0.5f;
-                uv0.V.w = 0.5f;
-                surfaceDescriptions[0] = new SurfaceDescription { UV0 = uv0, surfaceFlags = surfaceFlags, smoothingGroup = 0 };
+                surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
 
                 // Bottom plane
-                uv0 = UVMatrix.identity;
-                uv0.U.w = 0.5f;
-                uv0.V.w = 0.5f;
-                surfaceDescriptions[1] = new SurfaceDescription { UV0 = uv0, surfaceFlags = surfaceFlags, smoothingGroup = 0 };
-
-
+                surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
+                
                 float radius = top.diameterX * 0.5f;
                 float angle = (360.0f / sides);
                 float sideLength = (2 * Mathf.Sin((angle / 2.0f) * Mathf.Deg2Rad)) * radius;
@@ -252,11 +230,12 @@ namespace Chisel.Core
                 // Side planes
                 for (int i = 2; i < 2 + sides; i++)
                 {
-                    uv0 = UVMatrix.identity;
+                    var uv0 = UVMatrix.identity;
                     uv0.U.w = ((i - 2) + 0.5f) * sideLength;
                     // TODO: align with bottom
                     //uv0.V.w = 0.5f;
-                    surfaceDescriptions[i] = new SurfaceDescription { UV0 = uv0, surfaceFlags = surfaceFlags, smoothingGroup = smoothingGroup };
+                    surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
+                    surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
                 }
             }
         }

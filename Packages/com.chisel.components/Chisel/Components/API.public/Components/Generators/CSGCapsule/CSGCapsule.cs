@@ -71,7 +71,7 @@ namespace Chisel.Components
         protected override void UpdateGeneratorInternal()
         {
             var brushMeshes = new[] { new BrushMesh() };
-            if (BrushMeshFactory.GenerateCapsule(ref brushMeshes[0], ref definition))
+            if (!BrushMeshFactory.GenerateCapsule(ref brushMeshes[0], ref definition))
             {
                 generatedBrushes.Clear();
                 return;

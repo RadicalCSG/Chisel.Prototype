@@ -90,9 +90,7 @@ namespace Chisel.Core
                 brushMeshes = null;
                 return false;
             }
-
-            var brushMaterials	= definition.brushMaterials;
-            var descriptions	= definition.surfaceDescriptions;
+            
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);
             var torusRadius		= (definition.outerDiameter * 0.5f) - tubeRadiusX;
@@ -164,7 +162,7 @@ namespace Chisel.Core
                 }
                 
                 var brushMesh = new BrushMesh();
-                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, brushMaterials, descriptions);
+                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, definition.surfaceDefinition);
                 if (!brushMesh.Validate())
                 {
                     brushMeshes = null;

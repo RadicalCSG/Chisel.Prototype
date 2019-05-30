@@ -107,7 +107,7 @@ namespace Chisel.Core
             }
             
             var surfaceIndices	= new int[vertices.Length + 2];
-            if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.brushMaterials, definition.surfaceDescriptions))
+            if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, definition.sides, surfaceIndices, surfaceIndices, 0, 1, vertices, definition.surfaceDefinition))
             {
                 brushMesh.Clear();
                 return false;
