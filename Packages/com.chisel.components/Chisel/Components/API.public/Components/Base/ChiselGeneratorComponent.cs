@@ -9,7 +9,9 @@ namespace Chisel.Components
 {
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
-        public const string kGeneratedBrushesName = nameof(generatedBrushes);
+        public const string kDocumentationBaseURL   = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
+        public const string KDocumentationExtension = ".html";
+        public const string kGeneratedBrushesName   = nameof(generatedBrushes);
 
 
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };

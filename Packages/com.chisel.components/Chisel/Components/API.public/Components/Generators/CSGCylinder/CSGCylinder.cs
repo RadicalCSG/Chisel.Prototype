@@ -9,10 +9,13 @@ namespace Chisel.Components
     // TODO: add properties for SurfaceDescription/BrushMaterials
     // TODO: beveled edges (for top and/or bottom)
     //			-> makes this a capsule
-    [ExecuteInEditMode] 
+    [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGCylinder) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGCylinder.kNodeTypeName)]
     public sealed class CSGCylinder : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Cylinder"; } }
+        public const string kNodeTypeName = "Cylinder";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         [SerializeField] public CSGCylinderDefinition definition = new CSGCylinderDefinition();
 

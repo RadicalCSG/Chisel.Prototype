@@ -7,9 +7,12 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGCapsule) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGCapsule.kNodeTypeName)]
     public sealed class CSGCapsule : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Capsule"; } }
+        public const string kNodeTypeName = "Capsule";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
         [SerializeField] public CSGCapsuleDefinition definition = new CSGCapsuleDefinition();

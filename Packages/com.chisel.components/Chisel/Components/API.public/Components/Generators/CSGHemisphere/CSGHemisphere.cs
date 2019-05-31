@@ -7,9 +7,12 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGHemisphere) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGHemisphere.kNodeTypeName)]
     public sealed class CSGHemisphere : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Hemisphere"; } }
+        public const string kNodeTypeName = "Hemisphere";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
         [SerializeField] public CSGHemisphereDefinition definition = new CSGHemisphereDefinition();

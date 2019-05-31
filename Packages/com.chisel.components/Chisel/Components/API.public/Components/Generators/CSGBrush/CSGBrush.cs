@@ -11,10 +11,12 @@ namespace Chisel.Components
     // TODO: have some sort of bounds that we can use to "focus" on brush
     // TODO: add reset method, use default box
     [ExecuteInEditMode]
-    [HelpURL("http://example.com/docs/MyComponent.html")] // TODO: put these on every asset / component
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGBrush) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGBrush.kNodeTypeName)]
     public sealed class CSGBrush : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Brush"; } }
+        public const string kNodeTypeName = "Brush";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         public CSGBrush() : base() {  }
 

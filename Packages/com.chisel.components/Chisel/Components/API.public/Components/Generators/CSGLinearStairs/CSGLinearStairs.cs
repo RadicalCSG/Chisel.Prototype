@@ -9,9 +9,12 @@ using System.Linq;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGLinearStairs) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGLinearStairs.kNodeTypeName)]
     public sealed class CSGLinearStairs : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Linear Stairs"; } }
+        public const string kNodeTypeName = "Linear Stairs";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
         [SerializeField] public CSGLinearStairsDefinition definition = new CSGLinearStairsDefinition();

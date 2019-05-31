@@ -8,9 +8,12 @@ using UnitySceneExtensions;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGRevolvedShape) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGRevolvedShape.kNodeTypeName)]
     public sealed class CSGRevolvedShape : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Revolved Shape"; } }
+        public const string kNodeTypeName = "Revolved Shape";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
         [SerializeField] public CSGRevolvedShapeDefinition definition = new CSGRevolvedShapeDefinition();

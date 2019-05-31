@@ -7,9 +7,12 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
+    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGTorus) + ChiselGeneratorComponent.KDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + CSGTorus.kNodeTypeName)]
     public sealed class CSGTorus : ChiselGeneratorComponent
     {
-        public override string NodeTypeName { get { return "Torus"; } }
+        public const string kNodeTypeName = "Torus";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
         [SerializeField] public CSGTorusDefinition definition = new CSGTorusDefinition();
