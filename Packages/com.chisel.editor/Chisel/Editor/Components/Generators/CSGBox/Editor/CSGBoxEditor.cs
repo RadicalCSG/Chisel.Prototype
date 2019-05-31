@@ -22,9 +22,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGBoxEditor : ChiselGeneratorEditor<ChiselBox>
     {
-        // TODO: make these shared resources since this name is used in several places (with identical context)
-        static readonly GUIContent      kSurfacesContent        = new GUIContent("Surfaces");
-        static readonly GUIContent[]    kSurfaceNames           = new []
+        static readonly GUIContent[] kSurfaceNameContent = new []
         {
             new GUIContent("Top"),
             new GUIContent("Bottom"),
@@ -39,8 +37,8 @@ namespace Chisel.Editors
         
         protected override void ResetInspector()
         { 
-            boundsProp		        = null;
-            surfacesProp   = null;
+            boundsProp	    = null;
+            surfacesProp    = null;
         }
         
         protected override void InitInspector()
@@ -58,24 +56,8 @@ namespace Chisel.Editors
         protected override void OnInspector()
         {
             EditorGUILayout.PropertyField(boundsProp);
-            
-            EditorGUI.BeginChangeCheck();
-            var path                = surfacesProp.propertyPath;
-            var surfacesVisible     = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
-            if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(path, surfacesVisible);
-            if (surfacesVisible && surfacesProp.arraySize == 6)
-            {
-                EditorGUI.indentLevel++;
-                SerializedProperty elementProperty;
-                for (int i = 0; i < 6; i++)
-                {
-                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                    EditorGUILayout.PropertyField(elementProperty, kSurfaceNames[i], true);
-                }
-                EditorGUI.indentLevel--;
-            }
+
+            ShowSurfaces(surfacesProp, kSurfaceNameContent, 6);
         }
 
         protected override void OnScene(ChiselBox generator)

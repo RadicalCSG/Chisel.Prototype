@@ -29,6 +29,8 @@ namespace Chisel.Editors
         SerializedProperty topSidesProp;
         SerializedProperty bottomSidesProp;
 
+        SerializedProperty surfacesProp;
+
         protected override void ResetInspector()
         {
             heightProp			= null;
@@ -40,6 +42,8 @@ namespace Chisel.Editors
         
             topSidesProp		= null;
             bottomSidesProp		= null;
+
+            surfacesProp        = null;
         }
 
         protected override void InitInspector()
@@ -56,6 +60,11 @@ namespace Chisel.Editors
 
                 topSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.topSides));
                 bottomSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.bottomSides));
+
+                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.surfaceDefinition));
+                {
+                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselStadium.definition.surfaceDefinition.surfaces));
+                }
             }
         }
 
@@ -70,6 +79,8 @@ namespace Chisel.Editors
         
             EditorGUILayout.PropertyField(topSidesProp);
             EditorGUILayout.PropertyField(bottomSidesProp);
+            
+            ShowSurfaces(surfacesProp);
         }
 
         const float kLineDash					= 2.0f;

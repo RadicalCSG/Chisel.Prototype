@@ -14,6 +14,12 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGCapsuleEditor : ChiselGeneratorEditor<ChiselCapsule>
     {
+        // TODO: make these shared resources since this name is used in several places (with identical context)
+        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
+        const string                kSurfacePropertyName    = "Side {0}";
+        const string                kSurfacePathName        = "{0}[{1}]";
+        static GUIContent           surfacePropertyContent  = new GUIContent();
+
         SerializedProperty heightProp;
         SerializedProperty topHeightProp;
         SerializedProperty bottomHeightProp;
@@ -25,6 +31,8 @@ namespace Chisel.Editors
         SerializedProperty sidesProp;
         SerializedProperty topSegmentsProp;
         SerializedProperty bottomSegmentsProp;
+
+        SerializedProperty surfacesProp;
 
         protected override void ResetInspector()
         { 
@@ -39,6 +47,8 @@ namespace Chisel.Editors
             sidesProp			= null;
             topSegmentsProp		= null;
             bottomSegmentsProp	= null;
+
+            surfacesProp        = null;
         }
         
         protected override void InitInspector()
@@ -56,6 +66,11 @@ namespace Chisel.Editors
                 sidesProp			= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.sides));
                 topSegmentsProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.topSegments));
                 bottomSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.bottomSegments));
+                
+                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.surfaceDefinition));
+                {
+                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselCapsule.definition.surfaceDefinition.surfaces));
+                }
             }
         }
 
@@ -73,6 +88,9 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(sidesProp);
             EditorGUILayout.PropertyField(topSegmentsProp);
             EditorGUILayout.PropertyField(bottomSegmentsProp);
+
+
+            ShowSurfaces(surfacesProp, surfacesProp.arraySize);
         }
 
         const float kLineDash					= 2.0f;

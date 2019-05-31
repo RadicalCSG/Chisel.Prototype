@@ -23,6 +23,7 @@ namespace Chisel.Editors
         SerializedProperty rotationProp;
         SerializedProperty horizontalSegmentsProp;
         SerializedProperty verticalSegmentsProp;
+        SerializedProperty surfacesProp;
 
         protected override void ResetInspector()
         { 
@@ -30,6 +31,7 @@ namespace Chisel.Editors
             rotationProp		    = null;
             horizontalSegmentsProp  = null;
             verticalSegmentsProp    = null;
+            surfacesProp            = null;
         }
         
         protected override void InitInspector()
@@ -40,6 +42,11 @@ namespace Chisel.Editors
                 rotationProp		    = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.rotation));
                 horizontalSegmentsProp  = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.horizontalSegments));
                 verticalSegmentsProp    = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.verticalSegments));
+
+                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.surfaceDefinition));
+                {
+                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselSphere.definition.surfaceDefinition.surfaces));
+                }
             }
         }
 
@@ -50,6 +57,8 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(rotationProp);
             EditorGUILayout.PropertyField(horizontalSegmentsProp);
             EditorGUILayout.PropertyField(verticalSegmentsProp);
+
+            ShowSurfaces(surfacesProp);
         }
         
         const float kLineDash					= 2.0f;

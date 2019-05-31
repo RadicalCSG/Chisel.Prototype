@@ -21,15 +21,12 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGCylinderEditor : ChiselGeneratorEditor<ChiselCylinder>
     {
-        // TODO: make these shared resources since this name is used in several places (with identical context)
-        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
-        static readonly GUIContent  kTopContent             = new GUIContent("Top");
-        static readonly GUIContent  kBottomContent          = new GUIContent("Bottom");
-        static readonly GUIContent  kSideContent            = new GUIContent("Side");
-        const string                kSurfacePropertyName    = "Side {0}";
-        const string                kSurfacePathName        = "{0}[{1}]";
-        static GUIContent           surfacePropertyContent  = new GUIContent();
-        
+        GUIContent[] kSurfaceNameContent = new[]
+        {
+            new GUIContent("Top"),
+            new GUIContent("Bottom")
+        };
+
         SerializedProperty typeProp;
         SerializedProperty topHeightProp;
         SerializedProperty topDiameterXProp;
@@ -84,9 +81,9 @@ namespace Chisel.Editors
                 smoothingGroupProp	    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.smoothingGroup));
                 sidesProp			    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.sides));
                 
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition));
+                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.surfaceDefinition));
                 {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition.surfaces));
+                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselCylinder.definition.surfaceDefinition.surfaces));
                 }
             }
         }
@@ -129,39 +126,8 @@ namespace Chisel.Editors
             }
             EditorGUILayout.Space();
 
-            
-            EditorGUI.BeginChangeCheck();
-            var path                = surfacesProp.propertyPath;
-            var surfacesVisible     = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
-            if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(path, surfacesVisible);
-            if (surfacesVisible && surfacesProp.arraySize >= 3)
-            {
-                EditorGUI.indentLevel++;
-                SerializedProperty elementProperty;
-                
-                elementProperty = surfacesProp.GetArrayElementAtIndex(0);
-                EditorGUILayout.PropertyField(elementProperty, kTopContent, true);
-                
-                elementProperty = surfacesProp.GetArrayElementAtIndex(1);
-                EditorGUILayout.PropertyField(elementProperty, kBottomContent, true);
 
-                if (surfacesProp.arraySize == 3)
-                {
-                    elementProperty = surfacesProp.GetArrayElementAtIndex(2);
-                    EditorGUILayout.PropertyField(elementProperty, kSideContent, true);
-                } else
-                {
-                    for (int i = 2; i < surfacesProp.arraySize; i++)
-                    {
-                        surfacePropertyContent.text = string.Format(kSurfacePropertyName, (i - 2));
-                        elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
-                    }
-                }
-                EditorGUI.indentLevel--;
-            }
+            ShowSurfaces(surfacesProp, kSurfaceNameContent);
         }
         
         // TODO: put somewhere else

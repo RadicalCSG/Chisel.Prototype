@@ -14,7 +14,7 @@ namespace Chisel.Editors
     public abstract class ChiselNodeEditor<T> : Editor
         where T : ChiselNode
     {
-        static readonly GUIContent DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
+        static readonly GUIContent kDefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
 
         public virtual Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
         public virtual bool HasFrameBounds() { if (!target) return false; return true; }
@@ -74,7 +74,7 @@ namespace Chisel.Editors
             if (!IsPartOfDefaultModel(targetObjects))
                 return;
 
-            EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
+            EditorGUILayout.HelpBox(kDefaultModelContents.text, MessageType.Warning);
         }
 
         static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
@@ -256,6 +256,66 @@ namespace Chisel.Editors
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselGeneratorComponent
     {
+        static readonly GUIContent  kMissingSurfacesContents            = new GUIContent("This generator is not set up properly and doesn't have the correct number of surfaces.");
+        static readonly GUIContent  kMultipleDifferentSurfacesContents  = new GUIContent("Multiple generators are selected with different surfaces.");
+
+        static readonly GUIContent  kSurfacesContent            = new GUIContent("Surfaces");
+        static GUIContent           surfacePropertyContent      = new GUIContent();
+        const string                kSurfacePropertyName        = "Side {0}";
+
+        protected void ShowSurfaces(SerializedProperty surfacesProp, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        {
+            ShowSurfaces(surfacesProp, null, expectedSize, surfacePropertyName);
+        }
+
+        protected void ShowSurfaces(SerializedProperty surfacesProp, GUIContent[] kSurfaceNames, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        {
+            if (expectedSize > 0 && surfacesProp.arraySize != expectedSize)
+            {
+                EditorGUILayout.HelpBox(kMissingSurfacesContents.text, MessageType.Warning);
+            }
+
+            if (surfacesProp.hasMultipleDifferentValues)
+            {
+                // TODO: figure out how to detect if we have multiple selected generators with arrays of same size, or not
+                EditorGUILayout.HelpBox(kMultipleDifferentSurfacesContents.text, MessageType.None);
+                return;
+            }
+
+            if (surfacesProp.arraySize == 0)
+                return;
+            
+            EditorGUI.BeginChangeCheck();
+            var path                = surfacesProp.propertyPath;
+            var surfacesVisible     = SessionState.GetBool(path, false);
+            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
+            if (EditorGUI.EndChangeCheck())
+                SessionState.SetBool(path, surfacesVisible);
+            if (surfacesVisible)
+            {
+                EditorGUI.indentLevel++;
+                SerializedProperty elementProperty;
+                int startIndex = 0;
+                if (kSurfaceNames != null &&
+                    kSurfaceNames.Length > 0)
+                {
+                    startIndex = kSurfaceNames.Length;
+                    for (int i = 0; i < Mathf.Min(kSurfaceNames.Length, surfacesProp.arraySize); i++)
+                    {
+                        elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                        EditorGUILayout.PropertyField(elementProperty, kSurfaceNames[i], true);
+                    }
+                }
+
+                for (int i = startIndex; i < surfacesProp.arraySize; i++)
+                {
+                    surfacePropertyContent.text = string.Format(surfacePropertyName, (i - startIndex) + 1);
+                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                    EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
+                }
+                EditorGUI.indentLevel--;
+            }
+        }
 
         protected abstract void ResetInspector();
         protected abstract void InitInspector();
@@ -309,6 +369,7 @@ namespace Chisel.Editors
         {
             if (!target)
                 return;
+            serializedObject.Update();
             if (PreviewTextureManager.Update())
                 Repaint();
 

@@ -17,8 +17,20 @@ namespace Chisel.Editors
 
     [CustomEditor(typeof(ChiselSpiralStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGSpiralStairsEditor : ChiselGeneratorEditor<ChiselSpiralStairs> 
+    public sealed class CSGSpiralStairsEditor : ChiselGeneratorEditor<ChiselSpiralStairs>
     {
+        static readonly GUIContent[] kSurfaceContentNames = new[]
+        {
+            new GUIContent("Top"),
+            new GUIContent("Bottom"),
+            new GUIContent("Inner"),
+            new GUIContent("Outer"),
+            new GUIContent("Front"),
+            new GUIContent("Back"),
+            new GUIContent("Tread"),
+            new GUIContent("Step")
+        };
+
         SerializedProperty heightProp;
         SerializedProperty outerDiameterProp;
         SerializedProperty outerSegmentsProp;
@@ -33,7 +45,8 @@ namespace Chisel.Editors
         SerializedProperty riserTypeProp;
         SerializedProperty riserDepthProp;
         SerializedProperty bottomSmoothingGroupProp;
-        
+        SerializedProperty surfacesProp;
+
         protected override void ResetInspector()
         {
             heightProp					= null;
@@ -50,6 +63,8 @@ namespace Chisel.Editors
             riserTypeProp				= null;
             riserDepthProp				= null;
             bottomSmoothingGroupProp	= null;
+
+            surfacesProp                = null;
         }
         
         protected override void InitInspector()
@@ -70,6 +85,11 @@ namespace Chisel.Editors
                 riserTypeProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserType));
                 riserDepthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserDepth));
                 bottomSmoothingGroupProp	= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.bottomSmoothingGroup));
+
+                var surfDefProp             = definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.surfaceDefinition));
+                {
+                    surfacesProp            = surfDefProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.surfaceDefinition.surfaces));
+                }
             }
         }
         
@@ -89,6 +109,8 @@ namespace Chisel.Editors
             EditorGUILayout.PropertyField(riserTypeProp);
             EditorGUILayout.PropertyField(riserDepthProp);
             EditorGUILayout.PropertyField(bottomSmoothingGroupProp);
+
+            ShowSurfaces(surfacesProp, kSurfaceContentNames, kSurfaceContentNames.Length);
         }
         
                         

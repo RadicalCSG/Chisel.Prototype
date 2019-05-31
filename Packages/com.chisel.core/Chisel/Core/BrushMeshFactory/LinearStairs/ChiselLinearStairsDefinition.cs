@@ -91,15 +91,7 @@ namespace Chisel.Core
         public StairsSideType           leftSide;
         public StairsSideType           rightSide;
         
-        public ChiselSurfaceDefinition  surfaceDefinition;/*
-        public ChiselBrushMaterial		topSurface;
-        public ChiselBrushMaterial		bottomSurface;
-        public ChiselBrushMaterial		leftSurface;
-        public ChiselBrushMaterial		rightSurface;
-        public ChiselBrushMaterial		forwardSurface;
-        public ChiselBrushMaterial		backSurface;
-        public ChiselBrushMaterial		treadSurface;
-        public ChiselBrushMaterial		stepSurface;*/
+        public ChiselSurfaceDefinition  surfaceDefinition;
 
         
         public float	width  { get { return bounds.size.x; } set { var size = bounds.size; size.x = value; bounds.size = size; } }

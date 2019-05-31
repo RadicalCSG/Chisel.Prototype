@@ -19,7 +19,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGTorusEditor : ChiselGeneratorEditor<ChiselTorus>
     {
-        static GUIContent   InnerDiameterContent = new GUIContent("Inner Diameter");
+        static readonly GUIContent  kInnerDiameterContent   = new GUIContent("Inner Diameter");
 
         SerializedProperty outerDiameterProp;
         SerializedProperty tubeWidthProp;
@@ -30,6 +30,8 @@ namespace Chisel.Editors
         SerializedProperty startAngleProp;
         SerializedProperty totalAngleProp;
         SerializedProperty fitCircleProp;
+
+        SerializedProperty surfacesProp;
 
         protected override void ResetInspector()
         { 
@@ -42,6 +44,8 @@ namespace Chisel.Editors
             startAngleProp			= null;
             totalAngleProp			= null;
             fitCircleProp			= null;
+
+            surfacesProp            = null;
         }
         
         protected override void InitInspector()
@@ -57,12 +61,17 @@ namespace Chisel.Editors
                 startAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.startAngle));
                 totalAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.totalAngle));
                 fitCircleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.fitCircle));
+
+                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.surfaceDefinition));
+                {
+                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselTorus.definition.surfaceDefinition.surfaces));
+                }
             }
         }
 
         void InnerDiameterPropertyField()
         {
-            var content		= InnerDiameterContent;
+            var content		= kInnerDiameterContent;
             var position	= GUILayoutUtility.GetRect(content, EditorStyles.numberField);
             content = EditorGUI.BeginProperty(position, content, tubeWidthProp);
             {
@@ -95,6 +104,8 @@ namespace Chisel.Editors
 
             EditorGUILayout.PropertyField(startAngleProp);
             EditorGUILayout.PropertyField(totalAngleProp);
+
+            ShowSurfaces(surfacesProp);
         }
 
         const float kLineDash					= 2.0f;
