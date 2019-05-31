@@ -34,11 +34,14 @@ namespace Chisel.Editors
         }
         
         protected override void InitInspector()
-        { 
-            diameterXYZProp			= serializedObject.FindProperty("definition.diameterXYZ");
-            rotationProp			= serializedObject.FindProperty("definition.rotation");
-            horizontalSegmentsProp	= serializedObject.FindProperty("definition.horizontalSegments");
-            verticalSegmentsProp	= serializedObject.FindProperty("definition.verticalSegments");
+        {
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselHemisphere.definition));
+            {
+                diameterXYZProp			= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.diameterXYZ));
+                rotationProp			= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.rotation));
+                horizontalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.horizontalSegments));
+                verticalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.verticalSegments));
+            }
         }
 
         

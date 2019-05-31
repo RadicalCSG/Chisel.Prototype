@@ -38,11 +38,14 @@ namespace Chisel.Editors
 
         protected override void InitInspector()
         {
-            curveSegments			= serializedObject.FindProperty("definition.curveSegments");
-            revolveSegments			= serializedObject.FindProperty("definition.revolveSegments");
-            startAngleProp			= serializedObject.FindProperty("definition.startAngle");
-            totalAngleProp			= serializedObject.FindProperty("definition.totalAngle");
-            shapeProp				= serializedObject.FindProperty("definition.shape.controlPoints");
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselRevolvedShape.definition));
+            {
+                curveSegments   = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.curveSegments));
+                revolveSegments = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.revolveSegments));
+                startAngleProp  = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.startAngle));
+                totalAngleProp  = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.totalAngle));
+                shapeProp	    = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.shape.controlPoints));
+            }
         }
 
         protected override void OnInspector()

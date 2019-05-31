@@ -44,16 +44,19 @@ namespace Chisel.Editors
 
         protected override void InitInspector()
         {
-            heightProp			= serializedObject.FindProperty("definition.height");
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselStadium.definition));
+            {
+                heightProp			= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.height));
 
-            lengthProp			= serializedObject.FindProperty("definition.length");
-            topLengthProp		= serializedObject.FindProperty("definition.topLength");
-            bottomLengthProp	= serializedObject.FindProperty("definition.bottomLength");
+                lengthProp			= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.length));
+                topLengthProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.topLength));
+                bottomLengthProp	= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.bottomLength));
 
-            diameterProp		= serializedObject.FindProperty("definition.diameter");
+                diameterProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.diameter));
 
-            topSidesProp		= serializedObject.FindProperty("definition.topSides");
-            bottomSidesProp		= serializedObject.FindProperty("definition.bottomSides");
+                topSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.topSides));
+                bottomSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.bottomSides));
+            }
         }
 
         protected override void OnInspector()

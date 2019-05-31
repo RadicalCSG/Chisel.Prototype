@@ -19,7 +19,11 @@ namespace Chisel.Components
 
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
-        public const string kGeneratedBrushesName   = nameof(brushContainerAsset);
+        // This ensures names remain identical, or a compile error occurs.
+        public const string kOperationFieldName = nameof(operation);
+
+        // This ensures names remain identical, or a compile error occurs.
+        public const string kBrushContainerAssetName = nameof(brushContainerAsset);
 
 
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };

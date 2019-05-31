@@ -27,7 +27,7 @@ namespace Chisel.Editors
 
         protected override void InitInspector()
         {
-            brushContainerAssetProp = serializedObject.FindProperty(ChiselGeneratorComponent.kGeneratedBrushesName);
+            brushContainerAssetProp = serializedObject.FindProperty(ChiselGeneratorComponent.kBrushContainerAssetName);
         }
         
         protected override void OnInspector()

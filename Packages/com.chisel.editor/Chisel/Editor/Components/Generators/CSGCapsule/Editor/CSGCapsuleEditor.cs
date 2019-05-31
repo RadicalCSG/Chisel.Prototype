@@ -42,18 +42,21 @@ namespace Chisel.Editors
         }
         
         protected override void InitInspector()
-        { 
-            heightProp			= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.height)}");
-            topHeightProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.topHeight)}");
-            bottomHeightProp	= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.bottomHeight)}");
+        {
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselCapsule.definition));
+            {
+                heightProp			= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.height));
+                topHeightProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.topHeight));
+                bottomHeightProp	= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.bottomHeight));
 
-            diameterXProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.diameterX)}");
-            diameterZProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.diameterZ)}");
-            rotationProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.rotation)}");
+                diameterXProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.diameterX));
+                diameterZProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.diameterZ));
+                rotationProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.rotation));
 
-            sidesProp			= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.sides)}");
-            topSegmentsProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.topSegments)}");
-            bottomSegmentsProp	= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.bottomSegments)}");
+                sidesProp			= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.sides));
+                topSegmentsProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.topSegments));
+                bottomSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.bottomSegments));
+            }
         }
 
         

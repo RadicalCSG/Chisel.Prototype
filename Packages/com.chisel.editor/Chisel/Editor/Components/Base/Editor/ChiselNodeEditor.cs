@@ -279,7 +279,7 @@ namespace Chisel.Editors
                 return;
             }
 
-            operationProp = serializedObject.FindProperty("operation");
+            operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
 
             foreach (var target in targets)
             {

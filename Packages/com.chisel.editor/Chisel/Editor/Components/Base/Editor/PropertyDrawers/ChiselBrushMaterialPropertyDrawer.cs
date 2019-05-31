@@ -107,9 +107,9 @@ namespace Chisel.Editors
             EditorGUI.BeginProperty(position, label, property); 
             try
             {
-                SerializedProperty layerUsageProp       = property.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageName);
-                SerializedProperty renderMaterialProp   = property.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialName);
-                SerializedProperty physicsMaterialProp  = property.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialName);
+                SerializedProperty layerUsageProp       = property.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageFieldName);
+                SerializedProperty renderMaterialProp   = property.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialFieldName);
+                SerializedProperty physicsMaterialProp  = property.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialFieldName);
 
                 // Don't make child fields be indented
                 var originalPosition = position;

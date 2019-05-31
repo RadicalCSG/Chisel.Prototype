@@ -11,12 +11,14 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselOperation : ChiselNode
     {
+        // This ensures names remain identical and the field actually exists, or a compile error occurs.
+        public const string kOperationFieldName     = nameof(operation);
+        public const string kPassThroughFieldName   = nameof(passThrough);
+
         public const string kNodeTypeName = "Operation";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // bool   HandleAsOne     = false;
-
-        public ChiselOperation() : base() {  }
 
         [HideInInspector]
         public CSGTreeBranch Node;

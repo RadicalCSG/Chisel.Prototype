@@ -39,9 +39,9 @@ namespace Chisel.Editors
                 return;
             }
 
-            layerUsageProp		= serializedObject.FindProperty("layerUsage");
-            renderMaterialProp	= serializedObject.FindProperty("renderMaterial");
-            physicsMaterialProp = serializedObject.FindProperty("physicsMaterial");
+            layerUsageProp		= serializedObject.FindProperty(ChiselBrushMaterial.kLayerUsageFieldName);
+            renderMaterialProp	= serializedObject.FindProperty(ChiselBrushMaterial.kRenderMaterialFieldName);
+            physicsMaterialProp = serializedObject.FindProperty(ChiselBrushMaterial.kPhysicsMaterialFieldName);
         }
 
         internal void OnDisable()

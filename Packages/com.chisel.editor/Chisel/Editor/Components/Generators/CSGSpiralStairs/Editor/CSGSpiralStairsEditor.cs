@@ -53,21 +53,24 @@ namespace Chisel.Editors
         }
         
         protected override void InitInspector()
-        { 
-            heightProp					= serializedObject.FindProperty("definition.height");
-            outerDiameterProp			= serializedObject.FindProperty("definition.outerDiameter");
-            outerSegmentsProp			= serializedObject.FindProperty("definition.outerSegments");
-            innerDiameterProp			= serializedObject.FindProperty("definition.innerDiameter");
-            innerSegmentsProp			= serializedObject.FindProperty("definition.innerSegments");
-            stepHeightProp				= serializedObject.FindProperty("definition.stepHeight");
-            treadHeightProp				= serializedObject.FindProperty("definition.treadHeight");
-            nosingDepthProp				= serializedObject.FindProperty("definition.nosingDepth");
-            nosingWidthProp				= serializedObject.FindProperty("definition.nosingWidth");
-            startAngleProp				= serializedObject.FindProperty("definition.startAngle");
-            rotationProp				= serializedObject.FindProperty("definition.rotation");
-            riserTypeProp				= serializedObject.FindProperty("definition.riserType");
-            riserDepthProp				= serializedObject.FindProperty("definition.riserDepth");
-            bottomSmoothingGroupProp	= serializedObject.FindProperty("definition.bottomSmoothingGroup");
+        {
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselSpiralStairs.definition));
+            {
+                heightProp					= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.height));
+                outerDiameterProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.outerDiameter));
+                outerSegmentsProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.outerSegments));
+                innerDiameterProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.innerDiameter));
+                innerSegmentsProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.innerSegments));
+                stepHeightProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.stepHeight));
+                treadHeightProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.treadHeight));
+                nosingDepthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.nosingDepth));
+                nosingWidthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.nosingWidth));
+                startAngleProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.startAngle));
+                rotationProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.rotation));
+                riserTypeProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserType));
+                riserDepthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserDepth));
+                bottomSmoothingGroupProp	= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.bottomSmoothingGroup));
+            }
         }
         
         protected override void OnInspector()

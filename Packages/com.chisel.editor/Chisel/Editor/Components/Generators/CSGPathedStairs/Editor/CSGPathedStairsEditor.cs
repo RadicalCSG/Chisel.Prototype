@@ -82,34 +82,36 @@ namespace Chisel.Editors
 
         protected override void InitInspector()
         {
-            // TODO: not all these values make sense in this context ...
-            shapeProp			= serializedObject.FindProperty("definition.shape.controlPoints");
-            closedProp			= serializedObject.FindProperty("definition.shape.closed");
-            curveSegments		= serializedObject.FindProperty("definition.curveSegments");
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselLinearStairs.definition));
+            {
+                shapeProp			= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.shape.controlPoints));
+                closedProp			= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.shape.closed));
+                curveSegments		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.curveSegments));
 
-            boundsProp			= serializedObject.FindProperty("definition.stairs.bounds");
-            stepHeightProp		= serializedObject.FindProperty("definition.stairs.stepHeight");
-            stepDepthProp		= serializedObject.FindProperty("definition.stairs.stepDepth");
-            plateauHeightProp	= serializedObject.FindProperty("definition.stairs.plateauHeight");
-            riserTypeProp		= serializedObject.FindProperty("definition.stairs.riserType");
-            riserDepthProp		= serializedObject.FindProperty("definition.stairs.riserDepth");
-            leftSideProp		= serializedObject.FindProperty("definition.stairs.leftSide");
-            rightSideProp		= serializedObject.FindProperty("definition.stairs.rightSide");
-            sideDepthProp		= serializedObject.FindProperty("definition.stairs.sideDepth");
-            sideWidthProp		= serializedObject.FindProperty("definition.stairs.sideWidth");
-            sideHeightProp		= serializedObject.FindProperty("definition.stairs.sideHeight");
-            treadHeightProp		= serializedObject.FindProperty("definition.stairs.treadHeight");
-            nosingDepthProp		= serializedObject.FindProperty("definition.stairs.nosingDepth");
-            nosingWidthProp		= serializedObject.FindProperty("definition.stairs.nosingWidth");
-            
-            surfaceSideTopProp		= serializedObject.FindProperty("definition.stairs.topSurface");
-            surfaceSideBottomProp	= serializedObject.FindProperty("definition.stairs.bottomSurface");
-            surfaceSideLeftProp		= serializedObject.FindProperty("definition.stairs.leftSurface");
-            surfaceSideRightProp	= serializedObject.FindProperty("definition.stairs.rightSurface");
-            surfaceSideForwardProp	= serializedObject.FindProperty("definition.stairs.forwardSurface");
-            surfaceSideBackProp		= serializedObject.FindProperty("definition.stairs.backSurface");
-            surfaceSideTreadProp	= serializedObject.FindProperty("definition.stairs.treadSurface");
-            surfaceSideStepProp		= serializedObject.FindProperty("definition.stairs.stepSurface");
+                boundsProp			= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.bounds));
+                stepHeightProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.stepHeight));
+                stepDepthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.stepDepth));
+                plateauHeightProp	= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.plateauHeight));
+                riserTypeProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.riserType));
+                riserDepthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.riserDepth));
+                leftSideProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.leftSide));
+                rightSideProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.rightSide));
+                sideDepthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.sideDepth));
+                sideWidthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.sideWidth));
+                sideHeightProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.sideHeight));
+                treadHeightProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.treadHeight));
+                nosingDepthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.nosingDepth));
+                nosingWidthProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.nosingWidth));
+
+                surfaceSideTopProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.topSurface));
+                surfaceSideBottomProp	= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.bottomSurface));
+                surfaceSideLeftProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.leftSurface));
+                surfaceSideRightProp	= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.rightSurface));
+                surfaceSideForwardProp	= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.forwardSurface));
+                surfaceSideBackProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.backSurface));
+                surfaceSideTreadProp	= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.treadSurface));
+                surfaceSideStepProp		= definitionProp.FindPropertyRelative(nameof(ChiselPathedStairs.definition.stairs.stepSurface));
+            }
             
             surfacesVisible			= SessionState.GetBool(kSurfacesVisibleKey, false);
         }

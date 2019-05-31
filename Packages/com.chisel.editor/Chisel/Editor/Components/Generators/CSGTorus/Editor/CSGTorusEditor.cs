@@ -46,15 +46,18 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            outerDiameterProp		= serializedObject.FindProperty("definition.outerDiameter");
-            tubeWidthProp			= serializedObject.FindProperty("definition.tubeWidth");
-            tubeHeightProp			= serializedObject.FindProperty("definition.tubeHeight");
-            tubeRotationProp		= serializedObject.FindProperty("definition.tubeRotation");
-            horizontalSegmentsProp	= serializedObject.FindProperty("definition.horizontalSegments");
-            verticalSegmentsProp	= serializedObject.FindProperty("definition.verticalSegments");
-            startAngleProp			= serializedObject.FindProperty("definition.startAngle");
-            totalAngleProp			= serializedObject.FindProperty("definition.totalAngle");
-            fitCircleProp			= serializedObject.FindProperty("definition.fitCircle");
+            var definitionProp = serializedObject.FindProperty(nameof(ChiselTorus.definition));
+            {
+                outerDiameterProp		= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.outerDiameter));
+                tubeWidthProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeWidth));
+                tubeHeightProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeHeight));
+                tubeRotationProp		= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeRotation));
+                horizontalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.horizontalSegments));
+                verticalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.verticalSegments));
+                startAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.startAngle));
+                totalAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.totalAngle));
+                fitCircleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.fitCircle));
+            }
         }
 
         void InnerDiameterPropertyField()

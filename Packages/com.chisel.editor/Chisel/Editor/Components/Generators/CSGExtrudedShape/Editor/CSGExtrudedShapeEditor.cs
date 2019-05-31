@@ -33,8 +33,8 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            shapeProp		= serializedObject.FindProperty("shape.controlPoints");
-            pathProp		= serializedObject.FindProperty("path.segments");
+            shapeProp		= serializedObject.FindProperty(ChiselExtrudedShape.kDefinitionShapeControlPoints);
+            pathProp		= serializedObject.FindProperty(ChiselExtrudedShape.kDefinitionPathSegments);
         }
         
         protected override void OnInspector()

@@ -44,8 +44,8 @@ namespace Chisel.Editors
                 return;
             }
             // Fetch the objects from the GameObject script to display in the inspector
-            operationProp = serializedObject.FindProperty("operation");
-            passThroughProp = serializedObject.FindProperty("passThrough");
+            operationProp   = serializedObject.FindProperty(ChiselOperation.kOperationFieldName);
+            passThroughProp = serializedObject.FindProperty(ChiselOperation.kPassThroughFieldName);
         }
 
         internal void OnDisable()

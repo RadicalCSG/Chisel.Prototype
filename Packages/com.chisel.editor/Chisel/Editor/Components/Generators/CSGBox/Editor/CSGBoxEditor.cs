@@ -45,7 +45,7 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            var definitionProp      = serializedObject.FindProperty(nameof(ChiselCylinder.definition));
+            var definitionProp      = serializedObject.FindProperty(nameof(ChiselBox.definition));
             { 
                 boundsProp	        = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.bounds));
                 var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition));
