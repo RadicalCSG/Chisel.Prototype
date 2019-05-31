@@ -129,12 +129,12 @@ namespace Chisel.Components
         public SerializableUnwrapParam UVGenerationSettings { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
 
         [HideInInspector, NonSerialized]
-        public readonly Dictionary<Material, List<CSGRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<CSGRenderComponents>>();
+        public readonly Dictionary<Material, List<ChiselRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
         [HideInInspector, NonSerialized]
-        public readonly Dictionary<PhysicMaterial, List<CSGColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<CSGColliderComponents>>();
+        public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
         [HideInInspector, NonSerialized]
         public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
-        [SerializeField] internal CSGGeneratedModelMesh[]   generatedMeshes     = new CSGGeneratedModelMesh[0];
+        [SerializeField] internal ChiselGeneratedModelMesh[]   generatedMeshes     = new ChiselGeneratedModelMesh[0];
 
         // TODO: make these private + properties, these show up as settable default settings when selecting CSGModel.cs in unity
         public GameObject GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
@@ -151,7 +151,7 @@ namespace Chisel.Components
         {
             if (!generatedDataContainer)
             {
-                generatedDataContainer = CSGGeneratedComponentManager.FindContainerGameObject(this);
+                generatedDataContainer = ChiselGeneratedComponentManager.FindContainerGameObject(this);
                 if (generatedDataContainer != null)
                     generatedDataTransform = generatedDataContainer.transform;
             }
@@ -206,7 +206,7 @@ namespace Chisel.Components
 
         protected override void OnCleanup()
         {
-            CSGGeneratedComponentManager.RemoveContainerFlags(this);
+            ChiselGeneratedComponentManager.RemoveContainerFlags(this);
         }
 
         public override int GetAllTreeBrushCount()

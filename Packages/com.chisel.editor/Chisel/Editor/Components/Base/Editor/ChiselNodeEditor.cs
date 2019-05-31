@@ -62,7 +62,7 @@ namespace Chisel.Editors
                 }
                 if (node)
                 {
-                    if (CSGGeneratedComponentManager.IsDefaultModel(node.hierarchyItem.Model))
+                    if (ChiselGeneratedComponentManager.IsDefaultModel(node.hierarchyItem.Model))
                         return true;
                 }
             }
@@ -396,7 +396,7 @@ namespace Chisel.Editors
 
         public void OnSceneGUI()
         {
-            if (!target || CSGEditModeManager.EditMode != CSGEditMode.ShapeEdit)
+            if (!target || ChiselEditModeManager.EditMode != ChiselEditMode.ShapeEdit)
                 return;
 
             using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor))

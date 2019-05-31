@@ -48,7 +48,7 @@ namespace Chisel.Editors
             UnitySceneExtensions.Grid.HoverGrid = null;
             if (s_CurrentPointIndex == 0)
             {
-                s_StartIntersection = CSGClickSelectionManager.GetPlaneIntersection(mousePosition, dragArea);
+                s_StartIntersection = ChiselClickSelectionManager.GetPlaneIntersection(mousePosition, dragArea);
                 if (s_StartIntersection != null)
                 {
                     // TODO: try to cache this ..
@@ -134,7 +134,7 @@ namespace Chisel.Editors
             UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
 
             // reset the starting position
-            s_StartIntersection = CSGClickSelectionManager.GetPlaneIntersection(evt.mousePosition, dragArea);
+            s_StartIntersection = ChiselClickSelectionManager.GetPlaneIntersection(evt.mousePosition, dragArea);
             evt.Use();
         }
 

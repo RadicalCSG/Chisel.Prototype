@@ -105,7 +105,7 @@ namespace Chisel.Components
             CSGNodeHierarchyManager.FindAndReregisterAllNodes();
             CSGNodeHierarchyManager.UpdateAllTransformations();
             CSGNodeHierarchyManager.Update();
-            CSGGeneratedModelMeshManager.UpdateModels();
+            ChiselGeneratedModelMeshManager.UpdateModels();
         }
 
         // TODO: Probably needs to be internal?
@@ -150,7 +150,7 @@ namespace Chisel.Components
 
             createDefaultModels .Clear();
             
-            CSGGeneratedModelMeshManager.Reset();
+            ChiselGeneratedModelMeshManager.Reset();
             
             if (NodeHierarchyReset != null)
                 NodeHierarchyReset();
@@ -454,7 +454,7 @@ namespace Chisel.Components
         {
             __transforms.Clear();
             if (rootTransform.parent == null &&
-                CSGGeneratedComponentManager.IsDefaultModel(rootTransform))
+                ChiselGeneratedComponentManager.IsDefaultModel(rootTransform))
             {
                 // The default model is special in the sense that, unlike all other models, it doesn't
                 // simply contain all the nodes that are its childrens. Instead, it contains all the nodes 
@@ -739,7 +739,7 @@ namespace Chisel.Components
                         !sceneHierarchy.Scene.IsValid() ||
                         !sceneHierarchy.Scene.isLoaded)
                         continue;
-                    sceneHierarchy.DefaultModel = CSGGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
+                    sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
                 }
                 createDefaultModels.Clear();
             }
@@ -935,7 +935,7 @@ namespace Chisel.Components
                         if (parentHierarchyItem != null)
                         {
                             if (parentHierarchyItem.Parent == null &&
-                                CSGGeneratedComponentManager.IsDefaultModel(parentHierarchyItem.Component))
+                                ChiselGeneratedComponentManager.IsDefaultModel(parentHierarchyItem.Component))
                             {
                                 var hierarchy = hierarchyItem.sceneHierarchy;
                                 if (hierarchy != null)
@@ -1114,7 +1114,7 @@ namespace Chisel.Components
                     if (parentHierarchyItem != null)
                     {
                         if (parentHierarchyItem.Parent == null &&
-                            CSGGeneratedComponentManager.IsDefaultModel(parentHierarchyItem.Component))
+                            ChiselGeneratedComponentManager.IsDefaultModel(parentHierarchyItem.Component))
                         {
                             var hierarchy = hierarchyItem.sceneHierarchy;
                             if (hierarchy != null)
@@ -1270,7 +1270,7 @@ namespace Chisel.Components
                     
                     // TODO: create a virtual updateChildrenQueue list for the default model instead?
                     if (item.Children.Count == 0 &&
-                        CSGGeneratedComponentManager.IsDefaultModel(item.Component))
+                        ChiselGeneratedComponentManager.IsDefaultModel(item.Component))
                     {
                         var itemModel = item.Component as ChiselModel;
 
@@ -1286,7 +1286,7 @@ namespace Chisel.Components
                             sceneHierarchy.RootItems.Remove(itemModel.hierarchyItem);
                         }
                         destroyNodesList.Add(itemModel.Node);
-                        CSGObjectUtility.SafeDestroy(item.GameObject);
+                        ChiselObjectUtility.SafeDestroy(item.GameObject);
                         continue;
                     }
                 }
@@ -1337,14 +1337,14 @@ namespace Chisel.Components
             if (__unregisterNodes.Count > 0)
             {
                 foreach (var node in __unregisterNodes)
-                    CSGGeneratedModelMeshManager.Unregister(node);
+                    ChiselGeneratedModelMeshManager.Unregister(node);
                 __unregisterNodes.Clear();
             }
 
             if (__registerNodes.Count > 0)
             {
                 foreach (var node in __registerNodes)
-                    CSGGeneratedModelMeshManager.Register(node);
+                    ChiselGeneratedModelMeshManager.Register(node);
                 __registerNodes.Clear();
             }
 
