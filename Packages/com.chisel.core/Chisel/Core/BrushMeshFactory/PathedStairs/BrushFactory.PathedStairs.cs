@@ -35,7 +35,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GeneratePathedStairs(ref BrushMesh[] brushMeshes, ref CSGPathedStairsDefinition definition)
+        public static bool GeneratePathedStairs(ref BrushMesh[] brushMeshes, ref ChiselPathedStairsDefinition definition)
         {
             definition.Validate();
 

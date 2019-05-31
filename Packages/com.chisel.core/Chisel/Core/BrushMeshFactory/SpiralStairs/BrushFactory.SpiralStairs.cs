@@ -19,7 +19,7 @@ namespace Chisel.Core
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
         // TODO: create spiral sides support
 
-        public static bool GenerateSpiralStairs(ref BrushMesh[] brushMeshes, ref CSGOperationType[] operations, ref CSGSpiralStairsDefinition definition)
+        public static bool GenerateSpiralStairs(ref BrushMesh[] brushMeshes, ref CSGOperationType[] operations, ref ChiselSpiralStairsDefinition definition)
         {
             definition.Validate();
             ref readonly var surfaceDefinition = ref definition.surfaceDefinition;

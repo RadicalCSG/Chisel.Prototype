@@ -68,11 +68,11 @@ namespace Chisel.Editors
                 float innerDiameter;
                 EditorGUI.BeginChangeCheck();
                 {
-                    innerDiameter = CSGTorusDefinition.CalcInnerDiameter(outerDiameterProp.floatValue, tubeWidthProp.floatValue);
+                    innerDiameter = ChiselTorusDefinition.CalcInnerDiameter(outerDiameterProp.floatValue, tubeWidthProp.floatValue);
                     innerDiameter = EditorGUI.FloatField(position, content, innerDiameter);
                 }
                 if (EditorGUI.EndChangeCheck())
-                    tubeWidthProp.floatValue = CSGTorusDefinition.CalcTubeWidth(outerDiameterProp.floatValue, innerDiameter);
+                    tubeWidthProp.floatValue = ChiselTorusDefinition.CalcTubeWidth(outerDiameterProp.floatValue, innerDiameter);
             }
             EditorGUI.EndProperty();
         }
@@ -100,7 +100,7 @@ namespace Chisel.Editors
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        static void DrawOutline(CSGTorusDefinition definition, Vector3[] vertices, LineMode lineMode)
+        static void DrawOutline(ChiselTorusDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             //var baseColor		= UnityEditor.Handles.yAxisColor;
             //var isDisabled		= UnitySceneExtensions.Handles.disabled;

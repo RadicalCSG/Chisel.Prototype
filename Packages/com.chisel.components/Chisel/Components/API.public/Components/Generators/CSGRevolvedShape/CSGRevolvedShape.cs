@@ -16,7 +16,7 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public CSGRevolvedShapeDefinition definition = new CSGRevolvedShapeDefinition();
+        [SerializeField] public ChiselRevolvedShapeDefinition definition = new ChiselRevolvedShapeDefinition();
 
         // TODO: implement properties
         public Curve2D Shape

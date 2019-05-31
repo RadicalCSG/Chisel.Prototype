@@ -15,14 +15,14 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateHemisphere(ref BrushMesh brushMesh, ref CSGHemisphereDefinition definition)
+        public static bool GenerateHemisphere(ref BrushMesh brushMesh, ref ChiselHemisphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
             return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateHemisphereVertices(ref CSGHemisphereDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateHemisphereVertices(ref ChiselHemisphereDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);

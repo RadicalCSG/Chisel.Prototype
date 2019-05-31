@@ -14,7 +14,7 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Box";
         public override string NodeTypeName { get { return kNodeTypeName; } }
         
-        [SerializeField] public CSGBoxDefinition definition = new CSGBoxDefinition();
+        [SerializeField] public ChiselBoxDefinition definition = new ChiselBoxDefinition();
 
         #region Properties
         public Bounds Bounds

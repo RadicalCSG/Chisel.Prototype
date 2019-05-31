@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public class CSGRevolvedShapeDefinition // TODO: make this a struct
+    public class ChiselRevolvedShapeDefinition // TODO: make this a struct
     {
         public const int				kDefaultCurveSegments	= 8;
         public const int                kDefaultRevolveSegments = 8;

@@ -55,7 +55,7 @@ namespace Chisel.Editors
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        static void DrawOutline(CSGSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
+        static void DrawOutline(ChiselSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             //var baseColor		= UnityEditor.Handles.yAxisColor;
             //var isDisabled		= UnitySceneExtensions.Handles.disabled;

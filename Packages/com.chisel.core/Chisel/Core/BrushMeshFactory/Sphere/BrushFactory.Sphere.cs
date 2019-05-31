@@ -15,7 +15,7 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateSphere(ref BrushMesh brushMesh, ref CSGSphereDefinition definition)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, ref ChiselSphereDefinition definition)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
@@ -149,7 +149,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateSphereVertices(CSGSphereDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateSphereVertices(ChiselSphereDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);

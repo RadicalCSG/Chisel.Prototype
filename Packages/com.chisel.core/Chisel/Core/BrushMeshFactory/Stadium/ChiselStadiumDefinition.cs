@@ -7,7 +7,7 @@ using Mathf = UnityEngine.Mathf;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct CSGStadiumDefinition
+    public struct ChiselStadiumDefinition
     {
         const float         kNoCenterEpsilon            = 0.0001f;
 

@@ -37,8 +37,8 @@ namespace Chisel.Editors
         // TODO: Store/retrieve default settings
         bool    generateFromCenterXZ    = true;
         bool    isSymmetrical           = true;
-        int	    horizontalSegments      = CSGHemisphereDefinition.kDefaultHorizontalSegments;
-        int	    verticalSegments        = CSGHemisphereDefinition.kDefaultVerticalSegments;
+        int	    horizontalSegments      = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
+        int	    verticalSegments        = ChiselHemisphereDefinition.kDefaultVerticalSegments;
 
         CSGHemisphere hemisphere;
         

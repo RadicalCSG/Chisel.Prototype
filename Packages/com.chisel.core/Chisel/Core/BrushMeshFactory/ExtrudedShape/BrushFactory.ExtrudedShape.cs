@@ -81,7 +81,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, ref CSGExtrudedShapeDefinition definition)
+        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, ref ChiselExtrudedShapeDefinition definition)
         {
             definition.Validate();
             return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.surfaceDefinition);

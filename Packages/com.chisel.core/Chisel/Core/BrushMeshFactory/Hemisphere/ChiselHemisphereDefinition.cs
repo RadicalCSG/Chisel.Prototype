@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct CSGHemisphereDefinition
+    public struct ChiselHemisphereDefinition
     {
         public const float				kMinDiameter				= 0.01f;
         public const float              kDefaultRotation            = 0.0f;

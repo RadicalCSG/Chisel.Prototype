@@ -38,11 +38,11 @@ namespace Chisel.Editors
         // TODO: Store/retrieve default settings
         bool    generateFromCenterXZ    = true;
         bool    isSymmetrical           = true;
-        float   topHeight               = CSGCapsuleDefinition.kDefaultHemisphereHeight;
-        float   bottomHeight            = CSGCapsuleDefinition.kDefaultHemisphereHeight;
-        int	    sides				    = CSGCapsuleDefinition.kDefaultSides;
-        int	    topSegments			    = CSGCapsuleDefinition.kDefaultTopSegments;
-        int	    bottomSegments	        = CSGCapsuleDefinition.kDefaultBottomSegments;
+        float   topHeight               = ChiselCapsuleDefinition.kDefaultHemisphereHeight;
+        float   bottomHeight            = ChiselCapsuleDefinition.kDefaultHemisphereHeight;
+        int	    sides				    = ChiselCapsuleDefinition.kDefaultSides;
+        int	    topSegments			    = ChiselCapsuleDefinition.kDefaultTopSegments;
+        int	    bottomSegments	        = ChiselCapsuleDefinition.kDefaultBottomSegments;
 
         CSGCapsule capsule;
 

@@ -15,7 +15,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateCapsule(ref BrushMesh brushMesh, ref CSGCapsuleDefinition definition)
+        public static bool GenerateCapsule(ref BrushMesh brushMesh, ref ChiselCapsuleDefinition definition)
         {
             Vector3[] vertices = null;
             if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))
@@ -50,7 +50,7 @@ namespace Chisel.Core
         //	capsule with top OR bottom set to 0 height
         //	capsule with both top AND bottom set to 0 height
         //	capsule with height equal to top and bottom height
-        public static bool GenerateCapsuleVertices(ref CSGCapsuleDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateCapsuleVertices(ref ChiselCapsuleDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             var haveTopHemisphere		= definition.haveRoundedTop;

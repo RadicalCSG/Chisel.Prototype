@@ -15,7 +15,7 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public CSGStadiumDefinition definition = new CSGStadiumDefinition();
+        [SerializeField] public ChiselStadiumDefinition definition = new ChiselStadiumDefinition();
 
         // TODO: implement properties
 

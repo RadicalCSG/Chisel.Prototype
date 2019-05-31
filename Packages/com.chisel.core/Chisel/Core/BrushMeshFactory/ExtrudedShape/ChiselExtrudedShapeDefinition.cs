@@ -14,7 +14,7 @@ using System.Collections.Generic;
 namespace Chisel.Core
 {
     [Serializable]
-    public class CSGExtrudedShapeDefinition
+    public class ChiselExtrudedShapeDefinition
     {
         public const int                kDefaultCurveSegments   = 8;
         public static readonly Curve2D  kDefaultShape           = new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });

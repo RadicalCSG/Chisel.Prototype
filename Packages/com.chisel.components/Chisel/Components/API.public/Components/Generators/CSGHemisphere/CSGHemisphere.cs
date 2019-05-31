@@ -15,7 +15,7 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public CSGHemisphereDefinition definition = new CSGHemisphereDefinition();
+        [SerializeField] public ChiselHemisphereDefinition definition = new ChiselHemisphereDefinition();
         
         #region Properties
         public Vector3 DiameterXYZ

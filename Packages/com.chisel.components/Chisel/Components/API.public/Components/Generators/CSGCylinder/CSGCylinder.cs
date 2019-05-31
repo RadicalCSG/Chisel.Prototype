@@ -20,8 +20,8 @@ namespace Chisel.Components
         [SerializeField] public CSGCylinderDefinition definition = new CSGCylinderDefinition();
 
         #region Properties
-        public CSGCircleDefinition Top      { get { return definition.top; } }
-        public CSGCircleDefinition Bottom   { get { return definition.bottom; } }
+        public ChiselCircleDefinition Top      { get { return definition.top; } }
+        public ChiselCircleDefinition Bottom   { get { return definition.bottom; } }
         
         public CylinderShapeType Type
         {

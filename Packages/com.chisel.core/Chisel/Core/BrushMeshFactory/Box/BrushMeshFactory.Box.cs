@@ -8,7 +8,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateBox(ref BrushMesh brushMesh, ref CSGBoxDefinition definition)
+        public static bool GenerateBox(ref BrushMesh brushMesh, ref ChiselBoxDefinition definition)
         {
             definition.Validate();
 

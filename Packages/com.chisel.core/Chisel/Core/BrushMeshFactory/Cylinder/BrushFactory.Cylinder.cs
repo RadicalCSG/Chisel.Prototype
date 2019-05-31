@@ -41,25 +41,25 @@ namespace Chisel.Core
             return result;
         }
 
-        public static bool GenerateCylinder(ref BrushMesh brushMesh, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateCylinder(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = bottom.diameterX;
             top.diameterZ = bottom.diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustum(ref brushMesh, bottom, top, rotation, sides, in surfaceDefinition);
         }
 
-        public static bool GenerateCone(ref BrushMesh brushMesh, CSGCircleDefinition bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateCone(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = 0;
             top.diameterZ = 0;
             top.height = topHeight;
             return GenerateConicalFrustum(ref brushMesh, bottom, top, rotation, sides, in surfaceDefinition);
         }
 
-        public static bool GenerateConicalFrustum(ref BrushMesh brushMesh, CSGCircleDefinition bottom, CSGCircleDefinition top, float rotation, int segments, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateConicalFrustum(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, ChiselCircleDefinition top, float rotation, int segments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {
@@ -86,11 +86,11 @@ namespace Chisel.Core
 
         public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameter, float bottomHeight, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  bottom;
+            ChiselCircleDefinition  bottom;
             bottom.diameterX = diameter;
             bottom.diameterZ = diameter;
             bottom.height = bottomHeight;
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = diameter;
             top.diameterZ = diameter;
             top.height = topHeight;
@@ -99,29 +99,29 @@ namespace Chisel.Core
 
         public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameterX, float diameterZ, float bottomHeight, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  bottom;
+            ChiselCircleDefinition  bottom;
             bottom.diameterX = diameterX;
             bottom.diameterZ = diameterZ;
             bottom.height = bottomHeight;
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = diameterX;
             top.diameterZ = diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, in surfaceDefinition);
         }
 
-        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition  bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = bottom.diameterX;
             top.diameterZ = bottom.diameterZ;
             top.height = topHeight;
             return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, in surfaceDefinition);
         }
 
-        public static bool GenerateConeSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateConeSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition  bottom, float topHeight, float rotation, int sides, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            CSGCircleDefinition  top;
+            ChiselCircleDefinition  top;
             top.diameterX = 0;
             top.diameterZ = 0;
             top.height = topHeight;
@@ -129,7 +129,7 @@ namespace Chisel.Core
         }
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
-        public static Vector3[] GetConeFrustumVertices(CSGCircleDefinition  definition, float topHeight, float rotation, int segments, ref Vector3[] vertices, bool inverse = false)
+        public static Vector3[] GetConeFrustumVertices(ChiselCircleDefinition  definition, float topHeight, float rotation, int segments, ref Vector3[] vertices, bool inverse = false)
         {
             var rotate			= Quaternion.AngleAxis(rotation, Vector3.up);
             var bottomAxisX		= rotate * Vector3.right   * definition.diameterX * 0.5f;
@@ -160,7 +160,7 @@ namespace Chisel.Core
         }
 
 
-        public static Vector3[] GetConicalFrustumVertices(CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, ref Vector3[] vertices)
+        public static Vector3[] GetConicalFrustumVertices(ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, ref Vector3[] vertices)
         {
             if (top.height > bottom.height) { var temp = top; top = bottom; bottom = temp; }
 
@@ -198,7 +198,7 @@ namespace Chisel.Core
         }
 
 
-        public static bool GenerateConicalFrustumSubMesh(ref BrushMesh brushMesh, CSGCircleDefinition  bottom, CSGCircleDefinition  top, float rotation, int segments, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateConicalFrustumSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
             {

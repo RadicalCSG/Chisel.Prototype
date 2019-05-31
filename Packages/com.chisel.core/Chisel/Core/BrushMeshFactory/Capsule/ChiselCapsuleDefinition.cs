@@ -7,7 +7,7 @@ using Mathf = UnityEngine.Mathf;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct CSGCapsuleDefinition
+    public struct ChiselCapsuleDefinition
     {
         public const float	kMinDiameter				= 0.01f;
 

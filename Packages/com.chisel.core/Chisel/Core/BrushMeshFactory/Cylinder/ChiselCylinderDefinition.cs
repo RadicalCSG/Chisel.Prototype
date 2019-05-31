@@ -22,10 +22,10 @@ namespace Chisel.Core
     }
 
     [Serializable]
-    public struct CSGCircleDefinition
+    public struct ChiselCircleDefinition
     {
-        public CSGCircleDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
-        public CSGCircleDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
+        public ChiselCircleDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
+        public ChiselCircleDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
 
         [DistanceValue] public float diameterX;
         [DistanceValue] public float diameterZ;
@@ -46,8 +46,8 @@ namespace Chisel.Core
     [Serializable]
     public struct CSGCylinderDefinition
     {
-        public CSGCircleDefinition  top;
-        public CSGCircleDefinition  bottom;
+        public ChiselCircleDefinition  top;
+        public ChiselCircleDefinition  bottom;
         public bool                 isEllipsoid;
         public CylinderShapeType    type;
         public uint                 smoothingGroup;

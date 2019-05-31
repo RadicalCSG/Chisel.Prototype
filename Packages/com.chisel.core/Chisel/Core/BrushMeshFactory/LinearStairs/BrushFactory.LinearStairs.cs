@@ -17,7 +17,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: remove all stairs specific parameters
-        static void GenerateBottomRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
+        static void GenerateBottomRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, ChiselLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
         {
             for (int i = 0, j = startIndex; i < stepCount; i++, j++)
             {
@@ -61,7 +61,7 @@ namespace Chisel.Core
         }
 
         // TODO: remove all stairs specific parameters
-        static void GenerateTopRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
+        static void GenerateTopRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, ChiselLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
         {
             //var diffY			= (max.y - min.y);
             //var diffZ			= (max.z - min.z);
@@ -107,9 +107,9 @@ namespace Chisel.Core
             }
         }
 
-        public static int GetLinearStairsSubMeshCount(CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition)
+        public static int GetLinearStairsSubMeshCount(ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition)
         {
-            if (definition.surfaceDefinition.surfaces.Length != (int)CSGLinearStairsDefinition.SurfaceSides.TotalSides)
+            if (definition.surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
             {
                 return 0;
             }
@@ -163,12 +163,12 @@ namespace Chisel.Core
             return subMeshCount;
         }
 
-        public static bool GenerateLinearStairs(ref BrushMesh[] brushMeshes, ref CSGLinearStairsDefinition definition)
+        public static bool GenerateLinearStairs(ref BrushMesh[] brushMeshes, ref ChiselLinearStairsDefinition definition)
         {
             return BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushMeshes, ref definition, definition.leftSide, definition.rightSide, 0);
         }
 
-        public static bool GenerateLinearStairsSubMeshes(ref BrushMesh[] brushMeshes, ref CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
+        public static bool GenerateLinearStairsSubMeshes(ref BrushMesh[] brushMeshes, ref ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
             definition.Validate();
             int requiredSubMeshCount = BrushMeshFactory.GetLinearStairsSubMeshCount(definition, definition.leftSide, definition.rightSide);
@@ -188,11 +188,11 @@ namespace Chisel.Core
             return GenerateLinearStairsSubMeshes(brushMeshes, definition, leftSideDefinition, rightSideDefinition, subMeshOffset);
         }
 
-        public static bool GenerateLinearStairsSubMeshes(BrushMesh[] brushMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
+        public static bool GenerateLinearStairsSubMeshes(BrushMesh[] brushMeshes, ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
             // TODO: properly assign all materials
             
-            if (definition.surfaceDefinition.surfaces.Length != (int)CSGLinearStairsDefinition.SurfaceSides.TotalSides)
+            if (definition.surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
             {
                 return false;
             }

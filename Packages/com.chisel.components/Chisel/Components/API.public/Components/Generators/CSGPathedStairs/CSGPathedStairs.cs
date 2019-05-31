@@ -17,7 +17,7 @@ namespace Chisel.Components
 
 
         // TODO: make this private
-        [SerializeField] public CSGPathedStairsDefinition definition = new CSGPathedStairsDefinition();
+        [SerializeField] public ChiselPathedStairsDefinition definition = new ChiselPathedStairsDefinition();
 
         // TODO: implement properties
 

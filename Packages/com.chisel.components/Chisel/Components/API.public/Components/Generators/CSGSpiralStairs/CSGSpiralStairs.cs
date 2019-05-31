@@ -16,7 +16,7 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Spiral Stairs";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        [SerializeField] public CSGSpiralStairsDefinition definition = new CSGSpiralStairsDefinition();
+        [SerializeField] public ChiselSpiralStairsDefinition definition = new ChiselSpiralStairsDefinition();
 
         #region Properties
         public Vector3 Origin

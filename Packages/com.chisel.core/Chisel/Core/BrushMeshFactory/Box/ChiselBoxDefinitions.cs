@@ -7,7 +7,7 @@ namespace Chisel.Core
 {
     // TODO: beveled edges?
     [Serializable]
-    public struct CSGBoxDefinition
+    public struct ChiselBoxDefinition
     {
         public static readonly Bounds   kDefaultBounds = new UnityEngine.Bounds(Vector3.zero, Vector3.one);
 

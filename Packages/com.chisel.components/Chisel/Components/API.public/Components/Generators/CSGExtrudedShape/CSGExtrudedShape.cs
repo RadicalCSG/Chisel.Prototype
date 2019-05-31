@@ -17,7 +17,7 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Extruded Shape";
         public override string NodeTypeName { get { return kNodeTypeName; } }
         
-        [SerializeField] public CSGExtrudedShapeDefinition definition = new CSGExtrudedShapeDefinition();
+        [SerializeField] public ChiselExtrudedShapeDefinition definition = new ChiselExtrudedShapeDefinition();
 
         #region Properties
         public ChiselPath Path

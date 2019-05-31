@@ -172,7 +172,7 @@ namespace Chisel.Editors
                 var pDepth1		= new Vector3(max.x, max.y, min.z + stepDepthOffset);
 
                 plateauHeight   = UnitySceneExtensions.SceneHandles.Edge1DHandle(Axis.Y, pHeight0, pHeight1, snappingStep: generator.StepHeight) - min.y;
-                stepDepthOffset = UnitySceneExtensions.SceneHandles.Edge1DHandle(Axis.Z, pDepth0,  pDepth1,  snappingStep: CSGLinearStairsDefinition.kMinStepDepth) - min.z;
+                stepDepthOffset = UnitySceneExtensions.SceneHandles.Edge1DHandle(Axis.Z, pDepth0,  pDepth1,  snappingStep: ChiselLinearStairsDefinition.kMinStepDepth) - min.z;
                         
                 UnityEditor.Handles.DrawLine(pHeight0, pDepth0);
                 UnityEditor.Handles.DrawLine(pHeight1, pDepth1);
@@ -189,7 +189,7 @@ namespace Chisel.Editors
                     if (stepDepthOffset != originalStepDepthOffset ||
                         plateauHeight != originalPlateauHeight)
                     {
-                        stepDepthOffset			= Mathf.Clamp(stepDepthOffset, 0, generator.Depth - CSGLinearStairsDefinition.kMinStepDepth);
+                        stepDepthOffset			= Mathf.Clamp(stepDepthOffset, 0, generator.Depth - ChiselLinearStairsDefinition.kMinStepDepth);
                         generator.StepDepth		= (generator.Depth - stepDepthOffset) / generator.StepCount;
                     }
                 }

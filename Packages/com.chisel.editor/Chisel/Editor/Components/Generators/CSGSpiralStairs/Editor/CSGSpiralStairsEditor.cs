@@ -189,8 +189,8 @@ namespace Chisel.Editors
             var originalRotation		= generator.Rotation;
             var originalHeight			= generator.Height;
             var originalOrigin			= generator.Origin;
-            var cylinderTop				= new CSGCircleDefinition (1, originalOrigin.y + originalHeight);
-            var cylinderLow				= new CSGCircleDefinition (1, originalOrigin.y);
+            var cylinderTop				= new ChiselCircleDefinition (1, originalOrigin.y + originalHeight);
+            var cylinderLow				= new ChiselCircleDefinition (1, originalOrigin.y);
             var originalTopPoint		= normal * cylinderTop.height;
             var originalLowPoint		= normal * cylinderLow.height;
             var originalMidPoint		= (originalTopPoint + originalLowPoint) * 0.5f;
@@ -216,11 +216,11 @@ namespace Chisel.Editors
                 lowPoint		= UnitySceneExtensions.SceneHandles.DirectionHandle(lowPoint, -normal, snappingStep: originalStepHeight);
                 lowPoint.y		= Mathf.Min(topPoint.y - originalStepHeight, lowPoint.y);
 
-                float minOuterDiameter = innerDiameter + CSGSpiralStairsDefinition.kMinStairsDepth;						
+                float minOuterDiameter = innerDiameter + ChiselSpiralStairsDefinition.kMinStairsDepth;						
                 outerDiameter		= Mathf.Max(minOuterDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, topPoint, outerDiameter * 0.5f, renderDisc: false) * 2.0f);
                 outerDiameter		= Mathf.Max(minOuterDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, lowPoint, outerDiameter * 0.5f, renderDisc: false) * 2.0f);
                         
-                float maxInnerDiameter = outerDiameter - CSGSpiralStairsDefinition.kMinStairsDepth;
+                float maxInnerDiameter = outerDiameter - ChiselSpiralStairsDefinition.kMinStairsDepth;
                 innerDiameter		= Mathf.Min(maxInnerDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, midPoint, innerDiameter * 0.5f, renderDisc: false) * 2.0f);
 
                 startAngle = RotatedEdge2DHandle(startRotateEdgeID, startAngle           , lowPoint, outerDiameter * 0.5f, normal, lowDirection, Vector3.Cross(normal, lowDirection));

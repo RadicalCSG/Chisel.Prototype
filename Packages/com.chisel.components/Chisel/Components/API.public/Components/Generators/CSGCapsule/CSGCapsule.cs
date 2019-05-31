@@ -15,7 +15,7 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public CSGCapsuleDefinition definition = new CSGCapsuleDefinition();
+        [SerializeField] public ChiselCapsuleDefinition definition = new ChiselCapsuleDefinition();
         
         #region Properties
         public float Height

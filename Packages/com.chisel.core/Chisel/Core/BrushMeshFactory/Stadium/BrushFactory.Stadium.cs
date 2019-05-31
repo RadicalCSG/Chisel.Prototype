@@ -16,7 +16,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
 
-        public static bool GenerateStadiumVertices(CSGStadiumDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateStadiumVertices(ChiselStadiumDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             
@@ -96,7 +96,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateStadium(ref BrushMesh brushMesh, ref CSGStadiumDefinition definition)
+        public static bool GenerateStadium(ref BrushMesh brushMesh, ref ChiselStadiumDefinition definition)
         {
             definition.Validate();
             Vector3[] vertices = null;

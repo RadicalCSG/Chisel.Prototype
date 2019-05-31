@@ -15,7 +15,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateTorusVertices(CSGTorusDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
             //var surfaces		= definition.brushMaterials;
@@ -81,7 +81,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateTorus(ref BrushMesh[] brushMeshes, ref CSGTorusDefinition definition)
+        public static bool GenerateTorus(ref BrushMesh[] brushMeshes, ref ChiselTorusDefinition definition)
         {
             definition.Validate();
             Vector3[] vertices = null;

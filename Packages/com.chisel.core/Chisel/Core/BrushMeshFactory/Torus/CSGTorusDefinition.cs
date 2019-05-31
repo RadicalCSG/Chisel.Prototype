@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct CSGTorusDefinition
+    public struct ChiselTorusDefinition
     {
         public const float kMinTubeDiameter			   = 0.1f;
         public const int   kDefaultHorizontalSegments  = 8;

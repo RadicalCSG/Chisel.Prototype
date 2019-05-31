@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public class CSGPathedStairsDefinition // TODO: make this a struct
+    public class ChiselPathedStairsDefinition // TODO: make this a struct
     {
         public const int				kDefaultCurveSegments	= 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
@@ -17,7 +17,7 @@ namespace Chisel.Core
         public int                      curveSegments;
         
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
-        public CSGLinearStairsDefinition stairs = new CSGLinearStairsDefinition();
+        public ChiselLinearStairsDefinition stairs = new ChiselLinearStairsDefinition();
 
         public void Reset()
         {

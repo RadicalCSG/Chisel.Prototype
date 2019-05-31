@@ -36,10 +36,10 @@ namespace Chisel.Editors
         // TODO: Ability to modify default settings
         // TODO: Store/retrieve default settings
         bool generateFromCenterXZ   = true;
-        bool generateFromCenterY    = CSGSphereDefinition.kDefaultGenerateFromCenter;
+        bool generateFromCenterY    = ChiselSphereDefinition.kDefaultGenerateFromCenter;
         bool isSymmetrical          = true;
-        int verticalSegments        = CSGSphereDefinition.kDefaultVerticalSegments;
-        int horizontalSegments      = CSGSphereDefinition.kDefaultHorizontalSegments;
+        int verticalSegments        = ChiselSphereDefinition.kDefaultVerticalSegments;
+        int horizontalSegments      = ChiselSphereDefinition.kDefaultHorizontalSegments;
 
 
         CSGSphere sphere;

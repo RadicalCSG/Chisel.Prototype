@@ -75,7 +75,7 @@ namespace Chisel.Editors
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        static void DrawOutline(CSGStadiumDefinition definition, Vector3[] vertices, LineMode lineMode)
+        static void DrawOutline(ChiselStadiumDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             var sides				= definition.sides;
             var topSides			= Mathf.Max(definition.topSides, 1) + 1;

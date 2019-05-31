@@ -18,7 +18,7 @@ namespace BrushMeshAssetTests
 
         public static ChiselGeneratedBrushes CreateBox(Vector3 size, ChiselBrushMaterial material)
         {
-            var boxDefinition = new CSGBoxDefinition()
+            var boxDefinition = new ChiselBoxDefinition()
             {
                 bounds = new Bounds(Vector3.zero, size),
                 surfaceDefinition = new ChiselSurfaceDefinition()

@@ -17,7 +17,7 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public CSGLinearStairsDefinition definition = new CSGLinearStairsDefinition();
+        [SerializeField] public ChiselLinearStairsDefinition definition = new ChiselLinearStairsDefinition();
 
         #region Properties
         public float StepHeight

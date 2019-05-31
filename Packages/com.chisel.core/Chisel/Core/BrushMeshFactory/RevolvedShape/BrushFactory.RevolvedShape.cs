@@ -88,7 +88,7 @@ namespace Chisel.Core
             polygons.Insert(index, positivePolygon.ToArray());
         }
 
-        public static bool GenerateRevolvedShape(ref BrushMesh[] brushMeshes, ref CSGRevolvedShapeDefinition definition)
+        public static bool GenerateRevolvedShape(ref BrushMesh[] brushMeshes, ref ChiselRevolvedShapeDefinition definition)
         {
             definition.Validate();
         

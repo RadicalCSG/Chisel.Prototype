@@ -36,8 +36,8 @@ namespace Chisel.Editors
         // TODO: Ability to modify default settings
         // TODO: Store/retrieve default settings
         bool			generateFromCenterXZ    = true;
-        int             outerSegments           = CSGSpiralStairsDefinition.kDefaultOuterSegments;
-        float           stepHeight              = CSGSpiralStairsDefinition.kDefaultStepHeight;
+        int             outerSegments           = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
+        float           stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
 
         CSGSpiralStairs spiralStairs;
 
