@@ -1,21 +1,15 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselSphere : ChiselGeneratorComponent
+    public sealed class ChiselSphere : ChiselDefinedGeneratorComponent<ChiselSphereDefinition>
     {
         public const string kNodeTypeName = "Sphere";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-
-        // TODO: make this private
-        [SerializeField] public ChiselSphereDefinition definition = new ChiselSphereDefinition();
 
         #region Properties
         public Vector3 DiameterXYZ
@@ -59,22 +53,5 @@ namespace Chisel.Components
             set { if (value == definition.generateFromCenter) return; definition.generateFromCenter = value; OnValidateInternal(); }
         }
         #endregion
-
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMesh = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMesh);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

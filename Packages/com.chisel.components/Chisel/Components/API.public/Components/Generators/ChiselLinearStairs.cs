@@ -1,23 +1,15 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
 using Chisel.Core;
-using System;
-using UnitySceneExtensions;
-using System.Linq;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselLinearStairs : ChiselGeneratorComponent
+    public sealed class ChiselLinearStairs : ChiselDefinedGeneratorComponent<ChiselLinearStairsDefinition>
     {
         public const string kNodeTypeName = "Linear Stairs";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-
-        // TODO: make this private
-        [SerializeField] public ChiselLinearStairsDefinition definition = new ChiselLinearStairsDefinition();
 
         #region Properties
         public float StepHeight
@@ -132,22 +124,5 @@ namespace Chisel.Components
             set { if (definition.bounds == value) return; definition.bounds = value; OnValidateInternal(); }
         }
         #endregion
-
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = brushContainerAsset.BrushMeshes;
-            if (!BrushMeshFactory.GenerateLinearStairs(ref brushMeshes, ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

@@ -8,13 +8,13 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselRevolvedShapeDefinition // TODO: make this a struct
+    public struct ChiselRevolvedShapeDefinition : IChiselGenerator// TODO: make this a struct
     {
         public const int				kDefaultCurveSegments	= 8;
         public const int                kDefaultRevolveSegments = 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
-        public Curve2D				shape  = null; // TODO: make this a struct
+        public Curve2D				shape;
         public int					curveSegments;
         public int					revolveSegments;
         public float				startAngle;
@@ -45,6 +45,11 @@ namespace Chisel.Core
             totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
 
             surfaceDefinition.EnsureSize(6);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateRevolvedShape(ref brushContainer, ref this);
         }
     }
 }

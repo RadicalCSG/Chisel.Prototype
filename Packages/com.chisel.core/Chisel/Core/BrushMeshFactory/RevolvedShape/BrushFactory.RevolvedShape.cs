@@ -15,6 +15,85 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static bool GenerateRevolvedShape(ref ChiselBrushContainer brushContainer, ref ChiselRevolvedShapeDefinition definition)
+        { 
+            definition.Validate();
+        
+            
+            var shapeVertices		= new List<Vector2>();
+            var shapeSegmentIndices = new List<int>();
+            BrushMeshFactory.GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
+            
+            Vector2[][] polygonVerticesArray;
+            int[][] polygonIndicesArray;
+
+            if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
+                                           out polygonVerticesArray,
+                                           out polygonIndicesArray))
+                return false;
+            
+            // TODO: splitting it before we do the composition would be better
+            var polygonVerticesList		= polygonVerticesArray.ToList();
+            for (int i = polygonVerticesList.Count - 1; i >= 0; i--)
+            {
+                SplitPolygon(polygonVerticesList, i);
+            }
+
+            var brushMeshesList			= new List<BrushMesh>();
+            var horzSegments			= definition.revolveSegments;//horizontalSegments;
+            var horzDegreePerSegment	= definition.totalAngle / horzSegments;
+
+            
+            // TODO: make this work when intersecting rotation axis
+            //			1. split polygons along rotation axis
+            //			2. if edge lies on rotation axis, make sure we don't create infinitely thin quad
+            //					collapse this quad, or prevent this from happening
+            // TODO: share this code with torus generator
+            for (int p = 0; p < polygonVerticesList.Count; p++)
+            {
+                var polygonVertices		= polygonVerticesList[p];
+//				var segmentIndices		= polygonIndicesArray[p];
+                var shapeSegments		= polygonVertices.Length;
+                
+                var vertSegments		= polygonVertices.Length;
+                var descriptionIndex	= new int[2 + vertSegments];
+            
+                descriptionIndex[0] = 0;
+                descriptionIndex[1] = 1;
+            
+                for (int v = 0; v < vertSegments; v++)
+                {
+                    descriptionIndex[v + 2] = 2;
+                }
+                
+                var horzOffset		= definition.startAngle;
+                for (int h = 1, pr = 0; h < horzSegments + 1; pr = h, h++)
+                {
+                    var hDegree0 = (pr * horzDegreePerSegment) + horzOffset;
+                    var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
+                    var rotation0 = Quaternion.AngleAxis(hDegree0, Vector3.forward);
+                    var rotation1 = Quaternion.AngleAxis(hDegree1, Vector3.forward);
+                    var subMeshVertices = new Vector3[vertSegments * 2];
+                    for (int v = 0; v < vertSegments; v++)
+                    {
+                        subMeshVertices[v + vertSegments] = rotation0 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
+                        subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
+                    }
+
+                    var brushMesh = new BrushMesh();
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in definition.surfaceDefinition))
+                        continue;
+
+                    if (!brushMesh.Validate())
+                        return false;
+                    brushMeshesList.Add(brushMesh);
+                }
+            }
+
+            brushContainer.CopyFrom(brushMeshesList);
+            return true;
+        }
+
         static void SplitPolygon(List<Vector2[]> polygons, int index)
         {
             const float kEpsilon = 0.0001f;
@@ -88,97 +167,5 @@ namespace Chisel.Core
             polygons.Insert(index, positivePolygon.ToArray());
         }
 
-        public static bool GenerateRevolvedShape(ref BrushMesh[] brushMeshes, ref ChiselRevolvedShapeDefinition definition)
-        {
-            definition.Validate();
-        
-            
-            var shapeVertices		= new List<Vector2>();
-            var shapeSegmentIndices = new List<int>();
-            BrushMeshFactory.GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
-            
-            Vector2[][] polygonVerticesArray;
-            int[][] polygonIndicesArray;
-
-            if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
-                                           out polygonVerticesArray,
-                                           out polygonIndicesArray))
-            {
-                brushMeshes = null;
-                return false;
-            }
-            
-            // TODO: splitting it before we do the composition would be better
-            var polygonVerticesList		= polygonVerticesArray.ToList();
-            for (int i = polygonVerticesList.Count - 1; i >= 0; i--)
-            {
-                SplitPolygon(polygonVerticesList, i);
-            }
-
-            var brushMeshesList			= new List<BrushMesh>();
-            var horzSegments			= definition.revolveSegments;//horizontalSegments;
-            var horzDegreePerSegment	= definition.totalAngle / horzSegments;
-
-            
-            // TODO: make this work when intersecting rotation axis
-            //			1. split polygons along rotation axis
-            //			2. if edge lies on rotation axis, make sure we don't create infinitely thin quad
-            //					collapse this quad, or prevent this from happening
-            // TODO: share this code with torus generator
-            for (int p = 0; p < polygonVerticesList.Count; p++)
-            {
-                var polygonVertices		= polygonVerticesList[p];
-//				var segmentIndices		= polygonIndicesArray[p];
-                var shapeSegments		= polygonVertices.Length;
-                
-                var vertSegments		= polygonVertices.Length;
-                var descriptionIndex	= new int[2 + vertSegments];
-            
-                descriptionIndex[0] = 0;
-                descriptionIndex[1] = 1;
-            
-                for (int v = 0; v < vertSegments; v++)
-                {
-                    descriptionIndex[v + 2] = 2;
-                }
-                
-                var horzOffset		= definition.startAngle;
-                for (int h = 1, pr = 0; h < horzSegments + 1; pr = h, h++)
-                {
-                    var hDegree0 = (pr * horzDegreePerSegment) + horzOffset;
-                    var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                    var rotation0 = Quaternion.AngleAxis(hDegree0, Vector3.forward);
-                    var rotation1 = Quaternion.AngleAxis(hDegree1, Vector3.forward);
-                    var subMeshVertices = new Vector3[vertSegments * 2];
-                    for (int v = 0; v < vertSegments; v++)
-                    {
-                        subMeshVertices[v + vertSegments] = rotation0 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
-                        subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
-                    }
-
-                    var brushMesh = new BrushMesh();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in definition.surfaceDefinition))
-                        continue;
-
-                    if (!brushMesh.Validate())
-                    {
-                        brushMeshes = null;
-                        return false;
-                    }
-                    brushMeshesList.Add(brushMesh);
-                }
-            }
-
-            if (brushMeshes == null ||
-                brushMeshes.Length != brushMeshesList.Count)
-            {
-                brushMeshes = new BrushMesh[brushMeshesList.Count];
-                for (int i = 0; i < brushMeshes.Length; i++)
-                    brushMeshes[i] = new BrushMesh();
-            }
-            
-            brushMeshesList.CopyTo(brushMeshes);
-            return true;
-        }
     }
 }

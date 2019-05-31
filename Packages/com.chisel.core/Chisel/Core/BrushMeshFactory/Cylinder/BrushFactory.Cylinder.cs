@@ -16,7 +16,32 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateCylinder(ref BrushMesh brushMesh, ref CSGCylinderDefinition definition)
+        public static bool GenerateCylinder(ref ChiselBrushContainer brushContainer, ref ChiselCylinderDefinition definition)
+        {
+            definition.Validate();
+
+            var tempTop    = definition.top;
+            var tempBottom = definition.bottom;
+
+            if (!definition.isEllipsoid)
+            {
+                tempTop   .diameterZ = tempTop.diameterX;
+                tempBottom.diameterZ = tempBottom.diameterX;
+            }
+
+            brushContainer.EnsureSize(1);
+
+            bool result = false;
+            switch (definition.type)
+            {
+                case CylinderShapeType.Cylinder:       result = BrushMeshFactory.GenerateCylinder(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, in definition.surfaceDefinition); break;
+                case CylinderShapeType.ConicalFrustum: result = BrushMeshFactory.GenerateConicalFrustum(ref brushContainer.brushMeshes[0], tempBottom, tempTop, definition.rotation, definition.sides, in definition.surfaceDefinition); break;
+                case CylinderShapeType.Cone:           result = BrushMeshFactory.GenerateCone(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, in definition.surfaceDefinition); break;
+            }
+            return result;
+        }
+
+        public static bool GenerateCylinder(ref BrushMesh brushMesh, ref ChiselCylinderDefinition definition)
         {
             definition.Validate();
 

@@ -7,7 +7,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselTorusDefinition
+    public struct ChiselTorusDefinition : IChiselGenerator
     {
         public const float kMinTubeDiameter			   = 0.1f;
         public const int   kDefaultHorizontalSegments  = 8;
@@ -74,6 +74,11 @@ namespace Chisel.Core
             totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
             
             surfaceDefinition.EnsureSize(6);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
         }
     }
 }

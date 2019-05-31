@@ -1,20 +1,15 @@
 using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselBox : ChiselGeneratorComponent
+    public sealed class ChiselBox : ChiselDefinedGeneratorComponent<ChiselBoxDefinition>
     {
         public const string kNodeTypeName = "Box";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-        
-        [SerializeField] public ChiselBoxDefinition definition = new ChiselBoxDefinition();
 
         #region Properties
         public Bounds Bounds
@@ -47,21 +42,5 @@ namespace Chisel.Components
             set { if (value == definition.size) return; definition.size = value; OnValidateInternal(); }
         }
         #endregion
-
-        protected override void OnResetInternal()    { definition.Reset(); base.OnResetInternal(); }
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateBox(ref brushMeshes[0], ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

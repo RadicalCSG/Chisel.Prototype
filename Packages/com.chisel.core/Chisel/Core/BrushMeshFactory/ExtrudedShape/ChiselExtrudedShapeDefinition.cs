@@ -14,14 +14,14 @@ using System.Collections.Generic;
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselExtrudedShapeDefinition
+    public struct ChiselExtrudedShapeDefinition : IChiselGenerator
     {
         public const int                kDefaultCurveSegments   = 8;
         public static readonly Curve2D  kDefaultShape           = new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
         public Curve2D                  shape;
-        public ChiselPath                     path;
-        public int                      curveSegments   = kDefaultCurveSegments;
+        public ChiselPath               path;
+        public int                      curveSegments;
         
         public ChiselSurfaceDefinition  surfaceDefinition;
         
@@ -44,6 +44,11 @@ namespace Chisel.Core
 
             int sides = shape.controlPoints.Length;
             surfaceDefinition.EnsureSize(2 + sides);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateExtrudedShape(ref brushContainer, ref this);
         }
     }
 }

@@ -7,7 +7,7 @@ using Mathf = UnityEngine.Mathf;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselStadiumDefinition
+    public struct ChiselStadiumDefinition : IChiselGenerator
     {
         const float         kNoCenterEpsilon            = 0.0001f;
 
@@ -81,6 +81,11 @@ namespace Chisel.Core
 
             var sides			= 2 + Mathf.Max(topSides,1) + Mathf.Max(bottomSides,1);
             surfaceDefinition.EnsureSize(2 + sides);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateStadium(ref brushContainer, ref this);
         }
     }
 }

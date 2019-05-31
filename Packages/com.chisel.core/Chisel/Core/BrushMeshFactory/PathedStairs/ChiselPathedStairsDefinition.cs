@@ -8,21 +8,21 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselPathedStairsDefinition // TODO: make this a struct
+    public struct ChiselPathedStairsDefinition : IChiselGenerator
     {
         public const int				kDefaultCurveSegments	= 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
-        public Curve2D					shape  = null; // TODO: make this a struct
+        public Curve2D					shape;
         public int                      curveSegments;
         
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
-        public ChiselLinearStairsDefinition stairs = new ChiselLinearStairsDefinition();
+        public ChiselLinearStairsDefinition stairs;
 
         public void Reset()
         {
-            shape = kDefaultShape;
-            curveSegments = kDefaultCurveSegments;
+            shape           = kDefaultShape;
+            curveSegments   = kDefaultCurveSegments;
             stairs.Reset();
         }
 
@@ -30,6 +30,11 @@ namespace Chisel.Core
         {
             curveSegments = Mathf.Max(curveSegments, 2);
             stairs.Validate();
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GeneratePathedStairs(ref brushContainer, ref this);
         }
     }
 }

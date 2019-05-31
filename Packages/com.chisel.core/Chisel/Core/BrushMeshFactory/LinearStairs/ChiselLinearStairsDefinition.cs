@@ -34,7 +34,7 @@ namespace Chisel.Core
     // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
     // https://en.wikipedia.org/wiki/Stairs
     [Serializable]
-    public struct ChiselLinearStairsDefinition
+    public struct ChiselLinearStairsDefinition : IChiselGenerator
     {
         public enum SurfaceSides
         {
@@ -199,6 +199,11 @@ namespace Chisel.Core
 
             plateauHeight		= Mathf.Max(0, absHeight - totalStepHeight);
             stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, Mathf.Abs(depth) / totalSteps);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateLinearStairs(ref brushContainer, ref this);
         }
     }
 }

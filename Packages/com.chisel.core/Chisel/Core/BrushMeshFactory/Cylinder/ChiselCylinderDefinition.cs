@@ -44,7 +44,7 @@ namespace Chisel.Core
     }
 
     [Serializable]
-    public struct CSGCylinderDefinition
+    public struct ChiselCylinderDefinition : IChiselGenerator
     {
         public ChiselCircleDefinition  top;
         public ChiselCircleDefinition  bottom;
@@ -238,6 +238,11 @@ namespace Chisel.Core
                     surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
                 }
             }
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
         }
     }
 }

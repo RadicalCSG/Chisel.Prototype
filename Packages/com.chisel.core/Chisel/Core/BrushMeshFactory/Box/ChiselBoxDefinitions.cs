@@ -7,7 +7,7 @@ namespace Chisel.Core
 {
     // TODO: beveled edges?
     [Serializable]
-    public struct ChiselBoxDefinition
+    public struct ChiselBoxDefinition : IChiselGenerator
     {
         public static readonly Bounds   kDefaultBounds = new UnityEngine.Bounds(Vector3.zero, Vector3.one);
 
@@ -18,7 +18,7 @@ namespace Chisel.Core
         public Vector3			        max	    { get { return bounds.max; } set { bounds.max = value; } }
         public Vector3			        size    { get { return bounds.size; } set { bounds.size = value; } }
         public Vector3			        center  { get { return bounds.center; } set { bounds.center = value; } }
-
+        
         public void Reset()
         {
             bounds = kDefaultBounds;
@@ -30,6 +30,11 @@ namespace Chisel.Core
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
             surfaceDefinition.EnsureSize(6);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
         }
     }
 

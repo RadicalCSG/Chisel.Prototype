@@ -15,6 +15,31 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static bool GenerateCapsule(ref ChiselBrushContainer brushContainer, ref ChiselCapsuleDefinition definition)
+        {
+            definition.Validate();
+            Vector3[] vertices = null;
+            if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))
+                return false;
+
+            // TODO: share this with GenerateCapsuleVertices
+            var bottomCap		= !definition.haveRoundedBottom;
+            var topCap			= !definition.haveRoundedTop;
+            var sides			= definition.sides;
+            var segments		= definition.segments;
+            var bottomVertex	= definition.bottomVertex;
+            var topVertex		= definition.topVertex;
+
+            brushContainer.EnsureSize(1);
+
+            return BrushMeshFactory.GenerateSegmentedSubMesh(ref brushContainer.brushMeshes[0], 
+                                                             sides, segments, 
+                                                             vertices, 
+                                                             topCap, bottomCap,  
+                                                             topVertex, bottomVertex, 
+                                                             definition.surfaceDefinition);
+        }
+
         public static bool GenerateCapsule(ref BrushMesh brushMesh, ref ChiselCapsuleDefinition definition)
         {
             Vector3[] vertices = null;

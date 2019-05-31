@@ -38,16 +38,7 @@ namespace BrushContainerAssetTests
             boxDefinition.Validate();
 
             var brushContainerAsset = new ChiselBrushContainerAsset();
-            var brushMeshes         = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateBox(ref brushMeshes[0], ref boxDefinition))
-            {
-                brushContainerAsset.SetSubMeshes(brushMeshes);
-                brushContainerAsset.CalculatePlanes();
-                brushContainerAsset.SetDirty();
-            } else
-            {
-                brushContainerAsset.Clear();
-            }
+            brushContainerAsset.Generate(boxDefinition);
             return brushContainerAsset;
         }
 

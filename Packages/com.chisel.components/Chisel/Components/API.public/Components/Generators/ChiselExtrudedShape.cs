@@ -1,10 +1,6 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 using UnitySceneExtensions;
-using System.Linq;
 
 namespace Chisel.Components
 {
@@ -12,12 +8,10 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselExtrudedShape : ChiselGeneratorComponent
+    public sealed class ChiselExtrudedShape : ChiselDefinedGeneratorComponent<ChiselExtrudedShapeDefinition>
     {
         public const string kNodeTypeName = "Extruded Shape";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-        
-        [SerializeField] public ChiselExtrudedShapeDefinition definition = new ChiselExtrudedShapeDefinition();
 
         #region Properties
         public ChiselPath Path
@@ -48,23 +42,5 @@ namespace Chisel.Components
             }
         }
         #endregion
-
-        protected override void OnResetInternal()    { definition.Reset(); base.OnResetInternal(); }
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = brushContainerAsset.BrushMeshes;
-            if (!BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

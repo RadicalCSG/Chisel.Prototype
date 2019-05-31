@@ -15,27 +15,7 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        // TODO: move somewhere else
-        static bool Intersect(Vector2 p1, Vector2 d1,
-                                     Vector2 p2, Vector2 d2, out Vector2 intersection)
-        {
-            const float kEpsilon = 0.0001f;
-
-            var f = d1.y * d2.x - d1.x * d2.y;
-            // check if the rays are parallel
-            if (f >= -kEpsilon && f <= kEpsilon)
-            {
-                intersection = Vector2.zero;
-                return false;
-            }
-
-            var c0 = p1 - p2;
-            var t = (d2.y * c0.x - d2.x * c0.y) / f;
-            intersection = p1 + (t * d1);
-            return true;
-        }
-
-        public static bool GeneratePathedStairs(ref BrushMesh[] brushMeshes, ref ChiselPathedStairsDefinition definition)
+        public static bool GeneratePathedStairs(ref ChiselBrushContainer brushContainer, ref ChiselPathedStairsDefinition definition)
         {
             definition.Validate();
 
@@ -55,21 +35,11 @@ namespace Chisel.Core
                 totalSubMeshCount += BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
             }
             if (totalSubMeshCount == 0)
-            {
-                brushMeshes = null;
                 return false;
-            }
 
             //			var stairDirections = definition.shape.closed ? shapeVertices.Count : (shapeVertices.Count - 1);
 
-            // TODO: use list instead?
-            if (brushMeshes == null ||
-                brushMeshes.Length != totalSubMeshCount)
-            {
-                brushMeshes = new BrushMesh[totalSubMeshCount];
-                for (int i = 0; i < totalSubMeshCount; i++)
-                    brushMeshes[i] = new BrushMesh();
-            }
+            brushContainer.EnsureSize(totalSubMeshCount);
 
             var depth		= definition.stairs.depth;
             var height		= definition.stairs.height;
@@ -135,16 +105,13 @@ namespace Chisel.Core
                 if (subMeshCount == 0)
                     continue;
 
-                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, definition.stairs, leftSide, rightSide, subMeshIndex))
-                {
-                    brushMeshes = null;
+                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushContainer, definition.stairs, leftSide, rightSide, subMeshIndex))
                     return false;
-                }
 
                 var halfWidth = maxWidth1 * 0.5f;
                 for (int m = 0; m < subMeshCount; m++)
                 {
-                    var vertices = brushMeshes[subMeshIndex + m].vertices;
+                    var vertices = brushContainer.brushMeshes[subMeshIndex + m].vertices;
                     for (int v = 0; v < vertices.Length; v++)
                     {
                         // TODO: is it possible to put all of this in a single matrix?
@@ -165,5 +132,27 @@ namespace Chisel.Core
             }
             return false;
         }
+
+
+        // TODO: move somewhere else
+        static bool Intersect(Vector2 p1, Vector2 d1,
+                                     Vector2 p2, Vector2 d2, out Vector2 intersection)
+        {
+            const float kEpsilon = 0.0001f;
+
+            var f = d1.y * d2.x - d1.x * d2.y;
+            // check if the rays are parallel
+            if (f >= -kEpsilon && f <= kEpsilon)
+            {
+                intersection = Vector2.zero;
+                return false;
+            }
+
+            var c0 = p1 - p2;
+            var t = (d2.y * c0.x - d2.x * c0.y) / f;
+            intersection = p1 + (t * d1);
+            return true;
+        }
+
     }
 }

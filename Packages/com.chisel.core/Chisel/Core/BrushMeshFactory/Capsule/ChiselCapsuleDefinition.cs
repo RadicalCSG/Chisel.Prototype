@@ -7,7 +7,7 @@ using Mathf = UnityEngine.Mathf;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselCapsuleDefinition
+    public struct ChiselCapsuleDefinition : IChiselGenerator
     {
         public const float	kMinDiameter				= 0.01f;
 
@@ -107,6 +107,11 @@ namespace Chisel.Core
             sides				= Mathf.Max(sides, 3);
             
             surfaceDefinition.EnsureSize(2 + sides);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateCapsule(ref brushContainer, ref this);
         }
     }
 }

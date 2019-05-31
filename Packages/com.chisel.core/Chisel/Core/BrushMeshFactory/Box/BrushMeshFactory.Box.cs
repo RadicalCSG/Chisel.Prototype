@@ -15,17 +15,14 @@ namespace Chisel.Core
             var min = definition.min;
             var max = definition.max;
             if (!BoundsExtensions.IsValid(min, max))
-            {
                 return false;
-            }
-            
-            if (brushContainer.brushMeshes == null ||
-                brushContainer.brushMeshes.Length != 1) 
-                brushContainer.brushMeshes = new[] { new BrushMesh() };
+
+            brushContainer.EnsureSize(1);
+
             return GenerateBox(ref brushContainer.brushMeshes[0], definition.min, definition.max, definition.surfaceDefinition);
         }
 
-        public static bool GenerateBox(ref BrushMesh brushMesh, ref ChiselBoxDefinition definition)
+        static bool GenerateBox(ref BrushMesh brushMesh, ref ChiselBoxDefinition definition)
         {
             definition.Validate();
 

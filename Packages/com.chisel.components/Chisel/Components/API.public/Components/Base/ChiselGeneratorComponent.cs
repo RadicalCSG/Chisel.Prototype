@@ -7,6 +7,16 @@ using System.Linq;
 
 namespace Chisel.Components
 {
+    public abstract class ChiselDefinedGeneratorComponent<T> : ChiselGeneratorComponent
+        where T : IChiselGenerator, new()
+    {
+        [SerializeField] public T definition = new T();
+
+        protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
+        protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }
+        protected override void UpdateGeneratorInternal()   { brushContainerAsset.Generate(definition); }
+    }
+
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
         public const string kGeneratedBrushesName   = nameof(brushContainerAsset);

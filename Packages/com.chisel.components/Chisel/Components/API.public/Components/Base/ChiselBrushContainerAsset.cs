@@ -33,13 +33,9 @@ namespace Chisel.Components
         public void Generate(IChiselGenerator generator)
         {
             if (!generator.Generate(ref brushContainer))
-            {
-                CalculatePlanes();
-                SetDirty();
-            } else
-            {
-                brushContainer.Clear();
-            }
+                brushContainer.Reset();
+            CalculatePlanes();
+            SetDirty();
             ChiselBrushContainerAssetManager.NotifyContentsModified(this);
         }
 
@@ -71,7 +67,7 @@ namespace Chisel.Components
             return true;
         }
 
-        public void Clear() { brushContainer.Clear(); OnValidate(); }
+        public void Clear() { brushContainer.Reset(); OnValidate(); }
         
         internal bool HasInstances { get { return instances != null && instances.Length > 0 && instances[0].Valid; } }
 
@@ -122,6 +118,9 @@ namespace Chisel.Components
 
         public void	CalculatePlanes()
         {
+            if (brushContainer.brushMeshes == null)
+                return;
+
             for (int i = 0; i < brushContainer.brushMeshes.Length; i++)
             {
                 if (brushContainer.brushMeshes[i] == null)

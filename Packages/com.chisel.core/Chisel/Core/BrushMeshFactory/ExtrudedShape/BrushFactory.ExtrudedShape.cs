@@ -16,6 +16,94 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static bool GenerateExtrudedShape(ref ChiselBrushContainer brushContainer, ref ChiselExtrudedShapeDefinition definition)
+        {
+            definition.Validate();
+
+            ref readonly var shape               = ref definition.shape;
+            int              curveSegments       = definition.curveSegments;
+
+            var shapeVertices       = new List<Vector2>();
+            var shapeSegmentIndices = new List<int>();
+            GetPathVertices(shape, curveSegments, shapeVertices, shapeSegmentIndices);
+
+            Vector2[][] polygonVerticesArray;
+            int[][]     polygonIndicesArray;
+
+            if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
+                                                out polygonVerticesArray,
+                                                out polygonIndicesArray))
+                return false;
+
+            ref readonly var path                = ref definition.path;
+
+            // TODO: make each extruded quad split into two triangles when it's not a perfect plane,
+            //			split it to make sure it's convex
+
+            // TODO: make it possible to smooth (parts) of the shape
+
+            // TODO: make materials work well
+            // TODO: make it possible to 'draw' shapes on any surface
+
+            // TODO: make path work as a spline, with subdivisions
+            // TODO:	make this work well with twisted rotations
+            // TODO: make shape/path subdivisions be configurable / automatic
+
+
+
+            var brushMeshesList = new List<BrushMesh>();
+            for (int p = 0; p < polygonVerticesArray.Length; p++)
+            {
+                var polygonVertices = polygonVerticesArray[p];
+                var segmentIndices = polygonIndicesArray[p];
+                var shapeSegments = polygonVertices.Length;
+
+                for (int s = 0; s < path.segments.Length - 1; s++)
+                {
+                    var pathPointA = path.segments[s];
+                    var pathPointB = path.segments[s + 1];
+                    int subSegments = 1;
+                    var offsetQuaternion = pathPointB.rotation * Quaternion.Inverse(pathPointA.rotation);
+                    var offsetEuler = offsetQuaternion.eulerAngles;
+                    if (offsetEuler.x > 180) offsetEuler.x = 360 - offsetEuler.x;
+                    if (offsetEuler.y > 180) offsetEuler.y = 360 - offsetEuler.y;
+                    if (offsetEuler.z > 180) offsetEuler.z = 360 - offsetEuler.z;
+                    var maxAngle = Mathf.Max(offsetEuler.x, offsetEuler.y, offsetEuler.z);
+                    if (maxAngle != 0)
+                        subSegments = Mathf.Max(1, (int)Mathf.Ceil(maxAngle / 5));
+
+                    if ((pathPointA.scale.x / pathPointA.scale.y) != (pathPointB.scale.x / pathPointB.scale.y) &&
+                        (subSegments & 1) == 1)
+                        subSegments += 1;
+
+                    for (int n = 0; n < subSegments; n++)
+                    {
+                        var matrix0 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], n / (float)subSegments);
+                        var matrix1 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], (n + 1) / (float)subSegments);
+
+                        // TODO: this doesn't work if top and bottom polygons intersect
+                        //			=> need to split into two brushes then, invert one of the two brushes
+                        var invertDot = Vector3.Dot(matrix0.MultiplyVector(Vector3.forward).normalized, (matrix1.MultiplyPoint(shapeVertices[0]) - matrix0.MultiplyPoint(shapeVertices[0])).normalized);
+
+                        if (invertDot == 0.0f)
+                            continue;
+
+                        Vector3[] vertices;
+                        if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
+                        if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
+                            continue;
+
+                        var brushMesh = new BrushMesh();
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, definition.surfaceDefinition);
+                        brushMeshesList.Add(brushMesh);
+                    }
+                }
+            }
+
+            brushContainer.CopyFrom(brushMeshesList);
+            return true;
+        }
+        
         static Vector2 PointOnBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
         {
             return (1 - t) * (1 - t) * (1 - t) * p0 + 3 * t * (1 - t) * (1 - t) * p1 + 3 * t * t * (1 - t) * p2 + t * t * t * p3;
@@ -78,101 +166,6 @@ namespace Chisel.Core
                 vertices[s] = matrix0.MultiplyPoint(shapeVertices[s]);
                 vertices[shapeSegments + s] = matrix1.MultiplyPoint(shapeVertices[s]);
             }
-            return true;
-        }
-
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, ref ChiselExtrudedShapeDefinition definition)
-        {
-            definition.Validate();
-            return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.surfaceDefinition);
-        }
-
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, ChiselPath path, int curveSegments, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            var shapeVertices       = new List<Vector2>();
-            var shapeSegmentIndices = new List<int>();
-            GetPathVertices(shape, curveSegments, shapeVertices, shapeSegmentIndices);
-
-            Vector2[][] polygonVerticesArray;
-            int[][]     polygonIndicesArray;
-
-            if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
-                                                out polygonVerticesArray,
-                                                out polygonIndicesArray))
-                return false;
-
-            // TODO: make each extruded quad split into two triangles when it's not a perfect plane,
-            //			split it to make sure it's convex
-
-            // TODO: make it possible to smooth (parts) of the shape
-
-            // TODO: make materials work well
-            // TODO: make it possible to 'draw' shapes on any surface
-
-            // TODO: make path work as a spline, with subdivisions
-            // TODO:	make this work well with twisted rotations
-            // TODO: make shape/path subdivisions be configurable / automatic
-
-
-
-            var brushMeshesList = new List<BrushMesh>();
-            for (int p = 0; p < polygonVerticesArray.Length; p++)
-            {
-                var polygonVertices = polygonVerticesArray[p];
-                var segmentIndices = polygonIndicesArray[p];
-                var shapeSegments = polygonVertices.Length;
-
-                for (int s = 0; s < path.segments.Length - 1; s++)
-                {
-                    var pathPointA = path.segments[s];
-                    var pathPointB = path.segments[s + 1];
-                    int subSegments = 1;
-                    var offsetQuaternion = pathPointB.rotation * Quaternion.Inverse(pathPointA.rotation);
-                    var offsetEuler = offsetQuaternion.eulerAngles;
-                    if (offsetEuler.x > 180) offsetEuler.x = 360 - offsetEuler.x;
-                    if (offsetEuler.y > 180) offsetEuler.y = 360 - offsetEuler.y;
-                    if (offsetEuler.z > 180) offsetEuler.z = 360 - offsetEuler.z;
-                    var maxAngle = Mathf.Max(offsetEuler.x, offsetEuler.y, offsetEuler.z);
-                    if (maxAngle != 0)
-                        subSegments = Mathf.Max(1, (int)Mathf.Ceil(maxAngle / 5));
-
-                    if ((pathPointA.scale.x / pathPointA.scale.y) != (pathPointB.scale.x / pathPointB.scale.y) &&
-                        (subSegments & 1) == 1)
-                        subSegments += 1;
-
-                    for (int n = 0; n < subSegments; n++)
-                    {
-                        var matrix0 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], n / (float)subSegments);
-                        var matrix1 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], (n + 1) / (float)subSegments);
-
-                        // TODO: this doesn't work if top and bottom polygons intersect
-                        //			=> need to split into two brushes then, invert one of the two brushes
-                        var invertDot = Vector3.Dot(matrix0.MultiplyVector(Vector3.forward).normalized, (matrix1.MultiplyPoint(shapeVertices[0]) - matrix0.MultiplyPoint(shapeVertices[0])).normalized);
-
-                        if (invertDot == 0.0f)
-                            continue;
-
-                        Vector3[] vertices;
-                        if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
-                        if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
-                            continue;
-
-                        var brushMesh = new BrushMesh();
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, surfaceDefinition);
-                        brushMeshesList.Add(brushMesh);
-                    }
-                }
-            }
-
-            if (brushMeshes == null ||
-                brushMeshes.Length != brushMeshesList.Count)
-            {
-                brushMeshes = new BrushMesh[brushMeshesList.Count];
-                for (int i = 0; i < brushMeshes.Length; i++)
-                    brushMeshes[i] = new BrushMesh();
-            }
-
-            brushMeshesList.CopyTo(brushMeshes);
             return true;
         }
     }

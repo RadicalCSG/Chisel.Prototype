@@ -1,7 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using System;
 using Chisel.Core;
 
 namespace Chisel.Components
@@ -12,12 +9,10 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselCylinder : ChiselGeneratorComponent
+    public sealed class ChiselCylinder : ChiselDefinedGeneratorComponent<ChiselCylinderDefinition>
     {
         public const string kNodeTypeName = "Cylinder";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-
-        [SerializeField] public CSGCylinderDefinition definition = new CSGCylinderDefinition();
 
         #region Properties
         public ChiselCircleDefinition Top      { get { return definition.top; } }
@@ -113,22 +108,5 @@ namespace Chisel.Components
             set { if (value == definition.sides) return; definition.sides = value; OnValidateInternal(); }
         }
         #endregion
-
-        protected override void OnResetInternal()    { definition.Reset(); base.OnResetInternal(); }
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateCylinder(ref brushMeshes[0], ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

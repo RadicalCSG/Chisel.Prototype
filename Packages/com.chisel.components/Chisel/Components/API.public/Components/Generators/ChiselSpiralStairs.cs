@@ -1,22 +1,15 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
-using UnitySceneExtensions;
-using System.Linq;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselSpiralStairs : ChiselGeneratorComponent
+    public sealed class ChiselSpiralStairs : ChiselDefinedGeneratorComponent<ChiselSpiralStairsDefinition>
     {
         public const string kNodeTypeName = "Spiral Stairs";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-
-        [SerializeField] public ChiselSpiralStairsDefinition definition = new ChiselSpiralStairsDefinition();
 
         #region Properties
         public Vector3 Origin
@@ -108,23 +101,5 @@ namespace Chisel.Components
             get { return definition.StepCount; }
         }
         #endregion
-
-        protected override void OnValidateInternal()    { definition.Validate(); base.OnValidateInternal(); }
-        protected override void OnResetInternal()       { definition.Reset(); base.OnResetInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = brushContainerAsset.BrushMeshes;
-            var operations  = brushContainerAsset.Operations;
-            if (!BrushMeshFactory.GenerateSpiralStairs(ref brushMeshes, ref operations, ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-            
-            brushContainerAsset.SetSubMeshes(brushMeshes, operations);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

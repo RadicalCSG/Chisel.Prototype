@@ -1,22 +1,16 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselHemisphere : ChiselGeneratorComponent
+    public sealed class ChiselHemisphere : ChiselDefinedGeneratorComponent<ChiselHemisphereDefinition>
     {
         public const string kNodeTypeName = "Hemisphere";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        // TODO: make this private
-        [SerializeField] public ChiselHemisphereDefinition definition = new ChiselHemisphereDefinition();
-        
         #region Properties
         public Vector3 DiameterXYZ
         {
@@ -54,22 +48,5 @@ namespace Chisel.Components
             set { if (value == definition.verticalSegments) return; definition.verticalSegments = value; OnValidateInternal(); }
         }
         #endregion
-
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = new[] { new BrushMesh() };
-            if (!BrushMeshFactory.GenerateHemisphere(ref brushMeshes[0], ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
     }
 }

@@ -8,7 +8,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselSphereDefinition
+    public struct ChiselSphereDefinition : IChiselGenerator
     {
         public const float              kMinSphereDiameter          = 0.01f;
         public const float              kDefaultRotation            = 0.0f;
@@ -50,6 +50,11 @@ namespace Chisel.Core
             verticalSegments	= Mathf.Max(verticalSegments, 2);
             
             surfaceDefinition.EnsureSize(6);
+        }
+
+        public bool Generate(ref ChiselBrushContainer brushContainer)
+        {
+            return BrushMeshFactory.GenerateSphere(ref brushContainer, ref this);
         }
     }
 }

@@ -1,39 +1,16 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselTorus : ChiselGeneratorComponent
+    public sealed class ChiselTorus : ChiselDefinedGeneratorComponent<ChiselTorusDefinition>
     {
         public const string kNodeTypeName = "Torus";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        // TODO: make this private
-        [SerializeField] public ChiselTorusDefinition definition = new ChiselTorusDefinition();
-
-        // TODO: implement properties
-
-        protected override void OnValidateInternal() { definition.Validate(); base.OnValidateInternal(); }
-        protected override void OnResetInternal()	 { definition.Reset(); base.OnResetInternal(); }
-
-        protected override void UpdateGeneratorInternal()
-        {
-            var brushMeshes = brushContainerAsset.BrushMeshes;
-            if (!BrushMeshFactory.GenerateTorus(ref brushMeshes, ref definition))
-            {
-                brushContainerAsset.Clear();
-                return;
-            }
-
-            brushContainerAsset.SetSubMeshes(brushMeshes);
-            brushContainerAsset.CalculatePlanes();
-            brushContainerAsset.SetDirty();
-        }
+        // TODO: add all properties of ChiselTorusDefinition
     }
 }

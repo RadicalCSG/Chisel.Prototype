@@ -1,8 +1,5 @@
 ﻿using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
-using System;
 
 namespace Chisel.Components
 {
