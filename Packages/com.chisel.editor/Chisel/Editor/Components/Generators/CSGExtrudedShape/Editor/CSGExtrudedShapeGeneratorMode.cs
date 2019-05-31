@@ -55,9 +55,9 @@ namespace Chisel.Editors
 
                     extrudedShape.Operation = forceOperation ?? CSGOperationType.Additive;
                     extrudedShape.Shape = new Curve2D(shape);
-                    extrudedShape.Path = new Path(new[] {
-                        new PathPoint(Vector3.zero),
-                        new PathPoint(new Vector3(0,1,0))
+                    extrudedShape.Path = new ChiselPath(new[] {
+                        new ChiselPathPoint(Vector3.zero),
+                        new ChiselPathPoint(new Vector3(0,1,0))
                     });
                     extrudedShape.UpdateGenerator();
                     break;

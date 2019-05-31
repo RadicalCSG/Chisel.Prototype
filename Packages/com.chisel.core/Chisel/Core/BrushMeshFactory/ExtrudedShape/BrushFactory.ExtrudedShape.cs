@@ -87,7 +87,7 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, ChiselPath path, int curveSegments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             var shapeVertices       = new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
@@ -142,8 +142,8 @@ namespace Chisel.Core
 
                     for (int n = 0; n < subSegments; n++)
                     {
-                        var matrix0 = PathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], n / (float)subSegments);
-                        var matrix1 = PathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], (n + 1) / (float)subSegments);
+                        var matrix0 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], n / (float)subSegments);
+                        var matrix1 = ChiselPathPoint.Lerp(ref path.segments[s], ref path.segments[s + 1], (n + 1) / (float)subSegments);
 
                         // TODO: this doesn't work if top and bottom polygons intersect
                         //			=> need to split into two brushes then, invert one of the two brushes

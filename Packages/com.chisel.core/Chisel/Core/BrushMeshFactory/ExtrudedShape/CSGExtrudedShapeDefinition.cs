@@ -20,7 +20,7 @@ namespace Chisel.Core
         public static readonly Curve2D  kDefaultShape           = new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
         public Curve2D                  shape;
-        public Path                     path;
+        public ChiselPath                     path;
         public int                      curveSegments   = kDefaultCurveSegments;
         
         public ChiselSurfaceDefinition  surfaceDefinition;
@@ -28,7 +28,7 @@ namespace Chisel.Core
         public void Reset()
         {
             curveSegments   = kDefaultCurveSegments;
-            path			= new Path(Path.Default);
+            path			= new ChiselPath(ChiselPath.Default);
             shape			= new Curve2D(kDefaultShape);
             
             if (surfaceDefinition != null) surfaceDefinition.Reset();

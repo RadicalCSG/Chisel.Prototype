@@ -166,7 +166,7 @@ namespace Chisel.Editors
                 {
                     Undo.RecordObject(target, "Changed path of CSGShape");
                     var originalSegments = generator.Path.segments;
-                    path = new Path(new PathPoint[originalSegments.Length]);
+                    path = new ChiselPath(new ChiselPathPoint[originalSegments.Length]);
                     Array.Copy(originalSegments, path.segments, originalSegments.Length);
                     path.segments[i] = pathPoint;
                     generator.Path = path;

@@ -20,7 +20,7 @@ namespace Chisel.Components
         [SerializeField] public CSGExtrudedShapeDefinition definition = new CSGExtrudedShapeDefinition();
 
         #region Properties
-        public Path Path
+        public ChiselPath Path
         {
             get { return definition.path; }
             set

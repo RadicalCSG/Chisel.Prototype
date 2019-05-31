@@ -9,7 +9,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct PathPoint
+    public struct ChiselPathPoint
     {
         static readonly Vector4		unitX		= new Vector4(1,0,0,0);
         static readonly Vector4		unitY		= new Vector4(0,1,0,0);
@@ -17,7 +17,7 @@ namespace Chisel.Core
         static readonly Vector4		unitW		= new Vector4(0,0,0,1);
         static readonly Matrix4x4	swizzleYZ;
 
-        static PathPoint()
+        static ChiselPathPoint()
         {
             swizzleYZ.SetColumn(0, unitX);
             swizzleYZ.SetColumn(1, unitZ);
@@ -25,14 +25,14 @@ namespace Chisel.Core
             swizzleYZ.SetColumn(3, unitW);
         }
 
-        public PathPoint(Vector3 position, Quaternion rotation, Vector3 scale)
+        public ChiselPathPoint(Vector3 position, Quaternion rotation, Vector3 scale)
         {
             this.position	= position;
             this.rotation	= rotation;
             this.scale		= scale;
         }
         
-        public PathPoint(Vector3 position)
+        public ChiselPathPoint(Vector3 position)
         {
             this.position	= position;
             this.rotation	= Quaternion.identity;
@@ -55,7 +55,7 @@ namespace Chisel.Core
             return ToMatrix(position, rotation, scale); 
         }
 
-        public static Matrix4x4 Lerp(ref PathPoint A, ref PathPoint B, float t)
+        public static Matrix4x4 Lerp(ref ChiselPathPoint A, ref ChiselPathPoint B, float t)
         {
             var position = MathExtensions.Lerp(A.position, B.position, t);
             var rotation = MathExtensions.Lerp(A.rotation, B.rotation, t);
