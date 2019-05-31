@@ -30,14 +30,14 @@ namespace Chisel.Editors
             linearStairs = null;
         }
         
-        CSGLinearStairs linearStairs;
+        ChiselLinearStairs linearStairs;
         // TODO: Handle forcing operation types
         CSGOperationType? forceOperation = null;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds    bounds;
-            CSGModel  modelBeneathCursor;
+            ChiselModel  modelBeneathCursor;
             Matrix4x4 transformation;
             float     height;
 
@@ -47,7 +47,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    linearStairs = ChiselModelManager.Create<CSGLinearStairs>("Linear Stairs",
+                    linearStairs = ChiselModelManager.Create<ChiselLinearStairs>("Linear Stairs",
                                                                         ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                         transformation);
                     linearStairs.definition.Reset();

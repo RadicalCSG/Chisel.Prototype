@@ -96,10 +96,10 @@ namespace Chisel.Components
         public static T Create<T>(UnityEngine.Transform parent = null) where T : ChiselNode { return Create<T>(null, parent, Vector3.zero, Quaternion.identity, Vector3.one); }
         public static T Create<T>(Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode { return Create<T>(null, (UnityEngine.Transform)null, position, rotation, scale); }
         public static T Create<T>(Matrix4x4 trsMatrix) where T : ChiselNode { return Create<T>(null, (UnityEngine.Transform)null, trsMatrix); }
-        public static T Create<T>(CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
-        public static T Create<T>(CSGModel model, Matrix4x4 trsMatrix) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
-        public static T Create<T>(CSGModel model) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
-        public static T Create<T>(string name, CSGModel model, Matrix4x4 trsMatrix) where T : ChiselNode { return Create<T>(name, model ? model.transform : null, trsMatrix); }
-        public static T Create<T>(string name, CSGModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode { return Create<T>(name, model ? model.transform : null, position, rotation, scale); }
+        public static T Create<T>(ChiselModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, position, rotation, scale); }
+        public static T Create<T>(ChiselModel model, Matrix4x4 trsMatrix) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, trsMatrix); }
+        public static T Create<T>(ChiselModel model) where T : ChiselNode { return Create<T>(null, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
+        public static T Create<T>(string name, ChiselModel model, Matrix4x4 trsMatrix) where T : ChiselNode { return Create<T>(name, model ? model.transform : null, trsMatrix); }
+        public static T Create<T>(string name, ChiselModel model, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode { return Create<T>(name, model ? model.transform : null, position, rotation, scale); }
     }
 }

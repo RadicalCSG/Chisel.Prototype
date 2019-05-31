@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGStadiumDetails : ChiselGeneratorDetails<CSGStadium>
+    public sealed class CSGStadiumDetails : ChiselGeneratorDetails<ChiselStadium>
     {
     }
     
-    [CustomEditor(typeof(CSGStadium))]
+    [CustomEditor(typeof(ChiselStadium))]
     [CanEditMultipleObjects]
-    public sealed class CSGStadiumEditor : ChiselGeneratorEditor<CSGStadium>
+    public sealed class CSGStadiumEditor : ChiselGeneratorEditor<ChiselStadium>
     {
         SerializedProperty heightProp;
         SerializedProperty lengthProp;
@@ -118,7 +118,7 @@ namespace Chisel.Editors
         internal static int s_BottomHash	= "BottomStadiumHash".GetHashCode();
 
 
-        protected override void OnScene(CSGStadium generator)
+        protected override void OnScene(ChiselStadium generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

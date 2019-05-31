@@ -30,17 +30,17 @@ namespace Chisel.Components
         Dictionary<GeneratedMeshKey, CSGGeneratedRefCountedMesh> refCountedMeshes = new Dictionary<GeneratedMeshKey, CSGGeneratedRefCountedMesh>();
 
         public void Clear() { refCountedMeshes.Clear(); }
-        public void Register(CSGModel model) { AddUnityMeshes(model); }
-        public void Unregister(CSGModel model) { RemoveUnityMeshes(model); }
+        public void Register(ChiselModel model) { AddUnityMeshes(model); }
+        public void Unregister(ChiselModel model) { RemoveUnityMeshes(model); }
 
 
-        public void DecreaseMeshRefCount(CSGModel model)
+        public void DecreaseMeshRefCount(ChiselModel model)
         {
             // First decrease the ref count on all meshes
             RemoveUnityMeshes(model);
         }
 
-        public void ReuseExistingMeshes(CSGModel model)
+        public void ReuseExistingMeshes(ChiselModel model)
         {
             for (int i = 0; i < model.generatedMeshes.Length; i++)
             {
@@ -51,7 +51,7 @@ namespace Chisel.Components
             }
         }
 
-        public void CreateNewMeshes(CSGModel model)
+        public void CreateNewMeshes(ChiselModel model)
         {
             // Separate loop so we can re-use meshes when creating new meshes
 
@@ -68,7 +68,7 @@ namespace Chisel.Components
             }
         }
 
-        public void AddUnityMeshes(CSGModel model)
+        public void AddUnityMeshes(ChiselModel model)
         {
             for (int i = 0; i < model.generatedMeshes.Length; i++)
             {
@@ -77,7 +77,7 @@ namespace Chisel.Components
             }
         }
 
-        public void RemoveUnityMeshes(CSGModel model)
+        public void RemoveUnityMeshes(ChiselModel model)
         {
             for (int i = 0; i < model.generatedMeshes.Length; i++)
             {
@@ -174,7 +174,7 @@ namespace Chisel.Components
             return ReturnOrRegisterUnityMeshAndIncreaseRefCount(meshKey, sharedMesh);
         }
 
-        public bool RetrieveUnityMesh(CSGModel model, GeneratedMeshDescription meshDescription, UnityEngine.Mesh sharedMesh)
+        public bool RetrieveUnityMesh(ChiselModel model, GeneratedMeshDescription meshDescription, UnityEngine.Mesh sharedMesh)
         {
             // Retrieve the generatedMesh, and store it in the Unity Mesh
             model.generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription, model.generatedMeshContents);

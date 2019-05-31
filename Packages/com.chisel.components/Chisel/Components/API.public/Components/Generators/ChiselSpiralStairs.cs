@@ -9,9 +9,9 @@ using System.Linq;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGSpiralStairs) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGSpiralStairs.kNodeTypeName)]
-    public sealed class CSGSpiralStairs : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselSpiralStairs : ChiselGeneratorComponent
     {
         public const string kNodeTypeName = "Spiral Stairs";
         public override string NodeTypeName { get { return kNodeTypeName; } }

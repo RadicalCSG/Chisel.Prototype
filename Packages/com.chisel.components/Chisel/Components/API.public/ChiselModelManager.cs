@@ -22,14 +22,14 @@ namespace Chisel.Components
     public sealed partial class ChiselModelManager
     {
         // TODO: make this part of Undo stack ...
-        public static CSGModel ActiveModel
+        public static ChiselModel ActiveModel
         {
             get;
             set;
         }
 
         // TODO: improve naming
-        public static CSGModel GetModelForNode(CSGModel overrideModel = null)
+        public static ChiselModel GetModelForNode(ChiselModel overrideModel = null)
         {
             if (overrideModel)
             {
@@ -40,7 +40,7 @@ namespace Chisel.Components
             var activeModel = ChiselModelManager.ActiveModel;
             if (!activeModel)
             {
-                activeModel = ChiselModelManager.Create<CSGModel>("Model");
+                activeModel = ChiselModelManager.Create<ChiselModel>("Model");
                 ChiselModelManager.ActiveModel = activeModel;
             }
             return activeModel;

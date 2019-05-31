@@ -102,9 +102,12 @@ namespace Chisel.Components
 
     // TODO: give model an icon
     [ExecuteInEditMode]
-    public sealed class CSGModel : ChiselNode
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselModel : ChiselNode
     {
-        public override string NodeTypeName { get { return "Model"; } }
+        public const string kNodeTypeName = "Model";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
 
         [HideInInspector, SerializeField] CSGGeneratedColliderSettings  colliderSettings    = new CSGGeneratedColliderSettings();
@@ -170,7 +173,7 @@ namespace Chisel.Components
 
             initialized = true;
         }
-        public CSGModel() : base() { }
+        public ChiselModel() : base() { }
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()

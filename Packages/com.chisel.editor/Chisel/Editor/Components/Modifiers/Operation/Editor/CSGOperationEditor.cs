@@ -10,13 +10,13 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGOperationDetails : ChiselNodeDetails<CSGOperation>
+    public sealed class CSGOperationDetails : ChiselNodeDetails<ChiselOperation>
     {
         const string AdditiveIconName		= "csg_addition";
         const string SubtractiveIconName	= "csg_subtraction";
         const string IntersectingIconName	= "csg_intersection";
 
-        public override GUIContent GetHierarchyIcon(CSGOperation node)
+        public override GUIContent GetHierarchyIcon(ChiselOperation node)
         {
             switch (node.Operation)
             {
@@ -28,9 +28,9 @@ namespace Chisel.Editors
         }
     }
 
-    [CustomEditor(typeof(CSGOperation))]
+    [CustomEditor(typeof(ChiselOperation))]
     [CanEditMultipleObjects]
-    public sealed class CSGOperationEditor : ChiselNodeEditor<CSGOperation>
+    public sealed class CSGOperationEditor : ChiselNodeEditor<ChiselOperation>
     {
         SerializedProperty operationProp;
         SerializedProperty passThroughProp;
@@ -77,7 +77,7 @@ namespace Chisel.Editors
                     {
                         foreach (var target in serializedObject.targetObjects)
                         {
-                            var operation = target as CSGOperation;
+                            var operation = target as ChiselOperation;
                             if (!operation)
                                 continue;
 

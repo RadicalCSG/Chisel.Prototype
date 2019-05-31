@@ -196,7 +196,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene2));
             
             var scene3		= EditorSceneManager.OpenScene(TestUtility.tempFilename);
-            var operations	= Object.FindObjectsOfType<CSGOperation>();
+            var operations	= Object.FindObjectsOfType<ChiselOperation>();
             yield return null;
 
             Assert.NotNull(operations);

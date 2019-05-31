@@ -42,12 +42,12 @@ namespace Chisel.Editors
         int horizontalSegments      = ChiselSphereDefinition.kDefaultHorizontalSegments;
 
 
-        CSGSphere sphere;
+        ChiselSphere sphere;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds    bounds;
-            CSGModel  modelBeneathCursor;
+            ChiselModel  modelBeneathCursor;
             Matrix4x4 transformation;
             float     height;
 
@@ -59,7 +59,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    sphere = ChiselModelManager.Create<CSGSphere>("Sphere",
+                    sphere = ChiselModelManager.Create<ChiselSphere>("Sphere",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
 

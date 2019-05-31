@@ -11,15 +11,15 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGCylinderDetails : ChiselGeneratorDetails<CSGCylinder>
+    public sealed class CSGCylinderDetails : ChiselGeneratorDetails<ChiselCylinder>
     {
     }
     
     // TODO: why did resetting this generator not work?
     // TODO: make drag & drop of materials on generator side work
-    [CustomEditor(typeof(CSGCylinder))]
+    [CustomEditor(typeof(ChiselCylinder))]
     [CanEditMultipleObjects]
-    public sealed class CSGCylinderEditor : ChiselGeneratorEditor<CSGCylinder>
+    public sealed class CSGCylinderEditor : ChiselGeneratorEditor<ChiselCylinder>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
@@ -61,32 +61,32 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            var definitionProp      = serializedObject.FindProperty(nameof(CSGCylinder.definition));
+            var definitionProp      = serializedObject.FindProperty(nameof(ChiselCylinder.definition));
             { 
-                typeProp			    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.type));
+                typeProp			    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.type));
 
-                var topProp             = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.top));
+                var topProp             = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top));
                 { 
-                    topHeightProp	    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.height));
-                    topDiameterXProp    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.diameterX));
-                    topDiameterZProp    = topProp.FindPropertyRelative(nameof(CSGCylinder.definition.top.diameterZ));
+                    topHeightProp	    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.height));
+                    topDiameterXProp    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.diameterX));
+                    topDiameterZProp    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.diameterZ));
                 }
             
-                var bottomProp          = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom));
+                var bottomProp          = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom));
                 { 
-                    bottomHeightProp    = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.height));
-                    bottomDiameterXProp = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.diameterX));
-                    bottomDiameterZProp = bottomProp.FindPropertyRelative(nameof(CSGCylinder.definition.bottom.diameterZ));
+                    bottomHeightProp    = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.height));
+                    bottomDiameterXProp = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.diameterX));
+                    bottomDiameterZProp = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.diameterZ));
                 }
 
-                rotationProp		    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.rotation));
-                isEllipsoidProp		    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.isEllipsoid));
-                smoothingGroupProp	    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.smoothingGroup));
-                sidesProp			    = definitionProp.FindPropertyRelative(nameof(CSGCylinder.definition.sides));
+                rotationProp		    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.rotation));
+                isEllipsoidProp		    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.isEllipsoid));
+                smoothingGroupProp	    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.smoothingGroup));
+                sidesProp			    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.sides));
                 
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition));
+                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition));
                 {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition.surfaces));
+                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition.surfaces));
                 }
             }
         }
@@ -190,7 +190,7 @@ namespace Chisel.Editors
 
         struct CylinderHandle
         {
-            public void Init(CSGCylinder generator)
+            public void Init(ChiselCylinder generator)
             {
                 this.generator		= generator;
                 bottomDiameterX		= generator.BottomDiameterX;
@@ -225,7 +225,7 @@ namespace Chisel.Editors
                 vertices = new Vector3[generator.Sides * 2];
             }
 
-            CSGCylinder generator;
+            ChiselCylinder generator;
 
             float bottomDiameterX;
             float bottomDiameterZ;
@@ -480,12 +480,12 @@ namespace Chisel.Editors
         static CylinderHandle cylinderHandle = new CylinderHandle();
 
         // TODO: prevent "outer" outlines from being rendered
-        protected override void OnGeneratorSelected(CSGCylinder generator)
+        protected override void OnGeneratorSelected(ChiselCylinder generator)
         {
             cylinderHandle.Init(generator);
         }
 
-        protected override void OnScene(CSGCylinder generator)
+        protected override void OnScene(ChiselCylinder generator)
         {
             cylinderHandle.ShowInstance();
         }

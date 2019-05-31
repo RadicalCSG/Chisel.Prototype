@@ -10,9 +10,9 @@ namespace Chisel.Components
     // TODO: beveled edges (for top and/or bottom)
     //			-> makes this a capsule
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGCylinder) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGCylinder.kNodeTypeName)]
-    public sealed class CSGCylinder : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselCylinder : ChiselGeneratorComponent
     {
         public const string kNodeTypeName = "Cylinder";
         public override string NodeTypeName { get { return kNodeTypeName; } }

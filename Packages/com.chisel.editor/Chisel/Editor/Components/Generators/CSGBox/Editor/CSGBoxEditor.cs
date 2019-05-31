@@ -13,14 +13,14 @@ using UnityEditor.UIElements;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGBoxDetails : ChiselGeneratorDetails<CSGBox>
+    public sealed class CSGBoxDetails : ChiselGeneratorDetails<ChiselBox>
     {
     }
 
     // TODO: why did resetting this generator not work?
-    [CustomEditor(typeof(CSGBox))]
+    [CustomEditor(typeof(ChiselBox))]
     [CanEditMultipleObjects]
-    public sealed class CSGBoxEditor : ChiselGeneratorEditor<CSGBox>
+    public sealed class CSGBoxEditor : ChiselGeneratorEditor<ChiselBox>
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static readonly GUIContent      kSurfacesContent        = new GUIContent("Surfaces");
@@ -45,12 +45,12 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            var definitionProp      = serializedObject.FindProperty(nameof(CSGCylinder.definition));
+            var definitionProp      = serializedObject.FindProperty(nameof(ChiselCylinder.definition));
             { 
-                boundsProp	        = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.bounds));
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition));
+                boundsProp	        = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.bounds));
+                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition));
                 {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(CSGBox.definition.surfaceDefinition.surfaces));
+                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition.surfaces));
                 }
             }
         }
@@ -78,7 +78,7 @@ namespace Chisel.Editors
             }
         }
 
-        protected override void OnScene(CSGBox generator)
+        protected override void OnScene(ChiselBox generator)
         {
             EditorGUI.BeginChangeCheck();
 

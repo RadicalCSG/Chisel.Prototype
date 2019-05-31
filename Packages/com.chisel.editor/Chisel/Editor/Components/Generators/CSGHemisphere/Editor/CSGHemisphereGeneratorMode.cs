@@ -40,12 +40,12 @@ namespace Chisel.Editors
         int	    horizontalSegments      = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
         int	    verticalSegments        = ChiselHemisphereDefinition.kDefaultVerticalSegments;
 
-        CSGHemisphere hemisphere;
+        ChiselHemisphere hemisphere;
         
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds    bounds;
-            CSGModel  modelBeneathCursor;
+            ChiselModel  modelBeneathCursor;
             Matrix4x4 transformation;
             float     height;
             
@@ -56,7 +56,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    hemisphere = ChiselModelManager.Create<CSGHemisphere>("Hemisphere",
+                    hemisphere = ChiselModelManager.Create<ChiselHemisphere>("Hemisphere",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
                     hemisphere.definition.Reset();

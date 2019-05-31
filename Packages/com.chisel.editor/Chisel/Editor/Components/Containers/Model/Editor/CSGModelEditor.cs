@@ -11,19 +11,19 @@ using UnityEngine.Rendering;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGModelDetails : ChiselNodeDetails<CSGModel>
+    public sealed class CSGModelDetails : ChiselNodeDetails<ChiselModel>
     {
         const string ModelIconName = "csg_addition";
 
-        public override GUIContent GetHierarchyIcon(CSGModel node)
+        public override GUIContent GetHierarchyIcon(ChiselModel node)
         {
             return ChiselEditorResources.GetIconContent(ModelIconName, node.NodeTypeName)[0];
         }
     }
 
-    [CustomEditor(typeof(CSGModel))]
+    [CustomEditor(typeof(ChiselModel))]
     [CanEditMultipleObjects]
-    public sealed class CSGModelEditor : ChiselNodeEditor<CSGModel>
+    public sealed class CSGModelEditor : ChiselNodeEditor<ChiselModel>
     {
         const int kSingleLineHeight = 16;
 
@@ -254,7 +254,7 @@ namespace Chisel.Editors
 
             for (int t = 0; t < targets.Length; t++)
             {
-                var modelTarget = targets[t] as CSGModel;
+                var modelTarget = targets[t] as ChiselModel;
                 if (!modelTarget)
                     continue;
 
@@ -288,7 +288,7 @@ namespace Chisel.Editors
             float largestSurfaceArea = -1;
             foreach(var target in targets)
             {
-                var model = target as CSGModel;
+                var model = target as ChiselModel;
                 if (!model)
                     continue;
                 var renderComponents = model.generatedRenderComponents.Values;
@@ -314,7 +314,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as CSGModel;
+                var model = target as ChiselModel;
                 if (!model)
                     continue;
                 var renderComponents = model.generatedRenderComponents.Values;
@@ -339,7 +339,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as CSGModel;
+                var model = target as ChiselModel;
                 if (!model)
                     continue;
                 var renderComponents = model.generatedRenderComponents.Values;
@@ -364,7 +364,7 @@ namespace Chisel.Editors
                 return false;
             foreach (var target in targets)
             {
-                var model = target as CSGModel;
+                var model = target as ChiselModel;
                 if (!model)
                     continue;
                 var renderComponents = model.generatedRenderComponents.Keys;
@@ -384,7 +384,7 @@ namespace Chisel.Editors
 
             foreach(var target in targets)
             {
-                var model = target as CSGModel;
+                var model = target as ChiselModel;
                 if (!model)
                     continue;
                 if (CSGGeneratedComponentManager.NeedUVGeneration(model))
@@ -414,7 +414,7 @@ namespace Chisel.Editors
             */
         }
 
-        static internal bool AreLightProbesAllowed(CSGModel model)
+        static internal bool AreLightProbesAllowed(ChiselModel model)
         {
             // TODO: return false if lightmapped or dynamic lightmapped
 
@@ -443,7 +443,7 @@ namespace Chisel.Editors
                 return false;
 
             foreach (UnityEngine.Object obj in targets)
-                if (AreLightProbesAllowed((CSGModel)obj) == false)
+                if (AreLightProbesAllowed((ChiselModel)obj) == false)
                     return false;
             return true;
         }
@@ -766,7 +766,7 @@ namespace Chisel.Editors
 
             EditorGUI.showMixedValue = renderingLayerMaskProp.hasMultipleDifferentValues;
 
-            var model		= (CSGModel)target;
+            var model		= (ChiselModel)target;
             var renderer	= target;
             var mask		= (int)model.RenderSettings.renderingLayerMask;
 
@@ -782,7 +782,7 @@ namespace Chisel.Editors
                 Undo.RecordObjects(targets, "Set rendering layer mask");
                 foreach (var t in targets)
                 {
-                    var m = t as CSGModel;
+                    var m = t as ChiselModel;
                     if (m != null)
                     {
                         m.RenderSettings.renderingLayerMask = (uint)mask;

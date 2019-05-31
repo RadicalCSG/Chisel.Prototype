@@ -95,7 +95,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
 
             Undo.PerformUndo();
-            operation = Object.FindObjectsOfType<CSGOperation>()[0];
+            operation = Object.FindObjectsOfType<ChiselOperation>()[0];
             operationGameObject = operation.gameObject;
             yield return null;
             
@@ -132,7 +132,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
 
             Undo.PerformUndo();
-            operation = operationGameObject.GetComponent<CSGOperation>();
+            operation = operationGameObject.GetComponent<ChiselOperation>();
             yield return null;
 
             Assert.True(operationGameObject);

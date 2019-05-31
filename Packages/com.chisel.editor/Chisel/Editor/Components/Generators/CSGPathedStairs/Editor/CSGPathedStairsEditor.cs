@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGPathedStairsDetails : ChiselGeneratorDetails<CSGPathedStairs>
+    public sealed class CSGPathedStairsDetails : ChiselGeneratorDetails<ChiselPathedStairs>
     {
     }
 
-    [CustomEditor(typeof(CSGPathedStairs))]
+    [CustomEditor(typeof(ChiselPathedStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGPathedStairsEditor : ChiselGeneratorEditor<CSGPathedStairs>
+    public sealed class CSGPathedStairsEditor : ChiselGeneratorEditor<ChiselPathedStairs>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
         
@@ -178,7 +178,7 @@ namespace Chisel.Editors
             return true;
         }
 
-        protected override void OnScene(CSGPathedStairs generator)
+        protected override void OnScene(ChiselPathedStairs generator)
         {
             var shape = generator.Shape;
             EditorGUI.BeginChangeCheck();

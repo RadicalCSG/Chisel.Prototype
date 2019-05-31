@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGRevolvedShapeDetails : ChiselGeneratorDetails<CSGRevolvedShape>
+    public sealed class CSGRevolvedShapeDetails : ChiselGeneratorDetails<ChiselRevolvedShape>
     {
     }
 
-    [CustomEditor(typeof(CSGRevolvedShape))]
+    [CustomEditor(typeof(ChiselRevolvedShape))]
     [CanEditMultipleObjects]
-    public sealed class CSGRevolvedShapeEditor : ChiselGeneratorEditor<CSGRevolvedShape>
+    public sealed class CSGRevolvedShapeEditor : ChiselGeneratorEditor<ChiselRevolvedShape>
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
 
@@ -63,7 +63,7 @@ namespace Chisel.Editors
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        protected override void OnScene(CSGRevolvedShape generator)
+        protected override void OnScene(ChiselRevolvedShape generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

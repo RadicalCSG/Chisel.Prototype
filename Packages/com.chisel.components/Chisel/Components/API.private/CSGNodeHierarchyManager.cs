@@ -48,7 +48,7 @@ namespace Chisel.Components
         
         // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
         // so we remember them, and re-register at the end.
-        static readonly List<CSGModel>							    reregisterModelQueue		= new List<CSGModel>();
+        static readonly List<ChiselModel>							    reregisterModelQueue		= new List<ChiselModel>();
 
         static readonly List<CSGHierarchyItem>                      findChildrenQueue           = new List<CSGHierarchyItem>();
 
@@ -468,7 +468,7 @@ namespace Chisel.Components
                     var childNode		= childTransform.GetComponentInChildren<ChiselNode>();
                     if (!childNode)
                         continue;
-                    if (childNode is CSGModel)
+                    if (childNode is ChiselModel)
                         continue;
                     __transforms.Enqueue(childTransform);
                     hierarchyUpdateQueue.Add(childNode);
@@ -1173,7 +1173,7 @@ namespace Chisel.Components
                     var parentComponent = UpdateSiblingIndices(sceneHierarchy, hierarchyItem);
                     if (ReferenceEquals(parentComponent, null))
                     {
-                        if (!(hierarchyItem.Component is CSGModel))
+                        if (!(hierarchyItem.Component is ChiselModel))
                         {
                             if (!sceneHierarchy.DefaultModel)
                             {
@@ -1272,7 +1272,7 @@ namespace Chisel.Components
                     if (item.Children.Count == 0 &&
                         CSGGeneratedComponentManager.IsDefaultModel(item.Component))
                     {
-                        var itemModel = item.Component as CSGModel;
+                        var itemModel = item.Component as ChiselModel;
 
                         // If the default model is empty, we'll destroy it to remove clutter
                         var scene = item.Scene;
@@ -1386,12 +1386,12 @@ namespace Chisel.Components
         public static Transform FindModelTransformOfTransform(Transform transform)
         {
             // TODO: optimize this
-            CSGModel model;
+            ChiselModel model;
             do
             {
                 if (!transform)
                     return null;
-                model = transform.GetComponentInParent<CSGModel>();
+                model = transform.GetComponentInParent<ChiselModel>();
                 if (!model)
                     return null;
                 transform = model.hierarchyItem.Transform;
@@ -1406,12 +1406,12 @@ namespace Chisel.Components
         public static Matrix4x4 FindModelTransformMatrixOfTransform(Transform transform)
         {
             // TODO: optimize this
-            CSGModel model;
+            ChiselModel model;
             do
             {
                 if (!transform)
                     return Matrix4x4.identity;
-                model = transform.GetComponentInParent<CSGModel>();
+                model = transform.GetComponentInParent<ChiselModel>();
                 if (!model)
                     return Matrix4x4.identity;
                 transform = model.hierarchyItem.Transform;

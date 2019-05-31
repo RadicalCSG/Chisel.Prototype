@@ -44,12 +44,12 @@ namespace Chisel.Editors
         int	    topSegments			    = ChiselCapsuleDefinition.kDefaultTopSegments;
         int	    bottomSegments	        = ChiselCapsuleDefinition.kDefaultBottomSegments;
 
-        CSGCapsule capsule;
+        ChiselCapsule capsule;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds bounds;
-            CSGModel modelBeneathCursor;
+            ChiselModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
 
@@ -60,7 +60,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    capsule = ChiselModelManager.Create<CSGCapsule>("Capsule",
+                    capsule = ChiselModelManager.Create<ChiselCapsule>("Capsule",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
                     capsule.definition.Reset();

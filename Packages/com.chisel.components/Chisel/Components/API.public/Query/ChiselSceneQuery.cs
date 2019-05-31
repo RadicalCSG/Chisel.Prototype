@@ -61,7 +61,7 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as CSGModel;
+                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
                 
@@ -163,7 +163,7 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as CSGModel;
+                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
                 
@@ -224,12 +224,12 @@ namespace Chisel.Components
         }
         
         
-        public static bool FindFirstWorldIntersection(CSGModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out CSGTreeBrushIntersection foundIntersection)
+        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out CSGTreeBrushIntersection foundIntersection)
         {
             return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out foundIntersection);
         }
 
-        public static bool FindFirstWorldIntersection(CSGModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out CSGTreeBrushIntersection foundIntersection)
+        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out CSGTreeBrushIntersection foundIntersection)
         {
             foundIntersection = new CSGTreeBrushIntersection();
             foundIntersection.surfaceIntersection.distance = float.PositiveInfinity;
@@ -343,7 +343,7 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as CSGModel;
+                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
 

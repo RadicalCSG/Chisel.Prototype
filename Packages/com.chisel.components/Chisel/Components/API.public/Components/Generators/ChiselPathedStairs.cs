@@ -8,9 +8,9 @@ using UnitySceneExtensions;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGPathedStairs) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGPathedStairs.kNodeTypeName)]
-    public sealed class CSGPathedStairs : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselPathedStairs : ChiselGeneratorComponent
     {
         public const string kNodeTypeName = "Pathed Stairs";
         public override string NodeTypeName { get { return kNodeTypeName; } }

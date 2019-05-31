@@ -7,13 +7,16 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    public sealed class CSGOperation : ChiselNode
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselOperation : ChiselNode
     {
-        public override string NodeTypeName { get { return "Operation"; } }
+        public const string kNodeTypeName = "Operation";
+        public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // bool   HandleAsOne     = false;
 
-        public CSGOperation() : base() {  }
+        public ChiselOperation() : base() {  }
 
         [HideInInspector]
         public CSGTreeBranch Node;

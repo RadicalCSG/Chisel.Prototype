@@ -10,13 +10,13 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGBrushDetails : ChiselGeneratorDetails<CSGBrush>
+    public sealed class CSGBrushDetails : ChiselGeneratorDetails<ChiselBrush>
     {
     }
 
-    [CustomEditor(typeof(CSGBrush))]
+    [CustomEditor(typeof(ChiselBrush))]
     [CanEditMultipleObjects]
-    public sealed class CSGBrushEditor : ChiselGeneratorEditor<CSGBrush>
+    public sealed class CSGBrushEditor : ChiselGeneratorEditor<ChiselBrush>
     {
         SerializedProperty brushContainerAssetProp;
 
@@ -42,7 +42,7 @@ namespace Chisel.Editors
             }
         }
 
-        protected override void OnScene(CSGBrush generator)
+        protected override void OnScene(ChiselBrush generator)
         {
             var targetBrushContainerAsset	= generator.BrushContainerAsset;
             if (!targetBrushContainerAsset)

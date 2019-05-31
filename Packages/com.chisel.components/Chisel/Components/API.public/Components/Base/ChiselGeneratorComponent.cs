@@ -9,8 +9,6 @@ namespace Chisel.Components
 {
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
-        public const string kDocumentationBaseURL   = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
-        public const string KDocumentationExtension = ".html";
         public const string kGeneratedBrushesName   = nameof(brushContainerAsset);
 
 
@@ -735,7 +733,7 @@ namespace Chisel.Components
             {
                 if (brushContainerAsset.SubMeshCount == 1)
                 {
-                    var brush = UnityEditor.Undo.AddComponent<CSGBrush>(topGameObject);
+                    var brush = UnityEditor.Undo.AddComponent<ChiselBrush>(topGameObject);
                     brush.Operation = this.operation;
                     brush.BrushContainerAsset = brushContainerAsset;
                     brush.LocalTransformation = localTransformation;
@@ -743,7 +741,7 @@ namespace Chisel.Components
                     UnityEditor.Undo.SetCurrentGroupName("Converted Shape to Brush");
                 } else
                 {
-                    var operationComponent = UnityEditor.Undo.AddComponent<CSGOperation>(topGameObject);
+                    var operationComponent = UnityEditor.Undo.AddComponent<ChiselOperation>(topGameObject);
                     operationComponent.Operation = this.operation;
                     var parentTransform = topGameObject.transform;
                     for (int i = 0; i < brushContainerAsset.SubMeshCount; i++)
@@ -762,7 +760,7 @@ namespace Chisel.Components
                             brushTransform.localRotation = Quaternion.identity;
                             brushTransform.localScale = Vector3.one;
 
-                            var brush = UnityEditor.Undo.AddComponent<CSGBrush>(brushGameObject);
+                            var brush = UnityEditor.Undo.AddComponent<ChiselBrush>(brushGameObject);
                             brush.BrushContainerAsset = newBrushContainerAsset;
                             brush.LocalTransformation = localTransformation;
                             brush.PivotOffset = pivotOffset;

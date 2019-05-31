@@ -270,7 +270,7 @@ namespace BrushContainerAssetTests
             {
                 var newBrushContainerAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
-                var brush				= brushGameObject.AddComponent<CSGBrush>();
+                var brush				= brushGameObject.AddComponent<ChiselBrush>();
                 brush.BrushContainerAsset = newBrushContainerAsset;
             
                 yield return null;
@@ -296,7 +296,7 @@ namespace BrushContainerAssetTests
                 newBrushMaterial.LayerUsage = LayerUsageFlags.None;
                 var newBrushContainerAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
-                var brush				= brushGameObject.AddComponent<CSGBrush>();
+                var brush				= brushGameObject.AddComponent<ChiselBrush>();
                 brush.BrushContainerAsset = newBrushContainerAsset;
             
                 yield return null;
@@ -322,7 +322,7 @@ namespace BrushContainerAssetTests
             {
                 var newBrushContainerAsset	= CreateBox(Vector3.one, newBrushMaterial);
                 var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
-                var brush				= brushGameObject.AddComponent<CSGBrush>();
+                var brush				= brushGameObject.AddComponent<ChiselBrush>();
                 brush.BrushContainerAsset = newBrushContainerAsset;
             
                 yield return null;

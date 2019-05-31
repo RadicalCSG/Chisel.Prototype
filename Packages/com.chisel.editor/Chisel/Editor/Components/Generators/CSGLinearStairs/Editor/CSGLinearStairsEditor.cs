@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGLinearStairsDetails : ChiselGeneratorDetails<CSGLinearStairs>
+    public sealed class CSGLinearStairsDetails : ChiselGeneratorDetails<ChiselLinearStairs>
     {
     }
     
-    [CustomEditor(typeof(CSGLinearStairs))]
+    [CustomEditor(typeof(ChiselLinearStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGLinearStairsEditor : ChiselGeneratorEditor<CSGLinearStairs>
+    public sealed class CSGLinearStairsEditor : ChiselGeneratorEditor<ChiselLinearStairs>
     {
         SerializedProperty boundsProp;
         SerializedProperty stepHeightProp;
@@ -140,7 +140,7 @@ namespace Chisel.Editors
             }
         }
         
-        protected override void OnScene(CSGLinearStairs generator)
+        protected override void OnScene(ChiselLinearStairs generator)
         {
             var originalStepDepthOffset = generator.StepDepthOffset;
             var originalPlateauHeight	= generator.PlateauHeight;

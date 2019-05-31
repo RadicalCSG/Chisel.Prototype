@@ -15,7 +15,7 @@ namespace Chisel.Editors
     public sealed class PointDrawing
     {
         internal static int s_PointDrawingHash = "PointDrawingHash".GetHashCode();
-        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out CSGModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
         {
             var id = GUIUtility.GetControlID(s_PointDrawingHash, FocusType.Keyboard);
             PointDrawing.Do(id, dragArea, ref points, out transformation, out modelBeneathCursor, capFunction);
@@ -148,7 +148,7 @@ namespace Chisel.Editors
             points.Clear();
         }
 
-        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out CSGModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
         {
             modelBeneathCursor = null;
             var evt = Event.current;

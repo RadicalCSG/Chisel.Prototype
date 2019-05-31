@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGTorusDetails : ChiselGeneratorDetails<CSGTorus>
+    public sealed class CSGTorusDetails : ChiselGeneratorDetails<ChiselTorus>
     {
     }
 
-    [CustomEditor(typeof(CSGTorus))]
+    [CustomEditor(typeof(ChiselTorus))]
     [CanEditMultipleObjects]
-    public sealed class CSGTorusEditor : ChiselGeneratorEditor<CSGTorus>
+    public sealed class CSGTorusEditor : ChiselGeneratorEditor<ChiselTorus>
     {
         static GUIContent   InnerDiameterContent = new GUIContent("Inner Diameter");
 
@@ -139,7 +139,7 @@ namespace Chisel.Editors
         }
 
 
-        protected override void OnScene(CSGTorus generator)
+        protected override void OnScene(ChiselTorus generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

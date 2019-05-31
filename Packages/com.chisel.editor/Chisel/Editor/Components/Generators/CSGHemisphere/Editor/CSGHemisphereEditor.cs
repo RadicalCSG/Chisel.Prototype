@@ -11,14 +11,14 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGHemisphereDetails : ChiselGeneratorDetails<CSGHemisphere>
+    public sealed class CSGHemisphereDetails : ChiselGeneratorDetails<ChiselHemisphere>
     {
     }
 
 
-    [CustomEditor(typeof(CSGHemisphere))]
+    [CustomEditor(typeof(ChiselHemisphere))]
     [CanEditMultipleObjects]
-    public sealed class CSGHemisphereEditor : ChiselGeneratorEditor<CSGHemisphere>
+    public sealed class CSGHemisphereEditor : ChiselGeneratorEditor<ChiselHemisphere>
     {
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;
@@ -99,7 +99,7 @@ namespace Chisel.Editors
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
         
-        protected override void OnScene(CSGHemisphere generator)
+        protected override void OnScene(ChiselHemisphere generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

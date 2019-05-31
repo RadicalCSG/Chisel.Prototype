@@ -308,7 +308,7 @@ namespace Chisel.Editors
                 var nodes = transform.GetComponentsInChildren<ChiselNode>();
                 if (nodes.Length == 0)
                     continue;
-                if (nodes[0] is CSGModel)
+                if (nodes[0] is ChiselModel)
                     continue;
                 for (int n = 0; n < nodes.Length; n++)
                     modifiedNodes.Add(nodes[n]);

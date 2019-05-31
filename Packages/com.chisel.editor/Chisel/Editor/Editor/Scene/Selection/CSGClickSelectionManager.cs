@@ -15,7 +15,7 @@ namespace Chisel.Editors
     {
         public PlaneIntersection(Vector3 point, Plane plane) { this.point = point; this.plane = plane; }
         public PlaneIntersection(Vector3 point, Vector3 normal) { this.point = point; this.plane = new Plane(normal, point); }
-        public PlaneIntersection(CSGTreeBrushIntersection brushIntersection, ChiselNode node, CSGModel model)
+        public PlaneIntersection(CSGTreeBrushIntersection brushIntersection, ChiselNode node, ChiselModel model)
         {
             this.point = brushIntersection.surfaceIntersection.worldIntersection;
             this.plane = brushIntersection.surfaceIntersection.worldPlane;
@@ -28,7 +28,7 @@ namespace Chisel.Editors
         public Vector3		normal		{ get { return plane.normal; } }
         public Quaternion	orientation { get { return Quaternion.LookRotation(plane.normal); } }
         public ChiselNode      node;
-        public CSGModel     model;
+        public ChiselModel     model;
     }
 
     public sealed class GUIClip
@@ -386,7 +386,7 @@ namespace Chisel.Editors
             return intersection.surfaceID != -1;
         }
 
-        internal static GameObject PickModel(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out CSGModel model, out Material material)
+        internal static GameObject PickModel(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
         {
             model = null;
             material = null;
@@ -432,7 +432,7 @@ namespace Chisel.Editors
                 if (brushIntersection.brushUserID != -1)
                 {
                     var	brush	= CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brushIntersection.brush.UserID);
-                    var model	= CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brushIntersection.tree.UserID) as CSGModel;
+                    var model	= CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brushIntersection.tree.UserID) as ChiselModel;
                     return new PlaneIntersection(brushIntersection, brush, model);
                 }
                 
@@ -569,7 +569,7 @@ namespace Chisel.Editors
             }
         }
 
-        internal static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out CSGModel model, out ChiselNode node, out CSGTreeBrushIntersection intersection)
+        internal static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out CSGTreeBrushIntersection intersection)
         {
             TryNextSelection:
             intersection = new CSGTreeBrushIntersection { surfaceID = -1, brushUserID = -1 };
@@ -630,7 +630,7 @@ namespace Chisel.Editors
         internal static ChiselNode PickNode(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out CSGTreeBrushIntersection intersection)
         {
             TryNextNode:
-            CSGModel model;
+            ChiselModel model;
             ChiselNode node;
             var gameObject = PickNodeOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out node, out intersection);
             if (object.Equals(gameObject, null))
@@ -680,7 +680,7 @@ namespace Chisel.Editors
             //if (picked == null)
             {
                 ChiselNode node;
-                CSGModel model;
+                ChiselModel model;
                 var gameObject = PickNodeOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out node, out intersection);
                 if (!model)
                     return gameObject;

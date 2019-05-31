@@ -7,15 +7,15 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGTorus) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGTorus.kNodeTypeName)]
-    public sealed class CSGTorus : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselStadium : ChiselGeneratorComponent
     {
-        public const string kNodeTypeName = "Torus";
+        public const string kNodeTypeName = "Stadium";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: make this private
-        [SerializeField] public ChiselTorusDefinition definition = new ChiselTorusDefinition();
+        [SerializeField] public ChiselStadiumDefinition definition = new ChiselStadiumDefinition();
 
         // TODO: implement properties
 
@@ -24,8 +24,8 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            var brushMeshes = brushContainerAsset.BrushMeshes;
-            if (!BrushMeshFactory.GenerateTorus(ref brushMeshes, ref definition))
+            var brushMeshes = new[] { new BrushMesh() };
+            if (BrushMeshFactory.GenerateStadium(ref brushMeshes[0], ref definition))
             {
                 brushContainerAsset.Clear();
                 return;

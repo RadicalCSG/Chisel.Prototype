@@ -39,12 +39,12 @@ namespace Chisel.Editors
         int             outerSegments           = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
         float           stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
 
-        CSGSpiralStairs spiralStairs;
+        ChiselSpiralStairs spiralStairs;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds    bounds;
-            CSGModel  modelBeneathCursor;
+            ChiselModel  modelBeneathCursor;
             Matrix4x4 transformation;
             float     height;
 
@@ -56,7 +56,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    spiralStairs = ChiselModelManager.Create<CSGSpiralStairs>("Spiral Stairs",
+                    spiralStairs = ChiselModelManager.Create<ChiselSpiralStairs>("Spiral Stairs",
                                                                         ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                         transformation);
                     spiralStairs.definition.Reset();

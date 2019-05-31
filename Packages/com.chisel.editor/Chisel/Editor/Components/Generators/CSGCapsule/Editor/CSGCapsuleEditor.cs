@@ -5,14 +5,14 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGCapsuleDetails : ChiselGeneratorDetails<CSGCapsule>
+    public sealed class CSGCapsuleDetails : ChiselGeneratorDetails<ChiselCapsule>
     {
     }
 
 
-    [CustomEditor(typeof(CSGCapsule))]
+    [CustomEditor(typeof(ChiselCapsule))]
     [CanEditMultipleObjects]
-    public sealed class CSGCapsuleEditor : ChiselGeneratorEditor<CSGCapsule>
+    public sealed class CSGCapsuleEditor : ChiselGeneratorEditor<ChiselCapsule>
     {
         SerializedProperty heightProp;
         SerializedProperty topHeightProp;
@@ -43,17 +43,17 @@ namespace Chisel.Editors
         
         protected override void InitInspector()
         { 
-            heightProp			= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.height)}");
-            topHeightProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.topHeight)}");
-            bottomHeightProp	= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.bottomHeight)}");
+            heightProp			= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.height)}");
+            topHeightProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.topHeight)}");
+            bottomHeightProp	= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.bottomHeight)}");
 
-            diameterXProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.diameterX)}");
-            diameterZProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.diameterZ)}");
-            rotationProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.rotation)}");
+            diameterXProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.diameterX)}");
+            diameterZProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.diameterZ)}");
+            rotationProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.rotation)}");
 
-            sidesProp			= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.sides)}");
-            topSegmentsProp		= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.topSegments)}");
-            bottomSegmentsProp	= serializedObject.FindProperty($"{nameof(CSGCapsule.definition)}.{nameof(CSGCapsule.definition.bottomSegments)}");
+            sidesProp			= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.sides)}");
+            topSegmentsProp		= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.topSegments)}");
+            bottomSegmentsProp	= serializedObject.FindProperty($"{nameof(ChiselCapsule.definition)}.{nameof(ChiselCapsule.definition.bottomSegments)}");
         }
 
         
@@ -132,7 +132,7 @@ namespace Chisel.Editors
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
 
-        protected override void OnScene(CSGCapsule generator)
+        protected override void OnScene(ChiselCapsule generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

@@ -43,19 +43,19 @@ namespace Chisel.Components
     {
         public static event Action				PreReset;
         public static event Action				PostReset;
-        public static event Action<CSGModel>	PreUpdateModel;
-        public static event Action<CSGModel>	PostUpdateModel;
+        public static event Action<ChiselModel>	PreUpdateModel;
+        public static event Action<ChiselModel>	PostUpdateModel;
         public static event Action				PostUpdateModels;
         
         const int MaxVertexCount = 65000;
 
         static HashSet<ChiselNode>			registeredNodeLookup	= new HashSet<ChiselNode>();
-        static List<CSGModel>				registeredModels		= new List<CSGModel>();
+        static List<ChiselModel>				registeredModels		= new List<ChiselModel>();
 
         static CSGSharedUnityMeshManager	sharedUnityMeshes		= new CSGSharedUnityMeshManager();
         static CSGGeneratedComponentManager componentGenerator		= new CSGGeneratedComponentManager();
         
-        static List<CSGModel> updateList = new List<CSGModel>();
+        static List<ChiselModel> updateList = new List<ChiselModel>();
 
         internal static void Reset()
         {
@@ -80,7 +80,7 @@ namespace Chisel.Components
             if (!registeredNodeLookup.Remove(node))
                 return;
 
-            var model = node as CSGModel;
+            var model = node as ChiselModel;
             if (!ReferenceEquals(model, null))
             {
                 componentGenerator.Unregister(model);
@@ -94,7 +94,7 @@ namespace Chisel.Components
             if (!registeredNodeLookup.Add(node))
                 return;
 
-            var model = node as CSGModel;
+            var model = node as ChiselModel;
             if (!ReferenceEquals(model, null))
             {
                 registeredModels.Add(model);
@@ -193,7 +193,7 @@ namespace Chisel.Components
             }
         }
 
-        public static void UpdateModel(CSGModel model)
+        public static void UpdateModel(ChiselModel model)
         {
             if (PreUpdateModel != null)
                 PreUpdateModel(model);
@@ -222,7 +222,7 @@ namespace Chisel.Components
 
         static CSGGeneratedModelMesh[]		__emptyGeneratedMeshesTable		= new CSGGeneratedModelMesh[0];		// static to avoid allocations
         static List<CSGGeneratedModelMesh>	__allocateGeneratedMeshesTable	= new List<CSGGeneratedModelMesh>();	// static to avoid allocations
-        internal static void UpdateModelMeshDescriptions(CSGModel model)
+        internal static void UpdateModelMeshDescriptions(ChiselModel model)
         {
             var tree				= model.Node;
             if (!tree.Valid)

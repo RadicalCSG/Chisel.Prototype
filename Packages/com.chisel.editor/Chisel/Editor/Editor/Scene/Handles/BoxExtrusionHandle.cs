@@ -36,7 +36,7 @@ namespace Chisel.Editors
     public static class BoxExtrusionHandle
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
-        static CSGModel			s_ModelBeneathCursor;
+        static ChiselModel			s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new List<Vector3>();
         
         // TODO: somehow get rid of this
@@ -111,7 +111,7 @@ namespace Chisel.Editors
             return (s_Points[2] - s_Points[1])[(int)axis];
         }
 
-        public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, BoxExtrusionFlags flags, Axis axis, float? snappingSteps = null)
+        public static BoxExtrusionState Do(Rect dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, BoxExtrusionFlags flags, Axis axis, float? snappingSteps = null)
         {
             try
             {

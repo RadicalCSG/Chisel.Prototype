@@ -10,9 +10,9 @@ namespace Chisel.Components
 {
     // TODO: change name
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGExtrudedShape) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGExtrudedShape.kNodeTypeName)]
-    public sealed class CSGExtrudedShape : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselExtrudedShape : ChiselGeneratorComponent
     {
         public const string kNodeTypeName = "Extruded Shape";
         public override string NodeTypeName { get { return kNodeTypeName; } }

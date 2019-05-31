@@ -319,7 +319,7 @@ namespace Chisel.Editors
                 {
                     GUILayout.BeginHorizontal();
                     ShowOperationChoicesInternal(operationProp);
-                    if (typeof(T) != typeof(CSGBrush)) ConvertIntoBrushesButton(serializedObject);
+                    if (typeof(T) != typeof(ChiselBrush)) ConvertIntoBrushesButton(serializedObject);
                     GUILayout.EndHorizontal();
 
                     OnInspector();

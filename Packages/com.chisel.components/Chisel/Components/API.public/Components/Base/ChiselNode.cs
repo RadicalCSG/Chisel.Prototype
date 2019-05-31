@@ -11,6 +11,9 @@ namespace Chisel.Components
     //[ExcludeFromObjectFactoryAttribute]
     public abstract class ChiselNode : MonoBehaviour
     {
+        public const string kDocumentationBaseURL = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
+        public const string kDocumentationExtension = ".html";
+
         public abstract string NodeTypeName { get; }
 
         public ChiselNode()			{ hierarchyItem = new CSGHierarchyItem(this); CSGNodeHierarchyManager.Register(this); }

@@ -39,12 +39,12 @@ namespace Chisel.Editors
         bool			    isSymmetrical		    = false;
         int				    sides			        = 16;
         
-        CSGCylinder cylinder;
+        ChiselCylinder cylinder;
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds    bounds;
-            CSGModel  modelBeneathCursor;
+            ChiselModel  modelBeneathCursor;
             Matrix4x4 transformation;
             float     height;
 
@@ -55,7 +55,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    cylinder = ChiselModelManager.Create<CSGCylinder>("Cylinder",
+                    cylinder = ChiselModelManager.Create<ChiselCylinder>("Cylinder",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
                     cylinder.definition.Reset();

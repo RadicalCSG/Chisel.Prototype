@@ -30,7 +30,7 @@ namespace Chisel.Editors
             box = null;
         }
         
-        CSGBox box;
+        ChiselBox box;
 
         // TODO: Handle forcing operation types
         CSGOperationType? forceOperation = null;
@@ -42,7 +42,7 @@ namespace Chisel.Editors
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             Bounds bounds;
-            CSGModel modelBeneathCursor;
+            ChiselModel modelBeneathCursor;
             Matrix4x4 transformation;
             float height;
 
@@ -52,7 +52,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    box = ChiselModelManager.Create<CSGBox>("Box",
+                    box = ChiselModelManager.Create<ChiselBox>("Box",
                                                       ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                       transformation);
                     box.Operation = forceOperation ?? CSGOperationType.Additive;

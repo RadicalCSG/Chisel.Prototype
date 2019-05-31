@@ -7,9 +7,9 @@ using System;
 namespace Chisel.Components
 {
     [ExecuteInEditMode]
-    [HelpURL(ChiselGeneratorComponent.kDocumentationBaseURL + nameof(CSGHemisphere) + ChiselGeneratorComponent.KDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + CSGHemisphere.kNodeTypeName)]
-    public sealed class CSGHemisphere : ChiselGeneratorComponent
+    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    public sealed class ChiselHemisphere : ChiselGeneratorComponent
     {
         public const string kNodeTypeName = "Hemisphere";
         public override string NodeTypeName { get { return kNodeTypeName; } }

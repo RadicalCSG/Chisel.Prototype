@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGSpiralStairsDetails : ChiselGeneratorDetails<CSGSpiralStairs>
+    public sealed class CSGSpiralStairsDetails : ChiselGeneratorDetails<ChiselSpiralStairs>
     {
     }
 
-    [CustomEditor(typeof(CSGSpiralStairs))]
+    [CustomEditor(typeof(ChiselSpiralStairs))]
     [CanEditMultipleObjects]
-    public sealed class CSGSpiralStairsEditor : ChiselGeneratorEditor<CSGSpiralStairs> 
+    public sealed class CSGSpiralStairsEditor : ChiselGeneratorEditor<ChiselSpiralStairs> 
     {
         SerializedProperty heightProp;
         SerializedProperty outerDiameterProp;
@@ -176,7 +176,7 @@ namespace Chisel.Editors
         Vector3[] outerVertices;
 
         
-        protected override void OnScene(CSGSpiralStairs generator)
+        protected override void OnScene(ChiselSpiralStairs generator)
         {
             var normal					= Vector3.up;
             var topDirection			= Vector3.forward;

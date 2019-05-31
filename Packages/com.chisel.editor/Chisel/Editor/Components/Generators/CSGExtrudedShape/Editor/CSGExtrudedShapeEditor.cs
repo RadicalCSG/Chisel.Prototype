@@ -11,13 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGExtrudedShapeDetails : ChiselGeneratorDetails<CSGExtrudedShape>
+    public sealed class CSGExtrudedShapeDetails : ChiselGeneratorDetails<ChiselExtrudedShape>
     {
     }
     
-    [CustomEditor(typeof(CSGExtrudedShape))]
+    [CustomEditor(typeof(ChiselExtrudedShape))]
     [CanEditMultipleObjects]
-    public sealed class CSGExtrudedShapeEditor : ChiselGeneratorEditor<CSGExtrudedShape> 
+    public sealed class CSGExtrudedShapeEditor : ChiselGeneratorEditor<ChiselExtrudedShape> 
     {
         static GUIContent   shapeContent	= new GUIContent("Shape");
         static GUIContent   pathContent		= new GUIContent("Path");
@@ -51,7 +51,7 @@ namespace Chisel.Editors
 
 
         internal static int s_Curve2DDHash = "Curve2DHash".GetHashCode();
-        protected override void OnScene(CSGExtrudedShape generator)
+        protected override void OnScene(ChiselExtrudedShape generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;
