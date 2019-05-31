@@ -19,15 +19,19 @@ namespace Chisel.Core
             {
                 var defaultRenderMaterial = CSGMaterialManager.DefaultWallMaterial;
                 var defaultPhysicsMaterial = CSGMaterialManager.DefaultPhysicsMaterial;
-                surfaces = new ChiselSurface[expectedSize];
-                for (int i = 0; i < surfaces.Length; i++)
+                var newSurfaces = new ChiselSurface[expectedSize];
+                var prevLength  = (surfaces == null) ? 0 : surfaces.Length;
+                if (prevLength > 0)
+                    Array.Copy(surfaces, newSurfaces, Mathf.Min(newSurfaces.Length, surfaces.Length));
+                for (int i = prevLength; i < newSurfaces.Length; i++)
                 {
-                    surfaces[i] = new ChiselSurface
+                    newSurfaces[i] = new ChiselSurface
                     {
                         surfaceDescription  = SurfaceDescription.Default,
                         brushMaterial       = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial)
                     };
                 }
+                surfaces = newSurfaces;
                 return true;
             }
             return false;

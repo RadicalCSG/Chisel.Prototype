@@ -22,9 +22,9 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments))
+            if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments, in surfaceDefinition))
             {
                 brushMesh.Clear();
                 return false;
@@ -32,16 +32,14 @@ namespace Chisel.Core
             
             ref var dstBrushMesh = ref brushMesh;
 
+            // TODO: do something more intelligent with surface assignment, and put it inside CreateSphere
             for (int i = 0; i < dstBrushMesh.polygons.Length; i++)
-            {
-                dstBrushMesh.polygons[i].brushMaterial = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i].brushMaterial      : surfaceDefinition.surfaces[0].brushMaterial;
-                dstBrushMesh.polygons[i].description   = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i].surfaceDescription : surfaceDefinition.surfaces[0].surfaceDescription;
-            }
+                dstBrushMesh.polygons[i].surface = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i] : surfaceDefinition.surfaces[0];
 
             return true;
         }
 
-        public static bool CreateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ChiselBrushMaterial brushMaterial = null, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool CreateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||
@@ -134,8 +132,8 @@ namespace Chisel.Core
                         surfaceID = polygonIndex,
                         firstEdge = edgeIndex,
                         edgeCount = polygonEdgeCount,
-                        description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                        brushMaterial = brushMaterial
+                        // TODO: do something more intelligent with surface assignment
+                        surface = surfaceDefinition.surfaces[0]
                     };
                     
                     edgeIndex += polygonEdgeCount;

@@ -87,7 +87,7 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, definition.shape, definition.path, definition.curveSegments, definition.surfaceDefinition);
         }
 
-        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateExtrudedShape(ref BrushMesh[] brushMeshes, Curve2D shape, Path path, int curveSegments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             var shapeVertices       = new List<Vector2>();
             var shapeSegmentIndices = new List<int>();

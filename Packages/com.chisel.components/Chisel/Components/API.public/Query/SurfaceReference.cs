@@ -41,7 +41,10 @@ namespace Chisel.Components
                     return null;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return null;
-                return brushMesh.polygons[surfaceIndex].brushMaterial;
+                var surface = brushMesh.polygons[surfaceIndex].surface;
+                if (surface == null)
+                    return null;
+                return surface.brushMaterial;
             }
         }
 
@@ -201,10 +204,12 @@ namespace Chisel.Components
 
         public void PlaneSpaceTransformUV(in Matrix4x4 planeSpaceTransformation, in UVMatrix originalMatrix)
         {
+            if (Polygon.surface == null)
+                return;
             // TODO: We're modifying uv coordinates for the generated brush-meshes, 
             //       when we should be changing surfaces descriptions in the generators that generate the brush-meshes ..
             //       Now all UVs are overridden everytime we rebuild the geometry
-            Polygon.description.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
+            Polygon.surface.surfaceDescription.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
             brushMeshAsset.SetDirty();
         }
 

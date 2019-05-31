@@ -152,26 +152,14 @@ namespace Chisel.Components
             return new Bounds { min = min, max = max };
         }
 
-        public void Cut(Plane cutPlane, ChiselBrushMaterial brushMaterial, UVMatrix uv0)
-        {
-            // TODO: improve design of brushMaterial usage
-            var surfaceDescription = new SurfaceDescription()
-            {
-                smoothingGroup  = 0,
-                surfaceFlags    = SurfaceFlags.None,
-                UV0             = uv0
-            };
-            Cut(cutPlane, brushMaterial, surfaceDescription);
-        }
-        
-        public void Cut(Plane cutPlane, ChiselBrushMaterial brushMaterial, SurfaceDescription surfaceDescription)
+        public void Cut(Plane cutPlane, in ChiselSurface chiselSurface)
         {
             if (brushMeshes == null)
                 return;
 
             for (int i = brushMeshes.Length - 1; i >= 0; i--)
             {
-                if (!brushMeshes[i].Cut(cutPlane, surfaceDescription, brushMaterial))
+                if (!brushMeshes[i].Cut(cutPlane, in chiselSurface))
                 {
                     if (brushMeshes.Length > 1)
                     {

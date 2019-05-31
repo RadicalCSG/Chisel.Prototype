@@ -20,22 +20,29 @@ namespace Chisel.Core
                 return false;
             }
 
-            return GenerateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition.surfaces);
+            return GenerateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition);
         }
 
-        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselSurface[] surfaces)
+        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            if (!BoundsExtensions.IsValid(min, max))
+            if (surfaceDefinition == null)
+                return false;
+
+            var surfaces = surfaceDefinition.surfaces;
+            if (surfaces == null)
                 return false;
 
             if (surfaces.Length != 6)
+                return false;
+
+            if (!BoundsExtensions.IsValid(min, max))
                 return false;
 
             if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
-            brushMesh.polygons  = CreateBoxAssetPolygons(surfaces);
+            brushMesh.polygons  = CreateBoxPolygons(in surfaceDefinition);
             brushMesh.halfEdges = boxHalfEdges.ToArray();
             brushMesh.vertices  = BrushMeshFactory.CreateBoxVertices(min, max);
             return true;
@@ -66,7 +73,7 @@ namespace Chisel.Core
             return vertices;
         }
 
-        public static BrushMesh CreateBox(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ChiselBrushMaterial brushMaterial, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static BrushMesh CreateBox(UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurface surface)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return null;
@@ -77,7 +84,7 @@ namespace Chisel.Core
 
             return new BrushMesh
             {
-                polygons	= CreateBoxPolygons(brushMaterial, surfaceFlags),
+                polygons	= CreateBoxPolygons(in surface),
                 halfEdges	= boxHalfEdges.ToArray(),
                 vertices	= CreateBoxVertices(min, max)
             };
@@ -89,28 +96,10 @@ namespace Chisel.Core
         /// <param name="size">The size of the box</param>
         /// <param name="material">The [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html) that will be set to all surfaces of the box (optional)</param>
         /// <returns>A <see cref="Chisel.Core.BrushMesh"/> on success, null on failure</returns>
-        public static BrushMesh CreateBox(UnityEngine.Vector3 size, ChiselBrushMaterial brushMaterial, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static BrushMesh CreateBox(UnityEngine.Vector3 size, in ChiselSurface surface)
         {
             var halfSize = size * 0.5f;
-            return CreateBox(-halfSize, halfSize, brushMaterial, surfaceFlags);
-        }
-
-        static BrushMesh.Polygon[] CreateBoxPolygons(ChiselBrushMaterial brushMaterial, SurfaceFlags surfaceFlags)
-        {
-            return new[]
-            {
-                // left/right
-                new BrushMesh.Polygon{ surfaceID = 0, firstEdge =  0, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
-                new BrushMesh.Polygon{ surfaceID = 1, firstEdge =  4, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
-                
-                // front/back
-                new BrushMesh.Polygon{ surfaceID = 2, firstEdge =  8, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
-                new BrushMesh.Polygon{ surfaceID = 3, firstEdge = 12, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
-                
-                // top/down
-                new BrushMesh.Polygon{ surfaceID = 4, firstEdge = 16, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial },
-                new BrushMesh.Polygon{ surfaceID = 5, firstEdge = 20, edgeCount = 4, description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 }, brushMaterial = brushMaterial }
-            };
+            return CreateBox(-halfSize, halfSize, in surface);
         }
     }
 }

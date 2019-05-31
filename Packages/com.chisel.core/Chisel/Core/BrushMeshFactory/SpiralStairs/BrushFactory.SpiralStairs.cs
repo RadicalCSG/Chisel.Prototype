@@ -22,7 +22,7 @@ namespace Chisel.Core
         public static bool GenerateSpiralStairs(ref BrushMesh[] brushMeshes, ref CSGOperationType[] operations, ref CSGSpiralStairsDefinition definition)
         {
             definition.Validate();
-            var surfaceDefinition = definition.surfaceDefinition;
+            ref readonly var surfaceDefinition = ref definition.surfaceDefinition;
             if (surfaceDefinition == null ||
                 surfaceDefinition.surfaces == null ||
                 surfaceDefinition.surfaces.Length != 6)
@@ -145,7 +145,7 @@ namespace Chisel.Core
                         ref var brushMesh = ref brushMeshes[i];
                         if (i == 0)
                         {
-                            brushMesh.polygons = BrushMeshFactory.CreateBoxAssetPolygons(surfaceDefinition);
+                            brushMesh.polygons = BrushMeshFactory.CreateBoxPolygons(surfaceDefinition);
                             minY -= treadHeight;
                         } else
                         {
@@ -427,7 +427,7 @@ namespace Chisel.Core
                     ref var brushMesh = ref brushMeshes[i];
                     if (n == 0)
                     {
-                        brushMesh.polygons = BrushMeshFactory.CreateBoxAssetPolygons(surfaceDefinition);
+                        brushMesh.polygons = BrushMeshFactory.CreateBoxPolygons(surfaceDefinition);
                     } else
                         brushMesh.polygons = brushMeshes[startIndex].polygons.ToArray();
 

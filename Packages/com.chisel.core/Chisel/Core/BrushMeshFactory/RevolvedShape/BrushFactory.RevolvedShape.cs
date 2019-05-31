@@ -157,7 +157,7 @@ namespace Chisel.Core
                     }
 
                     var brushMesh = new BrushMesh();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, descriptionIndex, 0, 1, subMeshVertices, definition.surfaceDefinition))
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in definition.surfaceDefinition))
                         continue;
 
                     if (!brushMesh.Validate())

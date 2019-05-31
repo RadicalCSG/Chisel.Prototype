@@ -17,7 +17,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: remove all stairs specific parameters
-        static void GenerateBottomRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, ChiselSurfaceDefinition surfaceDefinition)
+        static void GenerateBottomRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, CSGLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
         {
             for (int i = 0, j = startIndex; i < stepCount; i++, j++)
             {
@@ -51,7 +51,6 @@ namespace Chisel.Core
 
                 BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[j], vertices, extrusion,
                                 new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                 surfaceDefinition);
 
                 min.z += definition.stepDepth;
@@ -62,7 +61,7 @@ namespace Chisel.Core
         }
 
         // TODO: remove all stairs specific parameters
-        static void GenerateTopRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, ChiselSurfaceDefinition surfaceDefinition)
+        static void GenerateTopRamp(BrushMesh[] brushMeshes, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, CSGLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
         {
             //var diffY			= (max.y - min.y);
             //var diffZ			= (max.z - min.z);
@@ -99,7 +98,6 @@ namespace Chisel.Core
 
                 BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[j + 0], vertices, extrusion, 
                                 new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
-                                new int[] { 0, 1, 2, 2, 2, 2, 2 }, // TODO: fix this
                                 surfaceDefinition);
                         
                 min.z += definition.stepDepth;
@@ -192,17 +190,7 @@ namespace Chisel.Core
 
         public static bool GenerateLinearStairsSubMeshes(BrushMesh[] brushMeshes, CSGLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
         {
-    
             // TODO: properly assign all materials
-
-            //const int Top		= (int)CSGLinearStairsDefinition.SurfaceSides.Top;
-            //const int Bottom	= (int)CSGLinearStairsDefinition.SurfaceSides.Bottom;
-            const int Left		= (int)CSGLinearStairsDefinition.SurfaceSides.Left;
-            const int Right		= (int)CSGLinearStairsDefinition.SurfaceSides.Right;
-            //const int Forward	= (int)CSGLinearStairsDefinition.SurfaceSides.Forward;
-            //const int Back	= (int)CSGLinearStairsDefinition.SurfaceSides.Back;
-            const int Tread		= (int)CSGLinearStairsDefinition.SurfaceSides.Tread;
-            const int Step		= (int)CSGLinearStairsDefinition.SurfaceSides.Step;
             
             if (definition.surfaceDefinition.surfaces.Length != (int)CSGLinearStairsDefinition.SurfaceSides.TotalSides)
             {
@@ -329,7 +317,6 @@ namespace Chisel.Core
 
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + i], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        new int[] { Left, Right, Step, Tread, Step, Tread }, // TODO: fix this
                                         definition.surfaceDefinition);						
 
                         if (riserType != StairsRiserType.FillDown)
@@ -360,7 +347,6 @@ namespace Chisel.Core
                         var extrusion	= new Vector3(max.x - min.x, 0, 0);
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startTread + i], vertices, extrusion,
                                         new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
-                                        new int[] { Left, Right, Tread, Tread, Tread, Tread }, // TODO: fix this
                                         definition.surfaceDefinition);
                         min += stepOffset;
                         max += stepOffset;
@@ -409,7 +395,6 @@ namespace Chisel.Core
 
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startLeftSideUp + (stepCount - 1)], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         definition.surfaceDefinition);
                     }
                     //if (!haveLeftSideDown)
@@ -436,7 +421,6 @@ namespace Chisel.Core
 
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startLeftSideUp + stepCount], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         definition.surfaceDefinition);
                     }
                 } 
@@ -461,7 +445,6 @@ namespace Chisel.Core
 
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startRightSideUp + (stepCount - 1)], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         definition.surfaceDefinition);
                     }
                     //if (!haveRightSideDown)
@@ -488,7 +471,6 @@ namespace Chisel.Core
 
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMeshes[subMeshOffset + startRightSideUp + stepCount], vertices, extrusion,
                                         new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
                                         definition.surfaceDefinition);
                     }
                 } 

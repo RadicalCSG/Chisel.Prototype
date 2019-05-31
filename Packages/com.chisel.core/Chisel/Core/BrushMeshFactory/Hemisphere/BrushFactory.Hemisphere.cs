@@ -77,7 +77,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateHemisphereSubMesh(ref BrushMesh brushMesh, Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (diameterXYZ.x == 0 ||
                 diameterXYZ.y == 0 ||

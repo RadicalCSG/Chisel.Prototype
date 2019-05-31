@@ -792,7 +792,12 @@ namespace Chisel.Editors
             // This makes it easier to recover from edge cases and makes it more accurate, floating point wise.
             selectedUVMatrices			= new UVMatrix[selectedSurfaceReferences.Length];
             for (int i = 0; i < selectedSurfaceReferences.Length; i++)
-                selectedUVMatrices[i] = selectedSurfaceReferences[i].Polygon.description.UV0;
+            {
+                if (selectedSurfaceReferences[i].Polygon.surface == null)
+                    selectedUVMatrices[i] = UVMatrix.identity;
+                else
+                    selectedUVMatrices[i] = selectedSurfaceReferences[i].Polygon.surface.surfaceDescription.UV0;
+            }
             
             // Find the intersection point/plane in model space
             var nodeTransform		= startSurfaceReference.node.hierarchyItem.Transform;

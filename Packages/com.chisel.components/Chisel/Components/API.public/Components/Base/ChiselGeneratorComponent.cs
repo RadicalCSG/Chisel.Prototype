@@ -466,7 +466,11 @@ namespace Chisel.Components
                     if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                         return null;
 
-                    return brushMesh.polygons[surfaceIndex].brushMaterial;
+                    var surface = brushMesh.polygons[surfaceIndex].surface;
+                    if (surface == null)
+                        return null;
+
+                    return surface.brushMaterial;
                 }
                 return null;
             } else
@@ -491,7 +495,11 @@ namespace Chisel.Components
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return null;
 
-                return brushMesh.polygons[surfaceIndex].brushMaterial;
+                var surface = brushMesh.polygons[surfaceIndex].surface;
+                if (surface == null)
+                    return null;
+
+                return surface.brushMaterial;
             }
         }
 
@@ -512,7 +520,12 @@ namespace Chisel.Components
                     
                     var surfaces	= new HashSet<ChiselBrushMaterial>();
                     for (int i = 0; i < brushMesh.polygons.Length; i++)
-                        surfaces.Add(brushMesh.polygons[i].brushMaterial);
+                    {
+                        var surface = brushMesh.polygons[i].surface;
+                        if (surface == null)
+                            continue;
+                        surfaces.Add(surface.brushMaterial);
+                    }
 
                     return surfaces.ToArray();
                 }
@@ -526,9 +539,14 @@ namespace Chisel.Components
                 var brushMesh = generatedBrushes.BrushMeshes[0];
                 if (brushMesh == null)
                     return null;
-                
+
                 for (int i = 0; i < brushMesh.polygons.Length; i++)
-                    surfaces.Add(brushMesh.polygons[i].brushMaterial);
+                {
+                    var surface = brushMesh.polygons[i].surface;
+                    if (surface == null)
+                        continue;
+                    surfaces.Add(surface.brushMaterial);
+                }
 
                 return surfaces.ToArray();
             }

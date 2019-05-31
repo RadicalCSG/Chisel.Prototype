@@ -59,10 +59,20 @@ namespace Chisel.Core
         public static implicit operator SmoothingGroup(uint smoothingGroup) { return new SmoothingGroup() { value = smoothingGroup }; }
     }
 
+    /// <summary>Defines the surface of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
+    /// <seealso cref="Chisel.Core.ChiselBrushMaterial"/>
+    /// <seealso cref="Chisel.Core.SurfaceDescription"/>
+    [Serializable]
+    public sealed class ChiselSurface
+    {
+        public ChiselBrushMaterial  brushMaterial;
+        public SurfaceDescription   surfaceDescription;
+    }
+
     /// <summary>Describes how the texture coordinates and normals are generated and if a surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</summary>
     /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
     /// <seealso cref="Chisel.Core.BrushMesh"/>
-    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [Serializable]
     public struct SurfaceDescription
     {
         /// <value>The current normal smoothing group, 0 means that the surface doesn't do any smoothing</value>
@@ -80,7 +90,7 @@ namespace Chisel.Core
 
         // .. more UVMatrices can be added when more UV channels are supported
 
-        public static readonly SurfaceDescription Default = new SurfaceDescription()
+        public static SurfaceDescription Default = new SurfaceDescription()
         {
             smoothingGroup  = 0,
             surfaceFlags    = CSGDefaults.SurfaceFlags,
@@ -136,6 +146,7 @@ namespace Chisel.Core
         /// <summary>Defines the polygon of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <seealso cref="Chisel.Core.BrushMesh"/>
         /// <seealso cref="Chisel.Core.Surface"/>
+        /// <seealso cref="Chisel.Core.ChiselSurface"/>
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Polygon
         {
@@ -148,12 +159,8 @@ namespace Chisel.Core
             /// <value>An ID that can be used to identify the <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
             public Int32 surfaceID; // TODO: replace with surfaceID (leading to BrushMaterial uniqueID) and polygonIndex
             
-            /// <value>Describes how normals and texture coordinates are created.</value>
-            public SurfaceDescription description;
-
-            /// <value>Describes the Material and PhysicMaterial that this <see cref="Chisel.Core.BrushMesh.Polygon"/> uses.</value>
-            /// <seealso cref="ChiselBrushMaterial"/>
-            public ChiselBrushMaterial brushMaterial;
+            /// <value>Describes what the surface of a polygon looks like & behaves.</value>
+            public ChiselSurface surface;
 
             [EditorBrowsable(EditorBrowsableState.Never)]
             public override string ToString() { return string.Format("{{ firstEdge = {0}, edgeCount = {1}, surfaceID = {2} }}", firstEdge, edgeCount, surfaceID); }

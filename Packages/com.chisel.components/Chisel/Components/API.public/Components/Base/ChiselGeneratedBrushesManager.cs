@@ -92,7 +92,10 @@ namespace Chisel.Components
                     continue;
                 foreach (var polygon in brushMesh.polygons)
                 {
-                    ChiselBrushMaterialManager.Unregister(polygon.brushMaterial);
+                    if (polygon.surface == null ||
+                        polygon.surface.brushMaterial == null)
+                        continue;
+                    ChiselBrushMaterialManager.Unregister(polygon.surface.brushMaterial);
                 }
             }
         }
@@ -107,7 +110,10 @@ namespace Chisel.Components
                     continue;
                 foreach (var polygon in brushMesh.polygons)
                 {
-                    ChiselBrushMaterialManager.Register(polygon.brushMaterial);
+                    if (polygon.surface == null ||
+                        polygon.surface.brushMaterial == null)
+                        continue;
+                    ChiselBrushMaterialManager.Register(polygon.surface.brushMaterial);
                 }
             }
         }
@@ -251,7 +257,11 @@ namespace Chisel.Components
             {
                 for (int i = 0; i < polygons.Length; i++)
                 {
-                    var brushMaterial = polygons[i].brushMaterial;
+                    var surface = brushMesh.polygons[i].surface;
+                    if (surface == null)
+                        continue;
+
+                    var brushMaterial = surface.brushMaterial;
                     if (Equals(null, brushMaterial))
                         continue;
 

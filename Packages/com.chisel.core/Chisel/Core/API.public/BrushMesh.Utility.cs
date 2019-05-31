@@ -548,8 +548,7 @@ namespace Chisel.Core
                 newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
                 newPolygons[newPolygonIndex].surfaceID      = polygons.Length;
-                newPolygons[newPolygonIndex].description    = polygons[polygonIndex].description;
-                newPolygons[newPolygonIndex].brushMaterial  = polygons[polygonIndex].brushMaterial;
+                newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexIn;
                 newPolygons[polygonIndex].edgeCount = segment2;
@@ -620,8 +619,7 @@ namespace Chisel.Core
                 newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
                 newPolygons[newPolygonIndex].surfaceID      = polygons.Length;
-                newPolygons[newPolygonIndex].description    = polygons[polygonIndex].description;
-                newPolygons[newPolygonIndex].brushMaterial  = polygons[polygonIndex].brushMaterial;
+                newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexOut;
                 newPolygons[polygonIndex].edgeCount = segment2;
@@ -961,7 +959,7 @@ namespace Chisel.Core
         static List<VertexSide> s_VertexDistances   = new List<VertexSide>();   // avoids allocations at runtime
         static List<int>        s_IntersectedEdges  = new List<int>();          // avoids allocations at runtime
 
-        public bool Cut(Plane cuttingPlane, SurfaceDescription description, ChiselBrushMaterial brushMaterial)
+        public bool Cut(Plane cuttingPlane, in ChiselSurface chiselSurface)
         {
             if (s_IntersectedEdges != null)
                 s_IntersectedEdges.Clear();
@@ -1112,14 +1110,12 @@ namespace Chisel.Core
                 Array.Copy(polygons, newPolygons, polygons.Length);
                 newPolygons[polygonIndex1].firstEdge        = polygonStart1;
                 newPolygons[polygonIndex1].edgeCount        = newEdgeCount;
-                newPolygons[polygonIndex1].description      = description;
-                newPolygons[polygonIndex1].brushMaterial    = brushMaterial;
+                newPolygons[polygonIndex1].surface          = chiselSurface;
                 newPolygons[polygonIndex1].surfaceID        = polygonIndex1;
 
                 newPolygons[polygonIndex2].firstEdge        = polygonStart2;
                 newPolygons[polygonIndex2].edgeCount        = newEdgeCount;
-                newPolygons[polygonIndex2].description      = description;
-                newPolygons[polygonIndex2].brushMaterial    = brushMaterial;
+                newPolygons[polygonIndex2].surface          = chiselSurface;
                 newPolygons[polygonIndex2].surfaceID        = polygonIndex2;
 
                 polygons  = newPolygons;

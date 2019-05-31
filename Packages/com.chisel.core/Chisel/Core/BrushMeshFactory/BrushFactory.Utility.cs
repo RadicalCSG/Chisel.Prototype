@@ -18,7 +18,7 @@ namespace Chisel.Core
     public sealed partial class BrushMeshFactory
     {
         // TODO: clean up
-        public static bool GenerateSegmentedSubMesh(ref BrushMesh brushMesh, int horzSegments, int vertSegments, Vector3[] segmentVertices, bool topCap, bool bottomCap, int topVertex, int bottomVertex, ChiselSurfaceDefinition surfaceDefinition)
+        public static bool GenerateSegmentedSubMesh(ref BrushMesh brushMesh, int horzSegments, int vertSegments, Vector3[] segmentVertices, bool topCap, bool bottomCap, int topVertex, int bottomVertex, in ChiselSurfaceDefinition surfaceDefinition)
         {
             // FIXME: hack, to fix math below .. 
             vertSegments++;
@@ -84,7 +84,7 @@ namespace Chisel.Core
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -150,7 +150,7 @@ namespace Chisel.Core
                         halfEdges[edgeIndex + 3] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial };
+                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -166,19 +166,13 @@ namespace Chisel.Core
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, description = surfaceDefinition.surfaces[0].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[0].brushMaterial };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
             }
             
             brushMesh.polygons	= polygons;
             brushMesh.halfEdges	= halfEdges;
             brushMesh.vertices	= vertices;
             return true;
-        }
-
-        
-        public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, ChiselSurfaceDefinition surfaceDefinition)
-        {
-            return CreateExtrudedSubMesh(ref brushMesh, segments, segmentDescriptionIndices, null, segmentTopIndex, segmentBottomIndex, vertices, surfaceDefinition);
         }
 
         enum SegmentTopology : sbyte
@@ -191,7 +185,7 @@ namespace Chisel.Core
             None = 3
         }
 
-        public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int[] segmentAssetIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, ChiselSurfaceDefinition surfaceDefinition)
+        public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (vertices.Length < 3)
                 return false;
@@ -285,25 +279,21 @@ namespace Chisel.Core
 
             var polygons = new BrushMesh.Polygon[polygonCount];
 
-            var surfaceDescription0 = surfaceDefinition.surfaces[segmentTopIndex].surfaceDescription;
-            var surfaceDescription1 = surfaceDefinition.surfaces[segmentBottomIndex].surfaceDescription;
-            var brushMaterial0 = surfaceDefinition.surfaces[segmentTopIndex].brushMaterial;
-            var brushMaterial1 = surfaceDefinition.surfaces[segmentBottomIndex].brushMaterial;
+            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
+            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
             
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, brushMaterial = brushMaterial1 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, surface = surface0 };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
                 var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s]);
-                var assetIndex = (segmentAssetIndices == null) ? 2 : (segmentAssetIndices[s]);
                 var firstEdge = edgeIndices[(s * 2) + 0] - 1;
                 switch (segmentTopology[s])
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                        polygons[surfaceID].description.smoothingGroup = (uint)0;
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -313,18 +303,15 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                        polygons[surfaceID + 0].description.smoothingGroup = (uint)smoothingGroup;
-                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                        polygons[surfaceID + 1].description.smoothingGroup = (uint)smoothingGroup;
+                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                        polygons[surfaceID].description.smoothingGroup = (uint)0;
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -585,7 +572,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public static void CreateExtrudedSubMesh(ref BrushMesh brushMesh, Vector3[] sideVertices, Vector3 extrusion, int[] segmentDescriptionIndices, int[] segmentAssetIndices, ChiselSurfaceDefinition surfaceDefinition)
+        public static void CreateExtrudedSubMesh(ref BrushMesh brushMesh, Vector3[] sideVertices, Vector3 extrusion, int[] segmentDescriptionIndices, in ChiselSurfaceDefinition surfaceDefinition)
         {
             const float distanceEpsilon = 0.0000001f;
             for (int i = sideVertices.Length - 1; i >= 0; i--)
@@ -659,37 +646,29 @@ namespace Chisel.Core
 
             var polygons = new BrushMesh.Polygon[polygonCount];
             
-            var descriptionIndex0 = (segmentDescriptionIndices == null) ? 0 : (segmentDescriptionIndices[0]);
-            var descriptionIndex1 = (segmentDescriptionIndices == null) ? 1 : (segmentDescriptionIndices[1]);
-            var assetIndex0		  = (segmentAssetIndices       == null) ? 0 : (segmentAssetIndices[0]);
-            var assetIndex1		  = (segmentAssetIndices       == null) ? 1 : (segmentAssetIndices[1]);
-            var surfaceDescription0 = surfaceDefinition.surfaces[descriptionIndex0].surfaceDescription;
-            var surfaceDescription1 = surfaceDefinition.surfaces[descriptionIndex1].surfaceDescription;
-            var brushMaterial0 = surfaceDefinition.surfaces[assetIndex0].brushMaterial;
-            var brushMaterial1 = surfaceDefinition.surfaces[assetIndex1].brushMaterial;
+            var surfaceIndex0 = (segmentDescriptionIndices == null) ? 0 : (segmentDescriptionIndices[0]);
+            var surfaceIndex1 = (segmentDescriptionIndices == null) ? 1 : (segmentDescriptionIndices[1]);
+            var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
+            var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, description = surfaceDescription0, brushMaterial = brushMaterial0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, description = surfaceDescription1, brushMaterial = brushMaterial1 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, surface = surface0 };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
                 var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
-                var assetIndex		 = (segmentAssetIndices       == null) ? 2     : (segmentAssetIndices[s + 2]);
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                    polygons[surfaceID].description.smoothingGroup = (uint)0;
+                    polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID++;
                 } else
                 {
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                    polygons[surfaceID + 0].description.smoothingGroup = (uint)smoothingGroup;
-                    polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, description = surfaceDefinition.surfaces[descriptionIndex].surfaceDescription, brushMaterial = surfaceDefinition.surfaces[assetIndex].brushMaterial };
-                    polygons[surfaceID + 1].description.smoothingGroup = (uint)smoothingGroup;
+                    polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID += 2;
                 }
             }

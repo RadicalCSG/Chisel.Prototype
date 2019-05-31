@@ -12,11 +12,9 @@ namespace Chisel.Core
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct NativePolygon
         {
-            public Int32 firstEdge;
-            public Int32 edgeCount;
-            public Int32 surfaceID;
-            public SurfaceDescription description;
-            public SurfaceLayers layers;
+            public Int32 firstEdge, edgeCount, surfaceID;
+            public SurfaceDescription   description;
+            public SurfaceLayers        layers;
         }
 
         private static NativePolygon[] ConvertToNative(BrushMesh.Polygon[] polygons)
@@ -25,18 +23,18 @@ namespace Chisel.Core
             for (int p = 0; p < nativePolygons.Length; p++)
             {
                 ref var polygon = ref polygons[p];
-                var brushMaterial = polygon.brushMaterial;
+                var surface = polygon.surface;
                 nativePolygons[p] = new NativePolygon()
                 {
                     firstEdge   = polygon.firstEdge,
                     edgeCount   = polygon.edgeCount,
                     surfaceID   = polygon.surfaceID,
-                    description = polygon.description,
+                    description = (surface != null) ? surface.surfaceDescription : SurfaceDescription.Default,
                     layers      = new SurfaceLayers()
                     {
-                        layerUsage      = (brushMaterial != null) ? brushMaterial.LayerUsage : LayerUsageFlags.None,
-                        layerParameter1 = (brushMaterial != null) ? brushMaterial.RenderMaterialInstanceID : 0,
-                        layerParameter2 = (brushMaterial != null) ? brushMaterial.PhysicsMaterialInstanceID : 0
+                        layerUsage      = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.LayerUsage : LayerUsageFlags.None,
+                        layerParameter1 = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.RenderMaterialInstanceID : 0,
+                        layerParameter2 = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.PhysicsMaterialInstanceID : 0
                     }
                 };
             }
