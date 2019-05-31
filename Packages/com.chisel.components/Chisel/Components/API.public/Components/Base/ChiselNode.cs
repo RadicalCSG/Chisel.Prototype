@@ -87,7 +87,7 @@ namespace Chisel.Components
 
         internal virtual void CollectChildNodesForParent(List<CSGTreeNode> childNodes) { }
 
-        public virtual ChiselGeneratedBrushes[] GetUsedBrushMeshAssets() { return null; }
+        public virtual ChiselBrushContainerAsset[] GetUsedGeneratedBrushes() { return null; }
         
         public abstract int GetAllTreeBrushCount();
 

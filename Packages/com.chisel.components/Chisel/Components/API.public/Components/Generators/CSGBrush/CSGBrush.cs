@@ -7,7 +7,7 @@ using System;
 namespace Chisel.Components
 {
     // TODO: is RemoveUnusedAssets safe? (relative to monobehaviour / managers?)
-    // TODO: how to handle duplication (ctrl-D)? (brushMeshAsset reference no longer unique)
+    // TODO: how to handle duplication (ctrl-D)? (brushContainerAsset reference no longer unique)
     // TODO: have some sort of bounds that we can use to "focus" on brush
     // TODO: add reset method, use default box
     [ExecuteInEditMode]

@@ -21,7 +21,7 @@ namespace Chisel.Editors
         ChiselBrushMaterial[]	prevBrushMaterials		= null;
         Material[]			    prevMaterials			= null;
 
-        ChiselGeneratedBrushes[]     prevBrushMeshAssets	= null;
+        ChiselBrushContainerAsset[]     prevBrushContainerAssets	= null;
 
         public static IDragAndDropOperation AcceptDrag()
         {
@@ -48,10 +48,10 @@ namespace Chisel.Editors
 
             prevMaterials = null;
             prevBrushMaterials = null;
-            prevBrushMeshAssets = null;
+            prevBrushContainerAssets = null;
         }
 
-        void ApplyMaterialToSurface(ChiselGeneratedBrushes[] brushMeshAssets, ChiselBrushMaterial[] surface)
+        void ApplyMaterialToSurface(ChiselBrushContainerAsset[] brushContainerAssets, ChiselBrushMaterial[] surface)
         {
             if (surface == null)
                 return;
@@ -68,7 +68,7 @@ namespace Chisel.Editors
                 prevBrushMaterials[i]  = surface[i];
                 surface[i].RenderMaterial = dragMaterial;
             }
-            prevBrushMeshAssets = brushMeshAssets;
+            prevBrushContainerAssets = brushContainerAssets;
         }
 
         static bool Equals(ChiselBrushMaterial[] surfacesA, ChiselBrushMaterial[] surfacesB)
@@ -115,9 +115,9 @@ namespace Chisel.Editors
         public void UpdateDrag()
         {
             var selectAllSurfaces = UnityEngine.Event.current.shift;
-            ChiselGeneratedBrushes[] brushMeshAssets;
-            ChiselBrushMaterial[]	surfaces;
-            CSGClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, out surfaces, out brushMeshAssets, selectAllSurfaces);
+            ChiselBrushContainerAsset[] brushContainerAssets;
+            ChiselBrushMaterial[]	    surfaces;
+            CSGClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, out surfaces, out brushContainerAssets, selectAllSurfaces);
             if (!Equals(prevBrushMaterials, surfaces))
             {
                 UndoPrevSurface();
@@ -126,19 +126,19 @@ namespace Chisel.Editors
                 if (!selectAllSurfaces)
                     surfaces = AddSelectedSurfaces(surfaces);
 
-                ApplyMaterialToSurface(brushMeshAssets, surfaces);
+                ApplyMaterialToSurface(brushContainerAssets, surfaces);
             }
         }
 
         public void PerformDrag()
         {
             var surfaces = prevBrushMaterials;
-            var brushMeshAssets = prevBrushMeshAssets;
+            var brushContainerAssets = prevBrushContainerAssets;
             UndoPrevSurface();
             if (surfaces == null)
                 return;
-            Undo.RecordObjects(brushMeshAssets, "Drag & drop material");
-            ApplyMaterialToSurface(brushMeshAssets, surfaces);
+            Undo.RecordObjects(brushContainerAssets, "Drag & drop material");
+            ApplyMaterialToSurface(brushContainerAssets, surfaces);
             Undo.CollapseUndoOperations(Undo.GetCurrentGroup());
             Undo.FlushUndoRecordObjects();
         }

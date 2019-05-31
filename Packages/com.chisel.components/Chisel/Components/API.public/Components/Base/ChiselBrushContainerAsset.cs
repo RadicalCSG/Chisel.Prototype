@@ -10,28 +10,38 @@ namespace Chisel.Components
     // they will all automatically update when one is modified.
 
     // TODO: when not unique, on modification make a copy first and modify that (unless it's an asset in the project?)
-    [Serializable, PreferBinarySerialization]
-    public sealed class ChiselGeneratedBrushes : ScriptableObject
+    [Serializable]
+    public sealed class ChiselBrushContainerAsset : ScriptableObject
     {
-        internal void OnEnable()	{ ChiselGeneratedBrushesManager.Register(this); }
-        internal void OnDisable()	{ ChiselGeneratedBrushesManager.Unregister(this); }
-        internal void OnValidate()	{ ChiselGeneratedBrushesManager.NotifyContentsModified(this); }
+        internal void OnEnable()	{ ChiselBrushContainerAssetManager.Register(this); }
+        internal void OnDisable()	{ ChiselBrushContainerAssetManager.Unregister(this); }
+        internal void OnValidate()	{ ChiselBrushContainerAssetManager.NotifyContentsModified(this); }
 
         // returns false if it was already dirty
-        public new bool SetDirty()	{ return ChiselGeneratedBrushesManager.SetDirty(this); }
-        public bool Dirty			{ get { return ChiselGeneratedBrushesManager.IsDirty(this); } }
+        public new bool SetDirty()	{ return ChiselBrushContainerAssetManager.SetDirty(this); }
+        public bool Dirty			{ get { return ChiselBrushContainerAssetManager.IsDirty(this); } }
 
-        [SerializeField] private BrushMesh[]	    brushMeshes;
-        [SerializeField] private CSGOperationType[]	operations;
+        [SerializeField] private ChiselBrushContainer brushContainer;
         [NonSerialized] private BrushMeshInstance[] instances;
-
-        public bool					Valid			{ get { return brushMeshes != null; } }
-
-        public bool					Empty			{ get { if (brushMeshes == null) return true; return brushMeshes.Length == 0; } }
-        public int					SubMeshCount	{ get { if (brushMeshes == null) return 0; return brushMeshes.Length; } }
-        public BrushMesh[]	        BrushMeshes		{ get { return brushMeshes; } }
-        public CSGOperationType[]	Operations		{ get { return operations; } }
+        
+        public bool					Empty			{ get { return brushContainer.Empty; } }
+        public int					SubMeshCount	{ get { return brushContainer.Count; } }
+        public BrushMesh[]	        BrushMeshes		{ get { return brushContainer.brushMeshes; } }
+        public CSGOperationType[]	Operations		{ get { return brushContainer.operations; } }
         public BrushMeshInstance[]	Instances		{ get { if (HasInstances) return instances; return null; } }
+        
+        public void Generate(IChiselGenerator generator)
+        {
+            if (!generator.Generate(ref brushContainer))
+            {
+                CalculatePlanes();
+                SetDirty();
+            } else
+            {
+                brushContainer.Clear();
+            }
+            ChiselBrushContainerAssetManager.NotifyContentsModified(this);
+        }
 
         public bool SetSubMeshes(BrushMesh[] brushMeshes)
         {
@@ -40,8 +50,8 @@ namespace Chisel.Components
                 Clear();
                 return false;
             }
-            this.brushMeshes = brushMeshes;
-            this.operations = new CSGOperationType[brushMeshes.Length]; // default is Additive
+            this.brushContainer.brushMeshes = brushMeshes;
+            this.brushContainer.operations = new CSGOperationType[brushMeshes.Length]; // default is Additive
             OnValidate();
             return true;
         }
@@ -55,13 +65,13 @@ namespace Chisel.Components
                 Clear();
                 return false;
             }
-            this.brushMeshes = brushMeshes;
-            this.operations = operations;
+            this.brushContainer.brushMeshes = brushMeshes;
+            this.brushContainer.operations = operations;
             OnValidate();
             return true;
         }
 
-        public void Clear() { brushMeshes = null; operations = null; OnValidate(); }
+        public void Clear() { brushContainer.Clear(); OnValidate(); }
         
         internal bool HasInstances { get { return instances != null && instances.Length > 0 && instances[0].Valid; } }
 
@@ -71,13 +81,13 @@ namespace Chisel.Components
             if (Empty) return;
 
             if (instances == null ||
-                instances.Length != brushMeshes.Length)
-                instances = new BrushMeshInstance[brushMeshes.Length];
+                instances.Length != brushContainer.brushMeshes.Length)
+                instances = new BrushMeshInstance[brushContainer.brushMeshes.Length];
 
             var userID = GetInstanceID();
             for (int i = 0; i < instances.Length; i++)
             {
-                ref var brushMesh = ref brushMeshes[i];
+                ref var brushMesh = ref brushContainer.brushMeshes[i];
                 if (!brushMesh.Validate(logErrors: true))
                     brushMesh.Clear();
                 instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
@@ -88,11 +98,11 @@ namespace Chisel.Components
         {
             if (instances == null) return;						
             if (Empty) { DestroyInstances(); return; }
-            if (instances.Length != brushMeshes.Length) { CreateInstances(); return; }
+            if (instances.Length != brushContainer.brushMeshes.Length) { CreateInstances(); return; }
 
             for (int i = 0; i < instances.Length; i++)
             {
-                ref var brushMesh = ref brushMeshes[i];
+                ref var brushMesh = ref brushContainer.brushMeshes[i];
                 if (!brushMesh.Validate(logErrors: true))
                     brushMesh.Clear();
                 instances[i].Set(brushMesh);
@@ -112,11 +122,11 @@ namespace Chisel.Components
 
         public void	CalculatePlanes()
         {
-            for (int i = 0; i < brushMeshes.Length; i++)
+            for (int i = 0; i < brushContainer.brushMeshes.Length; i++)
             {
-                if (brushMeshes[i] == null)
+                if (brushContainer.brushMeshes[i] == null)
                     throw new NullReferenceException("SubMeshes[" + i + "] is null");
-                ref var brushMesh = ref brushMeshes[i];
+                ref var brushMesh = ref brushContainer.brushMeshes[i];
                 brushMesh.CalculatePlanes();
                 brushMesh.UpdateHalfEdgePolygonIndices();
             }
@@ -127,15 +137,15 @@ namespace Chisel.Components
         static readonly Vector3 negativeInfinityVector = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
         public Bounds CalculateBounds(Matrix4x4 transformation)
         {
-            if (brushMeshes == null)
+            if (brushContainer.brushMeshes == null)
                 return new Bounds();
 
             var min = positiveInfinityVector;
             var max = negativeInfinityVector;
             
-            for (int m = 0; m < brushMeshes.Length; m++)
+            for (int m = 0; m < brushContainer.brushMeshes.Length; m++)
             {
-                var vertices = brushMeshes[m].vertices;
+                var vertices = brushContainer.brushMeshes[m].vertices;
                 for (int i = 0; i < vertices.Length; i++)
                 {
                     var point = transformation.MultiplyPoint(vertices[i]);
@@ -154,31 +164,31 @@ namespace Chisel.Components
 
         public void Cut(Plane cutPlane, in ChiselSurface chiselSurface)
         {
-            if (brushMeshes == null)
+            if (brushContainer.brushMeshes == null)
                 return;
 
-            for (int i = brushMeshes.Length - 1; i >= 0; i--)
+            for (int i = brushContainer.brushMeshes.Length - 1; i >= 0; i--)
             {
-                if (!brushMeshes[i].Cut(cutPlane, in chiselSurface))
+                if (!brushContainer.brushMeshes[i].Cut(cutPlane, in chiselSurface))
                 {
-                    if (brushMeshes.Length > 1)
+                    if (brushContainer.brushMeshes.Length > 1)
                     {
-                        var newBrushMeshes = new List<BrushMesh>(brushMeshes);
-                        var newOperations = new List<CSGOperationType>(operations);
+                        var newBrushMeshes = new List<BrushMesh>(brushContainer.brushMeshes);
+                        var newOperations = new List<CSGOperationType>(brushContainer.operations);
                         newBrushMeshes.RemoveAt(i);
                         newOperations.RemoveAt(i);
-                        brushMeshes = newBrushMeshes.ToArray();
-                        operations = newOperations.ToArray();
+                        brushContainer.brushMeshes = newBrushMeshes.ToArray();
+                        brushContainer.operations = newOperations.ToArray();
                     } else
                     {
-                        brushMeshes = null;
-                        operations = null;
+                        brushContainer.brushMeshes = null;
+                        brushContainer.operations = null;
                     }
                     continue;
                 }
             }
-            if (brushMeshes == null ||
-                brushMeshes.Length == 0)
+            if (brushContainer.brushMeshes == null ||
+                brushContainer.brushMeshes.Length == 0)
                 Clear();
         }
     }

@@ -471,10 +471,10 @@ namespace Chisel.Editors
         }
 
 
-        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, out ChiselGeneratedBrushes[] brushMeshAssets, bool selectAllSurfaces)
+        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, out ChiselBrushContainerAsset[] brushContainerAssets, bool selectAllSurfaces)
         {
             brushMaterials = null;
-            brushMeshAssets = null;
+            brushContainerAssets = null;
             try
             {
                 CSGTreeBrushIntersection intersection;
@@ -489,8 +489,8 @@ namespace Chisel.Editors
 
                 if (selectAllSurfaces)
                 {
-                    brushMeshAssets = node.GetUsedBrushMeshAssets();
-                    if (brushMeshAssets == null)
+                    brushContainerAssets = node.GetUsedGeneratedBrushes();
+                    if (brushContainerAssets == null)
                         return false;
                     brushMaterials = node.GetAllBrushMaterials(brush);
                     return true;
@@ -499,8 +499,8 @@ namespace Chisel.Editors
                     var surface = node.FindBrushMaterial(brush, intersection.surfaceID);
                     if (surface == null)
                         return false;
-                    brushMeshAssets = node.GetUsedBrushMeshAssets();
-                    if (brushMeshAssets == null)
+                    brushContainerAssets = node.GetUsedGeneratedBrushes();
+                    if (brushContainerAssets == null)
                         return false;
                     brushMaterials =  new ChiselBrushMaterial[] { surface };
                     return true;

@@ -55,16 +55,16 @@ namespace Chisel.Components
 
         protected override void UpdateGeneratorInternal()
         {
-            var brushMeshes = generatedBrushes.BrushMeshes;
+            var brushMeshes = brushContainerAsset.BrushMeshes;
             if (!BrushMeshFactory.GenerateExtrudedShape(ref brushMeshes, ref definition))
             {
-                generatedBrushes.Clear();
+                brushContainerAsset.Clear();
                 return;
             }
 
-            generatedBrushes.SetSubMeshes(brushMeshes);
-            generatedBrushes.CalculatePlanes();
-            generatedBrushes.SetDirty();
+            brushContainerAsset.SetSubMeshes(brushMeshes);
+            brushContainerAsset.CalculatePlanes();
+            brushContainerAsset.SetDirty();
         }
     }
 }

@@ -543,7 +543,7 @@ namespace Chisel.Editors
             hoverIntersection = null;
             hoverSurfaceReference = null;
             selectedSurfaceReferences = null;
-            selectedBrushMeshAsset = null;
+            selectedBrushContainerAsset = null;
             selectedUVMatrices = null;
         }
         #endregion
@@ -757,7 +757,7 @@ namespace Chisel.Editors
 
         static SurfaceReference     startSurfaceReference;
         static SurfaceReference[]	selectedSurfaceReferences;
-        static ChiselGeneratedBrushes[]	selectedBrushMeshAsset;
+        static ChiselBrushContainerAsset[]	selectedBrushContainerAsset;
         static UVMatrix[]			selectedUVMatrices;
         static Plane                worldDragPlane;
         static Plane                worldProjectionPlane;
@@ -785,8 +785,8 @@ namespace Chisel.Editors
 
             selectedSurfaceReferences	= CSGSurfaceSelectionManager.Selection.ToArray();
 
-            // We need all the brushMeshAssets for all the surfaces we're moving, so that we can record them for an undo
-            selectedBrushMeshAsset		= CSGSurfaceSelectionManager.SelectedBrushMeshes.ToArray();
+            // We need all the brushContainerAssets for all the surfaces we're moving, so that we can record them for an undo
+            selectedBrushContainerAsset		= CSGSurfaceSelectionManager.SelectedBrushMeshes.ToArray();
 
             // We copy all the original surface uvMatrices, so we always apply rotations and transformations relatively to the original
             // This makes it easier to recover from edge cases and makes it more accurate, floating point wise.
@@ -890,7 +890,7 @@ namespace Chisel.Editors
             // Get the rotation on that plane, around 'worldStartPosition'
             var worldspaceRotation = MathExtensions.RotateAroundAxis(center, normal, rotateAngle);
 
-            Undo.RecordObjects(selectedBrushMeshAsset, "Rotate UV coordinates");
+            Undo.RecordObjects(selectedBrushContainerAsset, "Rotate UV coordinates");
             for (int i = 0; i < selectedSurfaceReferences.Length; i++)
             {
                 var rotationInPlaneSpace = selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(in worldspaceRotation);
@@ -1010,7 +1010,7 @@ namespace Chisel.Editors
         static void TranslateSurfacesInWorldSpace(Vector3 translation)
         {
             var movementInWorldSpace = Matrix4x4.TRS(translation, Quaternion.identity, Vector3.one); 
-            Undo.RecordObjects(selectedBrushMeshAsset, "Moved UV coordinates");
+            Undo.RecordObjects(selectedBrushContainerAsset, "Moved UV coordinates");
             for (int i = 0; i < selectedSurfaceReferences.Length; i++)
             {
                 // Translates the uv surfaces in a given direction. Since the z direction, relatively to the surface, 

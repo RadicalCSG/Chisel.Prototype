@@ -82,16 +82,16 @@ namespace Chisel.Editors
             }
         }
         
-        public static HashSet<ChiselGeneratedBrushes> SelectedBrushMeshes
+        public static HashSet<ChiselBrushContainerAsset> SelectedBrushMeshes
         {
             get
             {
                 var selectedSurfaces		= Data.selectedSurfaces;
-                var uniqueBrushMeshAssets	= new HashSet<ChiselGeneratedBrushes>();
+                var uniqueBrushContainerAssets	= new HashSet<ChiselBrushContainerAsset>();
 
                 foreach (var selectedSurface in selectedSurfaces)
-                    uniqueBrushMeshAssets.Add(selectedSurface.brushMeshAsset);
-                return uniqueBrushMeshAssets;
+                    uniqueBrushContainerAssets.Add(selectedSurface.brushContainerAsset);
+                return uniqueBrushContainerAssets;
             }
         }
         

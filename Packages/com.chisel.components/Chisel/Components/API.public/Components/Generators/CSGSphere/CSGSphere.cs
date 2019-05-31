@@ -68,13 +68,13 @@ namespace Chisel.Components
             var brushMesh = new[] { new BrushMesh() };
             if (!BrushMeshFactory.GenerateSphere(ref brushMesh[0], ref definition))
             {
-                generatedBrushes.Clear();
+                brushContainerAsset.Clear();
                 return;
             }
 
-            generatedBrushes.SetSubMeshes(brushMesh);
-            generatedBrushes.CalculatePlanes();
-            generatedBrushes.SetDirty();
+            brushContainerAsset.SetSubMeshes(brushMesh);
+            brushContainerAsset.CalculatePlanes();
+            brushContainerAsset.SetDirty();
         }
     }
 }

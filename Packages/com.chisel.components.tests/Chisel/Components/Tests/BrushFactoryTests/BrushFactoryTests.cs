@@ -15,7 +15,7 @@ namespace BrushFactoryTests
         [SetUp] public void Setup() { }
 
         [UnityTest]
-        public IEnumerator CreateBrushMeshAsset_IsPartOfManager()
+        public IEnumerator CreateBrushContainerAsset_IsPartOfManager()
         {
             var chiselSurface = new ChiselSurface();
             var box = BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface);

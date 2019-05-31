@@ -11,17 +11,17 @@ namespace Chisel.Components
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
         public ChiselNode			    node;
-        public ChiselGeneratedBrushes   brushMeshAsset;
+        public ChiselBrushContainerAsset   brushContainerAsset;
 
         public int  subNodeIndex;
         public int  subMeshIndex;
         public int  surfaceID;
         public int  surfaceIndex;
 
-        public SurfaceReference(ChiselNode node, ChiselGeneratedBrushes brushMeshAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
+        public SurfaceReference(ChiselNode node, ChiselBrushContainerAsset brushContainerAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
         {
             this.node           = node;
-            this.brushMeshAsset = brushMeshAsset;
+            this.brushContainerAsset = brushContainerAsset;
             this.subNodeIndex   = subNodeIndex;
             this.subMeshIndex   = subMeshIndex;
             this.surfaceIndex   = surfaceIndex;
@@ -32,11 +32,11 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     return null;
-                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
                 if (brushMesh == null)
                     return null;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
@@ -54,11 +54,11 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     return ref s_DefaultPolygon;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     return ref s_DefaultPolygon;
-                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
                 if (brushMesh == null)
                     return ref s_DefaultPolygon;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
@@ -71,11 +71,11 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     return null;
-                var brushMeshes = brushMeshAsset.BrushMeshes;
+                var brushMeshes = brushContainerAsset.BrushMeshes;
                 if (brushMeshes == null)
                     return null;
                 return brushMeshes[subMeshIndex];
@@ -86,11 +86,11 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     yield break;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     yield break;
-                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
                 if (brushMesh == null)
                     yield break;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
@@ -109,11 +109,11 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     return null;
-                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
                 if (brushMesh == null)
                     return null;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
@@ -161,13 +161,13 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                if (!brushMeshAsset)
+                if (!brushContainerAsset)
                     return Matrix4x4.identity;
 
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
                     return Matrix4x4.identity;
 
-                var brushMesh = brushMeshAsset.BrushMeshes[subMeshIndex];
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
                 if (brushMesh == null)
                     return Matrix4x4.identity;
                 
@@ -210,7 +210,7 @@ namespace Chisel.Components
             //       when we should be changing surfaces descriptions in the generators that generate the brush-meshes ..
             //       Now all UVs are overridden everytime we rebuild the geometry
             Polygon.surface.surfaceDescription.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
-            brushMeshAsset.SetDirty();
+            brushContainerAsset.SetDirty();
         }
 
 
@@ -228,7 +228,7 @@ namespace Chisel.Components
                 ReferenceEquals(y, null))
                 return false;
             return	//x.treeBrush			== y.treeBrush &&
-                    x.brushMeshAsset	== y.brushMeshAsset &&
+                    x.brushContainerAsset	== y.brushContainerAsset &&
                     x.subNodeIndex		== y.subNodeIndex &&
                     x.subMeshIndex		== y.subMeshIndex &&
                     x.surfaceID			== y.surfaceID &&
@@ -255,7 +255,7 @@ namespace Chisel.Components
         public int GetHashCode(SurfaceReference obj)
         {
             return  //obj.treeBrush.NodeID.GetHashCode() ^
-                    obj.brushMeshAsset.GetInstanceID() ^
+                    obj.brushContainerAsset.GetInstanceID() ^
                     obj.subNodeIndex ^
                     obj.subMeshIndex ^
                     obj.surfaceID ^
