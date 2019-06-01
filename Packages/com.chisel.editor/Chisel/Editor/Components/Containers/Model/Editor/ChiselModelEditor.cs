@@ -25,6 +25,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModel>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselModel.kNodeTypeName, false, -1)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModel.kNodeTypeName); }
+
         const int kSingleLineHeight = 16;
 
         static readonly int RebuildButtonHashCode = "rebuild".GetHashCode();

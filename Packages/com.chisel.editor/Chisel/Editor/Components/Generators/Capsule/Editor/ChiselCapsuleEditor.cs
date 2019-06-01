@@ -14,6 +14,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselCapsuleEditor : ChiselGeneratorEditor<ChiselCapsule>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselCapsule.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCapsule.kNodeTypeName); }
+
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
         const string                kSurfacePropertyName    = "Side {0}";

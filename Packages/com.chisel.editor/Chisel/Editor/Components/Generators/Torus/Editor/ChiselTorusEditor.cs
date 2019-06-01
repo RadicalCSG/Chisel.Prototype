@@ -19,6 +19,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselTorusEditor : ChiselGeneratorEditor<ChiselTorus>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselTorus.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselTorus.kNodeTypeName); }
+
         static readonly GUIContent  kInnerDiameterContent   = new GUIContent("Inner Diameter");
 
         SerializedProperty outerDiameterProp;
