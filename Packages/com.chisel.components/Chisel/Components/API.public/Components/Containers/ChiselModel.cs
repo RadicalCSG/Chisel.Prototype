@@ -108,7 +108,10 @@ namespace Chisel.Components
     {
         public const string kNodeTypeName = "Model";
         public override string NodeTypeName { get { return kNodeTypeName; } }
-
+        
+        [ContextMenu("Set Active Model")]
+        void SetActiveModel() { ChiselModelManager.ActiveModel = this; }
+        
 
         [HideInInspector, SerializeField] CSGGeneratedColliderSettings  colliderSettings    = new CSGGeneratedColliderSettings();
         [HideInInspector, SerializeField] CSGGeneratedRenderSettings    renderSettings      = new CSGGeneratedRenderSettings();

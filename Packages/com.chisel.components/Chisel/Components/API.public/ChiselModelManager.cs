@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Chisel.Core;
 using UnityEngine;
 
@@ -38,7 +38,7 @@ namespace Chisel.Components
 
         [SerializeField]
         public ChiselModel activeModel;
-
+        
         public static ChiselModel ActiveModel
         { 
             get
@@ -48,7 +48,7 @@ namespace Chisel.Components
                 {
                     // TODO: handle not having an active model (try and find one in the scene?)
                     return null;
-            }
+                }
                 if (!activeModel)
                 {
                     // TODO: handle active model being invalid
@@ -83,5 +83,35 @@ namespace Chisel.Components
             }
             return activeModel;
         }
+
+#if UNITY_EDITOR
+        static ChiselModel GetSelectedModel()
+        {
+            var selectedGameObjects = UnityEditor.Selection.gameObjects;
+            if (selectedGameObjects == null ||
+                selectedGameObjects.Length != 1)
+                return null;
+
+            var selection   = selectedGameObjects[0];
+            return selection.GetComponent<ChiselModel>();
+        }
+
+        const string SetActiveModelMenuName = "GameObject/Set Active Model";
+        [UnityEditor.MenuItem(SetActiveModelMenuName, false, -100000)]
+        static void SetActiveModel()
+        {
+            var model = GetSelectedModel();
+            if (!model)
+                return;
+            ChiselModelManager.ActiveModel = model;
+        }
+
+        [UnityEditor.MenuItem(SetActiveModelMenuName, true, -100000)]
+        static bool ValidateSetActiveModel()
+        {
+            var model = GetSelectedModel();
+            return (model != null);
+        }
+#endif
     }
 }

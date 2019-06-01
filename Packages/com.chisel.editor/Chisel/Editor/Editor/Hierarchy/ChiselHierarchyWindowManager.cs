@@ -33,13 +33,18 @@ namespace Chisel.Editors
                 if (model == ChiselModelManager.ActiveModel)
                 {
                     const float kIconSize     = 13;
-                    const float kOffsetToText = kIconSize + 28;
+                    const float kOffsetToText = kIconSize + 27.0f;
 
                     var rect = selectionRect;
                     rect.xMin += kOffsetToText;
 
-                    var content     = EditorGUIUtility.TrTempContent(node.name + "*");
-                    GUI.Label(rect, content, EditorStyles.label);
+                    var content     = EditorGUIUtility.TrTempContent(node.name + " (active)");
+
+                    // TODO: figure out correct color depending on selection and proSkin
+
+                    GUI.Label(rect, content);
+                    rect.xMin += 0.5f;
+                    GUI.Label(rect, content);
                 }
             }
 
