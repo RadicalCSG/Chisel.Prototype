@@ -12,6 +12,8 @@ MonoImporter:
       type: 2}
   - defaultWallMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
       type: 2}
+  - defaultPhysicMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+      type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

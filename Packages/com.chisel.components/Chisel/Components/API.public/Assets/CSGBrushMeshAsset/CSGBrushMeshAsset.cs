@@ -10,206 +10,6 @@ namespace Chisel.Assets
     // (when, for example, they're repeated or mirrored) 
     // they will all automatically update when one is modified.
 
-    [Serializable]
-    public class CSGBrushSubMesh
-    {
-        public CSGBrushSubMesh() { }
-        public CSGBrushSubMesh(CSGBrushSubMesh other)
-        {
-            if (other.polygons != null)
-            {
-                this.polygons = new Polygon[other.polygons.Length];
-                for (int p = 0; p < other.polygons.Length; p++)
-                    this.polygons[p] = new Polygon(other.polygons[p]);
-            } else
-                this.polygons = null;
-            this.brushMesh = new BrushMesh(other.brushMesh);
-        }
-
-
-        [Serializable]
-        // TODO: find a better name
-        public sealed class Orientation
-        {
-            public Orientation() { }
-            public Orientation(Orientation other)
-            {
-                localPlane = other.localPlane;
-                localToPlaneSpace = other.localToPlaneSpace;
-                planeToLocalSpace = other.planeToLocalSpace;
-            }
-            [HideInInspector] [SerializeField] public Plane		localPlane;
-            [HideInInspector] [SerializeField] public Matrix4x4 localToPlaneSpace;
-            [HideInInspector] [SerializeField] public Matrix4x4 planeToLocalSpace;
-            public Vector3 Tangent { get { return localToPlaneSpace.GetRow(0); } }
-            public Vector3 BiNormal { get { return localToPlaneSpace.GetRow(1); } }
-        }
-
-
-        [Serializable]
-        public sealed class Polygon
-        {
-            public Polygon() { }
-            public Polygon(Polygon other)
-            {
-                firstEdge = other.firstEdge;
-                edgeCount = other.edgeCount;
-                surfaceID = other.surfaceID;
-                description = other.description;
-                surfaceAsset = other.surfaceAsset;
-            }
-            [HideInInspector] [SerializeField] public Int32 firstEdge;
-            [HideInInspector] [SerializeField] public Int32 edgeCount;
-            [HideInInspector] [SerializeField] public Int32 surfaceID;
-            public SurfaceDescription description;
-            public CSGSurfaceAsset surfaceAsset;    // this is an unfortunate consequence of the native dll, since we can't pass this along to 
-                                                    // the native side, it was "translated" to an integer using it's uniqueID, this created a 
-                                                    // lot of boiler plate/management code that we can probably do away with once the CSG algorithm 
-                                                    // is moved to managed code ..
-        }
-
-
-        public Vector3[]					Vertices		{ get { if (brushMesh == null) brushMesh = new BrushMesh(); return brushMesh.vertices;  } set { if (brushMesh == null) brushMesh = new BrushMesh(); brushMesh.vertices  = value; } }
-        public BrushMesh.HalfEdge[]			HalfEdges		{ get { if (brushMesh == null) brushMesh = new BrushMesh(); return brushMesh.halfEdges; } set { if (brushMesh == null) brushMesh = new BrushMesh(); brushMesh.halfEdges = value; } }
-        public Polygon[]					Polygons		{ get { return polygons; } set { polygons = value; } }
-        public Orientation[]				Orientations	{ get { return orientations; } set { orientations = value; } }
-        public CSGOperationType				Operation		{ get { return operation; } set { operation = value; } }
-        
-        [SerializeField] private Orientation[]			orientations;
-        [SerializeField] private Polygon[]				polygons;
-        [SerializeField] private BrushMesh				brushMesh;
-        [SerializeField] private CSGOperationType		operation = CSGOperationType.Additive;
-
-        public void Clear()
-        {
-            if (brushMesh == null)
-                brushMesh = new BrushMesh();
-            polygons = null;
-        }
-
-        public bool Validate()
-        {
-            if (brushMesh == null)
-                return false;
-            return brushMesh.Validate(logErrors: true);
-        }
-        
-        internal void	CalculatePlanes()
-        {
-            if (orientations == null ||
-                orientations.Length != polygons.Length)
-                orientations = new Orientation[polygons.Length];
-
-            var vertices  = brushMesh.vertices;
-            var halfEdges = brushMesh.halfEdges;
-            for (int i = 0; i < polygons.Length; i++)
-            {
-                var firstEdge = polygons[i].firstEdge;
-                var edgeCount = polygons[i].edgeCount;
-                if (edgeCount <= 0)
-                {
-                    if (orientations[i] == null) orientations[i] = new Orientation();
-                    orientations[i].localPlane = new Plane(Vector3.up, 0);
-                    orientations[i].localToPlaneSpace = Matrix4x4.identity;
-                    orientations[i].planeToLocalSpace = Matrix4x4.identity;
-                    continue;
-                }
-                var lastEdge	= firstEdge + edgeCount;
-                var normal		= Vector3.zero;
-                var prevVertex	= vertices[halfEdges[lastEdge - 1].vertexIndex];
-                for (int n = firstEdge; n < lastEdge; n++)
-                {
-                    var currVertex = vertices[halfEdges[n].vertexIndex];
-                    normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
-                    normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
-                    normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-                    prevVertex = currVertex;
-                }
-                normal = normal.normalized;
-
-                var d = 0.0f;
-                for (int n = firstEdge; n < lastEdge; n++)
-                    d -= Vector3.Dot(normal, vertices[halfEdges[n].vertexIndex]);
-                d /= edgeCount;
-                
-                if (orientations[i] == null) orientations[i] = new Orientation();
-                orientations[i].localPlane = new Plane(normal, d);
-                orientations[i].localToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(orientations[i].localPlane);
-                orientations[i].planeToLocalSpace = Matrix4x4.Inverse(orientations[i].localToPlaneSpace);
-            }
-        }
-
-        internal BrushMesh CreateOrUpdateBrushMesh()
-        {
-            if (brushMesh == null)
-                brushMesh = new BrushMesh(); 
-
-            // In case a user sets "polygons" to null, for consistency
-            if (polygons == null ||
-                polygons.Length == 0)
-            {
-                brushMesh.polygons = null;
-                return brushMesh;
-            }
-
-            if (brushMesh.polygons == null ||
-                brushMesh.polygons.Length != polygons.Length)
-                brushMesh.polygons = new BrushMesh.Polygon[polygons.Length];
-
-            var dstPolygons = brushMesh.polygons;
-            for (int i = 0; i < polygons.Length; i++)
-            {
-                if (polygons[i] == null)
-                {
-                    Debug.LogError("Polygons[" + i + "] is not initialized.");
-                    Clear();
-                    return brushMesh;
-                }
-                dstPolygons[i].firstEdge = polygons[i].firstEdge;
-                dstPolygons[i].edgeCount = polygons[i].edgeCount;
-                dstPolygons[i].surfaceID = polygons[i].surfaceID;
-                dstPolygons[i].description   = polygons[i].description;
-
-                var surfaceAsset = polygons[i].surfaceAsset;
-                if (surfaceAsset == null)
-                {
-                    dstPolygons[i].layers.layerUsage = LayerUsageFlags.None;
-                    dstPolygons[i].layers.layerParameter1 = 0;
-                    dstPolygons[i].layers.layerParameter2 = 0;
-                    continue;
-                } 
-                dstPolygons[i].layers.layerUsage      = surfaceAsset.LayerUsage;
-                dstPolygons[i].layers.layerParameter1 = surfaceAsset.RenderMaterialInstanceID;
-                dstPolygons[i].layers.layerParameter2 = surfaceAsset.PhysicsMaterialInstanceID;
-            }
-            
-            if (!Validate())
-                Clear(); 
-
-            return brushMesh;
-        }
-        
-        public void ExtendBounds(Matrix4x4 transformation, ref Vector3 min, ref Vector3 max)
-        {
-            if (brushMesh != null)
-            {
-                var vertices = brushMesh.vertices;
-                for (int i = 0; i < vertices.Length; i++)
-                {
-                    var point = transformation.MultiplyPoint(vertices[i]);
-
-                    min.x = Mathf.Min(min.x, point.x);
-                    min.y = Mathf.Min(min.y, point.y);
-                    min.z = Mathf.Min(min.z, point.z);
-
-                    max.x = Mathf.Max(max.x, point.x);
-                    max.y = Mathf.Max(max.y, point.y);
-                    max.z = Mathf.Max(max.z, point.z);
-                }
-            }
-        }
-    }
-
     // TODO: make sure this all works well with Polygon CSGSurfaceAssets 
     // TODO: when not unique, on modification make a copy first and modify that (unless it's an asset in the project?)
     [Serializable, PreferBinarySerialization]
@@ -301,6 +101,47 @@ namespace Chisel.Assets
                     subMeshes[i].ExtendBounds(transformation, ref min, ref max);
             }
             return new Bounds { min = min, max = max };
+        }
+
+        public void Cut(Plane cutPlane, CSGSurfaceAsset asset, UVMatrix uv0)
+        {
+            // TODO: improve design of surfaceAsset usage
+            var surfaceDescription = new SurfaceDescription()
+            {
+                smoothingGroup  = 0,
+                surfaceFlags    = SurfaceFlags.None,
+                UV0             = uv0
+            };
+            var surfaceLayers = new SurfaceLayers()
+            {
+                layerUsage      = asset.LayerUsage,
+                layerParameter1 = (asset.RenderMaterial  == null) ? 0 : asset.RenderMaterial .GetInstanceID(),
+                layerParameter2 = (asset.PhysicsMaterial == null) ? 0 : asset.PhysicsMaterial.GetInstanceID(),
+            };
+            Cut(cutPlane, surfaceDescription, surfaceLayers);
+        }
+        
+        public void Cut(Plane cutPlane, SurfaceDescription surfaceDescription, SurfaceLayers surfaceLayers)
+        {
+            for (int i = SubMeshes.Length - 1; i >= 0; i--)
+            {
+                SubMeshes[i].CreateOrUpdateBrushMesh();
+                if (!SubMeshes[i].Cut(cutPlane, surfaceDescription, surfaceLayers))
+                {
+                    if (SubMeshes.Length > 1)
+                    {
+                        var newSubMeshes = new List<CSGBrushSubMesh>(subMeshes);
+                        newSubMeshes.RemoveAt(i);
+                        subMeshes = newSubMeshes.ToArray();
+                    } else
+                        subMeshes = null;
+                    continue;
+                }
+                SubMeshes[i].CreateOrUpdateBrushMeshInverse();
+            }
+            if (subMeshes == null ||
+                subMeshes.Length == 0)
+                Clear();
         }
     }
 }

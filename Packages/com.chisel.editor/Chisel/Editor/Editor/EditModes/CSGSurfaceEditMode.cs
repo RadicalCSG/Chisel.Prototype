@@ -219,40 +219,22 @@ namespace Chisel.Editors
             if (Mathf.Abs(Vector3.Dot(yAxis, intersectionPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Y;
             if (Mathf.Abs(Vector3.Dot(zAxis, intersectionPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Z;
 
-            var polygons    = subMesh.Polygons;
-            var polygon     = polygons[surfaceReference.surfaceIndex];
-            var edges       = subMesh.HalfEdges;
-            var vertices    = subMesh.Vertices;
-            var firstEdge   = polygon.firstEdge;
-            var lastEdge    = firstEdge + polygon.edgeCount;
+            var polygons                = subMesh.Polygons;
+            var polygon                 = polygons[surfaceReference.surfaceIndex];
+            var halfEdges               = subMesh.HalfEdges;
+            var halfEdgePolygonIndices  = subMesh.HalfEdgePolygonIndices;
+            var vertices                = subMesh.Vertices;
+            var firstEdge               = polygon.firstEdge;
+            var lastEdge                = firstEdge + polygon.edgeCount;
 
             for (int e = firstEdge; e < lastEdge; e++)
             {
-                var twinIndex       = edges[e].twinIndex;
-#if USE_MANAGED_CSG_IMPLEMENTATION
-                var polygonIndex    = edges[e].polygonIndex;
-#else
-                // The managed CSG solution will have a polygon index stored for each half-edge
-                // the native solution doesn't have this, however, so we need to find the polygon ourselves
-                int polygonIndex    = -1;
-                for (int p = 0; p < polygons.Length; p++)
-                {
-                    if (twinIndex < polygons[p].firstEdge)
-                        continue;
-                    if (twinIndex >= polygons[p].firstEdge + polygons[p].edgeCount)
-                        continue;
-
-                    polygonIndex = p;
-                    break;
-                }
-                
-                if (polygonIndex == -1)
-                    continue;
-#endif
+                var twinIndex       = halfEdges[e].twinIndex;
+                var polygonIndex    = halfEdgePolygonIndices[e];
 
                 var surfaceIndex    = polygonIndex; // FIXME: throughout the code we're making assumptions about polygonIndices being the same as surfaceIndices, 
                                                     //         this needs to be fixed
-                var localPlane      = subMesh.Orientations[surfaceIndex].localPlane;
+                var localPlane      = subMesh.Surfaces[surfaceIndex].localPlane;
                 var worldPlane      = localToWorldSpace.TransformPlane(localPlane);
 
                 if ((CurrentSnapSettings & UVSnapSettings.GeometryGrid) != UVSnapSettings.None)

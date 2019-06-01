@@ -81,9 +81,14 @@ namespace Chisel.Core
     [Serializable]
     public sealed partial class BrushMesh
     {
+        public const int CurrentVersion = 1;
+
+        public int version = 0;
+
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)
         {
+            version = other.version;
             if (other.vertices != null)
             {
                 vertices = new Vector3[other.vertices.Length];
@@ -94,15 +99,26 @@ namespace Chisel.Core
                 halfEdges = new HalfEdge[other.halfEdges.Length];
                 Array.Copy(other.halfEdges, this.halfEdges, other.halfEdges.Length);
             }
+            if (other.halfEdgePolygonIndices != null)
+            {
+                halfEdgePolygonIndices = new int[other.halfEdgePolygonIndices.Length];
+                Array.Copy(other.halfEdgePolygonIndices, this.halfEdgePolygonIndices, other.halfEdgePolygonIndices.Length);
+            }
             if (other.polygons != null)
             {
                 polygons = new Polygon[other.polygons.Length];
                 Array.Copy(other.polygons, this.polygons, other.polygons.Length);
             }
+            if (other.surfaces != null)
+            {
+                surfaces = new Surface[other.surfaces.Length];
+                Array.Copy(other.surfaces, this.surfaces, other.surfaces.Length);
+            }
         }
 
         /// <summary>Defines the polygon of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <seealso cref="Chisel.Core.BrushMesh"/>
+        /// <seealso cref="Chisel.Core.Surface"/>
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Polygon
         {
@@ -121,6 +137,9 @@ namespace Chisel.Core
             /// <value>Describes the surface layers that this <see cref="Chisel.Core.BrushMesh.Polygon"/> is part of, and, for example, what Materials it uses.</value>
             /// <seealso cref="Chisel.Core.MeshQuery"/>
             public SurfaceLayers layers;
+
+            [EditorBrowsable(EditorBrowsableState.Never)]
+            public override string ToString() { return string.Format("{{ firstEdge = {0}, edgeCount = {1}, surfaceID = {2} }}", firstEdge, edgeCount, surfaceID); }
         }
 
         /// <summary>Defines a half edge of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
@@ -134,31 +153,23 @@ namespace Chisel.Core
             /// <value>The index to the twin <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/> of this <seealso cref="Chisel.Core.BrushMesh.HalfEdge"/>.</value>
             public Int32 twinIndex;
 
-#if USE_MANAGED_CSG_IMPLEMENTATION
-            // TODO: add description
-            public Int32 polygonIndex;
-
-            [EditorBrowsable(EditorBrowsableState.Never)]
-            public override string ToString() { return string.Format("{{ twinIndex = {0}, vertexIndex = {1}, surfaceIndex = {2} }}", twinIndex, vertexIndex, polygonIndex); }
-#else
             [EditorBrowsable(EditorBrowsableState.Never)]
             public override string ToString() { return string.Format("{{ twinIndex = {0}, vertexIndex = {1} }}", twinIndex, vertexIndex); }
-#endif
         }
-        
-#if USE_MANAGED_CSG_IMPLEMENTATION
-        // TODO: add descriptions
+
+        /// <summary>Defines a surface of a <see cref="Chisel.Core.BrushMesh"/>, multiple polygons may share the same surface.</summary>
+        /// <seealso cref="Chisel.Core.Polygon"/>
+        /// <seealso cref="Chisel.Core.BrushMesh"/>
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Surface
         {
-            public Surface(Plane plane) { this.plane = plane; }
-            public Plane plane;
+            public Surface(Plane localPlane) { this.localPlane = localPlane; }
+            public Plane localPlane;
         }
+
+#if USE_MANAGED_CSG_IMPLEMENTATION
         
-        // TODO: add description
-        public Surface[]	surfaces;
-        
-        // TODO: add description
+        /// <value>The axis aligned bounding box of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
         public Bounds		localBounds;
 
         // TODO: add description
@@ -171,8 +182,14 @@ namespace Chisel.Core
 
         /// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.</value>
         public HalfEdge[]	halfEdges;
+
+        /// <value>An array of indices to <see cref="polygons"/>s that define which <see cref="Chisel.Core.BrushMesh.Polygon"/> each <see cref="halfEdges">halfEdge</see> belongs to.</value>
+        public int[]        halfEdgePolygonIndices;
         
         /// <value>An array of <see cref="Chisel.Core.BrushMesh.Polygon"/> that define the polygons of a <see cref="Chisel.Core.BrushMesh"/>.</value>
         public Polygon[]	polygons;
+
+        /// <value>The surfaces of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
+        public Surface[]	surfaces;
     }
 }

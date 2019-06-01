@@ -70,7 +70,7 @@ namespace Chisel.Assets
             // See if we already, unsuccessfully, tried finding this instanceID
             if (unknownRenderMaterialInstanceIDs.Contains(instanceID))
             {
-                Debug.LogError("Could not find PhysicMaterial with instanceID " + instanceID + ".");
+                Debug.LogError("Could not find Material with instanceID " + instanceID + ".");
                 return null;
             }
 
@@ -152,7 +152,7 @@ namespace Chisel.Assets
         public static void Register(CSGSurfaceAsset surfaceAsset)
         {
             if (surfaceAsset == null || !registeredLookup.Add(surfaceAsset)) return;
-            
+
             surfaceRenderMaterialLookup [surfaceAsset] = IncRefCount(surfaceAsset.RenderMaterial);
             surfacePhysicsMaterialLookup[surfaceAsset] = IncRefCount(surfaceAsset.PhysicsMaterial);
 

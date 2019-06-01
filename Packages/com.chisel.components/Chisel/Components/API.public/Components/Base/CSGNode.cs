@@ -77,21 +77,6 @@ namespace Chisel.Components
             }
         }
 
-        public CSGBrushSubMesh.Orientation Orientation
-        {
-            get
-            {
-                if (!brushMeshAsset)
-                    return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
-                    return null;
-                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Orientations.Length)
-                    return null;
-                return subMesh.Orientations[surfaceIndex];
-            }
-        }
-
         public Plane? WorldPlane
         {
             get
@@ -101,9 +86,9 @@ namespace Chisel.Components
                 if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
                     return null;
                 var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
-                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Orientations.Length)
+                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Surfaces.Length)
                     return null;
-                return LocalToWorldSpace.TransformPlane(subMesh.Orientations[surfaceIndex].localPlane);
+                return LocalToWorldSpace.TransformPlane(subMesh.Surfaces[surfaceIndex].localPlane);
             }
         }
 
@@ -146,12 +131,19 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                var orientation			= Orientation;
-                if (orientation == null)
+                if (!brushMeshAsset)
                     return Matrix4x4.identity;
 
-                var worldToLocal		= node.hierarchyItem.WorldToLocalMatrix;
-                return orientation.localToPlaneSpace * worldToLocal;
+                if (subMeshIndex < 0 || subMeshIndex >= brushMeshAsset.SubMeshCount)
+                    return Matrix4x4.identity;
+
+                var subMesh = brushMeshAsset.SubMeshes[subMeshIndex];
+                if (surfaceIndex < 0 || surfaceIndex >= subMesh.Surfaces.Length)
+                    return Matrix4x4.identity;
+
+                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(subMesh.Surfaces[surfaceIndex].localPlane);
+                var worldToLocal        = node.hierarchyItem.WorldToLocalMatrix;
+                return localToPlaneSpace * worldToLocal;
             }	
         }
 

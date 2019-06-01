@@ -29,37 +29,18 @@ namespace Chisel.Components
         [SerializeField] public Material defaultStepMaterial;
         [SerializeField] public Material defaultTreadMaterial;
         [SerializeField] public Material defaultWallMaterial;
-        
-        public static Material DefaultFloorMaterial		{ get { return Instance.defaultFloorMaterial; } }
-        public static Material DefaultStepMaterial		{ get { return Instance.defaultStepMaterial; } }
-        public static Material DefaultTreadMaterial		{ get { return Instance.defaultTreadMaterial; } }
-        public static Material DefaultWallMaterial		{ get { return Instance.defaultWallMaterial; } }
+        [SerializeField] public PhysicMaterial defaultPhysicMaterial;
+
+        public static Material DefaultFloorMaterial		    { get { return Instance.defaultFloorMaterial; } }
+        public static Material DefaultStepMaterial		    { get { return Instance.defaultStepMaterial; } }
+        public static Material DefaultTreadMaterial		    { get { return Instance.defaultTreadMaterial; } }
+        public static Material DefaultWallMaterial		    { get { return Instance.defaultWallMaterial; } }
+        public static Material DefaultMaterial              { get { return Instance.defaultWallMaterial; } }
+        public static PhysicMaterial DefaultPhysicsMaterial { get { return Instance.defaultPhysicMaterial; } }
         
         static readonly Dictionary<string, Material>	editorMaterials = new Dictionary<string, Material>();
         static readonly Dictionary<Color,Material>		colorMaterials	= new Dictionary<Color, Material>();
         
-        static Material _defaultMaterial;
-        public static Material DefaultMaterial
-        {
-            get
-            {
-                // TODO: make this work with HDRP
-                if (!_defaultMaterial)
-                    _defaultMaterial = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
-                return _defaultMaterial;
-            }
-        }
-
-        static PhysicMaterial _defaultPhysicsMaterial;
-        public static PhysicMaterial DefaultPhysicsMaterial
-        {
-            get
-            {
-                if (!_defaultPhysicsMaterial)
-                    _defaultPhysicsMaterial = new PhysicMaterial("Default");
-                return _defaultPhysicsMaterial;
-            }
-        }
 
         internal static Material GenerateDebugColorMaterial(Color color)
         {
