@@ -30,16 +30,30 @@ namespace Chisel.Components
             {
                 if (_instance)
                     return _instance;
-
-                _instance = ScriptableObject.CreateInstance<ChiselModelManager>();
-                _instance.hideFlags = HideFlags.HideAndDontSave;
+                
+                var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselModelManager>();
+                if (foundInstances == null ||
+                    foundInstances.Length == 0)
+                {
+                    _instance = ScriptableObject.CreateInstance<ChiselModelManager>();
+                    _instance.hideFlags = HideFlags.DontSaveInBuild;
+                    return _instance;
+                }
+                
+                if (foundInstances.Length > 1)
+                {
+                    for (int i = 1; i < foundInstances.Length; i++)
+                        UnityEngine.Object.DestroyImmediate(foundInstances[i]);
+                }
+                
+                _instance = foundInstances[0];
                 return _instance;
             }
         }
         #endregion
 
         [SerializeField]
-        ChiselModel activeModel;
+        public ChiselModel activeModel;
 
         // TODO: make this part of Undo stack ...
         public static ChiselModel ActiveModel
@@ -49,7 +63,7 @@ namespace Chisel.Components
                 return Instance.activeModel;
             }
             set
-            { 
+            {
                 Instance.activeModel = value;
             }
         }
