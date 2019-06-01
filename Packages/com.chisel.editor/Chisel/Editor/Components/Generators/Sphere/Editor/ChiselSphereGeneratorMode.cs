@@ -60,7 +60,7 @@ namespace Chisel.Editors
                 case BoxExtrusionState.Create:
                 {
                     sphere = ChiselComponentFactory.Create<ChiselSphere>("Sphere",
-                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                                 transformation);
 
                     sphere.definition.Reset();

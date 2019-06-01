@@ -1,25 +1,9 @@
-﻿using System;
-using System.Linq;
+using System;
 using Chisel.Core;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
-using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
-using Mathf = UnityEngine.Mathf;
-using Plane = UnityEngine.Plane;
-using Debug = UnityEngine.Debug;
-using UnitySceneExtensions;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Chisel.Components
 {
-    // TODO: have concept of active model
-    // TODO: reduce allocations, reuse existing arrays when possible
-    // TODO: make it possible to generate brushes in specific scenes/specific parents
-    // TODO: clean up
-    // TODO: rename
     public class ChiselModelManager : ScriptableObject
     {
         #region Instance
@@ -55,12 +39,23 @@ namespace Chisel.Components
         [SerializeField]
         public ChiselModel activeModel;
 
-        // TODO: make this part of Undo stack ...
         public static ChiselModel ActiveModel
         { 
             get
             {
-                return Instance.activeModel;
+                var activeModel = Instance.activeModel;
+                if (ReferenceEquals(activeModel, null))
+                {
+                    // TODO: handle not having an active model (try and find one in the scene?)
+                    return null;
+            }
+                if (!activeModel)
+                {
+                    // TODO: handle active model being invalid
+                    return null;
+                }
+                // TODO: handle active model not being in active scene
+                return activeModel;
             }
             set
             {
@@ -68,8 +63,9 @@ namespace Chisel.Components
             }
         }
 
-        // TODO: improve naming
-        public static ChiselModel GetModelForNode(ChiselModel overrideModel = null)
+        // TODO: fix this so we keep the active scene in mind, as in, when the active scene changes, 
+        // we should be using a model in the active scene, not in another scene.
+        public static ChiselModel GetActiveModelOrCreate(ChiselModel overrideModel = null)
         {
             if (overrideModel)
             {
@@ -80,6 +76,8 @@ namespace Chisel.Components
             var activeModel = ChiselModelManager.ActiveModel;
             if (!activeModel)
             {
+                // TODO: ensure we create this in the active scene
+                // TODO: handle scene being locked by version control
                 activeModel = ChiselComponentFactory.Create<ChiselModel>("Model");
                 ChiselModelManager.ActiveModel = activeModel; 
             }

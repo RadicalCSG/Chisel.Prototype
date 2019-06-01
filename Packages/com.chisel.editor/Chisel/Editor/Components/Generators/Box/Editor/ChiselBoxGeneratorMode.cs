@@ -53,7 +53,7 @@ namespace Chisel.Editors
                 case BoxExtrusionState.Create:
                 {
                     box = ChiselComponentFactory.Create<ChiselBox>("Box",
-                                                      ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                                                      ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                       transformation);
                     box.Operation = forceOperation ?? CSGOperationType.Additive;
                     box.Bounds = bounds;
