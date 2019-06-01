@@ -18,6 +18,9 @@ namespace Chisel.Components
     {
         public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
         {
+            // TODO: ensure we're creating this in the active scene
+            // TODO: handle scene being locked by version control
+
             if (string.IsNullOrEmpty(name))
             {
 #if UNITY_EDITOR
@@ -36,18 +39,19 @@ namespace Chisel.Components
             {
                 var brushTransform = newGameObject.transform;
 #if UNITY_EDITOR
+                if (parent)
+                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
                 UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
-#endif
                 brushTransform.localPosition = position;
                 brushTransform.localRotation = rotation;
                 brushTransform.localScale = scale;
-#if UNITY_EDITOR
-                if (parent)
-                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
                 return UnityEditor.Undo.AddComponent<T>(newGameObject);
 #else
                 if (parent)
                     brushTransform.SetParent(parent, false);
+                brushTransform.localPosition = position;
+                brushTransform.localRotation = rotation;
+                brushTransform.localScale = scale;
                 return newGameObject.AddComponent<T>();
 #endif
             }
