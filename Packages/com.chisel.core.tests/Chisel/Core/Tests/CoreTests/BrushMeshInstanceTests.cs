@@ -17,11 +17,7 @@ namespace FoundationTests
         [Test]
         public void CreateBrushMesh()
         {
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.None
-            };
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, layers);
+            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
 
             Assert.AreNotEqual(null, brushMesh);
             Assert.AreNotEqual(null, brushMesh.vertices);
@@ -35,11 +31,7 @@ namespace FoundationTests
         [Test]
         public void CreateBrushMeshInstanceFromBrushMesh()
         {
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.None
-            };
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, layers);
+            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
 
             BrushMeshInstance coreBrushMesh = BrushMeshInstance.Create(brushMesh);
 
@@ -49,11 +41,7 @@ namespace FoundationTests
         [Test]
         public void DestroyBrushMeshInstance()
         {
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.None
-            };
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, layers);
+            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
             BrushMeshInstance brushMeshInstance = BrushMeshInstance.Create(brushMesh);
 
             brushMeshInstance.Destroy();

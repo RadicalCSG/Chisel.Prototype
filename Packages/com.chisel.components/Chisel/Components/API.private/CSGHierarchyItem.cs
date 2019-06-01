@@ -13,7 +13,7 @@ namespace Chisel.Components
     public sealed class CSGSceneHierarchy
     {
         public Scene                            Scene;
-        public CSGModel                         DefaultModel;		// TODO: create this, but only when necessary.
+        public ChiselModel                         DefaultModel;		// TODO: create this, but only when necessary.
         public readonly List<CSGHierarchyItem>  RootItems		= new List<CSGHierarchyItem>();
     }
 
@@ -21,7 +21,7 @@ namespace Chisel.Components
     {
         public static readonly Bounds EmptyBounds = new Bounds();
 
-        public CSGHierarchyItem(CSGNode node) { Component = node; }
+        public CSGHierarchyItem(ChiselNode node) { Component = node; }
 
         public CSGHierarchyItem                 Parent;
         public readonly List<int>               SiblingIndices      = new List<int>();
@@ -31,16 +31,16 @@ namespace Chisel.Components
         public Scene                Scene;
         public Transform            Transform;
         public GameObject           GameObject;
-        public readonly CSGNode     Component;
+        public readonly ChiselNode     Component;
         
-        public CSGModel Model
+        public ChiselModel Model
         {
             get
             {
                 var iterator = this;
                 do
                 {
-                    var model = iterator.Component as CSGModel;
+                    var model = iterator.Component as ChiselModel;
                     if (!Equals(model, null))
                         return model;
                     iterator = iterator.Parent;

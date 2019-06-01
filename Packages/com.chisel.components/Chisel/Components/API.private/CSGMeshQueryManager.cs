@@ -93,7 +93,7 @@ namespace Chisel.Components
             )
         };
 
-        public static MeshQuery[] GetMeshQuery(CSGModel model)
+        public static MeshQuery[] GetMeshQuery(ChiselModel model)
         {
             // TODO: make this depended on the model settings / helper surface view settings
             if (model.CreateRenderComponents &&

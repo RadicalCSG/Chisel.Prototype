@@ -33,18 +33,18 @@ namespace HierarchyTests
             return newScene;
         }
 
-        public static CSGModel CreateUndoableGameObjectWithModel(string name = "model", HideFlags flags = HideFlags.None)
+        public static ChiselModel CreateUndoableGameObjectWithModel(string name = "model", HideFlags flags = HideFlags.None)
         {
             var modelGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var model = modelGameObject.AddComponent<CSGModel>();
+            var model = modelGameObject.AddComponent<ChiselModel>();
             Undo.RegisterCreatedObjectUndo(modelGameObject, "Created " + name + " gameObject");
             return model;
         }
 
-        public static CSGOperation CreateUndoableGameObjectWithOperation(string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselOperation CreateUndoableGameObjectWithOperation(string name = "operation", HideFlags flags = HideFlags.None)
         {
             var operationGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var operation = operationGameObject.AddComponent<CSGOperation>();
+            var operation = operationGameObject.AddComponent<ChiselOperation>();
             Undo.RegisterCreatedObjectUndo(operationGameObject, "Created " + name + " gameObject");
             return operation;
         }
@@ -57,34 +57,34 @@ namespace HierarchyTests
                     return mirror;
                 }
         */
-        public static CSGBrush CreateUndoableGameObjectWithBrush(string name = "brush", HideFlags flags = HideFlags.None)
+        public static ChiselBrush CreateUndoableGameObjectWithBrush(string name = "brush", HideFlags flags = HideFlags.None)
         {
             var brushGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var brush = brushGameObject.AddComponent<CSGBrush>();
+            var brush = brushGameObject.AddComponent<ChiselBrush>();
             Undo.RegisterCreatedObjectUndo(brushGameObject, "Created " + name + " gameObject");
             return brush;
         }
 
-        public static CSGModel CreateGameObjectWithUndoableModelComponent(string name = "model", HideFlags flags = HideFlags.None)
+        public static ChiselModel CreateGameObjectWithUndoableModelComponent(string name = "model", HideFlags flags = HideFlags.None)
         {
             var modelGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var model = modelGameObject.AddComponent<CSGModel>();
+            var model = modelGameObject.AddComponent<ChiselModel>();
             Undo.RegisterCreatedObjectUndo(model, "Created " + name + " component");
             return model;
         }
 
-        public static CSGOperation CreateGameObjectWithUndoableOperationComponent(string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselOperation CreateGameObjectWithUndoableOperationComponent(string name = "operation", HideFlags flags = HideFlags.None)
         {
             var operationGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var operation = operationGameObject.AddComponent<CSGOperation>();
+            var operation = operationGameObject.AddComponent<ChiselOperation>();
             Undo.RegisterCreatedObjectUndo(operation, "Created " + name + " component");
             return operation;
         }
 
-        public static CSGBrush CreateGameObjectWithUndoableBrushComponent(string name = "brush", HideFlags flags = HideFlags.None)
+        public static ChiselBrush CreateGameObjectWithUndoableBrushComponent(string name = "brush", HideFlags flags = HideFlags.None)
         {
             var brushGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var brush = brushGameObject.AddComponent<CSGBrush>();
+            var brush = brushGameObject.AddComponent<ChiselBrush>();
             Undo.RegisterCreatedObjectUndo(brush, "Created " + name + " component");
             return brush;
         }
@@ -99,23 +99,23 @@ namespace HierarchyTests
         }
 
 
-        public static CSGModel CreateUndoableModelComponent(GameObject modelGameObject, string name = "model", HideFlags flags = HideFlags.None)
+        public static ChiselModel CreateUndoableModelComponent(GameObject modelGameObject, string name = "model", HideFlags flags = HideFlags.None)
         {
-            var model = modelGameObject.AddComponent<CSGModel>();
+            var model = modelGameObject.AddComponent<ChiselModel>();
             Undo.RegisterCreatedObjectUndo(model, "Created " + name + " component");
             return model;
         }
 
-        public static CSGOperation CreateUndoableOperationComponent(GameObject operationGameObject, string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselOperation CreateUndoableOperationComponent(GameObject operationGameObject, string name = "operation", HideFlags flags = HideFlags.None)
         {
-            var operation = operationGameObject.AddComponent<CSGOperation>();
+            var operation = operationGameObject.AddComponent<ChiselOperation>();
             Undo.RegisterCreatedObjectUndo(operation, "Created " + name + " component");
             return operation;
         }
 
-        public static CSGBrush CreateUndoableBrushComponent(GameObject brushGameObject, string name = "brush", HideFlags flags = HideFlags.None)
+        public static ChiselBrush CreateUndoableBrushComponent(GameObject brushGameObject, string name = "brush", HideFlags flags = HideFlags.None)
         {
-            var brush = brushGameObject.AddComponent<CSGBrush>();
+            var brush = brushGameObject.AddComponent<ChiselBrush>();
             Undo.RegisterCreatedObjectUndo(brush, "Created " + name + " component");
             return brush;
         }

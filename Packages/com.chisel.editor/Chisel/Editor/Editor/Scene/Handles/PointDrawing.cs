@@ -1,5 +1,4 @@
-﻿using Chisel.Assets;
-using Chisel.Core;
+﻿using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace Chisel.Editors
     public sealed class PointDrawing
     {
         internal static int s_PointDrawingHash = "PointDrawingHash".GetHashCode();
-        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out CSGModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
         {
             var id = GUIUtility.GetControlID(s_PointDrawingHash, FocusType.Keyboard);
             PointDrawing.Do(id, dragArea, ref points, out transformation, out modelBeneathCursor, capFunction);
@@ -49,7 +48,7 @@ namespace Chisel.Editors
             UnitySceneExtensions.Grid.HoverGrid = null;
             if (s_CurrentPointIndex == 0)
             {
-                s_StartIntersection = CSGClickSelectionManager.GetPlaneIntersection(mousePosition, dragArea);
+                s_StartIntersection = ChiselClickSelectionManager.GetPlaneIntersection(mousePosition, dragArea);
                 if (s_StartIntersection != null)
                 {
                     // TODO: try to cache this ..
@@ -135,7 +134,7 @@ namespace Chisel.Editors
             UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
 
             // reset the starting position
-            s_StartIntersection = CSGClickSelectionManager.GetPlaneIntersection(evt.mousePosition, dragArea);
+            s_StartIntersection = ChiselClickSelectionManager.GetPlaneIntersection(evt.mousePosition, dragArea);
             evt.Use();
         }
 
@@ -149,7 +148,7 @@ namespace Chisel.Editors
             points.Clear();
         }
 
-        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out CSGModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
+        public static void Do(int id, Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, UnitySceneExtensions.SceneHandles.CapFunction capFunction)
         {
             modelBeneathCursor = null;
             var evt = Event.current;

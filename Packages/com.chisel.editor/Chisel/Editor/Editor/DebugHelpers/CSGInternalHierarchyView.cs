@@ -352,7 +352,7 @@ namespace Chisel.Editors
                 var go = obj as GameObject;
                 if (go != null)
                 {
-                    foreach(var no in go.GetComponents<CSGNode>())
+                    foreach(var no in go.GetComponents<ChiselNode>())
                     {
                         var instanceID_ = no.GetInstanceID();
                         selectedInstanceIDs.Add(instanceID_);
@@ -405,12 +405,12 @@ namespace Chisel.Editors
             if (selectedInstanceIDs.Count == 1)
             {
                 var instanceID = selectedInstanceIDs.First();
-                var obj = EditorUtility.InstanceIDToObject(instanceID) as CSGNode;
+                var obj = EditorUtility.InstanceIDToObject(instanceID) as ChiselNode;
                 if (obj)
                 { 
-                    var brush		= obj as CSGBrush;
-                    var operation	= obj as CSGOperation;
-                    var model		= obj as CSGModel;
+                    var brush		= obj as ChiselBrush;
+                    var operation	= obj as ChiselOperation;
+                    var model		= obj as ChiselModel;
                     int nodeID = CSGTreeNode.InvalidNode.NodeID;
                     if      (brush    ) nodeID = brush.TopNode.NodeID;
                     else if (operation) nodeID = operation.Node.NodeID;

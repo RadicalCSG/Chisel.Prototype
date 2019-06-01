@@ -1,5 +1,4 @@
-﻿using Chisel.Assets;
-using Chisel.Core;
+﻿using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -25,7 +24,7 @@ namespace Chisel.Editors
     public static class ShapeExtrusionHandle
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
-        static CSGModel			s_ModelBeneathCursor;
+        static ChiselModel			s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new List<Vector3>();
         static Curve2D          s_Curve2D = null;
         static bool             s_ExtrusionMode = false;
@@ -75,7 +74,7 @@ namespace Chisel.Editors
 
         const float kDistanceEpsilon = 0.0001f;
 
-        public static ShapeExtrusionState Do(Rect dragArea, out Curve2D shape, out float height, out CSGModel modelBeneathCursor, out Matrix4x4 transformation, Axis axis)
+        public static ShapeExtrusionState Do(Rect dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis axis)
         {
             try
             { 

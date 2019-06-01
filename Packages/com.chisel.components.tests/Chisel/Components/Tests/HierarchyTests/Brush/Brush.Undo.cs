@@ -94,7 +94,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
 
             Undo.PerformUndo();
-            brush = Object.FindObjectsOfType<CSGBrush>()[0];
+            brush = Object.FindObjectsOfType<ChiselBrush>()[0];
             brushGameObject = brush.gameObject;
             yield return null;
 
@@ -132,7 +132,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
 
             Undo.PerformUndo();
-            brush = brushGameObject.GetComponent<CSGBrush>();
+            brush = brushGameObject.GetComponent<ChiselBrush>();
             yield return null; 
 
             Assert.True(brushGameObject);

@@ -67,7 +67,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene2));
             
             var scene3	= EditorSceneManager.OpenScene(TestUtility.tempFilename);
-            var brushes = Object.FindObjectsOfType<CSGBrush>();
+            var brushes = Object.FindObjectsOfType<ChiselBrush>();
             yield return null;
 
             Assert.NotNull(brushes);

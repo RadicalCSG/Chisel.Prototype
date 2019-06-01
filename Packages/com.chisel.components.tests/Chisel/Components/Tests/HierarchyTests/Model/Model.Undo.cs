@@ -95,7 +95,7 @@ namespace HierarchyTests
             Undo.PerformUndo();
             yield return null;
 
-            model = Object.FindObjectsOfType<CSGModel>()[0];
+            model = Object.FindObjectsOfType<ChiselModel>()[0];
             modelGameObject = model.gameObject;
             yield return null;
             
@@ -133,7 +133,7 @@ namespace HierarchyTests
             Undo.PerformUndo();
             yield return null;
 
-            model = modelGameObject.GetComponent<CSGModel>();
+            model = modelGameObject.GetComponent<ChiselModel>();
             yield return null;
             
             Assert.True(modelGameObject);

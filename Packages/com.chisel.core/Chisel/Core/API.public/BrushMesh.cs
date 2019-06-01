@@ -48,16 +48,36 @@ namespace Chisel.Core
         public static readonly UVMatrix identity = new UVMatrix(new Vector4(1,0,0,0.0f), new Vector4(0,1,0,0.0f));
         public static readonly UVMatrix centered = new UVMatrix(new Vector4(1,0,0,0.5f), new Vector4(0,1,0,0.5f));
     }
+    
+    // Separate struct so that we can create a property drawer for it
+    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct SmoothingGroup
+    {
+        public UInt32           value;
+
+        public static implicit operator uint(SmoothingGroup smoothingGroup) { return smoothingGroup.value; }
+        public static implicit operator SmoothingGroup(uint smoothingGroup) { return new SmoothingGroup() { value = smoothingGroup }; }
+    }
+
+    /// <summary>Defines the surface of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
+    /// <seealso cref="Chisel.Core.ChiselBrushMaterial"/>
+    /// <seealso cref="Chisel.Core.SurfaceDescription"/>
+    [Serializable]
+    public sealed class ChiselSurface
+    {
+        public ChiselBrushMaterial  brushMaterial;
+        public SurfaceDescription   surfaceDescription;
+    }
 
     /// <summary>Describes how the texture coordinates and normals are generated and if a surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</summary>
     /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
     /// <seealso cref="Chisel.Core.BrushMesh"/>
-    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [Serializable]
     public struct SurfaceDescription
     {
         /// <value>The current normal smoothing group, 0 means that the surface doesn't do any smoothing</value>
         /// <remarks><note>This is only used when normals are set to be generated using the <see cref="Chisel.Core.VertexChannelFlags"/>.</note></remarks>
-        public UInt32           smoothingGroup;
+        public SmoothingGroup   smoothingGroup;
 
         /// <value>Surface specific flags</value>
         [UnityEngine.HideInInspector]
@@ -69,6 +89,13 @@ namespace Chisel.Core
 
 
         // .. more UVMatrices can be added when more UV channels are supported
+
+        public static SurfaceDescription Default = new SurfaceDescription()
+        {
+            smoothingGroup  = 0,
+            surfaceFlags    = CSGDefaults.SurfaceFlags,
+            UV0             = UVMatrix.centered
+        };
     }
 
     /// <summary>Contains a shape that can be used to initialize and update a <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
@@ -119,6 +146,7 @@ namespace Chisel.Core
         /// <summary>Defines the polygon of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <seealso cref="Chisel.Core.BrushMesh"/>
         /// <seealso cref="Chisel.Core.Surface"/>
+        /// <seealso cref="Chisel.Core.ChiselSurface"/>
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Polygon
         {
@@ -129,14 +157,10 @@ namespace Chisel.Core
             public Int32 edgeCount;
             
             /// <value>An ID that can be used to identify the <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
-            public Int32 surfaceID; // TODO: replace with surfaceID (leading to SurfaceAsset uniqueID) and polygonIndex on
+            public Int32 surfaceID; // TODO: replace with surfaceID (leading to BrushMaterial uniqueID) and polygonIndex
             
-            /// <value>Describes how normals and texture coordinates are created.</value>
-            public SurfaceDescription description;
-
-            /// <value>Describes the surface layers that this <see cref="Chisel.Core.BrushMesh.Polygon"/> is part of, and, for example, what Materials it uses.</value>
-            /// <seealso cref="Chisel.Core.MeshQuery"/>
-            public SurfaceLayers layers;
+            /// <value>Describes what the surface of a polygon looks like & behaves.</value>
+            public ChiselSurface surface;
 
             [EditorBrowsable(EditorBrowsableState.Never)]
             public override string ToString() { return string.Format("{{ firstEdge = {0}, edgeCount = {1}, surfaceID = {2} }}", firstEdge, edgeCount, surfaceID); }
@@ -180,13 +204,17 @@ namespace Chisel.Core
         /// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
         public Vector3[]	vertices;
 
-        /// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.</value>
+        /// <value>An array of <see cref="Chisel.Core.BrushMesh.HalfEdge"/> that define the edges of a <see cref="Chisel.Core.BrushMesh"/>.
+        /// This array must be equal in length to <see cref="halfEdgePolygonIndices"/>s.</value>
         public HalfEdge[]	halfEdges;
 
-        /// <value>An array of indices to <see cref="polygons"/>s that define which <see cref="Chisel.Core.BrushMesh.Polygon"/> each <see cref="halfEdges">halfEdge</see> belongs to.</value>
+        /// <value>An array of indices to <see cref="polygons"/>s that define which <see cref="Chisel.Core.BrushMesh.Polygon"/> each <see cref="halfEdges">halfEdge</see> belongs to.
+        /// This array must be equal in length to <see cref="halfEdges"/>s.</value>
         public int[]        halfEdgePolygonIndices;
-        
-        /// <value>An array of <see cref="Chisel.Core.BrushMesh.Polygon"/> that define the polygons of a <see cref="Chisel.Core.BrushMesh"/>.</value>
+
+        /// <value>An array of <see cref="Chisel.Core.BrushMesh.Polygon"/> that define the polygons of a <see cref="Chisel.Core.BrushMesh"/>.
+        /// This array must be equal in length to <see cref="brushMaterials"/>s.</value>
+        /// <seealso cref="Chisel.Core.BrushMesh.BrushMaterial"/>
         public Polygon[]	polygons;
 
         /// <value>The surfaces of this <see cref="Chisel.Core.BrushMesh"/>.</value> 

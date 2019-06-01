@@ -27,9 +27,11 @@ namespace FoundationTests
             return material;
         }
 
-        public static BrushMesh CreateBox(Vector3 size, SurfaceLayers layers)
+        public static BrushMesh CreateBox(Vector3 size, ChiselBrushMaterial brushMaterial)
         {
-            return BrushMeshFactory.CreateBox(Vector3.one, layers);
+            var chiselSurface = new ChiselSurface();
+            chiselSurface.brushMaterial = brushMaterial;
+            return BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface);
         }
 
         public static void ExpectValidBrushWithUserID(ref CSGTreeBrush brush, int userID)

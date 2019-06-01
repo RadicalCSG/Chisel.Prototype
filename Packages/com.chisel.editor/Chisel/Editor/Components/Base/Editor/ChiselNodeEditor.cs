@@ -12,9 +12,9 @@ using Chisel.Components;
 namespace Chisel.Editors
 {
     public abstract class ChiselNodeEditor<T> : Editor
-        where T : CSGNode
+        where T : ChiselNode
     {
-        static readonly GUIContent DefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
+        static readonly GUIContent kDefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
 
         public virtual Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
         public virtual bool HasFrameBounds() { if (!target) return false; return true; }
@@ -24,7 +24,7 @@ namespace Chisel.Editors
             var bounds = new Bounds();
             foreach (var target in targets)
             {
-                var node = target as CSGNode;
+                var node = target as ChiselNode;
                 if (!node)
                     continue;
 
@@ -38,7 +38,7 @@ namespace Chisel.Editors
             serializedObject.ApplyModifiedProperties();
             foreach (var target in serializedObject.targetObjects)
             {
-                var node = target as CSGNode;
+                var node = target as ChiselNode;
                 if (!node)
                     continue;
                 CSGNodeHierarchyManager.NotifyContentsModified(node);
@@ -53,16 +53,16 @@ namespace Chisel.Editors
 
             for (int i = 0; i < targetObjects.Length; i++)
             {
-                CSGNode node = targetObjects[i] as CSGNode;
+                ChiselNode node = targetObjects[i] as ChiselNode;
                 if (Equals(node, null))
                 {
                     var gameObject = targetObjects[i] as GameObject;
                     if (gameObject)
-                        node = gameObject.GetComponent<CSGNode>();
+                        node = gameObject.GetComponent<ChiselNode>();
                 }
                 if (node)
                 {
-                    if (CSGGeneratedComponentManager.IsDefaultModel(node.hierarchyItem.Model))
+                    if (ChiselGeneratedComponentManager.IsDefaultModel(node.hierarchyItem.Model))
                         return true;
                 }
             }
@@ -74,10 +74,10 @@ namespace Chisel.Editors
             if (!IsPartOfDefaultModel(targetObjects))
                 return;
 
-            EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
+            EditorGUILayout.HelpBox(kDefaultModelContents.text, MessageType.Warning);
         }
 
-        static HashSet<CSGNode> modifiedNodes = new HashSet<CSGNode>();
+        static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
         public static void CheckForTransformationChanges(SerializedObject serializedObject)
         {
             if (Event.current.type == EventType.Layout)
@@ -85,7 +85,7 @@ namespace Chisel.Editors
                 modifiedNodes.Clear();
                 foreach (var target in serializedObject.targetObjects)
                 {
-                    var node = target as CSGNode;
+                    var node = target as ChiselNode;
                     if (!node)
                         continue;
                     var transform = node.transform;
@@ -137,7 +137,7 @@ namespace Chisel.Editors
             bool multiple = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as CSGNode;
+                var node = targetObject as ChiselNode;
                 if (!node)
                     continue;
                 var count = node.GetAllTreeBrushCount();
@@ -159,7 +159,7 @@ namespace Chisel.Editors
             bool modified = false;
             foreach (var targetObject in serializedObject.targetObjects)
             {
-                var node = targetObject as CSGNode;
+                var node = targetObject as ChiselNode;
                 if (!node)
                     continue;
 
@@ -254,8 +254,69 @@ namespace Chisel.Editors
     }
 
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
-        where T : CSGGeneratorComponent
+        where T : ChiselGeneratorComponent
     {
+        static readonly GUIContent  kMissingSurfacesContents            = new GUIContent("This generator is not set up properly and doesn't have the correct number of surfaces.");
+        static readonly GUIContent  kMultipleDifferentSurfacesContents  = new GUIContent("Multiple generators are selected with different surfaces.");
+
+        static readonly GUIContent  kSurfacesContent            = new GUIContent("Surfaces");
+        static GUIContent           surfacePropertyContent      = new GUIContent();
+        const string                kSurfacePropertyName        = "Side {0}";
+
+        protected void ShowSurfaces(SerializedProperty surfacesProp, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        {
+            ShowSurfaces(surfacesProp, null, expectedSize, surfacePropertyName);
+        }
+
+        protected void ShowSurfaces(SerializedProperty surfacesProp, GUIContent[] kSurfaceNames, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        {
+            if (expectedSize > 0 && surfacesProp.arraySize != expectedSize)
+            {
+                EditorGUILayout.HelpBox(kMissingSurfacesContents.text, MessageType.Warning);
+            }
+
+            if (surfacesProp.hasMultipleDifferentValues)
+            {
+                // TODO: figure out how to detect if we have multiple selected generators with arrays of same size, or not
+                EditorGUILayout.HelpBox(kMultipleDifferentSurfacesContents.text, MessageType.None);
+                return;
+            }
+
+            if (surfacesProp.arraySize == 0)
+                return;
+            
+            EditorGUI.BeginChangeCheck();
+            var path                = surfacesProp.propertyPath;
+            var surfacesVisible     = SessionState.GetBool(path, false);
+            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
+            if (EditorGUI.EndChangeCheck())
+                SessionState.SetBool(path, surfacesVisible);
+            if (surfacesVisible)
+            {
+                EditorGUI.indentLevel++;
+                SerializedProperty elementProperty;
+                int startIndex = 0;
+                if (kSurfaceNames != null &&
+                    kSurfaceNames.Length > 0)
+                {
+                    startIndex = kSurfaceNames.Length;
+                    for (int i = 0; i < Mathf.Min(kSurfaceNames.Length, surfacesProp.arraySize); i++)
+                    {
+                        elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                        EditorGUILayout.PropertyField(elementProperty, kSurfaceNames[i], true);
+                    }
+                }
+
+                for (int i = startIndex; i < surfacesProp.arraySize; i++)
+                {
+                    surfacePropertyContent.text = string.Format(surfacePropertyName, (i - startIndex) + 1);
+                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                    EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
+                }
+                EditorGUI.indentLevel--;
+            }
+        }
+
         protected abstract void ResetInspector();
         protected abstract void InitInspector();
 
@@ -266,7 +327,7 @@ namespace Chisel.Editors
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
-        void OnDisable() { Reset(); }
+        void OnDisable() { PreviewTextureManager.CleanUp(); Reset(); }
 
         private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
 
@@ -278,7 +339,7 @@ namespace Chisel.Editors
                 return;
             }
 
-            operationProp = serializedObject.FindProperty("operation");
+            operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
 
             foreach (var target in targets)
             {
@@ -308,6 +369,10 @@ namespace Chisel.Editors
         {
             if (!target)
                 return;
+            serializedObject.Update();
+            if (PreviewTextureManager.Update())
+                Repaint();
+
             base.OnInspectorGUI();
             try
             {
@@ -315,7 +380,7 @@ namespace Chisel.Editors
                 {
                     GUILayout.BeginHorizontal();
                     ShowOperationChoicesInternal(operationProp);
-                    if (typeof(T) != typeof(CSGBrush)) ConvertIntoBrushesButton(serializedObject);
+                    if (typeof(T) != typeof(ChiselBrush)) ConvertIntoBrushesButton(serializedObject);
                     GUILayout.EndHorizontal();
 
                     OnInspector();
@@ -331,7 +396,7 @@ namespace Chisel.Editors
 
         public void OnSceneGUI()
         {
-            if (!target || CSGEditModeManager.EditMode != CSGEditMode.ShapeEdit)
+            if (!target || ChiselEditModeManager.EditMode != ChiselEditMode.ShapeEdit)
                 return;
 
             using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor))
@@ -341,7 +406,7 @@ namespace Chisel.Editors
                     return;
 
                 var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-                var brush = generator.TopNode;
+                var brush       = generator.TopNode;
                 //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
                 //foreach (var brush in generator.Node.AllSynchronizedVariants) // <-- this fails when brushes have failed to be created
                 {

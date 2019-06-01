@@ -46,12 +46,8 @@ namespace FoundationTests
         {
             if (material == null)
                 material = material2;
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.All,
-                layerParameter1 = (material) ? material.GetInstanceID() : 0
-            };
-            BrushMesh brushMesh = TestUtility.CreateBox(size, layers);
+            var brushMaterial = ChiselBrushMaterial.CreateInstance(material);
+            BrushMesh brushMesh = TestUtility.CreateBox(size, brushMaterial);
             return BrushMeshInstance.Create(brushMesh);
         }
 

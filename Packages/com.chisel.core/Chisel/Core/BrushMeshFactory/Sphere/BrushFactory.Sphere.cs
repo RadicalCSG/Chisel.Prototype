@@ -15,8 +15,50 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
     {
-        public static BrushMesh CreateSphere(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+        public static bool GenerateSphere(ref ChiselBrushContainer brushContainer, ref ChiselSphereDefinition definition)
         {
+            definition.Validate();
+
+            brushContainer.EnsureSize(1);
+
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            return BrushMeshFactory.GenerateSphere(ref brushContainer.brushMeshes[0], definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+        }
+
+        public static bool GenerateSphere(ref BrushMesh brushMesh, ref ChiselSphereDefinition definition)
+        {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+        }
+
+        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments, in surfaceDefinition))
+            {
+                brushMesh.Clear();
+                return false;
+            }
+            
+            ref var dstBrushMesh = ref brushMesh;
+
+            // TODO: do something more intelligent with surface assignment, and put it inside CreateSphere
+            for (int i = 0; i < dstBrushMesh.polygons.Length; i++)
+                dstBrushMesh.polygons[i].surface = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i] : surfaceDefinition.surfaces[0];
+
+            return true;
+        }
+
+        public static bool CreateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (diameterXYZ.x == 0 ||
+                diameterXYZ.y == 0 ||
+                diameterXYZ.z == 0)
+            {
+                brushMesh.Clear();
+                return false;
+            }
+
             var lastVertSegment = vertSegments - 1;
 
             var triangleCount   = horzSegments + horzSegments;    // top & bottom
@@ -100,8 +142,8 @@ namespace Chisel.Core
                         surfaceID = polygonIndex,
                         firstEdge = edgeIndex,
                         edgeCount = polygonEdgeCount,
-                        description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                        layers = layers
+                        // TODO: do something more intelligent with surface assignment
+                        surface = surfaceDefinition.surfaces[0]
                     };
                     
                     edgeIndex += polygonEdgeCount;
@@ -111,12 +153,18 @@ namespace Chisel.Core
                     startVertex += horzSegments;
             }
 
-            return new BrushMesh
-            {
-                polygons = polygons,
-                halfEdges = halfEdges,
-                vertices = vertices
-            };
+            brushMesh.polygons  = polygons;
+            brushMesh.halfEdges = halfEdges;
+            brushMesh.vertices  = vertices;
+            return true;
+        }
+
+        public static bool GenerateSphereVertices(ChiselSphereDefinition definition, ref Vector3[] vertices)
+        {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, definition.horizontalSegments, definition.verticalSegments, ref vertices);
+            return true;
         }
 
         public static void CreateSphereVertices(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ref Vector3[] vertices)

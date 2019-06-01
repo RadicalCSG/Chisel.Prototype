@@ -15,13 +15,10 @@ namespace BrushFactoryTests
         [SetUp] public void Setup() { }
 
         [UnityTest]
-        public IEnumerator CreateBrushMeshAsset_IsPartOfManager()
+        public IEnumerator CreateBrushContainerAsset_IsPartOfManager()
         {
-            var layers = new SurfaceLayers
-            {
-                layerUsage = LayerUsageFlags.None
-            };
-            var box = BrushMeshFactory.CreateBox(Vector3.one, layers, SurfaceFlags.None);
+            var chiselSurface = new ChiselSurface();
+            var box = BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface);
             yield return null;
 
             var instance = BrushMeshInstance.Create(box);
