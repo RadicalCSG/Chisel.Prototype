@@ -47,7 +47,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    linearStairs = ChiselModelManager.Create<ChiselLinearStairs>("Linear Stairs",
+                    linearStairs = ChiselComponentFactory.Create<ChiselLinearStairs>("Linear Stairs",
                                                                         ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                         transformation);
                     linearStairs.definition.Reset();

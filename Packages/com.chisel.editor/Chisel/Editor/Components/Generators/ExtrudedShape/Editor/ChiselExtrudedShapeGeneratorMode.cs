@@ -48,7 +48,7 @@ namespace Chisel.Editors
                 {
                     var center2D = shape.Center;
                     var center3D = new Vector3(center2D.x, 0, center2D.y);
-                    extrudedShape = ChiselModelManager.Create<ChiselExtrudedShape>("Extruded Shape",
+                    extrudedShape = ChiselComponentFactory.Create<ChiselExtrudedShape>("Extruded Shape",
                                                                           ChiselModelManager.GetModelForNode(modelBeneathCursor), 
                                                                           transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one));
                     shape.Center = Vector2.zero;

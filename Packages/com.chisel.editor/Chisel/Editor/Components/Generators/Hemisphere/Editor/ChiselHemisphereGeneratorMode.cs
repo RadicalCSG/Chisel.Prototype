@@ -56,7 +56,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    hemisphere = ChiselModelManager.Create<ChiselHemisphere>("Hemisphere",
+                    hemisphere = ChiselComponentFactory.Create<ChiselHemisphere>("Hemisphere",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
                     hemisphere.definition.Reset();

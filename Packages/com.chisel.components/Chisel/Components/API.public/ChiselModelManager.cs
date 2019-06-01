@@ -11,6 +11,7 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Chisel.Components
 {
@@ -19,13 +20,38 @@ namespace Chisel.Components
     // TODO: make it possible to generate brushes in specific scenes/specific parents
     // TODO: clean up
     // TODO: rename
-    public sealed partial class ChiselModelManager
+    public class ChiselModelManager : ScriptableObject
     {
+        #region Instance
+        static ChiselModelManager _instance;
+        public static ChiselModelManager Instance
+        {
+            get
+            {
+                if (_instance)
+                    return _instance;
+
+                _instance = ScriptableObject.CreateInstance<ChiselModelManager>();
+                _instance.hideFlags = HideFlags.HideAndDontSave;
+                return _instance;
+            }
+        }
+        #endregion
+
+        [SerializeField]
+        ChiselModel activeModel;
+
         // TODO: make this part of Undo stack ...
         public static ChiselModel ActiveModel
-        {
-            get;
-            set;
+        { 
+            get
+            {
+                return Instance.activeModel;
+            }
+            set
+            { 
+                Instance.activeModel = value;
+            }
         }
 
         // TODO: improve naming
@@ -40,8 +66,8 @@ namespace Chisel.Components
             var activeModel = ChiselModelManager.ActiveModel;
             if (!activeModel)
             {
-                activeModel = ChiselModelManager.Create<ChiselModel>("Model");
-                ChiselModelManager.ActiveModel = activeModel;
+                activeModel = ChiselComponentFactory.Create<ChiselModel>("Model");
+                ChiselModelManager.ActiveModel = activeModel; 
             }
             return activeModel;
         }

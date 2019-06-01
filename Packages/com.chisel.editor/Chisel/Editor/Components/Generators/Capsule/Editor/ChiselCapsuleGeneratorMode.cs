@@ -60,7 +60,7 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    capsule = ChiselModelManager.Create<ChiselCapsule>("Capsule",
+                    capsule = ChiselComponentFactory.Create<ChiselCapsule>("Capsule",
                                                                 ChiselModelManager.GetModelForNode(modelBeneathCursor),
                                                                 transformation);
                     capsule.definition.Reset();

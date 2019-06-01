@@ -14,7 +14,7 @@ using System.Collections.Generic;
 namespace Chisel.Components
 {
     // TODO: rename
-    public sealed partial class ChiselModelManager
+    public sealed class ChiselComponentFactory
     {
         public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
         {
