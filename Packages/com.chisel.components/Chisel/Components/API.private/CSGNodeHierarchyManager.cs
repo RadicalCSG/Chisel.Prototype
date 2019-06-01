@@ -869,7 +869,8 @@ namespace Chisel.Components
             {
                 for (int i = registerQueue.Count - 1; i >= 0; i--)
                 {
-                    if (!registerQueue[i].isActiveAndEnabled)
+                    if (!registerQueue[i] ||
+                        !registerQueue[i].isActiveAndEnabled)
                         registerQueue.RemoveAt(i);
                 }
             }

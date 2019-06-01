@@ -179,7 +179,7 @@ namespace Chisel.Components
                 {
                     var child = containerTransform.GetChild(c);
                     if (!model.generatedComponents.Contains(child))
-                        CSGObjectUtility.SafeDestroy(child.gameObject);
+                        ChiselObjectUtility.SafeDestroy(child.gameObject);
                 }
             }
 
@@ -231,7 +231,7 @@ namespace Chisel.Components
             }
             foreach (var gameObject in __uniqueGameObjects)
             {
-                CSGObjectUtility.SafeDestroy(gameObject);
+                ChiselObjectUtility.SafeDestroy(gameObject);
             }
 
             __uniqueGameObjects.Clear();
@@ -581,7 +581,7 @@ namespace Chisel.Components
                 model.GeneratedDataContainer.hideFlags = HideFlags.None;
                 model.GeneratedDataTransform.hideFlags = HideFlags.None;
                 CSGNodeHierarchyManager.ignoreNextChildrenChanged = true;
-                CSGObjectUtility.SafeDestroy(model.GeneratedDataContainer);
+                ChiselObjectUtility.SafeDestroy(model.GeneratedDataContainer);
                 CSGNodeHierarchyManager.ignoreNextChildrenChanged = false;
                 model.GeneratedDataContainer = null;
                 model.GeneratedDataTransform = null;

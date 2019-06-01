@@ -24,36 +24,36 @@ namespace Chisel.Components
     [Serializable]
     public sealed class ChiselRenderComponents
     {
-        public MeshFilter               meshFilter;
-        public MeshRenderer             meshRenderer;
-        public GameObject               gameObject;
-        public Transform                transform;
-        public float                    uvLightmapUpdateTime;
+        public MeshFilter   meshFilter;
+        public MeshRenderer meshRenderer;
+        public GameObject   gameObject;
+        public Transform    transform;
+        public float        uvLightmapUpdateTime;
     }
 
     [Serializable]
     public sealed class ChiselColliderComponents
     {
-        public MeshCollider             meshCollider;
-        public GameObject				gameObject;
-        public Transform				transform;
+        public MeshCollider meshCollider;
+        public GameObject   gameObject;
+        public Transform    transform;
     }
 
     public static class ChiselGeneratedModelMeshManager
     {
-        public static event Action				PreReset;
-        public static event Action				PostReset;
-        public static event Action<ChiselModel>	PreUpdateModel;
-        public static event Action<ChiselModel>	PostUpdateModel;
-        public static event Action				PostUpdateModels;
+        public static event Action              PreReset;
+        public static event Action              PostReset;
+        public static event Action<ChiselModel> PreUpdateModel;
+        public static event Action<ChiselModel> PostUpdateModel;
+        public static event Action              PostUpdateModels;
         
         const int MaxVertexCount = 65000;
 
-        static HashSet<ChiselNode>			registeredNodeLookup	= new HashSet<ChiselNode>();
-        static List<ChiselModel>				registeredModels		= new List<ChiselModel>();
+        static HashSet<ChiselNode>  registeredNodeLookup    = new HashSet<ChiselNode>();
+        static List<ChiselModel>    registeredModels        = new List<ChiselModel>();
 
-        static ChiselSharedUnityMeshManager	sharedUnityMeshes		= new ChiselSharedUnityMeshManager();
-        static ChiselGeneratedComponentManager componentGenerator		= new ChiselGeneratedComponentManager();
+        static ChiselSharedUnityMeshManager	    sharedUnityMeshes   = new ChiselSharedUnityMeshManager();
+        static ChiselGeneratedComponentManager  componentGenerator  = new ChiselGeneratedComponentManager();
         
         static List<ChiselModel> updateList = new List<ChiselModel>();
 
