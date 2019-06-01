@@ -155,7 +155,7 @@ namespace Chisel.Components
 
             // Make sure we destroy the leftover meshes
             for (int i = 0; i < garbageMeshes.Count; i++)
-                CSGObjectUtility.SafeDestroy(garbageMeshes[i]);
+                ChiselObjectUtility.SafeDestroy(garbageMeshes[i]);
             garbageMeshes.Clear();
         }
 
