@@ -24,17 +24,36 @@ namespace Chisel.Editors
             selectionRect.y--;
             GUI.Label(selectionRect, icon);
         }
-
-        internal static void OnHierarchyWindowItemGUI(ChiselNode node, Rect selectionRect)
+        
+        static void RenderHierarchyItem(int instanceID, ChiselNode node, Rect selectionRect)
         {
-            // TODO: implement material drag & drop support on hierarchy items
+            var model = node as ChiselModel;
+            if (!ReferenceEquals(model, null))
+            {
+                if (model == ChiselModelManager.ActiveModel)
+                {
+                    const float kIconSize     = 13;
+                    const float kOffsetToText = kIconSize + 28;
 
-            if (Event.current.type != EventType.Repaint)
-                return;
+                    var rect = selectionRect;
+                    rect.xMin += kOffsetToText;
+
+                    var content     = EditorGUIUtility.TrTempContent(node.name + "*");
+                    GUI.Label(rect, content, EditorStyles.label);
+                }
+            }
 
             var icon = ChiselNodeDetailsManager.GetHierarchyIcon(node);
             if (icon != null)
                 RenderIcon(selectionRect, icon);
+        }
+
+        internal static void OnHierarchyWindowItemGUI(int instanceID, ChiselNode node, Rect selectionRect)
+        {
+            // TODO: implement material drag & drop support on hierarchy items
+
+            if (Event.current.type == EventType.Repaint)
+                RenderHierarchyItem(instanceID, node, selectionRect);
         }
     }
 }
