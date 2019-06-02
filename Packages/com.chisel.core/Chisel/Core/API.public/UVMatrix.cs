@@ -39,13 +39,13 @@ namespace Chisel.Core
 
         public static UVMatrix TRS(Vector2 translation, Vector3 normal, float rotation, Vector2 scale)
         {
-            var orientation     = Quaternion.Inverse(Quaternion.LookRotation(normal, Vector3.forward));
+            var orientation     = Quaternion.Inverse(Quaternion.LookRotation(normal));
             var rotation2d      = Quaternion.AngleAxis(rotation, Vector3.forward);
             var scale3d         = new Vector3(scale.x, scale.y, 1.0f);
 
             // TODO: optimize
             return (UVMatrix)
-                    (Matrix4x4.TRS(rotation2d * translation, Quaternion.identity, Vector3.one) *
+                    (Matrix4x4.TRS(translation, Quaternion.identity, Vector3.one) *
                      Matrix4x4.TRS(Vector3.zero, Quaternion.identity, scale3d) *
                      Matrix4x4.TRS(Vector3.zero, rotation2d, Vector3.one) *
 
@@ -53,31 +53,37 @@ namespace Chisel.Core
         }
         
         public void Decompose(out Vector2 translation, out Vector3 normal, out float rotation, out Vector2 scale)
-        {            
+        {
             normal              = planeNormal;
-            var orientation     = Quaternion.LookRotation(normal, Vector3.forward);
+            var orientation     = Quaternion.LookRotation(normal);
             var inv_orientation = Quaternion.Inverse(orientation);
 
             var u = inv_orientation * (Vector3)U;
             var v = inv_orientation * (Vector3)V;
-            
-            rotation        = -Vector3.SignedAngle(Vector3.right, u, Vector3.forward);
+
+            rotation = -Vector3.SignedAngle(Vector3.right, u, Vector3.forward);
 
             const double min_rotate = 1.0 / 10000.0;
             rotation = (float)(Math.Round(rotation / min_rotate) * min_rotate);
 
-            scale           = new Vector2(u.magnitude, v.magnitude);
+            scale = new Vector2(u.magnitude, v.magnitude);
 
             const double min_scale = 1.0 / 10000.0;
             scale.x = (float)(Math.Round(scale.x / min_scale) * min_scale);
             scale.y = (float)(Math.Round(scale.y / min_scale) * min_scale);
 
             var rotation2d  = Quaternion.AngleAxis(-rotation, Vector3.forward);
-            translation     = rotation2d * new Vector2(U.w, V.w);
+            translation     = new Vector2(U.w, V.w);
 
             const double min_translation = 1.0 / 32768.0;
             translation.x = (float)(Math.Round(translation.x / min_translation) * min_translation);
             translation.y = (float)(Math.Round(translation.y / min_translation) * min_translation);
+
+
+            // TODO: figure out a better way to find if we scale negatively
+            var newUvMatrix = UVMatrix.TRS(translation, normal, rotation, scale);
+            if (Vector3.Dot(V, newUvMatrix.V) < 0) scale.y = -scale.y;
+            if (Vector3.Dot(U, newUvMatrix.U) < 0) scale.x = -scale.x;
         }
 
         public override string ToString()

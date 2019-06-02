@@ -40,14 +40,33 @@ namespace Chisel.Editors
         static readonly GUIContent kScaleContent        = new GUIContent("Scale");
         static readonly GUIContent kRotationContent     = new GUIContent("Rotation");
 
+        class UVMatrixState
+        {
+            public bool     initialized = false;
+            public Vector2  translation;
+            public Vector3  normal;
+            public float    rotation;
+            public Vector2  scale;
+            public UVMatrix uvMatrix;
+        }
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SerializedProperty UProp    = property.FindPropertyRelative(nameof(UVMatrix.U));
             SerializedProperty VProp    = property.FindPropertyRelative(nameof(UVMatrix.V));
 
-            var uvMatrix = new UVMatrix(UProp.vector4Value, VProp.vector4Value);
+            int translationID   = GUIUtility.GetControlID(FocusType.Keyboard);
+            int scaleID         = GUIUtility.GetControlID(FocusType.Keyboard);
+            int rotationID      = GUIUtility.GetControlID(FocusType.Keyboard);
 
-            uvMatrix.Decompose(out Vector2 translation, out Vector3 normal, out float rotation, out Vector2 scale);
+            var uvMatrix    = new UVMatrix(UProp.vector4Value, VProp.vector4Value);
+            var state       = (UVMatrixState)EditorGUIUtility.GetStateObject(typeof(UVMatrixState), translationID);
+            if (!state.initialized)
+            {
+                uvMatrix.Decompose(out state.translation, out state.normal, out state.rotation, out state.scale);
+                state.uvMatrix = uvMatrix;
+                state.initialized = true;
+            }
 
             EditorGUI.BeginProperty(position, label, property);
             {
@@ -61,22 +80,26 @@ namespace Chisel.Editors
                 var rotationContent     = (label == null) ? GUIContent.none : kRotationContent;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, GUIContent.none);
-                translation = EditorGUI.Vector2Field(position,  translationContent, translation);
+                var fieldRect = EditorGUI.PrefixLabel(position, translationID, translationContent);
+                state.translation = EditorGUI.Vector2Field(fieldRect,  GUIContent.none, state.translation);
                 position.y += position.height + kSpacing;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, GUIContent.none);
-                scale = EditorGUI.Vector2Field(position,        scaleContent,       scale);
+                fieldRect = EditorGUI.PrefixLabel(position, scaleID, scaleContent);
+                state.scale = EditorGUI.Vector2Field(fieldRect,        GUIContent.none,       state.scale);
                 position.y += position.height + kSpacing;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
-                rotation = EditorGUI.FloatField(position,       rotationContent,    rotation);
+                fieldRect = EditorGUI.PrefixLabel(position, rotationID, rotationContent);
+                state.rotation = EditorGUI.FloatField(fieldRect,       GUIContent.none,    state.rotation);
                 position.y += position.height + kSpacing;
 
                 EditorGUI.showMixedValue = prevMixedValues;
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    uvMatrix = UVMatrix.TRS(translation, normal, rotation, scale);
+                    uvMatrix = UVMatrix.TRS(state.translation, state.normal, state.rotation, state.scale);
+
                     UProp.vector4Value = uvMatrix.U;
                     VProp.vector4Value = uvMatrix.V;
                     property.serializedObject.ApplyModifiedProperties();
