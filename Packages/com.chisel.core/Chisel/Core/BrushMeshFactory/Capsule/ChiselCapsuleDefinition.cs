@@ -12,9 +12,9 @@ namespace Chisel.Core
         public const float	kMinDiameter				= 0.01f;
 
         public const float	kDefaultHeight				= 1.0f;
-        public const float	kDefaultHemisphereHeight	= 0.25f;
-        public const float	kDefaultDiameterX			= 1.0f;
-        public const float	kDefaultDiameterZ			= 1.0f;
+        public const float	kDefaultDiameter			= 1.0f;
+        public const float	kDefaultHemisphereRatio	    = 0.25f;
+        public const float	kDefaultHemisphereHeight	= kDefaultDiameter * kDefaultHemisphereRatio;
         public const float  kDefaultRotation            = 0.0f;
         public const int	kDefaultSides				= 8;
         public const int	kDefaultTopSegments			= 4;
@@ -79,8 +79,8 @@ namespace Chisel.Core
             topHeight			= kDefaultHemisphereHeight;
             bottomHeight		= kDefaultHemisphereHeight;
             offsetY             = 0;
-            diameterX			= kDefaultDiameterX;
-            diameterZ			= kDefaultDiameterZ;
+            diameterX			= kDefaultDiameter;
+            diameterZ			= kDefaultDiameter;
             rotation			= kDefaultRotation;
             
             sides				= kDefaultSides;
