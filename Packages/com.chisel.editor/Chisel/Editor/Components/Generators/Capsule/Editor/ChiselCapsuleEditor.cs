@@ -150,8 +150,11 @@ namespace Chisel.Editors
             UnityEditor.Handles.color = prevColor;
         }
 
-        internal static int s_TopHash		= "TopCapsuleHash".GetHashCode();
-        internal static int s_BottomHash	= "BottomCapsuleHash".GetHashCode();
+        internal static int s_TopHash		    = "TopCapsuleHash".GetHashCode();
+        internal static int s_BottomHash	    = "BottomCapsuleHash".GetHashCode();
+
+        internal static int s_TopLoopHash       = "TopLoopHash".GetHashCode();
+        internal static int s_BottomLoopHash    = "BottomLoopHash".GetHashCode();
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
 
@@ -170,7 +173,11 @@ namespace Chisel.Editors
 
             UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, false, true, isDisabled);
             DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
-            
+
+
+            var topLoopID       = GUIUtility.GetControlID(s_TopLoopHash, FocusType.Keyboard);
+            var bottomLoopID    = GUIUtility.GetControlID(s_BottomLoopHash, FocusType.Keyboard);
+
 
             var topPoint	= normal * (generator.definition.offsetY + generator.Height);
             var bottomPoint = normal * (generator.definition.offsetY);
@@ -200,7 +207,7 @@ namespace Chisel.Editors
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, topHasFocus, isTopBackfaced, isDisabled);
                     topPoint = UnitySceneExtensions.SceneHandles.DirectionHandle(topId, topPoint, normal);
 
-                    var topLoopHasFocus = (topHasFocus && !generator.HaveRoundedTop);
+                    var topLoopHasFocus = (topHasFocus && !generator.HaveRoundedTop) || (focusControl == topLoopID);
 
                     var thickness = topLoopHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
                         
@@ -210,20 +217,22 @@ namespace Chisel.Editors
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, topLoopHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.topVertexOffset, generator.definition.sides, lineMode: LineMode.ZTest,   thickness: thickness);
 
-                    var prevGUIChanged = GUI.changed;
-                    for (int j = generator.definition.sides - 1, i = 0; i < generator.definition.sides; j = i, i++)
                     {
-                        GUI.changed = false;
-                        var from    = vertices[j + generator.definition.topVertexOffset];
-                        var to = vertices[i + generator.definition.topVertexOffset];
-                        var edgeOffset = UnitySceneExtensions.SceneHandles.Edge1DHandleOffset(UnitySceneExtensions.Axis.Y, from, to);
-                        if (GUI.changed)
+                        var prevGUIChanged = GUI.changed;
+                        for (int j = generator.definition.sides - 1, i = 0; i < generator.definition.sides; j = i, i++)
                         {
-                            topHeight = Mathf.Clamp(topHeight - edgeOffset, 0, maxTopHeight);
-                            prevGUIChanged = true;
+                            GUI.changed = false;
+                            var from    = vertices[j + generator.definition.topVertexOffset];
+                            var to      = vertices[i + generator.definition.topVertexOffset];
+                            var edgeOffset = UnitySceneExtensions.SceneHandles.Edge1DHandleOffset(topLoopID, UnitySceneExtensions.Axis.Y, from, to, capFunction: null);
+                            if (GUI.changed)
+                            {
+                                topHeight = Mathf.Clamp(topHeight - edgeOffset, 0, maxTopHeight);
+                                prevGUIChanged = true;
+                            }
                         }
+                        GUI.changed = prevGUIChanged;
                     }
-                    GUI.changed = prevGUIChanged;
                 }
                 
                 var bottomId = GUIUtility.GetControlID(s_BottomHash, FocusType.Passive);
@@ -234,7 +243,7 @@ namespace Chisel.Editors
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, bottomHasFocus, isBottomBackfaced, isDisabled);
                     bottomPoint = UnitySceneExtensions.SceneHandles.DirectionHandle(bottomId, bottomPoint, -normal);
 
-                    var bottomLoopHasFocus = (bottomHasFocus && !generator.HaveRoundedBottom);
+                    var bottomLoopHasFocus = (bottomHasFocus && !generator.HaveRoundedBottom) || (focusControl == bottomLoopID);
 
                     var thickness = bottomLoopHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
 
@@ -244,20 +253,22 @@ namespace Chisel.Editors
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, bottomLoopHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.bottomVertexOffset, generator.definition.sides, lineMode: LineMode.ZTest,   thickness: thickness);
 
-                    var prevGUIChanged = GUI.changed;
-                    for (int j = generator.definition.sides - 1, i = 0; i < generator.definition.sides; j = i, i++)
                     {
-                        GUI.changed = false;
-                        var from    = vertices[j + generator.definition.bottomVertexOffset];
-                        var to      = vertices[i + generator.definition.bottomVertexOffset];
-                        var edgeOffset = UnitySceneExtensions.SceneHandles.Edge1DHandleOffset(UnitySceneExtensions.Axis.Y, from, to);
-                        if (GUI.changed)
+                        var prevGUIChanged = GUI.changed;
+                        for (int j = generator.definition.sides - 1, i = 0; i < generator.definition.sides; j = i, i++)
                         {
-                            bottomHeight = Mathf.Clamp(bottomHeight + edgeOffset, 0, maxBottomHeight);
-                            prevGUIChanged = true;
+                            GUI.changed = false;
+                            var from    = vertices[j + generator.definition.bottomVertexOffset];
+                            var to      = vertices[i + generator.definition.bottomVertexOffset];
+                            var edgeOffset = UnitySceneExtensions.SceneHandles.Edge1DHandleOffset(bottomLoopID, UnitySceneExtensions.Axis.Y, from, to, capFunction: null);
+                            if (GUI.changed)
+                            {
+                                bottomHeight = Mathf.Clamp(bottomHeight + edgeOffset, 0, maxBottomHeight);
+                                prevGUIChanged = true;
+                            }
                         }
+                        GUI.changed = prevGUIChanged;
                     }
-                    GUI.changed = prevGUIChanged;
                 }
             }
             if (EditorGUI.EndChangeCheck())
