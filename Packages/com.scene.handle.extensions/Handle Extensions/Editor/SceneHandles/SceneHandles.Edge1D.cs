@@ -41,8 +41,13 @@ namespace UnitySceneExtensions
         public static float Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, float snappingStep, float handleSize, CapFunction capFunction) 
         {
             var id			= GUIUtility.GetControlID (s_Edge1DHash, FocusType.Keyboard);
-            var position	= (from + to) * 0.5f;
-            var direction	= (Vector3)Matrix4x4.identity.GetColumn((int)axis);
+            return Edge1DHandleOffset(id, axis, from, to, snappingStep, handleSize, capFunction);
+        }
+
+        public static float Edge1DHandleOffset(int id, Axis axis, Vector3 from, Vector3 to, float snappingStep, float handleSize, CapFunction capFunction)
+        {
+            var position    = (from + to) * 0.5f;
+            var direction   = (Vector3)Matrix4x4.identity.GetColumn((int)axis);
             if (snappingStep == 0)
                 snappingStep = Snapping.MoveSnappingSteps[(int)axis];
             if (handleSize == 0)
@@ -72,6 +77,16 @@ namespace UnitySceneExtensions
         public static float Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, float snappingStep = 0, float handleSize = 0)
         {
             return Edge1DHandleOffset(axis, from, to, snappingStep, handleSize, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
+        }
+
+        public static float Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, CapFunction capFunction)
+        {
+            return Edge1DHandleOffset(axis, from, to, 0, 0, capFunction);
+        }
+
+        public static float Edge1DHandleOffset(int id, Axis axis, Vector3 from, Vector3 to, CapFunction capFunction)
+        {
+            return Edge1DHandleOffset(id, axis, from, to, 0, 0, capFunction);
         }
 
         // TODO: improve this
@@ -105,7 +120,9 @@ namespace UnitySceneExtensions
                     {
                         var rect = sceneView.position;
                         rect.min = Vector2.zero;
-                        if (UnityEditor.HandleUtility.nearestControl == id || EditorGUIUtility.hotControl == id)
+                        var hovering = UnityEditor.HandleUtility.nearestControl == id && 
+                                        UnityEditor.HandleUtility.DistanceToLine(from, to) < 10; // in case multiple edges share the same id, we want to ignore those that aren't even close
+                        if (EditorGUIUtility.hotControl == id || hovering)
                         {
                             EditorGUIUtility.AddCursorRect(rect, SceneHandleUtility.GetCursorForEdge(from, to));
                         }
