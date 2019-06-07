@@ -762,29 +762,12 @@ namespace Chisel.Components
                     {
                         var newBrushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
                         newBrushContainerAsset.SetSubMeshes(new[] { new BrushMesh(brushContainerAsset.BrushMeshes[i]) });
-
-                        var brushGameObject = new GameObject("Brush (" + (i + 1) + ")");
-                        UnityEditor.Undo.RegisterCreatedObjectUndo(brushGameObject, "Created GameObject");
-                        brushGameObject.SetActive(false);
-                        try
-                        {
-                            var brushTransform = brushGameObject.transform;
-                            UnityEditor.Undo.SetTransformParent(brushTransform, parentTransform, "Move child brush underneath parent operation");
-                            UnityEditor.Undo.RecordObject(brushTransform, "Reset child brush transform");
-                            brushTransform.localPosition = Vector3.zero;
-                            brushTransform.localRotation = Quaternion.identity;
-                            brushTransform.localScale = Vector3.one;
-
-                            var brush = UnityEditor.Undo.AddComponent<ChiselBrush>(brushGameObject);
-                            brush.BrushContainerAsset = newBrushContainerAsset;
-                            brush.LocalTransformation = localTransformation;
-                            brush.PivotOffset = pivotOffset;
-                            brush.Operation = brushContainerAsset.Operations[i];
-                        }
-                        finally
-                        {
-                            brushGameObject.SetActive(true);
-                        }
+                        var brush = ChiselComponentFactory.Create<ChiselBrush>("Brush (" + (i + 1) + ")", parentTransform, Vector3.zero, Quaternion.identity, Vector3.one);
+                        brush.BrushContainerAsset   = newBrushContainerAsset;
+                        brush.LocalTransformation   = localTransformation;
+                        brush.PivotOffset           = pivotOffset;
+                        brush.Operation             = brushContainerAsset.Operations[i];
+                        UnityEditor.Undo.RecordObject(brush, "Modified brush");
                     }
                     UnityEditor.Undo.SetCurrentGroupName("Converted " + NodeTypeName + " to Multiple Brushes");
                 }

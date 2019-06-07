@@ -48,20 +48,20 @@ namespace Chisel.Editors
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            Bounds bounds;
+            Bounds      bounds;
             ChiselModel modelBeneathCursor;
-            Matrix4x4 transformation;
-            float height;
+            Matrix4x4   transformation;
+            float       height;
 
             var flags = (isSymmetrical ? BoxExtrusionFlags.IsSymmetricalXZ : BoxExtrusionFlags.None) |
-                       (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
+                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
 
             switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
-                    capsule = ChiselModelManager.Create<ChiselCapsule>("Capsule",
-                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                    capsule = ChiselComponentFactory.Create<ChiselCapsule>("Capsule",
+                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                                 transformation);
                     capsule.definition.Reset();
                     capsule.Operation       = forceOperation ?? CSGOperationType.Additive;
@@ -83,8 +83,11 @@ namespace Chisel.Editors
                                               ((height < 0 && modelBeneathCursor) ?
                                                 CSGOperationType.Subtractive :
                                                 CSGOperationType.Additive);
-                    capsule.TopHeight    = topHeight;
-                    capsule.BottomHeight = bottomHeight;
+
+                    var hemisphereHeight = Mathf.Min(bounds.size[(int)Axis.X], bounds.size[(int)Axis.Z]) * ChiselCapsuleDefinition.kDefaultHemisphereRatio;
+
+                    capsule.TopHeight    = Mathf.Min(hemisphereHeight, height * 0.5f);
+                    capsule.BottomHeight = Mathf.Min(hemisphereHeight, height * 0.5f);
                     capsule.DiameterX    = bounds.size[(int)Axis.X];
                     capsule.Height       = height;
                     capsule.DiameterZ    = bounds.size[(int)Axis.Z];

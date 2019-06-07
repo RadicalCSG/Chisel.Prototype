@@ -43,10 +43,10 @@ namespace Chisel.Editors
 
         public void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            Bounds    bounds;
-            ChiselModel  modelBeneathCursor;
-            Matrix4x4 transformation;
-            float     height;
+            Bounds      bounds;
+            ChiselModel modelBeneathCursor;
+            Matrix4x4   transformation;
+            float       height;
 
             var flags = (isSymmetrical ? BoxExtrusionFlags.IsSymmetricalXZ : BoxExtrusionFlags.None) |
                         (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
@@ -55,8 +55,8 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    cylinder = ChiselModelManager.Create<ChiselCylinder>("Cylinder",
-                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                    cylinder = ChiselComponentFactory.Create<ChiselCylinder>("Cylinder",
+                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                                 transformation);
                     cylinder.definition.Reset();
                     cylinder.Operation			= forceOperation ?? CSGOperationType.Additive;
@@ -74,9 +74,10 @@ namespace Chisel.Editors
                 case BoxExtrusionState.Modified:
                 {
                     cylinder.Operation  = forceOperation ?? 
-                                          ((height < 0 && modelBeneathCursor) ? 
-                                            CSGOperationType.Subtractive : 
-                                            CSGOperationType.Additive);
+                                              ((height < 0 && modelBeneathCursor) ? 
+                                                CSGOperationType.Subtractive : 
+                                                CSGOperationType.Additive);
+
                     cylinder.BottomDiameterX    = bounds.size[(int)Axis.X];
                     cylinder.Height             = height;
                     cylinder.BottomDiameterZ    = bounds.size[(int)Axis.Z];
