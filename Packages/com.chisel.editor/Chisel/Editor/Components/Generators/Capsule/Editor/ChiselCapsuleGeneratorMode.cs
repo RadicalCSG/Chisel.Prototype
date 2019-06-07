@@ -60,8 +60,8 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    capsule = ChiselModelManager.Create<ChiselCapsule>("Capsule",
-                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                    capsule = ChiselComponentFactory.Create<ChiselCapsule>("Capsule",
+                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                                 transformation);
                     capsule.definition.Reset();
                     capsule.Operation       = forceOperation ?? CSGOperationType.Additive;

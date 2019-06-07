@@ -55,8 +55,8 @@ namespace Chisel.Editors
             {
                 case BoxExtrusionState.Create:
                 {
-                    cylinder = ChiselModelManager.Create<ChiselCylinder>("Cylinder",
-                                                                ChiselModelManager.GetModelForNode(modelBeneathCursor),
+                    cylinder = ChiselComponentFactory.Create<ChiselCylinder>("Cylinder",
+                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
                                                                 transformation);
                     cylinder.definition.Reset();
                     cylinder.Operation			= forceOperation ?? CSGOperationType.Additive;

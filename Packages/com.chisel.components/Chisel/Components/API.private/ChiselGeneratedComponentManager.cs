@@ -247,7 +247,7 @@ namespace Chisel.Components
                 var generatedMesh = model.generatedMeshes[i];
                 if (generatedMesh.renderComponents != null &&
                     generatedMesh.renderComponents.meshRenderer &&
-                    generatedMesh.renderComponents.meshFilter)
+                    generatedMesh.renderComponents.meshFilter) 
                 {
                     var material = generatedMesh.renderComponents.meshRenderer.sharedMaterial;
                     List<ChiselRenderComponents> components;
@@ -505,13 +505,7 @@ namespace Chisel.Components
             
             try
             {
-                var gameObject = new GameObject(GeneratedDefaultModelName);
-                var transform = gameObject.GetComponent<Transform>();
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale	= Vector3.one;
-                
-                var model = gameObject.AddComponent<ChiselModel>();
+                var model = ChiselComponentFactory.Create<ChiselModel>(GeneratedDefaultModelName);
                 UpdateModelFlags(model);
                 return model;
             }
@@ -554,16 +548,24 @@ namespace Chisel.Components
             try
             {
                 CSGNodeHierarchyManager.ignoreNextChildrenChanged = true;
-                var gameObject = new GameObject(GeneratedContainerName);
-                var transform  = gameObject.GetComponent<Transform>();
-                CSGNodeHierarchyManager.ignoreNextChildrenChanged = true;
-                transform.SetParent(model.transform, false);
-                CSGNodeHierarchyManager.ignoreNextChildrenChanged = false;
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale = Vector3.one;
-                model.GeneratedDataContainer = gameObject;
-                model.GeneratedDataTransform = transform;
+                var newGameObject = new GameObject(GeneratedContainerName);
+                newGameObject.SetActive(false);
+                try
+                {
+                    var transform  = newGameObject.GetComponent<Transform>();
+                    CSGNodeHierarchyManager.ignoreNextChildrenChanged = true;
+                    transform.SetParent(model.transform, false);
+                    CSGNodeHierarchyManager.ignoreNextChildrenChanged = false;
+                    transform.localPosition = Vector3.zero;
+                    transform.localRotation = Quaternion.identity;
+                    transform.localScale    = Vector3.one;
+                    model.GeneratedDataContainer = newGameObject;
+                    model.GeneratedDataTransform = transform;
+                }
+                finally
+                {
+                    newGameObject.SetActive(true);
+                }
                 model.OnInitialize();
             }
             finally
