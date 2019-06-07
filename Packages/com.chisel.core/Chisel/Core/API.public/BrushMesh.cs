@@ -18,37 +18,6 @@ namespace Chisel.Core
         TextureIsInWorldSpace = 1
     }
 
-    /// <summary>A 2x4 matrix to calculate the UV coordinates for the vertices of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
-    /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
-    /// <seealso cref="Chisel.Core.BrushMesh"/>
-    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct UVMatrix
-    {
-        public UVMatrix(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); }
-        public UVMatrix(Vector4 u, Vector4 v) { U = u; V = v; }
-
-        /// <value>Used to convert a vertex coordinate to a U texture coordinate</value>
-        public Vector4 U;
-
-        /// <value>Used to convert a vertex coordinate to a V texture coordinate</value>
-        public Vector4 V;
-
-
-        // TODO: add description
-        public Matrix4x4 ToMatrix() { var W = Vector3.Cross(U, V); return new Matrix4x4(U, V, W, new Vector4(0, 0, 0, 1)).transpose; }
-
-        // TODO: add description
-        public UVMatrix Set(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); return this; }
-
-        // TODO: add description
-        public static implicit operator Matrix4x4(UVMatrix input) { return input.ToMatrix(); }
-        public static implicit operator UVMatrix(Matrix4x4 input) { return new UVMatrix(input); }
-
-        // TODO: add description
-        public static readonly UVMatrix identity = new UVMatrix(new Vector4(1,0,0,0.0f), new Vector4(0,1,0,0.0f));
-        public static readonly UVMatrix centered = new UVMatrix(new Vector4(1,0,0,0.5f), new Vector4(0,1,0,0.5f));
-    }
-    
     // Separate struct so that we can create a property drawer for it
     [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct SmoothingGroup
