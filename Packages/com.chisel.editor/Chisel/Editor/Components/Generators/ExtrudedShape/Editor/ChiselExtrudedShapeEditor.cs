@@ -17,8 +17,11 @@ namespace Chisel.Editors
     
     [CustomEditor(typeof(ChiselExtrudedShape))]
     [CanEditMultipleObjects]
-    public sealed class ChiselExtrudedShapeEditor : ChiselGeneratorEditor<ChiselExtrudedShape> 
+    public sealed class ChiselExtrudedShapeEditor : ChiselGeneratorEditor<ChiselExtrudedShape>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselExtrudedShape.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselExtrudedShape.kNodeTypeName); }
+
         static readonly GUIContent  kShapeContent   = new GUIContent("Shape");
         static readonly GUIContent  kPathContent    = new GUIContent("Path");
 

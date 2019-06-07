@@ -7,10 +7,10 @@ using System.Linq;
 
 namespace Chisel.Components
 {
-    public abstract class ChiselDefinedGeneratorComponent<T> : ChiselGeneratorComponent
-        where T : IChiselGenerator, new()
+    public abstract class ChiselDefinedGeneratorComponent<DefinitionType> : ChiselGeneratorComponent
+        where DefinitionType : IChiselGenerator, new()
     {
-        [SerializeField] public T definition = new T();
+        [SerializeField] public DefinitionType definition = new DefinitionType();
 
         protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
         protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }
@@ -762,7 +762,6 @@ namespace Chisel.Components
                     {
                         var newBrushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
                         newBrushContainerAsset.SetSubMeshes(new[] { new BrushMesh(brushContainerAsset.BrushMeshes[i]) });
-                        
                         var brush = ChiselComponentFactory.Create<ChiselBrush>("Brush (" + (i + 1) + ")", parentTransform, Vector3.zero, Quaternion.identity, Vector3.one);
                         brush.BrushContainerAsset   = newBrushContainerAsset;
                         brush.LocalTransformation   = localTransformation;

@@ -32,6 +32,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class CSGOperationEditor : ChiselNodeEditor<ChiselOperation>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselOperation.kNodeTypeName, false, 0)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselOperation.kNodeTypeName); }
+
         SerializedProperty operationProp;
         SerializedProperty passThroughProp;
 

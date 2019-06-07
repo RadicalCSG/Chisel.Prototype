@@ -22,6 +22,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselBoxEditor : ChiselGeneratorEditor<ChiselBox>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselBox.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselBox.kNodeTypeName); }
+
         static readonly GUIContent[] kSurfaceNameContent = new []
         {
             new GUIContent("Top"),

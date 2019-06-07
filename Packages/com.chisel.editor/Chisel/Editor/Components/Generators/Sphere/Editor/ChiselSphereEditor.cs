@@ -19,6 +19,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselSphereEditor : ChiselGeneratorEditor<ChiselSphere>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselSphere.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselSphere.kNodeTypeName); }
+
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;
         SerializedProperty horizontalSegmentsProp;

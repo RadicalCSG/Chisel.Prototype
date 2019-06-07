@@ -46,6 +46,19 @@ namespace Chisel.Editors
             }
         }
 
+        // This method is used by Component specific classes (e.g. ChiselBoxEditor) 
+        // to create a menu Item that creates a gameObject with a specific component (e.g. ChiselBox)
+        // Since MenuItems can only be created with attributes, and strings must be constant, 
+        // we can only do this from place where we specifically know which component the menu is for.
+        protected static void CreateAsGameObjectMenuCommand(MenuCommand menuCommand, string name)
+        {
+            var component   = ChiselModelManager.Create<T>(name, ChiselModelManager.GetModelForNode());
+            var gameObject  = component.gameObject;
+            GameObjectUtility.SetParentAndAlign(gameObject, menuCommand.context as GameObject);
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
+            Selection.activeObject = gameObject;
+        }
+
         public static bool IsPartOfDefaultModel(UnityEngine.Object[] targetObjects)
         {
             if (targetObjects == null)
@@ -262,7 +275,7 @@ namespace Chisel.Editors
         static readonly GUIContent  kSurfacesContent            = new GUIContent("Surfaces");
         static GUIContent           surfacePropertyContent      = new GUIContent();
         const string                kSurfacePropertyName        = "Side {0}";
-
+        
         protected void ShowSurfaces(SerializedProperty surfacesProp, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
         {
             ShowSurfaces(surfacesProp, null, expectedSize, surfacePropertyName);

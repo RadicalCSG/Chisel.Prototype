@@ -19,6 +19,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselRevolvedShapeEditor : ChiselGeneratorEditor<ChiselRevolvedShape>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselRevolvedShape.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselRevolvedShape.kNodeTypeName); }
+
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
         const string                kSurfacePropertyName    = "Side {0}";

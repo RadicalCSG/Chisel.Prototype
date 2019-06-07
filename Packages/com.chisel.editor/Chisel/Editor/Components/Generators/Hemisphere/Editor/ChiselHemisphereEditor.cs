@@ -20,6 +20,10 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselHemisphereEditor : ChiselGeneratorEditor<ChiselHemisphere>
     {
+        [MenuItem("GameObject/Chisel/" + ChiselHemisphere.kNodeTypeName)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselHemisphere.kNodeTypeName); }
+
+
         SerializedProperty diameterXYZProp;
         SerializedProperty rotationProp;
         SerializedProperty horizontalSegmentsProp;
