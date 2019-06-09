@@ -99,9 +99,9 @@ namespace Chisel.Core
                 min.y = Mathf.Min(min.y, vertex.y);
                 min.z = Mathf.Min(min.z, vertex.z);
 
-                max.x = Mathf.Min(max.x, vertex.x);
-                max.y = Mathf.Min(max.y, vertex.y);
-                max.z = Mathf.Min(max.z, vertex.z);
+                max.x = Mathf.Max(max.x, vertex.x);
+                max.y = Mathf.Max(max.y, vertex.y);
+                max.z = Mathf.Max(max.z, vertex.z);
             }
 
             localBounds = new Bounds((max + min) * 0.5f, (max - min));
