@@ -6,12 +6,19 @@ using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     // TODO: should only show pivot when there are pivots to modify
     public class ChiselPivotEditMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Pivot Mode";
+        [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToPivotEditMode, displayName = kEditModeShotcutName)]
+        public static void SwitchToPivotEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.Pivot; }
+        #endregion
+
         // TODO: put somewhere else
         #region Pivot rendering
 

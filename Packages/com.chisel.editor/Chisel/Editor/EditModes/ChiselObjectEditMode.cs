@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
@@ -13,6 +14,12 @@ namespace Chisel.Editors
     // TODO: should only use this when there are CSGNodes selected
     public class ChiselObjectEditMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Object Mode";
+        [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToObjectEditMode, displayName = kEditModeShotcutName)]
+        public static void SwitchToObjectEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.Object; }
+        #endregion
+
         public void OnEnable()
         {
             ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline;

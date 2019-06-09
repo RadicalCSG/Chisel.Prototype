@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
 using Chisel.Utilities;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
@@ -14,6 +15,12 @@ namespace Chisel.Editors
     // TODO: hovering on surfaces in inspector should highlight in scene
     public sealed class ChiselSurfaceEditMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Surface Edit Mode";
+        [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToSurfaceEditMode, displayName = kEditModeShotcutName)]
+        public static void SwitchToSurfaceEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.SurfaceEdit; }
+        #endregion
+
         static readonly int kSurfaceEditModeHash		= "SurfaceEditMode".GetHashCode();
         static readonly int kSurfaceDragSelectionHash	= "SurfaceDragSelection".GetHashCode();
         static readonly int kSurfaceScaleHash			= "SurfaceScale".GetHashCode();
