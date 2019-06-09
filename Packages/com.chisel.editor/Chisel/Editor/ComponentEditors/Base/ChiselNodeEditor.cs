@@ -409,7 +409,7 @@ namespace Chisel.Editors
 
         public void OnSceneGUI()
         {
-            if (!target || ChiselEditModeManager.EditMode != ChiselEditMode.ShapeEdit)
+            if (!target || !ChiselEditModeManager.EditMode.EnableComponentEditors)
                 return;
 
             using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor))

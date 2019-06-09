@@ -11,12 +11,19 @@ using UnityEditor.ShortcutManagement;
 namespace Chisel.Editors
 {
     // TODO: should only show pivot when there are pivots to modify
-    public class ChiselPivotEditMode : IChiselToolMode
+    public sealed class ChiselPivotEditMode : IChiselToolMode
     {
+        const string kToolName = "Pivot";
+        public string ToolName => kToolName;
+
+        public bool EnableComponentEditors  { get { return false; } }
+        public bool CanSelectSurfaces       { get { return false; } }
+        public bool ShowCompleteOutline     { get { return true; } }
+
         #region Keyboard Shortcut
-        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Pivot Mode";
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + kToolName + " Mode";
         [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToPivotEditMode, displayName = kEditModeShotcutName)]
-        public static void SwitchToPivotEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.Pivot; }
+        public static void SwitchToPivotEditMode() { ChiselEditModeManager.EditModeType = typeof(ChiselPivotEditMode); }
         #endregion
 
         // TODO: put somewhere else

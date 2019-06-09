@@ -168,7 +168,7 @@ namespace Chisel.Editors
             ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
         }
 
-        private static void OnEditModeChanged(ChiselEditMode prevEditMode, ChiselEditMode newEditMode)
+        private static void OnEditModeChanged(IChiselToolMode prevEditMode, IChiselToolMode newEditMode)
         {
             ChiselOutlineRenderer.Instance.OnEditModeChanged(prevEditMode, newEditMode);
         }

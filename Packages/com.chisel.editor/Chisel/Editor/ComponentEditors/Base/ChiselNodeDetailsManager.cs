@@ -16,7 +16,7 @@ namespace Chisel.Editors
         static Dictionary<Type, IChiselNodeDetails> nodeDetailsLookup = new Dictionary<Type, IChiselNodeDetails>();
 
         [InitializeOnLoadMethod]
-        static void InitializeIcons()
+        static void InitializeNodeDetails()
         {
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)
             {

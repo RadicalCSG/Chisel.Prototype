@@ -10,31 +10,18 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselTorusGeneratorMode : IChiselToolMode
+    public sealed class ChiselTorusGeneratorMode : ChiselGeneratorToolMode
     {
+        const string kToolName = ChiselTorus.kNodeTypeName;
+        public override string ToolName => kToolName;
+
         // Commented out, for the time being, because this generator has not been implemented yet
         /*
         #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselTorus.kNodeTypeName;
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.TorusBuilderModeKey, ChiselKeyboardDefaults.TorusBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Torus; }
+        public static void StartGeneratorMode() { ChiselEditModeManager.EditModeType = typeof(ChiselTorusGeneratorMode); }
         #endregion
         */
-
-        public void OnEnable()
-        {
-        }
-
-        public void OnDisable()
-        {
-        }
-
-        void Reset()
-        {
-        }
-        
-        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-        }
     }
 }

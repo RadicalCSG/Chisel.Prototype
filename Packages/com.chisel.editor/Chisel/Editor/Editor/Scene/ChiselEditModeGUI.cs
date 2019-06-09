@@ -10,9 +10,98 @@ namespace Chisel.Editors
 {
     public interface IChiselToolMode
     {
+        string          ToolName    { get; }
+
+        bool EnableComponentEditors { get; }
+        bool CanSelectSurfaces      { get; }
+        bool ShowCompleteOutline    { get; }
+
         void OnEnable();
         void OnDisable();
+
         void OnSceneGUI(SceneView sceneView, Rect dragArea);
+    }
+
+    public abstract class ChiselGeneratorToolMode : IChiselToolMode
+    {
+        public abstract string  ToolName                { get; }
+
+        public virtual bool     EnableComponentEditors  { get { return false; } }
+        public virtual bool     CanSelectSurfaces       { get { return false; } }
+        public virtual bool     ShowCompleteOutline     { get { return true; } }
+
+        public virtual void     OnEnable()
+        {
+            // TODO: shouldn't just always set this param
+            Tools.hidden = true;
+            Reset();
+        }
+
+        public virtual void     OnDisable()
+        {
+            Reset();
+        }
+
+        public virtual void     Reset() { }
+
+        public void Commit(GameObject newGameObject)
+        {
+            if (!newGameObject)
+            {
+                Cancel();
+                return;
+            }
+            UnityEditor.Selection.activeGameObject = newGameObject;
+            Reset();
+            ChiselEditModeManager.EditModeType = typeof(ChiselShapeEditMode);
+        }
+
+        public void Cancel()
+        { 
+            Reset();
+            Undo.RevertAllInCurrentGroup();
+            EditorGUIUtility.ExitGUI();
+        }
+
+        public virtual void     OnSceneGUI(SceneView sceneView, Rect dragArea)
+        {
+            var evt = Event.current;
+            switch (evt.type)
+            {
+                case EventType.KeyDown:
+                case EventType.ValidateCommand:
+                {
+                    if (Tools.current == Tool.View ||
+                        Tools.current == Tool.None ||
+                        (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
+                        GUIUtility.hotControl != 0)
+                        break;
+
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        evt.Use();
+                        break;
+                    }
+                    break;
+                }
+                case EventType.KeyUp:
+                {
+                    if (Tools.current == Tool.View ||
+                        Tools.current == Tool.None ||
+                        (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
+                        GUIUtility.hotControl != 0)
+                        break;
+
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        evt.Use();
+                        ChiselEditModeGUI.RestoreEditModeState();
+                        GUIUtility.ExitGUI();
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     // TODO: add ability to store position (per sceneview?)
@@ -37,66 +126,32 @@ namespace Chisel.Editors
         }
         #endregion
 
-        const float kSingleLineHeight = 20f;
-        const float kSingleSpacing = 0.0f;
+        const float kSingleLineHeight   = 20f;
+        const float kSingleSpacing      = 0.0f;
         const float kGeneratorSeparator = 5.0f;
         const float kExtraBottomSpacing = 2.0f;
-
-        sealed class CSGEditModeItem
-        {
-            public CSGEditModeItem(ChiselEditMode value, GUIContent content) { this.value = value; this.content = content; }
-            public ChiselEditMode	value;
-            public GUIContent   content;
-        }
-
-        static readonly CSGEditModeItem[] editModes = new[]
-        {
-            new CSGEditModeItem(ChiselEditMode.Object,         new GUIContent("Object")),
-            new CSGEditModeItem(ChiselEditMode.Pivot,          new GUIContent("Pivot")),
-            new CSGEditModeItem(ChiselEditMode.ShapeEdit,      new GUIContent("Shape Edit")),
-            new CSGEditModeItem(ChiselEditMode.SurfaceEdit,    new GUIContent("Surface Edit")),
-        };
-
-        static readonly CSGEditModeItem[] generatorModes = new[]
-        {
-            new CSGEditModeItem(ChiselEditMode.FreeDraw,		new GUIContent("FreeDraw")),
-
-            new CSGEditModeItem(ChiselEditMode.Box,			new GUIContent("Box")),
-            new CSGEditModeItem(ChiselEditMode.Cylinder,		new GUIContent("Cylinder")),
-
-            new CSGEditModeItem(ChiselEditMode.Capsule,        new GUIContent("Capsule")),
-            new CSGEditModeItem(ChiselEditMode.Hemisphere,     new GUIContent("Hemisphere")),
-            new CSGEditModeItem(ChiselEditMode.Sphere,         new GUIContent("Sphere")),
-
-//          new CSGEditModeItem(CSGEditMode.Torus,          new GUIContent("Torus")),
-//          new CSGEditModeItem(CSGEditMode.Stadium,        new GUIContent("Stadium")),
-
-//          new CSGEditModeItem(CSGEditMode.RevolvedShape,  new GUIContent("Revolved Shape")),
-
- //         new CSGEditModeItem(CSGEditMode.PathedStairs,   new GUIContent("Pathed Stairs")),
-
-            new CSGEditModeItem(ChiselEditMode.LinearStairs,   new GUIContent("Linear Stairs")),
-            new CSGEditModeItem(ChiselEditMode.SpiralStairs,   new GUIContent("Spiral Stairs"))
-        };
 
 
         static GUIResizableWindow editModeWindow;
 
         static void OnWindowGUI(Rect position)
         {
+            var editModes       = ChiselEditModeManager.editModes;
+            var generatorModes  = ChiselEditModeManager.generatorModes;
+
             var togglePosition = position;
             togglePosition.height = kSingleLineHeight;
             for (int i = 0; i < editModes.Length; i++)
             {
                 var editMode = editModes[i];
                 EditorGUI.BeginChangeCheck();
-                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.value, editMode.content, GUI.skin.button);
+                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
                     // If we're changing edit mode from a generator, we restore our previous selection.
-                    if (Instance.HaveSelection())
-                        Instance.RestoreSelection(skipEditMode: true);
-                    ChiselEditModeManager.EditMode = editMode.value;
+                    if (Instance.HaveStoredEditModeState())
+                        RestoreEditModeState(skipEditMode: true);
+                    ChiselEditModeManager.EditMode = editMode.instance;
                     ChiselEditorSettings.Save();
                 }
                 togglePosition.y += kSingleLineHeight + kSingleSpacing;
@@ -108,14 +163,14 @@ namespace Chisel.Editors
             {
                 var editMode = generatorModes[i];
                 EditorGUI.BeginChangeCheck();
-                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.value, editMode.content, GUI.skin.button);
+                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
                     // When we select a generator, we don't want anything else selected since the combination makes no sense.
                     // We store the selection, however, if our previous edit mode was not a generator.
-                    if (ChiselEditModeManager.EditMode < ChiselEditMode.FirstGenerator)
-                        Instance.RememberSelection();
-                    ChiselEditModeManager.EditMode = editMode.value;
+                    if (!(ChiselEditModeManager.EditMode is ChiselGeneratorToolMode))
+                        Instance.StoreEditModeState();
+                    ChiselEditModeManager.EditMode = editMode.instance;
                     ChiselEditorSettings.Save();
                 }
                 togglePosition.y += kSingleLineHeight + kSingleSpacing;
@@ -126,7 +181,7 @@ namespace Chisel.Editors
         {
             // Make sure we're currently in a non-generator, otherwise this makes no sense
             // We might actually be currently restoring a selection
-            if (ChiselEditModeManager.EditMode < ChiselEditMode.FirstGenerator)
+            if (!(ChiselEditModeManager.EditMode is ChiselGeneratorToolMode))
                 return;
 
             var activeObject = Selection.activeObject;
@@ -137,7 +192,7 @@ namespace Chisel.Editors
 
             // We just selected something in the editor, so we want to get rid of our 
             // stored selection to avoid restoring an old selection for no reason later on.
-            ClearStoredSelection();
+            ClearStoredEditModeState();
             
             var is_generator = activeObject is Components.ChiselGeneratorComponent;
             if (!is_generator)
@@ -148,74 +203,56 @@ namespace Chisel.Editors
             }
 
             if (is_generator)
-                ChiselEditModeManager.EditMode = ChiselEditMode.ShapeEdit;
+                ChiselEditModeManager.EditModeType = typeof(ChiselShapeEditMode);
             else
-                ChiselEditModeManager.EditMode = ChiselEditMode.Object;
+                ChiselEditModeManager.EditModeType = typeof(ChiselObjectEditMode);
         }
 
-
-        [SerializeField] UnityEngine.Object[] prevSelection = null;
-        [SerializeField] ChiselEditMode prevEditMode = ChiselEditMode.Object;
+        #region Edit Mode State
+        [SerializeField] UnityEngine.Object[]   storedSelection = null;
+        [SerializeField] IChiselToolMode        storedEditMode  = null;
         
-        internal bool HaveSelection()
+        internal bool HaveStoredEditModeState()
         {
-            return (prevSelection != null);
+            return (storedSelection != null);
         }
 
-        void RememberSelection()
+        void StoreEditModeState()
         {
-            prevSelection = Selection.objects;
-            prevEditMode = ChiselEditModeManager.EditMode;
+            storedSelection = Selection.objects;
+            storedEditMode = ChiselEditModeManager.EditMode;
             Selection.activeObject = null;
         }
 
-        void RestoreSelection(bool skipEditMode = false)
+        internal static void RestoreEditModeState(bool skipEditMode = false)
         {
-            if (prevSelection != null)
-                Selection.objects = prevSelection;
+            var instance = Instance;
+            if (instance.storedSelection != null)
+                Selection.objects = instance.storedSelection;
             else
                 // Selection.objects doesn't like being set to null, 
                 // it'll generate an error, Selection.activeObject has 
                 // no problem with it however.
                 Selection.activeObject = null;
             if (!skipEditMode)
-                ChiselEditModeManager.EditMode = prevEditMode;
-            ClearStoredSelection();
+                ChiselEditModeManager.EditMode = instance.storedEditMode;
+            instance.ClearStoredEditModeState();
         }
 
-        void ClearStoredSelection()
+        void ClearStoredEditModeState()
         {
-            prevSelection = null;
-            prevEditMode = ChiselEditMode.Object;
+            storedSelection = null;
+            storedEditMode = null;
         }
+        #endregion
 
 
-
-        static ChiselObjectEditMode		ObjectEditMode			= new ChiselObjectEditMode();
-        static ChiselPivotEditMode			PivotEditMode			= new ChiselPivotEditMode();
-        static ChiselSurfaceEditMode		SurfaceEditMode			= new ChiselSurfaceEditMode();
-        static ChiselShapeEditMode			ShapeEditMode			= new ChiselShapeEditMode();
-        
-        // TODO: automatically find generators
-        static ChiselExtrudedShapeGeneratorMode	    ExtrudedShapeGeneratorMode	= new ChiselExtrudedShapeGeneratorMode();
-        static ChiselRevolvedShapeGeneratorMode	    RevolvedShapeGeneratorMode	= new ChiselRevolvedShapeGeneratorMode();
-
-        static ChiselBoxGeneratorMode				BoxGeneratorMode			= new ChiselBoxGeneratorMode();
-        static ChiselCylinderGeneratorMode			CylinderGeneratorMode		= new ChiselCylinderGeneratorMode();
-        static ChiselHemisphereGeneratorMode        HemisphereGeneratorMode     = new ChiselHemisphereGeneratorMode();
-        static ChiselSphereGeneratorMode            SphereGeneratorMode         = new ChiselSphereGeneratorMode();
-        static ChiselCapsuleGeneratorMode           CapsuleGeneratorMode        = new ChiselCapsuleGeneratorMode();
-        static ChiselTorusGeneratorMode			    TorusGeneratorMode			= new ChiselTorusGeneratorMode();
-        static ChiselStadiumGeneratorMode           StadiumGeneratorMode        = new ChiselStadiumGeneratorMode();
-
-        static ChiselPathedStairsGeneratorMode      PathedStairsGeneratorMode   = new ChiselPathedStairsGeneratorMode();
-        static ChiselLinearStairsGeneratorMode      LinearStairsGeneratorMode   = new ChiselLinearStairsGeneratorMode();
-        static ChiselSpiralStairsGeneratorMode		SpiralStairsGeneratorMode	= new ChiselSpiralStairsGeneratorMode();
-
-        static IChiselToolMode         prevToolMode    = null;
-
+        static IChiselToolMode prevToolMode = null;
         public static void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
+            var editModes       = ChiselEditModeManager.editModes;
+            var generatorModes  = ChiselEditModeManager.generatorModes;
+
             if (editModeWindow == null)
             {
                 var minWidth	= 80;
@@ -227,32 +264,7 @@ namespace Chisel.Editors
             editModeWindow.Show(dragArea);
             
 
-            IChiselToolMode currentToolMode = null;
-            switch (ChiselEditModeManager.EditMode)
-            {
-                // Edit modes
-                case ChiselEditMode.Object:		currentToolMode = ObjectEditMode;	break;
-                case ChiselEditMode.Pivot:			currentToolMode = PivotEditMode;	break;
-                case ChiselEditMode.SurfaceEdit:	currentToolMode = SurfaceEditMode;	break;
-                case ChiselEditMode.ShapeEdit:		currentToolMode = ShapeEditMode;	break;
-                
-                // Generators
-                case ChiselEditMode.FreeDraw:		currentToolMode = ExtrudedShapeGeneratorMode; break;
-                case ChiselEditMode.RevolvedShape:	currentToolMode = RevolvedShapeGeneratorMode; break;
-                
-                case ChiselEditMode.Box:			currentToolMode = BoxGeneratorMode; break;
-                case ChiselEditMode.Stadium:		currentToolMode = StadiumGeneratorMode; break;
-                case ChiselEditMode.Cylinder:		currentToolMode = CylinderGeneratorMode; break;
-                case ChiselEditMode.Hemisphere:	currentToolMode = HemisphereGeneratorMode; break;
-                case ChiselEditMode.Sphere:		currentToolMode = SphereGeneratorMode; break;
-                case ChiselEditMode.Capsule:		currentToolMode = CapsuleGeneratorMode; break;
-                case ChiselEditMode.Torus:			currentToolMode = TorusGeneratorMode; break;
-                
-                case ChiselEditMode.PathedStairs:	currentToolMode = PathedStairsGeneratorMode; break;
-                case ChiselEditMode.LinearStairs:	currentToolMode = LinearStairsGeneratorMode; break;
-                case ChiselEditMode.SpiralStairs:	currentToolMode = SpiralStairsGeneratorMode; break;
-            }
-
+            IChiselToolMode currentToolMode = ChiselEditModeManager.EditMode;
 
             if (currentToolMode != prevToolMode)
             {
@@ -269,45 +281,6 @@ namespace Chisel.Editors
 
             if (currentToolMode != null)
             {
-                if (ChiselEditModeManager.EditMode >= ChiselEditMode.FirstGenerator)
-                {
-                    var evt = Event.current;
-                    switch (evt.type)
-                    {
-                        case EventType.KeyDown:
-                        case EventType.ValidateCommand:
-                        {
-                            if (Tools.current == Tool.View ||
-                                Tools.current == Tool.None ||
-                                (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
-                                GUIUtility.hotControl != 0)
-                                break;
-
-                            if (evt.keyCode == KeyCode.Escape)
-                            {
-                                evt.Use();
-                                break;
-                            }
-                            break;
-                        }
-                        case EventType.KeyUp:
-                        {
-                            if (Tools.current == Tool.View ||
-                                Tools.current == Tool.None ||
-                                (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
-                                GUIUtility.hotControl != 0)
-                                break;
-
-                            if (evt.keyCode == KeyCode.Escape)
-                            {
-                                evt.Use();
-                                Instance.RestoreSelection();
-                                GUIUtility.ExitGUI();
-                            }
-                            break;
-                        }
-                    }
-                }
                 dragArea.x = 0;
                 dragArea.y = 0;
                 currentToolMode.OnSceneGUI(sceneView, dragArea);

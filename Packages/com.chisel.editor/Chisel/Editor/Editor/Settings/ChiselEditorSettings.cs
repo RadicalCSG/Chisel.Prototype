@@ -9,8 +9,6 @@ namespace Chisel.Editors
 {
     public static class ChiselEditorSettings
     {
-        const ChiselEditMode				kDefaultEditMode        = ChiselEditMode.Object;
-
         // View Options
         public static bool				ShowGrid		= true;
         
@@ -27,8 +25,6 @@ namespace Chisel.Editors
         public static float				UniformSnapDistance		{ get { return Grid.defaultGrid.SpacingX; } set { Grid.defaultGrid.SpacingX = value;
                                                                                                           Grid.defaultGrid.SpacingY = value;
                                                                                                           Grid.defaultGrid.SpacingZ = value; } } 
-        public static ChiselEditMode		EditMode		{ get { return ChiselEditModeManager.EditMode; } set { ChiselEditModeManager.EditMode = value; } }
-
         public static bool				ShowAllAxi      = false;
         public static DistanceUnit		DistanceUnit	= DistanceUnit.Meters; 
 
@@ -51,7 +47,7 @@ namespace Chisel.Editors
             MoveSnapY		= EditorPrefs.GetFloat("MoveSnapY",			1.0f);
             MoveSnapZ		= EditorPrefs.GetFloat("MoveSnapZ",			1.0f);
 
-            DistanceUnit	= (DistanceUnit)EditorPrefs.GetInt  ("DistanceUnit",		(int)DistanceUnit.Meters);
+            DistanceUnit	= (DistanceUnit)EditorPrefs.GetInt("DistanceUnit", (int)DistanceUnit.Meters);
 
             RotateSnapping	= EditorPrefs.GetBool ("RotateSnapping",	true);
             RotateSnap		= EditorPrefs.GetFloat("RotationSnap",		15.0f);
@@ -61,7 +57,7 @@ namespace Chisel.Editors
 
             ShowGrid 		= EditorPrefs.GetBool ("ShowGrid",			true);
 
-            EditMode		= (ChiselEditMode)EditorPrefs.GetInt	  ("CSGEditMode",		(int)kDefaultEditMode);
+            ChiselEditModeManager.EditModeIndex = EditorPrefs.GetInt("ChiselEditMode", (int)-1);
         }
 
         public static void Save()
@@ -86,7 +82,8 @@ namespace Chisel.Editors
             EditorPrefs.SetFloat("ScaleSnap",		ScaleSnap);
 
             EditorPrefs.SetBool("ShowGrid",   		ShowGrid);
-            EditorPrefs.SetInt("CSGEditMode",	   (int)EditMode);
+
+            EditorPrefs.SetInt("ChiselEditMode", ChiselEditModeManager.EditModeIndex);
         }
     };
 }

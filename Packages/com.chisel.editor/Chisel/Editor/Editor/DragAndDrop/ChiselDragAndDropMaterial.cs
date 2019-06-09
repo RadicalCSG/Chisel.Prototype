@@ -99,10 +99,10 @@ namespace Chisel.Editors
                 surfaces.Length != 1)
                 return surfaces;
 
-            // TODO: remove special casing
-            if (ChiselEditModeManager.EditMode != ChiselEditMode.SurfaceEdit)
+            if (!ChiselEditModeManager.EditMode.CanSelectSurfaces)
                 return surfaces;
 
+            // TODO: implement the ability to query this from the edit mode
             if (!ChiselSurfaceSelectionManager.IsSelected(surfaces[0]))
                 return surfaces;
 
