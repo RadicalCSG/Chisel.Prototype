@@ -52,7 +52,7 @@ namespace Chisel.Editors
         // we can only do this from place where we specifically know which component the menu is for.
         protected static void CreateAsGameObjectMenuCommand(MenuCommand menuCommand, string name)
         {
-            var component   = ChiselModelManager.Create<T>(name, ChiselModelManager.GetModelForNode());
+            var component   = ChiselComponentFactory.Create<T>(name, ChiselModelManager.GetActiveModelOrCreate());
             var gameObject  = component.gameObject;
             GameObjectUtility.SetParentAndAlign(gameObject, menuCommand.context as GameObject);
             Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
