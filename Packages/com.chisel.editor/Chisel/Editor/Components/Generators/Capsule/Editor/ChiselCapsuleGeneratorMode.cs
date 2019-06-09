@@ -5,14 +5,20 @@ using UnityEditor;
 using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
-using Chisel.Utilities;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     // TODO: maybe just bevel top of cylinder instead of separate capsule generator??
     public sealed class ChiselCapsuleGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselCapsule.kNodeTypeName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CapsuleBuilderModeKey, ChiselKeyboardDefaults.CapsuleBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Capsule; }
+        #endregion
+
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param

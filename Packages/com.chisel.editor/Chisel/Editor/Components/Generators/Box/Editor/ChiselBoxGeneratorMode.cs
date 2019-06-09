@@ -3,15 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     public sealed class ChiselBoxGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselBox.kNodeTypeName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.BoxBuilderModeKey, ChiselKeyboardDefaults.BoxBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Box; }
+        #endregion
+
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param

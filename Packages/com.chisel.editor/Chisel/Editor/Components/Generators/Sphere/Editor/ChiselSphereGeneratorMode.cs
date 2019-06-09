@@ -1,17 +1,23 @@
-﻿using Chisel.Core;
-using Chisel.Components;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
+using Chisel.Core;
+using Chisel.Components;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     public sealed class ChiselSphereGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselSphere.kNodeTypeName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SphereBuilderModeKey, ChiselKeyboardDefaults.SphereBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Sphere; }
+        #endregion
+        
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param

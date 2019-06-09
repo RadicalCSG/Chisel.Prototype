@@ -1,17 +1,23 @@
-﻿using Chisel.Core;
-using Chisel.Components;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using Chisel.Utilities;
+using Chisel.Core;
+using Chisel.Components;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     public sealed class ChiselSpiralStairsGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselSpiralStairs.kNodeTypeName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.SpiralStairs; }
+        #endregion
+        
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param

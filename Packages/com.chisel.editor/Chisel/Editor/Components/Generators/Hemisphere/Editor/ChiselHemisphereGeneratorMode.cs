@@ -5,13 +5,19 @@ using UnityEditor;
 using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
-using Chisel.Utilities;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     public sealed class ChiselHemisphereGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselHemisphere.kNodeTypeName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.HemisphereBuilderModeKey, ChiselKeyboardDefaults.HemisphereBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Hemisphere; }
+        #endregion
+
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param

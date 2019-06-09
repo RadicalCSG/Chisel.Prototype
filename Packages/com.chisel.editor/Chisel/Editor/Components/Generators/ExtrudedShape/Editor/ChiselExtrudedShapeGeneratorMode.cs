@@ -4,14 +4,20 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Chisel.Core;
-using Chisel.Utilities;
 using Chisel.Components;
 using UnitySceneExtensions;
+using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
     public sealed class ChiselExtrudedShapeGeneratorMode : IChiselToolMode
     {
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + "Free Drawn Shape";
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.FreeDraw; }
+        #endregion
+
         public void OnEnable()
         {
             // TODO: shouldn't just always set this param
