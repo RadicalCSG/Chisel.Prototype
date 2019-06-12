@@ -80,9 +80,6 @@ namespace Chisel.Editors
 
             ChiselEditModeManager.EditModeChanged -= OnEditModeChanged;
             ChiselEditModeManager.EditModeChanged += OnEditModeChanged;
-            ChiselEditModeManager.Init();
-
-            SnappingKeyboard.Init();
 
             ChiselClickSelectionManager.Instance.OnReset();
             ChiselOutlineRenderer.Instance.OnReset();
@@ -169,7 +166,6 @@ namespace Chisel.Editors
 
             ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
             ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
-            KeyboardManager.OnSceneGUI(sceneView);
         }
 
         private static void OnEditModeChanged(ChiselEditMode prevEditMode, ChiselEditMode newEditMode)

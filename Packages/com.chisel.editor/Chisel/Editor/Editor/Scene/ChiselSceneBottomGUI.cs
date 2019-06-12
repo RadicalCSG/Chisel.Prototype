@@ -39,12 +39,6 @@ namespace Chisel.Editors
             CSGNodeHierarchyManager.Rebuild();
         }
 
-        public static void MultiplySnapDistance(float modifier) 
-        {
-            ChiselEditorSettings.UniformSnapDistance = ChiselEditorSettings.UniformSnapDistance * modifier;
-        }
-
-
         static void OnBottomBarUI(int windowID)
         {
             EditorGUI.BeginChangeCheck();
@@ -60,11 +54,11 @@ namespace Chisel.Editors
             ChiselEditorSettings.ShowGrid = GUILayout.Toggle(ChiselEditorSettings.ShowGrid, "Show Grid", toggleStyle);
 
             ChiselEditorSettings.UniformSnapDistance = EditorGUILayout.FloatField(ChiselEditorSettings.UniformSnapDistance, floatWidthLayout);
-            if (GUILayout.Button(halveSnapDistanceButton, EditorStyles.miniButtonLeft)) { 
-                MultiplySnapDistance(0.5f);
+            if (GUILayout.Button(halveSnapDistanceButton, EditorStyles.miniButtonLeft)) {
+                SnappingKeyboard.HalfGridSize();
             }
-            if (GUILayout.Button(doubleSnapDistanceButton, EditorStyles.miniButtonRight)) { 
-                MultiplySnapDistance(2.0f);
+            if (GUILayout.Button(doubleSnapDistanceButton, EditorStyles.miniButtonRight)) {
+                SnappingKeyboard.DoubleGridSize();
             }
 
             GUILayout.EndHorizontal();
