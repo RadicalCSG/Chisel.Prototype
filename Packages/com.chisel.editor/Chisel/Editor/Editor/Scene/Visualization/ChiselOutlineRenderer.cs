@@ -142,7 +142,7 @@ namespace Chisel.Editors
             Reset();
         }
 
-        internal void OnEditModeChanged(ChiselEditMode prevEditMode, ChiselEditMode newEditMode)
+        internal void OnEditModeChanged(IChiselToolMode prevEditMode, IChiselToolMode newEditMode)
         {
             // Defer since we could potentially get several events before we actually render
             // also, not everything might be set up correctly just yet.
@@ -503,8 +503,8 @@ namespace Chisel.Editors
 
                         if ((VisualizationMode & VisualizationMode.Outline) == VisualizationMode.Outline)
                         {
-                            var directSelect = ChiselEditModeManager.EditMode != ChiselEditMode.SurfaceEdit &&
-                                                ((brush == outline.brush && !anySelected) || (anySelected && ChiselSyncSelection.IsBrushVariantSelected(brush)));
+                            var directSelect = !ChiselEditModeManager.EditMode.ShowCompleteOutline &&
+                                               ((brush == outline.brush && !anySelected) || (anySelected && ChiselSyncSelection.IsBrushVariantSelected(brush)));
 
                             // TODO: tweak look of selection, figure out how to do backfaced lighting of edges, for clarity
                             // TODO: support selecting surfaces/edges/points (without showing the entire object selection)

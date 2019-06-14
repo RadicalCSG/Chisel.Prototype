@@ -15,10 +15,17 @@ namespace Chisel.Editors
     // TODO: hovering on surfaces in inspector should highlight in scene
     public sealed class ChiselSurfaceEditMode : IChiselToolMode
     {
+        const string kToolName = "Surface Edit";
+        public string ToolName => kToolName;
+
+        public bool EnableComponentEditors  { get { return false; } }
+        public bool CanSelectSurfaces       { get { return true; } }
+        public bool ShowCompleteOutline     { get { return false; } }
+
         #region Keyboard Shortcut
-        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Surface Edit Mode";
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + kToolName + " Mode";
         [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToSurfaceEditMode, displayName = kEditModeShotcutName)]
-        public static void SwitchToSurfaceEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.SurfaceEdit; }
+        public static void SwitchToSurfaceEditMode() { ChiselEditModeManager.EditModeType = typeof(ChiselSurfaceEditMode); }
         #endregion
 
         static readonly int kSurfaceEditModeHash		= "SurfaceEditMode".GetHashCode();

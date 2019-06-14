@@ -12,12 +12,19 @@ using UnityObject = UnityEngine.Object;
 namespace Chisel.Editors
 {
     // TODO: should only use this when there are CSGNodes selected
-    public class ChiselObjectEditMode : IChiselToolMode
+    public sealed class ChiselObjectEditMode : IChiselToolMode
     {
+        const string kToolName = "Object";
+        public string ToolName => kToolName;
+
+        public bool EnableComponentEditors  { get { return false; } }
+        public bool CanSelectSurfaces       { get { return false; } }
+        public bool ShowCompleteOutline     { get { return true; } }
+
         #region Keyboard Shortcut
-        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Object Mode";
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + kToolName + " Mode";
         [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToObjectEditMode, displayName = kEditModeShotcutName)]
-        public static void SwitchToObjectEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.Object; }
+        public static void SwitchToObjectEditMode() { ChiselEditModeManager.EditModeType = typeof(ChiselObjectEditMode); }
         #endregion
 
         public void OnEnable()

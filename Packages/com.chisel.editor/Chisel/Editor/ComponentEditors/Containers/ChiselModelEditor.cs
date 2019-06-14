@@ -764,7 +764,7 @@ namespace Chisel.Editors
         void RenderRenderingLayer()
         {
             bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
-            if (!usingSRP || target == null|| ChiselEditModeManager.EditMode != ChiselEditMode.ShapeEdit)
+            if (!usingSRP || target == null || !ChiselEditModeManager.EditMode.EnableComponentEditors)
                 return;
 
             EditorGUI.showMixedValue = renderingLayerMaskProp.hasMultipleDifferentValues;

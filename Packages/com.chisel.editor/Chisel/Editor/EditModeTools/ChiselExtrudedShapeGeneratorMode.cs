@@ -10,27 +10,18 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeGeneratorMode : IChiselToolMode
+    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselGeneratorToolMode
     {
+        const string kToolName = "Free Draw";
+        public override string ToolName => kToolName;
+
         #region Keyboard Shortcut
         const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + "Free Drawn Shape";
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.FreeDraw; }
+        public static void StartGeneratorMode() { ChiselEditModeManager.EditModeType = typeof(ChiselExtrudedShapeGeneratorMode); }
         #endregion
 
-        public void OnEnable()
-        {
-            // TODO: shouldn't just always set this param
-            Tools.hidden = true; 
-            Reset();
-        }
-
-        public void OnDisable()
-        {
-            Reset();
-        }
-
-        void Reset()
+        public override void Reset()
         {
             ShapeExtrusionHandle.Reset();
             extrudedShape = null;
@@ -40,15 +31,13 @@ namespace Chisel.Editors
         // TODO: Handle forcing operation types
         CSGOperationType? forceOperation = null;
 
-        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
+        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            Curve2D shape;
-            ChiselModel modelBeneathCursor;
-            Matrix4x4 transformation;
-            float height;
+            base.OnSceneGUI(sceneView, dragArea);
+
             // TODO: handle snapping against own points
             // TODO: handle ability to 'commit' last point
-            switch (ShapeExtrusionHandle.Do(dragArea, out shape, out height, out modelBeneathCursor, out transformation, Axis.Y))
+            switch (ShapeExtrusionHandle.Do(dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis.Y))
             {
                 case ShapeExtrusionState.Create:
                 {
@@ -58,7 +47,7 @@ namespace Chisel.Editors
                                                                           ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor), 
                                                                           transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one));
                     shape.Center = Vector2.zero;
-
+                    extrudedShape.definition.Reset();
                     extrudedShape.Operation = forceOperation ?? CSGOperationType.Additive;
                     extrudedShape.Shape = new Curve2D(shape);
                     extrudedShape.Path = new ChiselPath(new[] {
@@ -80,22 +69,9 @@ namespace Chisel.Editors
                     break;
                 }
                 
-                case ShapeExtrusionState.Commit:
-                {
-                    UnityEditor.Selection.activeGameObject = extrudedShape.gameObject;
-                    Reset();
-                    ChiselEditModeManager.EditMode = ChiselEditMode.ShapeEdit;
-                    break;
-                }
-
-                case ShapeExtrusionState.Cancel:
-                {
-                    Reset();
-                    Undo.RevertAllInCurrentGroup();
-                    EditorGUIUtility.ExitGUI();
-                    break;
-                }
                 
+                case ShapeExtrusionState.Commit:        { Commit(extrudedShape.gameObject); break; }
+                case ShapeExtrusionState.Cancel:        { Cancel(); break; }                
                 case ShapeExtrusionState.ExtrusionMode:
                 case ShapeExtrusionState.ShapeMode:		{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
                 case ShapeExtrusionState.HoverMode:		{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }

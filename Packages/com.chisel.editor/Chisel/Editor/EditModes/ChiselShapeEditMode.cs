@@ -9,12 +9,19 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
-    public class ChiselShapeEditMode : IChiselToolMode
+    public sealed class ChiselShapeEditMode : IChiselToolMode
     {
+        const string kToolName = "Shape Edit";
+        public string ToolName => kToolName;
+
+        public bool EnableComponentEditors  { get { return true; } }
+        public bool CanSelectSurfaces       { get { return false; } }
+        public bool ShowCompleteOutline     { get { return true; } }
+
         #region Keyboard Shortcut
-        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + "Shape Edit Mode";
+        const string kEditModeShotcutName = ChiselKeyboardDefaults.ShortCutEditModeBase + kToolName + " Mode";
         [Shortcut(kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToShapeEditMode, displayName = kEditModeShotcutName)]
-        public static void SwitchToShapeEditMode() { ChiselEditModeManager.EditMode = ChiselEditMode.ShapeEdit; }
+        public static void SwitchToShapeEditMode() { ChiselEditModeManager.EditModeType = typeof(ChiselShapeEditMode); }
         #endregion
 
         public void OnEnable()

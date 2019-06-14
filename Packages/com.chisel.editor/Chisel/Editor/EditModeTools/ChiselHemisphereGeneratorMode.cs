@@ -10,27 +10,18 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselHemisphereGeneratorMode : IChiselToolMode
+    public sealed class ChiselHemisphereGeneratorMode : ChiselGeneratorToolMode
     {
+        const string kToolName = ChiselHemisphere.kNodeTypeName;
+        public override string ToolName => kToolName;
+
         #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + ChiselHemisphere.kNodeTypeName;
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.HemisphereBuilderModeKey, ChiselKeyboardDefaults.HemisphereBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void Enable() { ChiselEditModeManager.EditMode = ChiselEditMode.Hemisphere; }
+        public static void StartGeneratorMode() { ChiselEditModeManager.EditModeType = typeof(ChiselHemisphereGeneratorMode); }
         #endregion
 
-        public void OnEnable()
-        {
-            // TODO: shouldn't just always set this param
-            Tools.hidden = true;
-            Reset();
-        }
-
-        public void OnDisable()
-        {
-            Reset();
-        }
-
-        void Reset()
+        public override void Reset()
         {
             BoxExtrusionHandle.Reset();
             hemisphere = null;
@@ -48,17 +39,14 @@ namespace Chisel.Editors
 
         ChiselHemisphere hemisphere;
         
-        public void OnSceneGUI(SceneView sceneView, Rect dragArea)
+        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            Bounds    bounds;
-            ChiselModel  modelBeneathCursor;
-            Matrix4x4 transformation;
-            float     height;
-            
+            base.OnSceneGUI(sceneView, dragArea);
+
             var flags = (isSymmetrical ? BoxExtrusionFlags.IsSymmetricalXZ : BoxExtrusionFlags.None) |
                        (generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
 
-            switch (BoxExtrusionHandle.Do(dragArea, out bounds, out height, out modelBeneathCursor, out transformation, flags, Axis.Y))
+            switch (BoxExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, flags, Axis.Y))
             {
                 case BoxExtrusionState.Create:
                 {
@@ -83,26 +71,13 @@ namespace Chisel.Editors
                     hemisphere.DiameterXYZ  = bounds.size;
                     break;
                 }
-
-                case BoxExtrusionState.Commit:
-                {
-                    UnityEditor.Selection.activeGameObject = hemisphere.gameObject;
-                    ChiselEditModeManager.EditMode = ChiselEditMode.ShapeEdit;
-                    Reset();
-                    break;
-                }
-
-                case BoxExtrusionState.Cancel:
-                {
-                    Reset();
-                    Undo.RevertAllInCurrentGroup();
-                    EditorGUIUtility.ExitGUI();
-                    break;
-                }
-
+                
+                
+                case BoxExtrusionState.Commit:      { Commit(hemisphere.gameObject); break; }
+                case BoxExtrusionState.Cancel:      { Cancel(); break; }
                 case BoxExtrusionState.BoxMode:
-                case BoxExtrusionState.SquareMode: { ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-                case BoxExtrusionState.HoverMode: { ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
+                case BoxExtrusionState.SquareMode:  { ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
+                case BoxExtrusionState.HoverMode:   { ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
             }
 
             // TODO: render hemisphere here
