@@ -10,6 +10,7 @@ Assets/AssetStoreTools*
 
 # Rider
 .idea
+*.[Dd]ot[Ss]ettings
 Assets/Plugins/Editor/JetBrains/
 Assets/Plugins/Editor/JetBrains.meta
 
