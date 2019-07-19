@@ -165,6 +165,9 @@ namespace Chisel.Editors
 
         void CancelChanges()
         {
+            if (!generatorModified)
+                return;
+
             generatorModified = false;
             var activeGenerators = activeOutlines.Keys.ToArray();
             foreach (var generator in activeGenerators)
