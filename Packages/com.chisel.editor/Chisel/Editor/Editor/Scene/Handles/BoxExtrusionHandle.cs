@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -115,8 +115,7 @@ namespace Chisel.Editors
         {
             try
             {
-                if (Tools.viewTool != ViewTool.None &&
-                    Tools.viewTool != ViewTool.Pan)
+                if (SceneHandles.InCameraOrbitMode)
                     return BoxExtrusionState.None;
 
                 if (s_Points.Count <= 2)

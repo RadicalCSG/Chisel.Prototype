@@ -6,7 +6,17 @@ namespace UnitySceneExtensions
     public sealed partial class SceneHandles
     {
         internal static int s_Edge2DHash = "Edge1DHash".GetHashCode();
-        
+
+        public static bool InCameraOrbitMode
+        {
+            get
+            {
+                return Tools.current == Tool.View ||
+                       Tools.current == Tool.None ||
+                       Event.current.alt;
+            } 
+        }
+
         public static Vector3 Edge2DHandleOffset(int id, Vector3 from, Vector3 to, Vector3 position, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, Vector3? snappingSteps = null) 
         {
             var evt = Event.current;
@@ -14,9 +24,7 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (InCameraOrbitMode)
                         break;
                     UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to) * 0.5f);
                     break;
@@ -25,9 +33,7 @@ namespace UnitySceneExtensions
                 {
                     var sceneView = SceneView.currentDrawingSceneView;
                     if (sceneView &&
-                        Tools.current != Tool.View &&
-                        Tools.current != Tool.None &&
-                        !evt.alt)
+                        !InCameraOrbitMode)
                     {
                         if (UnityEditor.HandleUtility.nearestControl == id || EditorGUIUtility.hotControl == id)
                         {

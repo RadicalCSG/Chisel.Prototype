@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -274,6 +274,8 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
+                    if (SceneHandles.InCameraOrbitMode)
+                        break;
                     if (controlID == -1)
                         break;
                     UnityEditor.HandleUtility.AddControl(controlID, UnityEditor.HandleUtility.DistanceToCircle(position, size));

@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -45,9 +45,7 @@ namespace UnitySceneExtensions
                 {
                     case EventType.MouseDown:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         if (GUIUtility.hotControl != 0)
@@ -128,9 +126,7 @@ namespace UnitySceneExtensions
                     }
                     case EventType.Layout:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         var position = handleOrigin + handleCursorOffset;

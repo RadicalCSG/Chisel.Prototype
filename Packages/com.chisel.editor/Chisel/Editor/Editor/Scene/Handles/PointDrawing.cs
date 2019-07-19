@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -164,9 +164,7 @@ namespace Chisel.Editors
                                                   if (evt.keyCode == kCommitKey) { Commit(evt, dragArea, ref points); break; } break; }
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
 
                     if (s_StartIntersection == null)
@@ -232,9 +230,7 @@ namespace Chisel.Editors
                 }
                 case EventType.MouseDown:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
 
                     if (GUIUtility.hotControl != 0)

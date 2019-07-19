@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -20,8 +20,7 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
                     UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to) * 2.0f);
                     break;
@@ -103,9 +102,7 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
                     UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to));
                     break;
