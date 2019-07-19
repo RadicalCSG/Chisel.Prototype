@@ -134,7 +134,7 @@ namespace Chisel.Editors
 
         static GUIResizableWindow editModeWindow;
 
-        static void EditModeButton(ChiselEditModeManager.CSGEditModeItem editMode, Rect togglePosition)
+        static void EditModeButton(ChiselEditModeManager.ChiselEditModeItem editMode, Rect togglePosition)
         {
             EditorGUI.BeginChangeCheck();
             var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
