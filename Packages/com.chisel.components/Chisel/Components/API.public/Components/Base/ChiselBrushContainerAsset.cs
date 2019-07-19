@@ -156,7 +156,7 @@ namespace Chisel.Components
 
             for (int i = brushContainer.brushMeshes.Length - 1; i >= 0; i--)
             {
-                if (!brushContainer.brushMeshes[i].Cut(cutPlane, in chiselSurface))
+                if (!brushContainer.brushMeshes[i].Cut(cutPlane, chiselSurface))
                 {
                     if (brushContainer.brushMeshes.Length > 1)
                     {

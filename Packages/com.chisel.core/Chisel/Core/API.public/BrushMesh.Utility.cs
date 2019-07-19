@@ -1029,8 +1029,17 @@ namespace Chisel.Core
         static List<VertexSide> s_VertexDistances   = new List<VertexSide>();   // avoids allocations at runtime
         static List<int>        s_IntersectedEdges  = new List<int>();          // avoids allocations at runtime
 
-        public bool Cut(Plane cuttingPlane, in ChiselSurface chiselSurface)
+        public bool Cut(Plane cuttingPlane, ChiselSurface chiselSurface)
         {
+            if (chiselSurface == null)
+            {
+                chiselSurface = new ChiselSurface
+                {
+                    brushMaterial       = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, CSGMaterialManager.DefaultPhysicsMaterial),
+                    surfaceDescription  = SurfaceDescription.Default
+                };
+            }
+
             if (s_IntersectedEdges != null)
                 s_IntersectedEdges.Clear();
 
