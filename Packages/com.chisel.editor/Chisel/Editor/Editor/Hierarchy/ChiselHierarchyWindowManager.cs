@@ -32,11 +32,12 @@ namespace Chisel.Editors
             {
                 if (model == ChiselModelManager.ActiveModel)
                 {
-                    const float kIconSize     = 13;
-                    const float kOffsetToText = kIconSize + 27.0f;
+                    const float kIconSize     = 16;
+                    const float kOffsetToText = 0.0f;
+                    //const float kOffsetToText = 24.0f;  // this used to be a random '24' in another version of unity?
 
                     var rect = selectionRect;
-                    rect.xMin += kOffsetToText;
+                    rect.xMin += kIconSize + kOffsetToText;
 
                     var content     = EditorGUIUtility.TrTempContent(node.name + " (active)");
 
