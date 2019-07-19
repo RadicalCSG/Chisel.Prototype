@@ -27,7 +27,7 @@ namespace Chisel.Components
                 if (foundInstances.Length > 1)
                 {
                     for (int i = 1; i < foundInstances.Length; i++)
-                        UnityEngine.Object.DestroyImmediate(foundInstances[i]);
+                        ChiselObjectUtility.SafeDestroy(foundInstances[i]);
                 }
                 
                 _instance = foundInstances[0];
@@ -89,11 +89,12 @@ namespace Chisel.Components
         {
             var selectedGameObjects = UnityEditor.Selection.gameObjects;
             if (selectedGameObjects == null ||
-                selectedGameObjects.Length != 1)
-                return null;
-
-            var selection   = selectedGameObjects[0];
-            return selection.GetComponent<ChiselModel>();
+                selectedGameObjects.Length == 1)
+            { 
+                var selection   = selectedGameObjects[0];
+                return selection.GetComponent<ChiselModel>();
+            }
+            return null;
         }
 
         const string SetActiveModelMenuName = "GameObject/Set Active Model";

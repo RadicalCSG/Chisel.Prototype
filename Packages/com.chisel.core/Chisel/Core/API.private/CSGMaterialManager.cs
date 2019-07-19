@@ -3,7 +3,6 @@ using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
 using System;
-using UnityEditor;
 
 namespace Chisel.Core
 {
@@ -86,7 +85,11 @@ namespace Chisel.Core
             
             material = GenerateDebugColorMaterial(color);
             if (!material)
-                return AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
+#if UNITY_EDITOR
+                return UnityEditor.AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
+#else
+                return null;
+#endif
 
             colorMaterials.Add(color, material);
             return material;
