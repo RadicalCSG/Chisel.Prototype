@@ -241,7 +241,8 @@ namespace UnitySceneExtensions
 
         public static void RenderSnapping3D(Grid grid, Extents3D extents, Vector3 pivotPosition, SnapResult3D snapResult, bool ignorePivot = false)
         {
-            if (Event.current.type != EventType.Repaint)
+            if (grid == null ||
+                Event.current.type != EventType.Repaint)
                 return;
             using (new SceneHandles.DrawingScope(grid.GridToWorldSpace))
             { 

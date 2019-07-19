@@ -1,4 +1,4 @@
-using Chisel.Core;
+﻿using Chisel.Core;
 using Chisel.Components;
 using System;
 using System.Collections.Generic;
@@ -36,7 +36,7 @@ namespace Chisel.Editors
     public static class BoxExtrusionHandle
     {
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
-        static ChiselModel			s_ModelBeneathCursor;
+        static ChiselModel		s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new List<Vector3>();
         
         // TODO: somehow get rid of this

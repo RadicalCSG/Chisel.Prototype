@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
@@ -409,7 +409,10 @@ namespace UnitySceneExtensions
             min = slideOrigin + SnappingUtility.DistanceToWorldPoint (snappedExtents.min, slideDirection);
             max = slideOrigin + SnappingUtility.DistanceToWorldPoint (snappedExtents.max, slideDirection);
 
-            var snappedDistance = SnappingUtility.DistanceToWorldPoint (offsetDistance + snappedOffsetDistance, slideDirection);
+            var newOffset = offsetDistance + snappedOffsetDistance;
+            if (Mathf.Abs(snappedOffsetDistance) > Mathf.Abs(offsetDistance)) newOffset = 0;
+
+            var snappedDistance = SnappingUtility.DistanceToWorldPoint (newOffset, slideDirection);
             var snappedPosition = (snappedDistance + slideOrigin);
             return snappedPosition;
         }
@@ -478,8 +481,8 @@ namespace UnitySceneExtensions
         public Vector3		WorldSnappedDelta		{ get { return worldSnappedPosition - worldSlideOrigin; } }
         public float		WorldSnappedMagnitude	{ get { return (worldSnappedPosition - worldSlideOrigin).magnitude; } }
         
-        public Vector3		GridSnappedDelta		{ get { return worldSlideGrid.WorldToGridSpace.MultiplyVector(worldSnappedPosition - worldSlideOrigin); } }
-        public Vector3		GridSnappedPosition		{ get { return worldSlideGrid.WorldToGridSpace.MultiplyPoint(worldSnappedPosition); } }
+        public Vector3		GridSnappedDelta		{ get { if (worldSlideGrid == null) { return worldSlideOrigin; } return worldSlideGrid.WorldToGridSpace.MultiplyVector(worldSnappedPosition - worldSlideOrigin); } }
+        public Vector3		GridSnappedPosition		{ get { if (worldSlideGrid == null) { return worldSlideOrigin; } return worldSlideGrid.WorldToGridSpace.MultiplyPoint(worldSnappedPosition); } }
         
         public Extents3D	WorldSnappedExtents		{ get { return gridSlideExtents + GridSnappedDelta; } }
 
@@ -507,23 +510,82 @@ namespace UnitySceneExtensions
             GetPlaneIntersection(currentGUIPosition, out startWorldPlanePosition);
         }
 
+        public void Reset()
+        {
+            startWorldPlanePosition = Vector3.zero;
+            worldSlidePlane         = new Plane(Vector3.up, 0);
+            worldSlideGrid          = null;
+
+            gridSlideExtents        = new Extents3D(Vector3.zero);
+            worldSlideOrigin        = Vector3.zero;
+
+            worldSlidePosition      = Vector3.zero;
+            worldSnappedPosition    = Vector3.zero;
+
+            localToWorldMatrix      = Matrix4x4.identity;
+
+            snapResult              = SnapResult3D.None;
+        }
+
         public void CalculateExtents(Vector3[] localPoints)
         {
             this.gridSlideExtents = this.worldSlideGrid.GetGridExtentsOfPointArray(localToWorldMatrix, localPoints);
         }
         
+        bool GetIntersectionOnAlternativePlane(Ray worldRay, Vector3 normal, Vector3 origin, out Vector3 worldPlanePosition)
+        {
+            var rotation    = Quaternion.FromToRotation(normal, worldSlidePlane.normal);
+            var alternativePlane = new Plane(normal, origin);
+            var dist = 0.0f;
+            if (!alternativePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+
+            worldPlanePosition = (rotation * (worldRay.GetPoint(dist) - origin)) + origin;
+            return true;
+        }
+
+
         private bool GetPlaneIntersection(Vector2 guiPosition, out Vector3 worldPlanePosition)
         {
+            if (worldSlideGrid == null)
+            {
+                worldPlanePosition = worldSlideOrigin;
+                return false;
+            }
+
             var worldRay = UnityEditor.HandleUtility.GUIPointToWorldRay(guiPosition);
             var dist = 0.0f;
 
-            if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
-            worldPlanePosition = worldRay.GetPoint(dist);
-            return true;
+            var camera  = Camera.current;
+            var forward = camera.transform.forward;
+            if (Mathf.Abs(Vector3.Dot(worldSlidePlane.normal, forward)) < 0.125f)
+            {
+                var normal = worldSlideGrid.GetClosestAxisVector(forward);
+                var origin = worldSlidePlane.ClosestPointOnPlane(worldSlideOrigin);
+                return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
+            }
+
+            if (!worldSlidePlane.Raycast(worldRay, out dist)) { dist = float.PositiveInfinity; }
+            if (dist > camera.farClipPlane)
+            {
+                var normal = worldSlideGrid.GetClosestAxisVector(forward);
+                var origin = worldSlidePlane.ClosestPointOnPlane(camera.transform.position) + (normal * camera.farClipPlane);
+                return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
+            } else
+            { 
+                if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+                worldPlanePosition = worldRay.GetPoint(dist);
+                return true;
+            }
         }
 
         public bool DragTo(Vector2 currentGUIPosition, SnappingMode snappingMode = SnappingMode.Default)
         {
+            if (worldSlideGrid == null)
+            {
+                this.worldSnappedPosition = this.worldSlideOrigin;
+                return false;
+            }
+
             Vector3 worldPlanePosition;
             if (!GetPlaneIntersection(currentGUIPosition, out worldPlanePosition))
                 return false;
@@ -534,7 +596,7 @@ namespace UnitySceneExtensions
             
             this.worldSlidePosition = this.worldSlideOrigin + worldDelta;
             var newWorldPosition	= (snappingMode == SnappingMode.Never) ? worldSlidePosition :
-                    this.worldSlideGrid.SnapExtents3D(this.gridSlideExtents, this.worldSlidePosition, this.worldSlideOrigin, out this.snapResult);
+                    this.worldSlideGrid.SnapExtents3D(this.gridSlideExtents, this.worldSlidePosition, this.worldSlideOrigin, out this.snapResult, ignoreStartPoint: (snappingMode == SnappingMode.Always));
                         
             // this doesn't make sense since we're locking axis in world space, but should be grid space, which we're already doing in SnapExtents3D?
             //newWorldPosition = SnappingUtility.PerformAxisLocking(this.worldSlideOrigin, newWorldPosition);
