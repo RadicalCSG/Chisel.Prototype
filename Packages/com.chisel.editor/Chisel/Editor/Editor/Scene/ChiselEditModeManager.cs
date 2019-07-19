@@ -20,9 +20,9 @@ namespace Chisel.Editors
 
     public class ChiselEditModeManager : SingletonManager<ChiselEditModeData, ChiselEditModeManager>
     {
-        internal sealed class CSGEditModeItem
+        internal sealed class ChiselEditModeItem
         {
-            public CSGEditModeItem(IChiselToolMode value, Type type)
+            public ChiselEditModeItem(IChiselToolMode value, Type type)
             {
                 this.instance   = value;
                 this.type       = type;
@@ -33,15 +33,15 @@ namespace Chisel.Editors
             public GUIContent       content; // TODO: put somewhere else
         }
 
-        internal static CSGEditModeItem[]    editModes;
-        internal static CSGEditModeItem[]    generatorModes;
+        internal static ChiselEditModeItem[]    editModes;
+        internal static ChiselEditModeItem[]    generatorModes;
 
 
         [InitializeOnLoadMethod]
         static void InitializeEditModes()
         {
-            var editModeList        = new List<CSGEditModeItem>();
-            var generatorModeList   = new List<CSGEditModeItem>();
+            var editModeList        = new List<ChiselEditModeItem>();
+            var generatorModeList   = new List<ChiselEditModeItem>();
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)
             {
                 if (!type.GetInterfaces().Contains(typeof(IChiselToolMode)))
@@ -50,11 +50,11 @@ namespace Chisel.Editors
                 if (type.BaseType == typeof(ChiselGeneratorToolMode))
                 {
                     var instance = (IChiselToolMode)Activator.CreateInstance(type);
-                    generatorModeList.Add(new CSGEditModeItem(instance, type));
+                    generatorModeList.Add(new ChiselEditModeItem(instance, type));
                 } else
                 {
                     var instance = (IChiselToolMode)Activator.CreateInstance(type);
-                    editModeList.Add(new CSGEditModeItem(instance, type));
+                    editModeList.Add(new ChiselEditModeItem(instance, type));
                 }
             }
             editModes       = editModeList.ToArray();
@@ -95,13 +95,17 @@ namespace Chisel.Editors
             {
                 var currentEditMode = Instance.data.currentTool;
 
-                var index = Array.IndexOf(editModes, currentEditMode);
-                if (index != -1)
-                    return -(index + 1);
+                for (int i = 0; i < editModes.Length; i++)
+                {
+                    if (editModes[i].instance == currentEditMode)
+                        return -(i + 1);
+                }
 
-                index = Array.IndexOf(generatorModes, currentEditMode);
-                if (index != -1)
-                    return (index + 1);
+                for (int j = 0; j < generatorModes.Length; j++)
+                {
+                    if (generatorModes[j].instance == currentEditMode)
+                        return (j + 1);
+                }
 
                 return 0;
             }
@@ -123,12 +127,12 @@ namespace Chisel.Editors
                 if (value > 0)
                 {
                     var index = (value - 1);
-                    if (index >= editModes.Length)
+                    if (index >= generatorModes.Length)
                     {
                         EditMode = null;
                         return;
                     }
-                    Instance.data.currentTool = editModes[index].instance;
+                    Instance.data.currentTool = generatorModes[index].instance;
                     return;
                 }
 
