@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using UnityEngine;
 using Chisel.Core;
-using Chisel.Components;
 
 namespace Chisel.Editors
 {
@@ -118,6 +117,21 @@ namespace Chisel.Editors
             }
         }
 
+
+        public void DrawPolygon(Matrix4x4 transformation, Vector3[] points, int[] indices, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, indices, color);
+        }
+
+        public void DrawPolygon(Matrix4x4 transformation, Vector3[] points, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, color);
+        }
+
+        public void DrawPolygon(Matrix4x4 transformation, List<Vector3> points, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, color);
+        }
 
 
         public void DrawLineLoop(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)

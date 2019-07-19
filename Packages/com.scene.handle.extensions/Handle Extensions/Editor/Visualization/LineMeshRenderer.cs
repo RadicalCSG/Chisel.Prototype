@@ -193,6 +193,8 @@ namespace UnitySceneExtensions
 
         public void DrawLine(Vector3 A, Vector3 B, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMesh = lineMeshes[currentLineMesh];
             if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; }
             lineMesh.AddLine(A, B, thickness, dashSize, color);
@@ -200,6 +202,8 @@ namespace UnitySceneExtensions
 
         public void DrawLine(Matrix4x4 matrix, Vector3 A, Vector3 B, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             A = matrix.MultiplyPoint(A);
             B = matrix.MultiplyPoint(B);
             var lineMesh = lineMeshes[currentLineMesh];
@@ -210,6 +214,8 @@ namespace UnitySceneExtensions
         //*
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             thickness *= pixelsPerPoint;
             var corner1 = new Vector4(-thickness, dashSize, 0);
             var corner2 = new Vector4( thickness, dashSize, 0);
@@ -279,6 +285,8 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Vector3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f) //2
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             thickness *= pixelsPerPoint;
             var corner1 = new Vector4(-thickness, dashSize, 0);
             var corner2 = new Vector4( thickness, dashSize, 0);
@@ -359,6 +367,8 @@ namespace UnitySceneExtensions
         
         public void DrawLines(Vector3[] vertices, int[] indices, Color32[] colors, float thickness = 1.0f, float dashSize = 0.0f) //1
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             thickness *= pixelsPerPoint;
             var corner1 = new Vector4(-thickness, dashSize, 0);
             var corner2 = new Vector4( thickness, dashSize, 0);
@@ -442,6 +452,8 @@ namespace UnitySceneExtensions
 
         public void DrawLineLoop(Matrix4x4 matrix, Vector3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             var last = startIndex + length;
@@ -460,6 +472,8 @@ namespace UnitySceneExtensions
 
         public void DrawContinuousLines(Matrix4x4 matrix, Vector3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             var last = startIndex + length - 1;
@@ -487,6 +501,8 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             for (int i = 0; i < vertices.Length; i += 2)
@@ -499,6 +515,8 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Vector3[] vertices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             for (int i = 0; i < vertices.Length; i += 2)
@@ -513,6 +531,8 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, int[] indices, Color32[] colors, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             for (int i = 0, c = 0; i < indices.Length; i += 2, c++)
@@ -529,6 +549,8 @@ namespace UnitySceneExtensions
         
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, Color32[] colors, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             for (int i = 0, c = 0; i < vertices.Length; i += 2, c++)
@@ -541,6 +563,8 @@ namespace UnitySceneExtensions
 
         public void DrawLines(Vector3[] vertices, Color32[] colors, float thickness = 1.0f, float dashSize = 0.0f)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var lineMeshIndex = currentLineMesh;
             var lineMesh = lineMeshes[currentLineMesh];
             for (int i = 0, c = 0; i < vertices.Length; i += 2, c++)

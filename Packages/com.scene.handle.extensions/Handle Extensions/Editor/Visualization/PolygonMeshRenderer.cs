@@ -94,7 +94,71 @@ namespace UnitySceneExtensions
                     indexCount += 3;
                 }
             }
-        
+
+            public void AddPolygon(Matrix4x4 matrix, Vector3[] polyVertices, Color color)
+            {
+                if (polyVertices.Length < 3)
+                    return;
+
+                int startIndex = vertexCount;
+                if (matrix.isIdentity)
+                {
+                    for (int i = 0; i < polyVertices.Length; i++)
+                    {
+                        vertices[vertexCount] = polyVertices[i];
+                        colors[vertexCount] = color;
+                        vertexCount++;
+                    }
+                } else
+                {
+                    for (int i = 0; i < polyVertices.Length; i++)
+                    {
+                        vertices[vertexCount] = matrix.MultiplyPoint(polyVertices[i]);
+                        colors[vertexCount] = color;
+                        vertexCount++;
+                    }
+                }
+                for (int i = 2; i < polyVertices.Length; i++)
+                {
+                    indices[indexCount + 0] = startIndex + 0;
+                    indices[indexCount + 1] = startIndex + i - 1;
+                    indices[indexCount + 2] = startIndex + i;
+                    indexCount += 3;
+                }
+            }
+
+            public void AddPolygon(Matrix4x4 matrix, List<Vector3> polyVertices, Color color)
+            {
+                if (polyVertices.Count < 3)
+                    return;
+
+                int startIndex = vertexCount;
+                if (matrix.isIdentity)
+                {
+                    for (int i = 0; i < polyVertices.Count; i++)
+                    {
+                        vertices[vertexCount] = polyVertices[i];
+                        colors[vertexCount] = color;
+                        vertexCount++;
+                    }
+                } else
+                {
+                    for (int i = 0; i < polyVertices.Count; i++)
+                    {
+                        vertices[vertexCount] = matrix.MultiplyPoint(polyVertices[i]);
+                        colors[vertexCount] = color;
+                        vertexCount++;
+                    }
+                }
+                for (int i = 2; i < polyVertices.Count; i++)
+                {
+                    indices[indexCount + 0] = startIndex + 0;
+                    indices[indexCount + 1] = startIndex + i - 1;
+                    indices[indexCount + 2] = startIndex + i;
+                    indexCount += 3;
+                }
+            }
+
             public void AddPolygon(Vector3[] polyVertices, int[] polyIndices, Color color)
             {
                 if (polyIndices.Length < 3)
@@ -234,6 +298,44 @@ namespace UnitySceneExtensions
             }
 
             triangleMesh.AddTriangles(matrix, vertices, indices, color);
+
+            currentTriangleMesh = triangleMeshIndex;
+        }
+        
+        public void DrawPolygon(Matrix4x4 matrix, List<Vector3> vertices, Color color)
+        {
+            var triangleMeshIndex = currentTriangleMesh;
+            var triangleMesh = triangleMeshes[currentTriangleMesh];
+
+            if (triangleMesh.VertexCount + vertices.Count >= TriangleMesh.MaxVertexCount)
+            {
+                currentTriangleMesh++;
+                if (currentTriangleMesh >= triangleMeshes.Count)
+                    triangleMeshes.Add(new TriangleMesh());
+                triangleMesh = triangleMeshes[currentTriangleMesh];
+                triangleMesh.Clear();
+            }
+
+            triangleMesh.AddPolygon(matrix, vertices, color);
+
+            currentTriangleMesh = triangleMeshIndex;
+        }
+
+        public void DrawPolygon(Matrix4x4 matrix, Vector3[] vertices, Color color)
+        {
+            var triangleMeshIndex = currentTriangleMesh;
+            var triangleMesh = triangleMeshes[currentTriangleMesh];
+
+            if (triangleMesh.VertexCount + vertices.Length >= TriangleMesh.MaxVertexCount)
+            {
+                currentTriangleMesh++;
+                if (currentTriangleMesh >= triangleMeshes.Count)
+                    triangleMeshes.Add(new TriangleMesh());
+                triangleMesh = triangleMeshes[currentTriangleMesh];
+                triangleMesh.Clear();
+            }
+
+            triangleMesh.AddPolygon(matrix, vertices, color);
 
             currentTriangleMesh = triangleMeshIndex;
         }
