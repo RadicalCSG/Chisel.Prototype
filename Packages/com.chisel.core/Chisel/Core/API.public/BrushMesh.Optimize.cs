@@ -80,6 +80,15 @@ namespace Chisel.Core
 
         public bool IsInsideOut()
         {
+            if (polygons == null)
+                return false;
+
+            if (halfEdgePolygonIndices == null)
+                UpdateHalfEdgePolygonIndices();
+
+            if (surfaces == null)
+                CalculatePlanes();
+
             // Detect if outline is inside-out
             for (int p = 0; p < polygons.Length; p++)
             {
