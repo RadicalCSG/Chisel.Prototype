@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -250,6 +250,9 @@ namespace Chisel.Editors
         // TODO: put somewhere else
         public static void ShowOperationChoicesInternal(SerializedProperty operationProp)
         {
+            if (operationProp == null)
+                return;
+
             if (styles == null)
                 styles = new Styles();
 
@@ -353,6 +356,7 @@ namespace Chisel.Editors
         protected abstract void InitInspector();
 
         protected abstract void OnInspector();
+        protected virtual bool OnGeneratorValidate(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
         protected abstract void OnScene(SceneView sceneView, T generator);
@@ -362,9 +366,11 @@ namespace Chisel.Editors
         protected virtual void OnUndoRedoPerformed() { }
 
         private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
+        private HashSet<UnityEngine.Object> validTargets = new HashSet<UnityEngine.Object>();
 
         void OnDisable()
         {
+            UpdateSelection();
             UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             PreviewTextureManager.CleanUp();
             Reset();
@@ -379,31 +385,57 @@ namespace Chisel.Editors
             }
 
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
+            UpdateSelection();
 
             UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            InitInspector();
+        }
+
+        void UpdateSelection()
+        {
+            var selectedGameObject = Selection.gameObjects.ToList();
+            var removeTargets = new HashSet<T>();
             foreach (var target in targets)
             {
-                if (knownTargets.Add(target))
-                    OnGeneratorSelected(target as T);
+                if (!knownTargets.Add(target))
+                    continue;
+                
+                var generator = target as T;
+                if (!OnGeneratorValidate(generator))
+                    continue;
+                
+                OnGeneratorSelected(target as T);
+                validTargets.Add(generator);
             }
-            if (targets.Length != knownTargets.Count)
+            
+            foreach (var knownTarget in knownTargets)
             {
-                var removeTargets = new HashSet<T>();
-                foreach (var knownTarget in knownTargets)
+                if (!targets.Contains(knownTarget))
                 {
-                    if (targets.Contains(knownTarget))
+                    var removeTarget = target as T;
+                    if (validTargets.Contains(removeTarget))
                     {
-                        var removeTarget = target as T;
                         OnGeneratorDeselected(removeTarget);
+                        validTargets.Remove(removeTarget);
+                    }
+                    removeTargets.Add(removeTarget);
+                } else
+                {
+                    var removeTarget = target as T;
+                    if (removeTarget == null ||
+                        !selectedGameObject.Contains(removeTarget.gameObject))
+                    {
+                        OnGeneratorDeselected(removeTarget);
+                        validTargets.Remove(removeTarget);
                         removeTargets.Add(removeTarget);
+                        continue;
                     }
                 }
-                foreach (var removeTarget in removeTargets)
-                    knownTargets.Remove(removeTarget);
             }
 
-            InitInspector();
+            foreach (var removeTarget in removeTargets)
+                knownTargets.Remove(removeTarget);
         }
 
         public override void OnInspectorGUI()
@@ -440,10 +472,26 @@ namespace Chisel.Editors
             if (!target || !ChiselEditModeManager.EditMode.EnableComponentEditors)
                 return;
 
-            var sceneView   = SceneView.currentDrawingSceneView;
             var generator = target as T;
-            if (!generator.isActiveAndEnabled)
-                return;
+            if (GUIUtility.hotControl == 0)
+            {
+                if (!OnGeneratorValidate(generator))
+                {
+                    if (validTargets.Contains(generator))
+                    {
+                        OnGeneratorDeselected(generator);
+                        validTargets.Remove(generator);
+                    }
+                    return;
+                }
+                if (!validTargets.Contains(generator))
+                {
+                    OnGeneratorSelected(generator);
+                    validTargets.Add(generator);
+                }
+            }
+
+            var sceneView   = SceneView.currentDrawingSceneView;
 
             var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             var brush       = generator.TopNode;
