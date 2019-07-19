@@ -724,10 +724,7 @@ namespace Chisel.Components
             // BrushMeshes of generators must always be unique
             if (!brushContainerAsset ||
                 !ChiselBrushContainerAssetManager.IsBrushMeshUnique(brushContainerAsset))
-            {
-                brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
-                brushContainerAsset.name = "Generated " + NodeTypeName;
-            }
+                brushContainerAsset = ChiselBrushContainerAsset.Create("Generated " + NodeTypeName);
 
             UpdateGeneratorInternal();
 
@@ -739,45 +736,61 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public override bool ConvertToBrushes()
         {
-            var topGameObject = this.gameObject;
+            if (brushContainerAsset == null ||
+                brushContainerAsset.BrushMeshes == null ||
+                brushContainerAsset.BrushMeshes.Length == 0)
+                return false;
+
+            string groupName;
+            var topGameObject       = this.gameObject;
+            var sourceBrushMeshes   = this.brushContainerAsset.BrushMeshes;
+            var sourceOperations    = this.brushContainerAsset.Operations;
+            var topOperation        = this.operation;
+            var pivotOffset         = this.pivotOffset;
+            var localTransformation = this.localTransformation;
+            var nodeTypeName        = this.NodeTypeName;
             UnityEditor.Undo.DestroyObjectImmediate(this);
             topGameObject.SetActive(false);
-            bool success = false;
             try
             {
-                if (brushContainerAsset.SubMeshCount == 1)
+                if (sourceBrushMeshes.Length == 1)
                 {
-                    var brush = UnityEditor.Undo.AddComponent<ChiselBrush>(topGameObject);
-                    brush.Operation = this.operation;
-                    brush.BrushContainerAsset = brushContainerAsset;
-                    brush.LocalTransformation = localTransformation;
-                    brush.PivotOffset = pivotOffset;
-                    UnityEditor.Undo.SetCurrentGroupName("Converted Shape to Brush");
+                    groupName = "Converted Shape to Brush";
+                    var brush = ChiselComponentFactory.AddComponent<ChiselBrush>(topGameObject);
+                    brush.LocalTransformation       = localTransformation;
+                    brush.PivotOffset               = pivotOffset;
+                    brush.Operation                 = topOperation;
+                    brush.definition = new BrushDefinition
+                    {
+                        brushOutline = new BrushMesh(sourceBrushMeshes[0])
+                    };
+                    // TODO: create surfacedefinition
                 } else
                 {
-                    var operationComponent = UnityEditor.Undo.AddComponent<ChiselOperation>(topGameObject);
-                    operationComponent.Operation = this.operation;
+                    groupName = "Converted " + NodeTypeName + " to Multiple Brushes";
+                    var operationComponent = ChiselComponentFactory.AddComponent<ChiselOperation>(topGameObject);
+                    operationComponent.Operation = topOperation;
                     var parentTransform = topGameObject.transform;
-                    for (int i = 0; i < brushContainerAsset.SubMeshCount; i++)
+                    for (int i = 0; i < sourceBrushMeshes.Length; i++)
                     {
-                        var newBrushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
-                        newBrushContainerAsset.SetSubMeshes(new[] { new BrushMesh(brushContainerAsset.BrushMeshes[i]) });
-                        var brush = ChiselComponentFactory.Create<ChiselBrush>("Brush (" + (i + 1) + ")", parentTransform, Vector3.zero, Quaternion.identity, Vector3.one);
-                        brush.BrushContainerAsset   = newBrushContainerAsset;
-                        brush.LocalTransformation   = localTransformation;
-                        brush.PivotOffset           = pivotOffset;
-                        brush.Operation             = brushContainerAsset.Operations[i];
-                        UnityEditor.Undo.RecordObject(brush, "Modified brush");
+                        var brush = ChiselComponentFactory.Create<ChiselBrush>("Brush (" + (i + 1) + ")", parentTransform);
+                        brush.LocalTransformation       = localTransformation;
+                        brush.PivotOffset               = pivotOffset;
+                        brush.Operation                 = sourceOperations[i];
+                        brush.definition = new BrushDefinition
+                        {
+                            brushOutline = new BrushMesh(sourceBrushMeshes[i])
+                        };
+                        // TODO: create surfacedefinition
                     }
-                    UnityEditor.Undo.SetCurrentGroupName("Converted " + NodeTypeName + " to Multiple Brushes");
                 }
-                success = true;
             }
             finally
             {
                 topGameObject.SetActive(true);
             }
-            return success;
+            UnityEditor.Undo.SetCurrentGroupName(groupName);
+            return true;
         }
 #endif
 

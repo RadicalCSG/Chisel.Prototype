@@ -16,6 +16,33 @@ namespace Chisel.Components
     // TODO: rename
     public sealed class ChiselComponentFactory
     {
+        public static T AddComponent<T>(UnityEngine.GameObject gameObject) where T : ChiselNode
+        {
+            // TODO: ensure we're creating this in the active scene
+            // TODO: handle scene being locked by version control
+
+            if (!gameObject)
+                return null;
+
+            bool prevActive = gameObject.activeSelf;
+            if (prevActive)
+                gameObject.SetActive(false);
+            try
+            {
+                var brushTransform = gameObject.transform;
+#if UNITY_EDITOR
+                return UnityEditor.Undo.AddComponent<T>(gameObject);
+#else
+                return newGameObject.AddComponent<T>();
+#endif
+            }
+            finally
+            {
+                if (prevActive)
+                    gameObject.SetActive(prevActive);
+            }
+        }
+
         public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
         {
             // TODO: ensure we're creating this in the active scene

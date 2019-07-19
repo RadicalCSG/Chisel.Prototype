@@ -40,7 +40,8 @@ namespace Chisel.Components
 
         public bool SetSubMeshes(BrushMesh[] brushMeshes)
         {
-            if (brushMeshes == null)
+            if (brushMeshes == null ||
+                brushMeshes.Length == 0)
             {
                 Clear();
                 return false;
@@ -68,7 +69,8 @@ namespace Chisel.Components
             for (int i = 0; i < instances.Length; i++)
             {
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
-                if (!brushMesh.Validate(logErrors: true))
+                if (brushMesh == null ||
+                    !brushMesh.Validate(logErrors: true))
                     brushMesh.Clear();
                 instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
             }
@@ -109,6 +111,8 @@ namespace Chisel.Components
             {
                 if (brushContainer.brushMeshes[i] == null)
                     throw new NullReferenceException("SubMeshes[" + i + "] is null");
+                if (brushContainer.brushMeshes[i].polygons == null)
+                    throw new NullReferenceException("SubMeshes[" + i + "].polygons is null");
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
                 brushMesh.CalculatePlanes();
                 brushMesh.UpdateHalfEdgePolygonIndices();
@@ -173,6 +177,21 @@ namespace Chisel.Components
             if (brushContainer.brushMeshes == null ||
                 brushContainer.brushMeshes.Length == 0)
                 Clear();
+        }
+
+        public static ChiselBrushContainerAsset Create(string name, BrushMesh brushMesh)
+        {
+            var brushContainerAsset = Create(name);
+            brushContainerAsset.SetSubMeshes(new[] { new BrushMesh(brushMesh) });
+            brushContainerAsset.SetDirty();
+            return brushContainerAsset;
+        }
+
+        public static ChiselBrushContainerAsset Create(string name)
+        {
+            var brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
+            brushContainerAsset.name = name;
+            return brushContainerAsset;
         }
     }
 }
