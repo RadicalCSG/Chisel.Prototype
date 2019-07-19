@@ -24,14 +24,14 @@ namespace Chisel.Editors
 
         static readonly GUIContent[] kSurfaceContentNames = new[]
         {
-            new GUIContent("Top"),
-            new GUIContent("Bottom"),
+            new GUIContent("Tread Top"),
+            new GUIContent("Tread Bottom"),
+            new GUIContent("Tread Front"),
+            new GUIContent("Tread Back"),
+            new GUIContent("Riser Front"),
+            new GUIContent("Riser Back"),
             new GUIContent("Inner"),
             new GUIContent("Outer"),
-            new GUIContent("Front"),
-            new GUIContent("Back"),
-            new GUIContent("Tread"),
-            new GUIContent("Step")
         };
 
         SerializedProperty heightProp;
