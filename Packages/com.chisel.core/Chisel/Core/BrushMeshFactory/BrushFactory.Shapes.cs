@@ -174,7 +174,7 @@ namespace Chisel.Core
                 new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, surface = surfaces[1] },
                 new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 4, surface = surfaces[2] },
                 new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 4, surface = surfaces[3] },
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, surface = surfaces[0] } // TODO: figure out why this is [0]
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, surface = surfaces[4] }
             };
         }
 

@@ -16,6 +16,16 @@ namespace Chisel.Core
     [Serializable]
     public struct ChiselSpiralStairsDefinition : IChiselGenerator
     {
+        public const int kTreadTopSurface       = 0;
+        public const int kTreadBottomSurface    = 1;
+        public const int kTreadFrontSurface     = 2;
+        public const int kTreadBackSurface      = 3;
+        public const int kRiserFrontSurface     = 4;
+        public const int kRiserBackSurface      = 5;
+        public const int kInnerSurface          = 6;
+        public const int kOuterSurface          = 7;
+
+
         public const float	kMinStepHeight			= 0.01f;
         public const float  kMinStairsDepth         = 0.1f;
         public const float  kMinRiserDepth          = 0.01f;
@@ -128,7 +138,7 @@ namespace Chisel.Core
             innerSegments	= Mathf.Max(kMinSegments, innerSegments);
             outerSegments	= Mathf.Max(kMinSegments, outerSegments);
             
-            surfaceDefinition.EnsureSize(6);
+            surfaceDefinition.EnsureSize(8);
         }
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
