@@ -2,5 +2,5 @@
 
 namespace UnitySceneExtensions
 {
-	public class AngleValueAttribute : PropertyAttribute {}
+    public class AngleValueAttribute : PropertyAttribute {}
 }

@@ -5,7 +5,7 @@ namespace Chisel.Core
 {
     partial struct BrushMeshInstance
     {
-#if USE_INTERNAL_IMPLEMENTATION
+#if USE_MANAGED_CSG_IMPLEMENTATION
         private static Int32 CreateBrushMesh(Int32					userID,   
                                              Vector3[]				vertices,
                                              BrushMesh.HalfEdge[]	halfEdges,

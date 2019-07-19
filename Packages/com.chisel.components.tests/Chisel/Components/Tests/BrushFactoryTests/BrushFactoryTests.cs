@@ -10,25 +10,22 @@ using UnityEngine.SceneManagement;
 
 namespace BrushFactoryTests
 {
-	public sealed class BrushFactoryTests
-	{
-		[SetUp] public void Setup() { }
+    public sealed class BrushFactoryTests
+    {
+        [SetUp] public void Setup() { }
 
-		[UnityTest]
-		public IEnumerator CreateBrushMeshAsset_IsPartOfManager()
-		{
-			var layers = new SurfaceLayers
-			{
-				layerUsage = LayerUsageFlags.None
-			};
-			var box = BrushMeshFactory.CreateBox(Vector3.one, layers, SurfaceFlags.None);
-			yield return null;
+        [UnityTest]
+        public IEnumerator CreateBrushContainerAsset_IsPartOfManager()
+        {
+            var chiselSurface = new ChiselSurface();
+            var box = BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface);
+            yield return null;
 
-			var instance = BrushMeshInstance.Create(box);
-			Assert.IsTrue(instance.Valid);
-			instance.Destroy();
-		}
+            var instance = BrushMeshInstance.Create(box);
+            Assert.IsTrue(instance.Valid);
+            instance.Destroy();
+        }
 
 
-	}
+    }
 }

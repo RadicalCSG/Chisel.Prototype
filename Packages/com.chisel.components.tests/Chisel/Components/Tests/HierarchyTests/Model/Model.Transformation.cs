@@ -10,11 +10,11 @@ using UnityEngine.SceneManagement;
 
 namespace HierarchyTests
 {
-	public partial class Model_Transformation
-	{
-		[SetUp] public void Setup() { TestUtility.ClearScene(); }
+    public partial class Model_Transformation
+    {
+        [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
-		// TODO: create transformation tests
+        // TODO: create transformation tests
 
-	}
+    }
 }

@@ -31,6 +31,20 @@ namespace Chisel.Core
             return NegativeY;
         }
 
+        public static Matrix4x4 RotateAroundAxis(Vector3 center, Vector3 normal, float angle)
+        {
+            var rotation = Quaternion.AngleAxis(angle, normal);
+            return MathExtensions.RotateAroundPoint(center, rotation);
+        }
+
+
+        public static Matrix4x4 RotateAroundPoint(Vector3 center, Quaternion rotation)
+        {
+            return Matrix4x4.TRS(center, Quaternion.identity, Vector3.one) *
+                   Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one) *
+                   Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
+        }
+
         public static void CalculateTangents(Vector3 normal, out Vector3 tangent, out Vector3 binormal)
         {
             tangent = Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
@@ -184,6 +198,32 @@ namespace Chisel.Core
                 var delta	= currDistance / length;
                 var vector	= currVertex - prevVertex;
                 return currVertex - (vector * delta);
+            }
+        }
+        
+        // http://matthias-mueller-fischer.ch/publications/stablePolarDecomp.pdf
+        public static void ExtractRotation(in Matrix4x4 input, out Quaternion output, uint maxIter = 10)
+        {
+            const float kEpsilon = 1.0e-9f;
+            output = Quaternion.identity;
+            for (int iter = 0; iter < maxIter; iter++)
+            {
+                var current = Matrix4x4.TRS(Vector3.zero, output, Vector3.one);
+                var O0      = current.GetColumn(0);
+                var O1      = current.GetColumn(1);
+                var O2      = current.GetColumn(2);
+
+                var I0      = input.GetColumn(0);
+                var I1      = input.GetColumn(1);
+                var I2      = input.GetColumn(2);
+
+                var omega   = (Vector3.Cross(O0, I0) + Vector3.Cross(O1, I1) + Vector3.Cross(O2, I2)) * 
+                              (1.0f / Mathf.Abs(Vector3.Dot(O0, I0) + Vector3.Dot(O1, I1) + Vector3.Dot(O2, I2)) + kEpsilon);
+                var w = omega.magnitude;
+                if (w < kEpsilon)
+                    break;
+                output = Quaternion.AngleAxis(w, (1.0f / w) * omega) * output;
+                output.Normalize();
             }
         }
     }

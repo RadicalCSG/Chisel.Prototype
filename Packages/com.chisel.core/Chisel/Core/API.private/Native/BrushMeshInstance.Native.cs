@@ -8,7 +8,39 @@ namespace Chisel.Core
 {
     partial struct BrushMeshInstance
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
+        [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+        public struct NativePolygon
+        {
+            public Int32 firstEdge, edgeCount, surfaceID;
+            public SurfaceDescription   description;
+            public SurfaceLayers        layers;
+        }
+
+        private static NativePolygon[] ConvertToNative(BrushMesh.Polygon[] polygons)
+        {
+            var nativePolygons = new NativePolygon[polygons.Length];
+            for (int p = 0; p < nativePolygons.Length; p++)
+            {
+                ref var polygon = ref polygons[p];
+                var surface = polygon.surface;
+                nativePolygons[p] = new NativePolygon()
+                {
+                    firstEdge   = polygon.firstEdge,
+                    edgeCount   = polygon.edgeCount,
+                    surfaceID   = polygon.surfaceID,
+                    description = (surface != null) ? surface.surfaceDescription : SurfaceDescription.Default,
+                    layers      = new SurfaceLayers()
+                    {
+                        layerUsage      = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.LayerUsage : LayerUsageFlags.None,
+                        layerParameter1 = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.RenderMaterialInstanceID : 0,
+                        layerParameter2 = (surface != null && surface.brushMaterial != null) ? surface.brushMaterial.PhysicsMaterialInstanceID : 0
+                    }
+                };
+            }
+            return nativePolygons;
+        }
+
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)]
         static extern Int32 CreateBrushMesh(Int32 userID,
                                             Int32 vertexCount,	 [In] IntPtr vertices,												    
@@ -18,7 +50,7 @@ namespace Chisel.Core
         private static Int32 CreateBrushMesh(Int32 userID,   
                                              Int32 vertexCount,   Vector3[]            vertices,
                                              Int32 halfEdgeCount, BrushMesh.HalfEdge[] halfEdges,
-                                             Int32 polygonCount,  BrushMesh.Polygon[]  polygons)
+                                             Int32 polygonCount,  NativePolygon[]      polygons)
         {
             var verticesHandle	= GCHandle.Alloc(vertices,  GCHandleType.Pinned);
             var halfEdgesHandle	= GCHandle.Alloc(halfEdges, GCHandleType.Pinned);
@@ -46,7 +78,7 @@ namespace Chisel.Core
         private static bool UpdateBrushMesh(Int32 brushMeshIndex,
                                             Int32 vertexCount,    Vector3[]            vertices,
                                             Int32 halfEdgeCount,  BrushMesh.HalfEdge[] halfEdges,
-                                            Int32 polygonCount,   BrushMesh.Polygon[]  polygons)
+                                            Int32 polygonCount,   NativePolygon[]      polygons)
         {
             if (vertices == null || halfEdges == null || polygons == null) return false;
             if (vertexCount < 0 || halfEdgeCount < 0 || polygonCount < 0) return false;

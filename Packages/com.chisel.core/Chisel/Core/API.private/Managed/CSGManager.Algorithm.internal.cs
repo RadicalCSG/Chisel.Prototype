@@ -7,10 +7,10 @@ using UnityEngine;
 namespace Chisel.Core
 {
     static partial class CSGManager
-	{
-#if USE_INTERNAL_IMPLEMENTATION
-		// TODO: review flags, might not make sense any more
-		enum NodeStatusFlags : UInt16
+    {
+#if USE_MANAGED_CSG_IMPLEMENTATION
+        // TODO: review flags, might not make sense any more
+        enum NodeStatusFlags : UInt16
         {
             None						= 0,
 //			NeedChildUpdate				= 1,
@@ -40,7 +40,7 @@ namespace Chisel.Core
             var output			= CSGManager.GetBrushOutput(brushNodeID);
             var outputLoops		= output.brushOutputLoops;
             var brushInstance	= CSGManager.GetBrushMeshID(brushNodeID);
-			var surfaceLoops	= (outputLoops.intersectionLoops == null || outputLoops.intersectionLoops.Count == 0) ? null : outputLoops.intersectionLoops.Values.First(); // temp. Hack
+            var surfaceLoops	= (outputLoops.intersectionLoops == null || outputLoops.intersectionLoops.Count == 0) ? null : outputLoops.intersectionLoops.Values.First(); // temp. Hack
 
             // TODO: get rid of needing mesh here
             var mesh			= BrushMeshManager.GetBrushMesh(brushInstance);
@@ -144,24 +144,24 @@ namespace Chisel.Core
                 return false;
 
             // TODO: optimize, only do this when necessary
-			for (int i=0;i<brushes.Count;i++)
-			{
-				var brushNodeID		= brushes[i];
-				var brushNodeIndex	= brushNodeID - 1;
-				var parentNodeID	= nodeHierarchies[brushNodeIndex].parentNodeID;
-				var parentNodeIndex = parentNodeID - 1;
-				var parentLocalTransformation		= (parentNodeIndex < 0) ? Matrix4x4.identity : nodeLocalTransforms[parentNodeIndex].localTransformation;
-				var parentLocalInvTransformation	= (parentNodeIndex < 0) ? Matrix4x4.identity : nodeLocalTransforms[parentNodeIndex].invLocalTransformation;
+            for (int i=0;i<brushes.Count;i++)
+            {
+                var brushNodeID		= brushes[i];
+                var brushNodeIndex	= brushNodeID - 1;
+                var parentNodeID	= nodeHierarchies[brushNodeIndex].parentNodeID;
+                var parentNodeIndex = parentNodeID - 1;
+                var parentLocalTransformation		= (parentNodeIndex < 0) ? Matrix4x4.identity : nodeLocalTransforms[parentNodeIndex].localTransformation;
+                var parentLocalInvTransformation	= (parentNodeIndex < 0) ? Matrix4x4.identity : nodeLocalTransforms[parentNodeIndex].invLocalTransformation;
 
-				// TODO: should be transformations the way up to the tree, not just tree vs brush
-				var brushLocalTransformation		= nodeLocalTransforms[brushNodeIndex].localTransformation;
-				var brushLocalInvTransformation		= nodeLocalTransforms[brushNodeIndex].invLocalTransformation;
+                // TODO: should be transformations the way up to the tree, not just tree vs brush
+                var brushLocalTransformation		= nodeLocalTransforms[brushNodeIndex].localTransformation;
+                var brushLocalInvTransformation		= nodeLocalTransforms[brushNodeIndex].invLocalTransformation;
 
-				var nodeTransform = nodeTransforms[brushNodeIndex];
-				nodeTransform.nodeToTree = brushLocalTransformation * parentLocalInvTransformation;
-				nodeTransform.treeToNode = parentLocalTransformation * brushLocalInvTransformation;
-				nodeTransforms[brushNodeIndex] = nodeTransform;
-			}
+                var nodeTransform = nodeTransforms[brushNodeIndex];
+                nodeTransform.nodeToTree = brushLocalTransformation * parentLocalInvTransformation;
+                nodeTransform.treeToNode = parentLocalTransformation * brushLocalInvTransformation;
+                nodeTransforms[brushNodeIndex] = nodeTransform;
+            }
 
             // TODO: find intersecting brushes
 
@@ -300,8 +300,8 @@ namespace Chisel.Core
             }
 
             if (treeInfo.meshDescriptions == null ||
-				treeInfo.meshDescriptions.Count == 0 ||
-				treeInfo.meshDescriptions[0].vertexCount <= 0 ||
+                treeInfo.meshDescriptions.Count == 0 ||
+                treeInfo.meshDescriptions[0].vertexCount <= 0 ||
                 treeInfo.meshDescriptions[0].indexCount <= 0)
                 return null;
 
@@ -391,5 +391,5 @@ namespace Chisel.Core
             return false;
         }
 #endif
-	}
+    }
 }

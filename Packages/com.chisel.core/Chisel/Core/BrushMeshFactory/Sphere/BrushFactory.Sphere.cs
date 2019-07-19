@@ -14,28 +14,67 @@ using static Chisel.Core.BrushMesh;
 namespace Chisel.Core
 {
     public sealed partial class BrushMeshFactory
-	{
-        public static BrushMesh CreateSphere(Vector3 diameterXYZ, int horzSegments, int vertSegments, SurfaceLayers layers = default, SurfaceFlags surfaceFlags = SurfaceFlags.None)
+    {
+        public static bool GenerateSphere(ref ChiselBrushContainer brushContainer, ref ChiselSphereDefinition definition)
         {
+            definition.Validate();
+
+            brushContainer.EnsureSize(1);
+
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            return BrushMeshFactory.GenerateSphere(ref brushContainer.brushMeshes[0], definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+        }
+
+        public static bool GenerateSphere(ref BrushMesh brushMesh, ref ChiselSphereDefinition definition)
+        {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+        }
+
+        public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, Matrix4x4 transform, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (!BrushMeshFactory.CreateSphere(ref brushMesh, diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments, in surfaceDefinition))
+            {
+                brushMesh.Clear();
+                return false;
+            }
+            
+            ref var dstBrushMesh = ref brushMesh;
+
+            // TODO: do something more intelligent with surface assignment, and put it inside CreateSphere
+            for (int i = 0; i < dstBrushMesh.polygons.Length; i++)
+                dstBrushMesh.polygons[i].surface = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i] : surfaceDefinition.surfaces[0];
+
+            return true;
+        }
+
+        public static bool CreateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (diameterXYZ.x == 0 ||
+                diameterXYZ.y == 0 ||
+                diameterXYZ.z == 0)
+            {
+                brushMesh.Clear();
+                return false;
+            }
+
             var lastVertSegment = vertSegments - 1;
 
-            //int vertexCount		= (horzSegments * (vertSegments - 1)) + 2;
-            var triangleCount = horzSegments + horzSegments;    // top & bottom
-            var quadCount = horzSegments * (vertSegments - 2);
-            int polygonCount = triangleCount + quadCount;
-            int halfEdgeCount = (triangleCount * 3) + (quadCount * 4);
+            var triangleCount   = horzSegments + horzSegments;    // top & bottom
+            var quadCount       = horzSegments * (vertSegments - 2);
+            int polygonCount    = triangleCount + quadCount;
+            int halfEdgeCount   = (triangleCount * 3) + (quadCount * 4);
 
             Vector3[] vertices = null;
-            CreateSphereVertices(diameterXYZ, horzSegments, vertSegments, ref vertices);       
+            CreateSphereVertices(diameterXYZ, offsetY, generateFromCenter, horzSegments, vertSegments, ref vertices);
 
-            var polygons = new Polygon[polygonCount];
-            var halfEdges = new HalfEdge[halfEdgeCount];
+            var polygons    = new Polygon[polygonCount];
+            var halfEdges   = new HalfEdge[halfEdgeCount];
 
-            //var radius			= 0.5f * diameterXYZ;
-
-            var edgeIndex = 0;
-            var polygonIndex = 0;
-            var startVertex = 2;
+            var edgeIndex       = 0;
+            var polygonIndex    = 0;
+            var startVertex     = 2;
             for (int v = 0; v < vertSegments; v++)
             {
                 var startEdge = edgeIndex;
@@ -103,8 +142,8 @@ namespace Chisel.Core
                         surfaceID = polygonIndex,
                         firstEdge = edgeIndex,
                         edgeCount = polygonEdgeCount,
-                        description = new SurfaceDescription { UV0 = UVMatrix.centered, surfaceFlags = surfaceFlags, smoothingGroup = 0 },
-                        layers = layers
+                        // TODO: do something more intelligent with surface assignment
+                        surface = surfaceDefinition.surfaces[0]
                     };
                     
                     edgeIndex += polygonEdgeCount;
@@ -114,15 +153,21 @@ namespace Chisel.Core
                     startVertex += horzSegments;
             }
 
-            return new BrushMesh
-            {
-                polygons = polygons,
-                halfEdges = halfEdges,
-                vertices = vertices
-            };
+            brushMesh.polygons  = polygons;
+            brushMesh.halfEdges = halfEdges;
+            brushMesh.vertices  = vertices;
+            return true;
         }
 
-        public static void CreateSphereVertices(Vector3 diameterXYZ, int horzSegments, int vertSegments, ref Vector3[] vertices)
+        public static bool GenerateSphereVertices(ChiselSphereDefinition definition, ref Vector3[] vertices)
+        {
+            definition.Validate();
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
+            BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, definition.horizontalSegments, definition.verticalSegments, ref vertices);
+            return true;
+        }
+
+        public static void CreateSphereVertices(Vector3 diameterXYZ, float offsetY, bool generateFromCenter, int horzSegments, int vertSegments, ref Vector3[] vertices)
         {
             //var lastVertSegment	= vertSegments - 1;
             int vertexCount = (horzSegments * (vertSegments - 1)) + 2;
@@ -133,22 +178,46 @@ namespace Chisel.Core
 
             var radius = 0.5f * diameterXYZ;
 
+            var offset = generateFromCenter ? offsetY : radius.y + offsetY;
             vertices[0] = Vector3.down * radius.y;
-            vertices[1] = Vector3.up * radius.y;
+            vertices[1] = Vector3.up   * radius.y;
+
+            vertices[0].y += offset;
+            vertices[1].y += offset;
+
+            // TODO: optimize
+
             var degreePerSegment = (360.0f / horzSegments) * Mathf.Deg2Rad;
             var angleOffset = ((horzSegments & 1) == 1) ? 0.0f : ((360.0f / horzSegments) * 0.5f) * Mathf.Deg2Rad;
             for (int v = 1, vertexIndex = 2; v < vertSegments; v++)
             {
-                var segmentFactor = ((v - (vertSegments / 2.0f)) / vertSegments);       // [-0.5f ... 0.5f]
-                var segmentDegree = (segmentFactor * 180);                          // [-90 .. 90]
-                var segmentHeight = Mathf.Sin(segmentDegree * Mathf.Deg2Rad);
-                var segmentRadius = Mathf.Cos(segmentDegree * Mathf.Deg2Rad);           // [0 .. 0.707 .. 1 .. 0.707 .. 0]
-                for (int h = 0; h < horzSegments; h++, vertexIndex++)
+                var segmentFactor   = ((v - (vertSegments / 2.0f)) / vertSegments); // [-0.5f ... 0.5f]
+                var segmentDegree   = (segmentFactor * 180);                        // [-90 .. 90]
+                var segmentHeight   = Mathf.Sin(segmentDegree * Mathf.Deg2Rad);
+                var segmentRadius   = Mathf.Cos(segmentDegree * Mathf.Deg2Rad);     // [0 .. 0.707 .. 1 .. 0.707 .. 0]
+
+                var yRingPos        = (segmentHeight * radius.y) + offset;
+                var xRingRadius     = segmentRadius * radius.x;
+                var zRingRadius     = segmentRadius * radius.z;
+
+                if (radius.y < 0)
                 {
-                    var hRad = (h * degreePerSegment) + angleOffset;
-                    vertices[vertexIndex] = new Vector3(Mathf.Cos(hRad) * segmentRadius * radius.x,
-                                                        segmentHeight * radius.y,
-                                                        Mathf.Sin(hRad) * segmentRadius * radius.z);
+                    for (int h = horzSegments - 1; h >= 0; h--, vertexIndex++)
+                    {
+                        var hRad = (h * degreePerSegment) + angleOffset;
+                        vertices[vertexIndex] = new Vector3(Mathf.Cos(hRad) * segmentRadius * radius.x,
+                                                            yRingPos,
+                                                            Mathf.Sin(hRad) * segmentRadius * radius.z);
+                    }
+                } else
+                {
+                    for (int h = 0; h < horzSegments; h++, vertexIndex++)
+                    {
+                        var hRad = (h * degreePerSegment) + angleOffset;
+                        vertices[vertexIndex] = new Vector3(Mathf.Cos(hRad) * segmentRadius * radius.x,
+                                                            yRingPos,
+                                                            Mathf.Sin(hRad) * segmentRadius * radius.z);
+                    }
                 }
             }
         }

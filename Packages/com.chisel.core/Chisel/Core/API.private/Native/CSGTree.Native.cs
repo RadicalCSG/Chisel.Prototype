@@ -13,7 +13,7 @@ namespace Chisel.Core
 {
     partial struct CSGTree
     {
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool	GenerateTree(Int32 userID, out Int32	generatedTreeNodeID);
         
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern Int32	GetNumberOfBrushesInTree(Int32 nodeID);
@@ -198,6 +198,7 @@ namespace Chisel.Core
         private bool RayCastMulti(MeshQuery[]						meshQuery, // TODO: add meshquery support here
                                   Vector3							worldRayStart,
                                   Vector3							worldRayEnd,
+                                  Matrix4x4                         treeLocalToWorldMatrix,
                                   int								filterLayerParameter0,
                                   out CSGTreeBrushIntersection[]	intersections,
                                   CSGTreeNode[]						ignoreNodes = null)
@@ -209,13 +210,12 @@ namespace Chisel.Core
             { 
                 var ignoreNodeIDsPtr	= (ignoreNodes != null) ? ignoreNodeIDsHandle.AddrOfPinnedObject() : IntPtr.Zero;
 
-                // TODO: remove this ...
-                Matrix4x4 treeLocalToWorldMatrix = Matrix4x4.identity;
+                var workAround = Matrix4x4.identity;
 
                 intersectionCount		= RayCastIntoTreeMultiCount(treeNodeID, 
                                                                     ref worldRayStart,
                                                                     ref worldRayEnd,
-                                                                    ref treeLocalToWorldMatrix,
+                                                                    ref workAround,
                                                                     filterLayerParameter0,// TODO: implement this properly with MeshQuery
                                                                     true, // TODO: implement this properly with MeshQuery
                                                                     ignoreNodeIDsPtr,
@@ -223,7 +223,7 @@ namespace Chisel.Core
             }
             if (ignoreNodeIDsHandle.IsAllocated)
                 ignoreNodeIDsHandle.Free();
-            
+
             if (intersectionCount > 0)
             {			
                 var outputIntersections			= new CSGTreeBrushIntersection[intersectionCount];				
@@ -233,6 +233,11 @@ namespace Chisel.Core
                     var result = RayCastMultiGet(intersectionCount, outputIntersectionsPtr);
                     if (result) intersections = outputIntersections;
                     else        intersections = null;
+                }
+                for (int i = 0; i < intersectionCount; i++)
+                {
+                    outputIntersections[i].surfaceIntersection.worldPlane = treeLocalToWorldMatrix.TransformPlane(outputIntersections[i].surfaceIntersection.worldPlane);
+                    outputIntersections[i].surfaceIntersection.worldIntersection = treeLocalToWorldMatrix.MultiplyPoint(outputIntersections[i].surfaceIntersection.worldIntersection);
                 }
                 outputIntersectionsHandle.Free();
             }			

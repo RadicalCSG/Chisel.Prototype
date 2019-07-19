@@ -7,9 +7,9 @@ namespace Chisel.Core
 {
     static partial class CSGManager
     {
-        public const string NativePluginName = "Chisel[" + PluginVersion + "]";
+        public const string NativePluginName = "Chisel[TEST]";
 
-#if !USE_INTERNAL_IMPLEMENTATION
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool HasBeenCompiledInDebugMode();
 
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)] private static extern bool ClearDirty(Int32 nodeID);		
