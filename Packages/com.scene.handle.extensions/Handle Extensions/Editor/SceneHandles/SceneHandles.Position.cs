@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -167,6 +167,30 @@ namespace UnitySceneExtensions
         public static Vector3 PositionHandle(Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
             return PositionHandle(new[] { position }, position, rotation, enabledAxes)[0];
+        }
+
+        public static Vector3 PositionHandle(Vector3 position, Axes enabledAxes = Axes.XYZ)
+        {
+            var activeGrid  = Grid.ActiveGrid;
+            var rotation    = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
+            return PositionHandle(new[] { position }, position, rotation, enabledAxes)[0];
+        }
+
+        public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
+        {
+            var activeGrid = Grid.ActiveGrid;
+            var rotation = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
+            return PositionHandle(handleIDs, new[] { position }, position, rotation, enabledAxes)[0];
+        }
+
+        public static Vector3 PositionHandleOffset(Vector3 position, Axes enabledAxes = Axes.XYZ)
+        {
+            return PositionHandle(position, enabledAxes) - position;
+        }
+
+        public static Vector3 PositionHandleOffset(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
+        {
+            return PositionHandle(handleIDs, position, enabledAxes) - position;
         }
     }
 }

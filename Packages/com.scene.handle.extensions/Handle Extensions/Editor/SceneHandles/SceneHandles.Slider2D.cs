@@ -23,7 +23,16 @@ namespace UnitySceneExtensions
         {
             return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
         }
-        
+
+        public static Vector3 Slider2DHandleOffset(int id, Vector3 handlePos, Vector3 handleDir, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
+        {
+            var grid        = Grid.ActiveGrid;
+            var normalAxis  = grid.GetClosestAxis(handleDir);
+            var axes        = grid.GetTangentAxesForAxis(normalAxis, out Vector3 slideDir1, out Vector3 slideDir2);
+            if (handleSize == 0)
+                handleSize = UnityEditor.HandleUtility.GetHandleSize(handlePos) * 0.05f;
+            return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, Vector3.zero, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0] - handlePos;
+        }
 
         public class Slider2D
         {
