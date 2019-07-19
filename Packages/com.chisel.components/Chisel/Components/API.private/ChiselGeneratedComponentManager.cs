@@ -60,6 +60,7 @@ namespace Chisel.Components
         {
             haveUVsToUpdate = false;
 
+#if UNITY_EDITOR
             if (!model)
                 return false;
 
@@ -75,6 +76,7 @@ namespace Chisel.Components
                 if (!ChiselSharedUnityMeshManager.HasLightmapUVs(generatedMesh.sharedMesh))
                     return true;
             }
+#endif
             return false;
         }
         

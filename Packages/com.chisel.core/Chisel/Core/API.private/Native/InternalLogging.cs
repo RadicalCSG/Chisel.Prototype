@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEditor;
 using Chisel.Core;
 
 namespace Chisel.Editors
@@ -34,26 +33,39 @@ namespace Chisel.Editors
 
             unityMethods.DebugLog = delegate (string message, int uniqueObjectID)
             {
-                Debug.Log(message, (uniqueObjectID != 0) ? EditorUtility.InstanceIDToObject(uniqueObjectID) : null);
+#if UNITY_EDITOR
+                Debug.Log(message, (uniqueObjectID != 0) ? UnityEditor.EditorUtility.InstanceIDToObject(uniqueObjectID) : null);
+#else
+                Debug.Log(message);
+#endif
             };
 
             unityMethods.DebugLogError = delegate (string message, int uniqueObjectID)
             {
-                Debug.LogError(message, (uniqueObjectID != 0) ? EditorUtility.InstanceIDToObject(uniqueObjectID) : null); 
+#if UNITY_EDITOR
+                Debug.LogError(message, (uniqueObjectID != 0) ? UnityEditor.EditorUtility.InstanceIDToObject(uniqueObjectID) : null);
+#else
+                Debug.LogError(message);
+#endif
             };
 
             unityMethods.DebugLogWarning = delegate (string message, int uniqueObjectID)
             {
-                Debug.LogWarning(message, (uniqueObjectID != 0) ? EditorUtility.InstanceIDToObject(uniqueObjectID) : null);
+#if UNITY_EDITOR
+                Debug.LogWarning(message, (uniqueObjectID != 0) ? UnityEditor.EditorUtility.InstanceIDToObject(uniqueObjectID) : null);
+#else
+                Debug.LogWarning(message);
+#endif
             };
 
             unityMethods.NameForUserID = delegate (int uniqueObjectID)
             {
-                var obj = (uniqueObjectID != 0) ? EditorUtility.InstanceIDToObject(uniqueObjectID) : null;
-                if (obj == null)
-                    return "<unknown>";
-                else
+#if UNITY_EDITOR
+                var obj = (uniqueObjectID != 0) ? UnityEditor.EditorUtility.InstanceIDToObject(uniqueObjectID) : null;
+                if (obj)
                     return obj.name;
+#endif
+                return "<unknown>";
             };
 
             RegisterMethods(ref unityMethods);
