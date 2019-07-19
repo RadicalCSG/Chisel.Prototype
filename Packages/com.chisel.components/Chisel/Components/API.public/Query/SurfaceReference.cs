@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using System;
 using Chisel.Core;
@@ -258,8 +258,9 @@ namespace Chisel.Components
 
         public int GetHashCode(SurfaceReference obj)
         {
+            // TODO: use a better hash combiner ..
             return  //obj.treeBrush.NodeID.GetHashCode() ^
-                    obj.brushContainerAsset.GetInstanceID() ^
+                    ((obj.brushContainerAsset == null) ? 0 : obj.brushContainerAsset.GetInstanceID()) ^
                     obj.subNodeIndex ^
                     obj.subMeshIndex ^
                     obj.surfaceID ^
