@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -17,35 +17,71 @@ namespace UnitySceneExtensions
             } 
         }
 
-        public static Vector3 Edge2DHandleOffset(int id, Vector3 from, Vector3 to, Vector3 position, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, Vector3? snappingSteps = null) 
+        public static void SetArrowCursor(MouseCursor cursor)
+        {
+            if (InCameraOrbitMode)
+                return;
+
+            var sceneView = SceneView.currentDrawingSceneView;
+            if (!sceneView)
+                return;
+            
+            var rect = sceneView.position;
+            rect.min = Vector2.zero;
+            EditorGUIUtility.AddCursorRect(rect, cursor);
+        }
+
+        public static void SetCursor(int id, MouseCursor cursor)
+        {
+            if (UnityEditor.HandleUtility.nearestControl != id && 
+                EditorGUIUtility.hotControl != id)
+                return;
+
+            SetArrowCursor(cursor);
+        }
+
+        public static void SetCursor(int id, Vector3 from, Vector3 to)
+        {
+            if (UnityEditor.HandleUtility.nearestControl != id && 
+                EditorGUIUtility.hotControl != id)
+                return;
+
+            SetArrowCursor(SceneHandleUtility.GetCursorForEdge(from, to));
+        }
+
+        public static void DrawEdgeHandle(int id, Vector3 from, Vector3 to, bool setCursor, bool renderEdge = true, bool setControl = true, MouseCursor? cursor = null)
         {
             var evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.Layout:
                 {
-                    if (InCameraOrbitMode)
-                        break;
-                    UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to) * 0.5f);
+                    if (setCursor && setControl)
+                    {
+                        if (InCameraOrbitMode)
+                            break;
+                        UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to) * 0.5f);
+                    }
                     break;
                 }
                 case EventType.Repaint:
                 {
-                    var sceneView = SceneView.currentDrawingSceneView;
-                    if (sceneView &&
+                    if (setCursor &&
                         !InCameraOrbitMode)
                     {
-                        if (UnityEditor.HandleUtility.nearestControl == id || EditorGUIUtility.hotControl == id)
-                        {
-                            var rect = sceneView.position;
-                            rect.min = Vector2.zero;
-                            EditorGUIUtility.AddCursorRect(rect, SceneHandleUtility.GetCursorForEdge(from, to));
-                        }
+                        if (!cursor.HasValue)
+                            SetCursor(id, from, to);
+                        else
+                            SetCursor(id, cursor.Value);
                     }
-                    if (EditorGUIUtility.keyboardControl == id)
-                        SceneHandles.DrawAAPolyLine(3.0f, from, to);
-                    else
-                        SceneHandles.DrawAAPolyLine(2.5f, from, to);
+
+                    if (renderEdge)
+                    {
+                        if (EditorGUIUtility.keyboardControl == id)
+                            SceneHandles.DrawAAPolyLine(3.5f, from, to);
+                        else
+                            SceneHandles.DrawAAPolyLine(2.5f, from, to);
+                    }
                     break;
                 }
             }

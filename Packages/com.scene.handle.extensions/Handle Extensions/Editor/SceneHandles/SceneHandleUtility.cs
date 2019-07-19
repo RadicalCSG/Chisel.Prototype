@@ -115,7 +115,7 @@ namespace UnitySceneExtensions
             return GetCursorForDirection(delta, 90);
         }
 
-        internal static MouseCursor GetCursorForDirection(Vector3 position, Vector3 direction)
+        public static MouseCursor GetCursorForDirection(Vector3 position, Vector3 direction)
         {
             var camera = SceneView.currentDrawingSceneView.camera;
             if (!camera)
