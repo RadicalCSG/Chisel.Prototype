@@ -56,13 +56,13 @@ namespace UnitySceneExtensions
         static readonly bool[]      s_BoundsAxisHot			= new bool[6];
         static readonly int[]		s_BoundsControlIds		= new int[6];
 
-        const float kPointScale			= 0.05f;
-        const float kArrowScale			= 1.00f;
+        public const float kPointScale			= 0.05f;
+        
         const float kShowPointThreshold = 0.00001f;
 
         public static Bounds BoundsHandle(Bounds bounds, Quaternion rotation, Vector3? snappingSteps = null)
         {
-            return BoundsHandle(bounds, rotation, UnitySceneExtensions.SceneHandles.OutlinedCircleHandleCap, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap, snappingSteps);
+            return BoundsHandle(bounds, rotation, UnitySceneExtensions.SceneHandles.NormalHandleCap, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap, snappingSteps);
         }
         
         public static Bounds BoundsHandle(Bounds bounds, Quaternion rotation, CapFunction sideCapFunction, CapFunction pointCapFunction, Vector3? snappingSteps = null)
@@ -153,7 +153,6 @@ namespace UnitySceneExtensions
                     var localPoint	= s_BoundsSidePoint[i];
                     var handleSize	= UnityEditor.HandleUtility.GetHandleSize(localPoint);
                     var pointSize	= handleSize * kPointScale;
-                    var arrowSize	= handleSize * kArrowScale;
                     var direction	= s_BoundsSlideDirs[i % 3];
                     var normal		= (i < 3) ? -direction : direction;
                     normal.x *= (bounds.size.x < 0) ? -1 : 1;
@@ -184,7 +183,6 @@ namespace UnitySceneExtensions
                                 rect.min = Vector2.zero;
                                 EditorGUIUtility.AddCursorRect(rect, SceneHandleUtility.GetCursorForDirection(localPoint, normal));
                             }
-                            SceneHandles.ArrowHandleCap(id, localPoint, Quaternion.LookRotation(normal), arrowSize, EventType.Repaint);
                             selectedAxes = s_BoundsAxes[i];
                         }
                     
@@ -192,7 +190,7 @@ namespace UnitySceneExtensions
                     }
                 
                     var steps		= snappingSteps ?? Snapping.MoveSnappingSteps;
-                    var newPoint	= Slider1DHandle(id, (Axis)(i % 3), localPoint, direction, steps[i % 3], pointSize, sideCapFunction);
+                    var newPoint	= Slider1DHandle(id, (Axis)(i % 3), localPoint, normal, steps[i % 3], pointSize, sideCapFunction);
                     if (GUI.changed)
                     {
                         s_BoundsValues[i] += Vector3.Dot(direction, newPoint - localPoint);

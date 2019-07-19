@@ -23,7 +23,7 @@ namespace UnitySceneExtensions
                 handleSize = UnityEditor.HandleUtility.GetHandleSize(handleOrigin);
 
             var currentFocusControl = UnitySceneExtensions.SceneHandleUtility.focusControl;
-            var result = UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize * 0.05f, UnitySceneExtensions.SceneHandles.OutlinedCircleHandleCap);
+            var result = UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize * 0.05f, UnitySceneExtensions.SceneHandles.NormalHandleCap);
             if (currentFocusControl == id)
             {
                 var sceneView = SceneView.currentDrawingSceneView;
@@ -169,10 +169,13 @@ namespace UnitySceneExtensions
                         var position = handleOrigin;
                         var rotation = Quaternion.LookRotation(handleDirection);
 
-                        if (capFunction != null)
-                            capFunction(id, position, rotation, handleSize, EventType.Layout);
-                        else
-                            UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * .2f));
+                        if (handleSize > 0)
+                        {
+                            if (capFunction != null)
+                                capFunction(id, position, rotation, handleSize, EventType.Layout);
+                            else
+                                UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * .2f));
+                        }
 
                         int currentFocusControl = SceneHandleUtility.focusControl;
                         if ((currentFocusControl == id && s_PrevFocusControl != id) ||
