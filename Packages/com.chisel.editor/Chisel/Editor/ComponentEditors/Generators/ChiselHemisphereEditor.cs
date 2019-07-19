@@ -116,7 +116,7 @@ namespace Chisel.Editors
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
         
-        protected override void OnScene(ChiselHemisphere generator)
+        protected override void OnScene(SceneView sceneView, ChiselHemisphere generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

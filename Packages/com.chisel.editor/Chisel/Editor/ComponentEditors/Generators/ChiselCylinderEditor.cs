@@ -454,7 +454,7 @@ namespace Chisel.Editors
             cylinderHandle.Init(generator);
         }
 
-        protected override void OnScene(ChiselCylinder generator)
+        protected override void OnScene(SceneView sceneView, ChiselCylinder generator)
         {
             cylinderHandle.ShowInstance();
         }

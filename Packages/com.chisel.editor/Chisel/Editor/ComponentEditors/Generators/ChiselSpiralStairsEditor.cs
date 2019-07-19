@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -204,7 +204,7 @@ namespace Chisel.Editors
         Vector3[] outerVertices;
 
         
-        protected override void OnScene(ChiselSpiralStairs generator)
+        protected override void OnScene(SceneView sceneView, ChiselSpiralStairs generator)
         {
             var normal					= Vector3.up;
             var topDirection			= Vector3.forward;

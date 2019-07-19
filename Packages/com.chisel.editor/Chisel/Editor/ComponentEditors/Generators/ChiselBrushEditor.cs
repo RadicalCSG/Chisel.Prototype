@@ -42,7 +42,7 @@ namespace Chisel.Editors
             }
         }
 
-        protected override void OnScene(ChiselBrush generator)
+        protected override void OnScene(SceneView sceneView, ChiselBrush generator)
         {
             var targetBrushContainerAsset	= generator.BrushContainerAsset;
             if (!targetBrushContainerAsset)

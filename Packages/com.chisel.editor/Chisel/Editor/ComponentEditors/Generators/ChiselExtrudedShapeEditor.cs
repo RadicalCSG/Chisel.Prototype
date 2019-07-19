@@ -70,7 +70,7 @@ namespace Chisel.Editors
 
 
         internal static int s_Curve2DDHash = "Curve2DHash".GetHashCode();
-        protected override void OnScene(ChiselExtrudedShape generator)
+        protected override void OnScene(SceneView sceneView, ChiselExtrudedShape generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

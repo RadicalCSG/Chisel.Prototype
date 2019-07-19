@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -336,7 +336,7 @@ namespace Chisel.Editors
         protected abstract void OnInspector();
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
-        protected abstract void OnScene(T generator);
+        protected abstract void OnScene(SceneView sceneView, T generator);
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
@@ -412,25 +412,19 @@ namespace Chisel.Editors
             if (!target || !ChiselEditModeManager.EditMode.EnableComponentEditors)
                 return;
 
-            using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor))
+            var sceneView   = SceneView.currentDrawingSceneView;
+            var generator = target as T;
+            if (!generator.isActiveAndEnabled)
+                return;
+
+            var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
+            var brush       = generator.TopNode;
+            
+            // NOTE: could loop over multiple instances from here, once we support that
             {
-                var generator = target as T;
-                if (!generator.isActiveAndEnabled)
-                    return;
-
-                var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-                var brush       = generator.TopNode;
-                //foreach (var brush in CSGSyncSelection.GetSelectedVariantsOfBrushOrSelf((CSGTreeBrush)generator.TopNode))
-                //foreach (var brush in generator.Node.AllSynchronizedVariants) // <-- this fails when brushes have failed to be created
+                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * brush.NodeToTreeSpaceMatrix))
                 {
-                    //var directSelect = CSGSyncSelection.IsBrushVariantSelected(brush);
-                    //if (!directSelect)
-                    //	continue;
-
-                    UnityEditor.Handles.matrix = modelMatrix * brush.NodeToTreeSpaceMatrix;
-                    UnityEditor.Handles.color = UnityEditor.Handles.yAxisColor;
-
-                    OnScene(generator);
+                    OnScene(sceneView, generator);
                 }
             }
         }

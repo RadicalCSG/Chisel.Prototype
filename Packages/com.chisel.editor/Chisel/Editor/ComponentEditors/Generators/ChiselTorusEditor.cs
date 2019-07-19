@@ -156,7 +156,7 @@ namespace Chisel.Editors
         }
 
 
-        protected override void OnScene(ChiselTorus generator)
+        protected override void OnScene(SceneView sceneView, ChiselTorus generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;
