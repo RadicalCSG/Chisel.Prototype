@@ -11,7 +11,26 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    public abstract class ChiselNodeEditor<T> : Editor
+    public abstract class ChiselNodeEditorBase : Editor
+    {
+        // Ugly hack around stupid Unity issue
+        static bool delayedUndoAllChanges = false;
+        public static void UndoAllChanges()
+        {
+            delayedUndoAllChanges = true;
+        }
+
+        public static void HandleCancelEvent()
+        {
+            if (delayedUndoAllChanges)
+            {
+                delayedUndoAllChanges = false;
+                Undo.RevertAllInCurrentGroup();
+            }
+        }
+    }
+
+    public abstract class ChiselNodeEditor<T> : ChiselNodeEditorBase
         where T : ChiselNode
     {
         static readonly GUIContent kDefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
@@ -340,9 +359,16 @@ namespace Chisel.Editors
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
-        void OnDisable() { PreviewTextureManager.CleanUp(); Reset(); }
+        protected virtual void OnUndoRedoPerformed() { }
 
         private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
+
+        void OnDisable()
+        {
+            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            PreviewTextureManager.CleanUp();
+            Reset();
+        }
 
         void OnEnable()
         {
@@ -354,6 +380,8 @@ namespace Chisel.Editors
 
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
 
+            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
             foreach (var target in targets)
             {
                 if (knownTargets.Add(target))

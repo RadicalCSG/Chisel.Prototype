@@ -248,6 +248,7 @@ namespace Chisel.Editors
             //Grid.HoverGrid = null;
             CSGNodeHierarchyManager.Update();
             ChiselGeneratedModelMeshManager.UpdateModels();
+            ChiselNodeEditorBase.HandleCancelEvent();
         }
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)
