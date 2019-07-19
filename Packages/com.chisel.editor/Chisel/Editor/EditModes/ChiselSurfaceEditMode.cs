@@ -252,7 +252,8 @@ namespace Chisel.Editors
 
                 var surfaceIndex    = polygonIndex; // FIXME: throughout the code we're making assumptions about polygonIndices being the same as surfaceIndices, 
                                                     //         this needs to be fixed
-                var localPlane      = brushMesh.surfaces[surfaceIndex].localPlane;
+                var localPlaneVector = brushMesh.surfaces[surfaceIndex].localPlane;
+                var localPlane      = new Plane((Vector3)localPlaneVector, localPlaneVector.w);
                 var worldPlane      = localToWorldSpace.TransformPlane(localPlane);
 
                 if ((CurrentSnapSettings & UVSnapSettings.GeometryGrid) != UVSnapSettings.None)

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System;
 using Chisel.Core;
@@ -10,7 +10,7 @@ namespace Chisel.Components
     [Serializable]
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
-        public ChiselNode			    node;
+        public ChiselNode			       node;
         public ChiselBrushContainerAsset   brushContainerAsset;
 
         public int  subNodeIndex;
@@ -118,7 +118,9 @@ namespace Chisel.Components
                     return null;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
                     return null;
-                return LocalToWorldSpace.TransformPlane(brushMesh.surfaces[surfaceIndex].localPlane);
+                var localPlaneVector = brushMesh.surfaces[surfaceIndex].localPlane;
+                var localPlane       = new Plane((Vector3)localPlaneVector, localPlaneVector.w);
+                return LocalToWorldSpace.TransformPlane(localPlane);
             }
         }
 
@@ -173,8 +175,10 @@ namespace Chisel.Components
                 
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.surfaces.Length)
                     return Matrix4x4.identity;
-
-                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(brushMesh.surfaces[surfaceIndex].localPlane);
+                
+                var localPlaneVector    = brushMesh.surfaces[surfaceIndex].localPlane;
+                var localPlane          = new Plane((Vector3)localPlaneVector, localPlaneVector.w);
+                var localToPlaneSpace   = MathExtensions.GenerateLocalToPlaneSpaceMatrix(localPlane);
                 var worldToLocal        = node.hierarchyItem.WorldToLocalMatrix;
                 return localToPlaneSpace * worldToLocal;
             }	
