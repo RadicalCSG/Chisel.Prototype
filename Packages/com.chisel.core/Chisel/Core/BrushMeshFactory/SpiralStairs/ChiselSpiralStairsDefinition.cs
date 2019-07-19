@@ -128,7 +128,7 @@ namespace Chisel.Core
             innerSegments	= Mathf.Max(kMinSegments, innerSegments);
             outerSegments	= Mathf.Max(kMinSegments, outerSegments);
             
-            surfaceDefinition.EnsureSize(6);
+            surfaceDefinition.EnsureSize(8);
         }
 
         public bool Generate(ref ChiselBrushContainer brushContainer)

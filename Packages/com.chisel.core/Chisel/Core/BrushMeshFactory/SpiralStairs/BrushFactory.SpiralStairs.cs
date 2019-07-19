@@ -25,7 +25,7 @@ namespace Chisel.Core
             ref readonly var surfaceDefinition = ref definition.surfaceDefinition;
             if (surfaceDefinition == null ||
                 surfaceDefinition.surfaces == null ||
-                surfaceDefinition.surfaces.Length != 6)
+                surfaceDefinition.surfaces.Length < 8)
                 return false;
             
             const float kEpsilon = 0.001f;
