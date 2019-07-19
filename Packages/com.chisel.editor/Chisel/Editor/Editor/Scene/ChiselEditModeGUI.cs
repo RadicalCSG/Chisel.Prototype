@@ -134,30 +134,46 @@ namespace Chisel.Editors
 
         static GUIResizableWindow editModeWindow;
 
+        static void EditModeButton(ChiselEditModeManager.CSGEditModeItem editMode, Rect togglePosition)
+        {
+            EditorGUI.BeginChangeCheck();
+            var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
+            
+            if (EditorGUI.EndChangeCheck() && value)
+            {
+                // If we're changing edit mode from a generator, we restore our previous selection.
+                if (Instance.HaveStoredEditModeState())
+                    RestoreEditModeState(skipEditMode: true);
+                ChiselEditModeManager.EditMode = editMode.instance;
+                ChiselEditorSettings.Save();
+            }
+        }
+
         static void OnWindowGUI(Rect position)
         {
             var editModes       = ChiselEditModeManager.editModes;
             var generatorModes  = ChiselEditModeManager.generatorModes;
 
             var togglePosition = position;
-            togglePosition.height = kSingleLineHeight;
-            for (int i = 0; i < editModes.Length; i++)
-            {
-                var editMode = editModes[i];
-                EditorGUI.BeginChangeCheck();
-                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
-                if (EditorGUI.EndChangeCheck() && value)
-                {
-                    // If we're changing edit mode from a generator, we restore our previous selection.
-                    if (Instance.HaveStoredEditModeState())
-                        RestoreEditModeState(skipEditMode: true);
-                    ChiselEditModeManager.EditMode = editMode.instance;
-                    ChiselEditorSettings.Save();
-                }
-                togglePosition.y += kSingleLineHeight + kSingleSpacing;
-            }
+            togglePosition.height = kSingleLineHeight * 2;
 
+            togglePosition.width *= 0.5f;
+            EditModeButton(editModes[0], togglePosition);
+            togglePosition.x += togglePosition.width;
+            EditModeButton(editModes[1], togglePosition);
+            togglePosition.y += kSingleLineHeight * 2;
+            EditModeButton(editModes[3], togglePosition);
+            togglePosition.x -= togglePosition.width;
+            EditModeButton(editModes[2], togglePosition);
+
+            // Spacing
+            togglePosition.y += kSingleLineHeight * 2;
             togglePosition.y += kGeneratorSeparator;
+
+            // Reset button size
+            // togglePosition.x -= togglePosition.width;
+            togglePosition.width *= 2f;
+            togglePosition.height = kSingleLineHeight;
 
             for (int i = 0; i < generatorModes.Length; i++)
             {
