@@ -702,7 +702,7 @@ namespace Chisel.Editors
 
             // TODO: for now, just assume we have one submesh
             var brushMeshes = (brushContainers == null || brushContainers.Length != 1) ? null : brushContainers[0].BrushMeshes;
-            var afterBrushMesh = (brushMeshes == null) ? null : brushMeshes[0];
+            var afterBrushMesh = (brushMeshes == null || brushMeshes.Length == 0) ? null : brushMeshes[0];
             if (afterBrushMesh == null)
                 return;
 
