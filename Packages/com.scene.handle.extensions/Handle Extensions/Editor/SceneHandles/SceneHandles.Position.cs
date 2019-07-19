@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -13,16 +13,51 @@ namespace UnitySceneExtensions
         internal static int s_yzAxisMoveHandleHash	= "yzAxesFreeMoveHandleHash".GetHashCode();
         internal static int s_centerMoveHandleHash  = "centerFreeMoveHandleHash".GetHashCode();
 
+        public struct PositionHandleIDs
+        {
+            public int xAxisId;
+            public int yAxisId;
+            public int zAxisId;
+            public int xzPlaneId;
+            public int xyPlaneId;
+            public int yzPlaneId;
+            public int centerId;
+
+            public bool Contains(int id)
+            {
+                return  id == xAxisId   || id == yAxisId   || id == zAxisId ||
+                        id == xzPlaneId || id == xyPlaneId || id == yzPlaneId ||
+                        id == centerId;
+            }
+        }
+
+        public static void SetPositionHandleIDs(ref PositionHandleIDs handleIDs)
+        {
+            GUI.SetNextControlName("xAxis");   handleIDs.xAxisId   = GUIUtility.GetControlID (s_xAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("yAxis");   handleIDs.yAxisId   = GUIUtility.GetControlID (s_yAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("zAxis");   handleIDs.zAxisId   = GUIUtility.GetControlID (s_zAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("xzPlane"); handleIDs.xzPlaneId = GUIUtility.GetControlID (s_xzAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("xyPlane"); handleIDs.xyPlaneId = GUIUtility.GetControlID (s_xyAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("yzPlane"); handleIDs.yzPlaneId = GUIUtility.GetControlID (s_yzAxisMoveHandleHash, FocusType.Passive);
+            GUI.SetNextControlName("center");  handleIDs.centerId  = GUIUtility.GetControlID (s_centerMoveHandleHash, FocusType.Passive);
+        }
 
         public static Vector3[] PositionHandle(Vector3[] points, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
-            GUI.SetNextControlName("xAxis");   var xAxisId   = GUIUtility.GetControlID (s_xAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("yAxis");   var yAxisId   = GUIUtility.GetControlID (s_yAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("zAxis");   var zAxisId   = GUIUtility.GetControlID (s_zAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("xzPlane"); var xzPlaneId = GUIUtility.GetControlID (s_xzAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("xyPlane"); var xyPlaneId = GUIUtility.GetControlID (s_xyAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("yzPlane"); var yzPlaneId = GUIUtility.GetControlID (s_yzAxisMoveHandleHash, FocusType.Passive);
-            GUI.SetNextControlName("center");  var centerId  = GUIUtility.GetControlID (s_centerMoveHandleHash, FocusType.Passive);
+            var handleIDs = new PositionHandleIDs();
+            SetPositionHandleIDs(ref handleIDs);
+            return PositionHandle(handleIDs, points, position, rotation, enabledAxes);
+        }
+
+        public static Vector3[] PositionHandle(PositionHandleIDs handleIDs, Vector3[] points, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
+        {
+            var xAxisId   = handleIDs.xAxisId;
+            var yAxisId   = handleIDs.yAxisId;
+            var zAxisId   = handleIDs.zAxisId;
+            var xzPlaneId = handleIDs.xzPlaneId;
+            var xyPlaneId = handleIDs.xyPlaneId;
+            var yzPlaneId = handleIDs.yzPlaneId;
+            var centerId  = handleIDs.centerId;
             
             var isStatic		= (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
             var prevDisabled	= SceneHandles.disabled;
