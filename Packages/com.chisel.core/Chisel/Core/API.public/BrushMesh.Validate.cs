@@ -126,7 +126,28 @@ namespace Chisel.Core
                     }
                 }
             }
-            return !fail;
+            if (fail)
+                return false;
+
+            if (IsSelfIntersecting())
+            {
+                if (logErrors)
+                {
+                    Debug.LogError("Brush is self intersecting");
+                }
+                return false;
+            }
+
+            if (!HasVolume())
+            {
+                if (logErrors)
+                {
+                    Debug.LogError("Brush has no volume");
+                }
+                return false;
+            }
+
+            return true;
         }
     }
 }

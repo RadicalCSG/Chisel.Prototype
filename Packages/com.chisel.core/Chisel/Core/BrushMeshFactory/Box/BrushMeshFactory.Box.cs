@@ -59,6 +59,8 @@ namespace Chisel.Core
             brushMesh.polygons  = CreateBoxPolygons(in surfaceDefinition);
             brushMesh.halfEdges = boxHalfEdges.ToArray();
             brushMesh.vertices  = BrushMeshFactory.CreateBoxVertices(min, max);
+            brushMesh.UpdateHalfEdgePolygonIndices();
+            brushMesh.CalculatePlanes();
             return true;
         }
 

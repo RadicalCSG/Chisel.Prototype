@@ -57,7 +57,7 @@ namespace Chisel.Editors
                     var activeGridCenter				= UnitySceneExtensions.Grid.ActiveGrid.Center;
                     var surfaceGridPlane				= s_StartIntersection.plane;
                     var surfaceGridUp					= surfaceGridPlane.normal;
-                    var surfaceGridForward				= -MathExtensions.ClosestTangentAxis(surfaceGridUp); // Q: why if this is not negated, we end up-side-down?
+                    var surfaceGridForward				= MathExtensions.CalculateTangent(surfaceGridUp); // Q: why if this is not negated, we end up-side-down?
 
                     var activeGridFromWorldRotation		= Quaternion.LookRotation(activeGridForward, activeGridUp);
                     var worldFromActiveGridRotation		= Quaternion.Inverse(activeGridFromWorldRotation);
@@ -88,11 +88,11 @@ namespace Chisel.Editors
                     }
 
                     // TODO: try to snap the new surface grid point in other directions on the active-grid? (do we need to?)
-                    
+
                     s_Transform = Matrix4x4.TRS(surfaceGridCenter - activeGridCenter, activeGridToSurfaceGridRotation, Vector3.one) * 
                                         UnitySceneExtensions.Grid.ActiveGrid.GridToWorldSpace;
                     s_InvTransform = s_Transform.inverse;
- 
+                    
                     s_Snapping2D.Initialize(new UnitySceneExtensions.Grid(s_Transform), mousePosition, s_StartIntersection.point, UnityEditor.Handles.matrix);
                 }
             }
@@ -164,9 +164,7 @@ namespace Chisel.Editors
                                                   if (evt.keyCode == kCommitKey) { Commit(evt, dragArea, ref points); break; } break; }
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
 
                     if (s_StartIntersection == null)
@@ -218,6 +216,7 @@ namespace Chisel.Editors
                         break;
 
                     UpdatePoints(points, GetPointAtPosition(evt.mousePosition, dragArea));
+                    SceneView.RepaintAll();
                     break;
                 }
                 case EventType.MouseDrag:
@@ -232,9 +231,7 @@ namespace Chisel.Editors
                 }
                 case EventType.MouseDown:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
 
                     if (GUIUtility.hotControl != 0)

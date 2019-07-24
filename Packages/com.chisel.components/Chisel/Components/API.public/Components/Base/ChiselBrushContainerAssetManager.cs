@@ -48,17 +48,37 @@ namespace Chisel.Components
             updateQueue             .Clear();
 
             brushMeshSurfaces		.Clear();
-            surfaceBrushMeshes		.Clear();	
+            surfaceBrushMeshes		.Clear(); 
 
         }
 
         public static void Reset()
         {
             Clear();
+            var usedContainers  = new HashSet<ChiselBrushContainerAsset>();
+            var chiselNodes     = Resources.FindObjectsOfTypeAll<ChiselNode>();
+            foreach (var chiselNode in chiselNodes)
+            {
+                var usedAssets = chiselNode.GetUsedGeneratedBrushes();
+                if (usedAssets == null)
+                    continue;
+                foreach(var asset in usedAssets)
+                    usedContainers.Add(asset);
+            }
             var brushContainerAssets = Resources.FindObjectsOfTypeAll<ChiselBrushContainerAsset>();
-
             foreach (var brushContainerAsset in brushContainerAssets)
             {
+                if (!usedContainers.Contains(brushContainerAsset))
+                {
+#if UNITY_EDITOR
+                    var path = UnityEditor.AssetDatabase.GetAssetPath(brushContainerAsset);
+                    if (string.IsNullOrEmpty(path))
+#endif
+                    {
+                        ChiselObjectUtility.SafeDestroy(brushContainerAsset);
+                        continue;
+                    }
+                }
                 Register(brushContainerAsset);
                 brushContainerAsset.CreateInstances();
             }
@@ -204,8 +224,7 @@ namespace Chisel.Components
             {
                 foreach (var brushContainerAsset in brushContainerAssets)
                 {
-                    HashSet<ChiselBrushMaterial> uniqueSurfaces;
-                    if (brushMeshSurfaces.TryGetValue(brushContainerAsset, out uniqueSurfaces))
+                    if (brushMeshSurfaces.TryGetValue(brushContainerAsset, out HashSet<ChiselBrushMaterial> uniqueSurfaces))
                     {
                         uniqueSurfaces.Remove(brushMaterial);
                         if (brushContainerAsset)

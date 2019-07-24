@@ -135,7 +135,7 @@ namespace Chisel.Editors
         internal static int s_BottomHash	= "BottomStadiumHash".GetHashCode();
 
 
-        protected override void OnScene(ChiselStadium generator)
+        protected override void OnScene(SceneView sceneView, ChiselStadium generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
             var isDisabled		= UnitySceneExtensions.SceneHandles.disabled;

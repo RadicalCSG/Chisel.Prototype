@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -8,8 +8,6 @@ namespace Chisel.Core
 {
     public sealed partial class BrushMesh
     {
-        const float kDistanceEpsilon = 0.00001f;
-
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         struct VertexSide
         {
@@ -68,7 +66,12 @@ namespace Chisel.Core
                 surfaces = new Surface[polygons.Length];
 
             for (int p = 0; p < polygons.Length; p++)
-                surfaces[p].localPlane = CalculatePlane(in polygons[p]);
+            {
+                var plane       = CalculatePlane(in polygons[p]);
+                var planeVector = (Vector4)plane.normal;
+                planeVector.w = plane.distance;
+                surfaces[p].localPlane = planeVector;
+            }
         }
 
         public void UpdateHalfEdgePolygonIndices()
@@ -179,7 +182,6 @@ namespace Chisel.Core
                     {
                         for (int p2 = p + 1; p2 < polygons.Length; p2++)
                             polygons[p2 - 1] = polygons[p2];
-                        //Array.Copy(polygons, p + 1, polygons, p, polygons.Length - p);
                     }
                     Array.Resize(ref polygons, newLength);
                     continue;
@@ -209,8 +211,8 @@ namespace Chisel.Core
             for (int e = 0; e < halfEdges.Length; e++)
                 lookup[e] = e;
 
-            var firstEdge0  = 0;// polygons[0].firstEdge;
-            var edgeCount0  = 0;// polygons[0].edgeCount;
+            var firstEdge0  = 0;
+            var edgeCount0  = 0;
             var lastEdge0   = firstEdge0 + edgeCount0;
             int lastEdge1, firstEdge1, edgeCount1;
 
@@ -290,11 +292,7 @@ namespace Chisel.Core
 
             // If we don't have any intersections then the polygon is either completely inside or outside
             if (s_Intersections.Count == 0)
-            {
-                //if (intersection.Traversal1.Side.Halfspace == 1)
-                //    polygon.edgeCount = 0;
                 return true;
-            }
 
             Debug.Assert(s_Intersections.Count != 1, "Number of edges crossing the plane boundary is 1, which should not be possible!");
 
@@ -335,11 +333,7 @@ namespace Chisel.Core
 
                 // Check if we have any intersections left
                 if (s_Intersections.Count == 0)
-                {
-                    //if (outside)
-                    //    polygon.edgeCount = 0;
                     return true;
-                }
             }
 
             Debug.Assert(s_Intersections.Count >= 2 && s_Intersections.Count <= 4, "Number of edges crossing the plane boundary should be ≥2 and ≤4!");
@@ -412,39 +406,10 @@ namespace Chisel.Core
                 var newVertexDistance = new VertexSide() { Distance = 0, Halfspace = 0 };
                 vertexDistances.Add(newVertexDistance);
 
-                //Debug.Log("< " + halfEdges[edgeIndex0].vertexIndex + " " + halfEdges[edgeIndex1].vertexIndex + " : " + newVertexIndex);
-
                 // Split the halfEdge (on both sides) and insert the vertex index in between
                 SplitHalfEdge(edgeIndex1, newVertexIndex, s_Intersections, out int newEdgeIndex);
-                //Debug.Log(newVertexIndex + " " + newVertex + " | " + vertex0 + " " + vertex1 + " " + length + " " + distance0 + " " + distance1 + "|"+
-                //    planeTraversal0.Traversal0.Side.Halfspace + " " + planeTraversal0.Traversal1.Side.Halfspace);
                 
                 polygon     = ref polygons[polygonIndex];
-
-                // Fix up the intersections since edge-indices might have changed
-                //var replacedEdgeIndex	= ((edgeIndex1 + polygon.edgeCount - polygon.firstEdge - 1) % polygon.edgeCount) + polygon.firstEdge;
-                //newEdgeIndex		= ((edgeIndex0 + polygon.edgeCount - polygon.firstEdge - 1) % polygon.edgeCount) + polygon.firstEdge;
-
-                //Debug.Log("> " + halfEdges[edgeIndex0].vertexIndex + " " + halfEdges[edgeIndex1].vertexIndex + " " + halfEdges[replacedEdgeIndex].vertexIndex + " " + halfEdges[newEdgeIndex].vertexIndex);
-                /*
-                for (var i1 = 0; i1 < s_Intersections.Count; i1++)
-                {
-                    if (i1 == i0)
-                        continue;
-
-                    var planeTraversal1 = s_Intersections[i1];
-                    if (planeTraversal1.Traversal0.EdgeIndex == edgeIndex1)
-                    {
-                        planeTraversal1.Traversal0.EdgeIndex = replacedEdgeIndex;
-                        s_Intersections[i1] = planeTraversal1;
-                    } else
-                    if (planeTraversal1.Traversal1.EdgeIndex == edgeIndex1)
-                    {
-                        planeTraversal1.Traversal1.EdgeIndex = replacedEdgeIndex;
-                        s_Intersections[i1] = planeTraversal1;
-                    }
-                }
-                */
 
                 Debug.Assert(halfEdges[newEdgeIndex].vertexIndex == newVertexIndex);
 
@@ -463,8 +428,6 @@ namespace Chisel.Core
                 // ... finally make the existing plane traversal start at the new intersection point
                 planeTraversal0.Traversal0 = newIntersection.Traversal1;
                 s_Intersections[i0] = planeTraversal0;
-                //if (s_Intersections.Count == 2)
-                //    return true;
             }
 
             // NOTE: from this point on Traversal𝑛.EdgeIndex may no longer be valid!
@@ -498,24 +461,17 @@ namespace Chisel.Core
             SplitPolygon(polygonIndex, indexOut, indexIn);
             return true;
         }
-
-        void SplitPolygon(int polygonIndex, int indexOut, int indexIn)
+        
+        public void SplitPolygon(int polygonIndex, int indexOut, int indexIn)
         {
-            //Debug.Log("SplitPolygon");
             var firstEdge = polygons[polygonIndex].firstEdge;
             var edgeCount = polygons[polygonIndex].edgeCount;
             var lastEdge  = firstEdge + edgeCount;
 
-            //Debug.Log("SplitPolygon " + firstEdge + " " + indexIn + " " + indexOut + "|"+ polygonIndex + " " + halfEdgePolygonIndices[indexIn] + " " + halfEdgePolygonIndices[indexOut]);
             if (halfEdgePolygonIndices[indexIn ] != polygonIndex ||
                 halfEdgePolygonIndices[indexOut] != polygonIndex)
             {
-                Debug.Assert(false);/*
-                var builder = new System.Text.StringBuilder();
-                builder.AppendLine("polygons:");
-                for (int i = 0; i < polygons.Length; i++)
-                    builder.AppendLine("  " + i + ":" + polygons[i].ToString());
-                Debug.Log(builder.ToString()); */
+                Debug.Assert(false);
                 return;
             }
 
@@ -527,13 +483,11 @@ namespace Chisel.Core
                 var segment2     = (indexOut - indexIn  ) + 1;
                 var segment3     = (lastEdge - indexOut ) + 1;
                 var newEdgeCount = segment1 + segment3;
-                //Debug.Log(firstEdge + " " + indexIn + " " + indexOut + " " + lastEdge + " " + newEdgeCount + " " + segment1 + " " + segment2 + " " + segment3);
 
                 if (segment2 <= 2 ||
                     (segment3 + segment1) <= 2)
                 {
                     Debug.Assert(false);
-                    //Debug.Log(segment1 + " " + segment2 + " " + segment3);
                     return;
                 }
 
@@ -547,7 +501,7 @@ namespace Chisel.Core
 
                 newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID      = polygons.Length;
+                newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
                 newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexIn;
@@ -562,10 +516,8 @@ namespace Chisel.Core
 
                 Array.Copy(halfEdges, indexIn,   newHalfEdges, indexIn, segment2);
 
-                //Debug.Log(firstEdge + " <-> " + (firstEdge + segment2 - 1) + " " + segment2 + " | " + newFirstIndex + " <-> " + (newFirstIndex + newEdgeCount - 1) + " " + newEdgeCount);
-
-                var index1 = newPolygons[polygonIndex   ].firstEdge;// + (newPolygons[polygonIndex   ].edgeCount - 1);
-                var index2 = newPolygons[newPolygonIndex].firstEdge;// + (newPolygons[newPolygonIndex].edgeCount - 1);
+                var index1 = newPolygons[polygonIndex   ].firstEdge;
+                var index2 = newPolygons[newPolygonIndex].firstEdge;
                 
                 newHalfEdges[index1].twinIndex = index2;
                 newHalfEdges[index2].twinIndex = index1;
@@ -598,13 +550,11 @@ namespace Chisel.Core
                 var segment2     = (indexIn  - indexOut) + 1;
                 var segment3     = (lastEdge - indexIn ) + 1;
                 var newEdgeCount = segment1 + segment3;
-                //Debug.Log(firstEdge + " " + indexIn + " " + indexOut + " " + lastEdge + " " + newEdgeCount + " " + segment1 + " " + segment2 + " " + segment3);
-
+                
                 if (segment2 <= 2 ||
                     (segment3 + segment1) <= 2)
                 {
                     Debug.Assert(false);
-                    //Debug.Log(segment1 + " " + segment2 + " " + segment3);
                     return;
                 }
 
@@ -618,7 +568,7 @@ namespace Chisel.Core
 
                 newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID      = polygons.Length;
+                newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
                 newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexOut;
@@ -633,10 +583,8 @@ namespace Chisel.Core
 
                 Array.Copy(halfEdges, indexOut,  newHalfEdges, indexOut, segment2);
 
-                //Debug.Log(firstEdge + " <-> " + (firstEdge + segment2 - 1) + " " + segment2 + " | " + newFirstIndex + " <-> " + (newFirstIndex + newEdgeCount - 1) + " " + newEdgeCount);
-
-                var index1 = newPolygons[polygonIndex   ].firstEdge;// + (newPolygons[polygonIndex   ].edgeCount - 1);
-                var index2 = newPolygons[newPolygonIndex].firstEdge;// + (newPolygons[newPolygonIndex].edgeCount - 1);
+                var index1 = newPolygons[polygonIndex   ].firstEdge;
+                var index2 = newPolygons[newPolygonIndex].firstEdge;
                 
                 newHalfEdges[index1].twinIndex = index2;
                 newHalfEdges[index2].twinIndex = index1;
@@ -660,15 +608,10 @@ namespace Chisel.Core
                 this.halfEdges = newHalfEdges;
                 this.polygons  = newPolygons;
             }
-            // TODO: implement
 
-
-            //Debug.Log("compact");
             CompactHalfEdges();
             CalculatePlanes();
-            //Debug.Log("validate");
             Validate(logErrors: true);
-            //Debug.Log("after");
         }
 
 
@@ -731,6 +674,65 @@ namespace Chisel.Core
             Debug.Log(builder.ToString());
         }
 
+        public void RemoveEdge(int removeEdgeIndex)
+        {
+            if (removeEdgeIndex < 0 ||
+                removeEdgeIndex >= halfEdges.Length)
+                return;
+
+            var twin            = halfEdges[removeEdgeIndex].twinIndex;
+            var polygonIndex1   = halfEdgePolygonIndices[removeEdgeIndex];
+            var polygonIndex2   = halfEdgePolygonIndices[twin];
+            
+            var newPolygons = new Polygon[polygons.Length + 1];
+            Array.Copy(polygons, newPolygons, polygons.Length);
+            newPolygons[polygonIndex1].edgeCount = 0;
+            newPolygons[polygonIndex2].edgeCount = 0;
+
+            var newCount        = (polygons[polygonIndex1].edgeCount - 1) + (polygons[polygonIndex2].edgeCount - 1);
+            var newFirstEdge    = halfEdges.Length;
+
+            var newHalfEdges    = new HalfEdge[halfEdges.Length + newCount];
+            Array.Copy(halfEdges, newHalfEdges, halfEdges.Length);
+
+            var newPolygonIndex = polygons.Length;
+            newPolygons[newPolygonIndex].edgeCount      = newCount;
+            newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
+            newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
+            newPolygons[newPolygonIndex].surface        = polygons[polygonIndex1].surface;
+
+            var edgeCount1 = polygons[polygonIndex1].edgeCount;
+            var firstEdge1 = polygons[polygonIndex1].firstEdge;
+            int newLastEdge = newFirstEdge;
+            for (int e = 1; e < edgeCount1; e++, newLastEdge++)
+            {
+                var edgeIndex = ((removeEdgeIndex - firstEdge1 + e) % edgeCount1) + firstEdge1;
+                newHalfEdges[newLastEdge] = halfEdges[edgeIndex];
+            }
+            var edgeCount2 = polygons[polygonIndex2].edgeCount;
+            var firstEdge2 = polygons[polygonIndex2].firstEdge;
+            for (int e = 1; e < edgeCount2; e++, newLastEdge++)
+            {
+                var edgeIndex = ((twin - firstEdge2 + e) % edgeCount2) + firstEdge2;
+                newHalfEdges[newLastEdge] = halfEdges[edgeIndex];
+            }
+            Debug.Assert(newLastEdge == (newFirstEdge + newCount));
+
+            for (int n = newFirstEdge; n < newLastEdge; n++)
+                newHalfEdges[newHalfEdges[n].twinIndex].twinIndex = n;
+
+            var oldPolygonLength = polygons.Length;
+
+            polygons    = newPolygons;
+            halfEdges   = newHalfEdges;
+
+            CompactHalfEdges();
+            CalculatePlanes();
+            UpdateHalfEdgePolygonIndices();
+
+            Validate(logErrors: true);
+        }
+
         void Dump()
         {
             var builder = new System.Text.StringBuilder();
@@ -762,6 +764,11 @@ namespace Chisel.Core
             for (int i = 0; i < vertices.Length; i++)
                 builder.AppendLine("vertices[" + i + "]:" + vertices[i]);
             Debug.Log(builder.ToString());
+        }
+        
+        public void SplitHalfEdge(int halfEdgeIndex, int newVertexIndex, out int newEdgeIndex)
+        {
+            SplitHalfEdge(halfEdgeIndex, newVertexIndex, null, out newEdgeIndex);
         }
 
         void SplitHalfEdge(int halfEdgeIndex, int newVertexIndex, List<PlaneTraversals> intersections, out int newEdgeIndex)
@@ -828,7 +835,6 @@ namespace Chisel.Core
             var dstOffset = 1;
             dstNewTwinIndex += dstOffset;
             newHalfEdges[dstNewSelfIndex] = new BrushMesh.HalfEdge { vertexIndex = newVertexIndex, twinIndex = dstNewTwinIndex };
-            //newHalfEdges[dstNewSelfIndex] = new BrushMesh.HalfEdge { vertexIndex = -2, twinIndex = -2 };
 
             // copy all halfEdges, from (including) selfEdgeIndex to twinEdgeIndex (including), to after the new halfEdge
             // |****ns****t 
@@ -840,7 +846,6 @@ namespace Chisel.Core
             // set the new twin halfEdge
             // |****ns****tn
             newHalfEdges[dstNewTwinIndex] = new BrushMesh.HalfEdge { vertexIndex = newVertexIndex, twinIndex = dstNewSelfIndex };
-            //newHalfEdges[dstNewTwinIndex] = new BrushMesh.HalfEdge { vertexIndex = -2, twinIndex = -2 };
             dstOffset++;
             
             // copy everything that's left behind twinEdgeIndex (excluding) 
@@ -849,19 +854,7 @@ namespace Chisel.Core
             var lastEnd         = oldLength - 1;
             var lastEdgeCount   = (lastEnd - lastStart) + 1;
             if (lastEdgeCount > 0) Array.Copy(halfEdges, lastStart, newHalfEdges, dstNewTwinIndex + 1, lastEdgeCount);
-            
-            /*
-            var builder = new System.Text.StringBuilder();
-            builder.AppendLine("polygons (before):");
-            for (int i = 0; i < polygons.Length; i++)
-                builder.AppendLine("  " + i + ":" + polygons[i].ToString());
-            builder.AppendLine("halfEdges:");
-            for (int i = 0; i < halfEdges.Length; i++)
-                builder.AppendLine("  "+i + ":" + halfEdges[i].ToString());
-            builder.AppendLine("newHalfEdges (before twin fix):");
-            for (int i = 0; i < newHalfEdges.Length; i++)
-                builder.AppendLine("  " + i + ":" + newHalfEdges[i].ToString());
-            */
+
             // Fix up all the twinIndices since the position of all half-edges beyond selfEdgeIndex have moved
             for (int e = 0; e < dstNewSelfIndex; e++)
             {
@@ -882,35 +875,32 @@ namespace Chisel.Core
                 newHalfEdges[e].twinIndex = twinIndex + ((twinIndex >= srcNewTwinIndex) ? 2 : 1);
             }
 
-            for (int i = 0; i < intersections.Count; i++)
+            if (intersections != null)
             {
-                var intersection = intersections[i];
+                for (int i = 0; i < intersections.Count; i++)
                 {
-                    var edgeIndex = intersection.Traversal0.EdgeIndex;
-                    if (edgeIndex >= dstNewSelfIndex)
+                    var intersection = intersections[i];
                     {
-                        intersection.Traversal0.EdgeIndex = edgeIndex + ((edgeIndex >= srcNewTwinIndex) ? 2 : 1);
+                        var edgeIndex = intersection.Traversal0.EdgeIndex;
+                        if (edgeIndex >= dstNewSelfIndex)
+                        {
+                            intersection.Traversal0.EdgeIndex = edgeIndex + ((edgeIndex >= srcNewTwinIndex) ? 2 : 1);
+                        }
                     }
-                }
-                {
-                    var edgeIndex = intersection.Traversal1.EdgeIndex;
-                    if (edgeIndex >= dstNewSelfIndex)
                     {
-                        intersection.Traversal1.EdgeIndex = edgeIndex + ((edgeIndex >= srcNewTwinIndex) ? 2 : 1);
+                        var edgeIndex = intersection.Traversal1.EdgeIndex;
+                        if (edgeIndex >= dstNewSelfIndex)
+                        {
+                            intersection.Traversal1.EdgeIndex = edgeIndex + ((edgeIndex >= srcNewTwinIndex) ? 2 : 1);
+                        }
                     }
+                    intersections[i] = intersection;
                 }
-                intersections[i] = intersection;
             }
 
 
             { var temp = newHalfEdges[dstNewSelfIndex].twinIndex; newHalfEdges[dstNewSelfIndex].twinIndex = newHalfEdges[dstNewSelfIndex + 1].twinIndex; newHalfEdges[dstNewSelfIndex + 1].twinIndex = temp; }
             { var temp = newHalfEdges[dstNewTwinIndex].twinIndex; newHalfEdges[dstNewTwinIndex].twinIndex = newHalfEdges[dstNewTwinIndex + 1].twinIndex; newHalfEdges[dstNewTwinIndex + 1].twinIndex = temp; }
-
-            /*
-            builder.AppendLine("newHalfEdges (after twin fix):");
-            for (int i = 0; i < newHalfEdges.Length; i++)
-                builder.AppendLine("  " + i + ":" + newHalfEdges[i].ToString());
-            */
 
             // Fix up the polygons that we added an edge to
             polygons[selfPolygonIndex].edgeCount++;
@@ -920,20 +910,13 @@ namespace Chisel.Core
             polygons[0].firstEdge = 0;
             for (int p = 1; p < polygons.Length; p++)
                 polygons[p].firstEdge = polygons[p - 1].firstEdge + polygons[p - 1].edgeCount;
-            /*
-            builder.AppendLine("polygons (after):");
-            for (int i = 0; i < polygons.Length; i++)
-                builder.AppendLine("  " + i + ":" + polygons[i].ToString());
-            Debug.Log(builder.ToString());
-            //*/
-
+            
             halfEdges = newHalfEdges;
 
             UpdateHalfEdgePolygonIndices();
             CalculatePlanes();
             Validate(logErrors: true);
-            //Debug.Log("validated");
-
+            
             if (swapped)
             {
                 var edgeCount = polygons[twinPolygonIndex].edgeCount;
@@ -959,8 +942,17 @@ namespace Chisel.Core
         static List<VertexSide> s_VertexDistances   = new List<VertexSide>();   // avoids allocations at runtime
         static List<int>        s_IntersectedEdges  = new List<int>();          // avoids allocations at runtime
 
-        public bool Cut(Plane cuttingPlane, in ChiselSurface chiselSurface)
+        public bool Cut(Plane cuttingPlane, ChiselSurface chiselSurface)
         {
+            if (chiselSurface == null)
+            {
+                chiselSurface = new ChiselSurface
+                {
+                    brushMaterial       = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, CSGMaterialManager.DefaultPhysicsMaterial),
+                    surfaceDescription  = SurfaceDescription.Default
+                };
+            }
+
             if (s_IntersectedEdges != null)
                 s_IntersectedEdges.Clear();
 
@@ -989,7 +981,6 @@ namespace Chisel.Core
             {
                 var distance = cuttingPlane.GetDistanceToPoint(vertices[p]);
                 var halfspace = (short)((distance < -kDistanceEpsilon) ? -1 : (distance > kDistanceEpsilon) ? 1 : 0);
-                Debug.Assert(halfspace == 0);
                 s_VertexDistances.Add(new VertexSide() { Distance = distance, Halfspace = halfspace });
             }
 
@@ -1186,16 +1177,174 @@ namespace Chisel.Core
             var firstEdge = polygons[polygonIndex].firstEdge;
             var lastEdge = firstEdge + edgeCount;
 
+            var min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
             var center = Vector3.zero;
             for (int e = firstEdge; e < lastEdge; e++)
             {
                 var vertexIndex = halfEdges[e].vertexIndex;
-                center += vertices[vertexIndex];
+                var vertex = vertices[vertexIndex];
+                min.x = Mathf.Min(min.x, vertex.x);
+                min.y = Mathf.Min(min.y, vertex.y);
+                min.z = Mathf.Min(min.z, vertex.z);
+                
+                max.x = Mathf.Max(max.x, vertex.x);
+                max.y = Mathf.Max(max.y, vertex.y);
+                max.z = Mathf.Max(max.z, vertex.z);
             }
-            center.x /= edgeCount;
-            center.y /= edgeCount;
-            center.z /= edgeCount;
-            return center;
+
+            return (min + max) * 0.5f;
+        }
+        
+        public Vector3 GetPolygonCentroid(int polygonIndex)
+        {
+            const float kMinimumArea = 1E-7f;
+
+            if (polygonIndex < 0 || polygonIndex >= polygons.Length)
+                throw new IndexOutOfRangeException();
+
+            var edgeCount = polygons[polygonIndex].edgeCount;
+            if (edgeCount < 3)
+                return Vector3.zero;
+
+            var firstEdge = polygons[polygonIndex].firstEdge;
+            var lastEdge  = firstEdge + edgeCount;
+            
+            var vectorA = vertices[halfEdges[firstEdge    ].vertexIndex];
+            var vectorB = vertices[halfEdges[firstEdge + 1].vertexIndex];
+
+            var centroid = Vector3.zero;
+            float accumulatedArea = 0.0f;
+            
+            for (int e = firstEdge + 2; e < lastEdge; e++)
+            {
+                var vertexIndex     = halfEdges[e].vertexIndex;
+                var vectorC         = vertices[vertexIndex];
+
+                var edgeCA = vectorC - vectorA;
+                var edgeCB = vectorC - vectorB;
+                
+                var area = Vector3.Cross(edgeCA, edgeCB).magnitude;
+
+                centroid.x += area * (vectorA.x + vectorB.x + vectorC.x);
+                centroid.y += area * (vectorA.y + vectorB.y + vectorC.y);
+                centroid.z += area * (vectorA.z + vectorB.z + vectorC.z);
+
+                accumulatedArea += area;
+                vectorB = vectorC;
+            }
+
+            if (Math.Abs(accumulatedArea) < kMinimumArea)
+                return Vector3.zero;
+            
+            return centroid * (1.0f / (accumulatedArea * 3.0f));
+        }
+
+
+        public bool IsInside(Vector3 localPoint)
+        {
+            if (surfaces == null)
+                return false;
+
+            for (int s = 0; s < surfaces.Length; s++)
+            {
+                var localPlane = new Plane((Vector3)surfaces[s].localPlane, surfaces[s].localPlane.w);
+                if (localPlane.GetDistanceToPoint(localPoint) > -kDistanceEpsilon)
+                    return false;
+            }
+            return true;
+        }
+
+        public bool IsInsideOrOn(Vector3 localPoint)
+        {
+            if (surfaces == null)
+                return false;
+
+            for (int s = 0; s < surfaces.Length; s++)
+            {
+                var localPlane = new Plane((Vector3)surfaces[s].localPlane, surfaces[s].localPlane.w);
+                if (localPlane.GetDistanceToPoint(localPoint) > kDistanceEpsilon)
+                    return false;
+            }
+            return true;
+        }
+
+        public int FindVertexIndexOfVertex(Vector3 vertex)
+        {
+            for (int v = 0; v < vertices.Length; v++)
+            {
+                if (vertices[v].x != vertex.x ||
+                    vertices[v].y != vertex.y ||
+                    vertices[v].z != vertex.z)
+                    continue;
+                return v;
+            }
+            return -1;
+        }
+
+        public int FindEdgeByVertexIndices(int vertexIndex1, int vertexIndex2)
+        {
+            for (int e = 0; e < halfEdges.Length; e++)
+            {
+                if (halfEdges[e].vertexIndex != vertexIndex2)
+                    continue;
+                var twin = halfEdges[e].twinIndex;
+                if (halfEdges[twin].vertexIndex == vertexIndex1)
+                    return e;
+            }
+            return -1;
+        }
+        
+        public int FindPolygonEdgeByVertexIndex(int polygonIndex, int vertexIndex)
+        {
+            var edgeCount = polygons[polygonIndex].edgeCount;
+            var firstEdge = polygons[polygonIndex].firstEdge;
+            var lastEdge = firstEdge + edgeCount;
+            for (int e = firstEdge; e < lastEdge; e++)
+            {
+                if (halfEdges[e].vertexIndex != vertexIndex)
+                    continue;
+                return e;
+            }
+            return -1;
+        }
+
+        public int FindAnyHalfEdgeWithVertexIndex(int vertexIndex)
+        {
+            for (int e = 0; e < halfEdges.Length; e++)
+            {
+                if (halfEdges[e].vertexIndex != vertexIndex)
+                    continue;
+                return e;
+            }
+            return -1;
+        }
+
+        public bool IsVertexIndexPartOfPolygon(int polygonIndex, int vertexIndex)
+        {
+            ref var polygon = ref polygons[polygonIndex];
+
+            var firstEdge = polygon.firstEdge;
+            var edgeCount = polygon.edgeCount;
+            var lastEdge  = firstEdge + edgeCount;
+            for (int e = firstEdge; e < lastEdge; e++)
+            {
+                if (halfEdges[e].vertexIndex == vertexIndex)
+                    return true;
+            }
+            return false;
+        }
+
+        public bool IsEdgeIndexPartOfPolygon(int polygonIndex, int edgeIndex)
+        {
+            ref var polygon = ref polygons[polygonIndex];
+
+            var firstEdge = polygon.firstEdge;
+            var edgeCount = polygon.edgeCount;
+            var lastEdge = firstEdge + edgeCount;
+            return (edgeIndex >= firstEdge &&
+                    edgeIndex < lastEdge);
         }
     }
 }

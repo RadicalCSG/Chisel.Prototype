@@ -117,7 +117,7 @@ namespace Chisel.Editors
             ShowSurfaces(surfacesProp, kSurfaceContentNames, kSurfaceContentNames.Length);
         }
         
-        protected override void OnScene(ChiselLinearStairs generator)
+        protected override void OnScene(SceneView sceneView, ChiselLinearStairs generator)
         {
             var originalStepDepthOffset = generator.StepDepthOffset;
             var originalPlateauHeight	= generator.PlateauHeight;

@@ -1,10 +1,11 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
@@ -71,8 +72,7 @@ namespace Chisel.Editors
                 case EventType.KeyDown:
                 case EventType.ValidateCommand:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
+                    if (SceneHandles.InCameraOrbitMode ||
                         (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
                         GUIUtility.hotControl != 0)
                         break;
@@ -86,8 +86,7 @@ namespace Chisel.Editors
                 }
                 case EventType.KeyUp:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
+                    if (SceneHandles.InCameraOrbitMode ||
                         (evt.modifiers & (EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command)) != EventModifiers.None ||
                         GUIUtility.hotControl != 0)
                         break;

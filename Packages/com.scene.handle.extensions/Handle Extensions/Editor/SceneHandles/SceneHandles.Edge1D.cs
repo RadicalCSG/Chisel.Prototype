@@ -20,8 +20,7 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
                     UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to) * 2.0f);
                     break;
@@ -103,31 +102,15 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
-                    if (Tools.current == Tool.View ||
-                        Tools.current == Tool.None ||
-                        evt.alt)
+                    if (SceneHandles.InCameraOrbitMode)
                         break;
                     UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToLine(from, to));
                     break;
                 }
                 case EventType.Repaint:
                 {
-                    var sceneView = SceneView.currentDrawingSceneView;
-                    if (sceneView &&
-                        Tools.current != Tool.View &&
-                        Tools.current != Tool.None &&
-                        !evt.alt)
-                    {
-                        var rect = sceneView.position;
-                        rect.min = Vector2.zero;
-                        var hovering = UnityEditor.HandleUtility.nearestControl == id && 
-                                        UnityEditor.HandleUtility.DistanceToLine(from, to) < 10; // in case multiple edges share the same id, we want to ignore those that aren't even close
-                        if (EditorGUIUtility.hotControl == id || hovering)
-                        {
-                            EditorGUIUtility.AddCursorRect(rect, SceneHandleUtility.GetCursorForEdge(from, to));
-                        }
-                    }
-                    
+                    SetCursor(id, from, to);
+
                     SceneHandles.DrawAAPolyLine(3.0f, from, to);
                     break;
                 }

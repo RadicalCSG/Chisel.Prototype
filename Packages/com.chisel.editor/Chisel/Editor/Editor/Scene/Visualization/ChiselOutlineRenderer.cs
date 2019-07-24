@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using System.Linq;
 
 namespace Chisel.Editors
 {
@@ -85,7 +86,9 @@ namespace Chisel.Editors
 
         ChiselRenderer	brushOutlineRenderer;
         ChiselRenderer	surfaceOutlineRenderer;
-        ChiselRenderer	handleRenderer;
+
+        // NOTE: handle-renderers often take the orientation of the camera into account (for example: backfaced surfaces) so they need to be camera specific
+        Dictionary<Camera, ChiselRenderer>	handleRenderers = new Dictionary<Camera, ChiselRenderer>();
         
         readonly Dictionary<SurfaceOutline, CSGWireframe>	surfaceOutlines		= new Dictionary<SurfaceOutline, CSGWireframe>();
         readonly Dictionary<SurfaceOutline, CSGWireframe>	surfaceOutlineFixes	= new Dictionary<SurfaceOutline, CSGWireframe>();
@@ -124,12 +127,14 @@ namespace Chisel.Editors
         {
             brushOutlineRenderer	= new ChiselRenderer();
             surfaceOutlineRenderer	= new ChiselRenderer();
-            handleRenderer			= new ChiselRenderer();
+            handleRenderers.Clear();
         }
 
         void OnDisable()
         {
-            handleRenderer			.Destroy();
+            foreach(var item in handleRenderers)
+                item.Value.Destroy();
+            handleRenderers.Clear();
             brushOutlineRenderer	.Destroy();
             surfaceOutlineRenderer	.Destroy();
 
@@ -363,22 +368,68 @@ namespace Chisel.Editors
             updateSurfaceWireframe = true;
         }
 
-        public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLine(transformation, from, to, color, lineMode, thickness, dashSize); }
-        public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLine(transformation, from, to, lineMode, thickness, dashSize); }
-        public static void DrawLine(Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLine(from, to, color, lineMode, thickness, dashSize); }
-        public static void DrawLine(Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLine(from, to, lineMode, thickness, dashSize); }
+        static void CleanUpHandleRenderers()
+        {
+            var handleRenderers = Instance.handleRenderers;
 
+            bool haveInvalidCameras = false;
+            foreach (var camera in handleRenderers.Keys)
+            {
+                if (camera)
+                    continue;
+                haveInvalidCameras = true;
+                break;
+            }
 
-        public static void DrawContinuousLines(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawContinuousLines(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
-        public static void DrawContinuousLines(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawContinuousLines(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
-        public static void DrawContinuousLines(Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawContinuousLines(points, startIndex, length, color, lineMode, thickness, dashSize); }
-        public static void DrawContinuousLines(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize); }
+            if (!haveInvalidCameras)
+                return;
 
-        public static void DrawLineLoop(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLineLoop(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
-        public static void DrawLineLoop(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLineLoop(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
-        public static void DrawLineLoop(Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLineLoop(points, startIndex, length, color, lineMode, thickness, dashSize); }
-        public static void DrawLineLoop(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { Instance.handleRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize); }
+            var allCameras = handleRenderers.Keys.ToArray();
+            foreach (var camera in allCameras)
+            {
+                if (camera)
+                    continue;
+                handleRenderers[camera].Destroy();
+                handleRenderers.Remove(camera);
+            }
+        }
+
+        static ChiselRenderer GetHandleRenderer(Camera camera)
+        {
+            var handleRenderers = Instance.handleRenderers;
+            ChiselRenderer renderer;
+            if (handleRenderers.TryGetValue(camera, out renderer))
+                return renderer;
+
+            CleanUpHandleRenderers();
+
+            renderer = new ChiselRenderer();
+            handleRenderers[camera] = renderer;
+            return renderer;
+        }
         
+        static ChiselRenderer HandleRenderer { get { return GetHandleRenderer(Camera.current); } }
+
+        public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, color, lineMode, thickness, dashSize); }
+        public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, lineMode, thickness, dashSize); }
+        public static void DrawLine(Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(from, to, color, lineMode, thickness, dashSize); }
+        public static void DrawLine(Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(from, to, lineMode, thickness, dashSize); }
+
+
+        public static void DrawContinuousLines(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize); }
+
+        public static void DrawLineLoop(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize); }
+        
+        public static void DrawPolygon(Matrix4x4 transformation, Vector3[] points, int[] indices, Color color) { HandleRenderer.DrawPolygon(transformation, points, indices, color); }
+        public static void DrawPolygon(Matrix4x4 transformation, Vector3[] points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
+        public static void DrawPolygon(Matrix4x4 transformation, List<Vector3> points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
+
         void UpdateBrushWireframe()
         {
             foreach (var pair in brushOutlines)
@@ -607,6 +658,9 @@ namespace Chisel.Editors
 
         public void OnSceneGUI(SceneView sceneView)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             var camera = sceneView.camera;
 
             // defer surface updates when it's not currently visible
@@ -622,6 +676,7 @@ namespace Chisel.Editors
                 surfaceOutlineRenderer.RenderAll(camera);
             }
 
+            var handleRenderer = GetHandleRenderer(camera);
             handleRenderer.End();
             handleRenderer.RenderAll(camera);
             handleRenderer.Begin();

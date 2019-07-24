@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,7 +23,7 @@ namespace UnitySceneExtensions
                 handleSize = UnityEditor.HandleUtility.GetHandleSize(handleOrigin);
 
             var currentFocusControl = UnitySceneExtensions.SceneHandleUtility.focusControl;
-            var result = UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize * 0.05f, UnitySceneExtensions.SceneHandles.OutlinedCircleHandleCap);
+            var result = UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize * 0.05f, UnitySceneExtensions.SceneHandles.NormalHandleCap);
             if (currentFocusControl == id)
             {
                 var sceneView = SceneView.currentDrawingSceneView;
@@ -42,6 +42,11 @@ namespace UnitySceneExtensions
         public static Vector3 Slider1DHandle(Vector3 handleOrigin, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0, Axis axis = Axis.Y)
         {
             var id = GUIUtility.GetControlID(s_Slider1DHash, FocusType.Passive);
+            return Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize);
+        }
+
+        public static Vector3 Slider1DHandle(int id, Axis axis, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0)
+        {
             if (snappingStep == 0)
                 snappingStep = Snapping.MoveSnappingSteps[(int)axis];
             if (handleSize == 0)
@@ -49,11 +54,54 @@ namespace UnitySceneExtensions
             return UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
         }
 
+        public static Vector3 Slider1DHandle(Vector3 handleOrigin, Vector3 handleDirection, CapFunction capFunction, float snappingStep = 0, float handleSize = 0, Axis axis = Axis.Y)
+        {
+            var id = GUIUtility.GetControlID(s_Slider1DHash, FocusType.Passive);
+            return Slider1DHandle(id, axis, handleOrigin, handleDirection, capFunction, snappingStep, handleSize);
+        }
+
+        public static Vector3 Slider1DHandle(int id, Axis axis, Vector3 handleOrigin, Vector3 handleDirection, CapFunction capFunction, float snappingStep = 0, float handleSize = 0)
+        {
+            return UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize, capFunction);
+        }
+
+        public static Vector3 Slider1DHandle(int id, Vector3 handleOrigin, Vector3 handleDirection, CapFunction capFunction, float snappingStep = 0, float handleSize = 0)
+        {
+            Axis axis = Grid.ActiveGrid.GetClosestAxis(Handles.matrix.MultiplyVector(handleDirection));
+            return UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize, capFunction);
+        }
+
         public static Vector3[] Slider1DHandle(int id, Axis axis, Vector3[] snapPoints, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep, float handleSize, CapFunction capFunction, bool selectLockingAxisOnClick = false) 
         {
             return Slider1D.Do(id, axis, snapPoints, handleOrigin, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick);
         }
-        
+
+        public static Vector3 Slider1DHandleOffset(int id, Axis axis, Vector3[] snapPoints, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
+        {
+            return Slider1D.Do(id, axis, snapPoints, snapPoints[0], handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0] - snapPoints[0];
+        }
+
+        public static Vector3 Slider1DHandleOffset(int id, Vector3[] snapPoints, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
+        {
+            Axis axis = Grid.ActiveGrid.GetClosestAxis(Handles.matrix.MultiplyVector(handleDirection));
+            return Slider1D.Do(id, axis, snapPoints, snapPoints[0], handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0] - snapPoints[0];
+        }
+
+        public static Vector3 Slider1DHandleOffset(int id, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
+        {
+            Axis axis = Grid.ActiveGrid.GetClosestAxis(Handles.matrix.MultiplyVector(handleDirection));
+            return UnitySceneExtensions.SceneHandles.Slider1DHandle(id, axis, handleOrigin, handleDirection, snappingStep, handleSize, capFunction) - handleOrigin;
+        }
+
+        public static Vector3 Slider1DHandleAlignedOffset(int id, Vector3 from, Vector3 to, float snappingStep = 0, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
+        {
+            var snapPoints      = new[] { from, to };
+            var handleDirection = (from - to).normalized;
+            var grid            = Grid.ActiveGrid;
+            var axis            = grid.GetClosestAxis(handleDirection);
+            return Slider1D.Do(id, axis, snapPoints, from, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0] - from;
+        }
+
         public static Vector3 Slider1DHandle(int id, Axis axis, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep, float handleSize, CapFunction capFunction, bool selectLockingAxisOnClick = false) 
         {
             return Slider1D.Do(id, axis, new Vector3[] { handleOrigin }, handleOrigin, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0];
@@ -70,22 +118,28 @@ namespace UnitySceneExtensions
             //private static Grid       s_PrevGrid;
             private static bool         s_MovedMouse = false;
 
-            internal static Vector3[] Do(int id, Axis axis, Vector3[] points, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep, float handleSize, SceneHandles.CapFunction capFunction, bool selectLockingAxisOnClick = false)
+            internal static Vector3[] Do(int id, Axis axis, Vector3[] points, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep = 0, float handleSize = 0, SceneHandles.CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
             {
                 return Do(id, axis, points, handleOrigin, handleDirection, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick);
             }
 
-            internal static Vector3[] Do(int id, Axis axis, Vector3[] points, Vector3 handleOrigin, Vector3 handleDirection, Vector3 slideDirection, float snappingStep, float handleSize, SceneHandles.CapFunction capFunction, bool selectLockingAxisOnClick = false)
+            internal static Vector3[] Do(int id, Axis axis, Vector3[] points, Vector3 handleOrigin, Vector3 handleDirection, Vector3 slideDirection, float snappingStep = 0, float handleSize = 0, SceneHandles.CapFunction capFunction = null, bool selectLockingAxisOnClick = false)
             {
+                if (snappingStep == 0)
+                    snappingStep = Snapping.MoveSnappingSteps[(int)axis];
+                if (handleSize == 0)
+                    handleSize = UnityEditor.HandleUtility.GetHandleSize(handleOrigin) * 0.05f;
+
+                if (handleDirection.sqrMagnitude == 0)
+                    return points;
+
                 var evt = Event.current;
                 var type = evt.GetTypeForControl(id);
                 switch (type)
                 {
                     case EventType.MouseDown:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         if (GUIUtility.hotControl != 0)
@@ -165,18 +219,19 @@ namespace UnitySceneExtensions
                     }
                     case EventType.Layout:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         var position = handleOrigin;
                         var rotation = Quaternion.LookRotation(handleDirection);
 
-                        if (capFunction != null)
-                            capFunction(id, position, rotation, handleSize, EventType.Layout);
-                        else
-                            UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * .2f));
+                        if (handleSize > 0)
+                        {
+                            if (capFunction != null)
+                                capFunction(id, position, rotation, handleSize, EventType.Layout);
+                            else
+                                UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * .2f));
+                        }
 
                         int currentFocusControl = SceneHandleUtility.focusControl;
                         if ((currentFocusControl == id && s_PrevFocusControl != id) ||

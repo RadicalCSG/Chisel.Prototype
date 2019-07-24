@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,7 +23,16 @@ namespace UnitySceneExtensions
         {
             return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
         }
-        
+
+        public static Vector3 Slider2DHandleOffset(int id, Vector3 handlePos, Vector3 handleDir, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
+        {
+            var grid        = Grid.ActiveGrid;
+            var normalAxis  = grid.GetClosestAxis(handleDir);
+            var axes        = grid.GetTangentAxesForAxis(normalAxis, out Vector3 slideDir1, out Vector3 slideDir2);
+            if (handleSize == 0)
+                handleSize = UnityEditor.HandleUtility.GetHandleSize(handlePos) * 0.05f;
+            return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, Vector3.zero, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0] - handlePos;
+        }
 
         public class Slider2D
         {
@@ -45,9 +54,7 @@ namespace UnitySceneExtensions
                 {
                     case EventType.MouseDown:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         if (GUIUtility.hotControl != 0)
@@ -64,7 +71,6 @@ namespace UnitySceneExtensions
                         s_CurrentMousePosition = evt.mousePosition;
                         s_StartPoints = points.ToArray();
                             
-
                         var localToWorldMatrix	= UnityEditor.Handles.matrix;
                         var	center				= Grid.ActiveGrid.Center;
                         Matrix4x4 gridSpace = Matrix4x4.identity;
@@ -97,7 +103,16 @@ namespace UnitySceneExtensions
                             break;
 
                         var handleInverseMatrix = UnityEditor.Handles.inverseMatrix;
-                        var pointDelta			= handleInverseMatrix.MultiplyVector(s_Snapping2D.WorldSnappedDelta);
+                        var localPointDelta     = s_Snapping2D.WorldSnappedDelta;
+
+                        if (axes != Axes.None)
+                        {
+                            if ((axes & Axes.X) == Axes.None) localPointDelta.x = 0;
+                            if ((axes & Axes.Y) == Axes.None) localPointDelta.y = 0;
+                            if ((axes & Axes.Z) == Axes.None) localPointDelta.z = 0;
+                        }
+
+                        var pointDelta			= handleInverseMatrix.MultiplyVector(localPointDelta);
 
                         if (s_StartPoints != null)
                         {
@@ -118,6 +133,7 @@ namespace UnitySceneExtensions
                             GUIUtility.hotControl = 0;
                             GUIUtility.keyboardControl = 0;
                             s_StartPoints = null;
+                            s_Snapping2D.Reset();
                             evt.Use();
                             EditorGUIUtility.SetWantsMouseJumping(0);
                             SceneView.RepaintAll();
@@ -128,9 +144,7 @@ namespace UnitySceneExtensions
                     }
                     case EventType.Layout:
                     {
-                        if (Tools.current == Tool.View ||
-                            Tools.current == Tool.None ||
-                            evt.alt)
+                        if (SceneHandles.InCameraOrbitMode)
                             break;
 
                         var position = handleOrigin + handleCursorOffset;
@@ -154,7 +168,8 @@ namespace UnitySceneExtensions
                     {
                         if (axes != Axes.None)
                         {
-                            if (GUIUtility.hotControl == id)
+                            if (GUIUtility.hotControl == id &&
+                                s_Snapping2D.WorldSlideGrid != null)
                             {
                                 var selectedColor = UnityEditor.Handles.selectedColor;
                                 selectedColor.a = 0.5f;

@@ -51,6 +51,11 @@ namespace Chisel.Core
             binormal = Vector3.Cross(normal, tangent).normalized;
         }
 
+        public static Vector3 CalculateTangent(Vector3 normal)
+        {
+            return Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
+        }
+
         public static Matrix4x4 GenerateLocalToPlaneSpaceMatrix(Plane plane)
         {
             Vector3 normal = -plane.normal;

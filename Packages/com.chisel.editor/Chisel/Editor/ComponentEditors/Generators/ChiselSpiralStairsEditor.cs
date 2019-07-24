@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -129,7 +129,7 @@ namespace Chisel.Editors
 
         static float rotatedStartAngle = 0.0f;
         static float rotatedAngleOffset = 0.0f;
-        public static float RotatedEdge2DHandle(int id, float angle, Vector3 origin, float diameter, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize = 0.0f, UnitySceneExtensions.SceneHandles.CapFunction capFunction = null, Axes axes = Axes.None) 
+        public static float RotatedEdge2DHandle(int id, float angle, Vector3 origin, float diameter, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize = 0.0f, UnitySceneExtensions.SceneHandles.CapFunction capFunction = null, Axes axes = Axes.None)
         {
             var from		= origin;
             var vector		= Quaternion.AngleAxis(angle, handleDir) * Vector3.forward;
@@ -146,16 +146,8 @@ namespace Chisel.Editors
                 }
                 case EventType.Repaint:
                 {
-                    var sceneView = SceneView.currentDrawingSceneView;
-                    if (sceneView)
-                    {
-                        if (UnityEditor.HandleUtility.nearestControl == id || EditorGUIUtility.hotControl == id)
-                        {
-                            var rect = sceneView.position;
-                            rect.min = Vector2.zero;
-                            EditorGUIUtility.AddCursorRect(rect, UnitySceneExtensions.SceneHandleUtility.GetCursorForEdge(from, to));
-                        }
-                    }
+                    SceneHandles.SetCursor(id, from, to);
+
                     if (EditorGUIUtility.keyboardControl == id)
                         UnityEditor.Handles.DrawAAPolyLine(3.0f, from, to);
                     else
@@ -178,12 +170,12 @@ namespace Chisel.Editors
             }
 
             var newPosition = UnitySceneExtensions.SceneHandles.Slider2D.Do(id, to, position, Vector3.zero, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes);
-            
+
             if (GUIUtility.hotControl != id)
                 return angle;
 
             rotatedAngleOffset += Utilities.GeometryMath.SignedAngle(vector, (newPosition - origin).normalized, handleDir);
-
+            
             
             // TODO: put somewhere else
             if (!Snapping.RotateSnappingActive)
@@ -204,7 +196,7 @@ namespace Chisel.Editors
         Vector3[] outerVertices;
 
         
-        protected override void OnScene(ChiselSpiralStairs generator)
+        protected override void OnScene(SceneView sceneView, ChiselSpiralStairs generator)
         {
             var normal					= Vector3.up;
             var topDirection			= Vector3.forward;

@@ -156,8 +156,8 @@ namespace Chisel.Core
         [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct Surface
         {
-            public Surface(Plane localPlane) { this.localPlane = localPlane; }
-            public Plane localPlane;
+            public Surface(Vector4 localPlane) { this.localPlane = localPlane; }
+            public Vector4 localPlane; // This is a Plane, but 'Plane' is not [Serializable]
         }
 
 #if USE_MANAGED_CSG_IMPLEMENTATION

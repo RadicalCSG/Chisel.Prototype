@@ -156,7 +156,7 @@ namespace Chisel.Editors
             return true;
         }
 
-        protected override void OnScene(ChiselPathedStairs generator)
+        protected override void OnScene(SceneView sceneView, ChiselPathedStairs generator)
         {
             var shape = generator.Shape;
             EditorGUI.BeginChangeCheck();

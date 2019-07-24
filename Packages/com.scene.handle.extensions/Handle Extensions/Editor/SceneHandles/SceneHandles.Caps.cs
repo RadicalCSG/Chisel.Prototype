@@ -249,12 +249,128 @@ namespace UnitySceneExtensions
             }
         }
 
+        public static void NormalHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        {
+            switch (eventType)
+            {
+                case EventType.Layout:
+                {
+                    if (SceneHandles.InCameraOrbitMode)
+                        break;
+                    if (controlID == -1)
+                        break;
+                    UnityEditor.HandleUtility.AddControl(controlID, UnityEditor.HandleUtility.DistanceToCircle(position, size));
+                    UnityEditor.HandleUtility.AddControl(controlID, UnityEditor.HandleUtility.DistanceToLine(position, position + (rotation * Vector3.forward * size * 10)));
+                    break;
+                }
+                case EventType.Repaint:
+                {
+                    RenderBorderedCircle(position, size);
+                    var prevColor = SceneHandles.color;
+                    var color = prevColor;
+                    color.a = 1.0f;
+                    var normal = rotation * Vector3.forward;
+                    SceneHandles.color = color;
+
+                    var currentFocusControl = SceneHandleUtility.focusControl;
+                    if (currentFocusControl == controlID)
+                        SceneHandles.ArrowHandleCap(controlID, position, Quaternion.LookRotation(normal), size * 20, Event.current.type);
+                    else
+                        DrawAAPolyLine(3.5f, position, position + (normal * size * 10));
+
+                    SceneHandles.color = prevColor;
+                    break;
+                }
+            }
+        }
+
+        public static void RenderBorderedCircle(Vector3 position, Quaternion rotation, float size)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            
+            if (circlePoints == null ||
+                circleRotatedPoints == null ||
+                circlePoints.Length != circleRotatedPoints.Length + 1)
+            {
+                const int kCircleSteps = 12;
+                
+                circlePoints = new Vector2[kCircleSteps];
+                for (int i = 0; i < kCircleSteps; i++)
+                {
+                    circlePoints[i] = new Vector2(
+                            (float)Mathf.Cos((i / (float)kCircleSteps) * Mathf.PI * 2),
+                            (float)Mathf.Sin((i / (float)kCircleSteps) * Mathf.PI * 2)
+                        );
+                }
+                circleRotatedPoints = new Vector3[kCircleSteps + 1];
+            }
+
+
+            // Only apply matrix to the position because its camera facing
+            position = SceneHandles.matrix.MultiplyPoint(position);
+
+
+            var sideways	= rotation * Vector3.right;
+            var up			= rotation * Vector3.up;
+            
+            for (int i = 0; i < circlePoints.Length; i++)
+            {
+                const float kCircleSize = 1.2f; // to make it roughly equal size to the other dots
+                var circle = circlePoints[i];
+                var sizex = circle.x * size;
+                var sizey = circle.y * size;
+                circleRotatedPoints[i] = position + (((sideways * sizex) + (up * sizey)) * kCircleSize);
+            }
+            circleRotatedPoints[circlePoints.Length] = circleRotatedPoints[0];
+
+            Color col = SceneHandles.color;
+
+            var material = SceneHandleMaterialManager.CustomDotMaterial;
+            if (material && material.SetPass(0))
+            {
+                GL.Begin(GL.TRIANGLES);
+                {
+                    GL.Color(col);
+                    for (int i = 1; i < circleRotatedPoints.Length - 1; i++)
+                    {
+                        GL.Vertex(circleRotatedPoints[0]);
+                        GL.Vertex(circleRotatedPoints[i]);
+                        GL.Vertex(circleRotatedPoints[i + 1]);
+                    }
+                }
+                GL.End();
+            }
+
+            material = SceneHandleMaterialManager.SurfaceNoDepthMaterial;
+            if (material && material.SetPass(0))
+            {
+                GL.Begin(GL.LINES);
+                {
+                    col.r = 0.0f;
+                    col.g = 0.0f;
+                    col.b = 0.0f;
+                    GL.Color(col);
+                    GL.Vertex(circleRotatedPoints[0]);
+                    for (int i = 1; i < circleRotatedPoints.Length; i++)
+                    {
+                        GL.Vertex(circleRotatedPoints[i]);
+                        GL.Vertex(circleRotatedPoints[i]);
+                    }
+                    GL.Vertex(circleRotatedPoints[0]);
+                }
+                GL.End();
+            }
+        }
+
         public static void OutlinedCircleHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             switch (eventType)
             {
                 case EventType.Layout:
                 {
+                    if (SceneHandles.InCameraOrbitMode)
+                        break;
                     if (controlID == -1)
                         break;
                     UnityEditor.HandleUtility.AddControl(controlID, UnityEditor.HandleUtility.DistanceToCircle(position, size));
@@ -274,6 +390,8 @@ namespace UnitySceneExtensions
             {
                 case EventType.Layout:
                 {
+                    if (SceneHandles.InCameraOrbitMode)
+                        break;
                     if (controlID == -1)
                         break;
                     UnityEditor.HandleUtility.AddControl(controlID, UnityEditor.HandleUtility.DistanceToCircle(position, size));

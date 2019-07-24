@@ -63,7 +63,7 @@ namespace Chisel.Editors
             ShowSurfaces(surfacesProp, kSurfaceNameContent, 6);
         }
 
-        protected override void OnScene(ChiselBox generator)
+        protected override void OnScene(SceneView sceneView, ChiselBox generator)
         {
             EditorGUI.BeginChangeCheck();
 

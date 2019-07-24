@@ -159,6 +159,73 @@ namespace UnitySceneExtensions
             }
         }
 
+        public Axes GetTangentAxesForAxis(Axis axis)
+        {
+            switch (axis)
+            {
+                case Axis.X: return Axes.YZ; 
+                default:
+                case Axis.Y: return Axes.XZ; 
+                case Axis.Z: return Axes.XY; 
+            }
+        }
+
+        public Axes GetTangentAxesForAxis(Axis axis, out Vector3 slideDir1, out Vector3 slideDir2)
+        {
+            switch (axis)
+            {
+                case Axis.X: { slideDir1 = Forward; slideDir2 = Up;      return Axes.YZ; }
+                default:
+                case Axis.Y: { slideDir1 = Right;   slideDir2 = Forward; return Axes.XZ; }
+                case Axis.Z: { slideDir1 = Right;   slideDir2 = Up;      return Axes.XY; }
+            }
+        }
+
+        public Axis GetClosestAxis(Vector3 vector)
+        {
+            var vector_x = Right;
+            var vector_y = Up;
+            var vector_z = Forward;
+
+            var dot_x = Mathf.Abs(Vector3.Dot(vector_x, vector));
+            var dot_y = Mathf.Abs(Vector3.Dot(vector_y, vector));
+            var dot_z = Mathf.Abs(Vector3.Dot(vector_z, vector));
+
+            if (dot_x > dot_y)
+            {
+                if (dot_x > dot_z)
+                    return Axis.X;
+            } else
+            if (dot_y > dot_z)
+                return Axis.Y;
+            return Axis.Z;
+        }
+
+        public Vector3 GetClosestAxisVector(Vector3 vector)
+        {
+            var vector_x = Right;
+            var vector_y = Up;
+            var vector_z = Forward;
+
+            var dot_x = Vector3.Dot(vector_x, vector);
+            var dot_y = Vector3.Dot(vector_y, vector);
+            var dot_z = Vector3.Dot(vector_z, vector);
+            var a_dot_x = Mathf.Abs(dot_x);
+            var a_dot_y = Mathf.Abs(dot_y);
+            var a_dot_z = Mathf.Abs(dot_z);
+
+            if (a_dot_x > a_dot_y)
+            {
+                if (a_dot_x > a_dot_z)
+                    return (dot_x < 0 ? -1 : 1) * (Vector3)_gridToWorldSpace.GetColumn(0);
+            } else
+            if (a_dot_y > a_dot_z)
+            {
+                return (dot_y < 0 ? -1 : 1) * (Vector3)_gridToWorldSpace.GetColumn(1);
+            }
+            return (dot_z < 0 ? -1 : 1) * (Vector3)_gridToWorldSpace.GetColumn(2);
+        }
+
         public Vector3 GetAxisVector(Axis axis)
         {
             switch (axis)
@@ -213,7 +280,7 @@ namespace UnitySceneExtensions
             return SnapExtents3D(extentsInGridSpace, worldCurrentPosition, worldStartPosition, out result, enabledAxes);
         }
 
-        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ)
+        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ, bool ignoreStartPoint = false)
         {
             snapResult = SnapResult3D.None;
             if (!Snapping.BoundsSnappingActive && !Snapping.PivotSnappingActive)
@@ -278,6 +345,14 @@ namespace UnitySceneExtensions
             
             var snappedOffsetInWorldSpace	=_gridToWorldSpace.MultiplyVector(offsetInGridSpace);
             var snappedPositionInWorldSpace	= (worldStartPosition + snappedOffsetInWorldSpace);
+
+            if (!ignoreStartPoint)
+            {
+                if (Mathf.Abs(worldCurrentPosition.x - snappedPositionInWorldSpace.x) > Mathf.Abs(offsetInWorldSpace.x)) snappedPositionInWorldSpace.x = worldStartPosition.x;
+                if (Mathf.Abs(worldCurrentPosition.y - snappedPositionInWorldSpace.y) > Mathf.Abs(offsetInWorldSpace.y)) snappedPositionInWorldSpace.y = worldStartPosition.y;
+                if (Mathf.Abs(worldCurrentPosition.z - snappedPositionInWorldSpace.z) > Mathf.Abs(offsetInWorldSpace.z)) snappedPositionInWorldSpace.z = worldStartPosition.z;
+            }
+
             return snappedPositionInWorldSpace;
         }
     }
