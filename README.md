@@ -10,4 +10,11 @@ Notes:
 - Right now a temporary native library is used for the CSG algorithm, this will be replaced by a managed implementation which is currently being developed.
 - The native library is x64 and MacOSX only
 
+Packages overview:
+* `com.chisel.core` Low-level API and functionality
+* `com.chisel.editor` Unity Scene Editor functionality and API, tools and UI
+* `com.chisel.components` Unity Monobehaviour runtime API (to allow for possible ECS replacement in future)
+* `com.scene.handles.extensions` Custom scene handle extensions
+
+
 The official Discord server can be found here: https://discord.gg/zttNkPQ
