@@ -133,17 +133,38 @@ namespace Chisel.Editors
 
         static GUIResizableWindow editModeWindow;
 
+        static bool Toggle(Rect togglePosition, ChiselEditModeManager.ChiselEditModeItem editMode)
+        {
+            var content     = ChiselEditorResources.GetIconContent(editMode.instance.ToolName, editMode.instance.ToolName);
+            var selected    = ChiselEditModeManager.EditMode == editMode.instance;
+            return GUI.Toggle(togglePosition, selected, content[0], GUI.skin.button);
+        }
+
         static void EditModeButton(ChiselEditModeManager.ChiselEditModeItem editMode, Rect togglePosition)
         {
             EditorGUI.BeginChangeCheck();
-            var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
-            
+            var value   = Toggle(togglePosition, editMode);
             if (EditorGUI.EndChangeCheck() && value)
             {
                 // If we're changing edit mode from a generator, we restore our previous selection.
                 if (Instance.HaveStoredEditModeState())
                     RestoreEditModeState(skipEditMode: true);
                 ChiselEditModeManager.EditMode = editMode.instance;
+                ChiselEditorSettings.Save();
+            }
+        }
+
+        static void GeneratorButton(ChiselEditModeManager.ChiselEditModeItem generator, Rect togglePosition)
+        {
+            EditorGUI.BeginChangeCheck();
+            var value   = Toggle(togglePosition, generator);
+            if (EditorGUI.EndChangeCheck() && value)
+            {
+                // When we select a generator, we don't want anything else selected since the combination makes no sense.
+                // We store the selection, however, if our previous edit mode was not a generator.
+                if (!(ChiselEditModeManager.EditMode is ChiselGeneratorToolMode))
+                    Instance.StoreEditModeState();
+                ChiselEditModeManager.EditMode = generator.instance;
                 ChiselEditorSettings.Save();
             }
         }
@@ -176,18 +197,7 @@ namespace Chisel.Editors
 
             for (int i = 0; i < generatorModes.Length; i++)
             {
-                var editMode = generatorModes[i];
-                EditorGUI.BeginChangeCheck();
-                var value = GUI.Toggle(togglePosition, ChiselEditModeManager.EditMode == editMode.instance, editMode.content, GUI.skin.button);
-                if (EditorGUI.EndChangeCheck() && value)
-                {
-                    // When we select a generator, we don't want anything else selected since the combination makes no sense.
-                    // We store the selection, however, if our previous edit mode was not a generator.
-                    if (!(ChiselEditModeManager.EditMode is ChiselGeneratorToolMode))
-                        Instance.StoreEditModeState();
-                    ChiselEditModeManager.EditMode = editMode.instance;
-                    ChiselEditorSettings.Save();
-                }
+                GeneratorButton(generatorModes[i], togglePosition);
                 togglePosition.y += kSingleLineHeight + kSingleSpacing;
             }
         }

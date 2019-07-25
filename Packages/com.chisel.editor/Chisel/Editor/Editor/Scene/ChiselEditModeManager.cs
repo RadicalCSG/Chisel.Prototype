@@ -26,16 +26,9 @@ namespace Chisel.Editors
             {
                 this.instance   = value;
                 this.type       = type;
-                var icon = ChiselEditorResources.LoadIconImage(instance.ToolName, false);
-                if (icon != null) {
-                    this.content = new GUIContent(icon, instance.ToolName);
-                } else {
-                    this.content = new GUIContent(instance.ToolName);
-                }
             }
             public IChiselToolMode  instance;
             public Type             type;
-            public GUIContent       content; // TODO: put somewhere else
         }
 
         internal static ChiselEditModeItem[]    editModes;
