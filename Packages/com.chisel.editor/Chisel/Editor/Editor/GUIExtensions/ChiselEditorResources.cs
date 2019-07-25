@@ -10,7 +10,12 @@ namespace Chisel.Editors
 {
     public static class ChiselEditorResources
     {
-        static string[] resourcePaths;
+        internal const string kLargeIconID      = "@2x";
+        internal const string kIconPath         = "Icons/";
+        internal const string kActiveIconID     = "_ON";
+        internal const string kDarkIconID       = "d_";
+
+        internal static string[] resourcePaths;
 
         static ChiselEditorResources()
         {
@@ -41,6 +46,8 @@ namespace Chisel.Editors
             for (int i = 0; i < resourcePaths.Length; i++)
             {
                 var path = resourcePaths[i] + name;
+                if (!System.IO.File.Exists(path))
+                    continue;
                 var image = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (image)
                     return image;
@@ -54,7 +61,7 @@ namespace Chisel.Editors
             var imagePixelsPerPoint = 1.0f;
             if (editorPixelsPerPoint > 1.0f)
             {
-                image = LoadImageFromResourcePaths(name + "@2x");
+                image = LoadImageFromResourcePaths(name + kLargeIconID);
                 if (image != null)
                     imagePixelsPerPoint = 2.0f;
             }
@@ -83,6 +90,8 @@ namespace Chisel.Editors
             if (imagesLookup.TryGetValue(name, out image))
                 return image;
             image = LoadScaledTexture(name);
+            if (!image)
+                return image;
             imagesLookup[name] = image;
             return image;
         }
@@ -92,13 +101,13 @@ namespace Chisel.Editors
             Texture2D result = null;
             if (isProSkin)
             {
-                if (active        ) result = LoadImage($@"Icons/d_{name} On");
-                if (result == null) result = LoadImage($@"Icons/d_{name}");
+                if (active        ) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}{kActiveIconID}");
+                if (result == null) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}");
             }
             if (result == null)
             {
-                if (active        ) result = LoadImage($@"Icons/{name} On");
-                if (result == null) result = LoadImage($@"Icons/{name}");
+                if (active        ) result = LoadImage($@"{kIconPath}{name}{kActiveIconID}");
+                if (result == null) result = LoadImage($@"{kIconPath}{name}");
             }
             return result;
         }
@@ -138,7 +147,8 @@ namespace Chisel.Editors
             return contents;
         }
 
-        public static void ClearCache() { imagesLookup.Clear(); iconImagesLookup.Clear(); }
+        [UnityEditor.Callbacks.DidReloadScripts]
+        public static void ClearCache() { imagesLookup.Clear(); iconImagesLookup.Clear(); iconContentLookup.Clear(); }
 
         
         #region Editor Resource Paths
