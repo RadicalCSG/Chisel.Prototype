@@ -140,7 +140,7 @@ namespace Chisel.Editors
 
         public void OnEnable()
         {
-            ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
+            ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline;
             // TODO: shouldn't just always set this param
             Tools.hidden = true; 
         }
