@@ -22,11 +22,11 @@ namespace UnitySceneExtensions
         
         static readonly Axes[]		s_EdgeAxes = new Axes[]
         {
-            Axes.YZ, Axes.XZ, Axes.YZ, Axes.XZ,
+            Axes.XY, Axes.XZ, Axes.XY, Axes.XZ,
 
-            Axes.YZ, Axes.XZ, Axes.YZ, Axes.XZ,
+            Axes.XY, Axes.XZ, Axes.XY, Axes.XZ,
 
-            Axes.XY, Axes.XY, Axes.XY, Axes.XY
+            Axes.YZ, Axes.YZ, Axes.YZ, Axes.YZ
         };
         
         static readonly Axes[]		s_BoundsAxes = new Axes[]
@@ -115,7 +115,8 @@ namespace UnitySceneExtensions
 
             
             using (new SceneHandles.DrawingScope())
-            { var prevDisabled	= SceneHandles.disabled;
+            {
+                var prevDisabled	= SceneHandles.disabled;
 
                 var isStatic = (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
                 
