@@ -174,11 +174,12 @@ namespace Chisel.Editors
                 UpdateDefinitions();
         }
         
-        static GUIContent rotationContent           = new GUIContent("↻↺");
         static GUIContent clockWiseRotation         = new GUIContent("↻");
         static GUIContent antiClockWiseRotation     = new GUIContent("↺");
 
-        public static Color measureColor = new Color(201f / 255, 200f / 255, 144f / 255, 1.00f);
+        // TODO: put somewhere else
+        public static Color iconColor = new Color(201f / 255, 200f / 255, 144f / 255, 1.00f);
+
         static bool ShowGeneratorHandles(ChiselLinearStairs generator, ChiselLinearStairsDefinition cachedDefinition)
         {
             ref readonly var currentDefinition = ref generator.definition;
@@ -249,7 +250,7 @@ namespace Chisel.Editors
                 var pLabel0     = new Vector3(axis0X ? min.x : max.x, axisY ? max.y : min.y, axis0Z ? min.z : max.z);
                 var pLabel1     = new Vector3(axis1X ? min.x : max.x, axisY ? max.y : min.y, axis1Z ? min.z : max.z);
 
-                Handles.color = measureColor;
+                Handles.color = iconColor;
 
                 // TODO: put both buttons next to each other?
                 if (SceneHandles.ClickableLabel(pLabel1, (pLabel1 - bounds.center).normalized, clockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
@@ -264,6 +265,7 @@ namespace Chisel.Editors
                     bounds.center = center;
                     newDefinition.bounds = bounds;
                     GUI.changed = true;
+
                     Undo.RecordObject(generatorTransform, "Rotated transform");
                     generatorTransform.RotateAround(generatorTransform.TransformPoint(center), generatorTransform.up, 90);
                 }
