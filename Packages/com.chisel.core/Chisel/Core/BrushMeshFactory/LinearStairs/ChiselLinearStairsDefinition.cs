@@ -50,6 +50,8 @@ namespace Chisel.Core
             TotalSides
         }
 
+        const float kStepSmudgeValue = 0.0001f;
+
         public const float	kMinStepHeight			= 0.01f;
         public const float	kMinStepDepth			= 0.01f;
         public const float  kMinRiserDepth          = 0.01f;
@@ -103,9 +105,8 @@ namespace Chisel.Core
         {
             get
             {
-                const float kSmudgeValue = 0.0001f;
                 return Mathf.Max(1,
-                          Mathf.FloorToInt((Mathf.Abs(height) - plateauHeight + kSmudgeValue) / stepHeight));
+                          Mathf.FloorToInt((Mathf.Abs(height) - plateauHeight + kStepSmudgeValue) / stepHeight));
             }
         }
 
@@ -186,7 +187,7 @@ namespace Chisel.Core
 
             plateauHeight		= Mathf.Clamp(plateauHeight, 0, maxPlateauHeight);
 
-            var totalSteps		= Mathf.Max(1, Mathf.FloorToInt((absHeight - plateauHeight) / stepHeight));
+            var totalSteps      = Mathf.Max(1, Mathf.FloorToInt((absHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
             var totalStepHeight = totalSteps * stepHeight;
 
             plateauHeight		= Mathf.Max(0, absHeight - totalStepHeight);
