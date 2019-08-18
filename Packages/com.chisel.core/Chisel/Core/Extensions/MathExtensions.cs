@@ -56,6 +56,11 @@ namespace Chisel.Core
             return Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
         }
 
+        public static Vector3 CalculateBinormal(Vector3 normal)
+        {
+            return Vector3.Cross(normal, CalculateTangent(normal));
+        }
+
         public static Matrix4x4 GenerateLocalToPlaneSpaceMatrix(Plane plane)
         {
             Vector3 normal = -plane.normal;
@@ -154,6 +159,36 @@ namespace Chisel.Core
             var normal = new Vector3(result.x, result.y, result.z);
             var magnitude = normal.magnitude;
             return new Plane(normal / magnitude, result.w / magnitude);
+        }
+
+        public static void Set(this Transform transform, Matrix4x4 matrix)
+        {
+            var position = matrix.GetColumn(3);
+            matrix.SetColumn(3, Vector4.zero);
+
+            var columnX = matrix.GetColumn(0);
+            var columnY = matrix.GetColumn(1);
+            var columnZ = matrix.GetColumn(2);
+            var scaleX = columnX.magnitude;
+            var scaleY = columnY.magnitude;
+            var scaleZ = columnZ.magnitude;
+
+            columnX /= scaleX;
+            columnY /= scaleY;
+            columnZ /= scaleZ;
+
+            if (Vector3.Dot(Vector3.Cross(columnZ, columnY), columnX) > 0)
+            {
+                scaleX = -scaleX;
+                columnX = -columnX;
+            }
+
+            var scale = new Vector3(scaleX, scaleY, scaleZ);
+            var rotation = Quaternion.LookRotation(columnZ, columnY);
+
+            transform.localScale = scale;
+            transform.localPosition = position;
+            transform.localRotation = rotation;
         }
 
     

@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using Chisel.Utilities;
 using UnitySceneExtensions;
+using Grid = UnitySceneExtensions.Grid;
 
 namespace Chisel.Editors
 {
@@ -29,7 +30,8 @@ namespace Chisel.Editors
         IsSymmetricalXZ         = 1,
         GenerateFromCenterXZ    = 2,
         GenerateFromCenterY     = 4,
-        AlwaysFaceUp            = 8
+        AlwaysFaceUp            = 8,
+        AlwaysFaceCameraXZ      = 16
     }
 
 
@@ -99,6 +101,7 @@ namespace Chisel.Editors
             }
             return bounds;
         }
+
         static bool Inverted(Axis axis)
         {
             if (s_Points.Count <= 2) return false;
@@ -163,6 +166,101 @@ namespace Chisel.Editors
                     center[(int)axis] -= height * 0.5f;
 
                 transformation      = s_Transformation * Matrix4x4.TRS(center, Quaternion.identity, Vector3.one);
+#if true
+                //if (height > 0)
+                {
+                    if ((flags & BoxExtrusionFlags.AlwaysFaceUp) == BoxExtrusionFlags.AlwaysFaceUp)
+                    {
+                        var currentUp       = transformation.MultiplyVector(Vector3.up);
+                        var currentForward  = transformation.MultiplyVector(Vector3.forward);
+                        var currentRight    = transformation.MultiplyVector(Vector3.right);
+
+                        var desiredUp       = Grid.ActiveGrid.Up;
+                    
+                        var dotX = Vector3.Dot(currentRight,    desiredUp);
+                        var dotY = Vector3.Dot(currentUp,       desiredUp);
+                        var dotZ = Vector3.Dot(currentForward,  desiredUp);
+
+                        var absDotX = Mathf.Abs(dotX);
+                        var absDotY = Mathf.Abs(dotY);
+                        var absDotZ = Mathf.Abs(dotZ);
+
+                        if (absDotX > absDotZ)
+                        {
+                            if (absDotX > absDotY)
+                            {
+                                var size = bounds.size;
+                                var t = size.x; size.x = size.y; size.y = t;
+                                bounds.size = size;
+                                axis = Axis.X;
+                                var position = transformation.GetColumn(3);
+                                transformation.SetColumn(3, new Vector4(0,0,0,1)); 
+                                transformation *= Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
+                                transformation *= new Matrix4x4(new Vector4(0,1,0,0),
+                                                                new Vector4(1,0,0,0),
+                                                                new Vector4(0,0,1,0),
+                                                                new Vector4(0,0,0,1));
+                                transformation.SetColumn(3, position);
+                            }
+                        } else
+                        {
+                            if (absDotZ > absDotY)
+                            {
+                                var size = bounds.size;
+                                var t = size.z; size.z = size.y; size.y = t;
+                                bounds.size = size;
+                                axis = Axis.Z;
+                                var position = transformation.GetColumn(3);
+                                transformation.SetColumn(3, new Vector4(0,0,0,1));
+                                transformation *= Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
+                                transformation *= new Matrix4x4(new Vector4(1,0,0,0),
+                                                                new Vector4(0,0,1,0),
+                                                                new Vector4(0,1,0,0),
+                                                                new Vector4(0,0,0,1));
+                                transformation.SetColumn(3, position);
+                            }
+                        }
+
+                    }
+
+                    if (!s_ModelBeneathCursor &&
+                        (flags & BoxExtrusionFlags.AlwaysFaceCameraXZ) == BoxExtrusionFlags.AlwaysFaceCameraXZ)
+                    {
+                        // TODO: take grid orientation into account to decide what is "X" and what is "Z"
+                        var currentForward  = transformation.MultiplyVector(Vector3.forward);
+                        var currentRight    = transformation.MultiplyVector(Vector3.right);
+                        var cameraOffset    = Camera.current.transform.forward;
+                        var cameraForward   = (new Vector3(cameraOffset.x, 0, cameraOffset.z)).normalized;
+                        var dotZ = Vector3.Dot(currentForward, cameraForward);
+                        var dotX = Vector3.Dot(currentRight,   cameraForward);
+
+                        var angle = 0;
+                        if (Mathf.Abs(dotX) < Mathf.Abs(dotZ))
+                        {
+                            if (dotZ > 0)
+                                angle += 180;
+                        } else
+                        {
+                            if (dotX < 0)
+                                angle += 90;
+                            else
+                                angle -= 90;
+                            
+                            if (axis == Axis.X)
+                                axis = Axis.Z;
+                            var size = bounds.size;
+                            var t = size.x; size.x = size.z; size.z = t;
+                            bounds.size = size;
+                        }
+                    
+                        var position = transformation.GetColumn(3);
+                        transformation.SetColumn(3, new Vector4(0,0,0,1));
+                        transformation *= Matrix4x4.TRS(position, Quaternion.identity, Vector3.one);
+                        transformation *= Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0, angle, 0), Vector3.one);
+                        transformation.SetColumn(3, position);
+                    }
+                }
+#endif
 
                 center = Vector3.zero;
                 if ((flags & BoxExtrusionFlags.GenerateFromCenterY) != BoxExtrusionFlags.GenerateFromCenterY)

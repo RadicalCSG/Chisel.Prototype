@@ -35,7 +35,7 @@ namespace Chisel.Editors
         {
             base.OnSceneGUI(sceneView, dragArea);
 
-            var flags = BoxExtrusionFlags.AlwaysFaceUp;
+            var flags = BoxExtrusionFlags.AlwaysFaceUp | BoxExtrusionFlags.AlwaysFaceCameraXZ;
 
             switch (BoxExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, flags, Axis.Y))
             {
@@ -53,6 +53,7 @@ namespace Chisel.Editors
 
                 case BoxExtrusionState.Modified:
                 {
+                    linearStairs.definition.Reset();
                     linearStairs.Operation  = forceOperation ?? 
                                               ((height < 0 && modelBeneathCursor) ? 
                                                 CSGOperationType.Subtractive : 

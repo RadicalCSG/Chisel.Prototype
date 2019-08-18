@@ -203,9 +203,7 @@ namespace Chisel.Editors
 
                 var steps		    = Snapping.MoveSnappingSteps;
                 steps.y			    = stepHeight;
-
-
-                // TODO: need ability to turn 90 degrees (without changing shape of bounds)
+                
                 EditorGUI.BeginChangeCheck();
                 {
                     bounds = SceneHandles.BoundsHandle(currentDefinition.bounds, Quaternion.identity, steps);

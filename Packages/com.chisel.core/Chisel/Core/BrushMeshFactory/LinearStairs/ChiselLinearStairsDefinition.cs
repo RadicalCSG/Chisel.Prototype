@@ -70,10 +70,10 @@ namespace Chisel.Core
 
         public const float	kDefaultPlateauHeight	= 0;
 
-        public const float  kDefaultRiserDepth      = 0.03f;
-        public const float  kDefaultSideDepth		= 0.0f;
-        public const float  kDefaultSideWidth		= 0.03f;
-        public const float  kDefaultSideHeight      = 0.03f;
+        public const float  kDefaultRiserDepth      = 0.05f;
+        public const float  kDefaultSideDepth		= 0.125f;
+        public const float  kDefaultSideWidth		= 0.125f;
+        public const float  kDefaultSideHeight      = 0.5f;
 
         // TODO: add all spiral stairs improvements to linear stairs
         // TODO: make placement of stairs works properly

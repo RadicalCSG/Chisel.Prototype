@@ -111,9 +111,12 @@ namespace Chisel.Core
                 if (boundsMin.z > boundsMax.z) { var t = boundsMin.z; boundsMin.z = boundsMax.z; boundsMax.z = t; }
 
                 haveRiser           = riserType != StairsRiserType.None;
-                haveLeftSideDown    = riserType != StairsRiserType.FillDown && (leftSideType == StairsSideType.Down || leftSideType == StairsSideType.DownAndUp);
+                haveLeftSideDown    = riserType != StairsRiserType.FillDown && 
+                                      (leftSideType == StairsSideType.Down || leftSideType == StairsSideType.DownAndUp) &&
+                                        definition.plateauHeight > 0;
                 haveLeftSideUp      = (leftSideType == StairsSideType.Up || leftSideType == StairsSideType.DownAndUp);
-                haveRightSideDown   = riserType != StairsRiserType.FillDown && (rightSideType == StairsSideType.Down || rightSideType == StairsSideType.DownAndUp);
+                haveRightSideDown   = riserType != StairsRiserType.FillDown && (rightSideType == StairsSideType.Down || rightSideType == StairsSideType.DownAndUp) &&
+                                        definition.plateauHeight > 0;
                 haveRightSideUp     = (rightSideType == StairsSideType.Up || rightSideType == StairsSideType.DownAndUp);
 
                 sideWidth           = definition.sideWidth;
