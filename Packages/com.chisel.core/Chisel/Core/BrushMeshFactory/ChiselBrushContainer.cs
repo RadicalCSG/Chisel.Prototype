@@ -27,6 +27,14 @@ namespace Chisel.Core
                 brushMeshesList.CopyTo(brushMeshes);
         }
 
+        public void Clear()
+        {
+            if (brushMeshes == null && brushMeshes.Length == 0)
+                return;
+            foreach (var brushMesh in brushMeshes)
+                brushMesh.Clear();
+        }
+
         public bool EnsureSize(int expectedSize)
         {
             if ((brushMeshes != null && expectedSize == brushMeshes.Length) ||

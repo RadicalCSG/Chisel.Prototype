@@ -292,7 +292,7 @@ namespace Chisel.Editors
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var totalStepHeight = (max.y - Mathf.Clamp(edgeHeight, stepHeight, max.y));
+                    var totalStepHeight = (max.y - Mathf.Clamp(edgeHeight, max.y % stepHeight, max.y));
                     const float kSmudgeValue = 0.0001f;
                     var oldStepCount = newDefinition.StepCount;
                     var newStepCount = Mathf.Max(1, Mathf.FloorToInt((Mathf.Abs(totalStepHeight) + kSmudgeValue) / stepHeight));

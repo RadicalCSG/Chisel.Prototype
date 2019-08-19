@@ -76,18 +76,22 @@ namespace Chisel.Core
         public const float  kDefaultSideHeight      = 0.5f;
 
         // TODO: add all spiral stairs improvements to linear stairs
-        // TODO: make placement of stairs works properly
 
         [DistanceValue] public float	stepHeight;
         [DistanceValue] public float	stepDepth;
+
         [DistanceValue] public float	plateauHeight;
+
         [DistanceValue] public float	treadHeight;
         [DistanceValue] public float	nosingDepth;
         [DistanceValue] public float	nosingWidth;
+
         [DistanceValue] public float	riserDepth;
+
         [DistanceValue] public float	sideDepth;
         [DistanceValue] public float	sideWidth;
         [DistanceValue] public float	sideHeight;
+
         public Bounds					bounds;
         public StairsRiserType			riserType;
         public StairsSideType           leftSide;

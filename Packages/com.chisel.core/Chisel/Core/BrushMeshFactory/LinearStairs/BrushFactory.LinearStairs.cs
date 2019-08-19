@@ -31,6 +31,667 @@ namespace Chisel.Core
             return GenerateLinearStairsSubMeshes(ref brushContainer, definition, definition.leftSide, definition.rightSide, subMeshOffset);
         }
 
+        struct LinearStairsSideData
+        {
+            public bool enabled;
+            public int  subMeshCount;
+            public LinearStairsSideData(ChiselLinearStairsDefinition definition, int stepCount, float sideDepth, Vector3 boundsMin, Vector3 boundsMax, StairsRiserType riserType, float riserDepth, StairsSideType sideDefinition, StairsSideType sideType)
+            {
+                enabled = sideType != StairsSideType.None;
+
+                if (!enabled)
+                {
+                    subMeshCount = 0;
+                    return;
+                }
+
+                if (sideType == StairsSideType.Down)
+                {
+                    subMeshCount = stepCount;
+
+                    var aspect = definition.stepHeight / definition.stepDepth;
+                    if (riserType == StairsRiserType.ThinRiser &&
+                        riserDepth > definition.stepDepth && 
+                        definition.sideDepth < (definition.plateauHeight - definition.treadHeight) / aspect &&
+                        riserDepth < definition.bounds.size.z)
+                    {
+                        subMeshCount++;
+                    }
+                } else
+                if (sideType == StairsSideType.Up)
+                {
+                    if (definition.StepDepthOffset > 0)
+                        subMeshCount = stepCount + 1;
+                    else
+                        subMeshCount = stepCount;
+                } else
+                if (sideType == StairsSideType.DownAndUp)
+                {
+                    if (definition.StepDepthOffset > sideDepth)
+                        subMeshCount = 2;
+                    else
+                        subMeshCount = 1;
+
+                    if ((boundsMax.y - definition.treadHeight) >= boundsMin.y)
+                    {
+                        var aspect = definition.stepHeight / definition.stepDepth;
+                        if ((definition.sideDepth * aspect) < (definition.plateauHeight - definition.treadHeight))
+                            subMeshCount ++;
+                    }
+                } else
+                    subMeshCount = 0;
+            }
+        }
+
+        private static void GenerateStairsSide(ref ChiselBrushContainer brushContainer, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, ChiselLinearStairsDefinition definition, in LineairStairsData description, in LinearStairsSideData side)
+        {
+            var min = new Vector3(minX, description.boundsMax.y - definition.treadHeight - definition.stepHeight, description.boundsMin.z + definition.StepDepthOffset);
+            var max = new Vector3(maxX, description.boundsMax.y - definition.treadHeight                        , description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
+
+            var maxZ = description.boundsMax.z - description.riserDepth;
+
+            var aspect = definition.stepHeight / definition.stepDepth;
+
+            if (sideType == StairsSideType.DownAndUp)
+            {
+                var extrusion = new Vector3(max.x - min.x, 0, 0);
+                // Top "wall"
+                if (definition.StepDepthOffset > description.sideDepth)
+                {
+                    // z0 y0 *----* z1 y0 
+                    //       |    |
+                    // z0 y1 *----* z1 y2 
+                    var y0 = max.y + definition.sideHeight;
+                    var y1 = max.y;
+                    var y2 = min.y;
+                    var z0 = description.boundsMin.z;
+                    var z1 = min.z - description.sideDepth;
+                    var vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y1, z0), // 1
+                                        new Vector3( min.x, y1, z1), // 2
+                                        new Vector3( min.x, y0, z1), // 3
+                                    };
+
+                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                    definition.surfaceDefinition);
+                } else
+                    startIndex--;
+
+                // "wall" on stair steps
+                if (description.sideDepth <= 0)
+                {
+                    var y1 = max.y;
+                    var y0 = y1 + definition.sideHeight;
+                    var y2 = min.y - (definition.stepHeight * (stepCount - 1));
+                    var y3 = y2 + definition.sideHeight;
+                    var z0 = min.z;
+                    var z1 = max.z + (definition.stepDepth * (stepCount - 1));
+
+                    // z0 y0 *
+                    //       |\
+                    //       | \
+                    //       |  \
+                    //       |   \
+                    //       |    \
+                    //       |     \
+                    // z0 y1 *      * z1 y3 
+                    //        \     |
+                    //         \    |
+                    //          \   |
+                    //           \  |
+                    //            \ |
+                    //             \|
+                    //              * z1 y2 
+
+                    var vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y1, z0), // 1
+                                        new Vector3( min.x, y2, z1), // 2
+                                        new Vector3( min.x, y3, z1), // 3
+                                    };
+
+                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + 1], vertices, extrusion,
+                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                    definition.surfaceDefinition);
+                } else
+                {
+                    var y1 = max.y;
+                    var y0 = y1 + definition.sideHeight;
+                    var y2 = description.boundsMin.y;
+                    var y4 = min.y - (definition.stepHeight * (stepCount - 1));
+                    var y3 = y4 + definition.sideHeight;
+                    var z0 = min.z;
+                    var z1 = max.z + (definition.stepDepth * (stepCount - 1));
+                    var z2 = z0 - description.sideDepth;
+                    var z3 = z1 - description.sideDepth - ((y2- y4) / aspect);
+
+                    if (z2 < description.boundsMin.z)
+                    {
+                        y1 -= (description.boundsMin.z - z2) * aspect;
+                        z2 = description.boundsMin.z;
+                    }
+                    if (y1 < description.boundsMin.y)
+                    {
+                        // y0 z2 *---* y0 z0 
+                        //       |    \
+                        //       |     \
+                        //       |      \
+                        //       |       \
+                        //       |        \
+                        //       |         \
+                        //       |          * y3 z1 
+                        //       |          |
+                        //       |          |
+                        //       |          |
+                        //       |          |
+                        //       |          |
+                        //       |          |
+                        // y2 z2 *----------* y2 z1 
+
+                        var vertices = new[] {
+                                            new Vector3( min.x, y0, z2), // 0
+                                            new Vector3( min.x, y2, z2), // 1
+                                            new Vector3( min.x, y2, z1), // 2
+                                            new Vector3( min.x, y3, z1), // 3
+                                            new Vector3( min.x, y0, z0), // 4
+                                        };
+
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + 1], vertices, extrusion,
+                                        new int[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }, // TODO: fix this
+                                        definition.surfaceDefinition);
+                    } else
+                    if (z3 > maxZ)
+                    {
+                        var z4 = maxZ;
+                        var y5 = y2 + ((z3 - z4) * aspect);
+                        var y6 = y3 + ((z1 - z4) * aspect);
+                        // y0 z2 *---* y0 z0 
+                        //       |    \
+                        //       |     \
+                        // y1 z2 *      * y6 z4 
+                        //        \     | 
+                        //         \    |
+                        //          \   |
+                        //           \  |
+                        //            \ |
+                        //             \|
+                        //              * y5 z4 
+
+                        var vertices = new[] {
+                                            new Vector3( min.x, y0, z2), // 0
+                                            new Vector3( min.x, y1, z2), // 1
+                                            new Vector3( min.x, y5, z4), // 3
+                                            new Vector3( min.x, y6, z4), // 4
+                                            new Vector3( min.x, y0, z0), // 5
+                                        };
+
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + 1], vertices, extrusion,
+                                        new int[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }, // TODO: fix this
+                                        definition.surfaceDefinition);
+                        if ((definition.sideDepth * aspect) < (definition.plateauHeight - definition.treadHeight))
+                        {
+                            var y7 = description.boundsMin.y;
+                            // y6 z4 *
+                            //       |\
+                            //       | \
+                            //       |  \
+                            //       |   \
+                            //       |    * y3 z1 
+                            //       |    |
+                            // y7 z4 *----* y7 z1 
+
+                            vertices = new[] {
+                                        new Vector3( min.x, y6, z4), // 0
+                                        new Vector3( min.x, y7, z4), // 1
+                                        new Vector3( min.x, y7, z1), // 2
+                                        new Vector3( min.x, y3, z1), // 3
+                                    };
+
+                            BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + 2], vertices, extrusion,
+                                            new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                            definition.surfaceDefinition);
+                        }
+                    } else
+                    {
+                        // y0 z2 *---* y0 z0 
+                        //       |    \
+                        //       |     \
+                        //       |      \
+                        //       |       \
+                        //       |        \
+                        //       |         \
+                        // y1 z2 *          * y3 z1 
+                        //        \         |
+                        //         \        |
+                        //          \       |
+                        //           \      |
+                        //            \     |
+                        //             \    |
+                        //        y2 z3 *---* y2 z1 
+
+                        var vertices = new[] {
+                                            new Vector3( min.x, y0, z2), // 0
+                                            new Vector3( min.x, y1, z2), // 1
+                                            new Vector3( min.x, y2, z3), // 2
+                                            new Vector3( min.x, y2, z1), // 3
+                                            new Vector3( min.x, y3, z1), // 4
+                                            new Vector3( min.x, y0, z0), // 5
+                                        };
+
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + 1], vertices, extrusion,
+                                        new int[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }, // TODO: fix this
+                                        definition.surfaceDefinition);
+                    }
+                }
+            } else
+            if (sideType == StairsSideType.Up)
+            {
+                var extrusion = new Vector3(max.x - min.x, 0, 0);
+                // Top "wall"
+                if ((min.z - description.boundsMin.z) > 0)
+                {
+                    // z0 y0 *----* z1 y0 
+                    //       |    |
+                    // z0 y1 *----* z1 y2 
+                    var y0 = max.y + definition.sideHeight;
+                    var y1 = max.y;
+                    var y2 = min.y;
+                    var z0 = description.boundsMin.z;
+                    var z1 = min.z;
+                    var vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y1, z0), // 1
+                                        new Vector3( min.x, y1, z1), // 2
+                                        new Vector3( min.x, y0, z1), // 3
+                                    };
+
+                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                    definition.surfaceDefinition);
+                } else
+                    startIndex--;
+                // "wall" on stair steps
+                for (int i = 0, j = startIndex + 1; i < stepCount; i++, j++)
+                {
+                    var y0 = max.y + definition.sideHeight;
+                    var y1 = max.y;
+                    var y2 = min.y;
+                    var y3 = min.y + definition.sideHeight;
+                    var z0 = min.z;
+                    var z1 = max.z;
+
+                    // z0 y0 *
+                    //       |\
+                    //       | \
+                    //       |  \
+                    //       |   \
+                    //       |    * z1 y3 
+                    //       |    |
+                    // z0 y1 *----* z1 y2 
+
+                    var vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y1, z0), // 1
+                                        new Vector3( min.x, y1, z1), // 2
+                                        new Vector3( min.x, y3, z1), // 3
+                                    };
+
+                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j], vertices, extrusion,
+                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                    definition.surfaceDefinition);
+
+                    min.z += definition.stepDepth;
+                    max.z += definition.stepDepth;
+                    min.y -= definition.stepHeight;
+                    max.y -= definition.stepHeight;
+                }
+            } else
+            if (sideType == StairsSideType.Down)
+            {
+                Vector3[] vertices;
+                var extrusion = new Vector3(max.x - min.x, 0, 0);
+                if (description.sideDepth == 0)
+                {
+                    for (int i = 0, j = startIndex; i < stepCount - 1; i++, j++)
+                    {
+                        var y0 = max.y;
+                        var y1 = min.y;
+                        var z0 = min.z;
+                        var z1 = max.z;
+
+                        // z0 y0 *------* z1 y0 
+                        //        \     |
+                        //         \    |
+                        //          \   |
+                        //           \  |
+                        //            \ |
+                        //             \|
+                        //              * z1 y1 
+                        vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y1, z1), // 1
+                                        new Vector3( min.x, y0, z1), // 2
+                                    };
+
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j], vertices, extrusion,
+                                        new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                        definition.surfaceDefinition);
+
+                        min.z += definition.stepDepth;
+                        max.z += definition.stepDepth;
+                        min.y -= definition.stepHeight;
+                        max.y -= definition.stepHeight;
+                    }
+                } else
+                {
+                    {
+                        var y0 = max.y;
+                        var y1 = min.y - (description.sideDepth * aspect);
+                        var z0 = min.z - description.sideDepth;
+                        var z1 = max.z;
+                        if (y1 < description.boundsMin.y)
+                        {
+                            var y2 = description.boundsMin.y;
+                            var z2 = max.z - ((description.boundsMin.y - y1) / aspect);
+                            if (z2 < description.boundsMin.z)
+                            {
+                                var z3 = description.boundsMin.z;
+                                // z3 y0 *---------* z1 y0 
+                                //       |         |
+                                //       |         |
+                                //       |         |
+                                //       |         |
+                                //       |         |
+                                //       |         |
+                                // z3 y2 *---------* z1 y2 
+                                vertices = new[] {
+                                                new Vector3( min.x, y0, z3), // 0
+                                                new Vector3( min.x, y2, z3), // 1
+                                                new Vector3( min.x, y2, z1), // 2
+                                                new Vector3( min.x, y0, z1), // 3
+                                            };
+
+                                BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                                new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                                definition.surfaceDefinition);
+
+                                min.z += definition.stepDepth;
+                                max.z += definition.stepDepth;
+                                min.y -= definition.stepHeight;
+                                max.y -= definition.stepHeight;
+                            } else
+                            if (z0 < description.boundsMin.z)
+                            {
+                                var z3 = description.boundsMin.z;
+                                var y3 = max.y - ((description.boundsMin.z - z0) * aspect);
+                                // z3 y0 *---------* z1 y0 
+                                //       |         |
+                                //       |         |
+                                //       |         |
+                                // z3 y3 *         |
+                                //        \        |
+                                //         \       |
+                                //          \      |
+                                //           \     |
+                                //            \    |
+                                //             \   |
+                                //        y2 z2 *--* z1 y2
+                                vertices = new[] {
+                                                new Vector3( min.x, y0, z3), // 0
+                                                new Vector3( min.x, y3, z3), // 1
+                                                new Vector3( min.x, y2, z2), // 2
+                                                new Vector3( min.x, y2, z1), // 2
+                                                new Vector3( min.x, y0, z1), // 3
+                                            };
+
+                                BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                                new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                                definition.surfaceDefinition);
+
+                                min.z += definition.stepDepth;
+                                max.z += definition.stepDepth;
+                                min.y -= definition.stepHeight;
+                                max.y -= definition.stepHeight;
+                            } else
+                            {
+                                // z0 y0 *---------* z1 y0 
+                                //        \        |
+                                //         \       |
+                                //          \      |
+                                //           \     |
+                                //            \    |
+                                //             \   |
+                                //        z2 y2 *--* z1 y2 
+                                vertices = new[] {
+                                                new Vector3( min.x, y0, z0), // 0
+                                                new Vector3( min.x, y2, z2), // 1
+                                                new Vector3( min.x, y2, z1), // 2
+                                                new Vector3( min.x, y0, z1), // 3
+                                            };
+
+                                BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                                new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                                definition.surfaceDefinition);
+
+                                min.z += definition.stepDepth;
+                                max.z += definition.stepDepth;
+                                min.y -= definition.stepHeight;
+                                max.y -= definition.stepHeight;
+                            }
+                        } else
+                        if (z0 < description.boundsMin.z)
+                        {
+                            var z2 = description.boundsMin.z;
+                            var y2 = max.y - ((description.boundsMin.z - z0) * aspect);
+                            // z2 y0 *------* z1 y0 
+                            //       |      |
+                            //       |      |
+                            //       |      |
+                            // z2 y2 *      |
+                            //        \     |
+                            //         \    |
+                            //          \   |
+                            //           \  |
+                            //            \ |
+                            //             \|
+                            //              * z1 y1 
+                            vertices = new[] {
+                                            new Vector3( min.x, y0, z2), // 0
+                                            new Vector3( min.x, y2, z2), // 1
+                                            new Vector3( min.x, y1, z1), // 2
+                                            new Vector3( min.x, y0, z1), // 3
+                                        };
+
+                            BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                            new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                            definition.surfaceDefinition);
+
+                            min.z += definition.stepDepth;
+                            max.z += definition.stepDepth;
+                            min.y -= definition.stepHeight;
+                            max.y -= definition.stepHeight;
+                        } else
+                        {
+                            // z0 y0 *------* z1 y0 
+                            //        \     |
+                            //         \    |
+                            //          \   |
+                            //           \  |
+                            //            \ |
+                            //             \|
+                            //              * z1 y1 
+                            vertices = new[] {
+                                            new Vector3( min.x, y0, z0), // 0
+                                            new Vector3( min.x, y1, z1), // 1
+                                            new Vector3( min.x, y0, z1), // 2
+                                        };
+
+                            BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex], vertices, extrusion,
+                                            new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                            definition.surfaceDefinition);
+
+                            min.z += definition.stepDepth;
+                            max.z += definition.stepDepth;
+                            min.y -= definition.stepHeight;
+                            max.y -= definition.stepHeight;
+                        }
+                    }
+                    for (int i = 1, j = startIndex + 1; i < stepCount - 1; i++, j++)
+                    {
+                        var y0 = max.y;
+                        var y1 = min.y - (description.sideDepth * aspect);
+                        var y2 = max.y - (description.sideDepth * aspect);
+                        var z0 = min.z;
+                        var z1 = max.z;
+
+                        if (y2 < description.boundsMin.y)
+                        {
+                            var y3 = description.boundsMin.y;
+                            // z0 y0 *------* z1 y0 
+                            //       |      |
+                            //       |      |
+                            //       |      |
+                            // z0 y3 *------* z1 y3 
+                            vertices = new[] {
+                                            new Vector3( min.x, y0, z0), // 0
+                                            new Vector3( min.x, y3, z0), // 1
+                                            new Vector3( min.x, y3, z1), // 2
+                                            new Vector3( min.x, y0, z1), // 3
+                                        };
+                        } else
+                        if (y1 < description.boundsMin.y)
+                        {
+                            var z2 = max.z - ((description.boundsMin.y - y1) / aspect);
+                            var y3 = description.boundsMin.y;
+                            // z0 y0 *---------* z1 y0 
+                            //       |         |
+                            //       |         |
+                            //       |         |
+                            // z0 y2 *         |
+                            //        \        |
+                            //         \       |
+                            //          \      |
+                            //           \     |
+                            //            \    |
+                            //             \   |
+                            //        y3 z2 *--* z1 y3
+                            vertices = new[] {
+                                            new Vector3( min.x, y0, z0), // 0
+                                            new Vector3( min.x, y2, z0), // 1
+                                            new Vector3( min.x, y3, z2), // 2
+                                            new Vector3( min.x, y3, z1), // 2
+                                            new Vector3( min.x, y0, z1), // 3
+                                        };
+                        } else
+                        {
+                            // z0 y0 *------* z1 y0 
+                            //       |      |
+                            //       |      |
+                            //       |      |
+                            // z0 y2 *      |
+                            //        \     |
+                            //         \    |
+                            //          \   |
+                            //           \  |
+                            //            \ |
+                            //             \|
+                            //              * z1 y1 
+                            vertices = new[] {
+                                            new Vector3( min.x, y0, z0), // 0
+                                            new Vector3( min.x, y2, z0), // 1
+                                            new Vector3( min.x, y1, z1), // 2
+                                            new Vector3( min.x, y0, z1), // 3
+                                        };
+                        }
+
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j], vertices, extrusion,
+                                        new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                        definition.surfaceDefinition);
+
+                        min.z += definition.stepDepth;
+                        max.z += definition.stepDepth;
+                        min.y -= definition.stepHeight;
+                        max.y -= definition.stepHeight;
+                    }
+                    if (description.riserType == StairsRiserType.ThinRiser &&
+                        description.riserDepth > definition.stepDepth &&
+                        definition.sideDepth < (definition.plateauHeight - definition.treadHeight) / aspect &&
+                        description.riserDepth < definition.bounds.size.z)
+                    {
+                        var z0 = description.boundsMax.z - description.riserDepth;
+                        var z1 = min.z;
+                        var y1 = max.y - (description.sideDepth * aspect) + ((min.z - z0) * aspect);
+                        var y2 = max.y - (description.sideDepth * aspect);
+                        var y3 = description.boundsMin.y;
+                        if (y2 <= y3)
+                        {
+                            if (y2 < y3)
+                            {
+                                z1 -= (y3 - y2) / aspect;
+                            }
+                            // y1 z0 *
+                            //       |\  
+                            //       | \ 
+                            //       |  \
+                            // y3 z0 *---* y3 z1 
+                            vertices = new[] {
+                                                new Vector3( min.x, y1, z0), // 0
+                                                new Vector3( min.x, y3, z0), // 1
+                                                new Vector3( min.x, y3, z1), // 2
+                                            };
+
+                            BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + stepCount], vertices, extrusion,
+                                            new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                            definition.surfaceDefinition);
+                        } else
+                        {
+                            // y1 z0 *
+                            //       |\  
+                            //       | \ 
+                            //       |  \
+                            //       |   * y2 z1 
+                            //       |   |
+                            // y3 z0 *---* y3 z1 
+                            vertices = new[] {
+                                                new Vector3( min.x, y1, z0), // 0
+                                                new Vector3( min.x, y3, z0), // 1
+                                                new Vector3( min.x, y3, z1), // 2
+                                                new Vector3( min.x, y2, z1), // 3
+                                            };
+
+                            BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + stepCount], vertices, extrusion,
+                                            new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                            definition.surfaceDefinition);
+                        }
+                    }
+                }
+                {
+                    var y0 = max.y;
+                    var z0 = min.z;
+                    var z1 = max.z;
+
+                    var y3 = description.boundsMin.y;
+                    // z0 y0 *------* z1 y0 
+                    //       |      |
+                    //       |      |
+                    //       |      |
+                    // z0 y3 *------* z1 y3 
+                    vertices = new[] {
+                                        new Vector3( min.x, y0, z0), // 0
+                                        new Vector3( min.x, y3, z0), // 1
+                                        new Vector3( min.x, y3, z1), // 2
+                                        new Vector3( min.x, y0, z1), // 3
+                                    };
+
+                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[startIndex + stepCount - 1], vertices, extrusion,
+                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
+                                    definition.surfaceDefinition);
+                }
+            }
+        }
+
         struct LineairStairsData
         {
             public float treadHeight;
@@ -43,17 +704,14 @@ namespace Chisel.Core
             public Vector3 boundsMax;
 
             public bool haveRiser;
+
             public bool haveLeftSideDown;
-            public bool haveLeftSideUp;
             public bool haveRightSideDown;
-            public bool haveRightSideUp;
 
             public float sideWidth;
-            public float sideHeight;
-            public float leftSideDepth;
-            public float rightSideDepth;
             public bool thickRiser;
             public float riserDepth;
+            public float sideDepth;
 
             public int stepCount;
             public float offsetZ;
@@ -71,14 +729,11 @@ namespace Chisel.Core
             public int subMeshCount;
 
             public int startTread;
-            public int startLeftSideDown;
-            public int startRightSideDown;
-            public int startLeftSideUp;
-            public int startLeftTopSideUp;
-            public int startRightSideUp;
-            public int startRightTopSideUp;
-            public int startLeftBottom;
-            public int startRightBottom;
+            public int startLeftSide;
+            public int startRightSide;
+
+            public LinearStairsSideData leftSideDescription;
+            public LinearStairsSideData rightSideDescription;
 
             public LineairStairsData(ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition)
             {
@@ -90,6 +745,32 @@ namespace Chisel.Core
                 riserType       = (treadHeight == 0 && definition.riserType == StairsRiserType.ThinRiser) ? StairsRiserType.ThickRiser : definition.riserType;
                 leftSideType    = (riserType == StairsRiserType.None && definition.leftSide  == StairsSideType.Up) ? StairsSideType.DownAndUp : leftSideDefinition;
                 rightSideType   = (riserType == StairsRiserType.None && definition.rightSide == StairsSideType.Up) ? StairsSideType.DownAndUp : rightSideDefinition;
+                if (definition.sideHeight <= 0)
+                {
+                    switch (leftSideType)
+                    {
+                        case StairsSideType.Up: leftSideType = StairsSideType.None; break;
+                        case StairsSideType.DownAndUp: leftSideType = StairsSideType.Down; break;
+                    }
+                    switch (rightSideType)
+                    {
+                        case StairsSideType.Up: rightSideType = StairsSideType.None; break;
+                        case StairsSideType.DownAndUp: rightSideType = StairsSideType.Down; break;
+                    }
+                }
+                if (riserType == StairsRiserType.FillDown)
+                {
+                    switch (leftSideType)
+                    {
+                        case StairsSideType.Down:       leftSideType = StairsSideType.None; break;
+                        case StairsSideType.DownAndUp:  leftSideType = StairsSideType.Up; break;
+                    }
+                    switch (rightSideType)
+                    {
+                        case StairsSideType.Down:       rightSideType = StairsSideType.None; break;
+                        case StairsSideType.DownAndUp:  rightSideType = StairsSideType.Up; break;
+                    }
+                } else
                 if (riserType == StairsRiserType.Smooth)
                 {
                     switch (leftSideType)
@@ -111,21 +792,19 @@ namespace Chisel.Core
                 if (boundsMin.z > boundsMax.z) { var t = boundsMin.z; boundsMin.z = boundsMax.z; boundsMax.z = t; }
 
                 haveRiser           = riserType != StairsRiserType.None;
-                haveLeftSideDown    = riserType != StairsRiserType.FillDown && 
-                                      (leftSideType == StairsSideType.Down || leftSideType == StairsSideType.DownAndUp) &&
-                                        definition.plateauHeight > 0;
-                haveLeftSideUp      = (leftSideType == StairsSideType.Up || leftSideType == StairsSideType.DownAndUp);
-                haveRightSideDown   = riserType != StairsRiserType.FillDown && (rightSideType == StairsSideType.Down || rightSideType == StairsSideType.DownAndUp) &&
-                                        definition.plateauHeight > 0;
-                haveRightSideUp     = (rightSideType == StairsSideType.Up || rightSideType == StairsSideType.DownAndUp);
+
+                haveLeftSideDown    = riserType != StairsRiserType.FillDown && (leftSideType == StairsSideType.Down || leftSideType == StairsSideType.DownAndUp) && definition.plateauHeight > 0;
+                var haveLeftSideUp  = (leftSideType == StairsSideType.Up || leftSideType == StairsSideType.DownAndUp);
+                haveRightSideDown   = riserType != StairsRiserType.FillDown && (rightSideType == StairsSideType.Down || rightSideType == StairsSideType.DownAndUp) && definition.plateauHeight > 0;
+                var haveRightSideUp = (rightSideType == StairsSideType.Up || rightSideType == StairsSideType.DownAndUp);
 
                 sideWidth           = definition.sideWidth;
-                sideHeight          = definition.sideHeight;
-                leftSideDepth       = (haveLeftSideDown ) ? definition.sideDepth : 0;
-                rightSideDepth      = (haveRightSideDown) ? definition.sideDepth : 0;
+                var sideHeight      = definition.sideHeight;
                 thickRiser          = riserType == StairsRiserType.ThickRiser || riserType == StairsRiserType.Smooth;
                 riserDepth          = (haveRiser && !thickRiser) ? definition.riserDepth : 0;
 
+                sideDepth           = riserDepth + Mathf.Max(definition.sideDepth, thickRiser ? definition.stepDepth : 0);
+                
                 stepCount           = definition.StepCount;
                 offsetZ             = (definition.StepDepthOffset < kEpsilon) ? 0 : definition.StepDepthOffset;
                 offsetY             = definition.plateauHeight;
@@ -139,16 +818,16 @@ namespace Chisel.Core
                 leftTopNosingWidth  = (haveLeftSideUp  && (!haveTopSide)) ? definition.nosingWidth : leftNosingWidth;
                 rightTopNosingWidth = (haveRightSideUp && (!haveTopSide)) ? definition.nosingWidth : rightNosingWidth;
 
+
+
+                leftSideDescription     = new LinearStairsSideData(definition, stepCount, sideDepth, boundsMin, boundsMax, riserType, riserDepth, leftSideDefinition, leftSideType);
+                rightSideDescription    = new LinearStairsSideData(definition, stepCount, sideDepth, boundsMin, boundsMax, riserType, riserDepth, rightSideDefinition, rightSideType);
+
                 subMeshCount        = 0; if (haveRiser) subMeshCount = stepCount;
                 startTread          = subMeshCount; if (haveTread) subMeshCount += stepCount;
-                startLeftSideDown   = subMeshCount; if (haveLeftSideDown ) subMeshCount += stepCount;
-                startRightSideDown  = subMeshCount; if (haveRightSideDown) subMeshCount += stepCount;
-                startLeftSideUp     = subMeshCount; if (haveLeftSideUp   ) subMeshCount += (stepCount - 1);
-                startLeftTopSideUp  = subMeshCount; if (haveLeftSideUp && haveTopSide) subMeshCount += 1;
-                startRightSideUp    = subMeshCount; if (haveRightSideUp  ) subMeshCount += (stepCount - 1);
-                startRightTopSideUp = subMeshCount; if (haveRightSideUp && haveTopSide) subMeshCount += 1;
-                startLeftBottom     = subMeshCount; if (haveLeftSideDown ) subMeshCount += 1;
-                startRightBottom    = subMeshCount; if (haveRightSideDown) subMeshCount += 1;
+
+                startLeftSide       = subMeshCount; if (leftSideDescription.enabled)    subMeshCount += leftSideDescription.subMeshCount;
+                startRightSide      = subMeshCount; if (rightSideDescription.enabled)   subMeshCount += rightSideDescription.subMeshCount;
             }
         }
 
@@ -160,6 +839,7 @@ namespace Chisel.Core
             if (definition.surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
                 return false;
 
+            brushContainer.Clear();
 
             var description = new LineairStairsData(definition, leftSideDefinition, rightSideDefinition);
 
@@ -184,7 +864,8 @@ namespace Chisel.Core
                     min.y -= description.treadHeight;
                     max.y -= description.treadHeight;
                     min.x += description.haveRightSideDown ? description.sideWidth : 0;
-                    max.x -= description.haveLeftSideDown ? description.sideWidth : 0;
+                    max.x -= description.haveLeftSideDown  ? description.sideWidth : 0;
+                    
                     var extrusion = new Vector3(max.x - min.x, 0, 0);
                     for (int i = 0; i < description.stepCount; i++)
                     {
@@ -198,22 +879,25 @@ namespace Chisel.Core
                             min.y += description.treadHeight - description.offsetY;
                         }
 
+                        var minZ = Mathf.Max(description.boundsMin.z, min.z);
+                        var maxZ = Mathf.Min(description.boundsMax.z, max.z);
+
                         Vector3[] vertices;
                         if (i == 0 || description.riserType != StairsRiserType.Smooth)
                         {
                             vertices = new[] {
-                                                new Vector3( min.x, min.y, min.z),	// 0
-                                                new Vector3( min.x, min.y, max.z),	// 1
-                                                new Vector3( min.x, max.y, max.z),  // 2
-                                                new Vector3( min.x, max.y, min.z),	// 3
+                                                new Vector3( min.x, min.y, minZ),	// 0
+                                                new Vector3( min.x, min.y, maxZ),	// 1
+                                                new Vector3( min.x, max.y, maxZ),  // 2
+                                                new Vector3( min.x, max.y, minZ),	// 3
                                             };
                         } else
                         {
                             vertices = new[] {
-                                                new Vector3( min.x, min.y, min.z),	// 0
-                                                new Vector3( min.x, min.y, max.z),	// 1
-                                                new Vector3( min.x, max.y, max.z),  // 2
-                                                new Vector3( min.x, max.y, min.z - definition.stepDepth),	// 3
+                                                new Vector3( min.x, min.y, minZ),	// 0
+                                                new Vector3( min.x, min.y, maxZ),	// 1
+                                                new Vector3( min.x, max.y, maxZ),  // 2
+                                                new Vector3( min.x, max.y, minZ - definition.stepDepth),	// 3
                                             };
                         }
 
@@ -254,315 +938,24 @@ namespace Chisel.Core
                         max += stepOffset;
                     }
                 }
-                if (description.haveLeftSideDown)
+
+                if (description.leftSideDescription.enabled)
                 {
-                    var min         = new Vector3(description.boundsMax.x - description.sideWidth, description.boundsMax.y - definition.stepHeight - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset);
-                    var max         = new Vector3(description.boundsMax.x, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
+                    var minX = description.boundsMax.x - description.sideWidth;
+                    var maxX = description.boundsMax.x;
 
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0);
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.leftSideDepth;
-                    var maxDepth    = description.boundsMin.z;
-
-                    GenerateBottomRamp(ref brushContainer, subMeshOffset + description.startLeftSideDown, description.stepCount, min, max, extrusion, description.riserType, definition.stepDepth /*- riserDepth*/, extraDepth, maxDepth, definition, definition.surfaceDefinition);
+                    GenerateStairsSide(ref brushContainer, subMeshOffset + description.startLeftSide, description.stepCount, minX, maxX, description.leftSideType, definition, description, description.leftSideDescription);
                 }
-                if (description.haveRightSideDown)
+
+                if (description.rightSideDescription.enabled)
                 {
-                    var min         = new Vector3(description.boundsMin.x, description.boundsMax.y - definition.stepHeight - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset);
-                    var max         = new Vector3(description.boundsMin.x + description.sideWidth, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
+                    var minX = description.boundsMin.x;
+                    var maxX = description.boundsMin.x + description.sideWidth;
 
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0); 
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.rightSideDepth;
-                    var maxDepth    = description.boundsMin.z;
-
-                    GenerateBottomRamp(ref brushContainer, subMeshOffset + description.startRightSideDown, description.stepCount, min, max, extrusion, description.riserType, definition.stepDepth /*- riserDepth*/, extraDepth, maxDepth, definition, definition.surfaceDefinition);
-                }
-                if (description.haveLeftSideUp)
-                {
-                    var min         = new Vector3(description.boundsMax.x - description.sideWidth, description.boundsMax.y - definition.treadHeight - definition.stepHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
-                    var max         = new Vector3(description.boundsMax.x, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth + definition.stepDepth);
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0);
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.leftSideDepth;
-                    var maxDepth    = description.boundsMin.z;
-
-                    GenerateTopRamp(ref brushContainer, subMeshOffset + description.startLeftSideUp, description.stepCount - 1, min, max, extrusion, description.sideHeight, extraDepth, maxDepth, description.riserType, definition, definition.surfaceDefinition, description.haveLeftSideDown);
-
-                    if (description.haveTopSide)
-                    {
-                        var vertices = new[] {
-                                            new Vector3( min.x, max.y + description.sideHeight + definition.treadHeight, min.z),		// 0
-                                            new Vector3( min.x, max.y + description.sideHeight + definition.treadHeight, description.boundsMin.z),	// 1
-                                            new Vector3( min.x, max.y                                      , description.boundsMin.z),  // 2
-                                            new Vector3( min.x, max.y                                      , min.z),		// 3
-                                        };
-
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + description.startLeftTopSideUp], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        definition.surfaceDefinition);
-                    }
-                }
-                if (description.haveRightSideUp)
-                {
-                    var min         = new Vector3(description.boundsMin.x, description.boundsMax.y - definition.treadHeight - definition.stepHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
-                    var max         = new Vector3(description.boundsMin.x + description.sideWidth, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth + definition.stepDepth);
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0);
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.rightSideDepth;
-                    var maxDepth    = description.boundsMin.z;
-
-                    GenerateTopRamp(ref brushContainer, subMeshOffset + description.startRightSideUp, description.stepCount - 1, min, max, extrusion, description.sideHeight, extraDepth, maxDepth, description.riserType, definition, definition.surfaceDefinition, description.haveRightSideDown);
-
-                    if (description.haveTopSide)
-                    {
-                        var vertices = new[] {
-                                            new Vector3( min.x, max.y + description.sideHeight + definition.treadHeight, min.z),		// 0
-                                            new Vector3( min.x, max.y + description.sideHeight + definition.treadHeight, description.boundsMin.z),  // 1
-                                            new Vector3( min.x, max.y                                      , description.boundsMin.z),  // 2
-                                            new Vector3( min.x, max.y                                      , min.z),		// 3
-                                        };
-
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + description.startRightTopSideUp], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        definition.surfaceDefinition);
-                    }
-                }
-                if (description.haveLeftSideDown)
-                {
-                    var min         = new Vector3(description.boundsMax.x - description.sideWidth, description.boundsMax.y - definition.treadHeight - definition.stepHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
-                    var max         = new Vector3(description.boundsMax.x, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth + definition.stepDepth);
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0);
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.leftSideDepth;
-                    
-                    //if (!haveLeftSideDown)
-                    {
-                        var plateauHeight = definition.plateauHeight;
-                        Vector3[] vertices;
-                        if (description.riserType == StairsRiserType.FillDown)
-                        {
-                            vertices = new[] {
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z),	// 0
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMin.z), // 1
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMin.z), // 2
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z),	// 3
-                                        };
-                        } else
-                        {
-                            vertices = new[] {
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z),		// 0
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z - extraDepth),  // 1
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z - extraDepth),  // 2
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z),		// 3
-                                        };
-                        }
-
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + description.startLeftBottom], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this 
-                                        definition.surfaceDefinition);
-                    }
-                }
-                if (description.haveRightSideDown)
-                {
-                    var min         = new Vector3(description.boundsMin.x, description.boundsMax.y - definition.treadHeight - definition.stepHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth);
-                    var max         = new Vector3(description.boundsMin.x + description.sideWidth, description.boundsMax.y - definition.treadHeight, description.boundsMin.z + definition.StepDepthOffset + definition.stepDepth + definition.stepDepth);
-                    var extrusion   = new Vector3(description.sideWidth, 0, 0);
-                    var extraDepth  = (description.thickRiser ? definition.stepDepth : description.riserDepth) + description.rightSideDepth;
-                    
-                    //if (!haveRightSideDown)
-                    {
-                        var plateauHeight = definition.plateauHeight;
-                        Vector3[] vertices;
-                        if (description.riserType == StairsRiserType.FillDown)
-                        {
-                            vertices = new[] {
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z),		// 0
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMin.z),  // 1
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMin.z),  // 2
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z),		// 3
-                                        };
-                        } else
-                        {
-                            vertices = new[] {
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z),		// 0
-                                            new Vector3( min.x, description.boundsMin.y + plateauHeight, description.boundsMax.z - extraDepth),  // 1
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z - extraDepth),  // 2
-                                            new Vector3( min.x, description.boundsMin.y                , description.boundsMax.z),		// 3
-                                        };
-                        }
-
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + description.startRightBottom], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        definition.surfaceDefinition);
-                    }
+                    GenerateStairsSide(ref brushContainer, subMeshOffset + description.startRightSide, description.stepCount, minX, maxX, description.rightSideType, definition, description, description.rightSideDescription);
                 }
             }
             return true;
-        }
-
-        // TODO: remove all stairs specific parameters
-        static void GenerateBottomRamp(ref ChiselBrushContainer brushContainer, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, StairsRiserType riserType, float riserDepth, float extraDepth, float maxDepth, ChiselLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            for (int i = 0, j = startIndex; i < stepCount; i++, j++)
-            {
-                Vector3[] vertices;
-                var z0 = Mathf.Max(maxDepth, min.z - extraDepth);
-                var z1 = Mathf.Max(maxDepth, max.z - extraDepth);
-                var z2 = Mathf.Max(maxDepth, min.z + riserDepth);
-                if (z2 < z1)
-                {
-                    var t = z1; z1 = z2; z2 = t;
-                    z1 = Mathf.Max(maxDepth, min.z - extraDepth + definition.stepDepth);
-                    z2 = Mathf.Max(maxDepth, max.z);
-                }
-                if (i != stepCount - 1)
-                {
-                    vertices = new[] {
-                                        new Vector3( min.x, max.y, z2), // 0
-                                        new Vector3( min.x, max.y, z0), // 1
-                                        new Vector3( min.x, min.y, z1), // 2
-                                        new Vector3( min.x, min.y, z2), // 3
-                                    };
-                } else
-                {
-                    vertices = new[] {  
-                                        new Vector3( min.x, max.y, z2), // 0
-                                        new Vector3( min.x, max.y, z0), // 1
-                                        new Vector3( min.x, min.y + definition.treadHeight, z1), // 2
-                                        new Vector3( min.x, min.y + definition.treadHeight, z2), // 3  
-                                    };
-                }
-
-                BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j], vertices, extrusion,
-                                new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                surfaceDefinition);
-
-                min.z += definition.stepDepth;
-                max.z += definition.stepDepth;
-                min.y -= definition.stepHeight;
-                max.y -= definition.stepHeight;
-            }
-        }
-
-        // TODO: remove all stairs specific parameters
-        static void GenerateTopRamp(ref ChiselBrushContainer brushContainer, int startIndex, int stepCount, Vector3 min, Vector3 max, Vector3 extrusion, float sideHeight, float extraDepth, float maxDepth, StairsRiserType riserType, ChiselLinearStairsDefinition definition, in ChiselSurfaceDefinition surfaceDefinition, bool allLargeSteps)
-        {
-            //var diffY			= (max.y - min.y);
-            //var diffZ			= (max.z - min.z);
-            //var aspect		= diffY / diffZ;
-            var diagonalHeight	= sideHeight + definition.treadHeight;//Mathf.Max(sideHeight + definition.treadHeight, (aspect * (riserDepth)));// + definition.nosingDepth)) + definition.treadHeight;
-
-            if (!allLargeSteps)
-            {
-                for (int i = 0, j = startIndex; i < stepCount; i++, j++)
-                {
-                    var topY        = max.y + diagonalHeight;
-                    var bottomY     = min.y;
-                    var middleY     = (bottomY + diagonalHeight);// - (lastStep ? (riserDepth * aspect) : 0);
-                    var rightZ      = Mathf.Max(maxDepth, max.z);// + (lastStep ? riserDepth : 0);
-                    var leftZ       = Mathf.Max(maxDepth, min.z);
-                    
-                    //            topY leftZ
-                    //          0    4 
-                    //           *--*    
-                    //           |   \
-                    //           |    \
-                    //  lefterZ  |     \ 3
-                    //           |      * 
-                    //           |      |   rightZ
-                    //           *------*
-                    //          1        2
-                    //            bottomY
-                    var lefterZ = (i == 0 || (riserType == StairsRiserType.FillDown)) ? maxDepth : Mathf.Max(maxDepth, leftZ - extraDepth);
-                    var vertices = new[] {
-                                        new Vector3( min.x, topY,    lefterZ),   // 0
-                                        new Vector3( min.x, bottomY, lefterZ),   // 1
-                                        new Vector3( min.x, bottomY, rightZ),  // 2
-                                        new Vector3( min.x, middleY, rightZ),  // 3
-                                        new Vector3( min.x, topY,    leftZ),   // 4
-                                    };
-
-                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j + 0], vertices, extrusion, 
-                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
-                                    surfaceDefinition);
-
-                    min.z += definition.stepDepth;
-                    max.z += definition.stepDepth;
-                    min.y -= definition.stepHeight;
-                    max.y -= definition.stepHeight;
-                }
-            } else
-            { 
-                int i = 0, j = startIndex;
-                for (; i < stepCount - 1; i++, j++)
-                {
-                    var topY		= max.y + diagonalHeight;
-                    var bottomY		= min.y;
-                    var middleY		= (bottomY + diagonalHeight);// - (lastStep ? (riserDepth * aspect) : 0);
-                    var rightZ		= Mathf.Max(maxDepth, max.z);// + (lastStep ? riserDepth : 0);
-                    var leftZ		= Mathf.Max(maxDepth, min.z);
-
-                    //            topY leftZ
-                    //          0    3 
-                    //           *--*    
-                    //           |   \
-                    //           |    \
-                    //  lefterZ  |     \  
-                    //           *------*
-                    //          1        2
-                    //            middleY
-                    var lefterZ = (i == 0 || (riserType == StairsRiserType.FillDown)) ? maxDepth : Mathf.Max(maxDepth, leftZ - extraDepth);
-                    var vertices = new[] {
-                                        new Vector3( min.x, topY,    lefterZ),   // 0
-                                        new Vector3( min.x, middleY, lefterZ),   // 1
-                                        new Vector3( min.x, middleY, rightZ),  // 2
-                                        new Vector3( min.x, topY,    leftZ),   // 3
-                                    }; 
-
-                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j + 0], vertices, extrusion, 
-                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
-                                    surfaceDefinition);
-                        
-                    min.z += definition.stepDepth;
-                    max.z += definition.stepDepth;
-                    min.y -= definition.stepHeight;
-                    max.y -= definition.stepHeight;
-                }
-                i = stepCount - 1;
-                j = startIndex + i;
-                { 
-                    var topY		= max.y + diagonalHeight;
-                    var bottomY		= min.y;
-                    var middleY		= (bottomY + diagonalHeight);// - (lastStep ? (riserDepth * aspect) : 0);
-                    var rightZ		= Mathf.Max(maxDepth, max.z);// + (lastStep ? riserDepth : 0);
-                    var leftZ		= Mathf.Max(maxDepth, min.z);
-
-                    //            topY leftZ
-                    //          0    4 
-                    //           *--*    
-                    //           |   \
-                    //           |    \
-                    //  lefterZ  |     \ 3
-                    //           |      * 
-                    //           |      |   rightZ
-                    //           *------*
-                    //          1        2
-                    //            bottomY
-                    var lefterZ = (i == 0 || (riserType == StairsRiserType.FillDown)) ? maxDepth : Mathf.Max(maxDepth, leftZ - extraDepth);
-                    var vertices = new[] {
-                                        new Vector3( min.x, topY,    lefterZ),   // 0
-                                        new Vector3( min.x, bottomY, lefterZ),   // 1
-                                        new Vector3( min.x, bottomY, rightZ),  // 2
-                                        new Vector3( min.x, middleY, rightZ),  // 3
-                                        new Vector3( min.x, topY,    leftZ),   // 4
-                                    };
-
-                    BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[j + 0], vertices, extrusion, 
-                                    new int[] { 0, 1, 2, 3, 3, 3, 3 }, // TODO: fix this
-                                    surfaceDefinition);
-                        
-                    min.z += definition.stepDepth;
-                    max.z += definition.stepDepth;
-                    min.y -= definition.stepHeight;
-                    max.y -= definition.stepHeight;
-                }
-            }
         }
 
         public static int GetLinearStairsSubMeshCount(ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition)

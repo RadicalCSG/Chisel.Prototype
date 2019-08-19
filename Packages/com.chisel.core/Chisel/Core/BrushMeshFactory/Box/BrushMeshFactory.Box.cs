@@ -19,7 +19,7 @@ namespace Chisel.Core
 
             brushContainer.EnsureSize(1);
 
-            return GenerateBox(ref brushContainer.brushMeshes[0], definition.min, definition.max, definition.surfaceDefinition);
+            return CreateBox(ref brushContainer.brushMeshes[0], definition.min, definition.max, definition.surfaceDefinition);
         }
 
         static bool GenerateBox(ref BrushMesh brushMesh, ref ChiselBoxDefinition definition)
@@ -34,10 +34,10 @@ namespace Chisel.Core
                 return false;
             }
 
-            return GenerateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition);
+            return CreateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition);
         }
 
-        public static bool GenerateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool CreateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 return false;
@@ -46,7 +46,7 @@ namespace Chisel.Core
             if (surfaces == null)
                 return false;
 
-            if (surfaces.Length != 6)
+            if (surfaces.Length < 6)
                 return false;
 
             if (!BoundsExtensions.IsValid(min, max))
