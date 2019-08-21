@@ -47,11 +47,6 @@ namespace UnitySceneExtensions
         {
             var position    = (from + to) * 0.5f;
             var direction   = (Vector3)Matrix4x4.identity.GetColumn((int)axis);
-            if (snappingStep == 0)
-                snappingStep = Snapping.MoveSnappingSteps[(int)axis];
-            if (handleSize == 0)
-                handleSize = UnityEditor.HandleUtility.GetHandleSize(position) * 0.05f;
-
             return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, capFunction)[(int)axis];
         }
 
@@ -65,11 +60,6 @@ namespace UnitySceneExtensions
             var id			= GUIUtility.GetControlID(s_Edge1DHash, FocusType.Keyboard);
             var position	= (from + to) * 0.5f;
             var direction	= (Vector3)Matrix4x4.identity.GetColumn((int)axis);
-            if (snappingStep == 0)
-                snappingStep = Snapping.MoveSnappingSteps[(int)axis];
-            if (handleSize == 0)
-                handleSize = UnityEditor.HandleUtility.GetHandleSize(position) * 0.05f;
-
             return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, capFunction)[(int)axis] + position[(int)axis];
         }
 
@@ -89,14 +79,26 @@ namespace UnitySceneExtensions
         }
 
         // TODO: improve this
+        public static Vector3 Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, Vector3 direction, float snappingStep= 0 , float handleSize = 0)
+        {
+            var position = (from + to) * 0.5f;
+            var id = GUIUtility.GetControlID(s_Edge1DHash, FocusType.Keyboard);
+            return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
+        }
+
         public static Vector3 Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, Vector3 position, Vector3 direction, float snappingStep, float handleSize, CapFunction capFunction)
         {
             var id = GUIUtility.GetControlID(s_Edge1DHash, FocusType.Keyboard);
             return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, capFunction);
         }
 
-        public static Vector3 Edge1DHandleOffset(int id, Axis axis, Vector3 from, Vector3 to, Vector3 position, Vector3 direction, float snappingStep, float handleSize, CapFunction capFunction) 
+        public static Vector3 Edge1DHandleOffset(int id, Axis axis, Vector3 from, Vector3 to, Vector3 position, Vector3 direction, float snappingStep, float handleSize, CapFunction capFunction)
         {
+            if (snappingStep == 0)
+                snappingStep = Snapping.MoveSnappingSteps[(int)axis];
+            if (handleSize == 0)
+                handleSize = UnityEditor.HandleUtility.GetHandleSize(position) * 0.05f;
+
             var evt = Event.current;
             switch (evt.GetTypeForControl(id))
             {

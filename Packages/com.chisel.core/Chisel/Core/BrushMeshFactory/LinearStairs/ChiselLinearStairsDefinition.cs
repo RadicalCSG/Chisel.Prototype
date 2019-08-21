@@ -99,24 +99,39 @@ namespace Chisel.Core
         
         public ChiselSurfaceDefinition  surfaceDefinition;
 
+        public bool     HasVolume
+        {
+            get
+            {
+                return bounds.size.x != 0 &&
+                       bounds.size.y != 0 &&
+                       bounds.size.z != 0;
+            }
+        }
         
         public float	width  { get { return bounds.size.x; } set { var size = bounds.size; size.x = value; bounds.size = size; } }
         public float	height { get { return bounds.size.y; } set { var size = bounds.size; size.y = value; bounds.size = size; } }
         public float	depth  { get { return bounds.size.z; } set { var size = bounds.size; size.z = value; bounds.size = size; } }
-        public Vector3	size   { get { return bounds.size;   } set { bounds.size = value; } }
+        
+        public Vector3  boundsMin { get { return new Vector3(Mathf.Min(bounds.min.x, bounds.max.x), Mathf.Min(bounds.min.y, bounds.max.y), Mathf.Min(bounds.min.z, bounds.max.z)); } }
+        public Vector3  boundsMax { get { return new Vector3(Mathf.Max(bounds.min.x, bounds.max.x), Mathf.Max(bounds.min.y, bounds.max.y), Mathf.Max(bounds.min.z, bounds.max.z)); } }
+        
+        public float	absWidth  { get { return Mathf.Abs(bounds.size.x); } }
+        public float	absHeight { get { return Mathf.Abs(bounds.size.y); } }
+        public float	absDepth  { get { return Mathf.Abs(bounds.size.z); } }
 
         public int StepCount
         {
             get
             {
                 return Mathf.Max(1,
-                          Mathf.FloorToInt((Mathf.Abs(height) - plateauHeight + kStepSmudgeValue) / stepHeight));
+                          Mathf.FloorToInt((absHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
             }
         }
 
         public float StepDepthOffset
         {
-            get { return Mathf.Max(0, Mathf.Abs(depth) - (StepCount * stepDepth)); }
+            get { return Mathf.Max(0, absDepth - (StepCount * stepDepth)); }
         }
 
         public void Reset()
@@ -173,29 +188,29 @@ namespace Chisel.Core
 
 
             stepHeight		= Mathf.Max(kMinStepHeight, stepHeight);
-            stepDepth		= Mathf.Clamp(stepDepth, kMinStepDepth, Mathf.Abs(depth));
+            stepDepth		= Mathf.Clamp(stepDepth, kMinStepDepth, absDepth);
             treadHeight		= Mathf.Max(0, treadHeight);
             nosingDepth		= Mathf.Max(0, nosingDepth);
             nosingWidth		= Mathf.Max(0, nosingWidth);
 
-            width			= Mathf.Max(kMinWidth, Mathf.Abs(width)) * (width < 0 ? -1 : 1);
-            depth			= Mathf.Max(stepDepth, Mathf.Abs(depth)) * (depth < 0 ? -1 : 1);
+            width			= Mathf.Max(kMinWidth, absWidth) * (width < 0 ? -1 : 1);
+            depth			= Mathf.Max(stepDepth, absDepth) * (depth < 0 ? -1 : 1);
 
             riserDepth		= Mathf.Max(kMinRiserDepth, riserDepth);
             sideDepth		= Mathf.Max(0, sideDepth);
             sideWidth		= Mathf.Max(kMinSideWidth, sideWidth);
             sideHeight		= Mathf.Max(0, sideHeight);
 
-            var absHeight        = Mathf.Max(stepHeight, Mathf.Abs(height));
-            var maxPlateauHeight = absHeight - stepHeight;
+            var realHeight       = Mathf.Max(stepHeight, absHeight);
+            var maxPlateauHeight = realHeight - stepHeight;
 
             plateauHeight		= Mathf.Clamp(plateauHeight, 0, maxPlateauHeight);
 
-            var totalSteps      = Mathf.Max(1, Mathf.FloorToInt((absHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
+            var totalSteps      = Mathf.Max(1, Mathf.FloorToInt((realHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
             var totalStepHeight = totalSteps * stepHeight;
 
-            plateauHeight		= Mathf.Max(0, absHeight - totalStepHeight);
-            stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, Mathf.Abs(depth) / totalSteps);
+            plateauHeight		= Mathf.Max(0, realHeight - totalStepHeight);
+            stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, absDepth / totalSteps);
         }
 
         public bool Generate(ref ChiselBrushContainer brushContainer)

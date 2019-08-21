@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -63,7 +63,7 @@ namespace Chisel.Core
                     if (riserType == StairsRiserType.ThinRiser &&
                         riserDepth > definition.stepDepth && 
                         definition.sideDepth < (definition.plateauHeight - definition.treadHeight) / aspect &&
-                        riserDepth < definition.bounds.size.z)
+                        riserDepth < definition.absDepth)
                     {
                         subMeshCount++;
                     }
@@ -628,7 +628,7 @@ namespace Chisel.Core
                     if (description.riserType == StairsRiserType.ThinRiser &&
                         description.riserDepth > definition.stepDepth &&
                         definition.sideDepth < (definition.plateauHeight - definition.treadHeight) / aspect &&
-                        description.riserDepth < definition.bounds.size.z)
+                        description.riserDepth < definition.absDepth)
                     {
                         var z0 = description.boundsMax.z - description.riserDepth;
                         var z1 = min.z;
@@ -794,12 +794,8 @@ namespace Chisel.Core
                         case StairsSideType.None: rightSideType = StairsSideType.Down; break;
                     }
                 }
-                boundsMin = definition.bounds.min;
-                boundsMax = definition.bounds.max;
-
-                if (boundsMin.y > boundsMax.y) { var t = boundsMin.y; boundsMin.y = boundsMax.y; boundsMax.y = t; }
-                if (boundsMin.x > boundsMax.x) { var t = boundsMin.x; boundsMin.x = boundsMax.x; boundsMax.x = t; }
-                if (boundsMin.z > boundsMax.z) { var t = boundsMin.z; boundsMin.z = boundsMax.z; boundsMax.z = t; }
+                boundsMin = definition.boundsMin;
+                boundsMax = definition.boundsMax;
 
                 haveRiser           = riserType != StairsRiserType.None;
 

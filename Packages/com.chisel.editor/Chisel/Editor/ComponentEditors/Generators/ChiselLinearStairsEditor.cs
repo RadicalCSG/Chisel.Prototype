@@ -213,28 +213,30 @@ namespace Chisel.Editors
                     newDefinition.bounds = bounds;
                 }
 
-                var min			= bounds.min;
-                var max			= bounds.max;
-                if (min.y > max.y) { var t = min.y; min.y = max.y; max.y = t; }
-                if (min.x > max.x) { var t = min.x; min.x = max.x; max.x = t; }
-                if (min.z > max.z) { var t = min.z; min.z = max.x; max.z = t; }
+                var min			= new Vector3(Mathf.Min(bounds.min.x, bounds.max.x), Mathf.Min(bounds.min.y, bounds.max.y), Mathf.Min(bounds.min.z, bounds.max.z));
+                var max			= new Vector3(Mathf.Max(bounds.min.x, bounds.max.x), Mathf.Max(bounds.min.y, bounds.max.y), Mathf.Max(bounds.min.z, bounds.max.z));
+
                 
-                var edgeHeight  = max.y - stepHeight * stepCount;
+                var size        = (max - min);
+                var center      = (max + min) * 0.5f;
+
+                var heightStart = bounds.max.y + (bounds.size.y < 0 ? size.y : 0);
+
+                var edgeHeight  = heightStart - stepHeight * stepCount;
                 var pHeight0	= new Vector3(min.x, edgeHeight, max.z);
                 var pHeight1	= new Vector3(max.x, edgeHeight, max.z);
 
-                var pDepth0		= new Vector3(min.x, max.y, min.z + stepDepthOffset);
-                var pDepth1		= new Vector3(max.x, max.y, min.z + stepDepthOffset);
+                var depthStart = bounds.min.z - (bounds.size.z < 0 ? size.z : 0);
 
-                var center      = bounds.center;
-                var worldCenter = generatorTransform.TransformPoint(center);
-                var direction   = (cameraPosition - worldCenter).normalized;
+                var pDepth0		= new Vector3(min.x, max.y, depthStart + stepDepthOffset);
+                var pDepth1		= new Vector3(max.x, max.y, depthStart + stepDepthOffset);
 
-                var boundsAxi   = new Vector3(Mathf.Sign(bounds.size.x), Mathf.Sign(bounds.size.y), Mathf.Sign(bounds.size.z));
+                var worldCenter     = generatorTransform.TransformPoint(center);
+                var iconDirection   = (cameraPosition - worldCenter).normalized;
 
-                var dotX        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(boundsAxi.x, 0, 0)), direction);
-                var dotZ        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(0, 0, boundsAxi.z)), direction);
-                var dotY        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(0, boundsAxi.y, 0)), direction);
+                var dotX        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(1, 0, 0)), iconDirection);
+                var dotZ        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(0, 0, 1)), iconDirection);
+                var dotY        = Vector3.Dot(generatorTransform.TransformVector(new Vector3(0, 1, 0)), iconDirection);
 
                 if ((dotX > -0.2f) && (dotX < 0.2f)) dotX = 0;
                 if ((dotZ > -0.2f) && (dotZ < 0.2f)) dotZ = 0;
@@ -250,17 +252,15 @@ namespace Chisel.Editors
 
                 Handles.color = iconColor;
 
-                // TODO: put both buttons next to each other?
-                if (SceneHandles.ClickableLabel(pLabel1, (pLabel1 - bounds.center).normalized, clockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
+                // TODO: consider putting both buttons next to each other
+                //  - buttons closer to each other, which is nicer when you need to go back and forth (although you could just click 3 times to go back)
+                //  - since you'd only have 1 button group, the chance is higher it's outside of the screen. 
+                //    so a better solution should be found to make sure the button group doesn't overlap the stairs, yet is close to it, and on screen.
+                if (SceneHandles.ClickableLabel(pLabel1, (pLabel1 - center).normalized, clockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
                 {
-                    bounds.center = Vector3.zero;
-                    var size = bounds.size;
-                    var sizeX = size.x;
-                    var sizeZ = size.z;
-                    size.x = sizeZ;
-                    size.z = sizeX;
-                    bounds.size = size;
-                    bounds.center = center;
+                    var newSize = bounds.size;
+                    var t = newSize.x; newSize.x = newSize.z; newSize.z = t;
+                    bounds.size = newSize;
                     newDefinition.bounds = bounds;
                     GUI.changed = true;
 
@@ -268,16 +268,11 @@ namespace Chisel.Editors
                     generatorTransform.RotateAround(generatorTransform.TransformPoint(center), generatorTransform.up, 90);
                 }
 
-                if (SceneHandles.ClickableLabel(pLabel0, (pLabel0 - bounds.center).normalized, antiClockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
+                if (SceneHandles.ClickableLabel(pLabel0, (pLabel0 - center).normalized, antiClockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
                 {
-                    bounds.center = Vector3.zero;
-                    var size = bounds.size;
-                    var sizeX = size.x;
-                    var sizeZ = size.z;
-                    size.x = sizeZ;
-                    size.z = sizeX;
-                    bounds.size = size;
-                    bounds.center = center;
+                    var newSize = bounds.size;
+                    var t = newSize.x; newSize.x = newSize.z; newSize.z = t;
+                    bounds.size = newSize;
                     newDefinition.bounds = bounds;
                     GUI.changed = true;
 
@@ -292,35 +287,36 @@ namespace Chisel.Editors
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    var totalStepHeight = (max.y - Mathf.Clamp(edgeHeight, max.y % stepHeight, max.y));
+                    var totalStepHeight = Mathf.Clamp((heightStart - edgeHeight), size.y % stepHeight, size.y);
                     const float kSmudgeValue = 0.0001f;
                     var oldStepCount = newDefinition.StepCount;
                     var newStepCount = Mathf.Max(1, Mathf.FloorToInt((Mathf.Abs(totalStepHeight) + kSmudgeValue) / stepHeight));
 
-                    newDefinition.stepDepth        = (oldStepCount * newDefinition.stepDepth) / newStepCount;
-                    newDefinition.plateauHeight    = bounds.size.y - (stepHeight * newStepCount);
+                    newDefinition.stepDepth     = (oldStepCount * newDefinition.stepDepth) / newStepCount;
+                    newDefinition.plateauHeight = size.y - (stepHeight * newStepCount);
                 }
 
                 EditorGUI.BeginChangeCheck();
                 {
-                    stepDepthOffset = SceneHandles.Edge1DHandle(Axis.Z, pDepth0,  pDepth1,  snappingStep: ChiselLinearStairsDefinition.kMinStepDepth) - min.z;
+                    stepDepthOffset = SceneHandles.Edge1DHandle(Axis.Z, pDepth0,  pDepth1, snappingStep: ChiselLinearStairsDefinition.kMinStepDepth) - depthStart;
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    stepDepthOffset = Mathf.Clamp(stepDepthOffset, 0, currentDefinition.depth - ChiselLinearStairsDefinition.kMinStepDepth);
-                    newDefinition.stepDepth = (currentDefinition.depth - stepDepthOffset) / currentDefinition.StepCount;
+                    stepDepthOffset = Mathf.Clamp(stepDepthOffset, 0, currentDefinition.absDepth - ChiselLinearStairsDefinition.kMinStepDepth);
+                    newDefinition.stepDepth = ((currentDefinition.absDepth - stepDepthOffset) / currentDefinition.StepCount);
                 }
 
-                var depthOffset = 0.0f;
+                var heightOffset = 0.0f;
                 EditorGUI.BeginChangeCheck();
                 {
-                    var depth0 = SceneHandles.Edge1DHandleOffset(Axis.Z, pHeight0, pDepth0, snappingStep: stepHeight);
-                    var depth1 = SceneHandles.Edge1DHandleOffset(Axis.Z, pHeight1, pDepth1, snappingStep: stepHeight);
-                    if (Mathf.Abs(depth0) > Mathf.Abs(depth1)) depthOffset = depth0; else depthOffset = depth1;
+                    var direction = Vector3.Cross(Vector3.forward, pHeight0 - pDepth0).normalized;
+                    var height0 = Vector3.Dot(direction, SceneHandles.Edge1DHandleOffset(Axis.Y, pHeight0, pDepth0, direction, snappingStep: stepHeight));
+                    var height1 = Vector3.Dot(direction, SceneHandles.Edge1DHandleOffset(Axis.Y, pHeight1, pDepth1, direction, snappingStep: stepHeight));
+                    if (Mathf.Abs(height0) > Mathf.Abs(height1)) heightOffset = height0; else heightOffset = height1;
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    newDefinition.plateauHeight += depthOffset;
+                    newDefinition.plateauHeight += heightOffset;
                 }
             }
             if (EditorGUI.EndChangeCheck())
