@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -20,9 +20,19 @@ namespace Chisel.Core
         {
             definition.Validate();
 
+            if (!definition.HasVolume)
+            {
+                brushContainer.Reset();
+                return false;
+            }
+
+
             int requiredSubMeshCount = BrushMeshFactory.GetLinearStairsSubMeshCount(definition, definition.leftSide, definition.rightSide);
             if (requiredSubMeshCount == 0)
+            {
+                brushContainer.Reset();
                 return false;
+            }
             
             int subMeshOffset = 0;
 
