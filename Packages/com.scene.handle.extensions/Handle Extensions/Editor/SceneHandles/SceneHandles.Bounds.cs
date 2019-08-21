@@ -22,11 +22,11 @@ namespace UnitySceneExtensions
         
         static readonly Axes[]		s_EdgeAxes = new Axes[]
         {
-            Axes.XY, Axes.XZ, Axes.XY, Axes.XZ,
+            Axes.YZ, Axes.XZ, Axes.YZ, Axes.XZ,
 
-            Axes.XY, Axes.XZ, Axes.XY, Axes.XZ,
+            Axes.YZ, Axes.XZ, Axes.YZ, Axes.XZ,
 
-            Axes.YZ, Axes.YZ, Axes.YZ, Axes.YZ
+            Axes.XY, Axes.XY, Axes.XY, Axes.XY
         };
         
         static readonly Axes[]		s_BoundsAxes = new Axes[]
