@@ -57,11 +57,11 @@ namespace Chisel.Editors
                     var activeGridCenter				= UnitySceneExtensions.Grid.ActiveGrid.Center;
                     var surfaceGridPlane				= s_StartIntersection.plane;
                     var surfaceGridUp					= surfaceGridPlane.normal;
-                    var surfaceGridForward				= MathExtensions.CalculateTangent(surfaceGridUp); // Q: why if this is not negated, we end up-side-down?
-
-                    var activeGridFromWorldRotation		= Quaternion.LookRotation(activeGridForward, activeGridUp);
+                    var surfaceGridForward				= MathExtensions.CalculateBinormal(surfaceGridUp);
+                    
+                    var activeGridFromWorldRotation		= Quaternion.LookRotation(activeGridUp, activeGridForward);
                     var worldFromActiveGridRotation		= Quaternion.Inverse(activeGridFromWorldRotation);
-                    var surfaceGridFromWorldRotation	= Quaternion.LookRotation(surfaceGridForward, surfaceGridUp);
+                    var surfaceGridFromWorldRotation	= Quaternion.LookRotation(surfaceGridUp, surfaceGridForward);
                     var activeGridToSurfaceGridRotation	= surfaceGridFromWorldRotation * worldFromActiveGridRotation;
 
 
@@ -88,11 +88,10 @@ namespace Chisel.Editors
                     }
 
                     // TODO: try to snap the new surface grid point in other directions on the active-grid? (do we need to?)
-
-                    s_Transform = Matrix4x4.TRS(surfaceGridCenter - activeGridCenter, activeGridToSurfaceGridRotation, Vector3.one) * 
-                                        UnitySceneExtensions.Grid.ActiveGrid.GridToWorldSpace;
-                    s_InvTransform = s_Transform.inverse;
                     
+                    s_Transform = Matrix4x4.TRS(surfaceGridCenter - activeGridCenter, activeGridToSurfaceGridRotation, Vector3.one) * 
+                                                UnitySceneExtensions.Grid.ActiveGrid.GridToWorldSpace;
+                    s_InvTransform = s_Transform.inverse;
                     s_Snapping2D.Initialize(new UnitySceneExtensions.Grid(s_Transform), mousePosition, s_StartIntersection.point, UnityEditor.Handles.matrix);
                 }
             }

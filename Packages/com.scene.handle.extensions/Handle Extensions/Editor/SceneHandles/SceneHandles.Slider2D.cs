@@ -105,14 +105,14 @@ namespace UnitySceneExtensions
                         var handleInverseMatrix = UnityEditor.Handles.inverseMatrix;
                         var localPointDelta     = s_Snapping2D.WorldSnappedDelta;
 
+                        var pointDelta			= handleInverseMatrix.MultiplyVector(localPointDelta);
+
                         if (axes != Axes.None)
                         {
-                            if ((axes & Axes.X) == Axes.None) localPointDelta.x = 0;
-                            if ((axes & Axes.Y) == Axes.None) localPointDelta.y = 0;
-                            if ((axes & Axes.Z) == Axes.None) localPointDelta.z = 0;
+                            if ((axes & Axes.X) == Axes.None) pointDelta.x = 0;
+                            if ((axes & Axes.Y) == Axes.None) pointDelta.y = 0;
+                            if ((axes & Axes.Z) == Axes.None) pointDelta.z = 0;
                         }
-
-                        var pointDelta			= handleInverseMatrix.MultiplyVector(localPointDelta);
 
                         if (s_StartPoints != null)
                         {

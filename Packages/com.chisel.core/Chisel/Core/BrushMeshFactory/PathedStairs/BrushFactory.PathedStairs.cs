@@ -41,8 +41,8 @@ namespace Chisel.Core
 
             brushContainer.EnsureSize(totalSubMeshCount);
 
-            var depth		= definition.stairs.depth;
-            var height		= definition.stairs.height;
+            var depth		= definition.stairs.absDepth;
+            var height		= definition.stairs.absHeight;
 
             var halfDepth	= depth  * 0.5f;
             var halfHeight	= height * 0.5f;
@@ -96,7 +96,7 @@ namespace Chisel.Core
                                               Vector3.one);
                 
                 // set the width to the width of the line
-                definition.stairs.width = maxWidth1;
+                definition.stairs.width = maxWidth1 * (definition.stairs.width < 0 ? -1 : 1);
                 definition.stairs.nosingWidth = 0;
 
                 var leftSide  = (!definition.shape.closed && vi2 ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
@@ -116,7 +116,7 @@ namespace Chisel.Core
                     {
                         // TODO: is it possible to put all of this in a single matrix?
                         // lerp the stairs to go from less wide to wider depending on the depth of the vertex
-                        var depthFactor = 1.0f - ((vertices[v].z / definition.stairs.depth) + 0.5f);
+                        var depthFactor = 1.0f - ((vertices[v].z / depth) + 0.5f);
                         var wideFactor  = (vertices[v].x / halfWidth) + 0.5f;
                         var scale		= (vertices[v].x / halfWidth);
 

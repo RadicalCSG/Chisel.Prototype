@@ -115,7 +115,8 @@ namespace UnitySceneExtensions
 
             
             using (new SceneHandles.DrawingScope())
-            { var prevDisabled	= SceneHandles.disabled;
+            {
+                var prevDisabled	= SceneHandles.disabled;
 
                 var isStatic = (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
                 
