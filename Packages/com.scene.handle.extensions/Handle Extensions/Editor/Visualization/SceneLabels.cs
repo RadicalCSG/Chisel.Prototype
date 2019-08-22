@@ -110,25 +110,31 @@ namespace UnitySceneExtensions
 
         public static bool ClickableLabel(UnityEngine.Vector3 position, UnityEngine.Vector3 alignmentDirection, string text, int fontSize = 11, FontStyle fontStyle = FontStyle.Normal, int padding = 4)
         {
-            var style = GetLabelStyle(SceneHandles.color, padding, fontSize, fontStyle);
-            return ClickableLabel(position, alignmentDirection, new GUIContent(text), style);
+            return ClickableLabel(position, alignmentDirection, new GUIContent(text), fontSize, fontStyle, padding);
         }
 
+        static float dragDistance = 0;
+        const float kMinimumClickDistance = 8;
+        static readonly int s_ClickableLabelHash = "ClickableLabel".GetHashCode();
         public static bool ClickableLabel(UnityEngine.Vector3 position, UnityEngine.Vector3 alignmentDirection, GUIContent content, int fontSize = 11, FontStyle fontStyle = FontStyle.Normal, int padding = 4)
         {
-            var style = GetLabelStyle(SceneHandles.color, padding, fontSize, fontStyle);
-            return ClickableLabel(position, alignmentDirection, content, style);
-        }
+            var id = GUIUtility.GetControlID(s_ClickableLabelHash, FocusType.Keyboard);
+            var prevColor = UnityEditor.Handles.color;
+            if (Event.current.type == EventType.Repaint)
+            {
+                var focusControl        = UnitySceneExtensions.SceneHandleUtility.focusControl;
+                var focusColor          = (focusControl == id) ? UnitySceneExtensions.SceneHandles.selectedColor : prevColor;
+                UnityEditor.Handles.color = SceneHandles.disabled ? Color.Lerp(focusColor, UnitySceneExtensions.SceneHandles.staticColor, UnitySceneExtensions.SceneHandles.staticBlend) : focusColor;
+            }
 
-        static bool canClick = false;
-        static readonly int s_ClickableLabelHash = "ClickableLabel".GetHashCode();
-        public static bool ClickableLabel(UnityEngine.Vector3 position, UnityEngine.Vector3 alignmentDirection, GUIContent content, GUIStyle style)
-        {
+            var style = GetLabelStyle(SceneHandles.color, padding, fontSize, fontStyle);
             var rect = DrawLabel(position, alignmentDirection, content, style);
+
+            UnityEditor.Handles.color = prevColor;
+
             if (SceneHandles.disabled)
                 return false;
 
-            var id      = GUIUtility.GetControlID(s_ClickableLabelHash, FocusType.Keyboard);
             var evt     = Event.current;
             var type    = evt.GetTypeForControl(id);
             switch (type)
@@ -157,7 +163,7 @@ namespace UnitySceneExtensions
                     GUIUtility.hotControl = GUIUtility.keyboardControl = id;
                     evt.Use();
                     UnityEditor.EditorGUIUtility.SetWantsMouseJumping(1);
-                    canClick = true;
+                    dragDistance = 0;
                     break;
                 }
                 case EventType.MouseDrag:
@@ -165,8 +171,13 @@ namespace UnitySceneExtensions
                     if (GUIUtility.hotControl != id)
                         break;
 
-                    canClick = false;
+                    dragDistance += evt.delta.magnitude;
                     evt.Use();
+                    break;
+                }
+                case EventType.MouseMove:
+                {
+                    dragDistance = 0;
                     break;
                 }
                 case EventType.MouseUp:
@@ -178,8 +189,8 @@ namespace UnitySceneExtensions
                     GUIUtility.keyboardControl = 0;
                     evt.Use();
                     UnityEditor.EditorGUIUtility.SetWantsMouseJumping(0);
-                    var result = canClick;
-                    canClick = false;
+                    var result = dragDistance < kMinimumClickDistance;
+                    dragDistance = 0;
                     return result;
                 }
             }
