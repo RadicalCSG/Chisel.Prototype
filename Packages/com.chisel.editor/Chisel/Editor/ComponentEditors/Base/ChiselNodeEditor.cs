@@ -33,8 +33,6 @@ namespace Chisel.Editors
     public abstract class ChiselNodeEditor<T> : ChiselNodeEditorBase
         where T : ChiselNode
     {
-        static readonly GUIContent kDefaultModelContents = new GUIContent("This node is not a child of a model, and is added to the default model. It is recommended that you explicitly add this node to a model.");
-
         public virtual Bounds OnGetFrameBounds() { return CalculateBounds(targets); }
         public virtual bool HasFrameBounds() { if (!target) return false; return true; }
 
@@ -72,11 +70,20 @@ namespace Chisel.Editors
         protected static void CreateAsGameObjectMenuCommand(MenuCommand menuCommand, string name)
         {
             T component;
-            if (typeof(T) == typeof(ChiselModel))
-                component   = ChiselComponentFactory.Create<T>(name);
-            else
-                component   = ChiselComponentFactory.Create<T>(name, ChiselModelManager.GetActiveModelOrCreate());
+            var parentGameObject = menuCommand.context as GameObject;
+            if (parentGameObject)
+            {
+                component = ChiselComponentFactory.Create<T>(name, parentGameObject.transform);
+            } else
+            {
+                if (typeof(T) == typeof(ChiselModel))
+                    component = ChiselComponentFactory.Create<T>(name);
+                else
+                    component = ChiselComponentFactory.Create<T>(name, ChiselModelManager.GetActiveModelOrCreate());
+            }
+
             var gameObject  = component.gameObject;
+            component = ChiselComponentFactory.Create<T>(name);
             GameObjectUtility.SetParentAndAlign(gameObject, menuCommand.context as GameObject);
             Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
             Selection.activeObject = gameObject;
@@ -105,12 +112,57 @@ namespace Chisel.Editors
             return false;
         }
 
+
+        static readonly string     kDefaultModelContents = "This node is not a child of a model, and is added to the default model. "+
+                                                           "It is recommended that you explicitly add this node to a model.";
+        static readonly GUIContent kCreateAndAddToModel  = new GUIContent("Create encapsulating model");
+        static readonly GUIContent kAddToActiveModel     = new GUIContent("Move to active model");
+
+        static void ModelTargetsUnderModel(UnityEngine.Object[] targetObjects, ChiselModel model)
+        {
+            var modelTransform  = model.transform;
+            var modelGameObject = model.gameObject;
+            for (int t = 0; t < targetObjects.Length; t++)
+            {
+                var targetComponent = (targetObjects[0] as MonoBehaviour);
+                var targetTransform = targetComponent.transform;
+                Undo.SetTransformParent(targetTransform, modelTransform, "Moved GameObject under Model");
+            }
+
+            Selection.activeObject = modelGameObject;
+            ChiselModelManager.ActiveModel = model;
+
+            // This forces the model to be opened when we create it
+            EditorGUIUtility.PingObject(modelGameObject);
+            for (int t = 0; t < targetObjects.Length; t++)
+                EditorGUIUtility.PingObject(targetObjects[t]);
+        }
+
         public static void ShowDefaultModelMessage(UnityEngine.Object[] targetObjects)
         {
             if (!IsPartOfDefaultModel(targetObjects))
                 return;
 
-            EditorGUILayout.HelpBox(kDefaultModelContents.text, MessageType.Warning);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.HelpBox(kDefaultModelContents, MessageType.Warning);
+            if (GUILayout.Button(kCreateAndAddToModel))
+            {
+                var childTransform      = (targetObjects[0] as MonoBehaviour).transform;
+                var childSiblingIndex   = childTransform.GetSiblingIndex();
+                var childParent         = childTransform.parent;
+
+                var model               = ChiselModelManager.CreateNewModel(childParent);
+                var modelGameObject     = model.gameObject;
+                var modelTransform      = model.transform;
+                modelTransform.SetSiblingIndex(childSiblingIndex);
+                Undo.RegisterCreatedObjectUndo(modelGameObject, "Create " + modelGameObject.name);
+                ModelTargetsUnderModel(targetObjects, model);
+            }
+            if (ChiselModelManager.ActiveModel && GUILayout.Button(kAddToActiveModel))
+            {
+                ModelTargetsUnderModel(targetObjects, ChiselModelManager.ActiveModel);
+            }
+            EditorGUILayout.EndVertical();
         }
 
         static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
