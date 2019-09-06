@@ -13,6 +13,8 @@ namespace Chisel.Editors
 {
     public abstract class ChiselNodeEditorBase : Editor
     {
+        const string kDefaultOperationName = "Operation";
+
         // Ugly hack around stupid Unity issue
         static bool delayedUndoAllChanges = false;
         public static void UndoAllChanges()
@@ -27,6 +29,104 @@ namespace Chisel.Editors
                 delayedUndoAllChanges = false;
                 Undo.RevertAllInCurrentGroup();
             }
+        }
+
+
+        static void SetMenuOperation(MenuCommand menuCommand, CSGOperationType operationType)
+        {
+            var gameObject = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            if (!gameObject)
+                return;
+
+            var generator = gameObject.GetComponent<ChiselGeneratorComponent>();
+            if (generator && generator.Operation != operationType)
+            {
+                Undo.RecordObject(generator, "Modified Operation");
+                generator.Operation = operationType;
+            }
+            var operation = gameObject.GetComponent<ChiselOperation>();
+            if (operation && operation.Operation != operationType)
+            {
+                Undo.RecordObject(generator, "Modified Operation");
+                operation.Operation = operationType;
+            }
+        }
+
+        static bool MenuValidateOperation(MenuCommand menuCommand)
+        {
+            var gameObject = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            if (!gameObject)
+                return false;
+
+            return gameObject.GetComponent<ChiselGeneratorComponent>() ||
+                    gameObject.GetComponent<ChiselOperation>();
+        }
+
+        [MenuItem("GameObject/Chisel/Operations/Additive", false, -1)] static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
+        [MenuItem("GameObject/Chisel/Operations/Additive", true)] static bool ValidateAdditiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+        [MenuItem("GameObject/Chisel/Operations/Subtractive", false, -1)] static void SetSubtractiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Subtractive); }
+        [MenuItem("GameObject/Chisel/Operations/Subtractive", true)] static bool ValidateSubtractiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+        [MenuItem("GameObject/Chisel/Operations/Intersecting", false, -1)] static void SetIntersectingOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Intersecting); }
+        [MenuItem("GameObject/Chisel/Operations/Intersecting", true)] static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+
+
+
+        [MenuItem("GameObject/Group in Operation", false, -1)]
+        static void EncapsulateInOperation(MenuCommand menuCommand)
+        {
+            var gameObjects = Selection.gameObjects;
+            if (gameObjects == null ||
+                gameObjects.Length == 1)
+                return;
+
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
+                    gameObjects[i].GetComponent<ChiselOperation>())
+                    continue;
+                return;
+            }
+
+            // TODO: sort gameObjects by their siblingIndex / hierarchy position
+            
+            var childTransform      = gameObjects[0].transform;
+            var childSiblingIndex   = childTransform.GetSiblingIndex();
+            var childParent         = childTransform.parent;
+
+            var operation           = ChiselComponentFactory.Create<ChiselModel>(kDefaultOperationName, childParent);
+            var operationGameObject = operation.gameObject;
+            var operationTransform  = operation.transform;
+            operationTransform.SetSiblingIndex(childSiblingIndex);
+            Undo.RegisterCreatedObjectUndo(operationGameObject, "Create " + operationGameObject.name);
+            
+            for (int i = 0; i < gameObjects.Length; i++)
+                Undo.SetTransformParent(gameObjects[i].transform, operationTransform, "Moved GameObject under Operation");
+
+            Selection.activeObject = operationGameObject;
+            ChiselModelManager.ActiveModel = operation;
+
+            // This forces the operation to be opened when we create it
+            EditorGUIUtility.PingObject(operationGameObject);
+            for (int i = 0; i < gameObjects.Length; i++)
+                EditorGUIUtility.PingObject(gameObjects[i]);
+        }
+
+        [MenuItem("GameObject/Group in Operation", true)]
+        static bool ValidateEncapsulateInOperation(MenuCommand menuCommand)
+        {
+            var gameObjects = Selection.gameObjects;
+            if (gameObjects == null ||
+                gameObjects.Length == 1)
+                return false;
+
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
+                    gameObjects[i].GetComponent<ChiselOperation>())
+                    continue;
+                return false;
+            }
+            return true;
         }
     }
 
@@ -70,10 +170,17 @@ namespace Chisel.Editors
         protected static void CreateAsGameObjectMenuCommand(MenuCommand menuCommand, string name)
         {
             T component;
-            var parentGameObject = menuCommand.context as GameObject;
-            if (parentGameObject)
+            var parentGameObject    = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            var parentTransform     = parentGameObject?.transform;
+
+            if (parentTransform &&
+                parentTransform.GetComponent<ChiselGeneratorComponent>())
+                parentTransform = parentTransform.parent;
+
+            if (parentTransform)
             {
-                component = ChiselComponentFactory.Create<T>(name, parentGameObject.transform);
+
+                component = ChiselComponentFactory.Create<T>(name, parentTransform);
             } else
             {
                 if (typeof(T) == typeof(ChiselModel))
@@ -83,8 +190,7 @@ namespace Chisel.Editors
             }
 
             var gameObject  = component.gameObject;
-            component = ChiselComponentFactory.Create<T>(name);
-            GameObjectUtility.SetParentAndAlign(gameObject, menuCommand.context as GameObject);
+            GameObjectUtility.SetParentAndAlign(gameObject, parentTransform?.gameObject);
             Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
             Selection.activeObject = gameObject;
         }
@@ -115,16 +221,16 @@ namespace Chisel.Editors
 
         static readonly string     kDefaultModelContents = "This node is not a child of a model, and is added to the default model. "+
                                                            "It is recommended that you explicitly add this node to a model.";
-        static readonly GUIContent kCreateAndAddToModel  = new GUIContent("Create encapsulating model");
+        static readonly GUIContent kCreateAndAddToModel  = new GUIContent("Create new model");
         static readonly GUIContent kAddToActiveModel     = new GUIContent("Move to active model");
 
-        static void ModelTargetsUnderModel(UnityEngine.Object[] targetObjects, ChiselModel model)
+        static void MoveTargetsUnderModel(UnityEngine.Object[] targetObjects, ChiselModel model)
         {
             var modelTransform  = model.transform;
             var modelGameObject = model.gameObject;
             for (int t = 0; t < targetObjects.Length; t++)
             {
-                var targetComponent = (targetObjects[0] as MonoBehaviour);
+                var targetComponent = (targetObjects[t] as MonoBehaviour);
                 var targetTransform = targetComponent.transform;
                 Undo.SetTransformParent(targetTransform, modelTransform, "Moved GameObject under Model");
             }
@@ -147,6 +253,8 @@ namespace Chisel.Editors
             EditorGUILayout.HelpBox(kDefaultModelContents, MessageType.Warning);
             if (GUILayout.Button(kCreateAndAddToModel))
             {
+                // TODO: sort gameObjects by their siblingIndex / hierarchy position, pick top one
+
                 var childTransform      = (targetObjects[0] as MonoBehaviour).transform;
                 var childSiblingIndex   = childTransform.GetSiblingIndex();
                 var childParent         = childTransform.parent;
@@ -156,11 +264,13 @@ namespace Chisel.Editors
                 var modelTransform      = model.transform;
                 modelTransform.SetSiblingIndex(childSiblingIndex);
                 Undo.RegisterCreatedObjectUndo(modelGameObject, "Create " + modelGameObject.name);
-                ModelTargetsUnderModel(targetObjects, model);
+                MoveTargetsUnderModel(targetObjects, model);
             }
             if (ChiselModelManager.ActiveModel && GUILayout.Button(kAddToActiveModel))
             {
-                ModelTargetsUnderModel(targetObjects, ChiselModelManager.ActiveModel);
+                // TODO: sort gameObjects by their siblingIndex / hierarchy position
+
+                MoveTargetsUnderModel(targetObjects, ChiselModelManager.ActiveModel);
             }
             EditorGUILayout.EndVertical();
         }
@@ -312,17 +422,17 @@ namespace Chisel.Editors
             if (styles == null)
                 styles = new Styles();
 
-            const string AdditiveIconName = "csg_addition";
-            const string SubtractiveIconName = "csg_subtraction";
-            const string IntersectingIconName = "csg_intersection";
+            const string AdditiveIconName           = "csg_addition";
+            const string SubtractiveIconName        = "csg_subtraction";
+            const string IntersectingIconName       = "csg_intersection";
 
-            const string AdditiveIconTooltip = "Additive CSG Operation";
-            const string SubtractiveIconTooltip = "Subtractive CSG Operation";
-            const string IntersectingIconTooltip = "Intersecting CSG Operation";
+            const string AdditiveIconTooltip        = "Additive CSG Operation";
+            const string SubtractiveIconTooltip     = "Subtractive CSG Operation";
+            const string IntersectingIconTooltip    = "Intersecting CSG Operation";
 
-            var additiveIcon = ChiselEditorResources.GetIconContent(AdditiveIconName, AdditiveIconTooltip);
-            var subtractiveIcon = ChiselEditorResources.GetIconContent(SubtractiveIconName, SubtractiveIconTooltip);
-            var intersectingIcon = ChiselEditorResources.GetIconContent(IntersectingIconName, IntersectingIconTooltip);
+            var additiveIcon        = ChiselEditorResources.GetIconContent(AdditiveIconName, AdditiveIconTooltip);
+            var subtractiveIcon     = ChiselEditorResources.GetIconContent(SubtractiveIconName, SubtractiveIconTooltip);
+            var intersectingIcon    = ChiselEditorResources.GetIconContent(IntersectingIconName, IntersectingIconTooltip);
 
             using (new EditorGUIUtility.IconSizeScope(new Vector2(16, 16)))     // This ensures that the icons will be the same size on regular displays and HDPI displays
                                                                                 // Note that the loaded images are different sizes on different displays
@@ -342,6 +452,7 @@ namespace Chisel.Editors
             CheckForTransformationChanges(serializedObject);
             ShowDefaultModelMessage(serializedObject.targetObjects);
         }
+
     }
 
     public class ChiselDefaultGeneratorDetails : IChiselNodeDetails
@@ -355,6 +466,9 @@ namespace Chisel.Editors
             var generator = node as ChiselGeneratorComponent;
             if (generator == null)
                 return GUIContent.none;
+
+            // TODO: when something is wrong with the node, we should show an indicator here
+
             switch (generator.Operation)
             {
                 default:
