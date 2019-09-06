@@ -10,6 +10,8 @@ namespace Chisel.Components
     public abstract class ChiselDefinedGeneratorComponent<DefinitionType> : ChiselGeneratorComponent
         where DefinitionType : IChiselGenerator, new()
     {
+        public const string kDefinitionName = nameof(definition);
+
         [SerializeField] public DefinitionType definition = new DefinitionType();
 
         protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
@@ -20,10 +22,10 @@ namespace Chisel.Components
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
         // This ensures names remain identical, or a compile error occurs.
-        public const string kOperationFieldName = nameof(operation);
+        public const string kOperationFieldName         = nameof(operation);
 
         // This ensures names remain identical, or a compile error occurs.
-        public const string kBrushContainerAssetName = nameof(brushContainerAsset);
+        public const string kBrushContainerAssetName    = nameof(brushContainerAsset);
 
 
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };

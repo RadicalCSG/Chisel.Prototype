@@ -22,7 +22,8 @@ namespace Chisel.Core
         public Curve2D                  shape;
         public ChiselPath               path;
         public int                      curveSegments;
-        
+
+        [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
         
         public void Reset()

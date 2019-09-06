@@ -13,55 +13,13 @@ using UnityEditor.UIElements;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselBoxDetails : ChiselGeneratorDetails<ChiselBox>
-    {
-    }
-
     // TODO: why did resetting this generator not work?
     [CustomEditor(typeof(ChiselBox))]
     [CanEditMultipleObjects]
     public sealed class ChiselBoxEditor : ChiselGeneratorEditor<ChiselBox>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselBox.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselBox.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselBox.kNodeTypeName); }
-
-        static readonly GUIContent[] kSurfaceNameContent = new []
-        {
-            new GUIContent("Top"),
-            new GUIContent("Bottom"),
-            new GUIContent("Right"),
-            new GUIContent("Left"),
-            new GUIContent("Front"),
-            new GUIContent("Back")
-        };
-        
-        SerializedProperty boundsProp;
-        SerializedProperty surfacesProp;
-        
-        protected override void ResetInspector()
-        { 
-            boundsProp	    = null;
-            surfacesProp    = null;
-        }
-        
-        protected override void InitInspector()
-        { 
-            var definitionProp      = serializedObject.FindProperty(nameof(ChiselBox.definition));
-            { 
-                boundsProp	        = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.bounds));
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition));
-                {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselBox.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        protected override void OnInspector()
-        {
-            EditorGUILayout.PropertyField(boundsProp);
-
-            ShowSurfaces(surfacesProp, kSurfaceNameContent, 6);
-        }
 
         protected override void OnScene(SceneView sceneView, ChiselBox generator)
         {

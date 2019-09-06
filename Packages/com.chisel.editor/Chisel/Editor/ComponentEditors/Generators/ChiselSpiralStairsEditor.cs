@@ -11,111 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSpiralStairsDetails : ChiselGeneratorDetails<ChiselSpiralStairs>
-    {
-    }
-
     [CustomEditor(typeof(ChiselSpiralStairs))]
     [CanEditMultipleObjects]
     public sealed class ChiselSpiralStairsEditor : ChiselGeneratorEditor<ChiselSpiralStairs>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselSpiralStairs.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselSpiralStairs.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselSpiralStairs.kNodeTypeName); }
 
-        static readonly GUIContent[] kSurfaceContentNames = new[]
-        {
-            new GUIContent("Tread Top"),
-            new GUIContent("Tread Bottom"),
-            new GUIContent("Tread Front"),
-            new GUIContent("Tread Back"),
-            new GUIContent("Riser Front"),
-            new GUIContent("Riser Back"),
-            new GUIContent("Inner"),
-            new GUIContent("Outer"),
-        };
-
-        SerializedProperty heightProp;
-        SerializedProperty outerDiameterProp;
-        SerializedProperty outerSegmentsProp;
-        SerializedProperty innerDiameterProp;
-        SerializedProperty innerSegmentsProp;
-        SerializedProperty stepHeightProp;
-        SerializedProperty nosingDepthProp;
-        SerializedProperty nosingWidthProp;
-        SerializedProperty treadHeightProp;
-        SerializedProperty startAngleProp;
-        SerializedProperty rotationProp;
-        SerializedProperty riserTypeProp;
-        SerializedProperty riserDepthProp;
-        SerializedProperty bottomSmoothingGroupProp;
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        {
-            heightProp					= null;
-            outerDiameterProp			= null;
-            outerSegmentsProp			= null;
-            innerDiameterProp			= null;
-            innerSegmentsProp			= null;
-            stepHeightProp				= null;
-            nosingDepthProp				= null;
-            nosingWidthProp				= null;
-            treadHeightProp				= null;
-            startAngleProp				= null;
-            rotationProp				= null;
-            riserTypeProp				= null;
-            riserDepthProp				= null;
-            bottomSmoothingGroupProp	= null;
-
-            surfacesProp                = null;
-        }
-        
-        protected override void InitInspector()
-        {
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselSpiralStairs.definition));
-            {
-                heightProp					= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.height));
-                outerDiameterProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.outerDiameter));
-                outerSegmentsProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.outerSegments));
-                innerDiameterProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.innerDiameter));
-                innerSegmentsProp			= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.innerSegments));
-                stepHeightProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.stepHeight));
-                treadHeightProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.treadHeight));
-                nosingDepthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.nosingDepth));
-                nosingWidthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.nosingWidth));
-                startAngleProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.startAngle));
-                rotationProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.rotation));
-                riserTypeProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserType));
-                riserDepthProp				= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.riserDepth));
-                bottomSmoothingGroupProp	= definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.bottomSmoothingGroup));
-
-                var surfDefProp             = definitionProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.surfaceDefinition));
-                {
-                    surfacesProp            = surfDefProp.FindPropertyRelative(nameof(ChiselSpiralStairs.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(heightProp);
-            EditorGUILayout.PropertyField(outerDiameterProp);
-            EditorGUILayout.PropertyField(outerSegmentsProp);
-            EditorGUILayout.PropertyField(innerDiameterProp);
-            EditorGUILayout.PropertyField(innerSegmentsProp);
-            EditorGUILayout.PropertyField(stepHeightProp);
-            EditorGUILayout.PropertyField(treadHeightProp);
-            EditorGUILayout.PropertyField(nosingDepthProp);
-            EditorGUILayout.PropertyField(nosingWidthProp);
-            EditorGUILayout.PropertyField(startAngleProp);
-            EditorGUILayout.PropertyField(rotationProp);
-            EditorGUILayout.PropertyField(riserTypeProp);
-            EditorGUILayout.PropertyField(riserDepthProp);
-            EditorGUILayout.PropertyField(bottomSmoothingGroupProp);
-
-            ShowSurfaces(surfacesProp, kSurfaceContentNames, kSurfaceContentNames.Length);
-        }
-        
                         
         // TODO: put somewhere else
 
@@ -228,7 +130,7 @@ namespace Chisel.Editors
                 var startRotateEdgeID	= GUIUtility.GetControlID ("SpiralStairsStartAngle".GetHashCode(), FocusType.Keyboard);
                 var endRotateEdgeID		= GUIUtility.GetControlID ("SpiralStairsEndAngle".GetHashCode(), FocusType.Keyboard);
                         
-                // TODO: properly show things as backfaces
+                // TODO: properly show things as backfaced
                 // TODO: temporarily show inner or outer diameter as disabled when resizing one or the other
                 // TODO: FIXME: why aren't there any arrows?
                 topPoint		= UnitySceneExtensions.SceneHandles.DirectionHandle(topPoint,  normal, snappingStep: originalStepHeight);

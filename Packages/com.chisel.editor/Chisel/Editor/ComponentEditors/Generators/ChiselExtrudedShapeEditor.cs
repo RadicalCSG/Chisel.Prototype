@@ -11,56 +11,12 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeDetails : ChiselGeneratorDetails<ChiselExtrudedShape>
-    {
-    }
-    
     [CustomEditor(typeof(ChiselExtrudedShape))]
     [CanEditMultipleObjects]
     public sealed class ChiselExtrudedShapeEditor : ChiselGeneratorEditor<ChiselExtrudedShape>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselExtrudedShape.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselExtrudedShape.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselExtrudedShape.kNodeTypeName); }
-
-        static readonly GUIContent  kShapeContent   = new GUIContent("Shape");
-        static readonly GUIContent  kPathContent    = new GUIContent("Path");
-
-        SerializedProperty controlPointsProp;
-        SerializedProperty pathSegmentsProp;
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        {
-            controlPointsProp   = null;
-            pathSegmentsProp    = null;
-
-            surfacesProp        = null;
-        }
-        
-        protected override void InitInspector()
-        {
-            var definitionProp  = serializedObject.FindProperty(nameof(ChiselExtrudedShape.definition));
-            {
-                var shapeProp		= definitionProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.shape));
-                controlPointsProp   = shapeProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.shape.controlPoints));
-
-                var pathProp		= definitionProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.path));
-                pathSegmentsProp	= pathProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.path.segments));
-
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.surfaceDefinition));
-                {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselExtrudedShape.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(controlPointsProp, kShapeContent, true);
-            EditorGUILayout.PropertyField(pathSegmentsProp,  kPathContent,  true);
-
-            ShowSurfaces(surfacesProp);
-        }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

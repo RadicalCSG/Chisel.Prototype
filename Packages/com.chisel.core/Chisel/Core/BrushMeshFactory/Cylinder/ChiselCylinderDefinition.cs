@@ -55,7 +55,8 @@ namespace Chisel.Core
 
         [AngleValue]
         public float rotation;
-        
+
+        [NamedItems("Top", "Bottom", overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public float TopDiameterX

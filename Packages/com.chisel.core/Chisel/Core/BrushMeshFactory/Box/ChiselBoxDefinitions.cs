@@ -12,6 +12,8 @@ namespace Chisel.Core
         public static readonly Bounds   kDefaultBounds = new UnityEngine.Bounds(Vector3.zero, Vector3.one);
 
         public UnityEngine.Bounds       bounds;
+
+        [NamedItems("Top", "Bottom", "Right", "Left", "Front", "Back", fixedSize = 6)]
         public ChiselSurfaceDefinition  surfaceDefinition;
         
         public Vector3                  min		{ get { return bounds.min; } set { bounds.min = value; } }

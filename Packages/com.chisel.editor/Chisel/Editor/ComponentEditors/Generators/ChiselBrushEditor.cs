@@ -11,38 +11,10 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselBrushDetails : ChiselGeneratorDetails<ChiselBrush>
-    {
-    }
-
     [CustomEditor(typeof(ChiselBrush))]
     [CanEditMultipleObjects]
     public sealed class ChiselBrushEditor : ChiselGeneratorEditor<ChiselBrush>
     {
-        SerializedProperty brushContainerAssetProp;
-
-        protected override void ResetInspector()
-        {
-            brushContainerAssetProp = null;
-        }
-
-        protected override void InitInspector()
-        {
-            brushContainerAssetProp = serializedObject.FindProperty(ChiselGeneratorComponent.kBrushContainerAssetName);
-        }
-        
-        protected override void OnInspector()
-        {
-            EditorGUI.BeginChangeCheck();
-            {
-                EditorGUILayout.PropertyField(brushContainerAssetProp);
-            }
-            if (EditorGUI.EndChangeCheck())
-            {
-                serializedObject.ApplyModifiedProperties();
-            }
-        }
-
         static Dictionary<ChiselBrush, ChiselEditableOutline> activeOutlines = new Dictionary<ChiselBrush, ChiselEditableOutline>();
 
         protected override void OnUndoRedoPerformed()

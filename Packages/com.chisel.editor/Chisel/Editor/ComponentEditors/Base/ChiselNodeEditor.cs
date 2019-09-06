@@ -158,8 +158,8 @@ namespace Chisel.Editors
             }
         }
 
-        static readonly GUIContent convertToBrushesContent = new GUIContent("Convert to Brushes");
-        static readonly GUIContent convertToBrushContent = new GUIContent("Convert to Brush");
+        static readonly GUIContent convertToBrushesContent  = new GUIContent("Convert to Brushes");
+        static readonly GUIContent convertToBrushContent    = new GUIContent("Convert to Brush");
 
 
         // TODO: put somewhere else
@@ -178,7 +178,7 @@ namespace Chisel.Editors
             }
             if (multiple)
             {
-                if (!GUILayout.Button(convertToBrushesContent))
+                if (!GUILayout.Button(convertToBrushesContent, GUILayout.ExpandHeight(true)))
                     return;
             } else
             if (singular)
@@ -288,74 +288,90 @@ namespace Chisel.Editors
         }
     }
 
+    public class ChiselDefaultGeneratorDetails : IChiselNodeDetails
+    {
+        const string kAdditiveIconName		= "csg_addition";
+        const string kSubtractiveIconName	= "csg_subtraction";
+        const string kIntersectingIconName	= "csg_intersection";
+        
+        public GUIContent GetHierarchyIconForGenericNode(ChiselNode node)
+        {
+            var generator = node as ChiselGeneratorComponent;
+            if (generator == null)
+                return GUIContent.none;
+            switch (generator.Operation)
+            {
+                default:
+                case CSGOperationType.Additive:     return ChiselEditorResources.GetIconContent(kAdditiveIconName,     $"Additive {node.NodeTypeName}")[0];
+                case CSGOperationType.Subtractive:  return ChiselEditorResources.GetIconContent(kSubtractiveIconName,  $"Subtractive {node.NodeTypeName}")[0];
+                case CSGOperationType.Intersecting: return ChiselEditorResources.GetIconContent(kIntersectingIconName, $"Intersecting {node.NodeTypeName}")[0];
+            }
+        }
+    }
+
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselGeneratorComponent
     {
-        static readonly GUIContent  kMissingSurfacesContents            = new GUIContent("This generator is not set up properly and doesn't have the correct number of surfaces.");
-        static readonly GUIContent  kMultipleDifferentSurfacesContents  = new GUIContent("Multiple generators are selected with different surfaces.");
-
-        static readonly GUIContent  kSurfacesContent            = new GUIContent("Surfaces");
-        static GUIContent           surfacePropertyContent      = new GUIContent();
-        const string                kSurfacePropertyName        = "Side {0}";
-        
-        protected void ShowSurfaces(SerializedProperty surfacesProp, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        protected void ResetDefaultInspector()
         {
-            ShowSurfaces(surfacesProp, null, expectedSize, surfacePropertyName);
+            definitionSerializedProperty = null;
+            children.Clear();
         }
 
-        protected void ShowSurfaces(SerializedProperty surfacesProp, GUIContent[] kSurfaceNames, int expectedSize = 0, string surfacePropertyName = kSurfacePropertyName)
+        List<SerializedProperty> children = new List<SerializedProperty>();
+        SerializedProperty definitionSerializedProperty;
+        protected void InitDefaultInspector()
         {
-            if (expectedSize > 0 && surfacesProp.arraySize != expectedSize)
-            {
-                EditorGUILayout.HelpBox(kMissingSurfacesContents.text, MessageType.Warning);
-            }
+            ResetDefaultInspector();
 
-            if (surfacesProp.hasMultipleDifferentValues)
+            var iterator = serializedObject.GetIterator();
+            if (iterator.NextVisible(true))
             {
-                // TODO: figure out how to detect if we have multiple selected generators with arrays of same size, or not
-                EditorGUILayout.HelpBox(kMultipleDifferentSurfacesContents.text, MessageType.None);
-                return;
-            }
-
-            if (surfacesProp.arraySize == 0)
-                return;
-            
-            EditorGUI.BeginChangeCheck();
-            var path                = surfacesProp.propertyPath;
-            var surfacesVisible     = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
-            if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(path, surfacesVisible);
-            if (surfacesVisible)
-            {
-                EditorGUI.indentLevel++;
-                SerializedProperty elementProperty;
-                int startIndex = 0;
-                if (kSurfaceNames != null &&
-                    kSurfaceNames.Length > 0)
+                do
                 {
-                    startIndex = kSurfaceNames.Length;
-                    for (int i = 0; i < Mathf.Min(kSurfaceNames.Length, surfacesProp.arraySize); i++)
+                    if (iterator.name == "definition") // TODO: use ChiselDefinedGeneratorComponent<DefinitionType>.kDefinitionName somehow
                     {
-                        elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                        EditorGUILayout.PropertyField(elementProperty, kSurfaceNames[i], true);
+                        definitionSerializedProperty = iterator.Copy();
+                        break;
                     }
-                }
+                } while (iterator.NextVisible(false));
+            }
 
-                for (int i = startIndex; i < surfacesProp.arraySize; i++)
+            if (definitionSerializedProperty == null)
+                return;
+
+            iterator = definitionSerializedProperty.Copy();
+            if (iterator.NextVisible(true))
+            {
+                do
                 {
-                    surfacePropertyContent.text = string.Format(surfacePropertyName, (i - startIndex) + 1);
-                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                    EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
-                }
-                EditorGUI.indentLevel--;
+                    //Debug.Log(iterator.name);
+                    children.Add(iterator.Copy());
+                } while (iterator.NextVisible(false));
             }
         }
 
-        protected abstract void ResetInspector();
-        protected abstract void InitInspector();
+        protected void OnDefaultInspector()
+        {
+            EditorGUI.BeginChangeCheck();
+            {
+                for (int i = 0; i < children.Count; i++)
+                    EditorGUILayout.PropertyField(children[i], true);
+            }
+            if (EditorGUI.EndChangeCheck())
+            {
+                OnTargetModifiedInInspector();
+            }
+        }
 
-        protected abstract void OnInspector();
+
+        protected virtual void ResetInspector() { ResetDefaultInspector(); } 
+        protected virtual void InitInspector() { InitDefaultInspector(); }
+
+        protected virtual void OnInspector() { OnDefaultInspector(); }
+
+        protected virtual void OnTargetModifiedInInspector() { }
+        protected virtual void OnTargetModifiedInScene() { }
         protected virtual bool OnGeneratorValidate(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
@@ -500,7 +516,14 @@ namespace Chisel.Editors
             {
                 using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * brush.NodeToTreeSpaceMatrix))
                 {
-                    OnScene(sceneView, generator);
+                    EditorGUI.BeginChangeCheck();
+                    {
+                        OnScene(sceneView, generator);
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        OnTargetModifiedInScene();
+                    }
                 }
             }
         }

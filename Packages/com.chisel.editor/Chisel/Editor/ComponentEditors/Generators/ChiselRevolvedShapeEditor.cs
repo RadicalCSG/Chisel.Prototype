@@ -11,73 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselRevolvedShapeDetails : ChiselGeneratorDetails<ChiselRevolvedShape>
-    {
-    }
-
     [CustomEditor(typeof(ChiselRevolvedShape))]
     [CanEditMultipleObjects]
     public sealed class ChiselRevolvedShapeEditor : ChiselGeneratorEditor<ChiselRevolvedShape>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselRevolvedShape.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselRevolvedShape.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselRevolvedShape.kNodeTypeName); }
 
-        // TODO: make these shared resources since this name is used in several places (with identical context)
-        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
-        const string                kSurfacePropertyName    = "Side {0}";
-        static GUIContent           surfacePropertyContent  = new GUIContent();
-        static readonly GUIContent  kShapeContent	        = new GUIContent("Shape");
-
-        SerializedProperty shapeProp;
-        SerializedProperty curveSegments;
-        SerializedProperty revolveSegments;
-        SerializedProperty startAngleProp;
-        SerializedProperty totalAngleProp;
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        {
-            shapeProp		= null;
-            curveSegments	= null;
-            revolveSegments	= null;
-            startAngleProp	= null;
-            totalAngleProp	= null;
-
-            surfacesProp    = null;
-        }
-
-        protected override void InitInspector()
-        {
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselRevolvedShape.definition));
-            {
-                curveSegments       = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.curveSegments));
-                revolveSegments     = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.revolveSegments));
-                startAngleProp      = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.startAngle));
-                totalAngleProp      = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.totalAngle));
-                shapeProp	        = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.shape.controlPoints));
-
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.surfaceDefinition));
-                {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselRevolvedShape.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        protected override void OnInspector()
-        {
-            EditorGUILayout.PropertyField(shapeProp, kShapeContent, true);
-            EditorGUILayout.PropertyField(curveSegments);
-            EditorGUILayout.PropertyField(revolveSegments);
-
-            EditorGUILayout.PropertyField(startAngleProp);
-            EditorGUILayout.PropertyField(totalAngleProp);
-
-
-            ShowSurfaces(surfacesProp);
-        }
-
-
-        
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;

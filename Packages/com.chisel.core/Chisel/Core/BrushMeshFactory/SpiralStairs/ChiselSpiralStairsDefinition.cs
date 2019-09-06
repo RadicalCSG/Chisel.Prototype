@@ -67,7 +67,8 @@ namespace Chisel.Core
         public StairsRiserType		    riserType;
 
         public uint					    bottomSmoothingGroup;
-        
+
+        [NamedItems("Tread Top", "Tread Bottom", "Tread Front", "Tread Back", "Riser Front", "Riser Back", "Inner", "Outer", overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public int StepCount

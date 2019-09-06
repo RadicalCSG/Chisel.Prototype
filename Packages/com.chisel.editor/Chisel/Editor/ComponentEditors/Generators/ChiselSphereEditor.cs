@@ -11,59 +11,13 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSphereDetails : ChiselGeneratorDetails<ChiselSphere>
-    {
-    }
-
     [CustomEditor(typeof(ChiselSphere))]
     [CanEditMultipleObjects]
     public sealed class ChiselSphereEditor : ChiselGeneratorEditor<ChiselSphere>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselSphere.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselSphere.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselSphere.kNodeTypeName); }
 
-        SerializedProperty diameterXYZProp;
-        SerializedProperty rotationProp;
-        SerializedProperty horizontalSegmentsProp;
-        SerializedProperty verticalSegmentsProp;
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        { 
-            diameterXYZProp		    = null;
-            rotationProp		    = null;
-            horizontalSegmentsProp  = null;
-            verticalSegmentsProp    = null;
-            surfacesProp            = null;
-        }
-        
-        protected override void InitInspector()
-        { 
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselSphere.definition));
-            {
-                diameterXYZProp		    = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.diameterXYZ));
-                rotationProp		    = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.rotation));
-                horizontalSegmentsProp  = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.horizontalSegments));
-                verticalSegmentsProp    = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.verticalSegments));
-
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselSphere.definition.surfaceDefinition));
-                {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselSphere.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(diameterXYZProp);
-            EditorGUILayout.PropertyField(rotationProp);
-            EditorGUILayout.PropertyField(horizontalSegmentsProp);
-            EditorGUILayout.PropertyField(verticalSegmentsProp);
-
-            ShowSurfaces(surfacesProp);
-        }
-        
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;
@@ -72,9 +26,6 @@ namespace Chisel.Editors
 
         static void DrawOutline(ChiselSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            //var baseColor		= UnityEditor.Handles.yAxisColor;
-            //var isDisabled		= UnitySceneExtensions.Handles.disabled;
-            //var normal			= Vector3.up;
             var sides			= definition.horizontalSegments;
             
             var extraVertices	= 2;

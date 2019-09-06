@@ -23,7 +23,8 @@ namespace Chisel.Core
         public float    rotation; // TODO: useless?
         public int	    horizontalSegments;
         public int	    verticalSegments;
-        
+
+        [NamedItems(overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()

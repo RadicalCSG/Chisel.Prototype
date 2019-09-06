@@ -11,80 +11,12 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselStadiumDetails : ChiselGeneratorDetails<ChiselStadium>
-    {
-    }
-    
     [CustomEditor(typeof(ChiselStadium))]
     [CanEditMultipleObjects]
     public sealed class ChiselStadiumEditor : ChiselGeneratorEditor<ChiselStadium>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselStadium.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselStadium.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselStadium.kNodeTypeName); }
-
-        SerializedProperty heightProp;
-        SerializedProperty lengthProp;
-        SerializedProperty topLengthProp;
-        SerializedProperty bottomLengthProp;
-
-        SerializedProperty diameterProp;
-        
-        SerializedProperty topSidesProp;
-        SerializedProperty bottomSidesProp;
-
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        {
-            heightProp			= null;
-            lengthProp			= null;
-            topLengthProp		= null;
-            bottomLengthProp	= null;
-
-            diameterProp		= null;
-        
-            topSidesProp		= null;
-            bottomSidesProp		= null;
-
-            surfacesProp        = null;
-        }
-
-        protected override void InitInspector()
-        {
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselStadium.definition));
-            {
-                heightProp			= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.height));
-
-                lengthProp			= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.length));
-                topLengthProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.topLength));
-                bottomLengthProp	= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.bottomLength));
-
-                diameterProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.diameter));
-
-                topSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.topSides));
-                bottomSidesProp		= definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.bottomSides));
-
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselStadium.definition.surfaceDefinition));
-                {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselStadium.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        protected override void OnInspector()
-        {
-            EditorGUILayout.PropertyField(heightProp);
-            EditorGUILayout.PropertyField(lengthProp);
-            EditorGUILayout.PropertyField(topLengthProp);
-            EditorGUILayout.PropertyField(bottomLengthProp);
-
-            EditorGUILayout.PropertyField(diameterProp);
-        
-            EditorGUILayout.PropertyField(topSidesProp);
-            EditorGUILayout.PropertyField(bottomSidesProp);
-            
-            ShowSurfaces(surfacesProp);
-        }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

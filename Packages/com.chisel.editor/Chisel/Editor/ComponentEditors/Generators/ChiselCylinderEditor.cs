@@ -11,127 +11,14 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCylinderDetails : ChiselGeneratorDetails<ChiselCylinder>
-    {
-    }
-    
     // TODO: why did resetting this generator not work?
     // TODO: make drag & drop of materials on generator side work
     [CustomEditor(typeof(ChiselCylinder))]
     [CanEditMultipleObjects]
     public sealed class ChiselCylinderEditor : ChiselGeneratorEditor<ChiselCylinder>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselCylinder.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselCylinder.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCylinder.kNodeTypeName); }
-
-        GUIContent[] kSurfaceNameContent = new[]
-        {
-            new GUIContent("Top"),
-            new GUIContent("Bottom")
-        };
-
-        SerializedProperty typeProp;
-        SerializedProperty topHeightProp;
-        SerializedProperty topDiameterXProp;
-        SerializedProperty topDiameterZProp;
-        SerializedProperty bottomHeightProp;
-        SerializedProperty bottomDiameterXProp;
-        SerializedProperty bottomDiameterZProp;
-        SerializedProperty rotationProp;
-        SerializedProperty isEllipsoidProp;
-        SerializedProperty smoothingGroupProp;
-        SerializedProperty sidesProp;
-        SerializedProperty surfacesProp;
-        
-        protected override void ResetInspector()
-        { 
-            typeProp				= null;
-            topHeightProp			= null;
-            topDiameterXProp		= null;
-            topDiameterZProp		= null;
-            bottomHeightProp		= null;
-            bottomDiameterXProp		= null;
-            bottomDiameterZProp		= null;
-            isEllipsoidProp			= null;
-            smoothingGroupProp		= null;
-            sidesProp				= null;
-
-            surfacesProp            = null;
-        }
-        
-        protected override void InitInspector()
-        { 
-            var definitionProp      = serializedObject.FindProperty(nameof(ChiselCylinder.definition));
-            { 
-                typeProp			    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.type));
-
-                var topProp             = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top));
-                { 
-                    topHeightProp	    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.height));
-                    topDiameterXProp    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.diameterX));
-                    topDiameterZProp    = topProp.FindPropertyRelative(nameof(ChiselCylinder.definition.top.diameterZ));
-                }
-            
-                var bottomProp          = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom));
-                { 
-                    bottomHeightProp    = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.height));
-                    bottomDiameterXProp = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.diameterX));
-                    bottomDiameterZProp = bottomProp.FindPropertyRelative(nameof(ChiselCylinder.definition.bottom.diameterZ));
-                }
-
-                rotationProp		    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.rotation));
-                isEllipsoidProp		    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.isEllipsoid));
-                smoothingGroupProp	    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.smoothingGroup));
-                sidesProp			    = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.sides));
-                
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselCylinder.definition.surfaceDefinition));
-                {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselCylinder.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(typeProp);
-            EditorGUILayout.PropertyField(isEllipsoidProp);
-            
-            EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField("Top");
-            EditorGUI.indentLevel++;
-            {
-                EditorGUILayout.PropertyField(topHeightProp);
-                if ((CylinderShapeType)typeProp.enumValueIndex == CylinderShapeType.ConicalFrustum)
-                {
-                    EditorGUILayout.PropertyField(topDiameterXProp);
-                    if (isEllipsoidProp.boolValue)
-                        EditorGUILayout.PropertyField(topDiameterZProp);
-                }
-            }
-            EditorGUI.indentLevel--;
-
-            EditorGUILayout.LabelField("Bottom");
-            EditorGUI.indentLevel++;
-            {
-                EditorGUILayout.PropertyField(bottomHeightProp);
-                EditorGUILayout.PropertyField(bottomDiameterXProp);
-                if (isEllipsoidProp.boolValue)
-                    EditorGUILayout.PropertyField(bottomDiameterZProp);
-            }
-            EditorGUI.indentLevel--;
-
-            EditorGUILayout.Space();
-            {
-                EditorGUILayout.PropertyField(sidesProp);
-                EditorGUILayout.PropertyField(smoothingGroupProp);
-                EditorGUILayout.PropertyField(rotationProp);
-            }
-            EditorGUILayout.Space();
-
-
-            ShowSurfaces(surfacesProp, kSurfaceNameContent);
-        }
         
         // TODO: put somewhere else
         public static Color GetColorForState(Color baseColor, bool hasFocus, bool isBackfaced, bool isDisabled)

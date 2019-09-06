@@ -11,105 +11,12 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselTorusDetails : ChiselGeneratorDetails<ChiselTorus>
-    {
-    }
-
     [CustomEditor(typeof(ChiselTorus))]
     [CanEditMultipleObjects]
     public sealed class ChiselTorusEditor : ChiselGeneratorEditor<ChiselTorus>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselTorus.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselTorus.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselTorus.kNodeTypeName); }
-
-        static readonly GUIContent  kInnerDiameterContent   = new GUIContent("Inner Diameter");
-
-        SerializedProperty outerDiameterProp;
-        SerializedProperty tubeWidthProp;
-        SerializedProperty tubeHeightProp;
-        SerializedProperty tubeRotationProp;
-        SerializedProperty horizontalSegmentsProp;
-        SerializedProperty verticalSegmentsProp;
-        SerializedProperty startAngleProp;
-        SerializedProperty totalAngleProp;
-        SerializedProperty fitCircleProp;
-
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        { 
-            outerDiameterProp		= null;
-            tubeWidthProp			= null;
-            tubeHeightProp			= null;
-            tubeRotationProp		= null;
-            horizontalSegmentsProp	= null;
-            verticalSegmentsProp	= null;
-            startAngleProp			= null;
-            totalAngleProp			= null;
-            fitCircleProp			= null;
-
-            surfacesProp            = null;
-        }
-        
-        protected override void InitInspector()
-        { 
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselTorus.definition));
-            {
-                outerDiameterProp		= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.outerDiameter));
-                tubeWidthProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeWidth));
-                tubeHeightProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeHeight));
-                tubeRotationProp		= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.tubeRotation));
-                horizontalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.horizontalSegments));
-                verticalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.verticalSegments));
-                startAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.startAngle));
-                totalAngleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.totalAngle));
-                fitCircleProp			= definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.fitCircle));
-
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselTorus.definition.surfaceDefinition));
-                {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselTorus.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        void InnerDiameterPropertyField()
-        {
-            var content		= kInnerDiameterContent;
-            var position	= GUILayoutUtility.GetRect(content, EditorStyles.numberField);
-            content = EditorGUI.BeginProperty(position, content, tubeWidthProp);
-            {
-                EditorGUI.showMixedValue = outerDiameterProp.hasMultipleDifferentValues || 
-                                           tubeWidthProp.hasMultipleDifferentValues;
-                float innerDiameter;
-                EditorGUI.BeginChangeCheck();
-                {
-                    innerDiameter = ChiselTorusDefinition.CalcInnerDiameter(outerDiameterProp.floatValue, tubeWidthProp.floatValue);
-                    innerDiameter = EditorGUI.FloatField(position, content, innerDiameter);
-                }
-                if (EditorGUI.EndChangeCheck())
-                    tubeWidthProp.floatValue = ChiselTorusDefinition.CalcTubeWidth(outerDiameterProp.floatValue, innerDiameter);
-            }
-            EditorGUI.EndProperty();
-        }
-
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(outerDiameterProp);
-            InnerDiameterPropertyField();
-            EditorGUILayout.PropertyField(tubeWidthProp);
-            EditorGUILayout.PropertyField(tubeHeightProp);
-            EditorGUILayout.PropertyField(fitCircleProp);
-            EditorGUILayout.PropertyField(tubeRotationProp);
-
-            EditorGUILayout.PropertyField(horizontalSegmentsProp);
-            EditorGUILayout.PropertyField(verticalSegmentsProp);
-
-            EditorGUILayout.PropertyField(startAngleProp);
-            EditorGUILayout.PropertyField(totalAngleProp);
-
-            ShowSurfaces(surfacesProp);
-        }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
