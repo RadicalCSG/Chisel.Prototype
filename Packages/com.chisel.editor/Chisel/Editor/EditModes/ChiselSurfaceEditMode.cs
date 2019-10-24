@@ -112,7 +112,7 @@ namespace Chisel.Editors
                 return;
 
             var grid				= UnitySceneExtensions.Grid.defaultGrid;
-            var gridSnappedPoint	= Snapping.SnapPoint(intersectionPoint, grid);
+            var gridSnappedPoint	= UnitySceneExtensions.Snapping.SnapPoint(intersectionPoint, grid);
 
             var worldPlane  = surfaceReference.WorldPlane.Value;
 
@@ -358,9 +358,9 @@ namespace Chisel.Editors
 
         static float SnapAngle(float rotatedAngle)
         {
-            if (!Snapping.RotateSnappingEnabled)
+            if (!UnitySceneExtensions.Snapping.RotateSnappingEnabled)
                 return rotatedAngle;
-            return ((int)(rotatedAngle / Snapping.RotateSnappingStep)) * Snapping.RotateSnappingStep;
+            return ((int)(rotatedAngle / UnitySceneExtensions.Snapping.RotateSnappingStep)) * UnitySceneExtensions.Snapping.RotateSnappingStep;
         }
 
         #endregion

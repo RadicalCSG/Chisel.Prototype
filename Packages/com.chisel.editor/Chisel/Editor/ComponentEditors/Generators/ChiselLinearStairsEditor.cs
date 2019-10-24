@@ -201,7 +201,7 @@ namespace Chisel.Editors
                 var bounds          = currentDefinition.bounds;
                 var cameraPosition  = Camera.current.transform.position;
 
-                var steps		    = Snapping.MoveSnappingSteps;
+                var steps		    = UnitySceneExtensions.Snapping.MoveSnappingSteps;
                 steps.y			    = stepHeight;
                 
                 EditorGUI.BeginChangeCheck();

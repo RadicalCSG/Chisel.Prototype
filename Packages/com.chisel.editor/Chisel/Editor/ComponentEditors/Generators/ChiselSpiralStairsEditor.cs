@@ -178,7 +178,7 @@ namespace Chisel.Editors
             
             
             // TODO: put somewhere else
-            if (!Snapping.RotateSnappingActive)
+            if (!UnitySceneExtensions.Snapping.RotateSnappingActive)
             {
                 return rotatedStartAngle + rotatedAngleOffset;
             }

@@ -901,7 +901,7 @@ namespace Chisel.Editors
                     if (captureControl)
                     {
                         SetControl(evt, 0);
-                        Snapping.ActiveAxes = Axes.XYZ;
+                        UnitySceneExtensions.Snapping.ActiveAxes = Axes.XYZ;
                         SceneView.RepaintAll();
                     }
 
