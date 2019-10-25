@@ -564,8 +564,8 @@ namespace UnitySceneExtensions
                 return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
             }
 
-            if (!worldSlidePlane.Raycast(worldRay, out dist)) { dist = float.PositiveInfinity; }
-            if (dist > camera.farClipPlane)
+            if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { dist = float.PositiveInfinity; }
+            if (Mathf.Abs(dist) > camera.farClipPlane)
             {
                 var normal = worldSlideGrid.GetClosestAxisVector(forward);
                 var origin = worldSlidePlane.ClosestPointOnPlane(camera.transform.position) + (normal * camera.farClipPlane);
@@ -573,7 +573,7 @@ namespace UnitySceneExtensions
             } else
             { 
                 if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
-                worldPlanePosition = worldRay.GetPoint(dist);
+                worldPlanePosition = worldRay.GetPoint(Mathf.Abs(dist));
                 return true;
             }
         }
