@@ -133,7 +133,7 @@ namespace Chisel.Editors
             {
                 float dist;
                 var ray = new Ray(gridSnappedPoint, xAxis);
-                if ((snapAxis & Axis.X) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.X) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -144,7 +144,7 @@ namespace Chisel.Editors
                     }
                 }
                 ray.direction = yAxis;
-                if ((snapAxis & Axis.Y) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.Y) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -155,7 +155,7 @@ namespace Chisel.Editors
                     }
                 }
                 ray.direction = zAxis;
-                if ((snapAxis & Axis.Z) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.Z) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -271,7 +271,7 @@ namespace Chisel.Editors
 
                     float dist;
                     var ray = new Ray(snappedPoint, xAxis);
-                    if ((edgeSnapAxis & Axis.X) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.X) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -282,7 +282,7 @@ namespace Chisel.Editors
                         }
                     }
                     ray.direction = yAxis;
-                    if ((edgeSnapAxis & Axis.Y) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.Y) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -293,7 +293,7 @@ namespace Chisel.Editors
                         }
                     }
                     ray.direction = zAxis;
-                    if ((edgeSnapAxis & Axis.Z) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.Z) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -843,7 +843,7 @@ namespace Chisel.Editors
             var currentWorldIntersection = worldStartPosition;                    
             var mouseRay = HandleUtility.GUIPointToWorldRay(mousePosition);
             var enter = 0.0f;
-            if (worldDragPlane.UnsignedRaycast(mouseRay, out enter))
+            if (worldDragPlane.SignedRaycast(mouseRay, out enter))
                 currentWorldIntersection = mouseRay.GetPoint(enter);
             currentWorldIntersection = SnapIntersection(currentWorldIntersection, startSurfaceReference, out pointHasSnapped);
             return currentWorldIntersection;

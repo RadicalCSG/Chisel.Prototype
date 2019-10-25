@@ -77,14 +77,14 @@ namespace Chisel.Editors
                     var bestDist = float.PositiveInfinity;
                     float dist;
 
-                    if (surfaceGridPlane.UnsignedRaycast(forwardRay, out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = forwardRay.GetPoint(dist); } }
-                    if (surfaceGridPlane.UnsignedRaycast(backRay,    out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = backRay   .GetPoint(dist); } }
-                    if (surfaceGridPlane.UnsignedRaycast(leftRay,    out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = leftRay   .GetPoint(dist); } }
-                    if (surfaceGridPlane.UnsignedRaycast(rightRay,   out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = rightRay  .GetPoint(dist); } }
+                    if (surfaceGridPlane.SignedRaycast(forwardRay, out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = forwardRay.GetPoint(dist); } }
+                    if (surfaceGridPlane.SignedRaycast(backRay,    out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = backRay   .GetPoint(dist); } }
+                    if (surfaceGridPlane.SignedRaycast(leftRay,    out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = leftRay   .GetPoint(dist); } }
+                    if (surfaceGridPlane.SignedRaycast(rightRay,   out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = rightRay  .GetPoint(dist); } }
                     if (bestDist > 100000) // prefer rays on the active-grid, only go up/down from the active-grid when we have no other choice
                     {
-                        if (surfaceGridPlane.UnsignedRaycast(upRay,   out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = upRay     .GetPoint(dist); } }
-                        if (surfaceGridPlane.UnsignedRaycast(downRay, out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = downRay   .GetPoint(dist); } }
+                        if (surfaceGridPlane.SignedRaycast(upRay,   out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = upRay     .GetPoint(dist); } }
+                        if (surfaceGridPlane.SignedRaycast(downRay, out dist)) { var abs_dist = Mathf.Abs(dist); if (abs_dist < bestDist) { bestDist = abs_dist; surfaceGridCenter = downRay   .GetPoint(dist); } }
                     }
 
                     // TODO: try to snap the new surface grid point in other directions on the active-grid? (do we need to?)

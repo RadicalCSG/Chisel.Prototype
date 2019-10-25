@@ -24,7 +24,7 @@ namespace UnitySceneExtensions
                                       (c * translation.z)));
         }
 #endif
-        public static bool UnsignedRaycast(this Plane plane, Ray ray, out float enter)
+        public static bool SignedRaycast(this Plane plane, Ray ray, out float enter)
         {
             float vdot = Vector3.Dot(ray.direction, plane.normal);
             float ndot = -Vector3.Dot(ray.origin, plane.normal) - plane.distance;

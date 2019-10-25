@@ -456,7 +456,7 @@ namespace Chisel.Editors
                 var gridPlane = UnitySceneExtensions.Grid.ActiveGrid.PlaneXZ;
                 var mouseRay = UnityEditor.HandleUtility.GUIPointToWorldRay(mousePosition);
                 var dist = 0.0f;
-                if (gridPlane.UnsignedRaycast(mouseRay, out dist))
+                if (gridPlane.SignedRaycast(mouseRay, out dist))
                     return new PlaneIntersection(mouseRay.GetPoint(dist), gridPlane);
             }
             return null;
