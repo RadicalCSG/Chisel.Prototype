@@ -8,6 +8,7 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -201,7 +202,7 @@ namespace Chisel.Editors
                 var bounds          = currentDefinition.bounds;
                 var cameraPosition  = Camera.current.transform.position;
 
-                var steps		    = UnitySceneExtensions.Snapping.MoveSnappingSteps;
+                var steps		    = Snapping.MoveSnappingSteps;
                 steps.y			    = stepHeight;
                 
                 EditorGUI.BeginChangeCheck();

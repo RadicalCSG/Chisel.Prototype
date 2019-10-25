@@ -8,6 +8,7 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -178,7 +179,7 @@ namespace Chisel.Editors
             
             
             // TODO: put somewhere else
-            if (!UnitySceneExtensions.Snapping.RotateSnappingActive)
+            if (!Snapping.RotateSnappingActive)
             {
                 return rotatedStartAngle + rotatedAngleOffset;
             }

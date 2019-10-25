@@ -356,7 +356,7 @@ namespace Chisel.Editors
         protected abstract void InitInspector();
 
         protected abstract void OnInspector();
-        protected virtual bool OnGeneratorValidate(T generator) { return generator != null && generator.isActiveAndEnabled; }
+        protected virtual bool OnGeneratorValidate(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
         protected abstract void OnScene(SceneView sceneView, T generator);

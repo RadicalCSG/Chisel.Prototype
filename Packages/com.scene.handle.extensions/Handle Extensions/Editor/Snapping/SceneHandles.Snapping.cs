@@ -565,7 +565,7 @@ namespace UnitySceneExtensions
             }
 
             if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { dist = float.PositiveInfinity; }
-            if (Mathf.Abs(dist) > camera.farClipPlane)
+            if (dist > camera.farClipPlane)
             {
                 var normal = worldSlideGrid.GetClosestAxisVector(forward);
                 var origin = worldSlidePlane.ClosestPointOnPlane(camera.transform.position) + (normal * camera.farClipPlane);

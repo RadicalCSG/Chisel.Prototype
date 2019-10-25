@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using Chisel.Utilities;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -63,7 +64,7 @@ namespace Chisel.Editors
         public static ExtrusionState Do(int id, Rect dragArea, ref Vector3 position, Axis axis, UnitySceneExtensions.SceneHandles.CapFunction capFunction, float? snappingSteps = null)
         {
             if (!snappingSteps.HasValue)
-                snappingSteps = UnitySceneExtensions.Snapping.MoveSnappingSteps[(int)axis];
+                snappingSteps = Snapping.MoveSnappingSteps[(int)axis];
             return Do(id, dragArea, ref position, axis, snappingSteps.Value, capFunction);
         }
 

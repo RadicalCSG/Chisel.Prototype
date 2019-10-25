@@ -8,6 +8,7 @@ using UnityEngine;
 using UnitySceneExtensions;
 using Chisel.Utilities;
 using UnityEditor.ShortcutManagement;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -112,7 +113,7 @@ namespace Chisel.Editors
                 return;
 
             var grid				= UnitySceneExtensions.Grid.defaultGrid;
-            var gridSnappedPoint	= UnitySceneExtensions.Snapping.SnapPoint(intersectionPoint, grid);
+            var gridSnappedPoint	= Snapping.SnapPoint(intersectionPoint, grid);
 
             var worldPlane  = surfaceReference.WorldPlane.Value;
 
@@ -358,9 +359,9 @@ namespace Chisel.Editors
 
         static float SnapAngle(float rotatedAngle)
         {
-            if (!UnitySceneExtensions.Snapping.RotateSnappingEnabled)
+            if (!Snapping.RotateSnappingEnabled)
                 return rotatedAngle;
-            return ((int)(rotatedAngle / UnitySceneExtensions.Snapping.RotateSnappingStep)) * UnitySceneExtensions.Snapping.RotateSnappingStep;
+            return ((int)(rotatedAngle / Snapping.RotateSnappingStep)) * Snapping.RotateSnappingStep;
         }
 
         #endregion
@@ -860,9 +861,9 @@ namespace Chisel.Editors
             var deltaVector = tangent  * Vector3.Dot(tangent,  worldSpaceMovement) +
                               biNormal * Vector3.Dot(biNormal, worldSpaceMovement);
 
-            if (UnitySceneExtensions.Snapping.AxisLockX) deltaVector.x = 0;
-            if (UnitySceneExtensions.Snapping.AxisLockY) deltaVector.y = 0;
-            if (UnitySceneExtensions.Snapping.AxisLockZ) deltaVector.z = 0;
+            if (Snapping.AxisLockX) deltaVector.x = 0;
+            if (Snapping.AxisLockY) deltaVector.y = 0;
+            if (Snapping.AxisLockZ) deltaVector.z = 0;
 
             worldDragDeltaVector = deltaVector;
         }

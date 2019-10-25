@@ -8,6 +8,7 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -901,7 +902,7 @@ namespace Chisel.Editors
                     if (captureControl)
                     {
                         SetControl(evt, 0);
-                        UnitySceneExtensions.Snapping.ActiveAxes = Axes.XYZ;
+                        Snapping.ActiveAxes = Axes.XYZ;
                         SceneView.RepaintAll();
                     }
 
