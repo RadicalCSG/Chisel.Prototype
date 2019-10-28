@@ -11,61 +11,12 @@ using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselHemisphereDetails : ChiselGeneratorDetails<ChiselHemisphere>
-    {
-    }
-
-
     [CustomEditor(typeof(ChiselHemisphere))]
     [CanEditMultipleObjects]
     public sealed class ChiselHemisphereEditor : ChiselGeneratorEditor<ChiselHemisphere>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselHemisphere.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselHemisphere.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselHemisphere.kNodeTypeName); }
-
-
-        SerializedProperty diameterXYZProp;
-        SerializedProperty rotationProp;
-        SerializedProperty horizontalSegmentsProp;
-        SerializedProperty verticalSegmentsProp;
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        { 
-            diameterXYZProp			= null;
-            rotationProp			= null;
-            horizontalSegmentsProp	= null;
-            verticalSegmentsProp	= null;
-
-            surfacesProp            = null;
-        }
-        
-        protected override void InitInspector()
-        {
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselHemisphere.definition));
-            {
-                diameterXYZProp			= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.diameterXYZ));
-                rotationProp			= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.rotation));
-                horizontalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.horizontalSegments));
-                verticalSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.verticalSegments));
-
-                var surfDefProp         = definitionProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.surfaceDefinition));
-                {
-                    surfacesProp        = surfDefProp.FindPropertyRelative(nameof(ChiselHemisphere.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(diameterXYZProp);
-            EditorGUILayout.PropertyField(rotationProp);
-            EditorGUILayout.PropertyField(horizontalSegmentsProp);
-            EditorGUILayout.PropertyField(verticalSegmentsProp);
-
-            ShowSurfaces(surfacesProp);
-        }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

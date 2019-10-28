@@ -13,7 +13,7 @@ namespace Chisel.Editors
 {
     [CustomEditor(typeof(ChiselNode), isFallback = true)]
     [CanEditMultipleObjects]
-    public sealed class ChiselFallbackNodeEditor : ChiselNodeEditor<ChiselModel>
+    public sealed class ChiselFallbackNodeEditor : ChiselNodeEditor<ChiselNode>
     {
     }
 }

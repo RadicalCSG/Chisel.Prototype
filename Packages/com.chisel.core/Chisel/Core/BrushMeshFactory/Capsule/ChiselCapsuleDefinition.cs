@@ -33,7 +33,8 @@ namespace Chisel.Core
         public int                  sides;
         public int                  topSegments;
         public int                  bottomSegments;
-        
+
+        [NamedItems(overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public bool					haveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }

@@ -19,7 +19,8 @@ namespace Chisel.Core
         public int					revolveSegments;
         public float				startAngle;
         public float				totalAngle;
-        
+
+        [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()

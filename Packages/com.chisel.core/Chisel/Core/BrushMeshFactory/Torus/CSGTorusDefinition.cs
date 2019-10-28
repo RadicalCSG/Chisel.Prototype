@@ -27,7 +27,8 @@ namespace Chisel.Core
         public int                  horizontalSegments;
 
         public bool                 fitCircle;
-        
+
+        [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public static float CalcInnerDiameter(float outerDiameter, float tubeWidth)

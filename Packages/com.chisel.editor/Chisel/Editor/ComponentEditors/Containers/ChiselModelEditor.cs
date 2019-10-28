@@ -25,8 +25,25 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModel>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselModel.kNodeTypeName, false, -1)]
+        [MenuItem("GameObject/Chisel/" + ChiselModel.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModel.kNodeTypeName); }
+
+
+        [ContextMenu("Set Active Model", false)]
+        static void SetActiveModel(MenuCommand menuCommand)
+        {
+            var model = (menuCommand.context as GameObject).GetComponent<ChiselModel>();
+            if (model)
+                ChiselModelManager.ActiveModel = model;
+        }
+
+        [ContextMenu("Set Active Model", true)]
+        static bool ValidateActiveModel(MenuCommand menuCommand)
+        {
+            var model = (menuCommand.context as GameObject).GetComponent<ChiselModel>();
+            return model;
+        }
+
 
         const int kSingleLineHeight = 16;
 

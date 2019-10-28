@@ -14,6 +14,7 @@ namespace Chisel.Editors
     public static class ChiselNodeDetailsManager
     {
         static Dictionary<Type, IChiselNodeDetails> nodeDetailsLookup = new Dictionary<Type, IChiselNodeDetails>();
+        static IChiselNodeDetails generatorDefaultDetails = new ChiselDefaultGeneratorDetails();
 
         [InitializeOnLoadMethod]
         static void InitializeNodeDetails()
@@ -34,27 +35,24 @@ namespace Chisel.Editors
 
         public static IChiselNodeDetails GetNodeDetails(ChiselNode node)
         {
-            IChiselNodeDetails someInterface;
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out someInterface))
+            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails someInterface))
                 return someInterface;
-            return null;
+            return generatorDefaultDetails;
         }
 
         public static IChiselNodeDetails GetNodeDetails(Type type)
         {
-            IChiselNodeDetails someInterface;
-            if (nodeDetailsLookup.TryGetValue(type, out someInterface))
+            if (nodeDetailsLookup.TryGetValue(type, out IChiselNodeDetails someInterface))
                 return someInterface;
-            return null;
+            return generatorDefaultDetails;
         }
 
 
         public static GUIContent GetHierarchyIcon(ChiselNode node)
         {
-            IChiselNodeDetails someInterface;
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out someInterface))
+            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails someInterface))
                 return someInterface.GetHierarchyIconForGenericNode(node);
-            return null;
+            return generatorDefaultDetails.GetHierarchyIconForGenericNode(node);
         }
     }
 }

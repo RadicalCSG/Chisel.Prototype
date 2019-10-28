@@ -5,96 +5,12 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCapsuleDetails : ChiselGeneratorDetails<ChiselCapsule>
-    {
-    }
-
-
     [CustomEditor(typeof(ChiselCapsule))]
     [CanEditMultipleObjects]
     public sealed class ChiselCapsuleEditor : ChiselGeneratorEditor<ChiselCapsule>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselCapsule.kNodeTypeName)]
+        [MenuItem("GameObject/Chisel/" + ChiselCapsule.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCapsule.kNodeTypeName); }
-
-        // TODO: make these shared resources since this name is used in several places (with identical context)
-        static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
-        const string                kSurfacePropertyName    = "Side {0}";
-        const string                kSurfacePathName        = "{0}[{1}]";
-        static GUIContent           surfacePropertyContent  = new GUIContent();
-
-        SerializedProperty heightProp;
-        SerializedProperty topHeightProp;
-        SerializedProperty bottomHeightProp;
-
-        SerializedProperty diameterXProp;
-        SerializedProperty diameterZProp;
-        SerializedProperty rotationProp;
-
-        SerializedProperty sidesProp;
-        SerializedProperty topSegmentsProp;
-        SerializedProperty bottomSegmentsProp;
-
-        SerializedProperty surfacesProp;
-
-        protected override void ResetInspector()
-        { 
-            heightProp			= null;
-            topHeightProp		= null;
-            bottomHeightProp	= null;
-
-            diameterXProp		= null;
-            diameterZProp		= null;
-            rotationProp		= null;
-
-            sidesProp			= null;
-            topSegmentsProp		= null;
-            bottomSegmentsProp	= null;
-
-            surfacesProp        = null;
-        }
-        
-        protected override void InitInspector()
-        {
-            var definitionProp = serializedObject.FindProperty(nameof(ChiselCapsule.definition));
-            {
-                heightProp			= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.height));
-                topHeightProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.topHeight));
-                bottomHeightProp	= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.bottomHeight));
-
-                diameterXProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.diameterX));
-                diameterZProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.diameterZ));
-                rotationProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.rotation));
-
-                sidesProp			= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.sides));
-                topSegmentsProp		= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.topSegments));
-                bottomSegmentsProp	= definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.bottomSegments));
-                
-                var surfDefProp     = definitionProp.FindPropertyRelative(nameof(ChiselCapsule.definition.surfaceDefinition));
-                {
-                    surfacesProp    = surfDefProp.FindPropertyRelative(nameof(ChiselCapsule.definition.surfaceDefinition.surfaces));
-                }
-            }
-        }
-
-        
-        protected override void OnInspector()
-        { 
-            EditorGUILayout.PropertyField(heightProp);
-            EditorGUILayout.PropertyField(topHeightProp);
-            EditorGUILayout.PropertyField(bottomHeightProp);
-
-            EditorGUILayout.PropertyField(diameterXProp);
-            EditorGUILayout.PropertyField(diameterZProp);
-            EditorGUILayout.PropertyField(rotationProp);
-
-            EditorGUILayout.PropertyField(sidesProp);
-            EditorGUILayout.PropertyField(topSegmentsProp);
-            EditorGUILayout.PropertyField(bottomSegmentsProp);
-
-
-            ShowSurfaces(surfacesProp, surfacesProp.arraySize);
-        }
 
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;

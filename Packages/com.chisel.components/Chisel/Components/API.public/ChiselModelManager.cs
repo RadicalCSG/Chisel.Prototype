@@ -6,6 +6,8 @@ namespace Chisel.Components
 {
     public class ChiselModelManager : ScriptableObject
     {
+        const string kDefaultModelName = "Model";
+
         #region Instance
         static ChiselModelManager _instance;
         public static ChiselModelManager Instance
@@ -78,10 +80,15 @@ namespace Chisel.Components
             {
                 // TODO: ensure we create this in the active scene
                 // TODO: handle scene being locked by version control
-                activeModel = ChiselComponentFactory.Create<ChiselModel>("Model");
+                activeModel = CreateNewModel();
                 ChiselModelManager.ActiveModel = activeModel; 
             }
             return activeModel;
+        }
+
+        public static ChiselModel CreateNewModel(Transform parent = null)
+        {
+            return ChiselComponentFactory.Create<ChiselModel>(kDefaultModelName, parent);
         }
 
 #if UNITY_EDITOR

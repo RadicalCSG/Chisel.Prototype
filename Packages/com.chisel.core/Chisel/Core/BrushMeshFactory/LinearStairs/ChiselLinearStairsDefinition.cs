@@ -42,7 +42,7 @@ namespace Chisel.Core
             Bottom,
             Left,
             Right,
-            Forward,
+            Front,
             Back,
             Tread,
             Step,
@@ -77,26 +77,29 @@ namespace Chisel.Core
 
         // TODO: add all spiral stairs improvements to linear stairs
 
+        public Bounds bounds;
+
         [DistanceValue] public float	stepHeight;
         [DistanceValue] public float	stepDepth;
 
-        [DistanceValue] public float	plateauHeight;
-
         [DistanceValue] public float	treadHeight;
+
         [DistanceValue] public float	nosingDepth;
         [DistanceValue] public float	nosingWidth;
 
+        [DistanceValue] public float    plateauHeight;
+
+        public StairsRiserType          riserType;
         [DistanceValue] public float	riserDepth;
 
-        [DistanceValue] public float	sideDepth;
-        [DistanceValue] public float	sideWidth;
-        [DistanceValue] public float	sideHeight;
-
-        public Bounds					bounds;
-        public StairsRiserType			riserType;
         public StairsSideType           leftSide;
         public StairsSideType           rightSide;
         
+        [DistanceValue] public float	sideWidth;
+        [DistanceValue] public float	sideHeight;
+        [DistanceValue] public float	sideDepth;
+        
+        [NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public bool     HasVolume
@@ -174,7 +177,7 @@ namespace Chisel.Core
                 surfaceDefinition.surfaces[(int)SurfaceSides.Bottom ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
                 surfaceDefinition.surfaces[(int)SurfaceSides.Left   ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
                 surfaceDefinition.surfaces[(int)SurfaceSides.Right  ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Forward].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+                surfaceDefinition.surfaces[(int)SurfaceSides.Front].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
                 surfaceDefinition.surfaces[(int)SurfaceSides.Back   ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
                 surfaceDefinition.surfaces[(int)SurfaceSides.Tread  ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
                 surfaceDefinition.surfaces[(int)SurfaceSides.Step   ].brushMaterial = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);

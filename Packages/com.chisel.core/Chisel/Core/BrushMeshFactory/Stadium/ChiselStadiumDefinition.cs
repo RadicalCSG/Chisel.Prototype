@@ -44,7 +44,9 @@ namespace Chisel.Core
         public bool					haveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
         public bool					haveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
         public bool					haveCenter			{ get { return (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
-        
+
+
+        [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()
