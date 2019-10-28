@@ -8,6 +8,7 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {

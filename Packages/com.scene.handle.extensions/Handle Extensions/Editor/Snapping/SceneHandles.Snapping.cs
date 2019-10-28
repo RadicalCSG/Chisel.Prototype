@@ -503,7 +503,6 @@ namespace UnitySceneExtensions
             this.worldSnappedPosition	= worldSlideOrigin;
             
             this.worldSlidePlane		= this.worldSlideGrid.PlaneXZ;
-            this.worldSlidePlane.Translate(-this.worldSlideOrigin);
             
             this.snapResult				= SnapResult3D.None;
 
@@ -537,7 +536,7 @@ namespace UnitySceneExtensions
             var rotation    = Quaternion.FromToRotation(normal, worldSlidePlane.normal);
             var alternativePlane = new Plane(normal, origin);
             var dist = 0.0f;
-            if (!alternativePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+            if (!alternativePlane.SignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
 
             worldPlanePosition = (rotation * (worldRay.GetPoint(dist) - origin)) + origin;
             return true;
@@ -572,7 +571,7 @@ namespace UnitySceneExtensions
                 return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
             } else
             { 
-                if (!worldSlidePlane.UnsignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+                if (!worldSlidePlane.SignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
                 worldPlanePosition = worldRay.GetPoint(dist);
                 return true;
             }

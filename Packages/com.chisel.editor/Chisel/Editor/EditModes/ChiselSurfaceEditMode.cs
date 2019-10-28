@@ -8,6 +8,7 @@ using UnityEngine;
 using UnitySceneExtensions;
 using Chisel.Utilities;
 using UnityEditor.ShortcutManagement;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
@@ -132,7 +133,7 @@ namespace Chisel.Editors
             {
                 float dist;
                 var ray = new Ray(gridSnappedPoint, xAxis);
-                if ((snapAxis & Axis.X) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.X) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -143,7 +144,7 @@ namespace Chisel.Editors
                     }
                 }
                 ray.direction = yAxis;
-                if ((snapAxis & Axis.Y) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.Y) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -154,7 +155,7 @@ namespace Chisel.Editors
                     }
                 }
                 ray.direction = zAxis;
-                if ((snapAxis & Axis.Z) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                if ((snapAxis & Axis.Z) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
                     var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -270,7 +271,7 @@ namespace Chisel.Editors
 
                     float dist;
                     var ray = new Ray(snappedPoint, xAxis);
-                    if ((edgeSnapAxis & Axis.X) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.X) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -281,7 +282,7 @@ namespace Chisel.Editors
                         }
                     }
                     ray.direction = yAxis;
-                    if ((edgeSnapAxis & Axis.Y) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.Y) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -292,7 +293,7 @@ namespace Chisel.Editors
                         }
                     }
                     ray.direction = zAxis;
-                    if ((edgeSnapAxis & Axis.Z) != Axis.None && worldPlane.UnsignedRaycast(ray, out dist))
+                    if ((edgeSnapAxis & Axis.Z) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                     {
                         var planePoint = ray.GetPoint(dist);
                         var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
@@ -842,7 +843,7 @@ namespace Chisel.Editors
             var currentWorldIntersection = worldStartPosition;                    
             var mouseRay = HandleUtility.GUIPointToWorldRay(mousePosition);
             var enter = 0.0f;
-            if (worldDragPlane.UnsignedRaycast(mouseRay, out enter))
+            if (worldDragPlane.SignedRaycast(mouseRay, out enter))
                 currentWorldIntersection = mouseRay.GetPoint(enter);
             currentWorldIntersection = SnapIntersection(currentWorldIntersection, startSurfaceReference, out pointHasSnapped);
             return currentWorldIntersection;
@@ -860,9 +861,9 @@ namespace Chisel.Editors
             var deltaVector = tangent  * Vector3.Dot(tangent,  worldSpaceMovement) +
                               biNormal * Vector3.Dot(biNormal, worldSpaceMovement);
 
-            if (UnitySceneExtensions.Snapping.AxisLockX) deltaVector.x = 0;
-            if (UnitySceneExtensions.Snapping.AxisLockY) deltaVector.y = 0;
-            if (UnitySceneExtensions.Snapping.AxisLockZ) deltaVector.z = 0;
+            if (Snapping.AxisLockX) deltaVector.x = 0;
+            if (Snapping.AxisLockY) deltaVector.y = 0;
+            if (Snapping.AxisLockZ) deltaVector.z = 0;
 
             worldDragDeltaVector = deltaVector;
         }

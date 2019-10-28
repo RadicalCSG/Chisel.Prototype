@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using Chisel.Utilities;
 using UnitySceneExtensions;
+using Snapping = UnitySceneExtensions.Snapping;
 
 namespace Chisel.Editors
 {
