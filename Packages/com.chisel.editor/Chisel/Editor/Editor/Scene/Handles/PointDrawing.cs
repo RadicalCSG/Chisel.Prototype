@@ -14,6 +14,8 @@ namespace Chisel.Editors
     // TODO: need to snap to vertices
     public sealed class PointDrawing
     {
+        public const float kDistanceEpsilon = 0.001f;
+
         internal static int s_PointDrawingHash = "PointDrawingHash".GetHashCode();
         public static void PointDrawHandle(Rect dragArea, ref List<Vector3> points, out Matrix4x4 transformation, out ChiselModel modelBeneathCursor, bool releaseOnMouseUp = true, UnitySceneExtensions.SceneHandles.CapFunction capFunction = null)
         {
@@ -117,10 +119,13 @@ namespace Chisel.Editors
         {
             if (point.HasValue)
             {
+                var localPosition = s_InvTransform.MultiplyPoint(point.Value);
+                if (s_CurrentPointIndex > 0 &&
+                    (localPosition - points[s_CurrentPointIndex - 1]).sqrMagnitude < kDistanceEpsilon)
+                    return;
+
                 while (points.Count > 0 && points.Count > s_CurrentPointIndex)
                     points.RemoveAt(points.Count - 1);
-
-                var localPosition = s_InvTransform.MultiplyPoint(point.Value);
 
                 while (points.Count <= s_CurrentPointIndex)
                     points.Add(localPosition);
@@ -230,6 +235,20 @@ namespace Chisel.Editors
                         using (new UnityEditor.Handles.DrawingScope(selectedColor))
                         {
                             HandleRendering.RenderSnapping3D(s_Snapping2D.WorldSlideGrid, s_Snapping2D.WorldSnappedExtents, s_Snapping2D.GridSnappedPosition, s_Snapping2D.SnapResult, true);
+
+                            using (new UnityEditor.Handles.DrawingScope(s_Transform))
+                            {
+                                var count = points.Count - 1;
+                                for (int i = 0; i < count - 1; i++)
+                                {
+                                    if ((points[count] - points[i]).sqrMagnitude < kDistanceEpsilon)
+                                    {
+                                        if (i > 0)
+                                            UnityEditor.Handles.color = Color.red;
+                                        capFunction(-1, points[count], orientation, UnityEditor.HandleUtility.GetHandleSize(points[count]) * (kPointScale * 2.0f), type);
+                                    }
+                                }
+                            }
                         }
                     }
                     break;

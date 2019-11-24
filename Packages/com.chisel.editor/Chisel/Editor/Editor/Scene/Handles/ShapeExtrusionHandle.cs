@@ -54,7 +54,7 @@ namespace Chisel.Editors
 
             var pointCount = s_ExtrusionMode ? s_Points.Count - 1 : s_Points.Count;
 
-            if ((s_Points[pointCount - 1] - s_Points[0]).sqrMagnitude < kDistanceEpsilon)
+            if ((s_Points[pointCount - 1] - s_Points[0]).sqrMagnitude < PointDrawing.kDistanceEpsilon)
                 pointCount--;
 
             if (s_Curve2D.controlPoints.Length != pointCount)
@@ -72,7 +72,6 @@ namespace Chisel.Editors
             return (s_Points[s_Points.Count - 1] - s_Points[1])[(int)axis];
         }
 
-        const float kDistanceEpsilon = 0.0001f;
 
         public static ShapeExtrusionState Do(Rect dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis axis)
         {
@@ -90,7 +89,7 @@ namespace Chisel.Editors
                     if (s_Points.Count <= 3)
                         return ShapeExtrusionState.ShapeMode;
 
-                    if ((s_Points[s_Points.Count - 2] - s_Points[0]).sqrMagnitude < kDistanceEpsilon)
+                    if ((s_Points[s_Points.Count - 2] - s_Points[0]).sqrMagnitude < PointDrawing.kDistanceEpsilon)
                     {
                         s_ExtrusionMode = true;
                         s_Points[s_Points.Count - 1] = s_Points[0];
