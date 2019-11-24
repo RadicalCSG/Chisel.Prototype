@@ -53,12 +53,12 @@ namespace Chisel.Core
             var radius			= new Vector3(diameterXYZ.x * 0.5f, 
                                               diameterXYZ.y, 
                                               diameterXYZ.z * 0.5f);
-
+            
             if (vertices == null || 
                 vertices.Length != vertexCount)
                 vertices = new Vector3[vertexCount];
-            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * radius.y);  // top
-            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.zero);					 // bottom
+            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * radius.y); // top
+            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.zero);          // bottom
             var degreePerSegment	= (360.0f / horzSegments) * Mathf.Deg2Rad;
             var angleOffset			= ((horzSegments & 1) == 1) ? 0.0f : 0.5f * degreePerSegment;
             var vertexIndex			= extraVertices;
@@ -76,7 +76,7 @@ namespace Chisel.Core
                 var segmentFactor	= ((v - (rings / 2.0f)) / rings) + 0.5f;			// [0.0f ... 1.0f]
                 var segmentDegree	= (segmentFactor * 90);								// [0 .. 90]
                 var segmentHeight	= Mathf.Sin(segmentDegree * Mathf.Deg2Rad) * radius.y;
-                var segmentRadius	= Mathf.Cos(segmentDegree * Mathf.Deg2Rad);		// [0 .. 0.707 .. 1 .. 0.707 .. 0]
+                var segmentRadius	= Mathf.Cos(segmentDegree * Mathf.Deg2Rad);		    // [0 .. 0.707 .. 1 .. 0.707 .. 0]
                 for (int h = 0; h < horzSegments; h++, vertexIndex++)
                 {
                     vertices[vertexIndex].x = vertices[h + extraVertices].x * segmentRadius;
@@ -111,20 +111,9 @@ namespace Chisel.Core
                                               diameterXYZ.z * 0.5f);
 
             var heightY = radius.y;
-            float topY, bottomY;
-            if (heightY < 0)
-            {
-                topY = 0;
-                bottomY = heightY;
-            } else
-            {
-                topY = heightY;
-                bottomY = 0;
-            }
-
             var vertices = new Vector3[vertexCount];
-            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * topY);    // top
-            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.up * bottomY); // bottom
+            if (!topCap   ) vertices[topVertex   ] = transform.MultiplyPoint(Vector3.up * heightY); // top
+            if (!bottomCap) vertices[bottomVertex] = transform.MultiplyPoint(Vector3.zero);         // bottom
             var degreePerSegment	= (360.0f / horzSegments) * Mathf.Deg2Rad;
             var angleOffset			= ((horzSegments & 1) == 1) ? 0.0f : 0.5f * degreePerSegment;
             var vertexIndex			= extraVertices;
