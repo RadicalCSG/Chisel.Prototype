@@ -1,3 +1,4 @@
+//#define ENABLE_DEBUG_GRID
 using System;
 using JetBrains.Annotations;
 using UnityEditor;
@@ -524,6 +525,9 @@ namespace UnitySceneExtensions
             localToWorldMatrix      = Matrix4x4.identity;
 
             snapResult              = SnapResult3D.None;
+#if ENABLE_DEBUG_GRID
+            Grid.debugGrid          = null;
+#endif
         }
 
         public void CalculateExtents(Vector3[] localPoints)
@@ -533,18 +537,41 @@ namespace UnitySceneExtensions
         
         bool GetIntersectionOnAlternativePlane(Ray worldRay, Vector3 normal, Vector3 origin, out Vector3 worldPlanePosition)
         {
-            var rotation    = Quaternion.FromToRotation(normal, worldSlidePlane.normal);
             var alternativePlane = new Plane(normal, origin);
             var dist = 0.0f;
-            if (!alternativePlane.SignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+            if (!alternativePlane.SignedRaycast(worldRay, out dist))
+            {
+                worldPlanePosition = worldSlideOrigin;
+                return false;
+            }
 
-            worldPlanePosition = (rotation * (worldRay.GetPoint(dist) - origin)) + origin;
+            var tangent         = Vector3.Cross(worldSlidePlane.normal, normal);
+            if (tangent.sqrMagnitude < 0.0001f)
+            {
+                worldPlanePosition = worldSlideOrigin;
+                return false;
+            }
+            tangent.Normalize();
+            var fromQuaternion  = Quaternion.LookRotation(tangent, normal);
+            var toQuaternion    = Quaternion.LookRotation(tangent, worldSlidePlane.normal);
+            var rotation        = fromQuaternion * Quaternion.Inverse(toQuaternion);
+            var worldAlternativePlanePosition = worldRay.GetPoint(dist) - origin;
+            worldPlanePosition = (rotation * (worldAlternativePlanePosition)) + origin;
+#if ENABLE_DEBUG_GRID
+            {
+                var planeOrientation = Quaternion.LookRotation(tangent, alternativePlane.normal);
+                Grid.debugGrid = new Grid(Matrix4x4.TRS(origin, planeOrientation, Vector3.one));
+            }
+#endif
             return true;
         }
 
 
         private bool GetPlaneIntersection(Vector2 guiPosition, out Vector3 worldPlanePosition)
         {
+#if ENABLE_DEBUG_GRID
+            Grid.debugGrid = null;
+#endif
             if (worldSlideGrid == null)
             {
                 worldPlanePosition = worldSlideOrigin;
@@ -562,17 +589,28 @@ namespace UnitySceneExtensions
                 var origin = worldSlidePlane.ClosestPointOnPlane(worldSlideOrigin);
                 return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
             }
-
+            
             if (!worldSlidePlane.Raycast(worldRay, out dist)) { dist = float.PositiveInfinity; }
-            if (dist > camera.farClipPlane)
+
+            float farClipPlaneDistance = camera.farClipPlane * 0.5f;
+            if (dist > farClipPlaneDistance)
             {
                 var normal = worldSlideGrid.GetClosestAxisVector(forward);
-                var origin = worldSlidePlane.ClosestPointOnPlane(camera.transform.position) + (normal * camera.farClipPlane);
+                var origin = worldSlidePlane.ClosestPointOnPlane(camera.transform.position) + (normal * farClipPlaneDistance);
                 return GetIntersectionOnAlternativePlane(worldRay, normal, origin, out worldPlanePosition);
             } else
             { 
                 if (!worldSlidePlane.SignedRaycast(worldRay, out dist)) { worldPlanePosition = worldSlideOrigin; return false; }
+
                 worldPlanePosition = worldRay.GetPoint(dist);
+#if ENABLE_DEBUG_GRID
+                {
+                    var tangent = GeometryUtility.CalculateTangent(worldSlidePlane.normal);
+                    var planeOrientation = Quaternion.LookRotation(tangent, worldSlidePlane.normal);
+                    Grid.debugGrid = new Grid(Matrix4x4.TRS(worldPlanePosition, planeOrientation, Vector3.one));
+                }
+#endif
+
                 return true;
             }
         }

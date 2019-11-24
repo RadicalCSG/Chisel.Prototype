@@ -43,6 +43,8 @@ namespace UnitySceneExtensions
 
         public static Grid HoverGrid { get; set; }
 
+        public static Grid debugGrid;
+
         public static Grid ActiveGrid
         {
             get

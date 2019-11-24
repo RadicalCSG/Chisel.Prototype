@@ -123,7 +123,7 @@ namespace Chisel.Editors
 
                 if (s_Points.Count <= 2)
                 {
-                    PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
+                    PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, releaseOnMouseUp: false, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
 
                     if (s_Points.Count <= 1)
                     {
@@ -132,6 +132,7 @@ namespace Chisel.Editors
 
                     if (s_Points.Count > 2)
                     {
+                        PointDrawing.Release();
                         s_Points[2] = s_Points[0];
                         return BoxExtrusionState.Create;
                     }
