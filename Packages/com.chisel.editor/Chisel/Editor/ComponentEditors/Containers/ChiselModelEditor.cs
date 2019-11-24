@@ -458,7 +458,12 @@ namespace Chisel.Editors
             if (targets == null)
                 return false;
 
+#if UNITY_2019_2_OR_NEWER
+            bool lightmapStatic = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+#else
             bool lightmapStatic = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.LightmapStatic) != 0;
+#endif
+
             if (lightmapStatic)
                 return false;
 
@@ -470,14 +475,22 @@ namespace Chisel.Editors
 
         void LightmapStaticSettings()
         {
+#if UNITY_2019_2_OR_NEWER
+            bool lightmapStatic = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+#else
             bool lightmapStatic = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.LightmapStatic) != 0;
+#endif
 
             EditorGUI.BeginChangeCheck();
             lightmapStatic = EditorGUILayout.Toggle(LightmapStaticContents, lightmapStatic);
 
             if (EditorGUI.EndChangeCheck())
             {
+#if UNITY_2019_2_OR_NEWER
+                SceneModeUtility.SetStaticFlags(gameObjectsSerializedObject.targetObjects, (int)StaticEditorFlags.ContributeGI, lightmapStatic);
+#else
                 SceneModeUtility.SetStaticFlags(gameObjectsSerializedObject.targetObjects, (int)StaticEditorFlags.LightmapStatic, lightmapStatic);
+#endif
                 gameObjectsSerializedObject.Update();
             }
         }
@@ -675,8 +688,12 @@ namespace Chisel.Editors
                 EditorGUILayout.HelpBox(GINotEnabledInfoContents.text, MessageType.Info);
                 return;
             }
-
+             
+#if UNITY_2019_2_OR_NEWER
+            bool enableSettings = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
+#else
             bool enableSettings = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.LightmapStatic) != 0;
+#endif
             if (enableSettings)
             {
                 EditorGUILayout.Space();

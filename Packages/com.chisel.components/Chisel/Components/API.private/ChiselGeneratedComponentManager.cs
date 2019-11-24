@@ -65,8 +65,13 @@ namespace Chisel.Components
                 return false;
 
             var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
+#if UNITY_2019_2_OR_NEWER
+            if ((staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) != UnityEditor.StaticEditorFlags.ContributeGI)
+                return false;
+#else
             if ((staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) != UnityEditor.StaticEditorFlags.LightmapStatic)
                 return false;
+#endif
 
             for (int i = 0; i < model.generatedMeshes.Length; i++)
             {
@@ -95,8 +100,12 @@ namespace Chisel.Components
                     continue;
 
                 var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
-                if ((!model.AutoRebuildUVs && !force) ||
-                    (staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) != UnityEditor.StaticEditorFlags.LightmapStatic)
+#if UNITY_2019_2_OR_NEWER
+                var lightmapStatic = (staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
+#else
+                var lightmapStatic = (staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) == UnityEditor.StaticEditorFlags.LightmapStatic;
+#endif
+                if ((!model.AutoRebuildUVs && !force) || !lightmapStatic)
                     continue;
 
                 for (int i = 0; i < model.generatedMeshes.Length; i++)
@@ -352,7 +361,12 @@ namespace Chisel.Components
                 if (generatedMesh.needsUpdate || forceUpdate)
                 {
 #if UNITY_EDITOR
-                    if ((modelState.staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) == UnityEditor.StaticEditorFlags.LightmapStatic)
+#if UNITY_2019_2_OR_NEWER
+                    var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
+#else
+                    var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) == UnityEditor.StaticEditorFlags.LightmapStatic;
+#endif
+                    if (lightmapStatic)
                     {
                         generatedMesh.renderComponents.meshRenderer.realtimeLightmapIndex = -1;
                         generatedMesh.renderComponents.meshRenderer.lightmapIndex         = -1;
