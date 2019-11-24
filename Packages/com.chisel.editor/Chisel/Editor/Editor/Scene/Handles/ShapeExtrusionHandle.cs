@@ -82,7 +82,7 @@ namespace Chisel.Editors
                 {
                     // TODO: handle snapping against own points
                     // TODO: handle ability to 'commit'
-                    PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
+                    PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, releaseOnMouseUp: true, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
 
                     if (s_Points.Count <= 1)
                         return ShapeExtrusionState.HoverMode;

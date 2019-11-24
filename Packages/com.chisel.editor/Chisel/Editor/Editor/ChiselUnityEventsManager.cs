@@ -155,6 +155,11 @@ namespace Chisel.Editors
                     grid = UnitySceneExtensions.Grid.ActiveGrid;
                 grid.Render(sceneView);
             }
+
+            if (UnitySceneExtensions.Grid.debugGrid != null)
+            {
+                UnitySceneExtensions.Grid.debugGrid.Render(sceneView);
+            }
         }
 
         static void OnSceneGUI(SceneView sceneView)
