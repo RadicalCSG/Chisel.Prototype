@@ -93,7 +93,7 @@ namespace Chisel.Editors
             var childSiblingIndex   = childTransform.GetSiblingIndex();
             var childParent         = childTransform.parent;
 
-            var operation           = ChiselComponentFactory.Create<ChiselModel>(kDefaultOperationName, childParent);
+            var operation           = ChiselComponentFactory.Create<ChiselOperation>(kDefaultOperationName, childParent);
             var operationGameObject = operation.gameObject;
             var operationTransform  = operation.transform;
             operationTransform.SetSiblingIndex(childSiblingIndex);
@@ -103,7 +103,6 @@ namespace Chisel.Editors
                 Undo.SetTransformParent(gameObjects[i].transform, operationTransform, "Moved GameObject under Operation");
 
             Selection.activeObject = operationGameObject;
-            ChiselModelManager.ActiveModel = operation;
 
             // This forces the operation to be opened when we create it
             EditorGUIUtility.PingObject(operationGameObject);
