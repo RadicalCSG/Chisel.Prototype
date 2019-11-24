@@ -1,12 +1,16 @@
 {
   "dependencies": {
-    "com.unity.burst": "1.0.0",
-    "com.unity.package-manager-ui": "2.1.2",
+    "com.unity.burst": "1.1.2",
+    "com.unity.ext.nunit": "1.0.0",
+    "com.unity.package-manager-ui": "2.2.0",
+    "com.unity.test-framework": "1.0.18",
     "com.unity.textmeshpro": "2.0.0",
     "com.unity.modules.ai": "1.0.0",
+    "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.imgui": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics": "1.0.0",
+    "com.unity.modules.physics2d": "1.0.0",
     "com.unity.modules.terrain": "1.0.0",
     "com.unity.modules.terrainphysics": "1.0.0",
     "com.unity.modules.ui": "1.0.0",
