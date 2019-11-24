@@ -688,7 +688,7 @@ namespace Chisel.Editors
                 EditorGUILayout.HelpBox(GINotEnabledInfoContents.text, MessageType.Info);
                 return;
             }
-
+             
 #if UNITY_2019_2_OR_NEWER
             bool enableSettings = (staticEditorFlagsProp.intValue & (int)StaticEditorFlags.ContributeGI) != 0;
 #else
