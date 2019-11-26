@@ -56,11 +56,11 @@ namespace Chisel.Editors
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
 
 #if UNITY_2019_1_OR_NEWER
-            UnityEditor.SceneView.duringSceneGui					    -= OnSceneGUI;
-            UnityEditor.SceneView.duringSceneGui                        += OnSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        -= OnSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        += OnSceneGUI;
 #else
             UnityEditor.SceneView.onSceneGUIDelegate					-= OnSceneGUI;
-            UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI;
+            UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI; 
 #endif            
                 
             CSGNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
@@ -151,7 +151,10 @@ namespace Chisel.Editors
             if (ChiselEditorSettings.ShowGrid)
             {
                 var grid = UnitySceneExtensions.Grid.HoverGrid;
-                if (grid == null)
+                if (grid != null)
+                {
+                    grid.Spacing = UnitySceneExtensions.Grid.defaultGrid.Spacing;
+                } else
                     grid = UnitySceneExtensions.Grid.ActiveGrid;
                 grid.Render(sceneView);
             }
@@ -164,10 +167,11 @@ namespace Chisel.Editors
 
         static void OnSceneGUI(SceneView sceneView)
         {
+            var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
             GridOnSceneGUI(sceneView);
-            ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
-            var dragArea = ChiselSceneBottomGUI.OnSceneGUI(sceneView);
             ChiselEditModeGUI.OnSceneGUI(sceneView, dragArea);
+            ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
+            ChiselSceneBottomGUI.OnSceneGUI(sceneView);
 
             ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
             ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
