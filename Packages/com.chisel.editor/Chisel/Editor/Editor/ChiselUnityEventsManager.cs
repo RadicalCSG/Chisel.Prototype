@@ -17,6 +17,10 @@ namespace Chisel.Editors
         [RuntimeInitializeOnLoadMethod]
         public static void Initialize()
         {
+            // Note that it's always safer to first unregister an event before 
+            // assigning it, since this will avoid double assigning / leaking events 
+            // whenever this code is, for whatever reason, run more than once.
+
             // Update loop
             UnityEditor.EditorApplication.update						-= OnEditorApplicationUpdate;
             UnityEditor.EditorApplication.update						+= OnEditorApplicationUpdate;
@@ -34,10 +38,10 @@ namespace Chisel.Editors
             UnityEditor.Selection.selectionChanged						+= OnSelectionChanged;
             
             // Triggered when currently active/selected item has changed.
-            ChiselSurfaceSelectionManager.selectionChanged					-= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.selectionChanged					+= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.hoverChanged						-= OnSurfaceHoverChanged;
-            ChiselSurfaceSelectionManager.hoverChanged						+= OnSurfaceHoverChanged;
+            ChiselSurfaceSelectionManager.selectionChanged				-= OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.selectionChanged				+= OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.hoverChanged					-= OnSurfaceHoverChanged;
+            ChiselSurfaceSelectionManager.hoverChanged					+= OnSurfaceHoverChanged;
 
             // A callback to be raised when an object in the hierarchy changes.
             // Each time an object is (or a group of objects are) created, 
@@ -155,7 +159,9 @@ namespace Chisel.Editors
                 {
                     grid.Spacing = UnitySceneExtensions.Grid.defaultGrid.Spacing;
                 } else
+                { 
                     grid = UnitySceneExtensions.Grid.ActiveGrid;
+                }
                 grid.Render(sceneView);
             }
 
