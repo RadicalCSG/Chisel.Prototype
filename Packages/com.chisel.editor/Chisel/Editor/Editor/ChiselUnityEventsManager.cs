@@ -17,6 +17,10 @@ namespace Chisel.Editors
         [RuntimeInitializeOnLoadMethod]
         public static void Initialize()
         {
+            // Note that it's always safer to first unregister an event before 
+            // assigning it, since this will avoid double assigning / leaking events 
+            // whenever this code is, for whatever reason, run more than once.
+
             // Update loop
             UnityEditor.EditorApplication.update						-= OnEditorApplicationUpdate;
             UnityEditor.EditorApplication.update						+= OnEditorApplicationUpdate;
@@ -34,10 +38,10 @@ namespace Chisel.Editors
             UnityEditor.Selection.selectionChanged						+= OnSelectionChanged;
             
             // Triggered when currently active/selected item has changed.
-            ChiselSurfaceSelectionManager.selectionChanged					-= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.selectionChanged					+= OnSurfaceSelectionChanged;
-            ChiselSurfaceSelectionManager.hoverChanged						-= OnSurfaceHoverChanged;
-            ChiselSurfaceSelectionManager.hoverChanged						+= OnSurfaceHoverChanged;
+            ChiselSurfaceSelectionManager.selectionChanged				-= OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.selectionChanged				+= OnSurfaceSelectionChanged;
+            ChiselSurfaceSelectionManager.hoverChanged					-= OnSurfaceHoverChanged;
+            ChiselSurfaceSelectionManager.hoverChanged					+= OnSurfaceHoverChanged;
 
             // A callback to be raised when an object in the hierarchy changes.
             // Each time an object is (or a group of objects are) created, 
@@ -56,11 +60,11 @@ namespace Chisel.Editors
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
 
 #if UNITY_2019_1_OR_NEWER
-            UnityEditor.SceneView.duringSceneGui					    -= OnSceneGUI;
-            UnityEditor.SceneView.duringSceneGui                        += OnSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        -= OnSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        += OnSceneGUI;
 #else
             UnityEditor.SceneView.onSceneGUIDelegate					-= OnSceneGUI;
-            UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI;
+            UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI; 
 #endif            
                 
             CSGNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
@@ -151,8 +155,13 @@ namespace Chisel.Editors
             if (ChiselEditorSettings.ShowGrid)
             {
                 var grid = UnitySceneExtensions.Grid.HoverGrid;
-                if (grid == null)
+                if (grid != null)
+                {
+                    grid.Spacing = UnitySceneExtensions.Grid.defaultGrid.Spacing;
+                } else
+                { 
                     grid = UnitySceneExtensions.Grid.ActiveGrid;
+                }
                 grid.Render(sceneView);
             }
 
@@ -164,10 +173,11 @@ namespace Chisel.Editors
 
         static void OnSceneGUI(SceneView sceneView)
         {
+            var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
             GridOnSceneGUI(sceneView);
-            ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
-            var dragArea = ChiselSceneBottomGUI.OnSceneGUI(sceneView);
             ChiselEditModeGUI.OnSceneGUI(sceneView, dragArea);
+            ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
+            ChiselSceneBottomGUI.OnSceneGUI(sceneView);
 
             ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
             ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);

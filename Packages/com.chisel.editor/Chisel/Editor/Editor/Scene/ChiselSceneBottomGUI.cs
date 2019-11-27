@@ -13,8 +13,7 @@ namespace Chisel.Editors
     // TODO: add tooltips
     public static class ChiselSceneBottomGUI
     {
-        const float kBottomBarHeight    = 20;
-        const float kTopBarHeight       = 17;
+        internal const float kBottomBarHeight    = 20;
         const float kFloatFieldWidth    = 60;
 
         static readonly int BottomBarGUIHash = typeof(ChiselSceneBottomGUI).Name.GetHashCode();
@@ -66,8 +65,7 @@ namespace Chisel.Editors
                 ChiselEditorSettings.Save();
         }
 
-
-        public static Rect OnSceneGUI(SceneView sceneView)
+        public static void OnSceneGUI(SceneView sceneView)
         {
             // TODO: put somewhere else
             var curSkin = EditorGUIUtility.isProSkin;
@@ -99,12 +97,6 @@ namespace Chisel.Editors
 
             GUILayout.Window(bottomBarGuiId, position, OnBottomBarUI, "", toolbarStyle);
             CSGEditorUtility.ConsumeUnusedMouseEvents(BottomBarGUIHash, position);
-
-            Rect dragArea = sceneView.position;
-            dragArea.x = 0;
-            dragArea.y = kTopBarHeight;
-            dragArea.height -= kBottomBarHeight + kTopBarHeight;
-            return dragArea;
         }
     }
 }
