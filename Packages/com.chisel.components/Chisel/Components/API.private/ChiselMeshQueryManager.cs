@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Chisel.Components
 {
-    public static class CSGMeshQueryManager
+    public static class ChiselMeshQueryManager
     {
         static MeshQuery[] renderOnly =
         {

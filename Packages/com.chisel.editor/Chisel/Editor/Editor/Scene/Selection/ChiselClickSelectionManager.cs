@@ -128,7 +128,7 @@ namespace Chisel.Editors
                 
                 pickClosestGameObjectDelegate = HandleUtilityType.GetField("pickClosestGameObjectDelegate", BindingFlags.NonPublic | BindingFlags.Static);
                 //var delegateType			= pickClosestGameObjectDelegate.FieldType;
-                //var pickClosestGameObject	= typeof(CSGSelectionManager).GetMethod("PickClosestGameObject");
+                //var pickClosestGameObject	= typeof(ChiselSelectionManager).GetMethod("PickClosestGameObject");
                 //var methodDelegate		= Delegate.CreateDelegate(delegateType, pickClosestGameObject);
                 //pickClosestGameObjectDelegate.SetValue(null, methodDelegate);
             }
@@ -228,7 +228,7 @@ namespace Chisel.Editors
                     }
                 }
                 if (modifiedNodes.Count > 0)
-                    CSGNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
+                    ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
             }
 
             // Handle selection clicks / marquee selection
@@ -431,8 +431,8 @@ namespace Chisel.Editors
             {
                 if (brushIntersection.brushUserID != -1)
                 {
-                    var	brush	= CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brushIntersection.brush.UserID);
-                    var model	= CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brushIntersection.tree.UserID) as ChiselModel;
+                    var	brush	= ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brushIntersection.brush.UserID);
+                    var model	= ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brushIntersection.tree.UserID) as ChiselModel;
                     return new PlaneIntersection(brushIntersection, brush, model);
                 }
                 
@@ -483,7 +483,7 @@ namespace Chisel.Editors
 
                 var brush = intersection.brush;
     
-                var node = CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brush.UserID);
+                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
                 if (!node)
                     return false;
 
@@ -523,7 +523,7 @@ namespace Chisel.Editors
 
                 var brush = brushIntersection.brush;
     
-                var node = CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brush.UserID);
+                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
                 if (!node)
                     return null;
                 
@@ -550,7 +550,7 @@ namespace Chisel.Editors
 
                 var brush = intersection.brush;
     
-                var node = CSGNodeHierarchyManager.FindCSGNodeByInstanceID(brush.UserID);
+                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
                 if (!node)
                     return null;
 
@@ -594,7 +594,7 @@ namespace Chisel.Editors
                     if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, layers, ignore, filter, out tempIntersection))
                     {
                         var clickedBrush		= tempIntersection.brush;
-                        node = CSGNodeHierarchyManager.FindCSGNodeByInstanceID(clickedBrush.UserID);
+                        node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(clickedBrush.UserID);
                         if (node)
                         {
                             if (ignore != null &&
@@ -691,7 +691,7 @@ namespace Chisel.Editors
                 return null;
             }
             /*
-            if (CSGGeneratedComponentManager.IsObjectGenerated(picked))
+            if (ChiselGeneratedComponentManager.IsObjectGenerated(picked))
             {
                 if (ignore == null)
                     return null;
@@ -700,7 +700,7 @@ namespace Chisel.Editors
             }
             return picked;*/
         }
-        
+
         public static IEnumerable<KeyValuePair<GameObject, CSGTreeBrushIntersection>> GetAllOverlapping(Vector2 position)
         {
             var allOverlapping = new List<GameObject>();

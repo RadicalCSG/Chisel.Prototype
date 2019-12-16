@@ -93,7 +93,7 @@ namespace Chisel.Components
             UpdateGenerator();
             UpdateBrushMeshInstances();
 
-            CSGNodeHierarchyManager.NotifyContentsModified(this);
+            ChiselNodeHierarchyManager.NotifyContentsModified(this);
             base.OnValidateInternal();
         }
 
@@ -114,7 +114,7 @@ namespace Chisel.Components
 
                 // Let the hierarchy manager know that the contents of this node has been modified
                 //	so we can rebuild/update sub-trees and regenerate meshes
-                CSGNodeHierarchyManager.NotifyContentsModified(this);
+                ChiselNodeHierarchyManager.NotifyContentsModified(this);
             }
         }
         
@@ -133,7 +133,7 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                CSGNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
             }
         }
 
@@ -153,7 +153,7 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                CSGNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
             }
         }
 
@@ -191,7 +191,7 @@ namespace Chisel.Components
 
                 // Let the hierarchy manager know that the contents of this node has been modified
                 //	so we can rebuild/update sub-trees and regenerate meshes
-                CSGNodeHierarchyManager.NotifyContentsModified(this);
+                ChiselNodeHierarchyManager.NotifyContentsModified(this);
             }
         }
 
@@ -263,7 +263,7 @@ namespace Chisel.Components
                     }
                 }
                 if (needRebuild) // if we don't do this, we'll end up creating nodes infinitely, when the node can't make a valid brushMesh
-                    CSGNodeHierarchyManager.RebuildTreeNodes(this);
+                    ChiselNodeHierarchyManager.RebuildTreeNodes(this);
                 return false;
             }
         }
@@ -319,7 +319,7 @@ namespace Chisel.Components
                 return;
 
             var localToWorldMatrix = transform.localToWorldMatrix;
-            var modelTransform = CSGNodeHierarchyManager.FindModelTransformOfTransform(transform);
+            var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
             if (modelTransform)
                 localTransformation = modelTransform.worldToLocalMatrix * localToWorldMatrix;
             else
@@ -390,10 +390,10 @@ namespace Chisel.Components
         public override Bounds CalculateBounds()
         {
             if (!brushContainerAsset)
-                return CSGHierarchyItem.EmptyBounds;
+                return ChiselHierarchyItem.EmptyBounds;
 
-            var modelMatrix		= CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
-            var bounds			= CSGHierarchyItem.EmptyBounds;
+            var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
+            var bounds			= ChiselHierarchyItem.EmptyBounds;
 
             var foundBrushes = new HashSet<CSGTreeBrush>();
             GetAllTreeBrushes(foundBrushes, false);
@@ -762,7 +762,7 @@ namespace Chisel.Components
                     brush.LocalTransformation       = localTransformation;
                     brush.PivotOffset               = pivotOffset;
                     brush.Operation                 = topOperation;
-                    brush.definition = new BrushDefinition
+                    brush.definition = new ChiselBrushDefinition
                     {
                         brushOutline = new BrushMesh(sourceBrushMeshes[0])
                     };
@@ -779,7 +779,7 @@ namespace Chisel.Components
                         brush.LocalTransformation       = localTransformation;
                         brush.PivotOffset               = pivotOffset;
                         brush.Operation                 = sourceOperations[i];
-                        brush.definition = new BrushDefinition
+                        brush.definition = new ChiselBrushDefinition
                         {
                             brushOutline = new BrushMesh(sourceBrushMeshes[i])
                         };

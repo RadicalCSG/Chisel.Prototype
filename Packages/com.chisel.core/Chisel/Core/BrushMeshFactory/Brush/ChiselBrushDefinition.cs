@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace Chisel.Core
 {
     [Serializable]
-    public class BrushDefinition : IChiselGenerator
+    public class ChiselBrushDefinition : IChiselGenerator
     {
         public BrushMesh                brushOutline;
 

@@ -11,6 +11,6 @@ namespace Chisel.Components
     public sealed class SurfaceIntersection
     {
         public SurfaceReference surface;
-        public CSGSurfaceIntersection intersection;
+        public ChiselSurfaceIntersection intersection;
     }
 }

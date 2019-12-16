@@ -409,7 +409,7 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator Operation1WithChildBrush_MoveBrushToNoneCSGNodeChildOfOperation2_ChildHasOperation2AsParent()
+        public IEnumerator Operation1WithChildBrush_MoveBrushToNoneChiselNodeChildOfOperation2_ChildHasOperation2AsParent()
         {
             var operation1				= TestUtility.CreateUndoableGameObjectWithOperation("operation1");
             var operation1GameObject	= operation1.gameObject;

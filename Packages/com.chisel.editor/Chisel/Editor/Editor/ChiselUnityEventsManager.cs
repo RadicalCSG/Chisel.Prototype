@@ -67,14 +67,14 @@ namespace Chisel.Editors
             UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI; 
 #endif            
                 
-            CSGNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
-            CSGNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
+            ChiselNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
+            ChiselNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
 
-            CSGNodeHierarchyManager.NodeHierarchyModified -= OnNodeHierarcyModified;
-            CSGNodeHierarchyManager.NodeHierarchyModified += OnNodeHierarcyModified;
+            ChiselNodeHierarchyManager.NodeHierarchyModified -= OnNodeHierarcyModified;
+            ChiselNodeHierarchyManager.NodeHierarchyModified += OnNodeHierarcyModified;
 
-            CSGNodeHierarchyManager.TransformationChanged -= OnTransformationChanged;
-            CSGNodeHierarchyManager.TransformationChanged += OnTransformationChanged;
+            ChiselNodeHierarchyManager.TransformationChanged -= OnTransformationChanged;
+            ChiselNodeHierarchyManager.TransformationChanged += OnTransformationChanged;
 
             ChiselGeneratedModelMeshManager.PostUpdateModels -= OnPostUpdateModels;
             ChiselGeneratedModelMeshManager.PostUpdateModels += OnPostUpdateModels;
@@ -193,8 +193,8 @@ namespace Chisel.Editors
             ChiselClickSelectionManager.Instance.OnSelectionChanged();
             ChiselOutlineRenderer.Instance.OnSelectionChanged();
             ChiselEditModeGUI.Instance.OnSelectionChanged();
-            //Editors.CSGManagedHierarchyView.RepaintAll();
-            //Editors.CSGNativeHierarchyView.RepaintAll();
+            //Editors.ChiselManagedHierarchyView.RepaintAll();
+            //Editors.ChiselNativeHierarchyView.RepaintAll();
         }
 
         private static void OnSurfaceSelectionChanged()
@@ -221,31 +221,31 @@ namespace Chisel.Editors
         private static void OnNodeHierarcyModified()
         {
             ChiselOutlineRenderer.Instance.OnReset();
-            Editors.CSGManagedHierarchyView.RepaintAll();
-            Editors.CSGInternalHierarchyView.RepaintAll();
+            Editors.ChiselManagedHierarchyView.RepaintAll();
+            Editors.ChiselInternalHierarchyView.RepaintAll();
             SceneView.RepaintAll(); 
         }
 
         private static void OnHierarchyReset()
         {			
-            Editors.CSGManagedHierarchyView.RepaintAll();
-            Editors.CSGInternalHierarchyView.RepaintAll(); 
+            Editors.ChiselManagedHierarchyView.RepaintAll();
+            Editors.ChiselInternalHierarchyView.RepaintAll(); 
         }
 
         /*
         private static void OnHierarchyWindowChanged()
         {
-            if (CSGNodeHierarchyManager.CheckHierarchyModifications())
+            if (ChiselNodeHierarchyManager.CheckHierarchyModifications())
             {
-                Editors.CSGManagedHierarchyView.RepaintAll();
-                Editors.CSGNativeHierarchyView.RepaintAll(); 
+                Editors.ChiselManagedHierarchyView.RepaintAll();
+                Editors.ChiselNativeHierarchyView.RepaintAll(); 
             }
         }
         */
 
         private static void OnPrefabInstanceUpdated(GameObject instance)
         {
-            CSGNodeHierarchyManager.OnPrefabInstanceUpdated(instance);
+            ChiselNodeHierarchyManager.OnPrefabInstanceUpdated(instance);
         }
 
 
@@ -261,7 +261,7 @@ namespace Chisel.Editors
             }
 
             //Grid.HoverGrid = null;
-            CSGNodeHierarchyManager.Update();
+            ChiselNodeHierarchyManager.Update();
             ChiselGeneratedModelMeshManager.UpdateModels();
             ChiselNodeEditorBase.HandleCancelEvent();
         }
@@ -283,12 +283,12 @@ namespace Chisel.Editors
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            CSGNodeHierarchyManager.firstStart = false;
+            ChiselNodeHierarchyManager.firstStart = false;
         }
 
         private static void OnUndoRedoPerformed()
         {
-            CSGNodeHierarchyManager.UpdateAllTransformations();
+            ChiselNodeHierarchyManager.UpdateAllTransformations();
             ChiselOutlineRenderer.Instance.OnTransformationChanged();
         }
 
@@ -327,7 +327,7 @@ namespace Chisel.Editors
             }
             if (modifiedNodes.Count > 0)
             {
-                CSGNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
+                ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
             }
             return modifications;
         }

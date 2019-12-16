@@ -11,7 +11,7 @@ namespace Chisel.Editors
     // This window is a helper window to see the UNDO stack, to help debug/test undo operations
     public sealed class HistoryWindow : EditorWindow
     {
-        [MenuItem("CSG DEBUG/Undo Window")]
+        [MenuItem("Chisel DEBUG/Undo Window")]
         static void Create()
         {
             window = (HistoryWindow)EditorWindow.GetWindow(typeof(HistoryWindow), false, "History");

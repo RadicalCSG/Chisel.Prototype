@@ -9,24 +9,24 @@ using UnityEngine.SceneManagement;
 namespace Chisel.Components
 {
 
-    public sealed class CSGSceneHierarchy
+    public sealed class ChiselSceneHierarchy
     {
         public Scene                            Scene;
         public ChiselModel                         DefaultModel;		// TODO: create this, but only when necessary.
-        public readonly List<CSGHierarchyItem>  RootItems		= new List<CSGHierarchyItem>();
+        public readonly List<ChiselHierarchyItem>  RootItems		= new List<ChiselHierarchyItem>();
     }
 
-    public sealed class CSGHierarchyItem
+    public sealed class ChiselHierarchyItem
     {
         public static readonly Bounds EmptyBounds = new Bounds();
 
-        public CSGHierarchyItem(ChiselNode node) { Component = node; }
+        public ChiselHierarchyItem(ChiselNode node) { Component = node; }
 
-        public CSGHierarchyItem                 Parent;
+        public ChiselHierarchyItem                 Parent;
         public readonly List<int>               SiblingIndices      = new List<int>();
-        public readonly List<CSGHierarchyItem>  Children            = new List<CSGHierarchyItem>();
+        public readonly List<ChiselHierarchyItem>  Children            = new List<ChiselHierarchyItem>();
 
-        public CSGSceneHierarchy    sceneHierarchy;
+        public ChiselSceneHierarchy    sceneHierarchy;
         public Scene                Scene;
         public Transform            Transform;
         public GameObject           GameObject;

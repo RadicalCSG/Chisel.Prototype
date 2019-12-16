@@ -296,7 +296,7 @@ namespace Chisel.Editors
                                         }
                                     }
                                 }
-                                var nodeComponent	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(treeNode);
+                                var nodeComponent	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(treeNode);
                                 if (!nodeComponent)
                                     continue;
                                 var gameObject = nodeComponent.gameObject;

@@ -50,7 +50,7 @@ namespace BrushContainerAssetTests
             yield return null;
             ChiselBrushContainerAssetManager.Update();
 
-            //Assert.False(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
             Assert.True(ChiselBrushContainerAssetManager.IsRegistered(newBrushContainerAsset));
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
         }
@@ -66,8 +66,8 @@ namespace BrushContainerAssetTests
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             yield return null;
             ChiselBrushContainerAssetManager.Update();
-            
-            //Assert.False(CSGBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));	// should already be done
+
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));	// should already be done
             Assert.False(ChiselBrushContainerAssetManager.IsRegistered(newBrushContainerAsset));
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
         }
@@ -79,11 +79,11 @@ namespace BrushContainerAssetTests
             yield return null;
             ChiselBrushContainerAssetManager.Update();
 
-            //Assert.False(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
-            //Assert.False(CSGBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));
             Assert.True(ChiselBrushContainerAssetManager.IsRegistered(newBrushContainerAsset));
             ChiselBrushContainerAssetManager.SetDirty(newBrushContainerAsset);
-            //Assert.True(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
+            //Assert.True(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
             Assert.True(ChiselBrushContainerAssetManager.IsDirty(newBrushContainerAsset));
 
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
@@ -97,12 +97,12 @@ namespace BrushContainerAssetTests
             yield return null;
             ChiselBrushContainerAssetManager.Update();
 
-            //Assert.False(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
-            //Assert.False(CSGBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
+            //Assert.False(ChiselBrushContainerAssetManager.IsInUnregisterQueue(newBrushContainerAsset));
             Assert.True(ChiselBrushContainerAssetManager.IsRegistered(newBrushContainerAsset));
             ChiselBrushContainerAssetManager.SetDirty(newBrushContainerAsset);
             ChiselBrushContainerAssetManager.Update();
-            //Assert.True(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
+            //Assert.True(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset));
             Assert.False(ChiselBrushContainerAssetManager.IsDirty(newBrushContainerAsset));
 
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
@@ -118,7 +118,7 @@ namespace BrushContainerAssetTests
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
 
-                //Assert.False(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
+                //Assert.False(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
                 Assert.IsTrue(newBrushContainerAsset.Instances != null && newBrushContainerAsset.Instances[0].Valid);
                 UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             }
@@ -138,7 +138,7 @@ namespace BrushContainerAssetTests
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
 
-                //Assert.False(CSGBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
+                //Assert.False(ChiselBrushContainerAssetManager.IsInUpdateQueue(newBrushContainerAsset)); // should already be done
                 Assert.IsFalse(newBrushContainerAsset.Instances != null && newBrushContainerAsset.Instances[0].Valid);
             }
         }
@@ -266,7 +266,7 @@ namespace BrushContainerAssetTests
             
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
-                CSGNodeHierarchyManager.Update();
+                ChiselNodeHierarchyManager.Update();
 
                 newBrushContainerAsset.SetDirty();
                 ChiselBrushContainerAssetManager.Update();
@@ -292,7 +292,7 @@ namespace BrushContainerAssetTests
             
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
-                CSGNodeHierarchyManager.Update();
+                ChiselNodeHierarchyManager.Update();
 
                 newBrushMaterial.LayerUsage = LayerUsageFlags.Renderable;
                 ChiselBrushContainerAssetManager.Update();
@@ -318,7 +318,7 @@ namespace BrushContainerAssetTests
             
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
-                CSGNodeHierarchyManager.Update();
+                ChiselNodeHierarchyManager.Update();
             
                 Assert.IsNotNull(brush.GetUsedGeneratedBrushes());
                 Assert.AreNotEqual(0, brush.GetUsedGeneratedBrushes());

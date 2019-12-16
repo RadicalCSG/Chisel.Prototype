@@ -63,13 +63,13 @@ namespace Chisel.Editors
                     Undo.RecordObject(target, "Modified " + generator.NodeTypeName);
                     generator.Shape = shape;
                 }
-                
+
                 //UnityEditor.Handles.color = noZTestcolor;
-                //CSGOutlineRenderer.DrawLineLoop(prevMatrix * currMatrix, shapeVertices3D, 0, shapeVertices3D.Length, lineMode: LineMode.NoZTest, thickness: kCapLineThickness);
+                //ChiselOutlineRenderer.DrawLineLoop(prevMatrix * currMatrix, shapeVertices3D, 0, shapeVertices3D.Length, lineMode: LineMode.NoZTest, thickness: kCapLineThickness);
 
                 //UnityEditor.Handles.color = zTestcolor;
-                //CSGOutlineRenderer.DrawLineLoop(prevMatrix * currMatrix, shapeVertices3D, 0, shapeVertices3D.Length, lineMode: LineMode.ZTest,   thickness: kCapLineThickness);
-                
+                //ChiselOutlineRenderer.DrawLineLoop(prevMatrix * currMatrix, shapeVertices3D, 0, shapeVertices3D.Length, lineMode: LineMode.ZTest,   thickness: kCapLineThickness);
+
 
                 // Draw lines between different segments
                 if (i + 1 < path.segments.Length)
@@ -139,7 +139,7 @@ namespace Chisel.Editors
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(target, "Changed path of CSGShape");
+                    Undo.RecordObject(target, "Changed path of ChiselShape");
                     var originalSegments = generator.Path.segments;
                     path = new ChiselPath(new ChiselPathPoint[originalSegments.Length]);
                     Array.Copy(originalSegments, path.segments, originalSegments.Length);

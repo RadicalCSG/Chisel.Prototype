@@ -61,7 +61,7 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
+                var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
                 
@@ -74,10 +74,10 @@ namespace Chisel.Components
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                     continue;
 
-                var query = CSGMeshQueryManager.GetMeshQuery(model);
+                var query = ChiselMeshQueryManager.GetMeshQuery(model);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!CSGMeshQueryManager.IsVisible(query))
+                if (!ChiselMeshQueryManager.IsVisible(query))
                     continue;					
 
                 Vector3 treeRayStart;
@@ -95,7 +95,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
+                var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
                 if (treeIntersections == null)
                     continue;
 
@@ -163,7 +163,7 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
+                var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
                 
@@ -176,10 +176,10 @@ namespace Chisel.Components
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                     continue;
 
-                var query = CSGMeshQueryManager.GetMeshQuery(model);
+                var query = ChiselMeshQueryManager.GetMeshQuery(model);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!CSGMeshQueryManager.IsVisible(query))
+                if (!ChiselMeshQueryManager.IsVisible(query))
                     continue;					
 
                 Vector3 treeRayStart;
@@ -197,7 +197,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
+                var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0);
                 if (treeIntersections == null)
                     continue;
 
@@ -288,10 +288,10 @@ namespace Chisel.Components
             if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                 return false;
             
-            var query = CSGMeshQueryManager.GetMeshQuery(model);
+            var query = ChiselMeshQueryManager.GetMeshQuery(model);
 
             // We only accept RayCasts into this model if it's visible
-            if (!CSGMeshQueryManager.IsVisible(query))
+            if (!ChiselMeshQueryManager.IsVisible(query))
                 return false;
 
             Vector3 treeRayStart;
@@ -309,7 +309,7 @@ namespace Chisel.Components
                 treeRayEnd		= worldRayEnd;
             }
             
-            var treeIntersections = tree.RayCastMulti(CSGMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0, ignoreBrushes);
+            var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0, ignoreBrushes);
             if (treeIntersections == null)
                 return false;
             
@@ -343,17 +343,17 @@ namespace Chisel.Components
             for (var t = 0; t < allTrees.Length; t++)
             {
                 var tree	= allTrees[t];
-                var model	= CSGNodeHierarchyManager.FindCSGNodeByTreeNode(tree) as ChiselModel;
+                var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!model || !model.isActiveAndEnabled)
                     continue;
 
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                     continue;
 
-                var query = CSGMeshQueryManager.GetMeshQuery(model);
+                var query = ChiselMeshQueryManager.GetMeshQuery(model);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!CSGMeshQueryManager.IsVisible(query))
+                if (!ChiselMeshQueryManager.IsVisible(query))
                     continue;
                 
                 // Transform the frustum into the space of the tree				

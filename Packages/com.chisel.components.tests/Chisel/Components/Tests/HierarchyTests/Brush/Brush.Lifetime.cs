@@ -37,7 +37,7 @@ namespace HierarchyTests
             Assert.False(brush);
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
@@ -61,7 +61,7 @@ namespace HierarchyTests
             Assert.False(brush);
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
@@ -88,7 +88,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
@@ -112,7 +112,7 @@ namespace HierarchyTests
             Assert.True(brush);
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
@@ -138,7 +138,7 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); // default model
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
@@ -164,7 +164,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); // default model
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]

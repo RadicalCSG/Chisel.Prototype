@@ -44,8 +44,8 @@ namespace HierarchyTests
             Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
             Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
 
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene1));
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene2));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
 
             // make sure test runner doesn't puke on its own bugs
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
@@ -94,8 +94,8 @@ namespace HierarchyTests
             Assert.AreEqual(scene2, brush.gameObject.scene, "Brush is not part of expected scene");
             Assert.AreEqual(scene2, brush.hierarchyItem.Scene, "Brush is not registered to expected scene");
 
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene1));
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene2));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
 
             // make sure test runner doesn't puke on its own bugs
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
@@ -132,8 +132,8 @@ namespace HierarchyTests
             Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
             Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
 
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene1));
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene2));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
 
             // make sure test runner doesn't puke on its own bugs
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
@@ -172,8 +172,8 @@ namespace HierarchyTests
             Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
             Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
 
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene1));
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene2));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
 
             // make sure test runner doesn't puke on its own bugs
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
@@ -193,7 +193,7 @@ namespace HierarchyTests
             
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene2));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene2));
             
             var scene3		= EditorSceneManager.OpenScene(TestUtility.tempFilename);
             var operations	= Object.FindObjectsOfType<ChiselOperation>();
@@ -208,9 +208,9 @@ namespace HierarchyTests
             Assert.AreEqual(scene3, operations[0].gameObject.scene, "Operation is not part of expected scene");
             Assert.AreEqual(scene3, operations[0].hierarchyItem.Scene, "Operation is not registered to expected scene");
 
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene1)); // unloaded, so should be unknown to us
-            Assert.AreEqual(0, CSGNodeHierarchyManager.RootCount(scene2)); // unloaded, so should be unknown to us
-            Assert.AreEqual(1, CSGNodeHierarchyManager.RootCount(scene3));
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1)); // unloaded, so should be unknown to us
+            Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene2)); // unloaded, so should be unknown to us
+            Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene3));
 
             // make sure test runner doesn't puke on its own bugs
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);

@@ -9,10 +9,10 @@ using UnityEngine.Rendering;
 
 namespace Chisel.Editors
 {
-    internal static class CSGEditorUtility
+    internal static class ChiselEditorUtility
     {
         static System.Reflection.PropertyInfo contextWidthProperty;
-        static CSGEditorUtility()
+        static ChiselEditorUtility()
         {
             contextWidthProperty = typeof(EditorGUIUtility).GetProperty("contextWidth", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);			
         }

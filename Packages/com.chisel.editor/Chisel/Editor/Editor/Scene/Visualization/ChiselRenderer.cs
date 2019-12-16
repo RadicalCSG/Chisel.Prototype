@@ -159,7 +159,7 @@ namespace Chisel.Editors
         }
 
 
-        public void DrawSimpleOutlines(Matrix4x4 transformation, CSGWireframe wireframe, Color color)
+        public void DrawSimpleOutlines(Matrix4x4 transformation, ChiselWireframe wireframe, Color color)
         {
             if (wireframe == null ||
                 wireframe.Vertices == null ||
@@ -191,7 +191,7 @@ namespace Chisel.Editors
             }
         }
         
-        public void DrawOutlines(Matrix4x4 transformation, CSGWireframe wireframe, Color wireframeColor, float thickness = -1, bool onlyInnerLines = false, bool showInnerLines = true)
+        public void DrawOutlines(Matrix4x4 transformation, ChiselWireframe wireframe, Color wireframeColor, float thickness = -1, bool onlyInnerLines = false, bool showInnerLines = true)
         { 
             Color outerColor		 = wireframeColor;
             Color innerColor		 = outerColor;
@@ -207,7 +207,7 @@ namespace Chisel.Editors
         }
             
 
-        public void DrawOutlines(Matrix4x4 transformation, CSGWireframe wireframe, 
+        public void DrawOutlines(Matrix4x4 transformation, ChiselWireframe wireframe, 
                                  Color outerColor, Color outerOccludedColor, 
                                  Color innerColor, Color innerOccludedColor, 
                                  float thickness = -1, bool onlyInnerLines = false, bool showInnerLines = true)
