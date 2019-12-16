@@ -34,11 +34,11 @@ namespace Chisel.Editors
 
         static IChiselDragAndDropOperation dragAndDropOperation;
 
-        static readonly int CSGDragAndDropManagerHash = "CSGDragAndDropManager".GetHashCode();
+        static readonly int ChiselDragAndDropManagerHash = "ChiselDragAndDropManager".GetHashCode();
 
         public void OnSceneGUI(SceneView sceneView)
         {
-            int id = GUIUtility.GetControlID(CSGDragAndDropManagerHash, FocusType.Keyboard);
+            int id = GUIUtility.GetControlID(ChiselDragAndDropManagerHash, FocusType.Keyboard);
             switch (Event.current.type)
             {
                 case EventType.ValidateCommand:

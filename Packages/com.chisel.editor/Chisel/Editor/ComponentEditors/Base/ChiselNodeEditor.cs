@@ -157,7 +157,7 @@ namespace Chisel.Editors
                 var node = target as ChiselNode;
                 if (!node)
                     continue;
-                CSGNodeHierarchyManager.NotifyContentsModified(node);
+                ChiselNodeHierarchyManager.NotifyContentsModified(node);
                 node.SetDirty();
             }
         }
@@ -318,7 +318,7 @@ namespace Chisel.Editors
                 }
                 if (modifiedNodes.Count > 0)
                 {
-                    CSGNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
+                    ChiselNodeHierarchyManager.NotifyTransformationChanged(modifiedNodes);
                 }
             }
         }
@@ -678,7 +678,7 @@ namespace Chisel.Editors
 
             var sceneView   = SceneView.currentDrawingSceneView;
 
-            var modelMatrix = CSGNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
+            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             var brush       = generator.TopNode;
             
             // NOTE: could loop over multiple instances from here, once we support that

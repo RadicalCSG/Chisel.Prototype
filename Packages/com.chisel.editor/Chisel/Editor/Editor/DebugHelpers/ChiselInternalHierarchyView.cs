@@ -9,9 +9,9 @@ namespace Chisel.Editors
 {
 #if true
     // This window is a helper window to see what the CSG tree looks like internally
-    sealed class CSGInternalHierarchyView : EditorWindow
+    sealed class ChiselInternalHierarchyView : EditorWindow
     {
-        CSGInternalHierarchyView()
+        ChiselInternalHierarchyView()
         {
             windows.Add(this);
         }
@@ -33,7 +33,7 @@ namespace Chisel.Editors
         }
 
         Dictionary<int, bool> openNodes = new Dictionary<int, bool>();
-        static List<CSGInternalHierarchyView> windows = new List<CSGInternalHierarchyView>();
+        static List<ChiselInternalHierarchyView> windows = new List<ChiselInternalHierarchyView>();
 
         public static void RepaintAll()
         {
@@ -44,14 +44,14 @@ namespace Chisel.Editors
             }
         }
 
-        [MenuItem("CSG DEBUG/Internal CSG Hierarchy")]
+        [MenuItem("Chisel DEBUG/Internal Chisel Hierarchy")]
         static void Create()
         {
-            window = (CSGInternalHierarchyView)EditorWindow.GetWindow(typeof(CSGInternalHierarchyView), false, "Internal CSG Hierarchy");
+            window = (ChiselInternalHierarchyView)EditorWindow.GetWindow(typeof(ChiselInternalHierarchyView), false, "Internal Chisel Hierarchy");
             window.autoRepaintOnSceneChange = true;
         }
 
-        static CSGInternalHierarchyView window;
+        static ChiselInternalHierarchyView window;
 
         class Styles
         {

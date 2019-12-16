@@ -24,8 +24,8 @@ namespace Chisel.Core
                 return true;
             }
 
-            var defaultRenderMaterial   = CSGMaterialManager.DefaultWallMaterial;
-            var defaultPhysicsMaterial  = CSGMaterialManager.DefaultPhysicsMaterial;
+            var defaultRenderMaterial   = ChiselMaterialManager.DefaultWallMaterial;
+            var defaultPhysicsMaterial  = ChiselMaterialManager.DefaultPhysicsMaterial;
             var newSurfaces = new ChiselSurface[expectedSize];
             var prevLength  = (surfaces == null) ? 0 : surfaces.Length;
             if (prevLength > 0)

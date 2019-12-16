@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 
 using System;
@@ -109,10 +109,10 @@ namespace Chisel.Editors
         static GUIContent   StitchLightmapSeamsContents             = new GUIContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
 #endif
 
-        const string kDisplayLightingKey			= "CSGModelEditor.ShowSettings";
-        const string kDisplayLightmapKey			= "CSGModelEditor.ShowLightmapSettings";
-        const string kDisplayChartingKey			= "CSGModelEditor.ShowChartingSettings";
-        const string kDisplayUnwrapParamsKey		= "CSGModelEditor.ShowUnwrapParams";
+        const string kDisplayLightingKey			= "ChiselModelEditor.ShowSettings";
+        const string kDisplayLightmapKey			= "ChiselModelEditor.ShowLightmapSettings";
+        const string kDisplayChartingKey			= "ChiselModelEditor.ShowChartingSettings";
+        const string kDisplayUnwrapParamsKey		= "ChiselModelEditor.ShowUnwrapParams";
 
 
         SerializedProperty  vertexChannelMaskProp;
@@ -575,7 +575,7 @@ namespace Chisel.Editors
                 } else
                 {
                     Rect r = EditorGUILayout.GetControlRect(true, kSingleLineHeight, EditorStyles.popup);
-                    CSGEditorUtility.Popup(r, reflectionProbeUsageProp, ReflectionProbeUsageOptionsContents, ReflectionProbeUsageContents);
+                    ChiselEditorUtility.Popup(r, reflectionProbeUsageProp, ReflectionProbeUsageOptionsContents, ReflectionProbeUsageContents);
                 }
             }
         }
@@ -595,8 +595,8 @@ namespace Chisel.Editors
 
         void RenderProbeFieldsGUI()
         {
-            bool isDeferredRenderingPath = CSGEditorUtility.IsUsingDeferredRenderingPath();
-            bool isDeferredReflections = isDeferredRenderingPath && CSGEditorUtility.IsDeferredReflections();
+            bool isDeferredRenderingPath = ChiselEditorUtility.IsUsingDeferredRenderingPath();
+            bool isDeferredReflections = isDeferredRenderingPath && ChiselEditorUtility.IsDeferredReflections();
             bool areLightProbesAllowed = AreLightProbesAllowed();
 
             RenderLightProbeUsage(areLightProbesAllowed);
@@ -903,7 +903,7 @@ namespace Chisel.Editors
                     RenderRenderingLayer();
                     CullDynamicFieldGUI();
                     // TODO: Make Position show up instead of "None" when nothing is selected
-                    CSGEditorUtility.EnumFlagsField(VertexChannelMaskContents, vertexChannelMaskProp, typeof(VertexChannelFlags), EditorStyles.popup);
+                    ChiselEditorUtility.EnumFlagsField(VertexChannelMaskContents, vertexChannelMaskProp, typeof(VertexChannelFlags), EditorStyles.popup);
                     
                     EditorGUI.indentLevel--;
                 }
@@ -923,7 +923,7 @@ namespace Chisel.Editors
                     EditorGUI.indentLevel--;
 
                     {
-                        CSGEditorUtility.EnumFlagsField(CookingOptionsContents, cookingOptionsProp, typeof(MeshColliderCookingOptions), EditorStyles.popup);
+                        ChiselEditorUtility.EnumFlagsField(CookingOptionsContents, cookingOptionsProp, typeof(MeshColliderCookingOptions), EditorStyles.popup);
                     }
 
                     EditorGUI.indentLevel--;

@@ -16,8 +16,8 @@ namespace Chisel.Components
 
         public abstract string NodeTypeName { get; }
 
-        public ChiselNode()			{ hierarchyItem = new CSGHierarchyItem(this); CSGNodeHierarchyManager.Register(this); }
-        protected void OnDestroy()	{ CSGNodeHierarchyManager.Unregister(this); OnCleanup(); }
+        public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
+        protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         public void OnValidate()	{ OnValidateInternal(); }
 
         protected virtual void OnValidateInternal() { SetDirty(); }
@@ -28,12 +28,12 @@ namespace Chisel.Components
         public virtual void OnInitialize() { }
         protected virtual void OnCleanup() {  }
 
-        [NonSerialized][HideInInspector] public readonly CSGHierarchyItem hierarchyItem;
+        [NonSerialized][HideInInspector] public readonly ChiselHierarchyItem hierarchyItem;
 
         protected void OnEnable()
         {
             OnInitialize(); // Awake is not reliable, so we initialize here
-            CSGNodeHierarchyManager.UpdateAvailability(this);
+            ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
 
 
@@ -48,22 +48,22 @@ namespace Chisel.Components
         protected void OnDisable()
         {
             // Note: cannot call OnCleanup here
-            CSGNodeHierarchyManager.UpdateAvailability(this);
+            ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
         
         // Called when the parent property of the transform has changed.
         protected void OnTransformParentChanged()
         {
-            CSGNodeHierarchyManager.OnTransformParentChanged(this);
+            ChiselNodeHierarchyManager.OnTransformParentChanged(this);
         }
     
         // Called when the list of children of the transform has changed.
         protected void OnTransformChildrenChanged()
         {
-            CSGNodeHierarchyManager.OnTransformChildrenChanged(this);
+            ChiselNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
     
-        public bool				Dirty					{ get { return CSGNodeHierarchyManager.IsNodeDirty(this); } }
+        public bool				Dirty					{ get { return ChiselNodeHierarchyManager.IsNodeDirty(this); } }
         public virtual int		NodeID					{ get { return CSGTreeNode.InvalidNode.NodeID; } }
         internal virtual bool	SkipThisNode			{ get { return !isActiveAndEnabled; } }
 

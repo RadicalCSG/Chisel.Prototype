@@ -18,22 +18,6 @@ namespace FoundationTests
             CSGManager.Clear();
         }
 
-        /*
-        [Test]
-        public void InvalidNode_RemoveAt_ReturnsFalse()
-        {
-            var invalidNode	= CSGTreeNode.InvalidNode;
-
-            var result		= invalidNode.RemoveAt(0);
-
-            Assert.AreEqual(false, result);
-            Assert.AreEqual(0, CSGUtility.TreeBrushCount);
-            Assert.AreEqual(0, CSGUtility.TreeCount);
-            Assert.AreEqual(0, CSGUtility.TreeBranchCount);
-            Assert.AreEqual(0, CSGUtility.TreeNodeCount);
-        }
-        */
-
         [Test]
         public void BranchWithNoChildren_RemoveAtZero_ReturnsFalse()
         {

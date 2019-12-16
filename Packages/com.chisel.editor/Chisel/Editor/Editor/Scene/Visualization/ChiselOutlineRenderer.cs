@@ -90,13 +90,13 @@ namespace Chisel.Editors
         // NOTE: handle-renderers often take the orientation of the camera into account (for example: backfaced surfaces) so they need to be camera specific
         Dictionary<Camera, ChiselRenderer>	handleRenderers = new Dictionary<Camera, ChiselRenderer>();
         
-        readonly Dictionary<SurfaceOutline, CSGWireframe>	surfaceOutlines		= new Dictionary<SurfaceOutline, CSGWireframe>();
-        readonly Dictionary<SurfaceOutline, CSGWireframe>	surfaceOutlineFixes	= new Dictionary<SurfaceOutline, CSGWireframe>();
+        readonly Dictionary<SurfaceOutline, ChiselWireframe>	surfaceOutlines		= new Dictionary<SurfaceOutline, ChiselWireframe>();
+        readonly Dictionary<SurfaceOutline, ChiselWireframe>	surfaceOutlineFixes	= new Dictionary<SurfaceOutline, ChiselWireframe>();
         readonly HashSet<SurfaceOutline>	foundSurfaceOutlines	= new HashSet<SurfaceOutline>();
         readonly HashSet<SurfaceOutline>	removedSurfaces			= new HashSet<SurfaceOutline>();
 
-        readonly Dictionary<BrushOutline, CSGWireframe>		brushOutlines		= new Dictionary<BrushOutline, CSGWireframe>();
-        readonly Dictionary<BrushOutline, CSGWireframe>		brushOutlineFixes	= new Dictionary<BrushOutline, CSGWireframe>();
+        readonly Dictionary<BrushOutline, ChiselWireframe>		brushOutlines		= new Dictionary<BrushOutline, ChiselWireframe>();
+        readonly Dictionary<BrushOutline, ChiselWireframe>		brushOutlineFixes	= new Dictionary<BrushOutline, ChiselWireframe>();
         readonly HashSet<CSGTreeBrush>		brushDirectlySelected	= new HashSet<CSGTreeBrush>();
         readonly HashSet<CSGTreeBrush>		foundTreeBrushes		= new HashSet<CSGTreeBrush>();
         readonly HashSet<BrushOutline>		foundBrushOutlines		= new HashSet<BrushOutline>();
@@ -264,7 +264,7 @@ namespace Chisel.Editors
                                                       // can also have child nodes, then we assume the CSGTreeBrushes are generated
                                                       // and we don't want to show those as directly selected
                                                       !node.CanHaveChildNodes;
-                                var transform = CSGNodeHierarchyManager.FindModelTransformOfTransform(node.hierarchyItem.Transform);
+                                var transform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(node.hierarchyItem.Transform);
                                 foreach (var treeBrush in foundTreeBrushes)
                                 {
                                     if (directSelected)
@@ -305,7 +305,7 @@ namespace Chisel.Editors
                         outline.brush.BrushMesh == BrushMeshInstance.InvalidInstance)
                         continue;
                     
-                    var wireframe = CSGWireframe.CreateWireframe(outline.brush);
+                    var wireframe = ChiselWireframe.CreateWireframe(outline.brush);
                     brushOutlines[outline] = wireframe;
                 }
             }
@@ -349,7 +349,7 @@ namespace Chisel.Editors
                 
                 foreach (var surface in allSurfaces)
                 {
-                    var transform	= CSGNodeHierarchyManager.FindModelTransformOfTransform(surface.node.hierarchyItem.Transform);
+                    var transform	= ChiselNodeHierarchyManager.FindModelTransformOfTransform(surface.node.hierarchyItem.Transform);
                     var outline		= new SurfaceOutline(transform, surface);
                     foundSurfaceOutlines.Add(outline);
                 }
@@ -360,7 +360,7 @@ namespace Chisel.Editors
                         outline.surface.TreeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
                         continue;
                     
-                    var wireframe = CSGWireframe.CreateWireframe(outline.surface.TreeBrush, outline.surface.surfaceID);
+                    var wireframe = ChiselWireframe.CreateWireframe(outline.surface.TreeBrush, outline.surface.surfaceID);
                     surfaceOutlines[outline] = wireframe;
                 }
             }
@@ -441,7 +441,7 @@ namespace Chisel.Editors
                 {
                     if (brush.Valid &&
                         brush.BrushMesh != BrushMeshInstance.InvalidInstance)
-                        brushOutlineFixes[outline] = CSGWireframe.CreateWireframe(brush);
+                        brushOutlineFixes[outline] = ChiselWireframe.CreateWireframe(brush);
                     else
                         brushOutlineFixes[outline] = null;
                     continue;
@@ -480,7 +480,7 @@ namespace Chisel.Editors
                 {
                     if (treeBrush.Valid &&
                         treeBrush.BrushMesh != BrushMeshInstance.InvalidInstance)
-                        surfaceOutlineFixes[outline] = CSGWireframe.CreateWireframe(treeBrush, surface.surfaceID);
+                        surfaceOutlineFixes[outline] = ChiselWireframe.CreateWireframe(treeBrush, surface.surfaceID);
                     else
                         surfaceOutlineFixes[outline] = null;
                     continue;
@@ -540,7 +540,7 @@ namespace Chisel.Editors
                     var wireframeValue	= pair.Value;
                     var modelTransform	= outline.transform;
                     //var brushes		= outline.brush.AllSynchronizedVariants;
-                    //var anySelected	= CSGSyncSelection.IsAnyBrushVariantSelected(brushes);
+                    //var anySelected	= ChiselSyncSelection.IsAnyBrushVariantSelected(brushes);
 
                     //foreach (var brush in brushes)
                     var brush = outline.brush;
@@ -562,7 +562,7 @@ namespace Chisel.Editors
                             if (directSelect)
                                 brushOutlineRenderer.DrawOutlines(transformation, wireframeValue, ColorManager.kSelectedOutlineColor, thickness: 3.0f, onlyInnerLines: false);
                             else
-                                brushOutlineRenderer.DrawOutlines(transformation, wireframeValue, ColorManager.kUnselectedOutlineColor, thickness: 1.0f, onlyInnerLines: false);// (CSGEditModeManager.EditMode == CSGEditMode.ShapeEdit));
+                                brushOutlineRenderer.DrawOutlines(transformation, wireframeValue, ColorManager.kUnselectedOutlineColor, thickness: 1.0f, onlyInnerLines: false);// (ChiselEditModeManager.EditMode == CSGEditMode.ShapeEdit));
                         }
                             
                         if ((VisualizationMode & VisualizationMode.SimpleOutline) == VisualizationMode.SimpleOutline)

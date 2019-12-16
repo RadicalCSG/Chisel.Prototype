@@ -15,7 +15,7 @@ namespace Chisel.Core
         public Int32        surfaceID;
         public Int32        brushUserID;
 
-        public CSGSurfaceIntersection surfaceIntersection;
+        public ChiselSurfaceIntersection surfaceIntersection;
 
         public readonly static CSGTreeBrushIntersection None = new CSGTreeBrushIntersection()
         {
@@ -23,7 +23,7 @@ namespace Chisel.Core
             brush				= (CSGTreeBrush)CSGTreeNode.InvalidNode,
             brushUserID			= 0,
             surfaceID			= -1,
-            surfaceIntersection	= CSGSurfaceIntersection.None
+            surfaceIntersection	= ChiselSurfaceIntersection.None
         };
     };
 }

@@ -4,8 +4,9 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-    sealed partial class CSGWireframe
-    {		
+    sealed partial class ChiselWireframe
+    {
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)]
         private static extern UInt64 GetBrushOutlineGeneration(Int32 brushNodeID);
         
@@ -49,7 +50,7 @@ namespace Chisel.Core
                                                            Int32 invisibleInnerLineCount, [Out] IntPtr invisibleInnerLines,
                                                            Int32 invalidLineCount,		  [Out] IntPtr invalidLines);
         
-        private static CSGWireframe CreateSurfaceWireframe(Int32 brushNodeID, Int32 surfaceID)
+        private static ChiselWireframe CreateSurfaceWireframe(Int32 brushNodeID, Int32 surfaceID)
         {
             int vertexCount = 0,             visibleOuterLineCount = 0;
             int visibleInnerLineCount = 0,   visibleTriangleCount = 0;
@@ -71,7 +72,7 @@ namespace Chisel.Core
                 return null;
 
 
-            var wireframe = new CSGWireframe
+            var wireframe = new ChiselWireframe
             {
                 vertices			= new Vector3[vertexCount],
                 visibleOuterLines	= new Int32[visibleOuterLineCount],
@@ -122,7 +123,7 @@ namespace Chisel.Core
             return wireframe;
         }
         
-        private static bool UpdateSurfaceWireframe(CSGWireframe wireframe)
+        private static bool UpdateSurfaceWireframe(ChiselWireframe wireframe)
         {
             int vertexCount = 0,             visibleOuterLineCount = 0;
             int visibleInnerLineCount = 0,   visibleTriangleCount = 0;
@@ -204,7 +205,7 @@ namespace Chisel.Core
         }
         
 
-        private static CSGWireframe CreateBrushWireframe(Int32 brushNodeID)
+        private static ChiselWireframe CreateBrushWireframe(Int32 brushNodeID)
         {
             int vertexCount = 0;
             int visibleOuterLineCount = 0;
@@ -226,7 +227,7 @@ namespace Chisel.Core
                 return null;
             }
 
-            var wireframe = new CSGWireframe
+            var wireframe = new ChiselWireframe
             {
                 vertices			= new Vector3[vertexCount],
                 visibleOuterLines	= new Int32[visibleOuterLineCount],
@@ -273,7 +274,7 @@ namespace Chisel.Core
             return wireframe;
         }
 
-        private static bool UpdateBrushWireframe(CSGWireframe wireframe)
+        private static bool UpdateBrushWireframe(ChiselWireframe wireframe)
         {
             int vertexCount = 0;
             int visibleOuterLineCount = 0;
@@ -347,5 +348,6 @@ namespace Chisel.Core
             wireframe.outlineGeneration = GetBrushOutlineGeneration(wireframe.originBrushID);
             return true;
         }
+#endif
     }
 }

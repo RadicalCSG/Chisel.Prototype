@@ -58,7 +58,7 @@ namespace Chisel.Editors
         public static void ClearBrushVariants(CSGTreeBrush brush)
         {
             Undo.RecordObject(ChiselSyncSelection.Instance, "ClearBrushVariants variant");
-            var node = CSGNodeHierarchyManager.FindCSGNodeByTreeNode(brush);
+            var node = ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(brush);
             if (node) node.hierarchyItem.SetBoundsDirty();
             var modified = false;
             if (modified)
@@ -68,7 +68,7 @@ namespace Chisel.Editors
         public static void DeselectBrushVariant(CSGTreeBrush brush)
         {
             Undo.RecordObject(ChiselSyncSelection.Instance, "Deselected brush variant");
-            var node = CSGNodeHierarchyManager.FindCSGNodeByTreeNode(brush);
+            var node = ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(brush);
             if (node) node.hierarchyItem.SetBoundsDirty();
             var selectedBrushesLookup = Instance.selectedBrushesLookup;
             var modified = selectedBrushesLookup.Remove(brush);
@@ -79,7 +79,7 @@ namespace Chisel.Editors
         public static void SelectBrushVariant(CSGTreeBrush brush, bool uniqueSelection = false)
         {
             Undo.RecordObject(ChiselSyncSelection.Instance, "Selected brush variant");
-            var node = CSGNodeHierarchyManager.FindCSGNodeByTreeNode(brush);
+            var node = ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(brush);
             if (node) node.hierarchyItem.SetBoundsDirty();
             var selectedBrushesLookup = Instance.selectedBrushesLookup;
             var modified = false;/*

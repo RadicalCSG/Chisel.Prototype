@@ -31,7 +31,7 @@ namespace Chisel.Components
     }
 
     [Serializable]
-    public sealed class CSGGeneratedColliderSettings
+    public sealed class ChiselGeneratedColliderSettings
     {
         public bool     isTrigger;
         public bool		convex;
@@ -48,7 +48,7 @@ namespace Chisel.Components
     }
 
     [Serializable]
-    public sealed class CSGGeneratedRenderSettings
+    public sealed class ChiselGeneratedRenderSettings
     {
         public GameObject                       lightProbeProxyVolumeOverride;
         public Transform                        probeAnchor;
@@ -109,8 +109,8 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Model";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        [HideInInspector, SerializeField] CSGGeneratedColliderSettings  colliderSettings    = new CSGGeneratedColliderSettings();
-        [HideInInspector, SerializeField] CSGGeneratedRenderSettings    renderSettings      = new CSGGeneratedRenderSettings();
+        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings  colliderSettings    = new ChiselGeneratedColliderSettings();
+        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings    renderSettings      = new ChiselGeneratedRenderSettings();
         [HideInInspector, SerializeField] SerializableUnwrapParam       uvGenerationSettings = new SerializableUnwrapParam();
         [HideInInspector] public CSGTree Node;
         [HideInInspector] internal GeneratedMeshContents generatedMeshContents;
@@ -123,8 +123,8 @@ namespace Chisel.Components
 
 
 
-        public CSGGeneratedColliderSettings ColliderSettings { get { return colliderSettings; } }
-        public CSGGeneratedRenderSettings RenderSettings { get { return renderSettings; } }
+        public ChiselGeneratedColliderSettings ColliderSettings { get { return colliderSettings; } }
+        public ChiselGeneratedRenderSettings RenderSettings { get { return renderSettings; } }
         public SerializableUnwrapParam UVGenerationSettings { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
 
         [HideInInspector, NonSerialized]
@@ -155,10 +155,10 @@ namespace Chisel.Components
                     generatedDataTransform = generatedDataContainer.transform;
             }
 
-            colliderSettings = new CSGGeneratedColliderSettings();
+            colliderSettings = new ChiselGeneratedColliderSettings();
             colliderSettings.Reset();
 
-            renderSettings = new CSGGeneratedRenderSettings();
+            renderSettings = new ChiselGeneratedRenderSettings();
             renderSettings.Reset();
 
 #if UNITY_EDITOR
@@ -178,7 +178,7 @@ namespace Chisel.Components
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (Node.Valid)
-                Debug.LogWarning("CSGModel already has a treeNode, but trying to create a new one?", this);
+                Debug.LogWarning("ChiselModel already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
             return new CSGTreeNode[] { Node };
@@ -189,7 +189,7 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                Debug.LogWarning("SetChildren called on a CSGModel that isn't properly initialized", this);
+                Debug.LogWarning("SetChildren called on a ChiselModel that isn't properly initialized", this);
                 return;
             }
             if (!Node.SetChildren(childNodes.ToArray()))
@@ -213,7 +213,7 @@ namespace Chisel.Components
             return 0;
         }
 
-        // Get all brushes directly contained by this CSGNode (not its children)
+        // Get all brushes directly contained by this ChiselNode (not its children)
         public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
         {
             // A Model doesn't contain a CSGTreeBrush node
@@ -222,7 +222,7 @@ namespace Chisel.Components
         // TODO: cache this
         public override Bounds CalculateBounds()
         {
-            var bounds = CSGHierarchyItem.EmptyBounds;
+            var bounds = ChiselHierarchyItem.EmptyBounds;
             var haveBounds = false;
             for (int c = 0; c < hierarchyItem.Children.Count; c++)
             {

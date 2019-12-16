@@ -24,7 +24,7 @@ namespace Chisel.Components
         public CSGTreeBranch Node;
 
         [SerializeField,HideInInspector] bool passThrough = false; // NOTE: name is used in CSGOperationEditor
-        public bool PassThrough { get { return passThrough; } set { if (value == passThrough) return; passThrough = value; CSGNodeHierarchyManager.UpdateAvailability(this); } }
+        public bool PassThrough { get { return passThrough; } set { if (value == passThrough) return; passThrough = value; ChiselNodeHierarchyManager.UpdateAvailability(this); } }
         
         [SerializeField,HideInInspector] CSGOperationType operation; // NOTE: name is used in CSGOperationEditor
         public CSGOperationType Operation { get { return operation; } set { if (value == operation) return; operation = value; if (Node.Valid) Node.Operation = operation; } }
@@ -46,7 +46,7 @@ namespace Chisel.Components
             if (passThrough)
                 return new CSGTreeNode[] { };
             if (Node.Valid)
-                Debug.LogWarning("CSGOperation already has a treeNode, but trying to create a new one", this);		
+                Debug.LogWarning("ChiselOperation already has a treeNode, but trying to create a new one", this);		
             Node = CSGTreeBranch.Create(userID: GetInstanceID());
             Node.Operation = operation;
             return new CSGTreeNode[] { Node };
@@ -65,7 +65,7 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                Debug.LogWarning("SetChildren called on a CSGOperation that isn't properly initialized", this);
+                Debug.LogWarning("SetChildren called on a ChiselOperation that isn't properly initialized", this);
                 return;
             }
             if (!Node.SetChildren(childNodes.ToArray()))
@@ -81,8 +81,8 @@ namespace Chisel.Components
         {
             return 0;
         }
-                 
-        // Get all brushes directly contained by this CSGNode (not its children)
+
+        // Get all brushes directly contained by this ChiselNode (not its children)
         public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
         {
             // An operation doesn't contain a CSGTreeBrush node
@@ -91,7 +91,7 @@ namespace Chisel.Components
         // TODO: cache this
         public override Bounds CalculateBounds()
         {
-            var bounds = CSGHierarchyItem.EmptyBounds;
+            var bounds = ChiselHierarchyItem.EmptyBounds;
             var haveBounds = false;
             for (int c = 0; c < hierarchyItem.Children.Count; c++)
             {

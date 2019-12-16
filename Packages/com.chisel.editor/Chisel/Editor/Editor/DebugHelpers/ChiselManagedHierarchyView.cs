@@ -10,9 +10,9 @@ using Chisel.Components;
 namespace Chisel.Editors
 {
     // This window is a helper window to see what the CSG tree looks like internally, on the managed side
-    sealed class CSGManagedHierarchyView : EditorWindow
+    sealed class ChiselManagedHierarchyView : EditorWindow
     {
-        CSGManagedHierarchyView()
+        ChiselManagedHierarchyView()
         {
             windows.Add(this);
         }
@@ -22,7 +22,7 @@ namespace Chisel.Editors
             windows.Remove(this);
         }
 
-        static List<CSGManagedHierarchyView> windows = new List<CSGManagedHierarchyView>();
+        static List<ChiselManagedHierarchyView> windows = new List<ChiselManagedHierarchyView>();
 
         public static void RepaintAll()
         {
@@ -33,14 +33,14 @@ namespace Chisel.Editors
             }
         }
 
-        [MenuItem("CSG DEBUG/Managed CSG Hierarchy")]
+        [MenuItem("Chisel DEBUG/Managed Chisel Hierarchy")]
         static void Create()
         {
-            window = (CSGManagedHierarchyView)EditorWindow.GetWindow(typeof(CSGManagedHierarchyView), false, "Managed CSG Hierarchy");
+            window = (ChiselManagedHierarchyView)EditorWindow.GetWindow(typeof(ChiselManagedHierarchyView), false, "Managed Chisel Hierarchy");
             window.autoRepaintOnSceneChange = true;
         }
 
-        static CSGManagedHierarchyView window;
+        static ChiselManagedHierarchyView window;
 
         class Styles
         {
@@ -148,15 +148,15 @@ namespace Chisel.Editors
 
         sealed class StackItem
         {
-            public StackItem(List<CSGHierarchyItem> _children, float _xpos = 0) { children = _children; index = 0; count = children.Count; xpos = _xpos; }
+            public StackItem(List<ChiselHierarchyItem> _children, float _xpos = 0) { children = _children; index = 0; count = children.Count; xpos = _xpos; }
             public int index;
             public int count;
             public float xpos;
-            public List<CSGHierarchyItem> children;
+            public List<ChiselHierarchyItem> children;
         }
         static List<StackItem>  itemStack = new List<StackItem>();
 
-        static int GetVisibleItems(Dictionary<Scene, CSGSceneHierarchy> sceneHierarchies)
+        static int GetVisibleItems(Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies)
         {
             if (sceneHierarchies == null || sceneHierarchies.Count == 0)
                 return 0;
@@ -171,7 +171,7 @@ namespace Chisel.Editors
             return totalCount;
         }
         
-        static int GetVisibleItems(List<CSGHierarchyItem> hierarchyItems)
+        static int GetVisibleItems(List<ChiselHierarchyItem> hierarchyItems)
         {
             if (hierarchyItems == null)
                 return 0;
@@ -205,7 +205,7 @@ namespace Chisel.Editors
             goto ContinueOnNextStackItem;
         }
 
-        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, Dictionary<Scene, CSGSceneHierarchy> sceneHierarchies)
+        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies)
         {
             if (sceneHierarchies == null || sceneHierarchies.Count == 0)
                 return;
@@ -231,7 +231,7 @@ namespace Chisel.Editors
             GUI.color = defaultColor;
         }
 
-        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, List<CSGHierarchyItem> hierarchyItems)
+        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, List<ChiselHierarchyItem> hierarchyItems)
         {
             if (hierarchyItems == null)
                 return;
@@ -302,7 +302,7 @@ namespace Chisel.Editors
             goto ContinueOnNextStackItem;
         }
 
-        static string NameForTreeNode(CSGHierarchyItem node)
+        static string NameForTreeNode(ChiselHierarchyItem node)
         {
             var nodeID = node.Component.NodeID;
             var instanceID = node.Component.GetInstanceID();
@@ -315,7 +315,7 @@ namespace Chisel.Editors
 
         void OnGUI()
         {
-            CSGNodeHierarchyManager.Update();
+            ChiselNodeHierarchyManager.Update();
             if (styles == null)
                 UpdateStyles();
 
@@ -323,7 +323,7 @@ namespace Chisel.Editors
             foreach (var transform in Selection.transforms)
                 selectedTransforms.Add(transform);
 
-            var totalCount = GetVisibleItems(CSGNodeHierarchyManager.sceneHierarchies);
+            var totalCount = GetVisibleItems(ChiselNodeHierarchyManager.sceneHierarchies);
 
             var itemArea = position;
             itemArea.x = 0;
@@ -346,7 +346,7 @@ namespace Chisel.Editors
                 visibleArea.x += m_ScrollPos.x;
                 visibleArea.y += m_ScrollPos.y;
 
-                AddFoldOuts(ref itemRect, ref visibleArea, selectedTransforms, CSGNodeHierarchyManager.sceneHierarchies);
+                AddFoldOuts(ref itemRect, ref visibleArea, selectedTransforms, ChiselNodeHierarchyManager.sceneHierarchies);
             }
             GUI.EndScrollView();
         }

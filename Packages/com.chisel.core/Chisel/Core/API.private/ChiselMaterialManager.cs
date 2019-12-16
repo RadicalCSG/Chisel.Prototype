@@ -6,18 +6,18 @@ using System;
 
 namespace Chisel.Core
 {
-    public class CSGMaterialManager : ScriptableObject
+    public class ChiselMaterialManager : ScriptableObject
     {
         #region Instance
-        static CSGMaterialManager _instance;
-        public static CSGMaterialManager Instance
+        static ChiselMaterialManager _instance;
+        public static ChiselMaterialManager Instance
         {
             get
             {
                 if (_instance)
                     return _instance;
                 
-                _instance = ScriptableObject.CreateInstance<CSGMaterialManager>();
+                _instance = ScriptableObject.CreateInstance<ChiselMaterialManager>();
                 _instance.hideFlags = HideFlags.HideAndDontSave;
                 return _instance;  
             }

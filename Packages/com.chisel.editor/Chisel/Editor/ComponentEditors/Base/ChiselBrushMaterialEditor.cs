@@ -99,7 +99,7 @@ namespace Chisel.Editors
                         var materialLabelID		= EditorGUIUtility.GetControlID(SurfaceEditorHashCode, FocusType.Keyboard, materialPart);
                         var materialPropRect	= EditorGUI.PrefixLabel(materialPart, materialLabelID, RenderMaterialContents);
                         var materialPreviewRect	= materialPropRect;
-                        var showMaterial		= (CSGEditorUtility.GetContextWidth() > 320);
+                        var showMaterial		= (ChiselEditorUtility.GetContextWidth() > 320);
                         
                         float materialPropHeight = EditorGUI.GetPropertyHeight(SerializedPropertyType.ExposedReference, GUIContent.none);
                         if (showMaterial)

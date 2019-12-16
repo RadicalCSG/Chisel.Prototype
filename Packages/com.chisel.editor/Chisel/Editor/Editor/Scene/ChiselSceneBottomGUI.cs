@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,7 +35,7 @@ namespace Chisel.Editors
 
         public static void Rebuild()
         {
-            CSGNodeHierarchyManager.Rebuild();
+            ChiselNodeHierarchyManager.Rebuild();
         }
 
         static void OnBottomBarUI(int windowID)
@@ -96,7 +96,7 @@ namespace Chisel.Editors
             position.height = kBottomBarHeight; 
 
             GUILayout.Window(bottomBarGuiId, position, OnBottomBarUI, "", toolbarStyle);
-            CSGEditorUtility.ConsumeUnusedMouseEvents(BottomBarGUIHash, position);
+            ChiselEditorUtility.ConsumeUnusedMouseEvents(BottomBarGUIHash, position);
         }
     }
 }

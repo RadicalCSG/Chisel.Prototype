@@ -10,10 +10,10 @@ namespace Chisel.Core
     /// This class defines an intersection into a specific surface of a brush
     /// </summary>
     [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct CSGSurfaceIntersection
+    public struct ChiselSurfaceIntersection
     {
         public Plane	localPlane;
-        public Plane	modelPlane;
+        public Plane	treePlane;
         public Plane	worldPlane;
 
         public Vector3	worldIntersection;
@@ -21,10 +21,10 @@ namespace Chisel.Core
 
         public float	distance;
 
-        public readonly static CSGSurfaceIntersection None = new CSGSurfaceIntersection()
+        public readonly static ChiselSurfaceIntersection None = new ChiselSurfaceIntersection()
         {
             localPlane			= new Plane(Vector3.zero, 0),
-            modelPlane			= new Plane(Vector3.zero, 0),
+            treePlane			= new Plane(Vector3.zero, 0),
             worldPlane			= new Plane(Vector3.zero, 0),
             worldIntersection	= Vector3.zero,
             surfaceIntersection = Vector2.zero,

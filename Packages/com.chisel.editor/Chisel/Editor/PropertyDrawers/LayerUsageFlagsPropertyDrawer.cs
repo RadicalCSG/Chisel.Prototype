@@ -34,7 +34,7 @@ namespace Chisel.Editors
         {
             EditorGUI.BeginProperty(position, label, property);
             bool prevShowMixedValue			= EditorGUI.showMixedValue;
-            bool deferredRenderingPath		= CSGEditorUtility.IsUsingDeferredRenderingPath();
+            bool deferredRenderingPath		= ChiselEditorUtility.IsUsingDeferredRenderingPath();
             EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
             try
             { 

@@ -75,7 +75,7 @@ namespace Chisel.Editors
                 var middleStyle = EditorStyles.miniButtonMid;
             
                 bool prevShowMixedValue			= EditorGUI.showMixedValue;
-                bool deferredRenderingPath		= CSGEditorUtility.IsUsingDeferredRenderingPath();
+                bool deferredRenderingPath		= ChiselEditorUtility.IsUsingDeferredRenderingPath();
                 EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
                 try
                 {

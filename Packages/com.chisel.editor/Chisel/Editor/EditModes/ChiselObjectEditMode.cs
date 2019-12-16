@@ -11,7 +11,7 @@ using UnityObject = UnityEngine.Object;
 // TODO: use, hidden & non savable, dummy gameobjects for sync'ed brushes to simplifiy selection? 
 namespace Chisel.Editors
 {
-    // TODO: should only use this when there are CSGNodes selected
+    // TODO: should only use this when there are ChiselNodes selected
     public sealed class ChiselObjectEditMode : IChiselToolMode
     {
         const string kToolName = "Object";
@@ -69,10 +69,10 @@ namespace Chisel.Editors
             var rotation = Tools.handleRotation;
 
 #if SYNC_SUPPORT // TODO: finish and fix this
-            var selectedNodes = Selection.GetFiltered<CSGNode>(SelectionMode.Editable | SelectionMode.TopLevel);
+            var selectedNodes = Selection.GetFiltered<ChiselNode>(SelectionMode.Editable | SelectionMode.TopLevel);
             if (selectedNodes.Length == 0)
             {
-                // TODO: probably need to use our own PositionHandle on non CSG objects, to be able to snap to grid
+                // TODO: probably need to use our own PositionHandle on non Chisel objects, to be able to snap to grid
                 return;
             }
             
@@ -87,13 +87,13 @@ namespace Chisel.Editors
                 selectedNodes[0].GetAllTreeBrushes(foundTreeBrushes, ignoreSynchronizedBrushes: true);
                 if (foundTreeBrushes.Count == 1)
                 {
-                    var transform = CSGNodeHierarchyManager.FindModelTransformOfTransform(selectedNodes[0].hierarchyItem.Transform);
+                    var transform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(selectedNodes[0].hierarchyItem.Transform);
                     var firstBrush = foundTreeBrushes.First();
                     var brush = firstBrush;
-                    if (!CSGSyncSelection.IsBrushVariantSelected(brush))
+                    if (!ChiselSyncSelection.IsBrushVariantSelected(brush))
                     {
                         List<CSGTreeBrush> selectedVariants = new List<CSGTreeBrush>();
-                        if (CSGSyncSelection.GetSelectedVariantsOfBrush(brush, selectedVariants))
+                        if (ChiselSyncSelection.GetSelectedVariantsOfBrush(brush, selectedVariants))
                             brush = selectedVariants[0];
                     }
                     if (transform)
@@ -108,7 +108,7 @@ namespace Chisel.Editors
                 }
             }
 #endif
-            
+
             EditorGUI.BeginChangeCheck();
             // TODO: make this work with bounds!
             var newPosition = UnitySceneExtensions.SceneHandles.PositionHandle(position, rotation);

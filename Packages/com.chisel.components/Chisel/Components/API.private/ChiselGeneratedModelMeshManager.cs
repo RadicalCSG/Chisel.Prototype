@@ -228,7 +228,7 @@ namespace Chisel.Components
             if (!tree.Valid)
                 return;
             
-            var meshTypes			= CSGMeshQueryManager.GetMeshQuery(model);
+            var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
             var meshDescriptions	= tree.GetMeshDescriptions(meshTypes, model.VertexChannelMask);
 
             // Make sure we remove all old generated meshes

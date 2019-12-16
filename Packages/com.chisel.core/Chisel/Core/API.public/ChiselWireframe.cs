@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Chisel.Core
 {
     [Serializable]
-    public sealed partial class CSGWireframe
+    public sealed partial class ChiselWireframe
     {
         internal Vector3[]	vertices                = null;
         internal Int32[]	visibleOuterLines       = null;
@@ -30,8 +30,8 @@ namespace Chisel.Core
 
         public bool	Dirty { get { return outlineGeneration != GetBrushOutlineGeneration(originBrushID); }  }
 
-        public static CSGWireframe CreateWireframe(CSGTreeBrush brush) { if (!brush.Valid) return null; return CreateBrushWireframe(brush.NodeID); }
-        public static CSGWireframe CreateWireframe(CSGTreeBrush brush, int surfaceID) { if (!brush.Valid) return null; return CreateSurfaceWireframe(brush.NodeID, surfaceID); }
+        public static ChiselWireframe CreateWireframe(CSGTreeBrush brush) { if (!brush.Valid) return null; return CreateBrushWireframe(brush.NodeID); }
+        public static ChiselWireframe CreateWireframe(CSGTreeBrush brush, int surfaceID) { if (!brush.Valid) return null; return CreateSurfaceWireframe(brush.NodeID, surfaceID); }
         public bool UpdateWireframe() { if (originSurfaceID == 0) return UpdateBrushWireframe(this); else  return UpdateSurfaceWireframe(this);  }
     }
 }

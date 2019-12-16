@@ -69,7 +69,7 @@ namespace Chisel.Editors
 
             var tempPosition = position;
             tempPosition.height -= kWindowTitleBarHeight;
-            CSGEditorUtility.ConsumeUnusedMouseEvents(kWindowHash, tempPosition);
+            ChiselEditorUtility.ConsumeUnusedMouseEvents(kWindowHash, tempPosition);
         }
 
         void HandleWindowLogic(int windowID)

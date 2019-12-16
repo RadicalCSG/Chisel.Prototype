@@ -14,8 +14,8 @@ namespace HierarchyTests
     {
         [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
-        // TODO: create generated meshes tests (CSGGeneratedMeshManager / CSGSharedUnityMeshManager)
-        // TODO: test if setting a brushMesh on a brush will get the brushMesh/node combo registered in CSGNodeHierarchyManager
+        // TODO: create generated meshes tests (ChiselGeneratedMeshManager / ChiselSharedUnityMeshManager)
+        // TODO: test if setting a brushMesh on a brush will get the brushMesh/node combo registered in ChiselNodeHierarchyManager
         // TODO: test brushContainerAsset changes changing brushes etc.
         // TODO: test brushMaterials changes changing brushes/brushmeshes etc.
     }

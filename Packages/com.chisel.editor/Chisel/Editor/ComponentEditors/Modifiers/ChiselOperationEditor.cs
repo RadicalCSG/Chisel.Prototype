@@ -10,7 +10,7 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    public sealed class CSGOperationDetails : ChiselNodeDetails<ChiselOperation>
+    public sealed class ChiselOperationDetails : ChiselNodeDetails<ChiselOperation>
     {
         const string AdditiveIconName		= "csg_addition";
         const string SubtractiveIconName	= "csg_subtraction";
@@ -30,7 +30,7 @@ namespace Chisel.Editors
 
     [CustomEditor(typeof(ChiselOperation))]
     [CanEditMultipleObjects]
-    public sealed class CSGOperationEditor : ChiselNodeEditor<ChiselOperation>
+    public sealed class ChiselOperationEditor : ChiselNodeEditor<ChiselOperation>
     {
         [MenuItem("GameObject/Chisel/" + ChiselOperation.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselOperation.kNodeTypeName); }
@@ -84,7 +84,7 @@ namespace Chisel.Editors
                             if (!operation)
                                 continue;
 
-                            CSGNodeHierarchyManager.UpdateAvailability(operation);
+                            ChiselNodeHierarchyManager.UpdateAvailability(operation);
                         }
                     }
                 }

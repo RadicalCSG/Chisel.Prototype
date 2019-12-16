@@ -33,8 +33,8 @@ namespace Chisel.Editors
             var haveRoundedTop		= definition.haveRoundedTop;
             var haveRoundedBottom	= definition.haveRoundedBottom;
             var haveCenter			= definition.haveCenter;
-            //CSGOutlineRenderer.DrawLineLoop(vertices,     0, sides, lineMode: lineMode, thickness: kCapLineThickness);
-            //CSGOutlineRenderer.DrawLineLoop(vertices, sides, sides, lineMode: lineMode, thickness: kCapLineThickness);
+            //ChiselOutlineRenderer.DrawLineLoop(vertices,     0, sides, lineMode: lineMode, thickness: kCapLineThickness);
+            //ChiselOutlineRenderer.DrawLineLoop(vertices, sides, sides, lineMode: lineMode, thickness: kCapLineThickness);
 
             var firstTopSide = definition.firstTopSide;
             var lastTopSide  = definition.lastTopSide;
@@ -55,12 +55,12 @@ namespace Chisel.Editors
                 var dashSize	= (sideLine ? 0                  : kLineDash);
                 ChiselOutlineRenderer.DrawLine(vertices[k], vertices[sides + k], lineMode: lineMode, thickness: thickness, dashSize: dashSize);
             }
-            
-            //CSGOutlineRenderer.DrawLine(vertices[firstBottomSide], vertices[lastBottomSide], lineMode: lineMode, thickness: kVertLineThickness);
-            //CSGOutlineRenderer.DrawLine(vertices[firstTopSide   ], vertices[lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
-            
-            //CSGOutlineRenderer.DrawLine(vertices[sides + firstBottomSide], vertices[sides + lastBottomSide], lineMode: lineMode, thickness: kVertLineThickness);
-            //CSGOutlineRenderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
+
+            //ChiselOutlineRenderer.DrawLine(vertices[firstBottomSide], vertices[lastBottomSide], lineMode: lineMode, thickness: kVertLineThickness);
+            //ChiselOutlineRenderer.DrawLine(vertices[firstTopSide   ], vertices[lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
+
+            //ChiselOutlineRenderer.DrawLine(vertices[sides + firstBottomSide], vertices[sides + lastBottomSide], lineMode: lineMode, thickness: kVertLineThickness);
+            //ChiselOutlineRenderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
         }
 
         internal static int s_TopHash		= "TopStadiumHash".GetHashCode();

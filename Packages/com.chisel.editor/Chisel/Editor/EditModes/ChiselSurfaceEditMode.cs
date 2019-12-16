@@ -817,7 +817,7 @@ namespace Chisel.Editors
             
             // Find the intersection point/plane in model space
             var nodeTransform		= startSurfaceReference.node.hierarchyItem.Transform;
-            var modelTransform		= CSGNodeHierarchyManager.FindModelTransformOfTransform(nodeTransform);
+            var modelTransform		= ChiselNodeHierarchyManager.FindModelTransformOfTransform(nodeTransform);
             worldStartPosition		= modelTransform.localToWorldMatrix.MultiplyPoint (hoverIntersection.Value.surfaceIntersection.worldIntersection);
             worldProjectionPlane	= modelTransform.localToWorldMatrix.TransformPlane(hoverIntersection.Value.surfaceIntersection.worldPlane);
             worldIntersection = worldStartPosition;

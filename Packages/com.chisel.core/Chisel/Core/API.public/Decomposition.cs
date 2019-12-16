@@ -10,24 +10,7 @@ namespace Chisel.Core
     {
         public static Vector2[][] ConvexPartition(Vector2[] inputVertices2D)
         {
-            var polygonCount = DecomposeStart(inputVertices2D);
-            if (polygonCount == 0)
-                return null;
-
-            var polygonSizes = new Int32[polygonCount];
-            if (!DecomposeGetSizes(polygonSizes))
-                return null;
-
-            var polygons = new List<Vector2[]>();
-            for (int i = 0; i < polygonCount; i++)
-            {
-                var vertexCount = polygonSizes[i];
-                var vertices	= DecomposeGetPolygon(i, vertexCount);
-                if (vertices == null)
-                    return null;
-                polygons.Add(vertices);
-            }
-            return polygons.ToArray();
+            return ConvexPartitionInternal(inputVertices2D);
         }
         
         public static bool ConvexPartition(List<Vector2>	inputVertices2D,

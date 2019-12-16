@@ -22,8 +22,8 @@ namespace HierarchyTests
         {
             defaultScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
             CSGManager.Clear();
-            CSGNodeHierarchyManager.Reset();
-            CSGNodeHierarchyManager.Update();
+            ChiselNodeHierarchyManager.Reset();
+            ChiselNodeHierarchyManager.Update();
         }
 
         public static Scene CreateAdditionalSceneAndActivate()
@@ -48,15 +48,7 @@ namespace HierarchyTests
             Undo.RegisterCreatedObjectUndo(operationGameObject, "Created " + name + " gameObject");
             return operation;
         }
-        /*
-                public static CSGMirror CreateUndoableGameObjectWithMirror(string name = "mirror", HideFlags flags = HideFlags.None)
-                {
-                    var mirrorGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-                    var mirror = mirrorGameObject.AddComponent<CSGMirror>();
-                    Undo.RegisterCreatedObjectUndo(mirrorGameObject, "Created " + name + " gameObject");
-                    return mirror;
-                }
-        */
+
         public static ChiselBrush CreateUndoableGameObjectWithBrush(string name = "brush", HideFlags flags = HideFlags.None)
         {
             var brushGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);

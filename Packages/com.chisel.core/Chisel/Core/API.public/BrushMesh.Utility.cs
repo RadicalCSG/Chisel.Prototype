@@ -948,7 +948,7 @@ namespace Chisel.Core
             {
                 chiselSurface = new ChiselSurface
                 {
-                    brushMaterial       = ChiselBrushMaterial.CreateInstance(CSGMaterialManager.DefaultFloorMaterial, CSGMaterialManager.DefaultPhysicsMaterial),
+                    brushMaterial       = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, ChiselMaterialManager.DefaultPhysicsMaterial),
                     surfaceDescription  = SurfaceDescription.Default
                 };
             }
