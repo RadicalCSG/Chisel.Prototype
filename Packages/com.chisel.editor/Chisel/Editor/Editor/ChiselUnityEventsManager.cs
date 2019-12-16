@@ -60,13 +60,15 @@ namespace Chisel.Editors
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
 
 #if UNITY_2019_1_OR_NEWER
-            UnityEditor.SceneView.beforeSceneGui                        -= OnSceneGUI;
-            UnityEditor.SceneView.beforeSceneGui                        += OnSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        -= OnBeforeSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        += OnBeforeSceneGUI;
+            UnityEditor.SceneView.duringSceneGui                        -= OnDuringSceneGUI;
+            UnityEditor.SceneView.duringSceneGui                        += OnDuringSceneGUI;
 #else
             UnityEditor.SceneView.onSceneGUIDelegate					-= OnSceneGUI;
             UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI; 
-#endif            
-                
+#endif
+
             ChiselNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
             ChiselNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
 
@@ -171,17 +173,30 @@ namespace Chisel.Editors
             }
         }
 
-        static void OnSceneGUI(SceneView sceneView)
+        static void OnBeforeSceneGUI(SceneView sceneView)
+        {
+            ChiselSceneBottomGUI.OnSceneGUI(sceneView);
+        }
+
+        static void OnDuringSceneGUI(SceneView sceneView)
         {
             var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
             GridOnSceneGUI(sceneView);
             ChiselEditModeGUI.OnSceneGUI(sceneView, dragArea);
             ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
-            ChiselSceneBottomGUI.OnSceneGUI(sceneView);
 
             ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
             ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
         }
+
+#if !UNITY_2019_1_OR_NEWER
+
+        static void OnSceneGUI(SceneView sceneView)
+        {
+            OnBeforeSceneGUI(sceneView);
+            OnDuringSceneGUI(sceneView);
+        }
+#endif
 
         private static void OnEditModeChanged(IChiselToolMode prevEditMode, IChiselToolMode newEditMode)
         {
