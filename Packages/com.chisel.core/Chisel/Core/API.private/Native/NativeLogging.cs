@@ -5,6 +5,7 @@ using Chisel.Core;
 
 namespace Chisel.Editors
 {
+#if !USE_MANAGED_CSG_IMPLEMENTATION
     // This class connects the native code with the unity log
     public sealed class NativeLogging
     {
@@ -76,4 +77,5 @@ namespace Chisel.Editors
             ClearMethods();
         }
     }
+#endif
 }

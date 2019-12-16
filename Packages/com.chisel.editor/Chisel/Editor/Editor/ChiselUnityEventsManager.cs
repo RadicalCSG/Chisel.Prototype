@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
 using System;
@@ -249,16 +249,20 @@ namespace Chisel.Editors
         }
 
 
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         static bool loggingMethodsRegistered = false;
+#endif
 
         private static void OnEditorApplicationUpdate()
         {
+#if !USE_MANAGED_CSG_IMPLEMENTATION
             // TODO: remove this once we've moved to managed implementation of CSG algorithm
             if (!loggingMethodsRegistered)
             {
                 Editors.NativeLogging.RegisterUnityMethods();
                 loggingMethodsRegistered = true;
             }
+#endif
 
             //Grid.HoverGrid = null;
             ChiselNodeHierarchyManager.Update();

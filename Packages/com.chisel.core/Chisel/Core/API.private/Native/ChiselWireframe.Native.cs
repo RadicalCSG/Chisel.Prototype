@@ -6,6 +6,7 @@ namespace Chisel.Core
 {
     sealed partial class ChiselWireframe
     {
+#if !USE_MANAGED_CSG_IMPLEMENTATION
         [DllImport(CSGManager.NativePluginName, CallingConvention = CallingConvention.Cdecl)]
         private static extern UInt64 GetBrushOutlineGeneration(Int32 brushNodeID);
         
@@ -347,5 +348,6 @@ namespace Chisel.Core
             wireframe.outlineGeneration = GetBrushOutlineGeneration(wireframe.originBrushID);
             return true;
         }
+#endif
     }
 }
