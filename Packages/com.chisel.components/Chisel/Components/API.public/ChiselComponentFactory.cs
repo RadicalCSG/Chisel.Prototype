@@ -73,7 +73,10 @@ namespace Chisel.Components
                 if (parent)
                     brushTransform.SetParent(parent, false);
 #endif
-                brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                if (parent)
+                    brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                else
+                    brushTransform.Set(trsMatrix);
 
 #if UNITY_EDITOR
                 return UnityEditor.Undo.AddComponent<T>(newGameObject);
