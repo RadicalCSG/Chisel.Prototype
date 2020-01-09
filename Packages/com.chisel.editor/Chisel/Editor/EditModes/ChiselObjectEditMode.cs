@@ -128,7 +128,7 @@ namespace Chisel.Editors
         {
             Undo.RecordObjects(transforms, "Move Transforms");
             foreach (var transform in transforms)
-                transform.localPosition += delta;
+                transform.position += delta;
         }
     }
 }
