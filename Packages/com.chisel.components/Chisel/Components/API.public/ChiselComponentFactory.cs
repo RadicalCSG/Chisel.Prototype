@@ -43,7 +43,7 @@ namespace Chisel.Components
             }
         }
 
-        public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
+        public static T Create<T>(string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : ChiselNode
         {
             // TODO: ensure we're creating this in the active scene
             // TODO: handle scene being locked by version control
@@ -69,16 +69,18 @@ namespace Chisel.Components
                 if (parent)
                     UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
                 UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
-                brushTransform.localPosition = position;
-                brushTransform.localRotation = rotation;
-                brushTransform.localScale = scale;
-                return UnityEditor.Undo.AddComponent<T>(newGameObject);
 #else
                 if (parent)
                     brushTransform.SetParent(parent, false);
-                brushTransform.localPosition = position;
-                brushTransform.localRotation = rotation;
-                brushTransform.localScale = scale;
+#endif
+                if (parent)
+                    brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                else
+                    brushTransform.Set(trsMatrix);
+
+#if UNITY_EDITOR
+                return UnityEditor.Undo.AddComponent<T>(newGameObject);
+#else
                 return newGameObject.AddComponent<T>();
 #endif
             }
@@ -87,38 +89,11 @@ namespace Chisel.Components
                 newGameObject.SetActive(true);
             }
         }
+         
 
-
-        public static T Create<T>(string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : ChiselNode
+        public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
         {
-            // TODO: put matrix4x4 -> transform values, into utility method
-            var position = trsMatrix.GetColumn(3);
-            trsMatrix.SetColumn(3, Vector4.zero);
-
-            var columnX = trsMatrix.GetColumn(0);
-            var columnY = trsMatrix.GetColumn(1);
-            var columnZ = trsMatrix.GetColumn(2);
-            var scaleX = columnX.magnitude;
-            var scaleY = columnY.magnitude;
-            var scaleZ = columnZ.magnitude;
-
-            columnX /= scaleX;
-            columnY /= scaleY;
-            columnZ /= scaleZ;
-
-            if (Vector3.Dot(Vector3.Cross(columnZ, columnY), columnX) > 0)
-            {
-                scaleX = -scaleX;
-                columnX = -columnX;
-            }
-
-            var scale = new Vector3(scaleX, scaleY, scaleZ);
-            var rotation = Quaternion.LookRotation(columnZ, columnY);
-
-            //var inverseMatrix = Matrix4x4.TRS(position, rotation, scale).inverse * trsMatrix;
-            //Debug.Log(position + " " + rotation + " " + scale + "\n" + inverseMatrix);
-
-            return Create<T>(name, parent, position, rotation, scale);
+            return Create<T>(name, parent, Matrix4x4.TRS(position, rotation, scale));
         }
 
         public static T Create<T>(string name, ChiselModel model) where T : ChiselNode { return Create<T>(name, model ? model.transform : null, Vector3.zero, Quaternion.identity, Vector3.one); }
