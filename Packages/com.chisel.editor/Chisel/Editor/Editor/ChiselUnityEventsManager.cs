@@ -175,18 +175,37 @@ namespace Chisel.Editors
 
         static void OnBeforeSceneGUI(SceneView sceneView)
         {
-            ChiselSceneBottomGUI.OnSceneGUI(sceneView);
+            var prevSkin = GUI.skin;
+            GUI.skin = ChiselSceneGUIStyle.GetSceneSkin(); 
+            try
+            {
+                ChiselSceneGUIStyle.Update();
+                ChiselSceneBottomGUI.OnSceneGUI(sceneView);
+            }
+            finally
+            {
+                GUI.skin = prevSkin;
+            }
         }
 
         static void OnDuringSceneGUI(SceneView sceneView)
         {
-            var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
-            GridOnSceneGUI(sceneView);
-            ChiselEditModeGUI.OnSceneGUI(sceneView, dragArea);
-            ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
+            var prevSkin = GUI.skin;
+            GUI.skin = ChiselSceneGUIStyle.GetSceneSkin();
+            try
+            {
+                var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
+                GridOnSceneGUI(sceneView);
+                ChiselEditModeGUI.OnSceneGUI(sceneView, dragArea);
+                ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
 
-            ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
-            ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
+                ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
+                ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
+            }
+            finally
+            {
+                GUI.skin = prevSkin;
+            }
         }
 
 #if !UNITY_2019_1_OR_NEWER
