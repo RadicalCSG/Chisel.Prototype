@@ -11,6 +11,35 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
+    public sealed class GUIView
+    {
+        static PropertyInfo currentProperty;
+        static PropertyInfo hasFocusProperty;
+
+        static GUIView()
+        {
+            var type = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GUIView");
+            currentProperty = type.GetProperty("current");
+            hasFocusProperty = type.GetProperty("hasFocus");
+        }
+
+        public static bool HasFocus
+        {
+            get
+            {
+                var currentGuiView = currentProperty.GetMethod.Invoke(null, null);
+                if (currentGuiView == null)
+                    return false;
+                
+                var hasFocusObj = hasFocusProperty.GetMethod.Invoke(currentGuiView, null);
+                if (hasFocusObj == null)
+                    return false;
+                
+                return (bool) hasFocusObj;
+            }
+        }
+    }
+
     public static class ChiselHierarchyWindowManager
     {
         public static void RenderIcon(Rect selectionRect, GUIContent icon)
@@ -27,25 +56,17 @@ namespace Chisel.Editors
         
         static void RenderHierarchyItem(int instanceID, ChiselNode node, Rect selectionRect)
         {
+            if (!ChiselSceneGUIStyle.isInitialized)
+                return;
             var model = node as ChiselModel;
             if (!ReferenceEquals(model, null))
             {
                 if (model == ChiselModelManager.ActiveModel)
                 {
-                    const float kIconSize     = 16;
-                    const float kOffsetToText = 0.0f;
-                    //const float kOffsetToText = 24.0f;  // this used to be a random '24' in another version of unity?
+                    var content = EditorGUIUtility.TrTempContent(node.name + " (active)");
 
-                    var rect = selectionRect;
-                    rect.xMin += kIconSize + kOffsetToText;
-
-                    var content     = EditorGUIUtility.TrTempContent(node.name + " (active)");
-
-                    // TODO: figure out correct color depending on selection and proSkin
-
-                    GUI.Label(rect, content);
-                    rect.xMin += 0.5f;
-                    GUI.Label(rect, content);
+                    bool selected = GUIView.HasFocus && Selection.Contains(instanceID);
+                    GUI.Label(selectionRect, content, selected ? ChiselSceneGUIStyle.inspectorSelectedLabel : ChiselSceneGUIStyle.inspectorLabel);
                 }
             }
 
