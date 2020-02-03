@@ -17,8 +17,8 @@ namespace Chisel.Editors
         {
             Rect dragArea = window.position;
             dragArea.x = 0;
-            dragArea.y = kTopBarHeight;
-            dragArea.height -= ChiselSceneBottomGUI.kBottomBarHeight + kTopBarHeight;
+            dragArea.y = ChiselSceneGUIStyle.kTopBarHeight;
+            dragArea.height -= ChiselSceneGUIStyle.kBottomBarHeight + ChiselSceneGUIStyle.kTopBarHeight;
             return dragArea;
         }
     }

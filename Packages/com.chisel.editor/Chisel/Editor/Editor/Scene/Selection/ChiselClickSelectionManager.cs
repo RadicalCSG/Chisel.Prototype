@@ -152,16 +152,17 @@ namespace Chisel.Editors
             public ChiselNode		node;
             public Transform	transform;
         }
-        static List<SelectedNode>	selectedNode = new List<SelectedNode>();
-        static HashSet<ChiselNode>		foundNodes = new HashSet<ChiselNode>();
+
+        static List<SelectedNode>	selectedNodeList        = new List<SelectedNode>();
+        static HashSet<ChiselNode>	selectedNodeHash        = new HashSet<ChiselNode>();
 
         void UpdateSelection()
         {
             var transforms = Selection.transforms;
-            selectedNode.Clear();
+            selectedNodeList.Clear();
             if (transforms.Length > 0)
             {
-                foundNodes.Clear();
+                selectedNodeHash.Clear();
                 for (int i = 0; i < transforms.Length; i++)
                 {
                     var transform = transforms[i];
@@ -171,12 +172,12 @@ namespace Chisel.Editors
                     if (nodes == null || nodes.Length == 0)
                         continue;
                     foreach (var node in nodes)
-                        foundNodes.Add(node);
+                        selectedNodeHash.Add(node);
                 }
-                foreach (var node in foundNodes)
+                foreach (var node in selectedNodeHash)
                 {
                     var transform = node.transform;
-                    selectedNode.Add(new SelectedNode(node, transform));
+                    selectedNodeList.Add(new SelectedNode(node, transform));
                 }
             }
         }
@@ -184,21 +185,21 @@ namespace Chisel.Editors
         static HashSet<ChiselNode> modifiedNodes = new HashSet<ChiselNode>();
         public void OnSceneGUI(SceneView sceneView)
         {
-            if (selectedNode.Count > 0)
+            if (selectedNodeList.Count > 0)
             {
-                for (int i = 0; i < selectedNode.Count; i++)
+                for (int i = 0; i < selectedNodeList.Count; i++)
                 {
-                    if (!selectedNode[i].transform)
+                    if (!selectedNodeList[i].transform)
                     {
                         UpdateSelection();
                         break;
                     }
                 }
                 modifiedNodes.Clear();
-                for (int i = 0; i < selectedNode.Count; i++)
+                for (int i = 0; i < selectedNodeList.Count; i++)
                 {
-                    var transform	= selectedNode[i].transform;
-                    var node		= selectedNode[i].node;
+                    var transform	= selectedNodeList[i].transform;
+                    var node		= selectedNodeList[i].node;
                     var curLocalToWorldMatrix = transform.localToWorldMatrix;
                     var oldLocalToWorldMatrix = node.hierarchyItem.LocalToWorldMatrix;
                     if (curLocalToWorldMatrix.m00 != oldLocalToWorldMatrix.m00 ||

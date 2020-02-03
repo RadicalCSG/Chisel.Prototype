@@ -13,50 +13,49 @@ namespace Chisel.Editors
     // TODO: add tooltips
     public static class ChiselSceneBottomGUI
     {
-        internal const float kBottomBarHeight    = 20;
-        const float kFloatFieldWidth    = 60;
-
         static readonly int BottomBarGUIHash = typeof(ChiselSceneBottomGUI).Name.GetHashCode();
 
-        static GUILayoutOption floatWidthLayout;
+        static GUILayoutOption floatWidthLayout = GUILayout.Width(ChiselSceneGUIStyle.kFloatFieldWidth);
 
-        static GUIStyle toolbarStyle;
-        static GUIStyle toggleStyle;
-        static GUIStyle buttonStyle;
-        static bool     prevSkin = false;
 
         // UI Element definitions
-        static GUIContent rebuildButton = new GUIContent("Rebuild");
-        static GUIContent doubleSnapDistanceButton = new GUIContent("+", "Double the snapping distance.\nHotkey: ]");
-        static GUIContent halveSnapDistanceButton = new GUIContent("-", "Halve the snapping distance.\nHotkey: [");
+        static GUIContent rebuildButton             = new GUIContent("Rebuild");
+        static GUIContent doubleSnapDistanceButton  = new GUIContent("+", "Double the snapping distance.\nHotkey: ]");
+        static GUIContent halveSnapDistanceButton   = new GUIContent("-", "Halve the snapping distance.\nHotkey: [");
 
-        static readonly int bottomBarGuiId					= 21001;
+        static readonly int kBottomBarID		    = "ChiselSceneBottomGUI".GetHashCode();
 
 
         public static void Rebuild()
         {
+            var startTime = EditorApplication.timeSinceStartup;
             ChiselNodeHierarchyManager.Rebuild();
+            var csg_endTime = EditorApplication.timeSinceStartup;
+            Debug.Log($"Full CSG rebuild done in {((csg_endTime - startTime) * 1000)} ms. ");
         }
 
-        static void OnBottomBarUI(int windowID)
+        static GUILayoutOption sizeButtonWidth = GUILayout.Width(12);
+
+        static readonly GUI.WindowFunction OnBottomBarUI = OnBottomBarUIFunction;
+        static void OnBottomBarUIFunction(int windowID)
         {
             EditorGUI.BeginChangeCheck();
             GUILayout.BeginHorizontal();
 
             // TODO: assign hotkey to rebuild, and possibly move it elsewhere to avoid it seemingly like a necessary action.
-            if (GUILayout.Button(rebuildButton, buttonStyle)) { 
+            if (GUILayout.Button(rebuildButton, ChiselSceneGUIStyle.buttonStyle)) { 
                 Rebuild();
             }
 
             GUILayout.FlexibleSpace();
 
-            ChiselEditorSettings.ShowGrid = GUILayout.Toggle(ChiselEditorSettings.ShowGrid, "Show Grid", toggleStyle);
+            ChiselEditorSettings.ShowGrid = GUILayout.Toggle(ChiselEditorSettings.ShowGrid, "Show Grid", ChiselSceneGUIStyle.toggleStyle);
 
             ChiselEditorSettings.UniformSnapDistance = EditorGUILayout.FloatField(ChiselEditorSettings.UniformSnapDistance, floatWidthLayout);
-            if (GUILayout.Button(halveSnapDistanceButton, EditorStyles.miniButtonLeft)) {
+            if (GUILayout.Button(halveSnapDistanceButton, EditorStyles.miniButtonLeft, sizeButtonWidth)) {
                 SnappingKeyboard.HalfGridSize();
             }
-            if (GUILayout.Button(doubleSnapDistanceButton, EditorStyles.miniButtonRight)) {
+            if (GUILayout.Button(doubleSnapDistanceButton, EditorStyles.miniButtonRight, sizeButtonWidth)) {
                 SnappingKeyboard.DoubleGridSize();
             }
 
@@ -67,35 +66,15 @@ namespace Chisel.Editors
 
         public static void OnSceneGUI(SceneView sceneView)
         {
-            // TODO: put somewhere else
-            var curSkin = EditorGUIUtility.isProSkin;
-            if (toolbarStyle == null ||
-                prevSkin != curSkin)
-            {
-
-                toolbarStyle = new GUIStyle(EditorStyles.toolbar);
-                toolbarStyle.fixedHeight = kBottomBarHeight;
-
-                toggleStyle = new GUIStyle(EditorStyles.toolbarButton);
-                toggleStyle.fixedHeight = kBottomBarHeight;
-
-                buttonStyle = new GUIStyle(EditorStyles.toolbarButton);
-                buttonStyle.fixedHeight = kBottomBarHeight;
-
-                floatWidthLayout = GUILayout.Width(kFloatFieldWidth);
-
-                prevSkin = curSkin;
-                ChiselEditorSettings.Load();
-            }
-
-
             // Calculate size of bottom bar and draw it
             Rect position = sceneView.position;
-            position.x		= 0;
-            position.y		= position.height - kBottomBarHeight;
-            position.height = kBottomBarHeight; 
+            position.x		= -2;
+            position.y		= position.height - ChiselSceneGUIStyle.kBottomBarHeight + 1;
+            position.width  += 4;
+            position.height = ChiselSceneGUIStyle.kBottomBarHeight;
 
-            GUILayout.Window(bottomBarGuiId, position, OnBottomBarUI, "", toolbarStyle);
+            GUI.Window(kBottomBarID, position, OnBottomBarUI, string.Empty, ChiselSceneGUIStyle.toolbarStyle);
+
             ChiselEditorUtility.ConsumeUnusedMouseEvents(BottomBarGUIHash, position);
         }
     }
