@@ -3,7 +3,7 @@
 This is a *work in progress* prototype for the Chisel level design editor.
 It is unfinished, and has bugs.
 
-Chisel requires Unity 2019.1 or newer
+Chisel requires Unity 2019.3 or newer
 with the project set to ".net standard 2.0" / scripting runtime to ".net 4.x"
 
 Notes:
