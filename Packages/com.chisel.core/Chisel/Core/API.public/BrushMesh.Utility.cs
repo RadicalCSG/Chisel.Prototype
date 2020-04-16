@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -71,6 +72,103 @@ namespace Chisel.Core
                 var planeVector = (Vector4)plane.normal;
                 planeVector.w = plane.distance;
                 surfaces[p].localPlane = planeVector;
+            }
+        }
+
+        public void Create(Vector3[] vertices, int[][] polygonIndices, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            if (vertices == null)
+                throw new ArgumentNullException(nameof(vertices));
+            if (polygonIndices == null)
+                throw new ArgumentNullException(nameof(polygonIndices));
+            if (surfaceDefinition == null)
+                throw new ArgumentNullException(nameof(surfaceDefinition));
+            if (surfaceDefinition.surfaces == null)
+                throw new ArgumentNullException($"{nameof(surfaceDefinition)}.{nameof(surfaceDefinition.surfaces)}");
+            if (surfaceDefinition.surfaces.Length == polygonIndices.Length)
+                throw new ArgumentException($"{nameof(surfaceDefinition)}.{nameof(surfaceDefinition.surfaces)}.Length needs to be the same as {polygonIndices}.Length");
+
+            // Create our polygons
+            polygons = new Polygon[polygonIndices.Length];
+            int totalEdgeCount = 0;
+            for (int p = 0; p < polygons.Length; p++)
+            {
+                if (polygonIndices[p] == null)
+                    throw new ArgumentNullException(nameof(polygonIndices) + $"[{p}]");
+                if (polygonIndices[p].Length == 0)
+                    continue;
+                var polygonEdgeCount = polygonIndices[p].Length;
+                // Store first edge index, and edge count which we can infer from the indices arrays
+                // since the number of indices is the same as our number of edges
+                polygons[p].firstEdge = totalEdgeCount;
+                polygons[p].edgeCount = polygonEdgeCount;
+                totalEdgeCount += polygonEdgeCount;
+            }
+
+            this.halfEdges = new HalfEdge[totalEdgeCount];
+            this.halfEdgePolygonIndices = new int[totalEdgeCount];
+            for (int p = 0, e = 0; p < polygons.Length; p++)
+            {
+                if (polygonIndices[p].Length == 0)
+                    continue;
+                var indices = polygonIndices[p];
+                for (int i = 0; i < indices.Length; i++, e++)
+                {
+                    // Create our edges, and set the vertex index to the indices in <polygonIndices>
+                    halfEdges[e].vertexIndex = indices[i];
+                    // Ensure we set the index to our polygons for each edge at the same time
+                    halfEdgePolygonIndices[e] = p;
+                }
+            }
+
+            this.vertices = vertices.ToArray(); // Need to make a copy just in case <vertices> is changed outside this method
+
+            this.UpdateHalfEdgeTwinIndices();   // Find the twins of our edges
+            this.CalculatePlanes();             // And finally, calculate our planes
+        }
+
+
+
+        // NOTE: this method is inefficient, it's faster if you have more context about the mesh you're creating
+        // NOTE: assumes "HalfEdge.twinIndex" are all set to 0
+        public void UpdateHalfEdgeTwinIndices()
+        {
+            for (int p0 = 0; p0 < polygons.Length; p0++)
+            {
+                var firstEdge0 = polygons[p0].firstEdge;
+                var edgeCount0 = polygons[p0].edgeCount;
+                var lastEdge0 = firstEdge0 + edgeCount0;
+                for (int p0e0 = lastEdge0 - 1, p0e1 = firstEdge0; p0e1 < lastEdge0; p0e0 = p0e1, p0e1++)
+                {
+                    // Note: This will not work for index 0, so it might to that single index twice
+                    if (halfEdges[p0e1].twinIndex > 0)
+                        continue;
+
+                    var p0vertex0 = halfEdges[p0e0].vertexIndex;
+                    var p0vertex1 = halfEdges[p0e1].vertexIndex;
+
+                    // since we fix up twins both ways, we can assume that 
+                    // all previous polygons already have their twins set
+                    for (int p1 = p0 + 1; p1 < polygons.Length; p1++)
+                    {
+                        var firstEdge1 = polygons[p1].firstEdge;
+                        var edgeCount1 = polygons[p1].edgeCount;
+                        var lastEdge1 = firstEdge1 + edgeCount1;
+                        for (int p1e0 = lastEdge1 - 1, p1e1 = firstEdge1; p1e1 < lastEdge1; p1e0 = p1e1, p1e1++)
+                        {
+                            var p1vertex0 = halfEdges[p1e0].vertexIndex;
+                            var p1vertex1 = halfEdges[p1e1].vertexIndex;
+                            if (p0vertex0 == p1vertex1 && p0vertex1 == p1vertex0)
+                            {
+                                halfEdges[p0e1].twinIndex = p1e1;
+                                halfEdges[p1e1].twinIndex = p0e1;
+                                goto FoundEdge;
+                            }
+                        }
+                    }
+FoundEdge:
+                    ;
+                }
             }
         }
 
