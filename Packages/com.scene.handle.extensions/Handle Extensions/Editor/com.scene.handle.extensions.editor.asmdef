@@ -1,9 +1,9 @@
 {
     "name": "com.scene.handle.extensions.editor",
     "references": [
-        "com.scene.handle.extensions.runtime"
+        "com.scene.handle.extensions.runtime",
+        "Unity.Mathematics"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
@@ -12,5 +12,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

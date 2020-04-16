@@ -9,7 +9,7 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public enum StairsRiserType
+    public enum StairsRiserType : byte
     {
         None,
         ThinRiser,
@@ -20,7 +20,7 @@ namespace Chisel.Core
     }
 
     [Serializable]
-    public enum StairsSideType
+    public enum StairsSideType : byte
     {
         None,
         // TODO: better names
@@ -36,7 +36,7 @@ namespace Chisel.Core
     [Serializable]
     public struct ChiselLinearStairsDefinition : IChiselGenerator
     {
-        public enum SurfaceSides
+        public enum SurfaceSides : byte
         {
             Top,
             Bottom,

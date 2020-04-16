@@ -9,6 +9,7 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -51,8 +52,8 @@ namespace Chisel.Core
             var topVertex		= 0;
             var bottomVertex	= (!topCap) ? 1 : 0;
             var radius			= new Vector3(diameterXYZ.x * 0.5f, 
-                                              diameterXYZ.y, 
-                                              diameterXYZ.z * 0.5f);
+                                             diameterXYZ.y, 
+                                             diameterXYZ.z * 0.5f);
             
             if (vertices == null || 
                 vertices.Length != vertexCount)
@@ -66,9 +67,9 @@ namespace Chisel.Core
                 for (int h = 0; h < horzSegments; h++, vertexIndex++)
                 {
                     var hRad = (h * degreePerSegment) + angleOffset;
-                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(Mathf.Cos(hRad) * radius.x,  
-                                                                                0.0f, 
-                                                                                Mathf.Sin(hRad) * radius.z));
+                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(math.cos(hRad) * radius.x,  
+                                                                               0.0f, 
+                                                                               math.sin(hRad) * radius.z));
                 }
             }
             for (int v = 1; v < rings; v++)
@@ -107,8 +108,8 @@ namespace Chisel.Core
             var topVertex		= 0;
             var bottomVertex	= (!topCap) ? 1 : 0;
             var radius			= new Vector3(diameterXYZ.x * 0.5f, 
-                                              diameterXYZ.y, 
-                                              diameterXYZ.z * 0.5f);
+                                             diameterXYZ.y, 
+                                             diameterXYZ.z * 0.5f);
 
             var heightY = radius.y;
             var vertices = new Vector3[vertexCount];
@@ -122,18 +123,18 @@ namespace Chisel.Core
                 for (int h = horzSegments - 1; h >= 0; h--, vertexIndex++)
                 {
                     var hRad = (h * degreePerSegment) + angleOffset;
-                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(Mathf.Cos(hRad) * radius.x,
-                                                                                0.0f,
-                                                                                Mathf.Sin(hRad) * radius.z));
+                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(math.cos(hRad) * radius.x,
+                                                                               0.0f,
+                                                                               math.sin(hRad) * radius.z));
                 }
             } else
             {
                 for (int h = 0; h < horzSegments; h++, vertexIndex++)
                 {
                     var hRad = (h * degreePerSegment) + angleOffset;
-                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(Mathf.Cos(hRad) * radius.x,  
-                                                                                0.0f, 
-                                                                                Mathf.Sin(hRad) * radius.z));
+                    vertices[vertexIndex] = transform.MultiplyPoint(new Vector3(math.cos(hRad) * radius.x,  
+                                                                               0.0f, 
+                                                                               math.sin(hRad) * radius.z));
                 }
             }
             for (int v = 1; v < rings; v++)

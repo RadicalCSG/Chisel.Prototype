@@ -9,6 +9,7 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -23,7 +24,7 @@ namespace Chisel.Core
             var shapeVertices		= new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
             BrushMeshFactory.GetPathVertices(definition.shape, definition.curveSegments, shapeVertices, shapeSegmentIndices);
-            
+
             Vector2[][] polygonVerticesArray;
             int[][] polygonIndicesArray;
 
@@ -71,13 +72,13 @@ namespace Chisel.Core
                 {
                     var hDegree0 = (pr * horzDegreePerSegment) + horzOffset;
                     var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                    var rotation0 = Quaternion.AngleAxis(hDegree0, Vector3.forward);
-                    var rotation1 = Quaternion.AngleAxis(hDegree1, Vector3.forward);
+                    var rotation0 = quaternion.AxisAngle(Vector3.forward, hDegree0);
+                    var rotation1 = quaternion.AxisAngle(Vector3.forward, hDegree1);
                     var subMeshVertices = new Vector3[vertSegments * 2];
                     for (int v = 0; v < vertSegments; v++)
                     {
-                        subMeshVertices[v + vertSegments] = rotation0 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
-                        subMeshVertices[v               ] = rotation1 * new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y);
+                        subMeshVertices[v + vertSegments] = math.mul(rotation0, new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y));
+                        subMeshVertices[v               ] = math.mul(rotation1, new Vector3(polygonVertices[v].x, 0, polygonVertices[v].y));
                     }
 
                     var brushMesh = new BrushMesh();

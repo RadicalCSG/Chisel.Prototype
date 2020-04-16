@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Mathematics;
 using Vector2 = UnityEngine.Vector2;
 
 namespace Chisel.Core
@@ -13,7 +14,7 @@ namespace Chisel.Core
             return ConvexPartitionInternal(inputVertices2D);
         }
         
-        public static bool ConvexPartition(List<Vector2>	inputVertices2D,
+        public static bool ConvexPartition(List<Vector2>	    inputVertices2D,
                                            List<int>		segmentIndices,
                                            out Vector2[][]	outputPolygonVertices2D,
                                            out int[][]		outputPolygonIndices)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,8 +21,11 @@ namespace Chisel.Editors
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
+            Undo.undoRedoPerformed			-= UndoRedoPerformed;
             Undo.undoRedoPerformed			+= UndoRedoPerformed;
+            Selection.selectionChanged		-= SelectionChanged;
             Selection.selectionChanged		+= SelectionChanged;
+            Undo.postprocessModifications	-= PostprocessModifications;
             Undo.postprocessModifications	+= PostprocessModifications;
 
             // internal static void GetRecords(List<string> undoRecords, List<string> redoRecords)

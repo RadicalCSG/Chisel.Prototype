@@ -11,7 +11,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.LayerUsageFlags"/>
     /// <seealso cref="Chisel.Core.LayerParameterIndex"/>
     /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions" />
-    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct MeshQuery
     {
         const int	BitShift	= 24;

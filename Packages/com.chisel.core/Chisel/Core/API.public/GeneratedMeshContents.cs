@@ -1,4 +1,6 @@
 ﻿using System;
+using Unity.Collections;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -8,21 +10,21 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree" /><seealso cref="Chisel.Core.CSGTree.GetGeneratedMesh" />
     /// <seealso cref="Chisel.Core.GeneratedMeshDescription"/><seealso cref="Chisel.Core.SurfaceDescription"/>
     /// <seealso href="https://docs.unity3d.com/ScriptReference/Mesh.html">UnityEngine.Mesh</seealso>
-    public sealed class GeneratedMeshContents
+    public sealed class GeneratedMeshContents : IDisposable
     {
         /// <value>Describes the GeneratedMesh.</value>
         /// <remarks>This is a copy of the description used to retrieve the GeneratedMeshContents by calling <see cref="Chisel.Core.CSGTree.GetGeneratedMesh" />.</remarks>
         public GeneratedMeshDescription description;
 
         /// <value>Triplet indices to the vertices that make up the triangles in this mesh.</value>
-        public int[]					indices;
+        public NativeArray<int> 		indices;
         
         /// <value>Position for each vertex.</value>
-        public UnityEngine.Vector3[]	positions;
+        public NativeArray<float3>	    positions;
         
         /// <value>Tangent for each vertex.</value>
         /// <remarks><note>Can be null when the <see cref="description"/> has no tangents set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note></remarks>
-        public UnityEngine.Vector4[]	tangents;
+        public NativeArray<float4>      tangents;
         
         /// <value>Normal for each vertex.</value>
         /// <remarks>Each <seealso cref="Chisel.Core.BrushMesh.Polygon"/> has a <seealso cref="Chisel.Core.SurfaceDescription.smoothingGroup"/> field in its <seealso cref="Chisel.Core.SurfaceDescription"/>.
@@ -30,14 +32,14 @@ namespace Chisel.Core
         /// If the <seealso cref="Chisel.Core.SurfaceDescription.smoothingGroup"/> is set to 0 the normal of the polygon is used.
         /// <note>Can be null when the <see cref="description"/>  has no normals set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note>
         /// </remarks>
-        public UnityEngine.Vector3[]	normals;
+        public NativeArray<float3>      normals;
 
         /// <value>First uv channel for each vertex.</value>
         /// <remarks>These are created by multiplying the vertices of the <seealso cref="Chisel.Core.BrushMesh"/>, which was used to generate this geometry, 
         /// by the <seealso cref="Chisel.Core.SurfaceDescription.UV0" /> <seealso cref="Chisel.Core.UVMatrix"/> of the <seealso cref="Chisel.Core.SurfaceDescription"/> of the vertex.
         /// <note>Can be null when the <see cref="description"/> has no <seealso cref="Chisel.Core.VertexChannelFlags.UV0" /> set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note>
         /// </remarks>
-        public UnityEngine.Vector2[]	uv0;
+        public NativeArray<float2>      uv0;
 
         /// <value>Bounds of the mesh.</value>
         public UnityEngine.Bounds       bounds;
@@ -68,13 +70,28 @@ namespace Chisel.Core
                 return;
             }
             
-            mesh.vertices = positions;
-            if (normals  != null) mesh.normals	= normals;
-            if (tangents != null) mesh.tangents	= tangents;
-            if (uv0      != null) mesh.uv		= uv0;
+            mesh.SetVertices(positions);
+            if (normals  .IsCreated) mesh.SetNormals(normals);
+            if (tangents .IsCreated) mesh.SetTangents(tangents);
+            if (uv0      .IsCreated) mesh.SetUVs(0, uv0);
             
-            mesh.SetTriangles(indices, 0, false);
+            mesh.SetTriangles(indices.ToArray(), 0, false);
             mesh.bounds = bounds;
+        }
+
+        public void Dispose()
+        {
+            if (indices  .IsCreated) indices.Dispose();
+            if (positions.IsCreated) positions.Dispose();
+            if (tangents .IsCreated) tangents.Dispose();
+            if (normals  .IsCreated) normals.Dispose();
+            if (uv0      .IsCreated) uv0.Dispose();
+            
+            indices   = default;
+            positions = default;
+            tangents  = default;
+            normals   = default;
+            uv0       = default;
         }
     };
 }

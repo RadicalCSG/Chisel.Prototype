@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Unity.Jobs;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -43,11 +45,10 @@ namespace Chisel.Components
     {
         public static event Action              PreReset;
         public static event Action              PostReset;
-        public static event Action<ChiselModel> PreUpdateModel;
         public static event Action<ChiselModel> PostUpdateModel;
         public static event Action              PostUpdateModels;
         
-        const int MaxVertexCount = 65000;
+        const int kMaxVertexCount = HashedVertices.kMaxVertexCount;
 
         static HashSet<ChiselNode>  registeredNodeLookup    = new HashSet<ChiselNode>();
         static List<ChiselModel>    registeredModels        = new List<ChiselModel>();
@@ -106,12 +107,20 @@ namespace Chisel.Components
         public static void UpdateModels()
         {
             // Update the tree meshes
-            if (!CSGManager.Flush())
+            Profiler.BeginSample("Flush");
+            try
             {
-                ChiselGeneratedComponentManager.DelayedUVGeneration();
-                if (sharedUnityMeshes.FindAllUnusedUnityMeshes())
-                    sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
-                return; // Nothing to update ..
+                if (!CSGManager.Flush())
+                {
+                    ChiselGeneratedComponentManager.DelayedUVGeneration();
+                    if (sharedUnityMeshes.FindAllUnusedUnityMeshes())
+                        sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
+                    return; // Nothing to update ..
+                }
+            }
+            finally
+            {
+                Profiler.EndSample();
             }
 
             for (int m = 0; m < registeredModels.Count; m++)
@@ -126,17 +135,9 @@ namespace Chisel.Components
                 if (!tree.Dirty)
                     continue;
 
-                try
-                {
-                    if (PreUpdateModel != null)
-                        PreUpdateModel(model);
-                }
-                catch (Exception ex) // if there's a bug in user-code we don't want to end up in a bad state
-                {
-                    Debug.LogException(ex);
-                }
-
+                Profiler.BeginSample("UpdateModelMeshDescriptions");
                 UpdateModelMeshDescriptions(model);
+                Profiler.EndSample();
 
                 // Re-use existing UnityEngine.Mesh if they exist
                 sharedUnityMeshes.ReuseExistingMeshes(model);
@@ -148,7 +149,9 @@ namespace Chisel.Components
             try
             {
                 // Find all meshes whose refCounts are 0
+                Profiler.BeginSample("sharedUnityMeshes.FindAllUnusedUnityMeshes");
                 sharedUnityMeshes.FindAllUnusedUnityMeshes();
+                Profiler.EndSample();
 
                 // Separate loop so we can re-use garbage collected UnityEngine.Meshes to avoid allocation costs
 
@@ -158,10 +161,14 @@ namespace Chisel.Components
 
                     // Generate new UnityEngine.Mesh instances and fill them with data from the CSG algorithm (if necessary)
                     //	note: reuses garbage collected meshes when possible
+                    Profiler.BeginSample("sharedUnityMeshes.CreateNewMeshes");
                     sharedUnityMeshes.CreateNewMeshes(model);
+                    Profiler.EndSample();
 
                     // Generate (or re-use) components and set them up properly
+                    Profiler.BeginSample("componentGenerator.Rebuild");
                     componentGenerator.Rebuild(model);
+                    Profiler.EndSample();
                 }
             }
             finally
@@ -172,8 +179,10 @@ namespace Chisel.Components
                     try
                     {
                         modifications = true;
+                        Profiler.BeginSample("PostUpdateModel");
                         if (PostUpdateModel != null)
                             PostUpdateModel(model);
+                        Profiler.EndSample();
                     }
                     catch (Exception ex) // if there's a bug in user-code we don't want to end up in a bad state
                     {
@@ -184,40 +193,17 @@ namespace Chisel.Components
             }
 
             // Destroy all meshes whose refCounts are 0
+            Profiler.BeginSample("DestroyNonRecycledUnusedUnityMeshes");
             sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
+            Profiler.EndSample();
 
             if (modifications)
             {
+                Profiler.BeginSample("PostUpdateModels");
                 if (PostUpdateModels != null)
                     PostUpdateModels();
+                Profiler.EndSample();
             }
-        }
-
-        public static void UpdateModel(ChiselModel model)
-        {
-            if (PreUpdateModel != null)
-                PreUpdateModel(model);
-
-            UpdateModelMeshDescriptions(model);
-
-            // Re-use existing UnityEngine.Mesh if they exist
-            sharedUnityMeshes.ReuseExistingMeshes(model);
-
-            // Find all meshes whose refCounts are 0
-            sharedUnityMeshes.FindAllUnusedUnityMeshes();
-
-            // Generate new UnityEngine.Mesh instances and fill them with data from the CSG algorithm (if necessary)
-            //	note: reuses garbage collected meshes when possible
-            sharedUnityMeshes.CreateNewMeshes(model);
-
-            // Generate (or re-use) components and set them up properly
-            componentGenerator.Rebuild(model);
-
-            if (PostUpdateModel != null)
-                PostUpdateModel(model);
-
-            // Destroy all meshes whose refCounts are 0
-            sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
         }
 
         static ChiselGeneratedModelMesh[]		__emptyGeneratedMeshesTable		= new ChiselGeneratedModelMesh[0];		// static to avoid allocations
@@ -255,9 +241,9 @@ namespace Chisel.Components
                     continue;
                 
                 // Make sure the mesh is valid
-                if (meshDescription.vertexCount >= MaxVertexCount)
+                if (meshDescription.vertexCount >= kMaxVertexCount)
                 {
-                    Debug.LogError("Mesh has too many vertices (" + meshDescription.vertexCount + " > " + MaxVertexCount + ")");
+                    Debug.LogError("Mesh has too many vertices (" + meshDescription.vertexCount + " > " + kMaxVertexCount + ")");
                     continue;
                 }
 

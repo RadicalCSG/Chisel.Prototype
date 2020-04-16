@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -410,6 +411,7 @@ namespace Chisel.Editors
         
         static ChiselRenderer HandleRenderer { get { return GetHandleRenderer(Camera.current); } }
 
+        #region Vector3 versions
         public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, color, lineMode, thickness, dashSize); }
         public static void DrawLine(Matrix4x4 transformation, Vector3 from, Vector3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, lineMode, thickness, dashSize); }
         public static void DrawLine(Vector3 from, Vector3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(from, to, color, lineMode, thickness, dashSize); }
@@ -429,6 +431,29 @@ namespace Chisel.Editors
         public static void DrawPolygon(Matrix4x4 transformation, Vector3[] points, int[] indices, Color color) { HandleRenderer.DrawPolygon(transformation, points, indices, color); }
         public static void DrawPolygon(Matrix4x4 transformation, Vector3[] points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
         public static void DrawPolygon(Matrix4x4 transformation, List<Vector3> points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
+        #endregion
+
+        #region float3 versions
+        public static void DrawLine(float4x4 transformation, float3 from, float3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, color, lineMode, thickness, dashSize); }
+        public static void DrawLine(float4x4 transformation, float3 from, float3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(transformation, from, to, lineMode, thickness, dashSize); }
+        public static void DrawLine(float3 from, float3 to, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(from, to, color, lineMode, thickness, dashSize); }
+        public static void DrawLine(float3 from, float3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLine(from, to, lineMode, thickness, dashSize); }
+
+
+        public static void DrawContinuousLines(float4x4 transformation, float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(float4x4 transformation, float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawContinuousLines(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize); }
+
+        public static void DrawLineLoop(float4x4 transformation, float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(transformation, points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(float4x4 transformation, float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(transformation, points, startIndex, length, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(points, startIndex, length, color, lineMode, thickness, dashSize); }
+        public static void DrawLineLoop(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { HandleRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize); }
+        
+        public static void DrawPolygon(float4x4 transformation, float3[] points, int[] indices, Color color) { HandleRenderer.DrawPolygon(transformation, points, indices, color); }
+        public static void DrawPolygon(float4x4 transformation, float3[] points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
+        public static void DrawPolygon(float4x4 transformation, List<float3> points, Color color) { HandleRenderer.DrawPolygon(transformation, points, color); }
+        #endregion
 
         void UpdateBrushWireframe()
         {

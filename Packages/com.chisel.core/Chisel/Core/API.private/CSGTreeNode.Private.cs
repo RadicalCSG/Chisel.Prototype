@@ -5,26 +5,10 @@ namespace Chisel.Core
 {
     partial struct CSGTreeNode
     {
-        internal static Matrix4x4 GetTreeToNodeSpaceMatrix(Int32 nodeID)
-        {
-            Matrix4x4 result = Matrix4x4.identity;
-            if (GetTreeToNodeSpaceMatrix(nodeID, out result))
-                return result;
-            return Matrix4x4.identity;
-        }		
-
-        internal static Matrix4x4 GetNodeToTreeSpaceMatrix(Int32 nodeID)
-        {
-            Matrix4x4 result = Matrix4x4.identity;
-            if (GetNodeToTreeSpaceMatrix(nodeID, out result))
-                return result;
-            return Matrix4x4.identity;
-        }
 
         internal static Matrix4x4 GetNodeLocalTransformation(Int32 nodeID)
         {
-            Matrix4x4 result = Matrix4x4.identity;
-            if (GetNodeLocalTransformation(nodeID, out result))
+            if (GetNodeLocalTransformation(nodeID, out Matrix4x4 result))
                 return result;
             return Matrix4x4.identity;
         }

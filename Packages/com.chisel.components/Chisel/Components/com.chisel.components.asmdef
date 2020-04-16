@@ -2,9 +2,9 @@
     "name": "com.chisel.components",
     "references": [
         "com.chisel.core",
-        "com.scene.handle.extensions.runtime"
+        "com.scene.handle.extensions.runtime",
+        "Unity.Mathematics"
     ],
-    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

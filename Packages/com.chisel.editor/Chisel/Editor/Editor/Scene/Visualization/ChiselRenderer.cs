@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Chisel.Core;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -118,6 +119,30 @@ namespace Chisel.Editors
         }
 
 
+        public void DrawContinuousLines(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawContinuousLines(UnityEditor.Handles.matrix, points, startIndex, length, UnityEditor.Handles.color, lineMode, thickness, dashSize);
+        }
+
+        public void DrawContinuousLines(float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawContinuousLines(UnityEditor.Handles.matrix, points, startIndex, length, color, lineMode, thickness, dashSize);
+        }
+
+        public void DrawContinuousLines(float4x4 transformation, float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawContinuousLines(transformation, points, startIndex, length, UnityEditor.Handles.color, lineMode, thickness, dashSize);
+        }
+
+        public void DrawContinuousLines(float4x4 transformation, float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            switch (lineMode)
+            {
+                case LineMode.ZTest:    zTestLinesManager.DrawContinuousLines(transformation, points, startIndex, length, color, thickness, dashSize); break;
+                case LineMode.NoZTest:  noZTestLinesManager.DrawContinuousLines(transformation, points, startIndex, length, color, thickness, dashSize); break;
+            }
+        }
+
         public void DrawPolygon(Matrix4x4 transformation, Vector3[] points, int[] indices, Color color)
         {
             polygonManager.DrawPolygon(transformation, points, indices, color);
@@ -129,6 +154,21 @@ namespace Chisel.Editors
         }
 
         public void DrawPolygon(Matrix4x4 transformation, List<Vector3> points, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, color);
+        }
+
+        public void DrawPolygon(float4x4 transformation, float3[] points, int[] indices, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, indices, color);
+        }
+
+        public void DrawPolygon(float4x4 transformation, float3[] points, Color color)
+        {
+            polygonManager.DrawPolygon(transformation, points, color);
+        }
+
+        public void DrawPolygon(float4x4 transformation, List<float3> points, Color color)
         {
             polygonManager.DrawPolygon(transformation, points, color);
         }
@@ -149,12 +189,38 @@ namespace Chisel.Editors
             DrawLineLoop(transformation, points, startIndex, length, UnityEditor.Handles.color, lineMode, thickness, dashSize);
         }
 
+
+        public void DrawLineLoop(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawLineLoop(UnityEditor.Handles.matrix, points, startIndex, length, UnityEditor.Handles.color, lineMode, thickness, dashSize);
+        }
+
+        public void DrawLineLoop(float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawLineLoop(UnityEditor.Handles.matrix, points, startIndex, length, color, lineMode, thickness, dashSize);
+        }
+
+        public void DrawLineLoop(float4x4 transformation, float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            DrawLineLoop(transformation, points, startIndex, length, UnityEditor.Handles.color, lineMode, thickness, dashSize);
+        }
+
+
         public void DrawLineLoop(Matrix4x4 transformation, Vector3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
         {
             switch (lineMode)
             {
                 case LineMode.ZTest:	zTestLinesManager  .DrawLineLoop(transformation, points, startIndex, length, color, thickness, dashSize); break;
                 case LineMode.NoZTest:	noZTestLinesManager.DrawLineLoop(transformation, points, startIndex, length, color, thickness, dashSize); break;
+            }
+        }
+
+        public void DrawLineLoop(Matrix4x4 transformation, float3[] points, int startIndex, int length, Color color, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            switch (lineMode)
+            {
+                case LineMode.ZTest:    zTestLinesManager.DrawLineLoop(transformation, points, startIndex, length, color, thickness, dashSize); break;
+                case LineMode.NoZTest:  noZTestLinesManager.DrawLineLoop(transformation, points, startIndex, length, color, thickness, dashSize); break;
             }
         }
 

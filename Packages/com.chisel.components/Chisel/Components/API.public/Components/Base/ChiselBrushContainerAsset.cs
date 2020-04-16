@@ -71,8 +71,13 @@ namespace Chisel.Components
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
                 if (brushMesh == null ||
                     !brushMesh.Validate(logErrors: true))
+                {
                     brushMesh.Clear();
-                instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+                    instances[i] = BrushMeshInstance.InvalidInstance;
+                } else
+                { 
+                    instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+                }
             }
         }
 
@@ -112,7 +117,8 @@ namespace Chisel.Components
                 if (brushContainer.brushMeshes[i] == null)
                     throw new NullReferenceException("SubMeshes[" + i + "] is null");
                 if (brushContainer.brushMeshes[i].polygons == null)
-                    throw new NullReferenceException("SubMeshes[" + i + "].polygons is null");
+                    brushContainer.brushMeshes[i].polygons = new BrushMesh.Polygon[0];
+                    //throw new NullReferenceException("SubMeshes[" + i + "].polygons is null");
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
                 brushMesh.CalculatePlanes();
                 brushMesh.UpdateHalfEdgePolygonIndices();

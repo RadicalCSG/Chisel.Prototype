@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -7,7 +9,7 @@ namespace Chisel.Core
     [Serializable]
     public sealed partial class ChiselWireframe
     {
-        internal Vector3[]	vertices                = null;
+        internal float3[]	vertices                = null;
         internal Int32[]	visibleOuterLines       = null;
         internal Int32[]	visibleInnerLines       = null;
         internal Int32[]	visibleTriangles		= null;
@@ -20,7 +22,7 @@ namespace Chisel.Core
         internal int		originBrushID			= 0;
         internal int		originSurfaceID			= 0;
         
-        public Vector3[]	Vertices                { get { return vertices; } }
+        public float3[]	    Vertices                { get { return vertices; } }
         public Int32[]		VisibleOuterLines       { get { return visibleOuterLines; } }
         public Int32[]		VisibleInnerLines       { get { return visibleInnerLines; } }
         public Int32[]		VisibleTriangles		{ get { return visibleTriangles; } }

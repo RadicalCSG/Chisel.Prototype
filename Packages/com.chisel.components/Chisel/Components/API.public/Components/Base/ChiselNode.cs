@@ -45,7 +45,7 @@ namespace Chisel.Components
             return true;
         }
 
-        protected void OnDisable()
+        protected virtual void OnDisable()
         {
             // Note: cannot call OnCleanup here
             ChiselNodeHierarchyManager.UpdateAvailability(this);

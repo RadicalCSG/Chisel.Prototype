@@ -17,7 +17,10 @@ namespace Chisel.Core
         /// <summary>The given <see cref="Chisel.Core.CSGTreeBrush"/> or <see cref="Chisel.Core.CSGTreeBranch"/> removes all the geometry that is outside it.</summary>
         Intersecting = 2,
 
+        /// <summary>The given <see cref="Chisel.Core.CSGTreeBrush"/> or <see cref="Chisel.Core.CSGTreeBranch"/> is added to the <see cref="Chisel.Core.CSGTree"/>.</summary>
+        Copy = 3,
+
         /// <summary>Invalid value.</summary>
-        Invalid = 3 // TODO: these values are hardcoded into the dll, once we switch away from native code we can change the order
+        Invalid = 4
     }
 }

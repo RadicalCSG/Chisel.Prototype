@@ -1,14 +1,12 @@
 ﻿using System;
-using System.Runtime.InteropServices;
-using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
     sealed partial class ChiselWireframe
     {
-#if USE_MANAGED_CSG_IMPLEMENTATION
         // TODO: generate outlines somewhere in managed code
 
 
@@ -25,7 +23,7 @@ namespace Chisel.Core
             brushOutline.Reset();
             if (brushMesh == null)
                 return brushOutline;
-            brushOutline.surfaceOutlines = new Outline[brushMesh.surfaces.Length];
+            brushOutline.surfaceOutlines = new Outline[brushMesh.planes.Length];
             brushOutline.vertices = brushMesh.vertices.ToArray();
 
             var surfaceOutlines = brushOutline.surfaceOutlines;
@@ -68,7 +66,6 @@ namespace Chisel.Core
         internal static void UpdateOutline(Int32 brushNodeID)
         {
             var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
-            brushInfo.brushOutlineGeneration++;
             var brushMeshInstanceID = CSGManager.GetBrushMeshID(brushNodeID);
             if (BrushMeshManager.IsBrushMeshIDValid(brushMeshInstanceID))
             {
@@ -83,7 +80,7 @@ namespace Chisel.Core
         }
 
         private static bool GetBrushOutlineValues(Int32             brushNodeID,
-                                                  ref Vector3[]     vertices,
+                                                  ref float3[]      vertices,
                                                   ref Int32[]       visibleOuterLines,
                                                   ref Int32[]       visibleInnerLines,
                                                   ref Int32[]       invisibleOuteLines,
@@ -93,6 +90,12 @@ namespace Chisel.Core
             var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
             if (brushInfo == null)
                 return false;
+
+            if (brushInfo.brushOutlineDirty)
+            {
+                ChiselWireframe.UpdateOutline(brushNodeID);
+                brushInfo.brushOutlineDirty = false;
+            }
 
             var brushOutline = brushInfo.brushOutline;
             if (brushOutline == null ||
@@ -112,7 +115,7 @@ namespace Chisel.Core
 
         private static bool GetSurfaceOutlineValues(Int32           brushNodeID,
                                                     Int32           surfaceID,
-                                                    ref Vector3[]   vertices,
+                                                    ref float3[]    vertices,
                                                     ref Int32[]     visibleOuterLines,
                                                     ref Int32[]     visibleInnerLines,
                                                     ref Int32[]     visibleTriangles,
@@ -123,6 +126,12 @@ namespace Chisel.Core
             var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
             if (brushInfo == null)
                 return false;
+
+            if (brushInfo.brushOutlineDirty)
+            {
+                ChiselWireframe.UpdateOutline(brushNodeID);
+                brushInfo.brushOutlineDirty = false;
+            }
 
             var brushOutline = brushInfo.brushOutline;
             if (brushOutline == null ||
@@ -167,7 +176,7 @@ namespace Chisel.Core
             wireframe.outlineGeneration = GetBrushOutlineGeneration(brushNodeID);
             return wireframe;
         }
-        
+
         private static bool UpdateSurfaceWireframe(ChiselWireframe wireframe)
         {
             bool success = GetSurfaceOutlineValues(wireframe.originBrushID, 
@@ -185,7 +194,7 @@ namespace Chisel.Core
 
             wireframe.outlineGeneration = GetBrushOutlineGeneration(wireframe.originBrushID);
             return true;
-        }        
+        }
 
         private static ChiselWireframe CreateBrushWireframe(Int32 brushNodeID)
         {
@@ -221,6 +230,5 @@ namespace Chisel.Core
             wireframe.outlineGeneration = GetBrushOutlineGeneration(wireframe.originBrushID);
             return true;
         }
-#endif
     }
 }

@@ -25,17 +25,10 @@ namespace Chisel.Core
             if (vertexCount < 4)
                 return 0;
 
-#if USE_MANAGED_CSG_IMPLEMENTATION
             var result = CreateBrushMesh(userID,
                                          brushMesh.vertices,
                                          brushMesh.halfEdges,
                                          brushMesh.polygons);
-#else
-            var result = CreateBrushMesh(userID,
-                                         vertexCount,  brushMesh.vertices,
-                                         edgeCount,    brushMesh.halfEdges,
-                                         polygonCount, ConvertToNative(brushMesh.polygons));
-#endif
             if (result <= 0)
                 result = 0;
             return result;
@@ -59,17 +52,10 @@ namespace Chisel.Core
                 return false;
 
             var vertexCount = brushMesh.vertices.Length;
-#if USE_MANAGED_CSG_IMPLEMENTATION
             var result = UpdateBrushMesh(brushMeshIndex,
                                          brushMesh.vertices,
                                          brushMesh.halfEdges,
                                          brushMesh.polygons);
-#else
-            var result = UpdateBrushMesh(brushMeshIndex,
-                                         vertexCount,  brushMesh.vertices,
-                                         edgeCount,    brushMesh.halfEdges,
-                                         polygonCount, ConvertToNative(brushMesh.polygons));
-#endif
             return result;
         }
     }

@@ -11,6 +11,7 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -171,7 +172,9 @@ namespace Chisel.Core
             
             brushMesh.polygons	= polygons;
             brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices	= vertices;
+            brushMesh.vertices = new float3[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                brushMesh.vertices[i] = vertices[i];
             return true;
         }
 
@@ -219,8 +222,8 @@ namespace Chisel.Core
                 var v2 = vertices[e + segments];
                 var v3 = vertices[p + segments];
 
-                var equals03 = (v0 - v3).sqrMagnitude < 0.0001f;
-                var equals12 = (v1 - v2).sqrMagnitude < 0.0001f;
+                var equals03 = math.lengthsq(v0 - v3) < 0.0001f;
+                var equals12 = math.lengthsq(v1 - v2) < 0.0001f;
                 if (equals03)
                 {
                     if (equals12)
@@ -566,7 +569,10 @@ namespace Chisel.Core
 
             brushMesh.polygons = polygons;
             brushMesh.halfEdges = halfEdges;
-            brushMesh.vertices = vertices;
+            brushMesh.vertices = new float3[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                brushMesh.vertices[i] = vertices[i];
+            brushMesh.CalculatePlanes();
             if (!brushMesh.Validate(logErrors: true))
                 brushMesh.Clear();
             return true;
@@ -578,7 +584,7 @@ namespace Chisel.Core
             for (int i = sideVertices.Length - 1; i >= 0; i--)
             {
                 var j = (i - 1 + sideVertices.Length) % sideVertices.Length;
-                var magnitude = (sideVertices[j] - sideVertices[i]).sqrMagnitude;
+                var magnitude = math.lengthsq(sideVertices[j] - sideVertices[i]);
                 if (magnitude < distanceEpsilon)
                 {
                     // TODO: improve on this
@@ -811,7 +817,9 @@ namespace Chisel.Core
 
             brushMesh.polygons	= polygons;
             brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices	= vertices;
+            brushMesh.vertices = new float3[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                brushMesh.vertices[i] = vertices[i];
             if (!brushMesh.Validate(logErrors: true))
                 brushMesh.Clear();
         }

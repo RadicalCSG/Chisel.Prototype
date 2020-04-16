@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Chisel.Core;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -338,10 +339,18 @@ namespace Chisel.Components
                     if (instances != null && instances[0].Valid)
                         brushContainerAsset.DestroyInstances();
                 }
-
-                if (OnBrushMeshInstanceDestroyed != null)
-                    OnBrushMeshInstanceDestroyed(brushContainerAsset);
             }
+            Profiler.BeginSample("OnBrushMeshInstanceDestroyed");
+            if (OnBrushMeshInstanceDestroyed != null)
+            {
+                for (int i = 0; i < unregisterQueue.Count; i++)
+                {
+                    var brushContainerAsset = unregisterQueue[i];
+                    OnBrushMeshInstanceDestroyed(brushContainerAsset);
+                }
+            }
+            Profiler.EndSample();
+
             unregisterQueue.Clear();
             unregisterQueueLookup.Clear();
             
@@ -369,10 +378,21 @@ namespace Chisel.Components
                 {
                     Debug.LogException(ex);
                 }
-
-                if (OnBrushMeshInstanceChanged != null)
-                    OnBrushMeshInstanceChanged(brushContainerAsset);
             }
+
+            Profiler.BeginSample("OnBrushMeshInstanceChanged");
+            if (OnBrushMeshInstanceChanged != null)
+            {
+                for (int i = 0; i < updateQueue.Count; i++)
+                {
+                    var brushContainerAsset = updateQueue[i];
+                    if (!brushContainerAsset)
+                        continue;
+                    OnBrushMeshInstanceChanged(brushContainerAsset);
+                }
+            }
+            Profiler.EndSample();
+
             updateQueue.Clear();
             updateQueueLookup.Clear();
         }

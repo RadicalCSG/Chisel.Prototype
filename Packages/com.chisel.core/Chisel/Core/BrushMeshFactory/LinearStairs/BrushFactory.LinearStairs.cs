@@ -10,6 +10,7 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -809,7 +810,7 @@ namespace Chisel.Core
                 thickRiser          = riserType == StairsRiserType.ThickRiser || riserType == StairsRiserType.Smooth;
                 riserDepth          = (haveRiser && !thickRiser) ? definition.riserDepth : 0;
 
-                sideDepth           = riserDepth + Mathf.Max(definition.sideDepth, thickRiser ? definition.stepDepth : 0);
+                sideDepth           = riserDepth + math.max(definition.sideDepth, thickRiser ? definition.stepDepth : 0);
                 
                 stepCount           = definition.StepCount;
                 offsetZ             = (definition.StepDepthOffset < kEpsilon) ? 0 : definition.StepDepthOffset;
@@ -885,8 +886,8 @@ namespace Chisel.Core
                             min.y += description.treadHeight - description.offsetY;
                         }
 
-                        var minZ = Mathf.Max(description.boundsMin.z, min.z);
-                        var maxZ = Mathf.Min(description.boundsMax.z, max.z);
+                        var minZ = math.max(description.boundsMin.z, min.z);
+                        var maxZ = math.min(description.boundsMax.z, max.z);
 
                         Vector3[] vertices;
                         if (i == 0 || description.riserType != StairsRiserType.Smooth)

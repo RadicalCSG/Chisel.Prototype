@@ -13,7 +13,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeNode"/>
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]	
+    [StructLayout(LayoutKind.Sequential)]	
     public partial struct CSGTree
     {
         #region Create
@@ -36,7 +36,7 @@ namespace Chisel.Core
             }
             return new CSGTree() { treeNodeID = treeNodeID };
         }
-        
+
         /// <summary>Generates a tree and returns a <see cref="Chisel.Core.CSGTree"/> struct that contains a reference to it.</summary>
         /// <param name="children">The child nodes that are children of this tree. A tree may not have duplicate children, contain itself or contain a <see cref="Chisel.Core.CSGTree"/>.</param>
         /// <returns>A new <see cref="Chisel.Core.CSGTree"/>. May be an invalid node if it failed to create it.</returns>
@@ -65,7 +65,7 @@ namespace Chisel.Core
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeNode"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         public bool Destroy		()				{ var prevTreeNodeID = treeNodeID; treeNodeID = CSGTreeNode.InvalidNodeID; return CSGTreeNode.DestroyNode(prevTreeNodeID); }
-        
+
         /// <summary>Sets the state of this struct to invalid.</summary>
         public void SetInvalid	()				{ treeNodeID = CSGTreeNode.InvalidNodeID; }
         #endregion
@@ -164,9 +164,10 @@ namespace Chisel.Core
         /// <param name="previousGeneratedMeshContents">The previously generated <see cref="Chisel.Core.GeneratedMeshContents"/>, this can reuse allocated memory if the mesh hasn't changed shape. (optional)</param>
         /// <returns>A <see cref="Chisel.Core.GeneratedMeshContents"/> that can be used to initialize a [UnityEngine.Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) with.</returns>
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions"/>
-        public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription, GeneratedMeshContents previousGeneratedMeshContents = null) { return GetGeneratedMesh(treeNodeID, meshDescription, previousGeneratedMeshContents); }
+        public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
 
         // TODO: add description
+        
         public CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]		meshQuery, 
                                                        Vector3			worldRayStart,
                                                        Vector3			worldRayEnd, 
@@ -181,14 +182,14 @@ namespace Chisel.Core
         }
 
         // TODO: add description
-        public CSGTreeNode[] GetNodesInFrustum(Plane[]		planes)
+        public CSGTreeNode[] GetNodesInFrustum(MeshQuery[] meshQuery, Plane[] planes)
         {
             CSGTreeNode[] nodes;
-            if (!GetNodesInFrustum(planes, out nodes))
+            if (!GetNodesInFrustum(meshQuery, planes, out nodes))
                 return null;
             return nodes;
         }
-        
+
         // TODO: add description / make this more consistent
         public static CSGTree	Find(int userID)			{ return new CSGTree { treeNodeID = FindTreeByUserID(userID) }; }
 
@@ -198,9 +199,22 @@ namespace Chisel.Core
         public static bool operator == (CSGTree left, CSGTree right) { return left.treeNodeID == right.treeNodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool operator != (CSGTree left, CSGTree right) { return left.treeNodeID != right.treeNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(CSGTree left, CSGTreeNode right) { return left.treeNodeID == right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(CSGTree left, CSGTreeNode right) { return left.treeNodeID != right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(CSGTreeNode left, CSGTree right) { return left.nodeID == right.treeNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(CSGTreeNode left, CSGTree right) { return left.nodeID != right.treeNodeID; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj) { if (!(obj is CSGTree)) return false; var other = (CSGTree)obj; return treeNodeID == other.treeNodeID; }
+        public override bool Equals(object obj)
+		{
+			if (obj is CSGTree) return treeNodeID == ((CSGTree)obj).treeNodeID;
+			if (obj is CSGTreeNode) return treeNodeID == ((CSGTreeNode)obj).nodeID;
+			return false;
+		}
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return treeNodeID.GetHashCode(); }
         #endregion

@@ -10,6 +10,7 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -157,15 +158,15 @@ namespace Chisel.Core
                         var i1 = o1 - riserVector;
 
                         var vertices = new[] {
-                                                new Vector3( i0.x, maxY, i0.y), // 0
-                                                new Vector3( i1.x, maxY, i1.y), // 1
-                                                new Vector3( o1.x, maxY, o1.y), // 2
-                                                new Vector3( o0.x, maxY, o0.y), // 3  
+                                                new float3( i0.x, maxY, i0.y), // 0
+                                                new float3( i1.x, maxY, i1.y), // 1
+                                                new float3( o1.x, maxY, o1.y), // 2
+                                                new float3( o0.x, maxY, o0.y), // 3  
                                             
-                                                new Vector3( i0.x, minY, i0.y), // 4
-                                                new Vector3( i1.x, minY, i1.y), // 5
-                                                new Vector3( o1.x, minY, o1.y), // 6
-                                                new Vector3( o0.x, minY, o0.y), // 7
+                                                new float3( i0.x, minY, i0.y), // 4
+                                                new float3( i1.x, minY, i1.y), // 5
+                                                new float3( o1.x, minY, o1.y), // 6
+                                                new float3( o0.x, minY, o0.y), // 7
                                             };
 
                         ref var brushMesh = ref brushContainer.brushMeshes[i];
@@ -240,12 +241,12 @@ namespace Chisel.Core
 
                             {
                                 var vertices = new[] {
-                                                        new Vector3(  i0.x, maxY,  i0.y), // 0
-                                                        new Vector3(  i0.x, minY,  i0.y), // 1
-                                                        new Vector3(  o0.x, minY,  o0.y), // 2  
-                                                        new Vector3(  o0.x, maxY,  o0.y), // 3  
+                                                        new float3(  i0.x, maxY,  i0.y), // 0
+                                                        new float3(  i0.x, minY,  i0.y), // 1
+                                                        new float3(  o0.x, minY,  o0.y), // 2  
+                                                        new float3(  o0.x, maxY,  o0.y), // 3  
 
-                                                        new Vector3(  o1.x, maxY,  o1.y), // 4
+                                                        new float3(  o1.x, maxY,  o1.y), // 4
                                                     };
 
                                 ref var brushMesh = ref brushContainer.brushMeshes[subMeshIndex];
@@ -263,11 +264,11 @@ namespace Chisel.Core
 
                             {
                                 var vertices = new[] {
-                                                        new Vector3(  i0.x, maxY,  i0.y), // 0
-                                                        new Vector3(  i0.x, minY,  i0.y), // 1
-                                                        new Vector3(  i1.x, maxY,  i1.y), // 2
+                                                        new float3(  i0.x, maxY,  i0.y), // 0
+                                                        new float3(  i0.x, minY,  i0.y), // 1
+                                                        new float3(  i1.x, maxY,  i1.y), // 2
 
-                                                        new Vector3(  o1.x, maxY,  o1.y), // 3
+                                                        new float3(  o1.x, maxY,  o1.y), // 3
                                                     };
 
                                 ref var brushMesh = ref brushContainer.brushMeshes[subMeshIndex];
@@ -289,11 +290,11 @@ namespace Chisel.Core
 
                         {
                             var vertices = new[] {
-                                                    new Vector3(  i0.x, maxY,  i0.y), // 0
-                                                    new Vector3(  i1.x, maxY,  i1.y), // 2
-                                                    new Vector3(  i0.x, minY,  i0.y), // 1
+                                                    new float3(  i0.x, maxY,  i0.y), // 0
+                                                    new float3(  i1.x, maxY,  i1.y), // 2
+                                                    new float3(  i0.x, minY,  i0.y), // 1
 
-                                                    new Vector3( origin.x, minY, origin.y), // 3
+                                                    new float3( origin.x, minY, origin.y), // 3
                                                 };
 
                             ref var brushMesh = ref brushContainer.brushMeshes[subMeshIndex];
@@ -311,11 +312,11 @@ namespace Chisel.Core
 
                         {
                             var vertices = new[] {
-                                                    new Vector3(  i1.x, maxY,  i1.y), // 2
-                                                    new Vector3(  i0.x, maxY,  i0.y), // 0
-                                                    new Vector3( origin.x, maxY, origin.y), // 1
+                                                    new float3(  i1.x, maxY,  i1.y), // 2
+                                                    new float3(  i0.x, maxY,  i0.y), // 0
+                                                    new float3( origin.x, maxY, origin.y), // 1
 
-                                                    new Vector3( origin.x, minY, origin.y), // 3
+                                                    new float3( origin.x, minY, origin.y), // 3
                                                 };
 
                             ref var brushMesh = ref brushContainer.brushMeshes[subMeshIndex];
@@ -357,13 +358,13 @@ namespace Chisel.Core
                         o0 = new Vector2(origin.x + c0, origin.z + s0);
                         o1 = new Vector2(origin.x + c1, origin.z + s1);
                         var vertices = new[] {
-                                                new Vector3( origin.x, maxY, origin.z), // 0
-                                                new Vector3(  o1.x, maxY,  o1.y), // 1
-                                                new Vector3(  o0.x, maxY,  o0.y), // 2  
+                                                new float3( origin.x, maxY, origin.z), // 0
+                                                new float3(  o1.x, maxY,  o1.y), // 1
+                                                new float3(  o0.x, maxY,  o0.y), // 2  
 
-                                                new Vector3( origin.x, minY, origin.z), // 3
-                                                new Vector3(  o1.x, minY,  o1.y), // 4
-                                                new Vector3(  o0.x, minY,  o0.y), // 5
+                                                new float3( origin.x, minY, origin.z), // 3
+                                                new float3(  o1.x, minY,  o1.y), // 4
+                                                new float3(  o0.x, minY,  o0.y), // 5
                                             };
 
                         ref var brushMesh = ref brushContainer.brushMeshes[i];
@@ -428,15 +429,15 @@ namespace Chisel.Core
                     o0 += noseSizeDeep;
 
                     var vertices = new[] {
-                                            new Vector3( i1.x, maxY, i1.y), // 1
-                                            new Vector3( i0.x, maxY, i0.y), // 0
-                                            new Vector3( o0.x, maxY, o0.y), // 3
-                                            new Vector3( o1.x, maxY, o1.y), // 2  
+                                            new float3( i1.x, maxY, i1.y), // 1
+                                            new float3( i0.x, maxY, i0.y), // 0
+                                            new float3( o0.x, maxY, o0.y), // 3
+                                            new float3( o1.x, maxY, o1.y), // 2  
                                             
-                                            new Vector3( i1.x, minY, i1.y), // 5
-                                            new Vector3( i0.x, minY, i0.y), // 4
-                                            new Vector3( o0.x, minY, o0.y), // 7
-                                            new Vector3( o1.x, minY, o1.y), // 6
+                                            new float3( i1.x, minY, i1.y), // 5
+                                            new float3( i0.x, minY, i0.y), // 4
+                                            new float3( o0.x, minY, o0.y), // 7
+                                            new float3( o1.x, minY, o1.y), // 6
                                         };
                     ref var brushMesh = ref brushContainer.brushMeshes[i];
                     if (n == 0)

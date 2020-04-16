@@ -9,6 +9,7 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -87,9 +88,9 @@ namespace Chisel.Core
                 {
                     var hRad = (s * degreePerSegment) + degreeOffset;
 
-                    var x = center.x + (Mathf.Cos(hRad) * radius);
+                    var x = center.x + (math.cos(hRad) * radius);
                     var y = center.y;
-                    var z = center.z + (Mathf.Sin(hRad) * topLength);
+                    var z = center.z + (math.sin(hRad) * topLength);
 
                     vertices[vertexIndex] = new Vector3(x, y, z);
                     vertexIndex++;
@@ -113,16 +114,16 @@ namespace Chisel.Core
                 {
                     var hRad = (s * degreePerSegment) + degreeOffset;
 
-                    var x = center.x + (Mathf.Cos(hRad) * radius);
+                    var x = center.x + (math.cos(hRad) * radius);
                     var y = center.y;
-                    var z = center.z + (Mathf.Sin(hRad) * bottomLength);
+                    var z = center.z + (math.sin(hRad) * bottomLength);
 
                     vertices[vertexIndex] = new Vector3(x, y, z);
                     vertexIndex++;
                 }
             }
-            
-            var extrusion = Vector3.up *  definition.height;
+
+            var extrusion = new Vector3(0, 1, 0) * definition.height;
             for (int s = 0; s < sides; s++)
                 vertices[s + sides] = vertices[s] + extrusion;
             return true;

@@ -1,7 +1,8 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -20,9 +21,6 @@ namespace Chisel.Editors
 
         static void DrawOutline(ChiselCapsuleDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            //var baseColor		= UnityEditor.Handles.yAxisColor;
-            //var isDisabled	= UnitySceneExtensions.Handles.disabled;
-            //var normal		= Vector3.up;
             var sides			= definition.sides;
             
             // TODO: share this logic with GenerateCapsuleVertices

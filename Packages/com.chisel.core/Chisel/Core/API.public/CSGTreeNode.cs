@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Matrix4x4 = UnityEngine.Matrix4x4;
@@ -36,7 +37,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree"/>
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct CSGTreeNode 
     {
         #region Node
@@ -53,14 +54,14 @@ namespace Chisel.Core
 
         /// <value>Returns the dirty flag of the <see cref="Chisel.Core.CSGTreeNode"/>.</value>
         public bool				Dirty			{ get { return CSGTreeNode.IsNodeDirty(nodeID); } }
-    
+
         /// <summary>Force set the dirty flag of the <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
         public void SetDirty	()				{ CSGTreeNode.SetDirty(nodeID); }
-    
+
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeNode"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         public bool	Destroy		()				{ var prevNodeID = nodeID; nodeID = CSGTreeNode.InvalidNodeID; return CSGTreeNode.DestroyNode(prevNodeID); }
-                
+
         /// <summary>Sets the state of this struct to invalid.</summary>
         public void SetInvalid	()				{ nodeID = CSGTreeNode.InvalidNodeID; }
         #endregion
@@ -84,7 +85,7 @@ namespace Chisel.Core
         /// <param name="index">The zero-based index of the child to get.</param>
         /// <returns>The element at the specified index.</returns>
         public CSGTreeNode		this[int index]	{ get { return new CSGTreeNode { nodeID = CSGTreeNode.GetChildNodeAtIndex(nodeID, index) }; } }
-        
+
         /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/> to a new array.</summary>
         /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/>.</returns>
         public CSGTreeNode[]	ChildrenToArray() { return CSGTreeNode.GetChildNodes(nodeID); }
@@ -93,12 +94,12 @@ namespace Chisel.Core
         #region TreeNode specific
         /// <value>Gets the node-type of this <see cref="Chisel.Core.CSGTreeNode"/>.</value>
         public CSGNodeType		Type				  { get { return CSGTreeNode.GetTypeOfNode(nodeID); } }
-        
+
         /// <summary>Creates a <see cref="Chisel.Core.CSGTreeNode"/> from a given nodeID.</summary>
         /// <param name="id">ID of the node to create a <see cref="Chisel.Core.CSGTreeNode"/> from</param>
         /// <returns>A <see cref="Chisel.Core.CSGTreeNode"/> with the givenID. If the ID is not known, this will result in an invalid <see cref="Chisel.Core.CSGTreeNode"/>.</returns>
         public static CSGTreeNode Encapsulate(int id) { return new CSGTreeNode { nodeID = id }; }
-        
+
         /// <summary>Operator to implicitly convert a <see cref="Chisel.Core.CSGTree"/> into a <see cref="Chisel.Core.CSGTreeNode"/>.</summary>
         /// <param name="tree">The <see cref="Chisel.Core.CSGTree"/> to convert into a <see cref="Chisel.Core.CSGTreeNode"/>.</param>
         /// <returns>A <see cref="Chisel.Core.CSGTreeNode"/> containing the same NodeID as <paramref name="tree"/></returns>
@@ -116,7 +117,7 @@ namespace Chisel.Core
         /// <returns>A <see cref="Chisel.Core.CSGTreeNode"/> containing the same NodeID as <paramref name="brush"/></returns>
         /// <remarks>This can be used to build arrays of <see cref="Chisel.Core.CSGTreeNode"/>'s that contain a mix of type of nodes.</remarks>
         public static implicit operator CSGTreeNode   (CSGTreeBrush  brush ) { return new CSGTreeNode { nodeID = brush.brushNodeID   }; }
-        
+
         /// <summary>Operator to allow a <see cref="Chisel.Core.CSGTreeNode"/> to be explicitly converted into a <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="node">The <see cref="Chisel.Core.CSGTreeNode"/> to be convert into a <see cref="Chisel.Core.CSGTree"/></param>
         /// <returns>A valid <see cref="Chisel.Core.CSGTree"/> if <paramref name="node"/> actually was one, otherwise an invalid node.</returns>
@@ -141,13 +142,40 @@ namespace Chisel.Core
         // TODO: add description
         public Matrix4x4			LocalTransformation		{ get { return GetNodeLocalTransformation(nodeID); } set { SetNodeLocalTransformation(nodeID, ref value); } }		
         // TODO: add description
-        public Matrix4x4			TreeToNodeSpaceMatrix	{ get { return GetTreeToNodeSpaceMatrix(nodeID); } }
+        public Matrix4x4			TreeToNodeSpaceMatrix   { get { if (!CSGManager.GetTreeToNodeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
-        public Matrix4x4			NodeToTreeSpaceMatrix	{ get { return GetNodeToTreeSpaceMatrix(nodeID); } }
+        public Matrix4x4			NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         #endregion
 
+        #region Comparison
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator >(CSGTreeNode left, CSGTreeNode right) { return left.nodeID > right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator <(CSGTreeNode left, CSGTreeNode right) { return left.nodeID < right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator >=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID >= right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator <=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID <= right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(CSGTreeNode left, CSGTreeNode right) { return left.nodeID == right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(CSGTreeNode left, CSGTreeNode right) { return left.nodeID != right.nodeID; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override bool Equals(object obj)
+        {
+            if (obj is CSGTreeNode) return nodeID == ((CSGTreeNode)obj).nodeID;
+            if (obj is CSGTreeBrush) return nodeID == ((CSGTreeBrush)obj).brushNodeID;
+            if (obj is CSGTreeBranch) return nodeID == ((CSGTreeBranch)obj).branchNodeID;
+            if (obj is CSGTree) return nodeID == ((CSGTree)obj).treeNodeID;
+            return false;
+        }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override int GetHashCode() { return nodeID.GetHashCode(); }
+        #endregion
         
         [SerializeField] // Useful to be able to handle selection in history
         internal Int32 nodeID;
+
+        public override string ToString() { return $"{Type} ({nodeID})"; }
     }
 }

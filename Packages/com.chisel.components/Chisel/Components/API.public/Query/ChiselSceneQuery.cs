@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,10 +75,12 @@ namespace Chisel.Components
                     continue;
 
                 var query = ChiselMeshQueryManager.GetMeshQuery(model);
+                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!ChiselMeshQueryManager.IsVisible(query))
-                    continue;					
+                if (visibleQueries == null ||
+                    visibleQueries.Length == 0)
+                    return false;
 
                 Vector3 treeRayStart;
                 Vector3 treeRayEnd;
@@ -177,10 +179,12 @@ namespace Chisel.Components
                     continue;
 
                 var query = ChiselMeshQueryManager.GetMeshQuery(model);
+                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!ChiselMeshQueryManager.IsVisible(query))
-                    continue;					
+                if (visibleQueries == null ||
+                    visibleQueries.Length == 0)
+                    return false;
 
                 Vector3 treeRayStart;
                 Vector3 treeRayEnd;
@@ -289,27 +293,14 @@ namespace Chisel.Components
                 return false;
             
             var query = ChiselMeshQueryManager.GetMeshQuery(model);
+            var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
 
             // We only accept RayCasts into this model if it's visible
-            if (!ChiselMeshQueryManager.IsVisible(query))
+            if (visibleQueries == null ||
+                visibleQueries.Length == 0)
                 return false;
 
-            Vector3 treeRayStart;
-            Vector3 treeRayEnd;
-
-            var transform = model.transform;
-            if (transform)
-            { 
-                var worldToLocalMatrix = transform.worldToLocalMatrix;
-                treeRayStart	= worldToLocalMatrix.MultiplyPoint(worldRayStart);
-                treeRayEnd		= worldToLocalMatrix.MultiplyPoint(worldRayEnd);
-            } else
-            {
-                treeRayStart	= worldRayStart;
-                treeRayEnd		= worldRayEnd;
-            }
-            
-            var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0, ignoreBrushes);
+            var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), worldRayStart, worldRayEnd, model.transform.localToWorldMatrix, filterLayerParameter0, ignoreBrushes);
             if (treeIntersections == null)
                 return false;
             
@@ -337,6 +328,7 @@ namespace Chisel.Components
         
         public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, ref HashSet<CSGTreeNode> rectFoundNodes)
         {
+            rectFoundNodes.Clear();
             var planes			= new Plane[6];
             Vector4 srcVector;
             var allTrees		= CSGManager.AllTrees;
@@ -351,9 +343,11 @@ namespace Chisel.Components
                     continue;
 
                 var query = ChiselMeshQueryManager.GetMeshQuery(model);
+                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
 
                 // We only accept RayCasts into this model if it's visible
-                if (!ChiselMeshQueryManager.IsVisible(query))
+                if (visibleQueries == null ||
+                    visibleQueries.Length == 0)
                     continue;
                 
                 // Transform the frustum into the space of the tree				
@@ -370,11 +364,11 @@ namespace Chisel.Components
 
                     srcVector = worldToLocalMatrixInversedTransposed * srcVector;
 
-                    planes[p].normal = srcVector;
+                    planes[p].normal   = srcVector;
                     planes[p].distance = srcVector.w;
                 }
-                
-                var treeNodesInFrustum = tree.GetNodesInFrustum(planes);
+
+                var treeNodesInFrustum = tree.GetNodesInFrustum(query, planes);
                 if (treeNodesInFrustum == null)
                     continue;
 
