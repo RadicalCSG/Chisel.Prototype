@@ -85,7 +85,7 @@ namespace Chisel.Core
                 throw new ArgumentNullException(nameof(surfaceDefinition));
             if (surfaceDefinition.surfaces == null)
                 throw new ArgumentNullException($"{nameof(surfaceDefinition)}.{nameof(surfaceDefinition.surfaces)}");
-            if (surfaceDefinition.surfaces.Length == polygonIndices.Length)
+            if (surfaceDefinition.surfaces.Length != polygonIndices.Length)
                 throw new ArgumentException($"{nameof(surfaceDefinition)}.{nameof(surfaceDefinition.surfaces)}.Length needs to be the same as {polygonIndices}.Length");
 
             // Create our polygons
@@ -102,6 +102,7 @@ namespace Chisel.Core
                 // since the number of indices is the same as our number of edges
                 polygons[p].firstEdge = totalEdgeCount;
                 polygons[p].edgeCount = polygonEdgeCount;
+                polygons[p].surfaceID = p;
                 totalEdgeCount += polygonEdgeCount;
             }
 
