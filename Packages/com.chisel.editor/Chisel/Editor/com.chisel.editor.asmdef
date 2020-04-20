@@ -6,7 +6,8 @@
         "com.scene.handle.extensions.editor",
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.Entities"
     ],
     "includePlatforms": [
         "Editor"
@@ -16,5 +17,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

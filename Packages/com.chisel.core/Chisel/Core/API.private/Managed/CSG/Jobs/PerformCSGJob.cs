@@ -82,7 +82,7 @@ namespace Chisel.Core
         
         void IntersectLoopsJob(NativeList<SurfaceInfo>           allInfos,
                                NativeListArray<Edge>             allEdges,
-                               in HashedVertices                     brushVertices,
+                               in HashedVertices                 brushVertices,
                                int                               surfaceLoopIndex, 
                                NativeListArray<Edge>.NativeList  intersectionLoop, 
                                CategoryGroupIndex                intersectionCategory, 
@@ -276,6 +276,15 @@ namespace Chisel.Core
                 var baseloopIndex   = loopIndices[l];
                 var baseLoopEdges   = allEdges[baseloopIndex];
                 if (baseLoopEdges.Length < 3)
+                {
+                    baseLoopEdges.Clear();
+                    continue;
+                }
+
+                var surfaceLoopInfo     = allInfos[baseloopIndex];
+                var interiorCategory    = (CategoryIndex)surfaceLoopInfo.interiorCategory;
+                if (interiorCategory != CategoryIndex.ValidAligned &&
+                    interiorCategory != CategoryIndex.ValidReverseAligned)
                 {
                     baseLoopEdges.Clear();
                     continue;
@@ -571,22 +580,22 @@ namespace Chisel.Core
             
 
 
-            ref var nodes               = ref routingTableRef.Value.nodes;
-            ref var routingLookups      = ref routingTableRef.Value.routingLookups;
-            ref var routingTableNodes   = ref routingTableRef.Value.nodes;
+            ref var routingTableNodeIndices = ref routingTableRef.Value.nodes;
+            ref var routingLookups          = ref routingTableRef.Value.routingLookups;
+            var routingLookupsLength        = routingLookups.Length;
 
-            var intersectionSurfaceInfo = stackalloc SurfaceInfo[routingTableNodes.Length * surfaceCount]; ;
+            var intersectionSurfaceInfo = stackalloc SurfaceInfo[routingTableNodeIndices.Length * surfaceCount];
             var intersectionLoops       = new NativeListArray<Edge>(0, Allocator.Temp);
-            intersectionLoops.ResizeExact(routingTableNodes.Length * surfaceCount);
+            intersectionLoops.ResizeExact(intersectionSurfaceInfos.Length + (routingTableNodeIndices.Length * surfaceCount));
 
             {
                 int maxIndex = 0;
-                for (int i = 0; i < routingTableNodes.Length; i++)
-                    maxIndex = math.max(maxIndex, routingTableNodes[i] - 1);
+                for (int i = 0; i < routingTableNodeIndices.Length; i++)
+                    maxIndex = math.max(maxIndex, routingTableNodeIndices[i]);
 
                 var nodeIDtoIndex = stackalloc int[maxIndex+1];
-                for (int i = 0; i < routingTableNodes.Length; i++)
-                    nodeIDtoIndex[routingTableNodes[i] - 1] = i + 1;
+                for (int i = 0; i < routingTableNodeIndices.Length; i++)
+                    nodeIDtoIndex[routingTableNodeIndices[i]] = i + 1;
 
                 // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIDtoIndex[surfaceInfo.brushNodeID], 
                 //       have a sequential list of all data. 
@@ -598,19 +607,26 @@ namespace Chisel.Core
                     var surfaceInfo     = intersectionSurfaceInfos[i];
                     var brushNodeIndex1 = surfaceInfo.brushNodeIndex;
 
-                    var brushIndex = nodeIDtoIndex[brushNodeIndex1];
-                    if (brushIndex == 0)
+                    // brush does not exist in routing table (has been deduced to not have any effect)
+                    if (!NativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
                         continue;
-                    brushIndex--;
 
-                    int offset = brushIndex + (surfaceInfo.basePlaneIndex * routingLookups.Length);
+                    var routingTableIndex = nodeIDtoIndex[brushNodeIndex1];
+                    if (routingTableIndex == 0)
+                        continue;
+
+                    routingTableIndex--;
+
+                    var surfaceIndex    = surfaceInfo.basePlaneIndex;
+                    int offset          = routingTableIndex + (surfaceIndex * routingLookupsLength);
+
                     intersectionLoops[offset].AddRange(intersectionEdges[i]);
                     intersectionSurfaceInfo[offset] = surfaceInfo;
                 }
             }
 
 
-            var holeIndices = new NativeListArray<int>(routingLookups.Length * surfaceCount, Allocator.Temp);
+            var holeIndices = new NativeListArray<int>(routingLookupsLength * surfaceCount, Allocator.Temp);
             var surfaceLoopIndices = new NativeListArray<int>(Allocator.Temp);
             surfaceLoopIndices.ResizeExact(surfaceCount);
 
@@ -619,7 +635,7 @@ namespace Chisel.Core
 
 
             ref var routingTable = ref routingTableRef.Value;
-            for (int surfaceIndex = 0, offset = 0; surfaceIndex < surfaceCount; surfaceIndex++)
+            for (int surfaceIndex = 0; surfaceIndex < surfaceCount; surfaceIndex++)
             {
                 if (basePolygonEdges[surfaceIndex].Length < 3)
                     continue;
@@ -633,10 +649,10 @@ namespace Chisel.Core
                 allInfos.Add(info);
                 allEdges.Add(basePolygonEdges[surfaceIndex]);
 
-
-                for (int i = 0; i < routingLookups.Length; i++, offset++)
+                for (int routingTableIndex = 0; routingTableIndex < routingLookupsLength; routingTableIndex++)
                 {
-                    ref var routingLookup   = ref routingLookups[i];
+                    int offset              = routingTableIndex + (surfaceIndex * routingLookupsLength);
+                    ref var routingLookup   = ref routingLookups[routingTableIndex];
                     var intersectionLoop    = intersectionLoops[offset];
                     var intersectionInfo    = intersectionSurfaceInfo[offset];
                     for (int l = loopIndices.Length - 1; l >= 0; l--)

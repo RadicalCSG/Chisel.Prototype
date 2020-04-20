@@ -87,15 +87,15 @@ namespace Chisel.Core
         //static class OperationTables
         //{
 #if HAVE_SELF_CATEGORIES
-            const CategoryGroupIndex Inside             = (CategoryGroupIndex)CategoryIndex.Inside;
-            const CategoryGroupIndex Aligned            = (CategoryGroupIndex)CategoryIndex.Aligned;
-            const CategoryGroupIndex SelfAligned        = (CategoryGroupIndex)CategoryIndex.SelfAligned;
-            const CategoryGroupIndex SelfReverseAligned = (CategoryGroupIndex)CategoryIndex.SelfReverseAligned;
-            const CategoryGroupIndex ReverseAligned     = (CategoryGroupIndex)CategoryIndex.ReverseAligned;
-            const CategoryGroupIndex Outside            = (CategoryGroupIndex)CategoryIndex.Outside;
+            //const CategoryGroupIndex Inside             = (CategoryGroupIndex)CategoryIndex.Inside;
+            //const CategoryGroupIndex Aligned            = (CategoryGroupIndex)CategoryIndex.Aligned;
+            //const CategoryGroupIndex SelfAligned        = (CategoryGroupIndex)CategoryIndex.SelfAligned;
+            //const CategoryGroupIndex SelfReverseAligned = (CategoryGroupIndex)CategoryIndex.SelfReverseAligned;
+            //const CategoryGroupIndex ReverseAligned     = (CategoryGroupIndex)CategoryIndex.ReverseAligned;
+            //const CategoryGroupIndex Outside            = (CategoryGroupIndex)CategoryIndex.Outside;
 
             // TODO: Burst might support reading this directly now?
-            public static readonly CategoryGroupIndex[] Tables = 
+            public static readonly CategoryGroupIndex[] OperationTables = 
             {
                 // Additive set operation on polygons: output = (left-node || right-node)
                 // Defines final output from combination of categorization of left and right node
@@ -161,6 +161,8 @@ namespace Chisel.Core
 	                Inside,               Aligned,          SelfAligned,          SelfReverseAligned,   ReverseAligned,   Outside           , // outside
                 //}
             };
+            public const int OperationStride    = 6 * 6;
+            public const int RowStride          = 6;
 #else
             public readonly static CategoryGroupIndex[] OperationTables =
             //public static readonly CategoryRoutingRow[][] RegularOperationTables = new[]
@@ -273,22 +275,25 @@ namespace Chisel.Core
             };
 
 
-            public const int NumberOfRowsPerOperation = 4;
-            public const int RemoveOverlappingOffset = 4 * NumberOfRowsPerOperation;
+            public const int RemoveOverlappingOffset = 4;
+            public const int OperationStride         = 4 * 4;
+            public const int RowStride               = 4;
 #endif
         //}
         #endregion
 
-        public CategoryRoutingRow(int tableOffset,
-            //NativeArray<CategoryRoutingRow> operationTable, 
-            CategoryIndex left, in CategoryRoutingRow right)
+        public CategoryRoutingRow(int operationIndex, CategoryIndex left, in CategoryRoutingRow right)
         {
 #if DEBUG_CATEGORIES
             destination = new IntArray();
 #endif
-            //var operationRow = operationTable[(int)left];
-            for (int i = 0, offset = (tableOffset + (int)left) * 4; i < Length; i++)
-                destination[(int)i] = (int)OperationTables[offset + (int)right[i]];
+            var operationOffset = operationIndex * OperationStride;
+            for (int i = 0; i < Length; i++)
+            {
+                var row     = (int)left;
+                var column  = (int)right[i];
+                destination[(int)i] = (int)OperationTables[operationOffset + (row * RowStride) + column];
+            }
         }
 
         public static CategoryRoutingRow operator +(CategoryRoutingRow a, int offset)
@@ -391,6 +396,11 @@ namespace Chisel.Core
 
         public override string ToString()
         {
+            return ToString(lastNode: false);
+        }
+
+        public string ToString(bool lastNode)
+        {
 #if HAVE_SELF_CATEGORIES
             var inside              = (int)destination[(int)CategoryIndex.Inside];
             var aligned             = (int)destination[(int)CategoryIndex.Aligned];
@@ -399,14 +409,20 @@ namespace Chisel.Core
             var reverseAligned      = (int)destination[(int)CategoryIndex.ReverseAligned];
             var outside             = (int)destination[(int)CategoryIndex.Outside];
 
-            return $"({(CategoryIndex)inside}, {(CategoryIndex)aligned}, {(CategoryIndex)selfAligned}, {(CategoryIndex)selfReverseAligned}, {(CategoryIndex)reverseAligned}, {(CategoryIndex)outside})";
+            if (lastNode)
+                return $"({(CategoryIndex)inside}, {(CategoryIndex)aligned}, {(CategoryIndex)selfAligned}, {(CategoryIndex)selfReverseAligned}, {(CategoryIndex)reverseAligned}, {(CategoryIndex)outside})";
+            else
+                return $"({(int)inside,3}, {(int)aligned}, {(int)selfAligned}, {(int)selfReverseAligned}, {(int)reverseAligned}, {(int)outside})";
 #else
             var inside              = (int)destination[(int)CategoryIndex.Inside];
             var aligned             = (int)destination[(int)CategoryIndex.Aligned];
             var reverseAligned      = (int)destination[(int)CategoryIndex.ReverseAligned];
             var outside             = (int)destination[(int)CategoryIndex.Outside];
-
-            return $"({(CategoryIndex)inside}, {(CategoryIndex)aligned}, {(CategoryIndex)reverseAligned}, {(CategoryIndex)outside})";
+            
+            if (lastNode)
+                return $"({(CategoryIndex)inside}, {(CategoryIndex)aligned}, {(CategoryIndex)reverseAligned}, {(CategoryIndex)outside})";
+            else
+                return $"({(int)inside}, {(int)aligned}, {(int)reverseAligned}, {(int)outside})";
 #endif
         }
     }

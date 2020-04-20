@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -136,6 +137,17 @@ namespace Chisel.Core
                     return;
                 }
             }
+        }
+
+        public static bool Contains<T>(ref BlobArray<T> array, T value)
+            where T : struct, IEquatable<T>
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i].Equals(value))
+                    return true;
+            }
+            return false;
         }
 
         public static bool Contains<T>(this NativeList<T> array, T value)

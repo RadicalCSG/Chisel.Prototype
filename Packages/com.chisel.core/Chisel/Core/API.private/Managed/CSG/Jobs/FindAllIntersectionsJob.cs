@@ -8,6 +8,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
+using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {

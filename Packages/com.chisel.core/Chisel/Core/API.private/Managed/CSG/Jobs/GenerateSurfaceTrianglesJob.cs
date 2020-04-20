@@ -156,19 +156,11 @@ namespace Chisel.Core
                 var loopIndices = surfaceLoopIndices[s];
                 for (int l = 0; l < loopIndices.Length; l++)
                 {
-                    var surfaceLoopIndex = loopIndices[l];
-                    var surfaceLoopInfo = surfaceLoopAllInfos[surfaceLoopIndex];
-                    var _interiorCategory = (CategoryIndex)surfaceLoopInfo.interiorCategory;
-                    //if (_interiorCategory > CategoryIndex.LastCategory)
-                    //    InvalidFinalCategory(_interiorCategory);
+                    var surfaceLoopIndex    = loopIndices[l];
+                    var surfaceLoopEdges    = surfaceLoopAllEdges[surfaceLoopIndex];
 
-                    // TODO: put this check in previous job
-                    if (_interiorCategory != CategoryIndex.ValidAligned &&
-                        _interiorCategory != CategoryIndex.ValidReverseAligned)
-                        continue;
-
-                    var surfaceLoopEdges = surfaceLoopAllEdges[surfaceLoopIndex];
-                    // TODO: put this check in previous job
+                    // TODO: verify that this never happens, check should be in previous job
+                    Debug.Assert(surfaceLoopEdges.Length >= 3);
                     if (surfaceLoopEdges.Length < 3)
                         continue;
 
@@ -197,12 +189,12 @@ namespace Chisel.Core
 
                 for (int l = 0; l < loops.Length; l++)
                 {
-                    var loopIndex = loops[l];
-                    var loopEdges = surfaceLoopAllEdges[loopIndex];
-                    var loopInfo = surfaceLoopAllInfos[loopIndex];
+                    var loopIndex   = loops[l];
+                    var loopEdges   = surfaceLoopAllEdges[loopIndex];
+                    var loopInfo    = surfaceLoopAllInfos[loopIndex];
                     interiorCategory = (CategoryIndex)loopInfo.interiorCategory;
 
-                    Debug.Assert(surfaceIndex == loopInfo.basePlaneIndex);
+                    Debug.Assert(surfaceIndex == loopInfo.basePlaneIndex, "surfaceIndex != loopInfo.basePlaneIndex");
 
 
 

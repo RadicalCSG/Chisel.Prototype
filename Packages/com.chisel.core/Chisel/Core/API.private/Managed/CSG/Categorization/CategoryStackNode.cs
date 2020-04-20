@@ -22,6 +22,7 @@ namespace Chisel.Core
         public CategoryGroupIndex   input;
         public CategoryRoutingRow   routingRow;
 
-        public override string ToString() { return $"'{nodeIndex}': {(CategoryIndex)input} -> {routingRow}"; }
+        public override string ToString() { return ToString(lastNode: false); }
+        public string ToString(bool lastNode) { return $"'{nodeIndex}': {(int)input} -> {routingRow.ToString(lastNode)}"; }
     }
 }
