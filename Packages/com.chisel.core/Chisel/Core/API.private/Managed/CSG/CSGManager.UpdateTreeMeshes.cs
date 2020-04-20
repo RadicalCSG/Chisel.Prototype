@@ -317,9 +317,10 @@ namespace Chisel.Core
                 }
                 Profiler.EndSample();
                 
+                // TODO: figure out more accurate maximum sizes
                 var triangleArraySize       = GeometryMath.GetTriangleArraySize(allTreeBrushIndices.Length);
                 var intersectionCount       = triangleArraySize;
-                var intersectionLoopBlobs   = new NativeList<BlobAssetReference<BrushIntersectionLoops>>(intersectionCount, Allocator.TempJob);
+                var intersectionLoopBlobs   = new NativeList<BlobAssetReference<BrushIntersectionLoops>>(intersectionCount * 2, Allocator.TempJob);
                 var brushBrushIntersections = new NativeMultiHashMap<int, BrushPair>(intersectionCount * 2, Allocator.TempJob);
                 var uniqueBrushPairs        = new NativeList<BrushPair>(intersectionCount, Allocator.TempJob);
                 var intersectingBrushes     = new NativeList<BlobAssetReference<BrushPairIntersection>>(intersectionCount, Allocator.TempJob);
