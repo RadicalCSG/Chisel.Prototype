@@ -58,20 +58,24 @@ namespace Chisel.Core
 
         internal static BlobAssetReference<CompactTree> Create(List<CSGManager.NodeHierarchy> nodeHierarchies, int treeNodeIndex)
         {
-            var treeInfo                    = nodeHierarchies[treeNodeIndex].treeInfo;
-            var treeBrushes                 = treeInfo.treeBrushes;
+            var treeInfo            = nodeHierarchies[treeNodeIndex].treeInfo;
+            var treeBrushes         = treeInfo.treeBrushes;
 
             if (treeBrushes.Count == 0)
                 return BlobAssetReference<CompactTree>.Null;
 
-            var bottomUpNodeIndices         = new List<BottomUpNodeIndex>();
-            var bottomUpNodes               = new List<int>();
+            var bottomUpNodeIndices = new List<BottomUpNodeIndex>();
+            var bottomUpNodes       = new List<int>();
             
-            var minBrushIndex               = nodeHierarchies.Count;
-            var maxBrushIndex               = 0;
+            var minBrushIndex       = nodeHierarchies.Count;
+            var maxBrushIndex       = 0;
             for (int b = 0; b < treeBrushes.Count; b++)
             {
-                var brush = new CSGTreeNode() { nodeID = treeBrushes[b] };
+                var brushNodeID = treeBrushes[b];
+                if (!CSGManager.IsValidNodeID(brushNodeID))
+                    continue;
+
+                var brush = new CSGTreeNode() { nodeID = brushNodeID };
                 if (!brush.Valid)
                     continue;
 
@@ -83,7 +87,11 @@ namespace Chisel.Core
             // Bottom-up -> per brush list of all ancestors to root
             for (int b = 0; b < treeBrushes.Count; b++)
             {
-                var brush = new CSGTreeNode() { nodeID = treeBrushes[b] };
+                var brushNodeID = treeBrushes[b];
+                if (!CSGManager.IsValidNodeID(brushNodeID))
+                    continue;
+
+                var brush = new CSGTreeNode() { nodeID = brushNodeID };
                 if (!brush.Valid)
                     continue;
 
@@ -106,6 +114,9 @@ namespace Chisel.Core
                     bottomUpStart   = parentStart
                 });
             }
+
+            if (bottomUpNodeIndices.Count == 0)
+                return BlobAssetReference<CompactTree>.Null;
 
             // Top-down
             var nodeQueue       = new Queue<CompactTopDownBuilderNode>();

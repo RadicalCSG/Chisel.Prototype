@@ -346,7 +346,10 @@ namespace Chisel.Core
             uniqueMeshDescriptions.Clear();
             for (int b = 0, count_b = treeBrushNodeCount; b < count_b; b++)
             {
-                var brushNodeID     = treeBrushNodeIDs[b];                
+                var brushNodeID     = treeBrushNodeIDs[b];
+                if (!CSGManager.IsValidNodeID(brushNodeID))
+                    continue;
+
                 var brushNodeIndex  = brushNodeID - 1;
                 var nodeType = nodeFlags[brushNodeIndex].nodeType;
                 if (nodeType != CSGNodeType.Brush)

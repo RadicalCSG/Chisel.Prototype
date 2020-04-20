@@ -209,6 +209,8 @@ namespace Chisel.Core
             for (int i = 0; i < treeInfo.treeBrushes.Count; i++)
             {
                 var brushNodeID = treeInfo.treeBrushes[i];
+                if (!CSGManager.IsValidNodeID(brushNodeID))
+                    continue;
 
                 if (ignoreNodeIndices.Contains(brushNodeID))
                     continue;

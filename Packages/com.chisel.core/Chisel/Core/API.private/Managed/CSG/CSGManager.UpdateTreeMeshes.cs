@@ -4,6 +4,8 @@ using Unity.Jobs;
 using Unity.Entities;
 using Unity.Collections;
 using Profiler = UnityEngine.Profiling.Profiler;
+using Debug = UnityEngine.Debug;
+using System.Diagnostics;
 
 namespace Chisel.Core
 {
@@ -115,7 +117,7 @@ namespace Chisel.Core
                 Profiler.EndSample();
 
                 var treeBrushes = treeInfo.treeBrushes;
-                if (treeInfo.treeBrushes.Count == 0)
+                if (treeBrushes.Count == 0)
                     continue;
                 
                 var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeIndex];
@@ -134,6 +136,10 @@ namespace Chisel.Core
                 for (int b = 0; b < treeBrushes.Count; b++)
                 {
                     var brushNodeID     = treeBrushes[b];
+                    // TODO: Ensure this list is correct on removal of brush from hierarchy
+                    if (!IsValidNodeID(brushNodeID))
+                        continue;
+
                     var brushNodeIndex  = brushNodeID - 1;
                     var brushMeshID     = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo.brushMeshInstanceID;
                     if (brushMeshID == 0)
@@ -201,6 +207,9 @@ namespace Chisel.Core
                         for (int i = 0; i < brushIntersections.Length; i++)
                         {
                             var otherBrushIndex = brushIntersections[i].nodeIndex;
+                            // TODO: Remove nodes from "brushIntersections" when the brush is removed from the hierarchy
+                            if (!IsValidNodeID(otherBrushIndex + 1))
+                                continue;
                             if (!rebuildTreeBrushIndicesList.Contains(otherBrushIndex))
                                 rebuildTreeBrushIndicesList.Add(otherBrushIndex);
                         }
@@ -232,6 +241,17 @@ namespace Chisel.Core
                         var brushNodeIndex = allTreeBrushIndices[i];
                         var brushMeshIndex = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo.brushMeshInstanceID - 1;
                         brushMeshLookup[brushNodeIndex] = brushMeshBlobs[brushMeshIndex];
+                    }
+
+                    // TODO: make this more efficient, adding some meshes twice
+                    if (rebuildTreeBrushIndicesList.Count != allBrushBrushIndicesList.Count)
+                    {
+                        for (int i = 0; i < rebuildTreeBrushIndicesList.Count; i++)
+                        {
+                            var brushNodeIndex = rebuildTreeBrushIndicesList[i];
+                            var brushMeshIndex = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo.brushMeshInstanceID - 1;
+                            brushMeshLookup[brushNodeIndex] = brushMeshBlobs[brushMeshIndex];
+                        }
                     }
                 }
                 Profiler.EndSample();
