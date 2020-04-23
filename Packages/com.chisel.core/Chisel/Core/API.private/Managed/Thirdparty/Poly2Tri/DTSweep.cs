@@ -412,19 +412,19 @@ namespace Poly2Tri
                 {
                     edgeLookupIndex = edgeLookupEdges.Length;
                     edgeLookups[inputEdgesCopy[i].index1] = edgeLookupIndex;
-                    edgeLookupEdges.Add();
+                    edgeLookupEdges.AddAndAllocateWithCapacity(inputEdgesCopy.Length);
                 }
-                edgeLookupEdges[edgeLookupIndex].Add(inputEdgesCopy[i]);
+                edgeLookupEdges[edgeLookupIndex].AddNoResize(inputEdgesCopy[i]);
             }
 
+            var edgeCount = edgeLookups.Count();
 
             while (inputEdgesCopy.Length > 0)
             {
                 var lastIndex   = inputEdgesCopy.Length - 1;
                 var edge        = inputEdgesCopy[lastIndex];
-                var index       = foundLoops.Add();
-                var newLoops    = foundLoops[index];
-                newLoops.Add(edge);
+                var newLoops    = foundLoops.AddAndAllocateWithCapacity(1 + (2 * edgeCount)); // TODO: figure out a more sensible max size
+                newLoops.AddNoResize(edge);
 
                 var edgesStartingAtVertex = edgeLookupEdges[edgeLookups[edge.index1]];
                 if (edgesStartingAtVertex.Length > 1)
@@ -457,7 +457,7 @@ namespace Poly2Tri
                         nextEdges.Remove(nextEdge);
                     } else
                         edgeLookups.Remove(edge.index2);
-                    newLoops.Add(nextEdge);
+                    newLoops.AddNoResize(nextEdge);
                     inputEdgesCopy.Remove(nextEdge);
                     edge = nextEdge;
                     if (edge.index2 == firstIndex)
@@ -479,6 +479,8 @@ namespace Poly2Tri
             children.Clear();
             children.ResizeExact(foundLoops.Count);
 
+            for (int l1 = 0; l1 < children.Count; l1++)
+                children.AllocateWithCapacityForIndex(l1, 1 + (children.Count * 2));
 
             MathExtensions.CalculateTangents(normal, out float3 right, out float3 forward);
             for (int l1 = foundLoops.Count - 1; l1 >= 0; l1--)
@@ -491,11 +493,11 @@ namespace Poly2Tri
                         continue;
                     if (IsPointInPolygon(right, forward, foundLoops[l1], foundLoops[l2], vertices))
                     {
-                        children[l1].Add(l2);
+                        children[l1].AddNoResize(l2);
                     } else
                     if (IsPointInPolygon(right, forward, foundLoops[l2], foundLoops[l1], vertices))
                     {
-                        children[l2].Add(l1);
+                        children[l2].AddNoResize(l1);
                         break;
                     }
                 }
@@ -515,7 +517,7 @@ namespace Poly2Tri
                             var index = children[l1][l2];
                             if (children[index].Count > 0)
                             {
-                                children[l1].AddRange(children[index]);
+                                children[l1].AddRangeNoResize(children[index]);
                                 children[l1].Remove(l1); // just in case
                                 children[index].Clear();
                             }
@@ -526,7 +528,7 @@ namespace Poly2Tri
                     for (int l2 = 0; l2 < children[l1].Count; l2++)
                     {
                         var index = children[l1][l2];
-                        foundLoops[l1].AddRange(foundLoops[index]);
+                        foundLoops[l1].AddRangeNoResize(foundLoops[index]);
                         foundLoops[index].Clear();
                     }
                 }

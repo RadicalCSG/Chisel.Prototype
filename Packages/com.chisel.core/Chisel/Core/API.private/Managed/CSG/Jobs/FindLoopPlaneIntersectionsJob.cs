@@ -163,11 +163,11 @@ namespace Chisel.Core
                     for (int i = 1; i < 2 + foundVertices; i++)
                     {
                         if (tempVertices[i - 1] != tempVertices[i])
-                            edges.Add(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
+                            edges.AddNoResize(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
                     }
                 } else
                 {
-                    edges.Add(inputEdges[e]);
+                    edges.AddNoResize(inputEdges[e]);
                 }
             }
 
@@ -324,11 +324,11 @@ namespace Chisel.Core
                     for (int i = 1; i < 2 + foundVertices; i++)
                     {
                         if (tempVertices[i - 1] != tempVertices[i])
-                            edges.Add(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
+                            edges.AddNoResize(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
                     }
                 } else
                 {
-                    edges.Add(inputEdges[e]);
+                    edges.AddNoResize(inputEdges[e]);
                 }
             }
 

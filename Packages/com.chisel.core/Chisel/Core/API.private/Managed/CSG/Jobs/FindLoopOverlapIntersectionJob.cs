@@ -36,7 +36,7 @@ namespace Chisel.Core
             return 0;
         }
 
-        static unsafe void CopyFrom(NativeListArray<Edge>.NativeList dst, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedVertices)
+        static unsafe void CopyFrom(NativeListArray<Edge> dst, int index, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedVertices, int extraCapacity)
         {
             ref var vertices = ref brushIntersectionLoop.loopVertices;
             var srcIndices = stackalloc ushort[vertices.Length];
@@ -45,12 +45,12 @@ namespace Chisel.Core
                 srcIndices[j] = hashedVertices.AddNoResize(vertices[j]);
 
             {
-                dst.Capacity = vertices.Length;
+                var dstEdges = dst.AllocateWithCapacityForIndex(index, vertices.Length + extraCapacity);
                 for (int j = 1; j < vertices.Length; j++)
                 {
-                    dst.Add(new Edge() { index1 = srcIndices[j - 1], index2 = srcIndices[j] });
+                    dstEdges.AddNoResize(new Edge() { index1 = srcIndices[j - 1], index2 = srcIndices[j] });
                 }
-                dst.Add(new Edge() { index1 = srcIndices[vertices.Length - 1], index2 = srcIndices[0] });
+                dstEdges.AddNoResize(new Edge() { index1 = srcIndices[vertices.Length - 1], index2 = srcIndices[0] });
             }
         }
 
@@ -115,16 +115,14 @@ namespace Chisel.Core
                 {
                     ref var input = ref basePolygonBlobValue.surfaces[s];
 
-                    var edges = basePolygonEdges[s];
-                    edges.Capacity = input.endEdgeIndex - input.startEdgeIndex;
+                    var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, input.endEdgeIndex - input.startEdgeIndex);
                     for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                        edges.Add(basePolygonBlobValue.edges[e]);
+                        edges.AddNoResize(basePolygonBlobValue.edges[e]);
 
                     basePolygonSurfaceInfos[s] = basePolygonBlobValue.surfaces[s].surfaceInfo;
                 }
             } else
             { 
-
                 intersectionEdges.ResizeExact(brushIntersectionLoops.Length);
                 for (int i = 0; i < brushIntersectionLoops.Length - 1; i++)
                 {
@@ -146,10 +144,9 @@ namespace Chisel.Core
                         {
                             ref var input = ref basePolygonBlobValue.surfaces[s];
 
-                            var edges = basePolygonEdges[s];
-                            edges.Capacity = input.endEdgeIndex - input.startEdgeIndex;
+                            var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersectionLoops.Length * 4));
                             for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                                edges.Add(basePolygonBlobValue.edges[e]);
+                                edges.AddNoResize(basePolygonBlobValue.edges[e]);
 
                             basePolygonSurfaceInfos[s] = basePolygonBlobValue.surfaces[s].surfaceInfo;
                         }
@@ -171,7 +168,7 @@ namespace Chisel.Core
                                         intersectionSurfaceSegments[s] = new int2(startIndex, 0);
                                     prevBasePlaneIndex = basePlaneIndex;
                                 }
-                                CopyFrom(intersectionEdges[l], ref brushIntersectionLoop, hashedVertices);
+                                CopyFrom(intersectionEdges, l, ref brushIntersectionLoop, hashedVertices, brushIntersectionLoops.Length * 4);
                             }
                             {
                                 intersectionSurfaceSegments[prevBasePlaneIndex] = new int2(startIndex, brushIntersectionLoops.Length - startIndex);
@@ -191,7 +188,7 @@ namespace Chisel.Core
                             var intersectionIndex0      = brushIntersectionLoops[intersectionSurfaceOffset + l0];
                             ref var intersection0       = ref intersectionLoopBlobs[intersectionIndex0.x].Value.loops[intersectionIndex0.y];
                             var intersectionBrushIndex0 = intersection0.surfaceInfo.brushNodeIndex;
-                            var edges = intersectionEdges[intersectionSurfaceOffset + l0];
+                            var edges                   = intersectionEdges[intersectionSurfaceOffset + l0];
                             for (int l1 = 0; l1 < intersectionSurfaceCount; l1++)
                             {
                                 if (l0 == l1)

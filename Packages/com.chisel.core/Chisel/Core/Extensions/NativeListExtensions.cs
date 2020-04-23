@@ -68,7 +68,7 @@ namespace Chisel.Core
             }
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
-
+        /*
         public static void RemoveAt<T>(this NativeListArray<T>.NativeList list, int index) 
             where T : unmanaged, IEquatable<T>
         {
@@ -87,7 +87,7 @@ namespace Chisel.Core
                 }
             }
         }
-
+        */
         public static void Remove(this NativeListArray<int>.NativeList list, int item) 
         {
             for (int index = 0; index < list.Length; index++)
@@ -112,7 +112,7 @@ namespace Chisel.Core
                 }
             }
         }
-
+        /*
         public static void Remove<T>(this NativeList<T> list, T item) 
             where T : unmanaged, IEquatable<T> 
         {
@@ -125,7 +125,7 @@ namespace Chisel.Core
                 }
             }
         }
-
+        */
         public static void Remove(this NativeList<Edge> list, Edge item)
         {
             for (int index = 0; index < list.Length; index++)

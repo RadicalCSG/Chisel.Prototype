@@ -147,11 +147,11 @@ namespace Chisel.Core
                         for (int i = 1; i < tempList.Length; i++)
                         {
                             if (tempList[i - 1] != tempList[i])
-                                edges.Add(new Edge() { index1 = tempList[i - 1], index2 = tempList[i] });
+                                edges.AddNoResize(new Edge() { index1 = tempList[i - 1], index2 = tempList[i] });
                         }
                     } else
                     {
-                        edges.Add(inputEdges[e]);
+                        edges.AddNoResize(inputEdges[e]);
                     }
                 }
 
