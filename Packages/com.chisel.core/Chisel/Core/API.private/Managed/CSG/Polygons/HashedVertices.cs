@@ -282,7 +282,7 @@ namespace Chisel.Core
         }
         #endregion
 
-        #region Dispose
+        #region UnsafeDisposeJob
         internal static bool ShouldDeallocate(Allocator allocator)
         {
             // Allocator.Invalid == container is not initialized.
@@ -345,6 +345,24 @@ namespace Chisel.Core
         }
         #endregion
 
+        public void Clear()
+        {
+            if (m_Vertices != null) m_Vertices->Clear();
+            if (m_ChainedIndices != null) m_ChainedIndices->Clear();
+            if (m_HashTable != null)
+            {
+                var hashTableMemSize = (ushort)(kHashTableSize + 1) * UnsafeUtility.SizeOf<ushort>();
+                UnsafeUtility.MemClear(m_HashTable, hashTableMemSize);
+            }
+        }
+
+        public int Capacity
+        {
+            get
+            {
+                return m_Vertices->Capacity;
+            }
+        }
 
         // Ensure we have at least this many extra vertices in capacity
         public void Reserve(int extraIndices)
