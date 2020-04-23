@@ -50,7 +50,7 @@ namespace Chisel.Core
                     var intersection    = intersections[i];
                     var brushNodeIndex1 = intersection.nodeIndex;
 
-                    var brushPair       = new BrushPair()
+                    var brushPair       = new BrushPair
                     {
                         type            = intersection.type,
                         brushNodeIndex0 = brushNodeIndex0,
@@ -211,7 +211,7 @@ namespace Chisel.Core
 
                         if (vertexUsedPtr[vertexIndex0] == 0) { vertexUsedPtr[vertexIndex0] = vertexIndex0 + 1; usedVerticesLength++; }
                         if (vertexUsedPtr[vertexIndex1] == 0) { vertexUsedPtr[vertexIndex1] = vertexIndex1 + 1; usedVerticesLength++; }
-                        usedPlanePairsPtr[usedPlanePairsLength] = new PlanePair()
+                        usedPlanePairsPtr[usedPlanePairsLength] = new PlanePair
                         {
                             plane0 = plane0,
                             plane1 = plane1,
@@ -263,13 +263,13 @@ namespace Chisel.Core
             root.type = type;
 
             var brushIntersections = builder.Allocate(ref root.brushes, 2);
-            brushIntersections[0] = new BrushIntersectionInfo()
+            brushIntersections[0] = new BrushIntersectionInfo
             {
                 brushNodeIndex      = brushNodeIndex0,
                 nodeToTreeSpace     = transformations0.Value.nodeToTree,
                 toOtherBrushSpace   = node0ToNode1
             };
-            brushIntersections[1] = new BrushIntersectionInfo()
+            brushIntersections[1] = new BrushIntersectionInfo
             {
                 brushNodeIndex      = brushNodeIndex1,
                 nodeToTreeSpace     = transformations1.Value.nodeToTree,
@@ -313,7 +313,7 @@ namespace Chisel.Core
             var surfaceInfos1 = builder.Allocate(ref brushIntersections[1].surfaceInfos, mesh1.localPlanes.Length);
             for (int i = 0; i < surfaceInfos0.Length; i++)
             {
-                surfaceInfos0[i] = new SurfaceInfo()
+                surfaceInfos0[i] = new SurfaceInfo
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
                     basePlaneIndex      = (ushort)i,
@@ -322,7 +322,7 @@ namespace Chisel.Core
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
             {
-                surfaceInfos1[i] = new SurfaceInfo()
+                surfaceInfos1[i] = new SurfaceInfo
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
                     basePlaneIndex      = (ushort)i,

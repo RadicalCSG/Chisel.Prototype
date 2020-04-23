@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Chisel.Core.LowLevel.Unsafe;
+using System;
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
@@ -11,6 +12,16 @@ namespace Chisel.Core
     public static unsafe class NativeListExtensions
     {
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
+
+        public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
+        {
+            list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
+        }
+
+        public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
+        {
+            list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
+        }
 
         public static void RemoveRange<T>(this NativeList<T> list, int index, int count) where T : unmanaged
         {

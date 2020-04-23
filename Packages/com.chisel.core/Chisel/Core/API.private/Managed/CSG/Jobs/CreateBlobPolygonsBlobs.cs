@@ -24,22 +24,22 @@ namespace Chisel.Core
         [NoAlias,WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
 
 
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         edges;
         [NativeDisableContainerSafetyRestriction] NativeArray<BasePolygon>  surfaces;
-        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         polygonEdges;
         
 
-        internal static unsafe bool IsDegenerate(HashedVertices hashedVertices, NativeArray<Edge> edges, int edgeCount)
+        static bool IsDegenerate(HashedVertices hashedVertices, NativeArray<Edge> edges, int edgeCount)
         {
             if (edgeCount < 3)
                 return true;
 
-            var vertices = hashedVertices.GetUnsafeReadOnlyPtr();
             for (int i = 0; i < edgeCount; i++)
             {
                 var vertexIndex1 = edges[i].index1;
-                var vertex1 = vertices[vertexIndex1];
+                var vertex1 = hashedVertices[vertexIndex1];
                 for (int j = 0; j < edgeCount; j++)
                 {
                     if (i == j)
@@ -54,8 +54,8 @@ namespace Chisel.Core
                         vertexIndexA == vertexIndexB)
                         continue;
 
-                    var vertexA = vertices[vertexIndexA];
-                    var vertexB = vertices[vertexIndexB];
+                    var vertexA = hashedVertices[vertexIndexA];
+                    var vertexB = hashedVertices[vertexIndexB];
 
                     var distance = GeometryMath.SqrDistanceFromPointToLineSegment(vertex1, vertexA, vertexB);
                     if (distance <= CSGConstants.kSqrDistanceEpsilon)
@@ -65,7 +65,7 @@ namespace Chisel.Core
             return false;
         }
         
-        public static void RemoveDuplicates(NativeArray<Edge> edges, ref int edgeCount)
+        static void RemoveDuplicates(NativeArray<Edge> edges, ref int edgeCount)
         {
             if (edgeCount < 3)
             {
@@ -83,17 +83,14 @@ namespace Chisel.Core
             }
         }
 
-        public AABB CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, int polygonIndex, float4x4 nodeToTreeSpaceMatrix, HashedVertices hashedVertices, NativeArray<Edge> edges, ref int edgeCount)
+        AABB CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, int polygonIndex, float4x4 nodeToTreeSpaceMatrix, HashedVertices hashedVertices, NativeArray<Edge> edges, ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
             ref var vertices    = ref mesh.Value.vertices;
-            //ref var planes      = ref mesh.Value.localPlanes;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];
 
-            //var localPlane  = planes[polygonIndex];
             var firstEdge   = polygon.firstEdge;
             var lastEdge    = firstEdge + polygon.edgeCount;
-            //var indexCount  = lastEdge - firstEdge;
 
             //hashedVertices.Reserve(indexCount); // ensure we have at least this many extra vertices in capacity
                 
@@ -154,8 +151,7 @@ namespace Chisel.Core
                 return new AABB();
         }
 
-
-        public unsafe void Execute(int b)
+        public void Execute(int b)
         {
             var brushNodeIndex  = treeBrushIndices[b];
             var transform       = transformations[brushNodeIndex];
@@ -169,18 +165,18 @@ namespace Chisel.Core
 
             if (!edges.IsCreated)
             {
-                hashedVertices  = new HashedVertices(math.max(vertices.Length * 2, 10000), Allocator.Temp);
-                hashedVertices.Reserve(vertices.Length);
-
-                edges           = new NativeArray<Edge>(math.max(halfEdges.Length * 2, 10000), Allocator.Temp);
-                surfaces        = new NativeArray<BasePolygon>(math.max(polygons.Length * 2, 10000), Allocator.Temp);
-                polygonEdges    = new NativeArray<Edge>(math.max(halfEdges.Length, 10000), Allocator.Temp);
+                hashedVertices  = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
+                edges           = new NativeArray<Edge>(math.max(halfEdges.Length, 1000), Allocator.Temp);
+                surfaces        = new NativeArray<BasePolygon>(math.max(polygons.Length, 100), Allocator.Temp);
+                polygonEdges    = new NativeArray<Edge>(math.max(halfEdges.Length, 1000), Allocator.Temp);
             } else
-            { 
-                hashedVertices.Clear();
+            {
                 if (hashedVertices.Capacity < vertices.Length)
-                    hashedVertices.Reserve(vertices.Length);
-                
+                {
+                    hashedVertices.Dispose();
+                    hashedVertices = new HashedVertices(vertices.Length, Allocator.Temp);
+                } else
+                    hashedVertices.Clear();
                 if (surfaces.Length < polygons.Length)
                 {
                     surfaces.Dispose();
@@ -246,8 +242,8 @@ namespace Chisel.Core
 
             var builder = new BlobBuilder(Allocator.Temp);
             ref var root = ref builder.ConstructRoot<BasePolygonsBlob>();
-            builder.Construct(ref root.surfaces, (BasePolygon*)surfaces.GetUnsafePtr(), totalSurfaceCount);
-            builder.Construct(ref root.edges,    (Edge       *)edges   .GetUnsafePtr(), totalEdgeCount);
+            builder.Construct(ref root.surfaces, surfaces, totalSurfaceCount);
+            builder.Construct(ref root.edges,    edges   , totalEdgeCount);
             builder.Construct(ref root.vertices, hashedVertices);
             root.bounds = new AABB() { min = min, max = max };
             var result = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);

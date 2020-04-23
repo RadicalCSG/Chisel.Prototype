@@ -313,6 +313,7 @@ namespace Chisel.Core
         public SurfaceInfo          surfaceInfo;
         public BlobArray<float3>    loopVertices;
     }
+
     public struct BrushIntersectionLoops
     {
         public BlobArray<BrushIntersectionLoop> loops;

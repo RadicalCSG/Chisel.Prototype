@@ -236,7 +236,7 @@ namespace Chisel.Core
             var hashTableMemSize = (ushort)(kHashTableSize + 1) * UnsafeUtility.SizeOf<ushort>();
             m_HashTable = UnsafeUtility.Malloc(hashTableMemSize, UnsafeUtility.AlignOf<ushort>(), m_AllocatorLabel);
             UnsafeUtility.MemClear(m_HashTable, hashTableMemSize);
-
+            
             m_Vertices          = UnsafeList.Create(UnsafeUtility.SizeOf<float3>(), UnsafeUtility.AlignOf<float3>(), vertexCapacity, allocator);
             m_ChainedIndices    = UnsafeList.Create(UnsafeUtility.SizeOf<ushort>(), UnsafeUtility.AlignOf<ushort>(), chainedIndicesCapacity, allocator);
         }

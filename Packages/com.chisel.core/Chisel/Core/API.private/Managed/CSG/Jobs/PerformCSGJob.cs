@@ -228,33 +228,33 @@ namespace Chisel.Core
                         intersectedHoleIndices[intersectedHoleIndicesLength] = allEdges.Length;
                         intersectedHoleIndicesLength++;
                         holeIndices.AddAndAllocateWithCapacity(1);
-                        allInfos.Add(holeInfo);
+                        allInfos.AddNoResize(holeInfo);
                         allEdges.AllocateItemAndAddValues(holeEdges);
                     }
                 }
                 // This loop is a hole 
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
-                allInfos.Add(intersectionInfo);
+                allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
 
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
-                allInfos.Add(intersectionInfo);
+                allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
             } else
             {
                 // This loop is a hole 
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
-                allInfos.Add(intersectionInfo);
+                allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
 
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
-                allInfos.Add(intersectionInfo);
+                allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
             }
         }
@@ -331,9 +331,28 @@ namespace Chisel.Core
                 if (holeIndicesList.Length == 0)
                     continue;
 
-                var allWorldPlanes   = new NativeList<float4>(Allocator.Temp);
-                var allSegments      = new NativeList<LoopSegment>(Allocator.Temp);
-                var allCombinedEdges = new NativeList<Edge>(Allocator.Temp);
+                int totalPlaneCount = 0;
+                int totalEdgeCount = baseLoopEdges.Length;
+                {
+                    ref var worldPlanes = ref brushWorldPlanes[allInfos[baseloopIndex].brushNodeIndex].Value.worldPlanes;
+                    totalPlaneCount += worldPlanes.Length;
+                }
+                for (int h = 0; h < holeIndicesList.Length; h++)
+                {
+                    var holeIndex = holeIndicesList[h];
+                    var holeEdges = allEdges[holeIndex];
+                    totalEdgeCount += holeEdges.Length;
+
+                    ref var worldPlanes = ref brushWorldPlanes[allInfos[holeIndex].brushNodeIndex].Value.worldPlanes;
+
+                    totalPlaneCount += worldPlanes.Length;
+                }
+
+
+
+                var allWorldPlanes   = new NativeList<float4>(totalPlaneCount, Allocator.Temp);
+                var allSegments      = new NativeList<LoopSegment>(holeIndicesList.Length + 1, Allocator.Temp);
+                var allCombinedEdges = new NativeList<Edge>(totalEdgeCount, Allocator.Temp);
                 {                
                     int edgeOffset = 0;
                     int planeOffset = 0;
@@ -362,7 +381,7 @@ namespace Chisel.Core
                         var planesLength    = worldPlanes.Length;
                         var edgesLength     = holeEdges.Length;
 
-                        allSegments.Add(new LoopSegment()
+                        allSegments.AddNoResize(new LoopSegment
                         {
                             edgeOffset      = edgeOffset,
                             edgeLength      = edgesLength,
@@ -370,10 +389,10 @@ namespace Chisel.Core
                             planesLength    = planesLength
                         });
 
-                        allCombinedEdges.AddRange(holeEdges);
+                        allCombinedEdges.AddRangeNoResize(holeEdges);
 
                         // TODO: ideally we'd only use the planes that intersect our edges
-                        allWorldPlanes.AddRange(worldPlanes.GetUnsafePtr(), planesLength);
+                        allWorldPlanes.AddRangeNoResize(worldPlanes.GetUnsafePtr(), planesLength);
 
                         edgeOffset += edgesLength;
                         planeOffset += planesLength;
@@ -385,7 +404,7 @@ namespace Chisel.Core
                         var planesLength    = worldPlanes.Length;
                         var edgesLength     = baseLoopEdges.Length;
 
-                        allSegments.Add(new LoopSegment()
+                        allSegments.AddNoResize(new LoopSegment()
                         {
                             edgeOffset      = edgeOffset,
                             edgeLength      = edgesLength,
@@ -393,10 +412,10 @@ namespace Chisel.Core
                             planesLength    = planesLength
                         });
 
-                        allCombinedEdges.AddRange(baseLoopEdges);
+                        allCombinedEdges.AddRangeNoResize(baseLoopEdges);
 
                         // TODO: ideally we'd only use the planes that intersect our edges
-                        allWorldPlanes.AddRange(worldPlanes.GetUnsafePtr(), planesLength);
+                        allWorldPlanes.AddRangeNoResize(worldPlanes.GetUnsafePtr(), planesLength);
 
                         edgeOffset += edgesLength;
                         planeOffset += planesLength;
@@ -488,9 +507,9 @@ namespace Chisel.Core
                         }
                     }
                 }
-                allWorldPlanes  .Dispose();
-                allSegments     .Dispose();
-                allCombinedEdges.Dispose();
+                //allWorldPlanes  .Dispose();
+                //allSegments     .Dispose();
+                //allCombinedEdges.Dispose();
 
                 for (int h = holeIndicesList.Length - 1; h >= 0; h--)
                 {
@@ -638,12 +657,13 @@ namespace Chisel.Core
             }
 
 
-            var holeIndices = new NativeListArray<int>(routingLookupsLength * surfaceCount, Allocator.Temp);
-            var surfaceLoopIndices = new NativeListArray<int>(Allocator.Temp);
+            var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount);
+            var holeIndices         = new NativeListArray<int>(maxLoops, Allocator.Temp);
+            var surfaceLoopIndices  = new NativeListArray<int>(Allocator.Temp);
             surfaceLoopIndices.ResizeExact(surfaceCount);
 
-            var allInfos = new NativeList<SurfaceInfo>(Allocator.Temp);
-            var allEdges = new NativeListArray<Edge>(Allocator.Temp);
+            var allInfos = new NativeList<SurfaceInfo>(maxLoops, Allocator.Temp);
+            var allEdges = new NativeListArray<Edge>(maxLoops, Allocator.Temp);
 
 
             ref var routingTable = ref routingTableRef.Value;
@@ -662,7 +682,7 @@ namespace Chisel.Core
                 var loopIndices = surfaceLoopIndices.AllocateWithCapacityForIndex(surfaceIndex, maxAllocation);
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(maxAllocation);
-                allInfos.Add(info);
+                allInfos.AddNoResize(info);
                 var basePolygonDst = allEdges.AddAndAllocateWithCapacity(basePolygonSrc.Length + maxEdgeAllocation);// TODO: find a more reliable "max"
                 basePolygonDst.AddRangeNoResize(basePolygonSrc);
 
@@ -753,8 +773,8 @@ namespace Chisel.Core
             output.EndForEachIndex();
 
 
-            intersectionLoops.Dispose();
-            holeIndices.Dispose();
+            //intersectionLoops.Dispose();
+            //holeIndices.Dispose();
         }
     }
 } 
