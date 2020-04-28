@@ -1,5 +1,6 @@
 ﻿using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 
@@ -15,7 +16,10 @@ namespace Chisel.Core
                 return BlobAssetReference<BrushWorldPlanes>.Null;
 
             var nodeToTreeInverseTransposed = math.transpose(math.inverse(nodeToTreeTransformation));
-            var builder = new BlobBuilder(Allocator.Temp);
+
+            var totalSize = 16 + (brushMeshBlob.Value.localPlanes.Length * UnsafeUtility.SizeOf<float4>());
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushWorldPlanes>();
             var worldPlaneArray = builder.Allocate(ref root.worldPlanes, brushMeshBlob.Value.localPlanes.Length);
             for (int i = 0; i < brushMeshBlob.Value.localPlanes.Length; i++)

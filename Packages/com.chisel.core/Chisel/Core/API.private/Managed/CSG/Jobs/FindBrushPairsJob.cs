@@ -6,6 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -67,21 +68,6 @@ namespace Chisel.Core
                 }
             }
             brushPairMap.Dispose();
-        }
-    }
-
-    [BurstCompile(CompileSynchronously = true)]
-    struct DisposeBrushPairsJob : IJobParallelFor
-    {
-        [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushPairIntersection>> intersectingBrushes;
-
-        public void Execute(int index)
-        {
-            if (index >= intersectingBrushes.Length ||
-                intersectingBrushes.Length == 0)
-                return;
-
-            intersectingBrushes[index].Dispose();
         }
     }
 
@@ -257,8 +243,8 @@ namespace Chisel.Core
 
             ref var mesh0 = ref blobMesh0.Value;
             ref var mesh1 = ref blobMesh1.Value;
-
-            var builder = new BlobBuilder(Allocator.Temp);
+            
+            var builder = new BlobBuilder(Allocator.Temp, 4096);
             ref var root = ref builder.ConstructRoot<BrushPairIntersection>();
             root.type = type;
 

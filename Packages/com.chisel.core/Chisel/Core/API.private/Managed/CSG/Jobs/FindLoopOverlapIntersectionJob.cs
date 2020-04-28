@@ -14,7 +14,7 @@ namespace Chisel.Core
     { 
         [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushIndices;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoops>>      intersectionLoopBlobs;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygonBlobs;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>     brushWorldPlanes;
         
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
@@ -58,10 +58,9 @@ namespace Chisel.Core
         {
             var brushNodeIndex      = treeBrushIndices[index];
 
-            var basePolygonBlob     = basePolygonBlobs[brushNodeIndex];
-            ref var basePolygonBlobValue = ref basePolygonBlob.Value;
+            ref var basePolygonBlob = ref basePolygons[brushNodeIndex].Value;
 
-            var surfaceCount        = basePolygonBlobValue.surfaces.Length;
+            var surfaceCount        = basePolygonBlob.polygons.Length;
             if (surfaceCount == 0)
                 return;
             
@@ -103,7 +102,7 @@ namespace Chisel.Core
             var uniqueBrushIndices = uniqueBrushIndicesHashMap.GetKeyArray(Allocator.Temp);
             uniqueBrushIndicesHashMap.Dispose();
 
-            hashedVertices.AddUniqueVertices(ref basePolygonBlobValue.vertices); /*OUTPUT*/
+            hashedVertices.AddUniqueVertices(ref basePolygonBlob.vertices); /*OUTPUT*/
 
             var uniqueBrushIndexCount = uniqueBrushIndices.Length;
             if (uniqueBrushIndexCount == 0)
@@ -111,15 +110,15 @@ namespace Chisel.Core
                 // If we don't have any intersection loops, just convert basePolygonBlob to loops and be done
                 // TODO: should do this per surface!
 
-                for (int s = 0; s < basePolygonBlobValue.surfaces.Length; s++)
+                for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
                 {
-                    ref var input = ref basePolygonBlobValue.surfaces[s];
+                    ref var input = ref basePolygonBlob.polygons[s];
 
                     var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, input.endEdgeIndex - input.startEdgeIndex);
                     for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                        edges.AddNoResize(basePolygonBlobValue.edges[e]);
+                        edges.AddNoResize(basePolygonBlob.edges[e]);
 
-                    basePolygonSurfaceInfos[s] = basePolygonBlobValue.surfaces[s].surfaceInfo;
+                    basePolygonSurfaceInfos[s] = basePolygonBlob.polygons[s].surfaceInfo;
                 }
             } else
             { 
@@ -140,15 +139,15 @@ namespace Chisel.Core
                 var intersectionSurfaceSegments = stackalloc int2[surfaceCount];
                 {
                     {
-                        for (int s = 0; s < basePolygonBlobValue.surfaces.Length; s++)
+                        for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
                         {
-                            ref var input = ref basePolygonBlobValue.surfaces[s];
+                            ref var input = ref basePolygonBlob.polygons[s];
 
                             var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersectionLoops.Length * 4));
                             for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                                edges.AddNoResize(basePolygonBlobValue.edges[e]);
+                                edges.AddNoResize(basePolygonBlob.edges[e]);
 
-                            basePolygonSurfaceInfos[s] = basePolygonBlobValue.surfaces[s].surfaceInfo;
+                            basePolygonSurfaceInfos[s] = basePolygonBlob.polygons[s].surfaceInfo;
                         }
 
                         { 

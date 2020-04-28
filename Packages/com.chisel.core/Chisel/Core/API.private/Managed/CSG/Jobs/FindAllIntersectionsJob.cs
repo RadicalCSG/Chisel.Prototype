@@ -101,9 +101,9 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeArray<int>  allTreeBrushIndices;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>   transformations;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>      basePolygons;// TODO: only need bounds, should separate that data
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
+        [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushWorldBounds;
 
         [NoAlias] public NativeList<int> updateBrushIndices;
 
@@ -274,8 +274,8 @@ namespace Chisel.Core
             if (!brushMesh0.IsCreated || !brushMesh1.IsCreated)
                 return IntersectionType.NoIntersection;
 
-            var bounds0 = basePolygons[brush0NodeIndex].Value.bounds;
-            var bounds1 = basePolygons[brush1NodeIndex].Value.bounds;
+            var bounds0 = brushWorldBounds[brush0NodeIndex];
+            var bounds1 = brushWorldBounds[brush1NodeIndex];
 
             if (!bounds0.Intersects(bounds1, kPlaneDistanceEpsilon))
                 return IntersectionType.NoIntersection;
@@ -401,7 +401,13 @@ namespace Chisel.Core
 
                 SetUsedNodesBits(compactTree, brushIntersections, brushNodeIndex, rootNodeIndex, bitset);
             }
-            var builder = new BlobBuilder(Allocator.Temp);
+            
+            var totalBrushIntersectionsSize = 16 + (brushIntersections.Length * UnsafeUtility.SizeOf<BrushIntersection>());
+            var totalIntersectionBitsSize   = 16 + (bitset.twoBits.Length * UnsafeUtility.SizeOf<uint>());
+            var totalSize                   = totalBrushIntersectionsSize + totalIntersectionBitsSize;
+
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushesTouchedByBrush>();
 
             builder.Construct(ref root.brushIntersections, brushIntersections);

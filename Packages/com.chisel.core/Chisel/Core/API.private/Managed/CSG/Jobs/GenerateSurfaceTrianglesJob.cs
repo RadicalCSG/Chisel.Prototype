@@ -131,8 +131,8 @@ namespace Chisel.Core
             }
 
 
-            var basePolygonsBlob = basePolygons[brushNodeIndex];
-            var brushWorldPlanesBlob = brushWorldPlanes[brushNodeIndex];
+            ref var baseSurfaces            = ref basePolygons[brushNodeIndex].Value.surfaces;
+            ref var brushWorldPlanesBlob    = ref brushWorldPlanes[brushNodeIndex].Value;
 
             var pointCount                  = brushVertices.Length + 2;
             var context_points              = new NativeArray<float2>(pointCount, allocator);
@@ -150,7 +150,7 @@ namespace Chisel.Core
             var context_inputEdgesCopy      = new NativeList<Edge>(64, allocator);
 
 
-            var builder = new BlobBuilder(allocator);
+            var builder = new BlobBuilder(allocator, 4096);
             ref var root = ref builder.ConstructRoot<ChiselBrushRenderBuffer>();
             var surfaceRenderBuffers = builder.Allocate(ref root.surfaces, surfaceLoopIndices.Length);
 
@@ -179,10 +179,10 @@ namespace Chisel.Core
                 }
 
                 // TODO: why are we doing this in tree-space? better to do this in brush-space, then we can more easily cache this
-                var surfaceIndex = s;
-                var surfaceLayers = basePolygonsBlob.Value.surfaces[surfaceIndex].layers;
-                var surfaceWorldPlane = brushWorldPlanesBlob.Value.worldPlanes[surfaceIndex];
-                var UV0 = basePolygonsBlob.Value.surfaces[surfaceIndex].UV0;
+                var surfaceIndex        = s;
+                var surfaceLayers       = baseSurfaces[surfaceIndex].layers;
+                var surfaceWorldPlane   = brushWorldPlanesBlob.worldPlanes[surfaceIndex];
+                var UV0                 = baseSurfaces[surfaceIndex].UV0;
                 var localSpaceToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(surfaceWorldPlane);
                 var uv0Matrix = math.mul(UV0.ToFloat4x4(), localSpaceToPlaneSpace);
 

@@ -465,7 +465,17 @@ namespace Chisel.Core
                 SortIndices(vertices, sortedStack, uniqueIndices, offset, length, brushWorldPlanes.worldPlanes[planeIndex].xyz);
             }
 
-            var builder = new BlobBuilder(Allocator.Temp);
+            
+            var totalLoopsSize          = 16 + (planeIndexOffsetsLength * UnsafeUtility.SizeOf<BrushIntersectionLoop>());
+            var totalSize               = totalLoopsSize;
+            for (int j = 0; j < planeIndexOffsetsLength; j++)
+            {
+                var planeIndexLength = planeIndexOffsets[j];
+                var loopLength = planeIndexLength.length;
+                totalSize += (loopLength * UnsafeUtility.SizeOf<float3>()); 
+            }
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushIntersectionLoops>();
             var dstSurfaces = builder.Allocate(ref root.loops, planeIndexOffsetsLength);
             var srcVertices = hashedVertices.GetUnsafeReadOnlyPtr();

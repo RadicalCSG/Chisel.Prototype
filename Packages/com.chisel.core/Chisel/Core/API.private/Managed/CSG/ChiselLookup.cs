@@ -265,19 +265,22 @@ namespace Chisel.Core
     struct BasePolygon
     {
         public SurfaceInfo      surfaceInfo;
-        public SurfaceLayers    layers;
         public int              startEdgeIndex;
         public int              endEdgeIndex;
+    }
+    
+    struct BaseSurface
+    {
+        public SurfaceLayers    layers;
         public UVMatrix         UV0;
     }
 
     internal struct BasePolygonsBlob
     {
-        public BlobArray<BasePolygon>   surfaces;
+        public BlobArray<BasePolygon>   polygons;
         public BlobArray<Edge>          edges;
         public BlobArray<float3>        vertices;
-        public AABB                     bounds;
-
+        public BlobArray<BaseSurface>   surfaces;
     }
     
     public enum IntersectionType : byte
@@ -332,6 +335,7 @@ namespace Chisel.Core
         public unsafe class Data
         {
             public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>         basePolygons;
+            public NativeHashMap<int, MinMaxAABB>                                   brushWorldBounds;
             public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
             public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>         brushWorldPlanes;
             public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
@@ -352,6 +356,20 @@ namespace Chisel.Core
                         basePolygons.Remove(brushNodeID);
                         if (basePolygonsBlob.IsCreated)
                             basePolygonsBlob.Dispose();
+                    }
+                }
+            }
+
+            internal void RemoveBrushWorldBoundsBrushID(List<int> brushNodeIndices)
+            {
+                if (brushWorldBounds.Count() == 0)
+                    return;
+                for (int b = 0; b < brushNodeIndices.Count; b++)
+                {
+                    var brushNodeID = brushNodeIndices[b];
+                    if (brushWorldBounds.TryGetValue(brushNodeID, out var basePolygonsBlob))
+                    {
+                        brushWorldBounds.Remove(brushNodeID);
                     }
                 }
             }
@@ -441,6 +459,7 @@ namespace Chisel.Core
             {
                 // brushIndex
                 basePolygons            = new NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
+                brushWorldBounds        = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
                 routingTableLookup      = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
                 brushWorldPlanes        = new NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>(1000, Allocator.Persistent);
                 brushesTouchedByBrushes = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
@@ -462,6 +481,11 @@ namespace Chisel.Core
                         basePolygons.Clear();
                         basePolygons.Dispose();
                     }
+                }
+                if (brushWorldBounds.IsCreated)
+                {
+                    brushWorldBounds.Clear();
+                    brushWorldBounds.Dispose();
                 }
                 if (routingTableLookup.IsCreated)
                 {

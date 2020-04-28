@@ -6,6 +6,7 @@ using Unity.Collections;
 using Profiler = UnityEngine.Profiling.Profiler;
 using Debug = UnityEngine.Debug;
 using System.Diagnostics;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -32,9 +33,12 @@ namespace Chisel.Core
             
             public BlobAssetReference<CompactTree>  compactTree;
 
+            // TODO: We store this per tree, and ensure brushes have ids from 0 to x per tree, then we can use an array here.
+            //       Remap "local index" to "nodeindex" and back? How to make this efficiently work with caching stuff?
             public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>            brushMeshLookup;
             public NativeHashMap<int, BlobAssetReference<NodeTransformations>>      transformations;
             public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>         basePolygons;
+            public NativeHashMap<int, MinMaxAABB>                                   brushWorldBounds;
             public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>         brushWorldPlanes;
             public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
             public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
@@ -126,6 +130,7 @@ namespace Chisel.Core
                 ref var brushMeshBlobs          = ref chiselMeshValues.brushMeshBlobs;
                 ref var transformations         = ref chiselLookupValues.transformations;
                 ref var basePolygons            = ref chiselLookupValues.basePolygons;
+                ref var brushWorldBounds        = ref chiselLookupValues.brushWorldBounds;
                 ref var brushesTouchedByBrushes = ref chiselLookupValues.brushesTouchedByBrushes;
 
                 // Removes all brushes that have MeshID == 0 from treeBrushesArray
@@ -168,6 +173,10 @@ namespace Chisel.Core
                         if (basePolygonsBlob.IsCreated)
                             basePolygonsBlob.Dispose();
                     }
+                    if (brushWorldBounds.TryGetValue(brushNodeIndex, out var brushWorldBoundsBlob))
+                    {
+                        brushWorldBounds.Remove(brushNodeIndex);
+                    }                    
 
                     if ((nodeFlags.status & NodeStatusFlags.ShapeModified) != NodeStatusFlags.None)
                     {
@@ -337,6 +346,7 @@ namespace Chisel.Core
                     brushMeshLookup                 = brushMeshLookup,
                     transformations                 = chiselLookupValues.transformations,
                     basePolygons                    = chiselLookupValues.basePolygons,
+                    brushWorldBounds                = chiselLookupValues.brushWorldBounds,
                     brushWorldPlanes                = chiselLookupValues.brushWorldPlanes,
                     routingTableLookup              = chiselLookupValues.routingTableLookup,
                     brushesTouchedByBrushes         = chiselLookupValues.brushesTouchedByBrushes,
@@ -376,7 +386,8 @@ namespace Chisel.Core
                         transformations     = treeUpdate.transformations,
 
                         // Write
-                        basePolygons        = treeUpdate.basePolygons.AsParallelWriter()
+                        basePolygons        = treeUpdate.basePolygons.AsParallelWriter(),
+                        brushWorldBounds    = treeUpdate.brushWorldBounds.AsParallelWriter()
                     };
                     treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
                         Schedule(treeUpdate.rebuildTreeBrushIndices, 16);
@@ -399,8 +410,8 @@ namespace Chisel.Core
                         allTreeBrushIndices     = treeUpdate.allTreeBrushIndices,
                         transformations         = treeUpdate.transformations,
                         brushMeshLookup         = treeUpdate.brushMeshLookup,
-                        basePolygons            = treeUpdate.basePolygons,
-
+                        brushWorldBounds        = treeUpdate.brushWorldBounds,
+                        
                         // Write
                         brushBrushIntersections = treeUpdate.brushBrushIntersections.AsParallelWriter()
                     };
@@ -547,7 +558,7 @@ namespace Chisel.Core
                         treeBrushIndices            = treeUpdate.rebuildTreeBrushIndices.AsDeferredJobArray(),
                         intersectionLoopBlobs       = treeUpdate.intersectionLoopBlobs.AsDeferredJobArray(),
                         brushWorldPlanes            = treeUpdate.brushWorldPlanes,
-                        basePolygonBlobs            = treeUpdate.basePolygons,
+                        basePolygons                = treeUpdate.basePolygons,// by nodeIndex (non-bounds, non-surfaceinfo)
 
                         // Write
                         output                      = treeUpdate.dataStream1.AsWriter()

@@ -1,5 +1,6 @@
 ﻿using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -38,12 +39,19 @@ namespace Chisel.Core
                 brushMesh.halfEdges.Length < 12)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-            var builder = new BlobBuilder(Allocator.Temp);
 
             var srcVertices = brushMesh.vertices;
-            var srcPlanes = brushMesh.planes;
+            //var srcPlanes = brushMesh.planes;
+            
+            var totalPolygonSize        = 16 + (brushMesh.polygons.Length * UnsafeUtility.SizeOf<Polygon>());
+            var totalPlaneSize          = 16 + (brushMesh.planes.Length * UnsafeUtility.SizeOf<float4>());
+            var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
+            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
+            var totalVertexSize         = 16 + (srcVertices.Length * UnsafeUtility.SizeOf<float3>());
+            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
 
 
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
             root.localBounds = brushMesh.localBounds;
             builder.Construct(ref root.vertices, srcVertices);

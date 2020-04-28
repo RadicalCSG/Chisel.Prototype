@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -436,12 +437,12 @@ namespace Chisel.Core
             if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false;
             var treeNodeID = nodeHierarchies[brushNodeID - 1].treeNodeID;
             var chiselLookupValues = ChiselTreeLookup.Value[treeNodeID - 1];
-            if (!chiselLookupValues.basePolygons.TryGetValue(brushNodeID - 1, out BlobAssetReference<BasePolygonsBlob> result))
+            if (!chiselLookupValues.brushWorldBounds.TryGetValue(brushNodeID - 1, out MinMaxAABB result))
                 return false;
 
             bounds = new Bounds();
-            if (!float.IsInfinity(result.Value.bounds.min.x))
-                bounds.SetMinMax(result.Value.bounds.min, result.Value.bounds.max);
+            if (!float.IsInfinity(result.Min.x))
+                bounds.SetMinMax(result.Min, result.Max);
             return true;
         }
 

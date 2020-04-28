@@ -7,6 +7,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -52,7 +53,14 @@ namespace Chisel.Core
                     maxCounter = Math.Max(maxCounter, (int)routingTable[i].input);
                 polygonGroupCount = maxCounter + 1;
                     
-                var builder = new BlobBuilder(Allocator.Temp);
+                
+                var totalInputsSize         = 16 + (routingTable.Length * UnsafeUtility.SizeOf<CategoryGroupIndex>());
+                var totalRoutingRowsSize    = 16 + (routingTable.Length * UnsafeUtility.SizeOf<CategoryRoutingRow>());
+                var totalLookupsSize        = 16 + (routingTable.Length * UnsafeUtility.SizeOf<RoutingLookup>());
+                var totalNodesSize          = 16 + (routingTable.Length * UnsafeUtility.SizeOf<int>());
+                var totalSize               = totalInputsSize + totalRoutingRowsSize + totalLookupsSize + totalNodesSize;
+
+                var builder = new BlobBuilder(Allocator.Temp, totalSize);
                 ref var root    = ref builder.ConstructRoot<RoutingTable>();
                 var inputs      = builder.Allocate(ref root.inputs,           routingTable.Length);
                 var routingRows = builder.Allocate(ref root.routingRows,      routingTable.Length);
