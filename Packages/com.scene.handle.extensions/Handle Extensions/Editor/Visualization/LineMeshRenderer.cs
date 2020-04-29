@@ -133,7 +133,7 @@ namespace UnitySceneExtensions
                 mesh.SetColors(newColors);
                 mesh.SetIndices(indices, MeshTopology.Triangles, 0, calculateBounds: false);
                 mesh.RecalculateBounds();
-                mesh.UploadMeshData(false);
+                //mesh.UploadMeshData(false);
             }
 
             internal void Destroy()
