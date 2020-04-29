@@ -184,15 +184,15 @@ namespace Chisel.Core
         #endregion
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void FindInsideVertices(ref BlobArray<float3>   usedVertices0,
-                                ref BlobArray<ushort>   vertexIntersectionPlanes,
-                                ref BlobArray<int2>     vertexIntersectionSegments,
-                                ref BlobArray<float4>   intersectingPlanes1,
-                                float4x4                nodeToTreeSpaceMatrix1,
-                                float4x4                vertexToLocal0,
-                                //ref HashedVertices    hashedVertices,
-                                PlaneVertexIndexPair*   foundIndices0,
-                                ref int                 foundIndices0Length)
+        void FindInsideVertices(ref BlobArray<float3>               usedVertices0,
+                                ref BlobArray<ushort>               vertexIntersectionPlanes,
+                                ref BlobArray<int2>                 vertexIntersectionSegments,
+                                ref BlobArray<float4>               intersectingPlanes1,
+                                float4x4                            nodeToTreeSpaceMatrix1,
+                                float4x4                            vertexToLocal0,
+                                //ref HashedVertices                hashedVertices,
+                                NativeArray<PlaneVertexIndexPair>   foundIndices0,
+                                ref int                             foundIndices0Length)
         {
             var localVertices   = stackalloc float4[usedVertices0.Length];
             var usedVertexIndices = stackalloc ushort[usedVertices0.Length];
@@ -254,34 +254,40 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void FindIntersectionVertices(ref BlobArray<float4>      intersectingPlanes0,
-                                      ref BlobArray<float4>      intersectingPlanes1,
-                                      ref BlobArray<PlanePair>   usedPlanePairs1,
-                                      ref BlobArray<int>         intersectingPlaneIndices0,
-                                      float4x4                   nodeToTreeSpaceMatrix0,
-                                      //ref HashedVertices       hashedVertices,
-                                      PlaneVertexIndexPair*      foundIndices0,
-                                      ref int                    foundIndices0Length,
-                                      PlaneVertexIndexPair*      foundIndices1,
-                                      ref int                    foundIndices1Length)
+        void FindIntersectionVertices(ref BlobArray<float4>             intersectingPlanes0,
+                                      ref BlobArray<float4>             intersectingPlanes1,
+                                      ref BlobArray<PlanePair>          usedPlanePairs1,
+                                      ref BlobArray<int>                intersectingPlaneIndices0,
+                                      float4x4                          nodeToTreeSpaceMatrix0,
+                                      //ref HashedVertices              hashedVertices,
+                                      NativeArray<PlaneVertexIndexPair> foundIndices0,
+                                      ref int                           foundIndices0Length,
+                                      NativeArray<PlaneVertexIndexPair> foundIndices1,
+                                      ref int                           foundIndices1Length)
         {
-            var foundVertices       = stackalloc float4[usedPlanePairs1.Length * intersectingPlanes0.Length];
-            var foundEdges          = stackalloc IntersectionEdge[usedPlanePairs1.Length * intersectingPlanes0.Length];
-            var foundIntersections  = stackalloc IntersectionPlanes[usedPlanePairs1.Length * intersectingPlanes0.Length];
+            var foundVertices       = new NativeArray<float4>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
+            var foundEdges          = new NativeArray<IntersectionEdge>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
+            var foundIntersections  = new NativeArray<IntersectionPlanes>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
             var n = 0;
             for (int i = 0; i < usedPlanePairs1.Length; i++)
             {
                 for (int j = 0; j < intersectingPlanes0.Length; j++)
-                {
-                    foundIntersections[n].plane0        = usedPlanePairs1[i].plane0;
-                    foundIntersections[n].plane1        = usedPlanePairs1[i].plane1;
-                    foundIntersections[n].plane2        = intersectingPlanes0[j];
-                    foundIntersections[n].planeIndex0   = usedPlanePairs1[i].planeIndex0;
-                    foundIntersections[n].planeIndex1   = usedPlanePairs1[i].planeIndex1;
-                    foundIntersections[n].planeIndex2   = intersectingPlaneIndices0[j];
+                { 
+                    foundIntersections[n] = new IntersectionPlanes
+                    { 
+                        plane0      = usedPlanePairs1[i].plane0,
+                        plane1      = usedPlanePairs1[i].plane1,
+                        plane2      = intersectingPlanes0[j],
+                        planeIndex0 = usedPlanePairs1[i].planeIndex0,
+                        planeIndex1 = usedPlanePairs1[i].planeIndex1,
+                        planeIndex2 = intersectingPlaneIndices0[j]
+                    };
 
-                    foundEdges[n].edgeVertex0 = usedPlanePairs1[i].edgeVertex0;
-                    foundEdges[n].edgeVertex1 = usedPlanePairs1[i].edgeVertex1;
+                    foundEdges[n] = new IntersectionEdge
+                    {
+                        edgeVertex0 = usedPlanePairs1[i].edgeVertex0,
+                        edgeVertex1 = usedPlanePairs1[i].edgeVertex1
+                    };
                     
                     var plane0      = usedPlanePairs1[i].plane0;
                     var plane1      = usedPlanePairs1[i].plane1;
@@ -357,13 +363,13 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void GenerateLoop(int                        brushNodeIndex0,
-                          int                        brushNodeIndex1,
-                          ref BlobArray<SurfaceInfo> surfaceInfos,
-                          ref BrushWorldPlanes       brushWorldPlanes,
-                          PlaneVertexIndexPair*      foundIndices0,
-                          ref int                    foundIndices0Length,
-                          //ref HashedVertices       hashedVertices,
+        void GenerateLoop(int                               brushNodeIndex0,
+                          int                               brushNodeIndex1,
+                          ref BlobArray<SurfaceInfo>        surfaceInfos,
+                          ref BrushWorldPlanes              brushWorldPlanes,
+                          NativeArray<PlaneVertexIndexPair> foundIndices0,
+                          ref int                           foundIndices0Length,
+                          //ref HashedVertices              hashedVertices,
                           NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
@@ -371,8 +377,8 @@ namespace Chisel.Core
             {
                 for (int j = i + 1; j < foundIndices0Length; j++)
                 {
-                    ref var x = ref foundIndices0[i];
-                    ref var y = ref foundIndices0[j];
+                    var x = foundIndices0[i];
+                    var y = foundIndices0[j];
                     if (x.planeIndex > y.planeIndex)
                         continue;
                     if (x.planeIndex == y.planeIndex)
@@ -523,8 +529,8 @@ namespace Chisel.Core
             int foundIndices0Capacity           = intersectionStream0Capacity + (2 * intersectionStream1Capacity) + (brushPairIntersection0.localSpacePlanes0.Length * insideVerticesStream0Capacity);
             int foundIndices1Capacity           = intersectionStream1Capacity + (2 * intersectionStream0Capacity) + (brushPairIntersection1.localSpacePlanes0.Length * insideVerticesStream1Capacity);
 
-            var foundIndices0           = stackalloc PlaneVertexIndexPair[foundIndices0Capacity];
-            var foundIndices1           = stackalloc PlaneVertexIndexPair[foundIndices1Capacity];
+            var foundIndices0           = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
+            var foundIndices1           = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
             var foundIndices0Length     = 0;
             var foundIndices1Length     = 0;
             //var foundIndices0 = new NativeList<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
