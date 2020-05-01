@@ -324,44 +324,6 @@ namespace Chisel.Core
             return (ptr != null && ptr->IsCreated);
         }
 
-        public NativeList AllocateWithCapacityForIndex(int index, int capacity)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            CheckArgPositive(index);
-            var positiveIndex = AssumePositive(index);
-            CheckArgInRange(positiveIndex, m_Array->Length);
-            
-            var ptr = m_Array->Ptr[index];            
-            CheckNotAllocated(ptr);
-
-            ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (capacity > 0)
-                CheckAllocated(ptr);
-#endif
-            return new NativeList(ptr, ref m_Safety);
-        }
-
-        public NativeList AddAndAllocateWithCapacity(int capacity)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            int index = m_Array->AllocateItem();
-
-            var ptr = m_Array->Ptr[index];
-
-            CheckNotAllocated(ptr);
-
-            ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            CheckAllocated(m_Array->Ptr[index]);
-#endif
-            return new NativeList(m_Array->Ptr[index], ref m_Safety);
-        }
-
         public NativeList SafeGet(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -387,6 +349,54 @@ namespace Chisel.Core
 #endif
         }
 
+        public bool IsAllocated(int index)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+#endif
+            CheckArgPositive(index);
+            var positiveIndex = AssumePositive(index);
+            CheckArgInRange(positiveIndex, m_Array->Length);
+            var ptr = m_Array->Ptr[positiveIndex];
+            return (ptr != null && ptr->IsCreated);
+        }
+
+        public NativeList AllocateWithCapacityForIndex(int index, int capacity)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+#endif
+            CheckArgPositive(index);
+            var positiveIndex = AssumePositive(index);
+            CheckArgInRange(positiveIndex, m_Array->Length);
+
+            var ptr = m_Array->Ptr[index];
+            CheckNotAllocated(ptr);
+
+            capacity = Math.Max(1, capacity);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+#endif
+            return new NativeList(m_Array->Ptr[index], ref m_Safety);
+        }
+
+        public NativeList AddAndAllocateWithCapacity(int capacity)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+#endif
+            int index = m_Array->AllocateItem();
+            var ptr = m_Array->Ptr[index];
+            CheckNotAllocated(ptr);
+            capacity = Math.Max(1, capacity);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+#endif
+            return new NativeList(m_Array->Ptr[index], ref m_Safety);
+        }
+
         public int AllocateItemAndAddValues(NativeListArray<T>.NativeList other)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -394,9 +404,12 @@ namespace Chisel.Core
 #endif
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
-            CheckNull(ptr);
-            var dstList = new NativeList(ptr, ref m_Safety);
+            CheckNotAllocated(ptr);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+#endif
+            var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
             dstList.AddRangeNoResize(other);
             return index;
         }
@@ -408,10 +421,17 @@ namespace Chisel.Core
 #endif
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), otherLength);
-            CheckNull(ptr);
-            var dstList = new NativeList(ptr, ref m_Safety);
-            dstList.AddRangeNoResize(otherPtr, otherLength);
+            var capacity = Math.Max(1, otherLength);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+#endif
+            if (otherLength > 0)
+            {
+                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
+                dstList.AddRangeNoResize(otherPtr, otherLength);
+            }
+            Debug.Assert(IsAllocated(index));
             return index;
         }
 
@@ -646,11 +666,12 @@ namespace Chisel.Core
             {
                 get
                 {
+                    if (m_ListData == null)
+                        return 0;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 #endif
-                    if (m_ListData == null ||
-                        !m_ListData->IsCreated)
+                    if (!m_ListData->IsCreated)
                         return 0;
                     return AssumePositive(m_ListData->Length);
                 }
@@ -660,6 +681,8 @@ namespace Chisel.Core
             {
                 get
                 {
+                    if (m_ListData == null)
+                        return 0;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 #endif
@@ -674,6 +697,8 @@ namespace Chisel.Core
             {
                 get
                 {
+                    if (m_ListData == null)
+                        return 0;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 #endif

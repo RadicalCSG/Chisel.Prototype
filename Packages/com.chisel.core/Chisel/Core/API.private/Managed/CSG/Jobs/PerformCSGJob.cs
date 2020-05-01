@@ -80,26 +80,34 @@ namespace Chisel.Core
             return -1;
         }
         
-        void IntersectLoopsJob(NativeList<SurfaceInfo>           allInfos,
-                               NativeListArray<Edge>             allEdges,
-                               in HashedVertices                 brushVertices,
-                               int                               surfaceLoopIndex, 
-                               NativeListArray<Edge>.NativeList  intersectionLoop, 
-                               CategoryGroupIndex                intersectionCategory, 
-                               SurfaceInfo                       intersectionInfo, 
-                               NativeListArray<int>.NativeList   loopIndices, 
-                               NativeListArray<int>              holeIndices)
+        void IntersectLoopsJob(HashedVertices                   brushVertices,
+                               
+                               NativeListArray<int>.NativeList  loopIndices, 
+                               int                              surfaceLoopIndex, 
+                               
+                               NativeListArray<int>             holeIndices,
+                               NativeList<SurfaceInfo>          allInfos,
+                               NativeListArray<Edge>            allEdges, 
+
+                               NativeListArray<Edge>.NativeList intersectionLoop, 
+                               CategoryGroupIndex               intersectionCategory, 
+                               SurfaceInfo                      intersectionInfo)
         {
+            if (intersectionLoop.Length == 0)
+                return;
+
+            //Debug.Assert(allEdges.Length == allInfos.Length);
+            //Debug.Assert(allInfos.Length == holeIndices.Length);
+
             var currentLoopEdges    = allEdges[surfaceLoopIndex];
             var currentInfo         = allInfos[surfaceLoopIndex];
-            var currentHoleIndices  = holeIndices.SafeGet(surfaceLoopIndex);
+            var currentHoleIndices  = holeIndices[surfaceLoopIndex];
 
             // It might look like we could just set the interiorCategory of brush_intersection here, and let all other cut loops copy from it below,
             // but the same brush_intersection might be used by another categorized_loop and then we'd try to reroute it again, which wouldn't work
             //brush_intersection.interiorCategory = newHoleCategory;
 
-            if (intersectionLoop.Length == 0 ||
-                currentLoopEdges.Length == 0)
+            if (currentLoopEdges.Length == 0)
                 return;
 
             var maxLength       = math.max(intersectionLoop.Length, currentLoopEdges.Length);
@@ -145,6 +153,7 @@ namespace Chisel.Core
                 // New polygon overrides the existing polygon
                 currentInfo.interiorCategory = intersectionCategory;
                 allInfos[surfaceLoopIndex] = currentInfo;
+                //Debug.Assert(holeIndices.IsAllocated(surfaceLoopIndex));
                 return; 
             }
             
@@ -230,6 +239,9 @@ namespace Chisel.Core
                         holeIndices.AddAndAllocateWithCapacity(1);
                         allInfos.AddNoResize(holeInfo);
                         allEdges.AllocateItemAndAddValues(holeEdges);
+                        //Debug.Assert(allEdges.Length == allInfos.Length);
+                        //Debug.Assert(allInfos.Length == holeIndices.Length);
+                        //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
                     }
                 }
                 // This loop is a hole 
@@ -237,12 +249,18 @@ namespace Chisel.Core
                 holeIndices.AddAndAllocateWithCapacity(1);
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //Debug.Assert(allEdges.Length == allInfos.Length);
+                //Debug.Assert(allInfos.Length == holeIndices.Length);
+                //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //Debug.Assert(allEdges.Length == allInfos.Length);
+                //Debug.Assert(allInfos.Length == holeIndices.Length);
+                //Debug.Assert(holeIndices.IsAllocated(allEdges.Length - 1));
             } else
             {
                 // This loop is a hole 
@@ -250,16 +268,22 @@ namespace Chisel.Core
                 holeIndices.AddAndAllocateWithCapacity(1);
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //Debug.Assert(allEdges.Length == allInfos.Length);
+                //Debug.Assert(allInfos.Length == holeIndices.Length);
+                //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
+                //Debug.Assert(allEdges.Length == allInfos.Length);
+                //Debug.Assert(allInfos.Length == holeIndices.Length);
+                //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
             }
         }
 
-        internal static unsafe float3 CalculatePlaneNormal(in NativeListArray<Edge>.NativeList edges, in HashedVertices hashedVertices)
+        internal static unsafe float3 CalculatePlaneNormal(NativeListArray<Edge>.NativeList edges, HashedVertices hashedVertices)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
@@ -279,7 +303,7 @@ namespace Chisel.Core
             return normal;
         }
 
-        void CleanUp(in NativeList<SurfaceInfo> allInfos, NativeListArray<Edge> allEdges, in HashedVertices brushVertices, in NativeListArray<int>.NativeList loopIndices, NativeListArray<int> holeIndices)
+        void CleanUp(NativeList<SurfaceInfo> allInfos, NativeListArray<Edge> allEdges, HashedVertices brushVertices, NativeListArray<int>.NativeList loopIndices, NativeListArray<int> holeIndices)
         {
             for (int l = loopIndices.Length - 1; l >= 0; l--)
             {
@@ -657,7 +681,7 @@ namespace Chisel.Core
             }
 
 
-            var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount);
+            var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount); // TODO: find a more reliable "max"
             var holeIndices         = new NativeListArray<int>(maxLoops, Allocator.Temp);
             var surfaceLoopIndices  = new NativeListArray<int>(Allocator.Temp);
             surfaceLoopIndices.ResizeExact(surfaceCount);
@@ -680,11 +704,17 @@ namespace Chisel.Core
                 var maxEdgeAllocation   = 1 + (brushVertices.Length * 2);
 
                 var loopIndices = surfaceLoopIndices.AllocateWithCapacityForIndex(surfaceIndex, maxAllocation);
-                loopIndices.AddNoResize(allEdges.Length);
+
+                loopIndices.AddNoResize(allEdges.Length);                
                 holeIndices.AddAndAllocateWithCapacity(maxAllocation);
-                allInfos.AddNoResize(info);
+                allInfos   .AddNoResize(info);
+                //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
+
                 var basePolygonDst = allEdges.AddAndAllocateWithCapacity(basePolygonSrc.Length + maxEdgeAllocation);// TODO: find a more reliable "max"
                 basePolygonDst.AddRangeNoResize(basePolygonSrc);
+
+                //Debug.Assert(allEdges.Length == allInfos.Length);
+                //Debug.Assert(allInfos.Length == holeIndices.Length);
 
                 for (int routingTableIndex = 0; routingTableIndex < routingLookupsLength; routingTableIndex++)
                 {
@@ -700,6 +730,7 @@ namespace Chisel.Core
                             continue;
 
                         var surfaceLoopInfo = allInfos[surfaceLoopIndex];
+                        //Debug.Assert(holeIndices.IsAllocated(surfaceLoopIndex));
 
                         // Lookup categorization between original surface & other surface ...
                         if (!routingLookup.TryGetRoute(ref routingTable, surfaceLoopInfo.interiorCategory, out CategoryRoutingRow routingRow))
@@ -733,17 +764,15 @@ namespace Chisel.Core
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)
                                 continue;
 
-                            IntersectLoopsJob(allInfos, allEdges, brushVertices,
-                                              surfaceLoopIndex, 
+                            IntersectLoopsJob(brushVertices, loopIndices, surfaceLoopIndex,
+                                              holeIndices, allInfos, allEdges, 
                                               intersectionLoop, 
                                               intersectionCategory, 
-                                              intersectionInfo, 
-                                              loopIndices, 
-                                              holeIndices);
+                                              intersectionInfo);
                         }
                     }
                 }
-                CleanUp(in allInfos, allEdges, in brushVertices, in loopIndices, holeIndices);
+                CleanUp(allInfos, allEdges, brushVertices, loopIndices, holeIndices);
             }
 
             output.BeginForEachIndex(index);
