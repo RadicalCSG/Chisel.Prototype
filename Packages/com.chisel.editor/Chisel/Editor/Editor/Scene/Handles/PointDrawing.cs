@@ -29,7 +29,7 @@ namespace Chisel.Editors
         {
             s_CurrentPointIndex = 0;
             UnitySceneExtensions.Grid.HoverGrid = null;
-            s_MousePosition = Event.current.mousePosition;
+            s_MousePosition = Event.current != null ? Event.current.mousePosition : Vector2.zero;
             s_MouseJumping = false;
         }
 

@@ -50,7 +50,7 @@ namespace Chisel.Editors
 
             bool visible = true;
             // Draw label
-            if (label != null)
+            if (ChiselGUIUtility.LabelHasContent(label))
             {
                 EditorGUI.BeginChangeCheck();
                 visible = SessionState.GetBool(property.propertyPath, false);
@@ -75,7 +75,6 @@ namespace Chisel.Editors
                 var middleStyle = EditorStyles.miniButtonMid;
             
                 bool prevShowMixedValue			= EditorGUI.showMixedValue;
-                bool deferredRenderingPath		= ChiselEditorUtility.IsUsingDeferredRenderingPath();
                 EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
                 try
                 {

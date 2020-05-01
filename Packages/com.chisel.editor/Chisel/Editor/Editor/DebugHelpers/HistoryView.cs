@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEditor;
-using System.Reflection;
 
 namespace Chisel.Editors
 { 
@@ -17,7 +16,6 @@ namespace Chisel.Editors
             window = (HistoryWindow)EditorWindow.GetWindow(typeof(HistoryWindow), false, "History");
             window.autoRepaintOnSceneChange = true;
         }
-
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
@@ -28,15 +26,18 @@ namespace Chisel.Editors
             Undo.postprocessModifications	-= PostprocessModifications;
             Undo.postprocessModifications	+= PostprocessModifications;
 
-            // internal static void GetRecords(List<string> undoRecords, List<string> redoRecords)
-            GetRecords_method = typeof(Undo).GetMethod("GetRecords", BindingFlags.NonPublic | BindingFlags.Static,
-                                                null,
-                                                new Type[] {
-                                                    typeof(System.Collections.Generic.List<string>),
-                                                    typeof(System.Collections.Generic.List<string>)
-                                                },
-                                                null);
         }
+
+        static List<HistoryWindow> historyWindows = new List<HistoryWindow>();
+        static List<string> undoRecords = new List<string>();
+        static List<string> redoRecords = new List<string>();
+        static int undoPosition = 0;
+        static HistoryWindow window;
+
+        static bool dirty = true;
+        
+        delegate void GetRecordsDelegate(System.Collections.Generic.List<string> undoRecords, System.Collections.Generic.List<string> redoRecords);
+        static GetRecordsDelegate GetRecords = typeof(Undo).CreateDelegate<GetRecordsDelegate>("GetRecords");
 
         HistoryWindow()
         {
@@ -47,26 +48,10 @@ namespace Chisel.Editors
         {
             historyWindows.Remove(this);
         }
-
-        static List<HistoryWindow> historyWindows = new List<HistoryWindow>();
-        static List<string> undoRecords = new List<string>();
-        static List<string> redoRecords = new List<string>();
-        static int undoPosition = 0;
-        static HistoryWindow window;
-
-        static bool dirty = true;
-        static MethodInfo GetRecords_method;
-
         static void UpdateLists()
         {
             dirty = false;
-            if (GetRecords_method == null)
-                return;
-            GetRecords_method.Invoke(null,
-                new object[] {
-                        undoRecords,
-                        redoRecords
-                });
+            GetRecords?.Invoke(undoRecords, redoRecords);
             undoPosition = undoRecords.Count;
         }
 
@@ -118,11 +103,7 @@ namespace Chisel.Editors
             do
             {
                 Undo.PerformUndo();
-                GetRecords_method.Invoke(null,
-                    new object[] {
-                            undoRecords,
-                            redoRecords
-                    });
+                GetRecords?.Invoke(undoRecords, redoRecords);
             }
             while (undoRecords.Count > position);
         }
@@ -131,11 +112,7 @@ namespace Chisel.Editors
             while (undoRecords.Count < position)
             {
                 Undo.PerformRedo();
-                GetRecords_method.Invoke(null,
-                    new object[] {
-                            undoRecords,
-                            redoRecords
-                    });
+                GetRecords?.Invoke(undoRecords, redoRecords);
             }
         }
 

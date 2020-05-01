@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -90,6 +89,9 @@ namespace UnitySceneExtensions
         internal static Color	gridColor;
         internal static int		counter = 0;
 
+        public static float Opacity { get; set; } = 1.0f;
+
+
         public static void Render(this Grid grid, SceneView sceneView)
         {
             if (Event.current.type != EventType.Repaint)
@@ -129,12 +131,14 @@ namespace UnitySceneExtensions
 
             counter--;
             if (counter <= 0)
-            { 
+            {
+                var opacity = Opacity;
+
                 // this code is slow and creates garbage, but unity doesn't give us a nice efficient mechanism to get these standard colors
                 centerColor = ColorUtility.GetPreferenceColor("Scene/Center Axis", new Color(.8f, .8f, .8f, .93f));
-                centerColor.a = 0.5f;
+                centerColor.a = opacity * 0.5f;
                 gridColor = ColorUtility.GetPreferenceColor("Scene/Grid", new Color(.5f, .5f, .5f, .4f));
-                gridColor.a = 0.5f;
+                gridColor.a = opacity;
                 counter = 10;
             }
 

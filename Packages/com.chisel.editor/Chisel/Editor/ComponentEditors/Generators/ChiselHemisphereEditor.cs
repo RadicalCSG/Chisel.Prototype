@@ -15,7 +15,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselHemisphereEditor : ChiselGeneratorEditor<ChiselHemisphere>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselHemisphere.kNodeTypeName, false, 0)]
+        [MenuItem("GameObject/Chisel/Create/" + ChiselHemisphere.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselHemisphere.kNodeTypeName); }
 
         const float kLineDash					= 2.0f;

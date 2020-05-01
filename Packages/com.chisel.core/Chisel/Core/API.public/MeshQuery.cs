@@ -64,6 +64,14 @@ namespace Chisel.Core
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { var hashCode = -1385006369; hashCode = hashCode * -1521134295; hashCode = hashCode * -1521134295 + (int)layers; hashCode = hashCode * -1521134295 + (int)maskAndChannels; return hashCode; }
         #endregion
+
+
+        #region ToString
+        public override string ToString()
+        {
+            return $"(LayerQuery: {LayerQuery}, LayerQueryMask: {LayerQueryMask}, LayerParameterIndex: {LayerParameterIndex}, UsedVertexChannels: {UsedVertexChannels})";
+        }
+        #endregion
     }
 }
  

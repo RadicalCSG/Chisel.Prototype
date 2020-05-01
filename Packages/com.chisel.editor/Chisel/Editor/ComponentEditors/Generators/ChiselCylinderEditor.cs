@@ -17,7 +17,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselCylinderEditor : ChiselGeneratorEditor<ChiselCylinder>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselCylinder.kNodeTypeName, false, 0)]
+        [MenuItem("GameObject/Chisel/Create/" + ChiselCylinder.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCylinder.kNodeTypeName); }
         
         // TODO: put somewhere else
@@ -116,6 +116,9 @@ namespace Chisel.Editors
 
             public void ShowInstance()
             {
+                if (!generator)
+                    return;
+
                 var tempTop		= generator.Top;
                 var tempBottom	= generator.Bottom;
                 var sides		= generator.Sides;

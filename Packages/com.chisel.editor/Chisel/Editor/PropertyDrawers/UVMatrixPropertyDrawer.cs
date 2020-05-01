@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -61,13 +62,16 @@ namespace Chisel.Editors
 
             var uvMatrix    = new UVMatrix(UProp.vector4Value, VProp.vector4Value);
             var state       = (UVMatrixState)EditorGUIUtility.GetStateObject(typeof(UVMatrixState), translationID);
-            if (!state.initialized)
+            if (!state.initialized || math.all(state.uvMatrix.U != uvMatrix.U) || math.all(state.uvMatrix.V != uvMatrix.V))
             {
                 uvMatrix.Decompose(out state.translation, out state.normal, out state.rotation, out state.scale);
                 state.uvMatrix = uvMatrix;
                 state.initialized = true;
             }
 
+            var hasLabel = ChiselGUIUtility.LabelHasContent(label);
+
+            var prevIndenLevel = EditorGUI.indentLevel;
             EditorGUI.BeginProperty(position, label, property);
             {
                 EditorGUI.BeginChangeCheck();
@@ -80,18 +84,24 @@ namespace Chisel.Editors
                 var rotationContent     = (label == null) ? GUIContent.none : kRotationContent;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, GUIContent.none);
-                var fieldRect = EditorGUI.PrefixLabel(position, translationID, translationContent);
+                var fieldRect = EditorGUI.PrefixLabel(position, translationID, !hasLabel ? GUIContent.none : translationContent);
+                EditorGUI.indentLevel = 0;
                 state.translation = EditorGUI.Vector2Field(fieldRect,  GUIContent.none, state.translation);
+                EditorGUI.indentLevel = prevIndenLevel;
                 position.y += position.height + kSpacing;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, GUIContent.none);
-                fieldRect = EditorGUI.PrefixLabel(position, scaleID, scaleContent);
+                fieldRect = EditorGUI.PrefixLabel(position, scaleID, !hasLabel ? GUIContent.none : scaleContent);
+                EditorGUI.indentLevel = 0;
                 state.scale = EditorGUI.Vector2Field(fieldRect,        GUIContent.none,       state.scale);
+                EditorGUI.indentLevel = prevIndenLevel;
                 position.y += position.height + kSpacing;
 
                 position.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.Float, GUIContent.none);
-                fieldRect = EditorGUI.PrefixLabel(position, rotationID, rotationContent);
+                fieldRect = EditorGUI.PrefixLabel(position, rotationID, !hasLabel ? GUIContent.none : rotationContent);
+                EditorGUI.indentLevel = 0;
                 state.rotation = EditorGUI.FloatField(fieldRect,       GUIContent.none,    state.rotation);
+                EditorGUI.indentLevel = prevIndenLevel;
                 position.y += position.height + kSpacing;
 
                 EditorGUI.showMixedValue = prevMixedValues;
@@ -104,6 +114,7 @@ namespace Chisel.Editors
                     VProp.vector4Value = uvMatrix.V;
                     property.serializedObject.ApplyModifiedProperties();
                 }
+
             }
             EditorGUI.EndProperty();
             /*

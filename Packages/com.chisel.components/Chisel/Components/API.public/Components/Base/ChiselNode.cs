@@ -16,6 +16,15 @@ namespace Chisel.Components
 
         public abstract string NodeTypeName { get; }
 
+        public virtual Vector3 PivotOffset
+        {
+            get
+            {
+                return Vector3.zero;
+            }
+            set { }
+        }
+
         public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
         protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         public void OnValidate()	{ OnValidateInternal(); }
@@ -24,6 +33,8 @@ namespace Chisel.Components
 
         public void Reset() { OnResetInternal(); }
         protected virtual void OnResetInternal() { OnInitialize(); }
+
+        public abstract bool HasValidState();
 
         public virtual void OnInitialize() { }
         protected virtual void OnCleanup() {  }

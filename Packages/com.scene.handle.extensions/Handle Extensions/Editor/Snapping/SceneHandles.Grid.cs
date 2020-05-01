@@ -34,6 +34,22 @@ namespace UnitySceneExtensions
     {
         const float kMinSpacing = (1 / 8192.0f);
 
+
+        public static readonly Matrix4x4 XZPlane = new Matrix4x4(new Vector4(1, 0, 0, 0),
+                                                                 new Vector4(0, 1, 0, 0),
+                                                                 new Vector4(0, 0, 1, 0),
+                                                                 new Vector4(0, 0, 0, 1));
+
+        public static readonly Matrix4x4 YZPlane = new Matrix4x4(new Vector4(0, 1, 0, 0),
+                                                                 new Vector4(1, 0, 0, 0),
+                                                                 new Vector4(0, 0, 1, 0),
+                                                                 new Vector4(0, 0, 0, 1));
+
+        public static readonly Matrix4x4 XYPlane = new Matrix4x4(new Vector4(1, 0, 0, 0),
+                                                                 new Vector4(0, 0, 1, 0),
+                                                                 new Vector4(0, 1, 0, 0),
+                                                                 new Vector4(0, 0, 0, 1));
+
         public Grid() { }
         public Grid(Matrix4x4 gridToWorldSpace, Vector3 spacing) { this.GridToWorldSpace = gridToWorldSpace; this.Spacing = spacing; }
         public Grid(Matrix4x4 gridToWorldSpace) { this.GridToWorldSpace = gridToWorldSpace; this.Spacing = defaultGrid.Spacing; }
@@ -155,9 +171,23 @@ namespace UnitySceneExtensions
         {
             get
             {
-                var up		= (Vector3)_gridToWorldSpace.GetColumn(1);
-                var center	= (Vector3)_gridToWorldSpace.GetColumn(3);
-                return new Plane(up, center);
+                return new Plane(Up, Center);
+            }
+        }
+
+        public Plane PlaneYZ
+        {
+            get
+            {
+                return new Plane(Right, Center);
+            }
+        }
+
+        public Plane PlaneXY
+        {
+            get
+            {
+                return new Plane(Forward, Center);
             }
         }
 

@@ -12,6 +12,11 @@ namespace Chisel.Components
     [Serializable]
     public sealed class SerializableUnwrapParam
     {
+        public const string kAngleErrorName         = nameof(angleError);
+        public const string kAreaErrorName          = nameof(areaError);
+        public const string kHardAngleName          = nameof(hardAngle);
+        public const string kPackMarginPixelsName   = nameof(packMarginPixels);
+
         public const float minAngleError	= 0.001f;
         public const float maxAngleError    = 1.000f;
 
@@ -33,10 +38,15 @@ namespace Chisel.Components
     [Serializable]
     public sealed class ChiselGeneratedColliderSettings
     {
-        public bool     isTrigger;
-        public bool		convex;
-        public MeshColliderCookingOptions cookingOptions = (MeshColliderCookingOptions)(2|4|8);
-        public float	skinWidth	= 0.01f;
+        public const string kIsTriggerName      = nameof(isTrigger);
+        public const string kConvexName         = nameof(convex);
+        public const string kCookingOptionsName = nameof(cookingOptions);
+        public const string kSkinWidthName      = nameof(skinWidth);
+
+        public bool                         isTrigger;
+        public bool		                    convex;
+        public MeshColliderCookingOptions   cookingOptions;
+        public float	                    skinWidth;
 
         public void Reset()
         {
@@ -50,19 +60,38 @@ namespace Chisel.Components
     [Serializable]
     public sealed class ChiselGeneratedRenderSettings
     {
+        public const string kMotionVectorGenerationModeName     = nameof(motionVectorGenerationMode);
+        public const string kAllowOcclusionWhenDynamicName      = nameof(allowOcclusionWhenDynamic);
+        public const string kRenderingLayerMaskName             = nameof(renderingLayerMask);
+        public const string kReflectionProbeUsageName           = nameof(reflectionProbeUsage);
+        public const string kLightProbeUsageName                = nameof(lightProbeUsage);
+        public const string kLightProbeVolumeOverrideName       = nameof(lightProbeProxyVolumeOverride);
+        public const string kProbeAnchorName                    = nameof(probeAnchor);
+        public const string kReceiveGIName                      = nameof(receiveGI);
+        
+#if UNITY_EDITOR
+        public const string kLightmapParametersName             = nameof(lightmapParameters);
+        public const string kImportantGIName                    = nameof(importantGI);
+        public const string kOptimizeUVsName                    = nameof(optimizeUVs);
+        public const string kIgnoreNormalsForChartDetectionName = nameof(ignoreNormalsForChartDetection);
+        public const string kScaleInLightmapName                = nameof(scaleInLightmap);
+        public const string kAutoUVMaxDistanceName              = nameof(autoUVMaxDistance);
+        public const string kAutoUVMaxAngleName                 = nameof(autoUVMaxAngle);
+        public const string kMinimumChartSizeName               = nameof(minimumChartSize);
+        public const string kStitchLightmapSeamsName            = nameof(stitchLightmapSeams);
+#endif
+
         public GameObject                       lightProbeProxyVolumeOverride;
         public Transform                        probeAnchor;
         public MotionVectorGenerationMode		motionVectorGenerationMode		= MotionVectorGenerationMode.Object;
         public ReflectionProbeUsage				reflectionProbeUsage			= ReflectionProbeUsage.BlendProbes;
-        public LightProbeUsage					lightProbeUsage					= LightProbeUsage.Off;
-        #if UNITY_2017_2_OR_ABOVE || UNITY_EDITOR
-        public bool                             dynamicOccludee                 = true;
-        #endif
-        #if UNITY_2018_2_OR_ABOVE || UNITY_EDITOR
+        public LightProbeUsage					lightProbeUsage					= LightProbeUsage.BlendProbes;
+        public bool                             allowOcclusionWhenDynamic       = true;
         public uint                             renderingLayerMask              = ~(uint)0;
-        #endif
+        public ReceiveGI						receiveGI						= ReceiveGI.LightProbes;
+
 #if UNITY_EDITOR
-///		public UnityEditor.LightmapParameters   lightmapParameters				= null;		// TODO: figure out how to apply this, safely, using SerializedObject
+    	public UnityEditor.LightmapParameters   lightmapParameters				= null;		// TODO: figure out how to apply this, safely, using SerializedObject
         public bool								importantGI						= false;
         public bool								optimizeUVs                     = false;	// "Preserve UVs"
         public bool								ignoreNormalsForChartDetection  = false;
@@ -70,20 +99,21 @@ namespace Chisel.Components
         public float							autoUVMaxDistance				= 0.5f;
         public float							autoUVMaxAngle					= 89;
         public int								minimumChartSize				= 4;
-
-#if UNITY_2017_2_OR_ABOVE
         public bool								stitchLightmapSeams				= false;
-#endif
 #endif
 
         public void Reset()
         {
+            lightProbeProxyVolumeOverride   = null;
+            probeAnchor                     = null;
             motionVectorGenerationMode		= MotionVectorGenerationMode.Object;
             reflectionProbeUsage			= ReflectionProbeUsage.BlendProbes;
             lightProbeUsage					= LightProbeUsage.Off;
-            dynamicOccludee					= true;
+            allowOcclusionWhenDynamic		= true;
+            renderingLayerMask              = ~(uint)0;
+            receiveGI                       = ReceiveGI.LightProbes;
 #if UNITY_EDITOR
-//			lightmapParameters				= new UnityEditor.LightmapParameters();
+    		lightmapParameters				= new UnityEditor.LightmapParameters();
             importantGI						= false;
             optimizeUVs						= false;
             ignoreNormalsForChartDetection  = false;
@@ -91,10 +121,7 @@ namespace Chisel.Components
             autoUVMaxDistance				= 0.5f;
             autoUVMaxAngle					= 89;
             minimumChartSize				= 4;
-            renderingLayerMask              = ~(uint)0;
-#if UNITY_2017_2_OR_ABOVE
             stitchLightmapSeams				= false;
-#endif
 #endif
         }
     }
@@ -106,12 +133,22 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselModel : ChiselNode
     {
+        public const string kRenderSettingsName             = nameof(renderSettings);
+        public const string kColliderSettingsName           = nameof(colliderSettings);
+        public const string kUVGenerationSettingsName       = nameof(uvGenerationSettings);
+        public const string kCreateRenderComponentsName     = nameof(CreateRenderComponents);
+        public const string kCreateColliderComponentsName   = nameof(CreateColliderComponents);
+        public const string kAutoRebuildUVsName             = nameof(AutoRebuildUVs);
+        public const string kVertexChannelMaskName          = nameof(VertexChannelMask);
+
+
         public const string kNodeTypeName = "Model";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings  colliderSettings    = new ChiselGeneratedColliderSettings();
-        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings    renderSettings      = new ChiselGeneratedRenderSettings();
-        [HideInInspector, SerializeField] SerializableUnwrapParam       uvGenerationSettings = new SerializableUnwrapParam();
+        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings   colliderSettings;
+        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings     renderSettings;
+        [HideInInspector, SerializeField] SerializableUnwrapParam           uvGenerationSettings;
+
         [HideInInspector] public CSGTree Node;
         [HideInInspector] internal GeneratedMeshContents generatedMeshContents;
 
@@ -155,19 +192,29 @@ namespace Chisel.Components
                     generatedDataTransform = generatedDataContainer.transform;
             }
 
-            colliderSettings = new ChiselGeneratedColliderSettings();
-            colliderSettings.Reset();
+            if (colliderSettings == null)
+            {
+                colliderSettings = new ChiselGeneratedColliderSettings();
+                colliderSettings.Reset();
+            }
 
-            renderSettings = new ChiselGeneratedRenderSettings();
-            renderSettings.Reset();
+            if (renderSettings == null)
+            {
+                renderSettings = new ChiselGeneratedRenderSettings();
+                renderSettings.Reset();
+            }
 
 #if UNITY_EDITOR
-            UnityEditor.UnwrapParam defaults;
-            UnityEditor.UnwrapParam.SetDefaults(out defaults);
-            uvGenerationSettings.angleError = defaults.angleError;
-            uvGenerationSettings.areaError = defaults.areaError;
-            uvGenerationSettings.hardAngle = defaults.hardAngle;
-            uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
+            if (uvGenerationSettings == null)
+            {
+                uvGenerationSettings = new SerializableUnwrapParam();
+                UnityEditor.UnwrapParam defaults;
+                UnityEditor.UnwrapParam.SetDefaults(out defaults);
+                uvGenerationSettings.angleError = defaults.angleError;
+                uvGenerationSettings.areaError = defaults.areaError;
+                uvGenerationSettings.hardAngle = defaults.hardAngle;
+                uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
+            }
 #endif
 
             initialized = true;
@@ -201,6 +248,16 @@ namespace Chisel.Components
         internal override void CollectChildNodesForParent(List<CSGTreeNode> childNodes)
         {
             // No parent can hold a model as a child, so we don't add anything
+        }
+
+
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {
+            if (!Node.Valid)
+                return false;
+            // A model makes no sense without any children
+            return (transform.childCount > 0);
         }
 
         public override void SetDirty() { if (Node.Valid) Node.SetDirty(); }

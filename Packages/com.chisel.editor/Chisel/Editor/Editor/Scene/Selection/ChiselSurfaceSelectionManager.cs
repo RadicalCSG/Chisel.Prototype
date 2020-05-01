@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEditor;
 
 namespace Chisel.Editors
 {
@@ -44,6 +45,11 @@ namespace Chisel.Editors
         protected override void Shutdown()
         {
             UnityEditor.Selection.selectionChanged -= OnSelectionChanged;
+        }
+
+        public static bool HaveSelection
+        {
+            get { return Data.selectedSurfaces.Count > 0; }
         }
 
         public static HashSet<SurfaceReference> Selection 
@@ -317,7 +323,18 @@ namespace Chisel.Editors
             }
 
             UnityEditor.Selection.selectionChanged -= OnSelectionChanged;
-            UnityEditor.Selection.objects = SelectedGameObjects.ToArray();
+
+            if (SelectedGameObjects.Count == 0)
+            {
+                // To prevent the EditorTool from exiting the moment we deselect all surfaces, we leave one object 'selected'
+                var selected = UnityEditor.Selection.GetFiltered<ChiselNode>(SelectionMode.Deep | SelectionMode.Editable);
+                if (selected.Length > 0)
+                {
+                    UnityEditor.Selection.activeObject = selected[0];
+                }
+            } else
+                UnityEditor.Selection.objects = SelectedGameObjects.ToArray();
+
             UnityEditor.Selection.selectionChanged += OnSelectionChanged;
             if (modified && selectionChanged != null)
                 selectionChanged.Invoke();
@@ -327,7 +344,7 @@ namespace Chisel.Editors
         
         public static bool SetHovering(SelectionType selectionType, HashSet<SurfaceReference> surfaces)
         {
-            bool modified = false;
+            bool modified;
             if (surfaces != null)
             {
                 switch (selectionType)

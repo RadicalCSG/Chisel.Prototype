@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
@@ -15,59 +14,29 @@ namespace Chisel.Editors
     {
         public PlaneIntersection(Vector3 point, Plane plane) { this.point = point; this.plane = plane; }
         public PlaneIntersection(Vector3 point, Vector3 normal) { this.point = point; this.plane = new Plane(normal, point); }
-        public PlaneIntersection(CSGTreeBrushIntersection brushIntersection, ChiselNode node, ChiselModel model)
+        public PlaneIntersection(ChiselIntersection chiselIntersection)
         {
-            this.point = brushIntersection.surfaceIntersection.worldIntersection;
-            this.plane = brushIntersection.surfaceIntersection.worldPlane;
-            this.node = node;
-            this.model = model;
+            this.point  = chiselIntersection.worldPlaneIntersection;
+            this.plane  = chiselIntersection.worldPlane;
+            this.node   = chiselIntersection.node;
+            this.model  = chiselIntersection.model;
         }
 
         public Vector3      point;
         public Plane        plane;
         public Vector3		normal		{ get { return plane.normal; } }
         public Quaternion	orientation { get { return Quaternion.LookRotation(plane.normal); } }
-        public ChiselNode      node;
-        public ChiselModel     model;
+        public ChiselNode   node;
+        public ChiselModel  model;
     }
 
     public sealed class GUIClip
     {
-        delegate Vector2 UnclipDelegate(Vector2 pos);
-        static UnclipDelegate GUIClipUnclipPtr;
+        public delegate Vector2 UnclipDelegate(Vector2 pos);
+        public static readonly UnclipDelegate GUIClipUnclip = ReflectionExtensions.CreateDelegate<UnclipDelegate>("UnityEngine.GUIClip", "Unclip");
 
-        delegate GameObject FindSelectionBaseDelegate(GameObject go);
-        static FindSelectionBaseDelegate FindSelectionBasePtr;
-
-        static GUIClip()
-        {
-            var HandleUtilityType = typeof(HandleUtility);
-            var UnityEngineTypes = typeof(UnityEngine.GUIUtility).Assembly.GetTypes();
-            var GUIClipType = UnityEngineTypes.FirstOrDefault(t => t.FullName == "UnityEngine.GUIClip");
-
-            if (FindSelectionBasePtr == null)
-            {
-                var findSelectionBaseMethod = HandleUtilityType.GetMethod("FindSelectionBase", BindingFlags.NonPublic | BindingFlags.Static, null, new[] { typeof(GameObject) }, null);
-                if (findSelectionBaseMethod != null)
-                    FindSelectionBasePtr = (FindSelectionBaseDelegate)Delegate.CreateDelegate(typeof(FindSelectionBaseDelegate), null, findSelectionBaseMethod, true);
-            }
-            if (GUIClipUnclipPtr == null && GUIClipType != null)
-            {
-                var unclipMethod = GUIClipType.GetMethod("Unclip", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Vector2) }, null);
-                if (unclipMethod != null)
-                    GUIClipUnclipPtr = (UnclipDelegate)Delegate.CreateDelegate(typeof(UnclipDelegate), null, unclipMethod, true);
-            }
-        }
-
-        public static Vector2 GUIClipUnclip(Vector2 pos)
-        {
-            return GUIClipUnclipPtr(pos);
-        }
-
-        public static GameObject FindSelectionBase(GameObject go)
-        {
-            return FindSelectionBasePtr(go);
-        }
+        public delegate GameObject FindSelectionBaseDelegate(GameObject go);
+        public static readonly FindSelectionBaseDelegate FindSelectionBase = typeof(HandleUtility).CreateDelegate<FindSelectionBaseDelegate>("FindSelectionBase");
     }
 
     // TODO: clean up, rename
@@ -98,41 +67,13 @@ namespace Chisel.Editors
         #endregion
 
 
-        public static bool IntersectRayMesh(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit)
-        {
-            return IntersectRayMeshImpl(ray, mesh, matrix, out hit);
-        }
+        public delegate bool IntersectRayMeshFunc(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit);
+        public static IntersectRayMeshFunc IntersectRayMesh = typeof(HandleUtility).CreateDelegate<IntersectRayMeshFunc>("IntersectRayMesh");
+        public delegate GameObject PickClosestGameObjectFunc(Camera camera, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
+        public static PickClosestGameObjectFunc PickClosestGO = typeof(HandleUtility).CreateDelegate<PickClosestGameObjectFunc>("Internal_PickClosestGO");
 
-
-        delegate bool IntersectRayMeshFunc(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit);
-        static IntersectRayMeshFunc IntersectRayMeshImpl;
-        delegate GameObject PickClosestGameObjectFunc(Camera camera, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
-        static PickClosestGameObjectFunc pickClosestGO;
-        static FieldInfo pickClosestGameObjectDelegate;
-        
         static ChiselClickSelectionManager()
         {
-            var HandleUtilityType	= typeof(HandleUtility);
-
-            if (pickClosestGO == null ||
-                pickClosestGameObjectDelegate == null ||
-                IntersectRayMeshImpl == null)
-            { 
-                var IntersectRayMeshMethod = HandleUtilityType.GetMethod("IntersectRayMesh", BindingFlags.NonPublic | BindingFlags.Static);
-                if (IntersectRayMeshMethod != null)
-                    IntersectRayMeshImpl = (IntersectRayMeshFunc)Delegate.CreateDelegate(typeof(IntersectRayMeshFunc), null, IntersectRayMeshMethod, true);
-
-                var pickClosestGOMethod = HandleUtilityType.GetMethod("Internal_PickClosestGO", BindingFlags.NonPublic | BindingFlags.Static);
-                if (pickClosestGOMethod != null)
-                    pickClosestGO = (PickClosestGameObjectFunc)Delegate.CreateDelegate(typeof(PickClosestGameObjectFunc), null, pickClosestGOMethod, true);
-                
-                pickClosestGameObjectDelegate = HandleUtilityType.GetField("pickClosestGameObjectDelegate", BindingFlags.NonPublic | BindingFlags.Static);
-                //var delegateType			= pickClosestGameObjectDelegate.FieldType;
-                //var pickClosestGameObject	= typeof(ChiselSelectionManager).GetMethod("PickClosestGameObject");
-                //var methodDelegate		= Delegate.CreateDelegate(delegateType, pickClosestGameObject);
-                //pickClosestGameObjectDelegate.SetValue(null, methodDelegate);
-            }
-
             Selection.selectionChanged += ResetHashes;
         }
 
@@ -240,7 +181,7 @@ namespace Chisel.Editors
         private static bool s_RetainHashes = false;
         private static int s_PreviousTopmostHash = 0;
         private static int s_PreviousPrefixHash = 0;
-        private static IEnumerator<KeyValuePair<GameObject, CSGTreeBrushIntersection>> enumerator;
+        private static IEnumerator<KeyValuePair<GameObject, ChiselIntersection>> enumerator;
         private static Vector2 prevMousePosition = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
 
         private static void ResetHashes()
@@ -257,13 +198,9 @@ namespace Chisel.Editors
 
 
         // TODO: rewrite this, why do we need hashes?
-        public static GameObject PickClosestGameObject(Vector2 mousePosition, out CSGTreeBrushIntersection intersection)
+        public static GameObject PickClosestGameObject(Vector2 mousePosition, out ChiselIntersection intersection)
         {
-            intersection = new CSGTreeBrushIntersection
-            {
-                surfaceID = -1,
-                brushUserID = -1
-            };
+            intersection = ChiselIntersection.None;
 
             s_RetainHashes = true;
 
@@ -377,14 +314,14 @@ namespace Chisel.Editors
             return enumerator.Current.Key;
         }
 
-        public static bool PickFirstGameObject(Vector2 position, out CSGTreeBrushIntersection intersection)
+        public static bool PickFirstGameObject(Vector2 position, out ChiselIntersection intersection)
         {
             GameObject[] ignore = null;
             GameObject[] filter = null;
             if (!PickClosestGameObjectDelegated(position, ref ignore, ref filter, out intersection))
                 return false;
 
-            return intersection.surfaceID != -1;
+            return intersection.brushIntersection.surfaceID != -1;
         }
 
         internal static GameObject PickModel(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
@@ -397,11 +334,10 @@ namespace Chisel.Editors
             try
             {
                 int materialIndex = -1;
-                if (pickClosestGO == null ||
-                    pickClosestGameObjectDelegate == null)
+                if (PickClosestGO == null)
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
                 else
-                    gameObject = pickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
+                    gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
 
             }
             finally
@@ -425,17 +361,13 @@ namespace Chisel.Editors
 
         public static PlaneIntersection GetPlaneIntersection(Vector2 mousePosition)
         {
-            CSGTreeBrushIntersection brushIntersection;
+            ChiselIntersection brushIntersection;
             var intersectionObject = ChiselClickSelectionManager.PickClosestGameObject(mousePosition, out brushIntersection);
             if (intersectionObject &&
                 intersectionObject.activeInHierarchy)
             {
-                if (brushIntersection.brushUserID != -1)
-                {
-                    var	brush	= ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brushIntersection.brush.UserID);
-                    var model	= ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brushIntersection.tree.UserID) as ChiselModel;
-                    return new PlaneIntersection(brushIntersection, brush, model);
-                }
+                if (brushIntersection.node != null)
+                    return new PlaneIntersection(brushIntersection);
                 
                 var meshFilter = intersectionObject.GetComponent<MeshFilter>();
                 if (meshFilter)
@@ -478,15 +410,15 @@ namespace Chisel.Editors
             brushContainerAssets = null;
             try
             {
-                CSGTreeBrushIntersection intersection;
+                ChiselIntersection intersection;
                 if (!PickFirstGameObject(Event.current.mousePosition, out intersection))
                     return false;
 
-                var brush = intersection.brush;
-    
-                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
+                var node = intersection.node;
                 if (!node)
                     return false;
+
+                var brush = intersection.brushIntersection.brush;
 
                 if (selectAllSurfaces)
                 {
@@ -497,7 +429,7 @@ namespace Chisel.Editors
                     return true;
                 } else
                 {
-                    var surface = node.FindBrushMaterial(brush, intersection.surfaceID);
+                    var surface = node.FindBrushMaterial(brush, intersection.brushIntersection.surfaceID);
                     if (surface == null)
                         return false;
                     brushContainerAssets = node.GetUsedGeneratedBrushes();
@@ -518,20 +450,20 @@ namespace Chisel.Editors
         {
             try
             {
-                CSGTreeBrushIntersection brushIntersection;
+                ChiselIntersection brushIntersection;
                 if (!PickFirstGameObject(position, out brushIntersection))
                     return null;
 
-                var brush = brushIntersection.brush;
-    
-                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
+                var node = brushIntersection.node;
                 if (!node)
                     return null;
-                
-                var surface = node.FindSurfaceReference(brush, brushIntersection.surfaceID);
+
+                var brush = brushIntersection.brushIntersection.brush;
+
+                var surface = node.FindSurfaceReference(brush, brushIntersection.brushIntersection.surfaceID);
                 if (surface == null)
                     return null;
-                return new SurfaceIntersection { surface = surface, intersection = brushIntersection.surfaceIntersection };
+                return new SurfaceIntersection { surface = surface, intersection = brushIntersection.brushIntersection.surfaceIntersection };
             }
             catch (Exception ex)
             {
@@ -540,22 +472,22 @@ namespace Chisel.Editors
             }
         }
         
-        public static SurfaceReference[] FindSurfaceReference(Vector2 position, bool selectAllSurfaces, out CSGTreeBrushIntersection intersection, out SurfaceReference surfaceReference)
+        public static SurfaceReference[] FindSurfaceReferences(Vector2 position, bool selectAllSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
         {
-            intersection = CSGTreeBrushIntersection.None;
+            intersection = ChiselIntersection.None;
             surfaceReference = null;
             try
             {
                 if (!PickFirstGameObject(position, out intersection))
                     return null;
-
-                var brush = intersection.brush;
     
-                var node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.UserID);
+                var node = intersection.node;
                 if (!node)
                     return null;
 
-                surfaceReference = node.FindSurfaceReference(brush, intersection.surfaceID);
+                var brush = intersection.brushIntersection.brush;
+
+                surfaceReference = node.FindSurfaceReference(brush, intersection.brushIntersection.surfaceID);
                 if (selectAllSurfaces)
                     return node.GetAllSurfaceReferences(brush);
 
@@ -569,11 +501,19 @@ namespace Chisel.Editors
                 return null;
             }
         }
+        
+        public static SurfaceReference FindSurfaceReference(Vector2 position, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
+        {
+            var surfaceReferences = FindSurfaceReferences(position, false, out intersection, out surfaceReference);
+            if (surfaceReferences == null)
+                return null;
+            return surfaceReferences[0];
+        }
 
-        internal static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out CSGTreeBrushIntersection intersection)
+        internal static GameObject PickNodeOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out ChiselNode node, out ChiselIntersection intersection)
         {
             TryNextSelection:
-            intersection = new CSGTreeBrushIntersection { surfaceID = -1, brushUserID = -1 };
+            intersection = ChiselIntersection.None;
 
             model = null;
             node = null;
@@ -591,11 +531,10 @@ namespace Chisel.Editors
                     var worldRayVector	= (worldRay.direction * (camera.farClipPlane - camera.nearClipPlane));
                     var worldRayEnd		= worldRayStart + worldRayVector;
 
-                    CSGTreeBrushIntersection tempIntersection;
+                    ChiselIntersection tempIntersection;
                     if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, layers, ignore, filter, out tempIntersection))
                     {
-                        var clickedBrush		= tempIntersection.brush;
-                        node = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(clickedBrush.UserID);
+                        node = tempIntersection.node;
                         if (node)
                         {
                             if (ignore != null &&
@@ -628,7 +567,7 @@ namespace Chisel.Editors
             return gameObject;
         }
 
-        internal static ChiselNode PickNode(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out CSGTreeBrushIntersection intersection)
+        internal static ChiselNode PickNode(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselIntersection intersection)
         {
             TryNextNode:
             ChiselModel model;
@@ -644,7 +583,7 @@ namespace Chisel.Editors
             goto TryNextNode;
         }
         
-        public static ChiselNode PickClosestNode(Vector2 position, out CSGTreeBrushIntersection intersection)
+        public static ChiselNode PickClosestNode(Vector2 position, out ChiselIntersection intersection)
         {
             var camera = Camera.current;
             int layers = camera.cullingMask;
@@ -657,26 +596,15 @@ namespace Chisel.Editors
             return PickNode(camera, pickposition, layers, ref ignore, ref filter, out intersection);
         }
 
-        internal static GameObject PickClosestGameObjectDelegated(Vector2 position, ref GameObject[] ignore, ref GameObject[] filter, out CSGTreeBrushIntersection intersection)
+        internal static GameObject PickClosestGameObjectDelegated(Vector2 position, ref GameObject[] ignore, ref GameObject[] filter, out ChiselIntersection intersection)
         {
             var camera = Camera.current;
             int layers = camera.cullingMask;
             var pickposition = GUIClip.GUIClipUnclip(position);
             pickposition = EditorGUIUtility.PointsToPixels(pickposition);
             pickposition.y = Screen.height - pickposition.y - camera.pixelRect.yMin;
-            
-            /*
-            GameObject picked = null;
-            if (pickClosestGameObjectDelegate != null)
-            {
-                // TODO: figure out how to call a delegate through reflection with an out parameter ...
-            }*/
 
-            intersection = new CSGTreeBrushIntersection
-            {
-                surfaceID = -1,
-                brushUserID = -1
-            };
+            intersection = ChiselIntersection.None;
 
             //if (picked == null)
             {
@@ -702,7 +630,7 @@ namespace Chisel.Editors
             return picked;*/
         }
 
-        public static IEnumerable<KeyValuePair<GameObject, CSGTreeBrushIntersection>> GetAllOverlapping(Vector2 position)
+        public static IEnumerable<KeyValuePair<GameObject, ChiselIntersection>> GetAllOverlapping(Vector2 position)
         {
             var allOverlapping = new List<GameObject>();
 
@@ -710,7 +638,7 @@ namespace Chisel.Editors
             {
                 GameObject[] ignore = allOverlapping.ToArray();
                 GameObject[] filter = null;
-                CSGTreeBrushIntersection intersection;
+                ChiselIntersection intersection;
                 var go = PickClosestGameObjectDelegated(position, ref ignore, ref filter, out intersection);
                 if (go == null)
                     break;
@@ -719,7 +647,7 @@ namespace Chisel.Editors
                     break;
 
                 if (!ChiselGeneratedComponentManager.IsObjectGenerated(go))
-                    yield return new KeyValuePair<GameObject, CSGTreeBrushIntersection>(go, intersection);
+                    yield return new KeyValuePair<GameObject, ChiselIntersection>(go, intersection);
 
                 allOverlapping.Add(go);
             }

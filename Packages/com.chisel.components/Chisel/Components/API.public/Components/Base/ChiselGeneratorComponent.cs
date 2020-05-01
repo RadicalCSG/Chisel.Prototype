@@ -52,6 +52,18 @@ namespace Chisel.Components
             base.OnResetInternal();
         }
 
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {
+            if (!ValidNodes)
+                return false;
+
+            if (ChiselGeneratedComponentManager.IsDefaultModel(hierarchyItem.Model))
+                return false;
+
+            return true;
+        }
+
         //**Temporary hack to ensure that a BrushContainerAsset remains unique when duplicated so that we can control when we share a BrushContainerAsset**//
         #region HandleDuplication
 #if UNITY_EDITOR
@@ -118,7 +130,7 @@ namespace Chisel.Components
             }
         }
         
-        public Vector3     PivotOffset
+        public override Vector3 PivotOffset
         {
             get
             {
@@ -137,7 +149,7 @@ namespace Chisel.Components
             }
         }
 
-        public Matrix4x4			LocalTransformation
+        public Matrix4x4 LocalTransformation
         {
             get
             {
@@ -178,7 +190,7 @@ namespace Chisel.Components
             UpdateInternalTransformation();
         }
 
-        Matrix4x4 LocalTransformationWithPivot
+        public Matrix4x4 LocalTransformationWithPivot
         {
             get
             {

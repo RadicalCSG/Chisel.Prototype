@@ -37,6 +37,9 @@ namespace Chisel.Core
     [Serializable]
     public sealed class ChiselSurface
     {
+        public const string kBrushMaterialName      = nameof(brushMaterial);
+        public const string kSurfaceDescriptionName = nameof(surfaceDescription);
+
         public ChiselBrushMaterial  brushMaterial;
         public SurfaceDescription   surfaceDescription;
     }
@@ -47,6 +50,10 @@ namespace Chisel.Core
     [Serializable]
     public struct SurfaceDescription
     {
+        public const string kSmoothingGroupName = nameof(smoothingGroup);
+        public const string kSurfaceFlagsName   = nameof(surfaceFlags);
+        public const string kUV0Name            = nameof(UV0);
+
         /// <value>The current normal smoothing group, 0 means that the surface doesn't do any smoothing</value>
         /// <remarks><note>This is only used when normals are set to be generated using the <see cref="Chisel.Core.VertexChannelFlags"/>.</note></remarks>
         public SmoothingGroup   smoothingGroup;

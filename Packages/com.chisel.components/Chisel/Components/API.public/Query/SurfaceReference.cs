@@ -20,12 +20,34 @@ namespace Chisel.Components
 
         public SurfaceReference(ChiselNode node, ChiselBrushContainerAsset brushContainerAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
         {
-            this.node           = node;
-            this.brushContainerAsset = brushContainerAsset;
-            this.subNodeIndex   = subNodeIndex;
-            this.subMeshIndex   = subMeshIndex;
-            this.surfaceIndex   = surfaceIndex;
-            this.surfaceID      = surfaceID;
+            this.node                   = node;
+            this.brushContainerAsset    = brushContainerAsset;
+            this.subNodeIndex           = subNodeIndex;
+            this.subMeshIndex           = subMeshIndex;
+            this.surfaceIndex           = surfaceIndex;
+            this.surfaceID              = surfaceID;
+        }
+
+        public void SetDirty()
+        {
+            brushContainerAsset.SetDirty();
+        }
+
+        public ChiselSurface BrushSurface
+        {
+            get
+            {
+                if (!brushContainerAsset)
+                    return null;
+                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
+                    return null;
+                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
+                if (brushMesh == null)
+                    return null;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
+                    return null;
+                return brushMesh.polygons[surfaceIndex].surface;
+            }
         }
 
         public ChiselBrushMaterial BrushMaterial
@@ -118,7 +140,11 @@ namespace Chisel.Components
                     return null;
                 if (surfaceIndex < 0 || surfaceIndex >= brushMesh.planes.Length)
                     return null;
-                return LocalToWorldSpace.TransformPlane(new Plane(brushMesh.planes[surfaceIndex].xyz, brushMesh.planes[surfaceIndex].w));
+
+                var localPlaneVector = brushMesh.planes[surfaceIndex];
+                var localPlane       = new Plane(localPlaneVector.xyz, localPlaneVector.w);
+                localPlane.Translate(-node.PivotOffset);
+                return LocalToWorldSpace.TransformPlane(localPlane);
             }
         }
 

@@ -33,7 +33,8 @@ namespace Chisel.Editors
         
         public static void MultiplySnapDistance(float modifier)
         {
-            ChiselEditorSettings.UniformSnapDistance = ChiselEditorSettings.UniformSnapDistance * modifier;
+            ChiselEditorSettings.UniformSnapSize = ChiselEditorSettings.UniformSnapSize * modifier;
+            ChiselEditorSettings.Save();
         }
 
         const string TogglePivotSnappingName = ShortCutBaseName + "Toggle Snapping/Pivot";

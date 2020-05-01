@@ -63,7 +63,7 @@ namespace Chisel.Editors
             return scrollPosition;
         }
 
-        public bool OnPreviewGUI(Rect region, GUIStyle background, Material material)
+        public static bool OnPreviewGUI(Rect region, GUIStyle background, Material material)
         {
             var newPreviewDir = Drag2D(previewDir, region);
             if (newPreviewDir != previewDir)
@@ -74,7 +74,11 @@ namespace Chisel.Editors
 
             var texture = PreviewTextureManager.GetPreviewTexture(region, previewDir, material);
             if (!texture)
+            {
+                if (Event.current.type == EventType.Repaint)
+                    background.Draw(region, false, false, false, false);
                 return false;
+            }
             GUI.DrawTexture(region, texture, ScaleMode.StretchToFill, false); 
             return true;
         }
@@ -84,92 +88,130 @@ namespace Chisel.Editors
             return true;
         }
 
-        
+
+        public static float DefaultMaterialLayerUsageHeight
+        {
+            get
+            {
+                float materialHeight, layerUsageHeight;
+                materialHeight = EditorGUIUtility.singleLineHeight;
+                layerUsageHeight = LayerUsageFlagsPropertyDrawer.DefaultHeight;
+                return materialHeight + kSpacing + layerUsageHeight;
+            }
+        }
+
         public static float DefaultHeight
         {
             get
             {
-                float physicsMaterialHeight, materialHeight, layerUsageHeight;
-                materialHeight          =
-                physicsMaterialHeight   = EditorGUI.GetPropertyHeight(SerializedPropertyType.ExposedReference, GUIContent.none);
-                layerUsageHeight        = LayerUsageFlagsPropertyDrawer.DefaultHeight;
-                return physicsMaterialHeight + kSpacing + materialHeight + kSpacing + layerUsageHeight;
+                float physicsMaterialHeight;
+                physicsMaterialHeight   = EditorGUIUtility.singleLineHeight;
+                return physicsMaterialHeight + kSpacing + DefaultMaterialLayerUsageHeight;
             }
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+                return 0;
             return DefaultHeight;
+        }
+
+        public static void ShowMaterialLayerUsage(Rect position, SerializedProperty renderMaterialProp, SerializedProperty layerUsageProp)
+        {
+
+            var previewSize         = position.height;            
+            var lineHeight          = EditorGUIUtility.singleLineHeight;
+            var materialPropRect    = new Rect(position.x, position.y, position.width, lineHeight);
+            var layerUsagePropRect  = new Rect(position.x, position.y + lineHeight + kSpacing, position.width, previewSize - lineHeight + kSpacing);
+
+
+            var showMaterial = (position.width > 260 && renderMaterialProp != null);
+            if (showMaterial)
+            {
+                materialPropRect.xMin   += previewSize + kSpacing;
+                layerUsagePropRect.xMin += previewSize + kSpacing;
+            }
+            var prevIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+            {
+                if (renderMaterialProp != null) EditorGUI.PropertyField(materialPropRect, renderMaterialProp, GUIContent.none, false);                
+                if (layerUsageProp     != null) EditorGUI.PropertyField(layerUsagePropRect, layerUsageProp, GUIContent.none, false);
+            }
+            EditorGUI.indentLevel = prevIndent;
+
+            // Render material preview
+            if (showMaterial)
+            {
+                var materialPreviewRect = new Rect(position.x, position.y, previewSize, previewSize);
+                if (styles == null)
+                    styles = new Styles();
+                OnPreviewGUI(materialPreviewRect, styles.background, renderMaterialProp.objectReferenceValue as Material);
+            }
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+            {
+                EditorGUI.BeginProperty(position, label, property);
+                EditorGUI.EndProperty();
+                return;
+            }
+
             EditorGUI.BeginProperty(position, label, property); 
             try
             {
-                SerializedProperty layerUsageProp       = property.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageFieldName);
-                SerializedProperty renderMaterialProp   = property.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialFieldName);
-                SerializedProperty physicsMaterialProp  = property.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialFieldName);
+                var materialProperty = property;
+                SerializedProperty layerUsageProp       = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageFieldName);
+                SerializedProperty renderMaterialProp   = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialFieldName);
+                SerializedProperty physicsMaterialProp  = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialFieldName);
 
                 // Don't make child fields be indented
                 var originalPosition = position;
                 position            = EditorGUI.IndentedRect(position);
                 var indentOffset    = position.x - originalPosition.x;
-                
-                var showMaterial    = (ChiselEditorUtility.GetContextWidth() > 430);
 
                 var physicMaterialPrefixRect    = originalPosition;
-                physicMaterialPrefixRect.height = EditorGUI.GetPropertyHeight(SerializedPropertyType.ExposedReference, GUIContent.none);
+                physicMaterialPrefixRect.height = EditorGUIUtility.singleLineHeight;
                 originalPosition.yMin += physicMaterialPrefixRect.height + kSpacing;
                 
                 var previewSize             = originalPosition.height;
                 var materialPrefixRect      = originalPosition;
-                materialPrefixRect.height   = EditorGUI.GetPropertyHeight(SerializedPropertyType.ExposedReference, GUIContent.none);
+                materialPrefixRect.height   = EditorGUIUtility.singleLineHeight;
                 originalPosition.yMin += materialPrefixRect.height + kSpacing;
-                
-                var materialPreviewRect     = materialPrefixRect;
-                materialPreviewRect.width   = previewSize;
-                materialPreviewRect.height  = previewSize;
 
-                var layerUsagePropRect      = originalPosition;
-                
+                var hasLabel = ChiselGUIUtility.LabelHasContent(label);
+
                 EditorGUI.BeginChangeCheck();
                 {
 
-                    { 
-                        var materialLabelID     = EditorGUIUtility.GetControlID(kBrushMaterialEditorHashCode, FocusType.Keyboard, materialPrefixRect);
-                        var materialPropRect	= EditorGUI.PrefixLabel(materialPrefixRect, materialLabelID, kRenderMaterialContents);
-                        materialPreviewRect.x   = materialPropRect.x;
-                        materialPropRect.xMin -= indentOffset;
-                        if (showMaterial)
-                            materialPropRect.xMin += previewSize + kSpacing;
-                        layerUsagePropRect.xMin = materialPropRect.xMin;
-                        EditorGUI.PropertyField(materialPropRect, renderMaterialProp, GUIContent.none, false);
-                    }
-
-                    { 
-                        EditorGUI.PropertyField(layerUsagePropRect, layerUsageProp, GUIContent.none, false);
-                    }
-
                     {
                         var physicMaterialLabelID   = EditorGUIUtility.GetControlID(kBrushPhysicMaterialEditorHashCode, FocusType.Keyboard, physicMaterialPrefixRect);
-                        var physicMaterialPropRect  = EditorGUI.PrefixLabel(physicMaterialPrefixRect, physicMaterialLabelID, kPhysicRenderMaterialContents);
+                        var physicMaterialPropRect  = EditorGUI.PrefixLabel(physicMaterialPrefixRect, physicMaterialLabelID, !hasLabel ? GUIContent.none : kPhysicRenderMaterialContents);
 
                         physicMaterialPropRect.xMin -= indentOffset;
-                        EditorGUI.PropertyField(physicMaterialPropRect, physicsMaterialProp, GUIContent.none, false);
+                        if (physicsMaterialProp != null)
+                            EditorGUI.PropertyField(physicMaterialPropRect, physicsMaterialProp, GUIContent.none, false);
                     }
 
-                    // Render material preview
-                    if (showMaterial)
-                    {
-                        if (styles == null)
-                            styles = new Styles();
-                        OnPreviewGUI(materialPreviewRect, styles.background, renderMaterialProp.objectReferenceValue as Material);
+                
+                    Rect    propRect;
+                    { 
+                        var materialLabelID = EditorGUIUtility.GetControlID(kBrushMaterialEditorHashCode, FocusType.Keyboard, materialPrefixRect);
+                        propRect	        = EditorGUI.PrefixLabel(materialPrefixRect, materialLabelID, !hasLabel ? GUIContent.none : kRenderMaterialContents);
                     }
+
+                    propRect.height = previewSize;
+                    ShowMaterialLayerUsage(propRect, renderMaterialProp, layerUsageProp);
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    property.serializedObject.ApplyModifiedProperties();
+#if MATERIAL_IS_SCRIPTABLEOBJECT
+                    materialObject.ApplyModifiedProperties();
+#else
+                    materialProperty.serializedObject.ApplyModifiedProperties();
+#endif
                 }
             }
             catch (ExitGUIException) { }
