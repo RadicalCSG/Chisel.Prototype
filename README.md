@@ -3,6 +3,8 @@
 This is a *work in progress* prototype for the Chisel level design editor.
 It is unfinished, and has bugs.
 
+![Example](chisel_example.png)
+
 Chisel requires Unity 2020.1 or newer
 
 Notes:
