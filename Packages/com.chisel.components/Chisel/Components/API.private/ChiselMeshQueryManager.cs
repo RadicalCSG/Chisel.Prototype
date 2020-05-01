@@ -106,10 +106,19 @@ namespace Chisel.Components
                 return collisionOnly;
         }
 
-        public static bool IsVisible(MeshQuery[] query)
+        public static MeshQuery[] GetVisibleQueries(MeshQuery[] queryArray)
         {
-            // TODO: implement this
-            return true;
+            // TODO: make this depend on debug visualization
+            var visibleLayerFlags = LayerUsageFlags.Renderable;
+
+            var queryList = queryArray.ToList();
+            for (int n = queryList.Count - 1; n >= 0; n--)
+            {
+                if ((visibleLayerFlags & queryList[n].LayerQuery) != LayerUsageFlags.None)
+                    continue;
+                queryList.RemoveAt(n);
+            }
+            return queryList.ToArray();
         }
     }
 }

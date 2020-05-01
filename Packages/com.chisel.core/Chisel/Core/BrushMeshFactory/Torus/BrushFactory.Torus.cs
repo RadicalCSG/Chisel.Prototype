@@ -9,6 +9,7 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -34,26 +35,26 @@ namespace Chisel.Core
 
 
             var horzDegreePerSegment	= (definition.totalAngle / horzSegments);
-            var vertDegreePerSegment	= (360.0f / vertSegments) * Mathf.Deg2Rad;
+            var vertDegreePerSegment	= math.radians(360.0f / vertSegments);
             var descriptionIndex		= new int[2 + vertSegments];
             
             descriptionIndex[0] = 0;
             descriptionIndex[1] = 1;
             
-            var circleVertices	= new Vector2[vertSegments];
+            var circleVertices	= new Vector3[vertSegments];
 
-            var min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
-            var max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
-            var tubeAngleOffset	= ((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation) * Mathf.Deg2Rad;
+            var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
+            var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
+            var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation);
             for (int v = 0; v < vertSegments; v++)
             {
                 var vRad = tubeAngleOffset + (v * vertDegreePerSegment);
-                circleVertices[v] = new Vector2((Mathf.Cos(vRad) * tubeRadiusX) - torusRadius, 
-                                                (Mathf.Sin(vRad) * tubeRadiusY));
-                min.x = Mathf.Min(min.x, circleVertices[v].x);
-                min.y = Mathf.Min(min.y, circleVertices[v].y);
-                max.x = Mathf.Max(max.x, circleVertices[v].x);
-                max.y = Mathf.Max(max.y, circleVertices[v].y);
+                circleVertices[v] = new Vector3((math.cos(vRad) * tubeRadiusX) - torusRadius, 
+                                               (math.sin(vRad) * tubeRadiusY), 0);
+                min.x = math.min(min.x, circleVertices[v].x);
+                min.y = math.min(min.y, circleVertices[v].y);
+                max.x = math.max(max.x, circleVertices[v].x);
+                max.y = math.max(max.y, circleVertices[v].y);
                 descriptionIndex[v + 2] = 2;
             }
 
@@ -76,13 +77,13 @@ namespace Chisel.Core
             {
                 var hDegree0 = (p * horzDegreePerSegment) + horzOffset;
                 var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                var rotation0 = Quaternion.AngleAxis(hDegree0, Vector3.up);
-                var rotation1 = Quaternion.AngleAxis(hDegree1, Vector3.up);
+                var rotation0 = quaternion.AxisAngle(new Vector3(0,1,0), hDegree0);
+                var rotation1 = quaternion.AxisAngle(new Vector3(0, 1, 0), hDegree1);
                 var subMeshVertices	= new Vector3[vertSegments * 2];
                 for (int v = 0; v < vertSegments; v++)
                 {
-                    subMeshVertices[v + vertSegments] = rotation0 * circleVertices[v];
-                    subMeshVertices[v] = rotation1 * circleVertices[v];
+                    subMeshVertices[v + vertSegments] = math.mul(rotation0, circleVertices[v]);
+                    subMeshVertices[v] = math.mul(rotation1, circleVertices[v]);
                 }
                 
                 var brushMesh = new BrushMesh();
@@ -109,22 +110,22 @@ namespace Chisel.Core
             var vertSegments	= definition.verticalSegments;
 
             var horzDegreePerSegment	= (definition.totalAngle / horzSegments);
-            var vertDegreePerSegment	= (360.0f / vertSegments) * Mathf.Deg2Rad;
+            var vertDegreePerSegment	= math.radians(360.0f / vertSegments);
             
-            var circleVertices	= new Vector2[vertSegments];
+            var circleVertices	= new Vector3[vertSegments];
 
-            var min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
-            var max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
-            var tubeAngleOffset	= ((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation) * Mathf.Deg2Rad;
+            var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
+            var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
+            var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation);
             for (int v = 0; v < vertSegments; v++)
             {
                 var vRad = tubeAngleOffset + (v * vertDegreePerSegment);
-                circleVertices[v] = new Vector2((Mathf.Cos(vRad) * tubeRadiusX) - torusRadius, 
-                                                (Mathf.Sin(vRad) * tubeRadiusY));
-                min.x = Mathf.Min(min.x, circleVertices[v].x);
-                min.y = Mathf.Min(min.y, circleVertices[v].y);
-                max.x = Mathf.Max(max.x, circleVertices[v].x);
-                max.y = Mathf.Max(max.y, circleVertices[v].y);
+                circleVertices[v] = new Vector3((math.cos(vRad) * tubeRadiusX) - torusRadius, 
+                                               (math.sin(vRad) * tubeRadiusY), 0);
+                min.x = math.min(min.x, circleVertices[v].x);
+                min.y = math.min(min.y, circleVertices[v].y);
+                max.x = math.max(max.x, circleVertices[v].x);
+                max.y = math.max(max.y, circleVertices[v].y);
             }
 
             if (definition.fitCircle)
@@ -152,10 +153,10 @@ namespace Chisel.Core
             for (int h = 0, v = 0; h < horzSegments; h++)
             {
                 var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                var rotation1 = Quaternion.AngleAxis(hDegree1, Vector3.up);
+                var rotation1 = quaternion.AxisAngle(new Vector3(0, 1, 0), hDegree1);
                 for (int i = 0; i < vertSegments; i++, v++)
                 {
-                    vertices[v] = rotation1 * circleVertices[i];
+                    vertices[v] = math.mul(rotation1, circleVertices[i]);
                 }
             }
             return true;

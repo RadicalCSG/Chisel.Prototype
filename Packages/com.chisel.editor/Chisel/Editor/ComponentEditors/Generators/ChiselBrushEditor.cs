@@ -8,6 +8,7 @@ using Chisel;
 using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -79,7 +80,7 @@ namespace Chisel.Editors
         // Creates a new optimized/fixed brushMesh based on the brushMesh inside of the generator
         // this will not be copied to the generator until the current operation is complete. 
         // This prevents, for example, dragging an edge over another edge DURING a dragging operation messing things up.
-        void UpdateEditableOutline(ChiselBrush generator, Vector3[] vertices)
+        void UpdateEditableOutline(ChiselBrush generator, float3[] vertices)
         {
             generatorModified = true;
             var outline = activeOutlines[generator];

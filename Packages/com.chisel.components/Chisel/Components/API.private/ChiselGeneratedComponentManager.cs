@@ -423,9 +423,7 @@ namespace Chisel.Components
             if (transform.parent != modelState.modelTransform)
             {
                 transform.SetParent(modelState.modelTransform, false);
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale    = Vector3.one;
+                ResetTransform(transform);
             }
             
             if (gameObject.layer     != modelState.layer   ) gameObject.layer     = modelState.layer;
@@ -458,9 +456,7 @@ namespace Chisel.Components
             if (componentTransform.parent != modelState.containerTransform)
             {
                 componentTransform.SetParent(modelState.containerTransform, false);
-                componentTransform.localPosition = Vector3.zero;
-                componentTransform.localRotation = Quaternion.identity;
-                componentTransform.localScale    = Vector3.one;
+                ResetTransform(componentTransform);
             }
             
             if (componentGameObject.layer     != modelState.layer   ) componentGameObject.layer     = modelState.layer;
@@ -505,9 +501,7 @@ namespace Chisel.Components
                     return model;
 
                 var transform = gameObject.GetComponent<Transform>();
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale	= Vector3.one;
+                ResetTransform(transform);
                     
                 model = gameObject.AddComponent<ChiselModel>();
                 UpdateModelFlags(model);
@@ -532,6 +526,26 @@ namespace Chisel.Components
             }
         }
 
+        private static void ResetTransform(Transform transform)
+        {
+            var prevLocalPosition   = transform.localPosition;
+            var prevLocalRotation   = transform.localRotation;
+            var prevLocalScale      = transform.localScale;
+                
+            if (prevLocalPosition.x != 0 ||
+                prevLocalPosition.y != 0 ||
+                prevLocalPosition.z != 0)
+                transform.localPosition = Vector3.zero;
+                
+            if (prevLocalRotation != Quaternion.identity)
+                transform.localRotation = Quaternion.identity;
+
+            if (prevLocalScale.x != 1 ||
+                prevLocalScale.y != 1 ||
+                prevLocalScale.z != 1)
+                transform.localScale    = Vector3.one;
+        }
+
         private static void UpdateModelFlags(ChiselModel model)
         {
             if (!IsDefaultModel(model))
@@ -548,9 +562,7 @@ namespace Chisel.Components
             if (transform.parent != null)
             {
                 transform.SetParent(null, false);
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale    = Vector3.one;
+                ResetTransform(transform);
             }
         }
                 
@@ -572,9 +584,7 @@ namespace Chisel.Components
                     ChiselNodeHierarchyManager.ignoreNextChildrenChanged = true;
                     transform.SetParent(model.transform, false);
                     ChiselNodeHierarchyManager.ignoreNextChildrenChanged = false;
-                    transform.localPosition = Vector3.zero;
-                    transform.localRotation = Quaternion.identity;
-                    transform.localScale    = Vector3.one;
+                    ResetTransform(transform);
                     model.GeneratedDataContainer = newGameObject;
                     model.GeneratedDataTransform = transform;
                 }
@@ -603,6 +613,11 @@ namespace Chisel.Components
                 ChiselNodeHierarchyManager.ignoreNextChildrenChanged = false;
                 model.GeneratedDataContainer = null;
                 model.GeneratedDataTransform = null;
+                if (model.generatedMeshContents != null)
+                {
+                    model.generatedMeshContents.Dispose();
+                    model.generatedMeshContents = null;
+                }
             }
         }
 
@@ -682,9 +697,7 @@ namespace Chisel.Components
                 var gameObject = new GameObject(name, components);
                 var transform  = gameObject.GetComponent<Transform>();
                 transform.SetParent(container.transform, false);
-                transform.localPosition = Vector3.zero;
-                transform.localRotation = Quaternion.identity;
-                transform.localScale = Vector3.one;
+                ResetTransform(transform);
                 return gameObject;
             }
             finally

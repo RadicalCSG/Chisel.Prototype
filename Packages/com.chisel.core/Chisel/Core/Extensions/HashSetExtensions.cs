@@ -55,6 +55,16 @@ namespace Chisel.Components
         }
 
 
+        public static HashSet<T> Common<T>(this HashSet<T> A, HashSet<T> B)
+        {
+            var self = new HashSet<T>();
+            foreach (var item in A)
+                if (B.Contains(item))
+                    self.Add(item);
+            return self;
+        }
+
+
         public static bool AddRange<T>(this HashSet<T> self, HashSet<T> other)
         {
             if (other == null)
@@ -75,7 +85,6 @@ namespace Chisel.Components
             return modified;
         }
 
-        
         public static bool RemoveRange<T>(this HashSet<T> self, HashSet<T> other)
         {
             if (other == null)
@@ -95,7 +104,7 @@ namespace Chisel.Components
                 modified = self.Remove(item) || modified;
             return modified;
         }
-        
+
 
         public static bool ContentsEquals<T>(this HashSet<T> self, HashSet<T> other)
         {
@@ -107,7 +116,7 @@ namespace Chisel.Components
                     return false;
             return true;
         }
-        
+
         public static bool ContentsEquals<T>(this HashSet<T> self, IEnumerable<T> other)
         {
             if (other.Count() != self.Count)
@@ -119,7 +128,7 @@ namespace Chisel.Components
             return true;
         }
 
-        
+
         public static bool ContainsAll<T>(this HashSet<T> self, HashSet<T> other)
         {
             if (other.Count > self.Count)
@@ -130,7 +139,7 @@ namespace Chisel.Components
                     return false;
             return true;
         }
-        
+
         public static bool ContainsAll<T>(this HashSet<T> self, IEnumerable<T> other)
         {
             foreach (var item in other)
@@ -138,7 +147,7 @@ namespace Chisel.Components
                     return false;
             return true;
         }
-        
+
         public static bool ContainsAny<T>(this HashSet<T> self, IEnumerable<T> other)
         {
             foreach (var item in other)

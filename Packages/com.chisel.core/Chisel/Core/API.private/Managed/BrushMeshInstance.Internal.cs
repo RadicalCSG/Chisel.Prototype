@@ -1,13 +1,12 @@
 ﻿using System;
-using UnityEngine;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
     partial struct BrushMeshInstance
     {
-#if USE_MANAGED_CSG_IMPLEMENTATION
-        private static Int32 CreateBrushMesh(Int32					userID,   
-                                             Vector3[]				vertices,
+        private static Int32 CreateBrushMesh(Int32					userID,
+                                             float3[]				vertices,
                                              BrushMesh.HalfEdge[]	halfEdges,
                                              BrushMesh.Polygon[]	polygons)
         {
@@ -20,13 +19,13 @@ namespace Chisel.Core
         }
 
         private static bool UpdateBrushMesh(Int32				 brushMeshID,
-                                            Vector3[]            vertices,
+                                            float3[]             vertices,
                                             BrushMesh.HalfEdge[] halfEdges,
                                             BrushMesh.Polygon[]  polygons)
         {
             return BrushMeshManager.UpdateBrushMesh(brushMeshID, vertices, halfEdges, polygons);
         }
-        
+
         private static bool DestroyBrushMesh(Int32 brushMeshID)
         {
             return BrushMeshManager.DestroyBrushMesh(brushMeshID);
@@ -36,6 +35,5 @@ namespace Chisel.Core
         {
             return BrushMeshManager.IsBrushMeshIDValid(brushMeshID);
         }
-#endif
     }
 }

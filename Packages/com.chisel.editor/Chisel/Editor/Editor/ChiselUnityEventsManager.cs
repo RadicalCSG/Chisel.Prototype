@@ -43,12 +43,6 @@ namespace Chisel.Editors
             ChiselSurfaceSelectionManager.hoverChanged					-= OnSurfaceHoverChanged;
             ChiselSurfaceSelectionManager.hoverChanged					+= OnSurfaceHoverChanged;
 
-            // A callback to be raised when an object in the hierarchy changes.
-            // Each time an object is (or a group of objects are) created, 
-            // renamed, parented, unparented or destroyed this callback is raised.
-//			UnityEditor.EditorApplication.hierarchyWindowChanged		-= OnHierarchyWindowChanged;
-//			UnityEditor.EditorApplication.hierarchyWindowChanged		+= OnHierarchyWindowChanged;
-
             UnityEditor.EditorApplication.playModeStateChanged			-= OnPlayModeStateChanged;
             UnityEditor.EditorApplication.playModeStateChanged			+= OnPlayModeStateChanged;
 
@@ -59,15 +53,10 @@ namespace Chisel.Editors
             UnityEditor.Undo.postprocessModifications					-= OnPostprocessModifications;
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
 
-#if UNITY_2019_1_OR_NEWER
             UnityEditor.SceneView.beforeSceneGui                        -= OnBeforeSceneGUI;
             UnityEditor.SceneView.beforeSceneGui                        += OnBeforeSceneGUI;
             UnityEditor.SceneView.duringSceneGui                        -= OnDuringSceneGUI;
             UnityEditor.SceneView.duringSceneGui                        += OnDuringSceneGUI;
-#else
-            UnityEditor.SceneView.onSceneGUIDelegate					-= OnSceneGUI;
-            UnityEditor.SceneView.onSceneGUIDelegate					+= OnSceneGUI; 
-#endif
 
             ChiselNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
             ChiselNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
@@ -208,15 +197,6 @@ namespace Chisel.Editors
             }
         }
 
-#if !UNITY_2019_1_OR_NEWER
-
-        static void OnSceneGUI(SceneView sceneView)
-        {
-            OnBeforeSceneGUI(sceneView);
-            OnDuringSceneGUI(sceneView);
-        }
-#endif
-
         private static void OnEditModeChanged(IChiselToolMode prevEditMode, IChiselToolMode newEditMode)
         {
             ChiselOutlineRenderer.Instance.OnEditModeChanged(prevEditMode, newEditMode);
@@ -227,8 +207,6 @@ namespace Chisel.Editors
             ChiselClickSelectionManager.Instance.OnSelectionChanged();
             ChiselOutlineRenderer.Instance.OnSelectionChanged();
             ChiselEditModeGUI.Instance.OnSelectionChanged();
-            //Editors.ChiselManagedHierarchyView.RepaintAll();
-            //Editors.ChiselNativeHierarchyView.RepaintAll();
         }
 
         private static void OnSurfaceSelectionChanged()
@@ -257,7 +235,8 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.Instance.OnReset();
             Editors.ChiselManagedHierarchyView.RepaintAll();
             Editors.ChiselInternalHierarchyView.RepaintAll();
-            SceneView.RepaintAll(); 
+            //SceneView.RepaintAll();
+            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
         }
 
         private static void OnHierarchyReset()
@@ -266,39 +245,13 @@ namespace Chisel.Editors
             Editors.ChiselInternalHierarchyView.RepaintAll(); 
         }
 
-        /*
-        private static void OnHierarchyWindowChanged()
-        {
-            if (ChiselNodeHierarchyManager.CheckHierarchyModifications())
-            {
-                Editors.ChiselManagedHierarchyView.RepaintAll();
-                Editors.ChiselNativeHierarchyView.RepaintAll(); 
-            }
-        }
-        */
-
         private static void OnPrefabInstanceUpdated(GameObject instance)
         {
             ChiselNodeHierarchyManager.OnPrefabInstanceUpdated(instance);
         }
 
-
-#if !USE_MANAGED_CSG_IMPLEMENTATION
-        static bool loggingMethodsRegistered = false;
-#endif
-
         private static void OnEditorApplicationUpdate()
         {
-#if !USE_MANAGED_CSG_IMPLEMENTATION
-            // TODO: remove this once we've moved to managed implementation of CSG algorithm
-            if (!loggingMethodsRegistered)
-            {
-                Editors.NativeLogging.RegisterUnityMethods();
-                loggingMethodsRegistered = true;
-            }
-#endif
-
-            //Grid.HoverGrid = null;
             ChiselNodeHierarchyManager.Update();
             ChiselGeneratedModelMeshManager.UpdateModels();
             ChiselNodeEditorBase.HandleCancelEvent();

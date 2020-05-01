@@ -2,6 +2,8 @@
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Mathematics;
+using Unity.Entities.UniversalDelegates;
 
 namespace Chisel.Core
 {
@@ -37,7 +39,7 @@ namespace Chisel.Core
             return CreateBox(ref brushMesh, definition.min, definition.max, definition.surfaceDefinition);
         }
 
-        public static bool CreateBox(ref BrushMesh brushMesh, UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
+        public static bool CreateBox(ref BrushMesh brushMesh, Vector3 min, Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 return false;
@@ -56,15 +58,19 @@ namespace Chisel.Core
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
+            var vertices = BrushMeshFactory.CreateBoxVertices(min, max);
+
             brushMesh.polygons  = CreateBoxPolygons(in surfaceDefinition);
             brushMesh.halfEdges = boxHalfEdges.ToArray();
-            brushMesh.vertices  = BrushMeshFactory.CreateBoxVertices(min, max);
+            brushMesh.vertices  = new float3[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                brushMesh.vertices[i] = vertices[i];
             brushMesh.UpdateHalfEdgePolygonIndices();
             brushMesh.CalculatePlanes();
             return true;
         }
 
-        public static void CreateBoxVertices(UnityEngine.Vector3 min, UnityEngine.Vector3 max, ref Vector3[] vertices)
+        public static void CreateBoxVertices(Vector3 min, Vector3 max, ref Vector3[] vertices)
         {
             if (vertices == null ||
                 vertices.Length != 8)
@@ -82,14 +88,14 @@ namespace Chisel.Core
         }
 
         // TODO: do not use this version unless we have no choice ..
-        public static Vector3[] CreateBoxVertices(UnityEngine.Vector3 min, UnityEngine.Vector3 max)
+        public static Vector3[] CreateBoxVertices(Vector3 min, Vector3 max)
         {
             Vector3[] vertices = null;
             CreateBoxVertices(min, max, ref vertices);
             return vertices;
         }
 
-        public static BrushMesh CreateBox(UnityEngine.Vector3 min, UnityEngine.Vector3 max, in ChiselSurface surface)
+        public static BrushMesh CreateBox(Vector3 min, Vector3 max, in ChiselSurface surface)
         {
             if (!BoundsExtensions.IsValid(min, max))
                 return null;
@@ -98,11 +104,16 @@ namespace Chisel.Core
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
+            var vec_vertices = CreateBoxVertices(min, max);
+            var vertices = new float3[vec_vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                vertices[i] = vec_vertices[i];
+
             return new BrushMesh
             {
                 polygons	= CreateBoxPolygons(in surface),
                 halfEdges	= boxHalfEdges.ToArray(),
-                vertices	= CreateBoxVertices(min, max)
+                vertices	= vertices
             };
         }
 
@@ -112,7 +123,7 @@ namespace Chisel.Core
         /// <param name="size">The size of the box</param>
         /// <param name="material">The [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html) that will be set to all surfaces of the box (optional)</param>
         /// <returns>A <see cref="Chisel.Core.BrushMesh"/> on success, null on failure</returns>
-        public static BrushMesh CreateBox(UnityEngine.Vector3 size, in ChiselSurface surface)
+        public static BrushMesh CreateBox(Vector3 size, in ChiselSurface surface)
         {
             var halfSize = size * 0.5f;
             return CreateBox(-halfSize, halfSize, in surface);

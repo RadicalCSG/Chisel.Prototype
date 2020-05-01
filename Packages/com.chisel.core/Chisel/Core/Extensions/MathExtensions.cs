@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
-    public enum IntersectionResult
+    public enum IntersectionResult : byte
     {
         Intersecting,
         Inside,
@@ -31,12 +29,37 @@ namespace Chisel.Core
             return NegativeY;
         }
 
+        public static float3 ClosestTangentAxis(float3 vector)
+        {
+            var absX = math.abs(vector.x);
+            var absY = math.abs(vector.y);
+            var absZ = math.abs(vector.z);
+
+            if (absY > absX && absY > absZ)
+                return new float3(0,0,1);
+
+            return new float3(0, -1, 0);
+        }
+
+        public static bool Equals(this Vector3 self, Vector3 other, double epsilon)
+        {
+            return System.Math.Abs(self.x - other.x) <= epsilon &&
+                   System.Math.Abs(self.y - other.y) <= epsilon &&
+                   System.Math.Abs(self.z - other.z) <= epsilon;
+        }
+
+        public static bool Equals(this Vector3 self, Vector3 other, float epsilon)
+        {
+            return System.Math.Abs(self.x - other.x) <= epsilon &&
+                   System.Math.Abs(self.y - other.y) <= epsilon &&
+                   System.Math.Abs(self.z - other.z) <= epsilon;
+        }
+
         public static Matrix4x4 RotateAroundAxis(Vector3 center, Vector3 normal, float angle)
         {
             var rotation = Quaternion.AngleAxis(angle, normal);
             return MathExtensions.RotateAroundPoint(center, rotation);
         }
-
 
         public static Matrix4x4 RotateAroundPoint(Vector3 center, Quaternion rotation)
         {
@@ -51,9 +74,30 @@ namespace Chisel.Core
             binormal = Vector3.Cross(normal, tangent).normalized;
         }
 
+        public static void CalculateTangents(float3 normal, out float3 tangent, out float3 binormal)
+        {
+            tangent = math.normalize(math.cross(normal, ClosestTangentAxis(normal)));
+            binormal = math.normalize(math.cross(normal, tangent));
+        }
+
         public static Vector3 CalculateTangent(Vector3 normal)
         {
             return Vector3.Cross(normal, ClosestTangentAxis(normal)).normalized;
+        }
+
+        public static float4x4 GenerateLocalToPlaneSpaceMatrix(float4 planeVector)
+        {
+            float3 normal = -planeVector.xyz;
+            CalculateTangents(normal, out float3 tangent, out float3 biNormal);
+            var pointOnPlane = normal * -planeVector.w;
+
+            return new float4x4
+            {
+                c0 = new float4(tangent.x, biNormal.x, normal.x, 0.0f),
+                c1 = new float4(tangent.y, biNormal.y, normal.y, 0.0f),
+                c2 = new float4(tangent.z, biNormal.z, normal.z, 0.0f),
+                c3 = new float4(math.dot(tangent, pointOnPlane), math.dot(biNormal, pointOnPlane), math.dot(normal, pointOnPlane), 1.0f)
+            };
         }
 
         public static Vector3 CalculateBinormal(Vector3 normal)
@@ -78,6 +122,26 @@ namespace Chisel.Core
             };
         }
 
+        public static bool IsInside(this Plane plane, in Bounds bounds)
+		{
+            var normal = plane.normal;
+			var backward_x = normal.x < 0 ? bounds.min.x : bounds.max.x;
+            var backward_y = normal.y < 0 ? bounds.min.y : bounds.max.y;
+            var backward_z = normal.z < 0 ? bounds.min.z : bounds.max.z;
+            var distance = plane.GetDistanceToPoint(new Vector3(backward_x, backward_y, backward_z));
+			return (distance < -kDistanceEpsilon);
+		}
+
+        public static bool IsOutside(this Plane plane, Bounds bounds)
+		{
+            var normal = plane.normal;
+			var backward_x = normal.x >= 0 ? bounds.min.x : bounds.max.x;
+            var backward_y = normal.y >= 0 ? bounds.min.y : bounds.max.y;
+            var backward_z = normal.z >= 0 ? bounds.min.z : bounds.max.z;
+            var distance = plane.GetDistanceToPoint(new Vector3(backward_x, backward_y, backward_z));
+            return (distance > kDistanceEpsilon);
+		}
+
         static bool Intersect(Vector2 p1, Vector2 d1, Vector2 p2, Vector2 d2, out Vector2 intersection)
         {
             const float kEpsilon = 0.0001f;
@@ -95,7 +159,6 @@ namespace Chisel.Core
             intersection = p1 + (t * d1);
             return true;
         }
-
 
 
         public static float SignedAngle(Vector3 v1, Vector3 v2, Vector3 n)
@@ -132,9 +195,9 @@ namespace Chisel.Core
         {
             return Quaternion.Slerp(A, B, t);
         }
-        
+
         // Transforms a plane by this matrix.
-        public static Plane Transform(this Matrix4x4 matrix, Plane plane)
+        public static Plane Transform(this Matrix4x4 matrix, in Plane plane)
         {
             var ittrans = matrix.inverse;
 
@@ -149,9 +212,25 @@ namespace Chisel.Core
             var magnitude = normal.magnitude;
             return new Plane(normal / magnitude, d / magnitude);
         }
-        
+
+        public static Plane Transform(this Matrix4x4 matrix, in Vector4 planeVector)
+        {
+            var ittrans = matrix.inverse;
+
+            float x = planeVector.x, y = planeVector.y, z = planeVector.z, w = planeVector.w;
+            // note: a transpose is part of this transformation
+            var a = ittrans.m00 * x + ittrans.m10 * y + ittrans.m20 * z + ittrans.m30 * w;
+            var b = ittrans.m01 * x + ittrans.m11 * y + ittrans.m21 * z + ittrans.m31 * w;
+            var c = ittrans.m02 * x + ittrans.m12 * y + ittrans.m22 * z + ittrans.m32 * w;
+            var d = ittrans.m03 * x + ittrans.m13 * y + ittrans.m23 * z + ittrans.m33 * w;
+
+            var normal = new Vector3(a, b, c);
+            var magnitude = normal.magnitude;
+            return new Plane(normal / magnitude, d / magnitude);
+        }
+
         // Transforms a plane by this matrix.
-        public static Plane InverseTransform(this Matrix4x4 matrix, Plane plane)
+        public static Plane InverseTransform(this Matrix4x4 matrix, in Plane plane)
         {
             var ittrans = matrix.transpose;
             var planeEq = new Vector4(plane.normal.x, plane.normal.y, plane.normal.z, plane.distance);
@@ -161,7 +240,28 @@ namespace Chisel.Core
             return new Plane(normal / magnitude, result.w / magnitude);
         }
 
-        public static void Set(this Transform transform, Matrix4x4 matrix)
+        public static Plane InverseTransform(this Matrix4x4 matrix, in Vector4 planeVector)
+        {
+            var ittrans = matrix.transpose;
+            var result = (ittrans * planeVector);
+            var normal = new Vector3(result.x, result.y, result.z);
+            var magnitude = normal.magnitude;
+            return new Plane(normal / magnitude, result.w / magnitude);
+        }
+
+        public static float4 InverseTransform(this float4x4 ittrans, in float4 planeVector)
+        {
+            // note: a transpose is part of this transformation
+            var result = new float4(ittrans.c0.x * planeVector.x + ittrans.c0.y * planeVector.y + ittrans.c0.z * planeVector.z + ittrans.c0.w * planeVector.w,
+                                    ittrans.c1.x * planeVector.x + ittrans.c1.y * planeVector.y + ittrans.c1.z * planeVector.z + ittrans.c1.w * planeVector.w,
+                                    ittrans.c2.x * planeVector.x + ittrans.c2.y * planeVector.y + ittrans.c2.z * planeVector.z + ittrans.c2.w * planeVector.w,
+                                    ittrans.c3.x * planeVector.x + ittrans.c3.y * planeVector.y + ittrans.c3.z * planeVector.z + ittrans.c3.w * planeVector.w);
+            var magnitude = math.length(result.xyz);
+            return result / magnitude;
+        }
+
+
+        public static void Set(this Transform transform, in Matrix4x4 matrix)
         {
             var position = matrix.GetColumn(3);
             matrix.SetColumn(3, Vector4.zero);
@@ -195,22 +295,46 @@ namespace Chisel.Core
         public const float kDistanceEpsilon = 0.00001f;
 
         // Check if bounds is inside/outside or intersects with plane
+
         public static IntersectionResult Intersection(this Plane plane, Bounds bounds)
         {
-            float[] extends_X = new []{ bounds.min.x, bounds.max.x };
-            float[] extends_Y = new []{ bounds.min.y, bounds.max.y };
-            float[] extends_Z = new []{ bounds.min.z, bounds.max.z };
+            var min = bounds.min;
+            var max = bounds.max;
 
-            var normal	 = plane.normal;
-            var x_octant = (normal.x < 0) ? 1 : 0;
-            var y_octant = (normal.y < 0) ? 1 : 0;
-            var z_octant = (normal.z < 0) ? 1 : 0;
+            var normal	= plane.normal;
 
-            float forward = plane.GetDistanceToPoint(new Vector3(extends_X[x_octant], extends_Y[y_octant], extends_Z[z_octant]));
+            var corner  = new Vector3((normal.x < 0) ? max.x : min.x,
+                                      (normal.y < 0) ? max.y : min.y,
+                                      (normal.z < 0) ? max.z : min.z);
+            float forward = Vector3.Dot(normal, corner) + plane.distance;
             if (forward > kDistanceEpsilon)
-                return IntersectionResult.Outside;	// closest point is outside
-        
-            float backward = plane.GetDistanceToPoint(new Vector3(extends_X[1 - x_octant], extends_Y[1 - y_octant], extends_Z[1 - z_octant]));
+                return IntersectionResult.Outside;  // closest point is outside
+
+            corner = new Vector3((normal.x >= 0) ? max.x : min.x,
+                                 (normal.y >= 0) ? max.y : min.y,
+                                 (normal.z >= 0) ? max.z : min.z);
+            float backward = Vector3.Dot(normal, corner) + plane.distance;
+            if (backward < -kDistanceEpsilon)
+                return IntersectionResult.Inside;	// closest point is inside
+
+            return IntersectionResult.Intersecting;	// closest point is intersecting
+        }
+
+        public static IntersectionResult Intersection(this Plane plane, Vector3 min, Vector3 max)
+        {
+            var normal = plane.normal;
+
+            var corner = new Vector3((normal.x < 0) ? max.x : min.x,
+                                     (normal.y < 0) ? max.y : min.y,
+                                     (normal.z < 0) ? max.z : min.z);
+            float forward = Vector3.Dot(normal, corner) + plane.distance;
+            if (forward > kDistanceEpsilon)
+                return IntersectionResult.Outside;  // closest point is outside
+
+            corner = new Vector3((normal.x >= 0) ? max.x : min.x,
+                                 (normal.y >= 0) ? max.y : min.y,
+                                 (normal.z >= 0) ? max.z : min.z);
+            float backward = Vector3.Dot(normal, corner) + plane.distance;
             if (backward < -kDistanceEpsilon)
                 return IntersectionResult.Inside;	// closest point is inside
 
@@ -240,7 +364,7 @@ namespace Chisel.Core
                 return currVertex - (vector * delta);
             }
         }
-        
+
         // http://matthias-mueller-fischer.ch/publications/stablePolarDecomp.pdf
         public static void ExtractRotation(in Matrix4x4 input, out Quaternion output, uint maxIter = 10)
         {

@@ -5,7 +5,6 @@ namespace Chisel.Core
 {
     partial struct CSGTreeNode
     {
-#if USE_MANAGED_CSG_IMPLEMENTATION
         internal static bool	IsNodeDirty(Int32 nodeID)		{ return CSGManager.IsNodeDirty(nodeID); }
         internal static bool	SetDirty(Int32 nodeID)			{ return CSGManager.SetDirty(nodeID); }
 
@@ -15,7 +14,7 @@ namespace Chisel.Core
 
         internal static Int32	GetParentOfNode(Int32 nodeID)	{ return CSGManager.GetParentOfNode(nodeID); }
         internal static Int32	GetTreeOfNode(Int32 nodeID)		{ return CSGManager.GetTreeOfNode(nodeID); }
-        
+
         internal static Int32	GetChildNodeCount(Int32 nodeID) { return CSGManager.GetChildNodeCount(nodeID); }
 
         internal static bool	RemoveChildNode(Int32 nodeID, Int32 childNodeID)				{ return CSGManager.RemoveChildNode(nodeID, childNodeID); }
@@ -57,6 +56,5 @@ namespace Chisel.Core
         {
             return CSGManager.InsertChildNodeRange(nodeID, index, children);
         }
-#endif
     }
 }

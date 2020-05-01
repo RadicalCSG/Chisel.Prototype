@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
     internal partial class BrushMeshManager
     {
-#if USE_MANAGED_CSG_IMPLEMENTATION
         static List<BrushMesh>	brushMeshes		= new List<BrushMesh>();
         static List<int>		userIDs			= new List<int>();
         static List<int>		unusedIDs		= new List<int>();
@@ -19,14 +21,14 @@ namespace Chisel.Core
             {
                 var nodeIndex = brushMeshInstanceID - 1;
                 if (nodeIndex >= 0 && nodeIndex < brushMeshes.Count)
-                    Debug.LogError("Invalid ID " + brushMeshInstanceID);
+                    Debug.LogError($"Invalid ID {brushMeshInstanceID}");
                 else
-                    Debug.LogError("Invalid ID " + brushMeshInstanceID + ", outside of bounds");
+                    Debug.LogError($"Invalid ID {brushMeshInstanceID}, outside of bounds (min 1, max {brushMeshes.Count})");
                 return false;
             }
             return true;
         }
-        
+
         internal static int			GetBrushMeshCount		()					{ return brushMeshes.Count - unusedIDs.Count; }
 
         public static Int32			GetBrushMeshUserID		(Int32 brushMeshInstanceID)
@@ -40,11 +42,24 @@ namespace Chisel.Core
         {
             if (!AssertBrushMeshIDValid(brushMeshInstanceID))
                 return null;
-            return brushMeshes[brushMeshInstanceID - 1];
+            var brushMesh = brushMeshes[brushMeshInstanceID - 1];
+            if (brushMesh == null)
+                return null;
+            return brushMesh;
+        }
+
+        internal static BlobAssetReference<BrushMeshBlob> GetBrushMeshBlob(Int32 brushMeshInstanceID)
+        {
+            if (!IsBrushMeshIDValid(brushMeshInstanceID))
+                return BlobAssetReference<BrushMeshBlob>.Null;
+
+            if (!ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshInstanceID - 1, out BlobAssetReference<BrushMeshBlob> item))
+                return BlobAssetReference<BrushMeshBlob>.Null;
+            return item;
         }
 
         public static Int32 CreateBrushMesh(Int32				 userID,
-                                            Vector3[]			 vertices,
+                                            float3[]			 vertices,
                                             BrushMesh.HalfEdge[] halfEdges,
                                             BrushMesh.Polygon[]	 polygons)
         {
@@ -64,12 +79,24 @@ namespace Chisel.Core
                 DestroyBrushMesh(brushMeshID);
                 return BrushMeshInstance.InvalidInstanceID;
             }
+
+            var brushMeshIndex = brushMeshID - 1;
+            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+            {
+                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
+                if (item.IsCreated)
+                    item.Dispose();
+            }
+
+            Profiler.BeginSample("BrushMeshBlob.Build");
+            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
+            Profiler.EndSample();
             return brushMeshID;
         }
 
 
         public static bool UpdateBrushMesh(Int32				brushMeshInstanceID,
-                                           Vector3[]			vertices,
+                                           float3[]			    vertices,
                                            BrushMesh.HalfEdge[] halfEdges,
                                            BrushMesh.Polygon[]	polygons)
         {
@@ -91,7 +118,17 @@ namespace Chisel.Core
                 return false;
             }
 
+            var brushMeshIndex = brushMeshInstanceID - 1;
+            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+            {
+                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
+                if (item.IsCreated)
+                    item.Dispose();
+            }
+            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
+            Profiler.BeginSample("BrushMeshBlob.Build");
             CSGManager.NotifyBrushMeshModified(brushMeshInstanceID);
+            Profiler.EndSample();
             return true;
         }
 
@@ -111,6 +148,12 @@ namespace Chisel.Core
             unusedIDs.RemoveAt(0); // sorry again
             brushMeshes[brushMeshIndex].Reset();
             userIDs[brushMeshIndex] = userID;
+            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+            {
+                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
+                if (item.IsCreated)
+                    item.Dispose();
+            }
             return brushMeshID;
         }
 
@@ -122,6 +165,12 @@ namespace Chisel.Core
             CSGManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
 
             var brushMeshIndex = brushMeshInstanceID - 1;
+            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+            {
+                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
+                if (item.IsCreated)
+                    item.Dispose();
+            }
             brushMeshes[brushMeshIndex].Reset();
             userIDs[brushMeshIndex] = CSGManager.kDefaultUserID;
             unusedIDs.Add(brushMeshInstanceID);
@@ -149,6 +198,5 @@ namespace Chisel.Core
             }
             return allInstances;
         }
-#endif
     }
 }

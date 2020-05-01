@@ -6,7 +6,6 @@ namespace Chisel.Core
 {
     partial struct CSGTree
     {
-#if USE_MANAGED_CSG_IMPLEMENTATION
         private static bool	    GenerateTree(Int32 userID, out Int32 generatedTreeNodeID)
         {
             return CSGManager.GenerateTree(userID, out generatedTreeNodeID);
@@ -33,10 +32,10 @@ namespace Chisel.Core
         {
             return CSGManager.GetMeshDescriptions(treeNodeID, meshQueries, vertexChannelMask);
         }
-        
-        private static GeneratedMeshContents GetGeneratedMesh(int treeNodeID, GeneratedMeshDescription meshDescription, GeneratedMeshContents previousGeneratedMeshContents)
+
+        private static GeneratedMeshContents GetGeneratedMesh(int treeNodeID, GeneratedMeshDescription meshDescription)
         {
-            return CSGManager.GetGeneratedMesh(treeNodeID, meshDescription, previousGeneratedMeshContents);
+            return CSGManager.GetGeneratedMesh(treeNodeID, meshDescription);
         }
         
         
@@ -48,29 +47,24 @@ namespace Chisel.Core
         [EditorBrowsable(EditorBrowsableState.Never)]
         public bool		IsInTree(CSGTreeBrush brush)	{ return DoesTreeContainBrush(treeNodeID, brush.NodeID); }
 
-        
+
         private bool RayCastMulti(MeshQuery[]						meshQuery,
                                   Vector3							worldRayStart,
                                   Vector3							worldRayEnd,
+                                  Matrix4x4                         treeLocalToWorldMatrix,
                                   int								filterLayerParameter0,
                                   out CSGTreeBrushIntersection[]	intersections,
                                   CSGTreeNode[]						ignoreNodes = null)
         {
-            return CSGManager.RayCastMulti(meshQuery, worldRayStart, worldRayEnd, filterLayerParameter0, out intersections, ignoreNodes);
+            return CSGManager.RayCastMulti(this, meshQuery, worldRayStart, worldRayEnd, treeLocalToWorldMatrix, filterLayerParameter0, out intersections, ignoreNodes);
         }
-        
-        private bool GetNodesInFrustum(Plane[]			 planes, 
+
+        private bool GetNodesInFrustum(MeshQuery[]       meshQuery,
+                                       Plane[]			 planes, 
                                        out CSGTreeNode[] nodes)
         {
-            return CSGManager.GetNodesInFrustum(planes, out nodes);
+            return CSGManager.GetNodesInFrustum(meshQuery, planes, out nodes);
 
         }
-        
-        private bool GetUserIDsInFrustum(Plane[]	 planes, 
-                                         out Int32[] userIDs)
-        {
-            return CSGManager.GetUserIDsInFrustum(planes, out userIDs);
-        }
-#endif
     }
 }

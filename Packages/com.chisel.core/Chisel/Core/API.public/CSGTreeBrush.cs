@@ -4,6 +4,7 @@ using System.ComponentModel;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 using Bounds = UnityEngine.Bounds;
 using UnityEngine;
+using Unity.Burst;
 
 namespace Chisel.Core
 {
@@ -11,7 +12,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush.Flags"/>
     [Serializable, Flags]
-    public enum CSGTreeBrushFlags
+    public enum CSGTreeBrushFlags : byte
     {
         /// <summary>This brush has no special states</summary>
         Default		= 0,
@@ -30,7 +31,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.BrushMesh"/>
     /// <seealso cref="Chisel.Core.BrushMeshInstance"/>
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]	
+    [StructLayout(LayoutKind.Sequential)]	
     public partial struct CSGTreeBrush 
     {
         #region Create
@@ -54,7 +55,7 @@ namespace Chisel.Core
                 brushNodeID = 0;
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
         }
-        
+
         /// <summary>Generates a brush and returns a <see cref="Chisel.Core.CSGTreeBrush"/> struct that contains a reference to it.</summary>
         /// <param name="localTransformation">The transformation of the brush relative to the tree root</param>
         /// <param name="brushMesh">A <see cref="Chisel.Core.BrushMeshInstance"/>, which is a reference to a <see cref="Chisel.Core.BrushMesh"/>.</param>
@@ -65,7 +66,7 @@ namespace Chisel.Core
         {
             return Create(0, localTransformation, brushMesh, operation, flags);
         }
-        
+
         /// <summary>Generates a brush and returns a <see cref="Chisel.Core.CSGTreeBrush"/> struct that contains a reference to it.</summary>
         /// <param name="userID">A unique id to help identify this particular brush. For instance, this could be an InstanceID to a [UnityEngine.Object](https://docs.unity3d.com/ScriptReference/Object.html)</param>
         /// <param name="brushMesh">A <see cref="Chisel.Core.BrushMeshInstance"/>, which is a reference to a <see cref="Chisel.Core.BrushMesh"/>.</param>
@@ -117,13 +118,14 @@ namespace Chisel.Core
 
         #region TreeBrush specific
         /// <value>Gets or sets <see cref="Chisel.Core.CSGTreeBrush"/> specific flags.</value>
-        public CSGTreeBrushFlags Flags				{ get { return GetBrushFlags(brushNodeID); } set	{ SetBrushFlags(brushNodeID, value); } }
+        public CSGTreeBrushFlags Flags				{ get { return GetBrushFlags(brushNodeID); } set { SetBrushFlags(brushNodeID, value); } }
 
         /// <value>Sets or gets a <see cref="Chisel.Core.BrushMeshInstance"/></value>
         /// <remarks>By modifying the <see cref="Chisel.Core.BrushMeshInstance"/> you can change the shape of the <see cref="Chisel.Core.CSGTreeBrush"/>
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>
         /// <seealso cref="Chisel.Core.BrushMesh" />
-        public BrushMeshInstance BrushMesh			{ set { SetBrushMesh(brushNodeID, value); } get { return GetBrushMesh(brushNodeID); } }
+        
+        public BrushMeshInstance BrushMesh			{ set { SetBrushMesh(brushNodeID, value); } [BurstDiscard] get { return GetBrushMesh(brushNodeID); } }
 
         /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
         public Bounds			Bounds				{ get { return GetBrushBounds(brushNodeID); } }
@@ -131,11 +133,11 @@ namespace Chisel.Core
         
         #region Transformation
         // TODO: add description
-        public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		
+		public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } [BurstDiscard] set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		
         // TODO: add description
-        public Matrix4x4			TreeToNodeSpaceMatrix	{ get { return CSGTreeNode.GetTreeToNodeSpaceMatrix(brushNodeID); } }
+		public Matrix4x4			TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
-        public Matrix4x4			NodeToTreeSpaceMatrix	{ get { return CSGTreeNode.GetNodeToTreeSpaceMatrix(brushNodeID); } }
+		public Matrix4x4			NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         #endregion
         
         #region Comparison
@@ -143,14 +145,30 @@ namespace Chisel.Core
         public static bool operator == (CSGTreeBrush left, CSGTreeBrush right) { return left.brushNodeID == right.brushNodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool operator != (CSGTreeBrush left, CSGTreeBrush right) { return left.brushNodeID != right.brushNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(CSGTreeBrush left, CSGTreeNode right) { return left.brushNodeID == right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(CSGTreeBrush left, CSGTreeNode right) { return left.brushNodeID != right.nodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator ==(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID == right.brushNodeID; }
+		[EditorBrowsable(EditorBrowsableState.Never)]
+        public static bool operator !=(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID != right.brushNodeID; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj) { if (!(obj is CSGTreeBrush)) return false; var other = (CSGTreeBrush)obj; return brushNodeID == other.brushNodeID; }
+        public override bool Equals(object obj)
+		{
+			if (obj is CSGTreeBrush) return brushNodeID == ((CSGTreeBrush)obj).brushNodeID;
+			if (obj is CSGTreeNode) return brushNodeID == ((CSGTreeNode)obj).nodeID;
+			return false;
+		}
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return brushNodeID.GetHashCode(); }
         #endregion
 
         [SerializeField] // Useful to be able to handle selection in history
         internal Int32 brushNodeID;
+
+        public override string ToString() { return $"({NodeID})"; }
+
     }
 }

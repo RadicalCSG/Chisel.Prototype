@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Mathematics;
 
 namespace UnitySceneExtensions
 {
@@ -132,7 +133,7 @@ namespace UnitySceneExtensions
                 mesh.SetColors(newColors);
                 mesh.SetIndices(indices, MeshTopology.Triangles, 0, calculateBounds: false);
                 mesh.RecalculateBounds();
-                mesh.UploadMeshData(true);
+                //mesh.UploadMeshData(false);
             }
 
             internal void Destroy()
@@ -213,6 +214,77 @@ namespace UnitySceneExtensions
 
         //*
         public void DrawLines(Matrix4x4 matrix, Vector3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            thickness *= pixelsPerPoint;
+            var corner1 = new Vector4(-thickness, dashSize, 0);
+            var corner2 = new Vector4( thickness, dashSize, 0);
+            var corner3 = new Vector4(-thickness, dashSize, 0);
+            var corner4 = new Vector4( thickness, dashSize, 0);
+
+            var lineMeshIndex = currentLineMesh;
+            while (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh());
+            if (lineMeshes[lineMeshIndex].VertexCount + (indices.Length * 2) <= LineMesh.MaxVertexCount)
+            {
+                var lineMesh	= lineMeshes[lineMeshIndex];
+                var vertices1	= lineMesh.vertices1;
+                var vertices2	= lineMesh.vertices2;
+                var lineParams	= lineMesh.lineParams;
+                var colors		= lineMesh.colors;
+
+                var n = lineMesh.vertexCount;
+                for (int i = 0; i < indices.Length; i += 2)
+                {
+                    var A = matrix.MultiplyPoint(vertices[indices[i + 0]]);
+                    var B = matrix.MultiplyPoint(vertices[indices[i + 1]]);
+                    
+                    if (float.IsInfinity(A.x) || float.IsInfinity(A.y) || float.IsInfinity(A.z) ||
+                        float.IsInfinity(B.x) || float.IsInfinity(B.y) || float.IsInfinity(B.z) ||
+                        float.IsNaN(A.x) || float.IsNaN(A.y) || float.IsNaN(A.z) ||
+                        float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
+                        continue;
+
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner1; colors[n] = color; n++;
+                    vertices1[n] = B; vertices2[n] = A; lineParams[n] = corner2; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner3; colors[n] = color; n++;
+                    vertices1[n] = A; vertices2[n] = B; lineParams[n] = corner4; colors[n] = color; n++;
+                }
+                lineMesh.vertexCount = n;
+            } else
+            {
+                for (int i = 0; i < indices.Length; i += 2)
+                {
+                    var lineMesh	= lineMeshes[lineMeshIndex];
+                    var vertexCount = lineMesh.vertexCount;
+                    if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { lineMeshIndex++; if (lineMeshIndex >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[lineMeshIndex]; vertexCount = lineMesh.vertexCount; }
+
+                    var vertices1	= lineMesh.vertices1;
+                    var vertices2	= lineMesh.vertices2;
+                    var lineParams  = lineMesh.lineParams;
+                    var colors		= lineMesh.colors;
+
+                    var A = matrix.MultiplyPoint(vertices[indices[i + 0]]);
+                    var B = matrix.MultiplyPoint(vertices[indices[i + 1]]);
+
+                    if (float.IsInfinity(A.x) || float.IsInfinity(A.y) || float.IsInfinity(A.z) ||
+                        float.IsInfinity(B.x) || float.IsInfinity(B.y) || float.IsInfinity(B.z) ||
+                        float.IsNaN(A.x) || float.IsNaN(A.y) || float.IsNaN(A.z) ||
+                        float.IsNaN(B.x) || float.IsNaN(B.y) || float.IsNaN(B.z))
+                        continue;
+
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner1; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = B; vertices2[vertexCount] = A; lineParams[vertexCount] = corner2; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner3; colors[vertexCount] = color; vertexCount++;
+                    vertices1[vertexCount] = A; vertices2[vertexCount] = B; lineParams[vertexCount] = corner4; colors[vertexCount] = color; vertexCount++;
+                    
+                    lineMesh.vertexCount += 4;
+                }
+                currentLineMesh = lineMeshIndex;
+            }
+        }
+        
+        public void DrawLines(Matrix4x4 matrix, float3[] vertices, int[] indices, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -470,7 +542,43 @@ namespace UnitySceneExtensions
             currentLineMesh = lineMeshIndex;
         }
 
+        public void DrawLineLoop(Matrix4x4 matrix, float3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            var lineMeshIndex = currentLineMesh;
+            var lineMesh = lineMeshes[currentLineMesh];
+            var last = startIndex + length;
+
+            float dashOffset = 0;
+            for (int j = last - 1, i = startIndex; i < last; j = i, i ++)
+            {
+                if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; lineMesh.Clear(); }
+                var p0 = matrix.MultiplyPoint(vertices[j]);
+                var p1 = matrix.MultiplyPoint(vertices[i]);	
+                dashOffset = lineMesh.AddLine(p0, p1, thickness, dashSize, color, dashOffset);
+            }
+
+            currentLineMesh = lineMeshIndex;
+        }
+
         public void DrawContinuousLines(Matrix4x4 matrix, Vector3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            var lineMeshIndex = currentLineMesh;
+            var lineMesh = lineMeshes[currentLineMesh];
+            var last = startIndex + length - 1;
+            for (int i = startIndex; i < last; i ++)
+            {
+                if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount)
+                { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; lineMesh.Clear(); }
+                lineMesh.AddLine(matrix.MultiplyPoint(vertices[i + 0]), matrix.MultiplyPoint(vertices[i + 1]), thickness, dashSize, color);
+            }
+            currentLineMesh = lineMeshIndex;
+        }
+
+        public void DrawContinuousLines(Matrix4x4 matrix, float3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
             if (Event.current.type != EventType.Repaint)
                 return;

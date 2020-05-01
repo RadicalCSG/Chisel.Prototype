@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 
 
@@ -98,14 +99,47 @@ namespace Chisel.Components
         // TODO: Clean up API
         public static void Rebuild()
         {
+            double endTime, startTime;
+
+            startTime = Time.realtimeSinceStartup;
+            Profiler.BeginSample("Reset");
             CSGManager.Clear();
             ChiselBrushContainerAssetManager.Reset();
             ChiselBrushMaterialManager.Reset();
+            Profiler.EndSample();
+            endTime = Time.realtimeSinceStartup;
+            Debug.Log($"  Reset done in {((endTime - startTime) * 1000)} ms. ");
 
+
+            startTime = Time.realtimeSinceStartup;
+            Profiler.BeginSample("FindAndReregisterAllNodes");
             ChiselNodeHierarchyManager.FindAndReregisterAllNodes();
+            Profiler.EndSample();
+            endTime = Time.realtimeSinceStartup;
+            Debug.Log($"  FindAndReregisterAllNodes done in {((endTime - startTime) * 1000)} ms. ");
+
+
+            startTime = Time.realtimeSinceStartup;
+            Profiler.BeginSample("UpdateAllTransformations");
             ChiselNodeHierarchyManager.UpdateAllTransformations();
+            Profiler.EndSample();
+            endTime = Time.realtimeSinceStartup;
+            Debug.Log($"  UpdateAllTransformations done in {((endTime - startTime) * 1000)} ms. ");
+
+
+            startTime = Time.realtimeSinceStartup;
+            Profiler.BeginSample("UpdateHierarchy");
             ChiselNodeHierarchyManager.Update();
+            Profiler.EndSample();
+            endTime = Time.realtimeSinceStartup;
+            Debug.Log($"  UpdateHierarchy done in {((endTime - startTime) * 1000)} ms. ");
+
+            startTime = Time.realtimeSinceStartup;
+            Profiler.BeginSample("UpdateModels");
             ChiselGeneratedModelMeshManager.UpdateModels();
+            Profiler.EndSample();
+            endTime = Time.realtimeSinceStartup;
+            Debug.Log($"  UpdateModels done in {((endTime - startTime) * 1000)} ms. ");
         }
 
         // TODO: Probably needs to be internal?
@@ -663,9 +697,30 @@ namespace Chisel.Components
 
             try
             {
+                Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
                 ChiselBrushContainerAssetManager.Update();
+                Profiler.EndSample();
+
+                Profiler.BeginSample("ChiselBrushMaterialManager.Update");
                 ChiselBrushMaterialManager.Update();
+                Profiler.EndSample();
+
+                Profiler.BeginSample("UpdateTrampoline");
                 UpdateTrampoline();
+                Profiler.EndSample();
+
+                // TODO: fix that generators create brushes inside the trampoline, requiring us to call things twice
+                Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
+                ChiselBrushContainerAssetManager.Update();
+                Profiler.EndSample();
+
+                Profiler.BeginSample("ChiselBrushMaterialManager.Update");
+                ChiselBrushMaterialManager.Update();
+                Profiler.EndSample();
+
+                Profiler.BeginSample("UpdateTrampoline");
+                UpdateTrampoline();
+                Profiler.EndSample();
             }
             // If we get an exception we don't want to end up infinitely spawning this exception ..
             finally
@@ -1296,6 +1351,7 @@ namespace Chisel.Components
             if (destroyNodesList.Count > 0)
             {                
                 // Destroy all old nodes after we created new nodes, to make sure we don't get conflicting IDs
+                // TODO: add 'generation' to indices to avoid needing to do this
                 CSGManager.Destroy(destroyNodesList.ToArray());
                 destroyNodesList.Clear();
             }

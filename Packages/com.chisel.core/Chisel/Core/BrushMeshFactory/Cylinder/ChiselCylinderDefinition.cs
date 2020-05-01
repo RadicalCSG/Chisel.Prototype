@@ -14,7 +14,7 @@ using System.Collections.Generic;
 namespace Chisel.Core
 {
     [Serializable]
-    public enum CylinderShapeType
+    public enum CylinderShapeType : byte
     {
         Cylinder,
         Cone,

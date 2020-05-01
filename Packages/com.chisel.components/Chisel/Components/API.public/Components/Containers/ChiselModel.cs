@@ -174,6 +174,8 @@ namespace Chisel.Components
         }
         public ChiselModel() : base() { }
 
+        protected override void OnDisable() { base.OnDisable(); if (generatedMeshContents != null) generatedMeshContents.Dispose(); }
+
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()
         {

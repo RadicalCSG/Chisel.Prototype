@@ -22,15 +22,15 @@ namespace Chisel.Core
 
         /// <value>Gets the <see cref="Chisel.Core.BrushMeshInstance.UserID"/> set to the <see cref="Chisel.Core.BrushMeshInstance"/> at creation time.</value>
         public Int32			UserID				{ get { return GetBrushMeshUserID(brushMeshID); } }
-                
+
         /// <summary>Create a <see cref="Chisel.Core.BrushMeshInstance"/> from a given <see cref="Chisel.Core.BrushMesh"/></summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to create an instance with</param>
         /// <returns>A newly created <see cref="Chisel.Core.BrushMeshInstance"/> on success, or an invalid <see cref="Chisel.Core.BrushMeshInstance"/> on failure.</returns>
         public static BrushMeshInstance Create(BrushMesh brushMesh, Int32 userID = 0) { return new BrushMeshInstance { brushMeshID = CreateBrushMesh(userID, brushMesh) }; }
-                
+
         /// <summary>Destroy the <see cref="Chisel.Core.BrushMeshInstance"/> and release the memory used by this instance.</summary>
         public void	Destroy		()					{ var prevBrushMeshID = brushMeshID; brushMeshID = BrushMeshInstance.InvalidInstanceID; DestroyBrushMesh(prevBrushMeshID); }
-        
+
         /// <summary>Update this <see cref="Chisel.Core.BrushMeshInstance"/> with the given <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to update the <see cref="Chisel.Core.BrushMeshInstance"/> with</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure. In case of failure the brush will keep using the previously set <see cref="Chisel.Core.BrushMesh"/>.</returns>

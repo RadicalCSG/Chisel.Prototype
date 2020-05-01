@@ -9,6 +9,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -418,7 +419,7 @@ namespace Chisel.Editors
             var vertices = brushMesh.vertices;
             Undo.RecordObject(brush, "Changed shape of Brush");
             foreach (var v in selection.selectedVertices)
-                vertices[v] += offset;
+                vertices[v] += (float3)offset;
             brushMesh.CalculatePlanes();
         }
 
@@ -722,8 +723,8 @@ namespace Chisel.Editors
             var afterHalfEdgePolygonIndices = afterBrushMesh.halfEdgePolygonIndices;
             var beforeHalfEdgePolygonIndices = beforBrushMesh.halfEdgePolygonIndices;
 
-            var afterSurfaces = afterBrushMesh.surfaces;
-            var afterVertices = afterBrushMesh.vertices;
+            var afterPlanes     = afterBrushMesh.planes;
+            var afterVertices   = afterBrushMesh.vertices;
 
             s_TempPolygon1ToPolygon2.Clear();
             for (int i = 0; i < afterPolygons.Length; i++)
@@ -776,8 +777,8 @@ namespace Chisel.Editors
                     afterPolygonIndexB = afterPolygonIndexB,
                     afterPolygonCenterA = afterBrushMesh.GetPolygonCentroid(afterPolygonIndexA),
                     afterPolygonCenterB = afterBrushMesh.GetPolygonCentroid(afterPolygonIndexB),
-                    afterLocalPlaneA = afterSurfaces[afterPolygonIndexA].localPlane,
-                    afterLocalPlaneB = afterSurfaces[afterPolygonIndexB].localPlane
+                    afterLocalPlaneA = afterPlanes[afterPolygonIndexA],
+                    afterLocalPlaneB = afterPlanes[afterPolygonIndexB]
                 });
             }
             softEdges = softEdgeList.ToArray();
@@ -1060,7 +1061,7 @@ namespace Chisel.Editors
             var isCameraInsideOutline   = IsPointInsideOutline(cameraLocalPos);
 
             var polygons                = brushMesh.polygons;
-            var surfaces                = brushMesh.surfaces;
+            var planes                  = brushMesh.planes;
             var vertices                = brushMesh.vertices;
             var halfEdges               = brushMesh.halfEdges;
             var halfEdgePolygonIndices  = brushMesh.halfEdgePolygonIndices;
@@ -1114,7 +1115,7 @@ namespace Chisel.Editors
                 var isHovering      = currentFocusControl == id;
                 var isActive        = currentHotControl == id;
                 var isSelected      = selection.selectedPolygons.Contains(p);
-                var isFrontFacing   = IsPolygonFrontfacing(polygonCenters[p], surfaces[p].localPlane, cameraLocalPos, cameraLocalForward, isCameraInsideOutline, isCameraOrthographic);
+                var isFrontFacing   = IsPolygonFrontfacing(polygonCenters[p], planes[p], cameraLocalPos, cameraLocalForward, isCameraInsideOutline, isCameraOrthographic);
 
                 var firstEdge   = polygons[p].firstEdge;
                 var edgeCount   = polygons[p].edgeCount;
@@ -1192,34 +1193,31 @@ namespace Chisel.Editors
 
         // Snap a point on an edge where it intersects with the grid. 
         // Note that we're never allowed to snap to a point outside the edge
-        void SnapToGridOnEdge(Vector3 point, int edgeIndex, ref Vector3 snappedPoint, ref float bestDist)
+        void SnapToGridOnEdge(float3 point, int edgeIndex, ref Vector3 snappedPoint, ref float bestDist)
         {
-            var vertices = brushMesh.vertices;
-            var halfEdges = brushMesh.halfEdges;
-            var surfaces = brushMesh.surfaces;
-            var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
-            var twinIndex = halfEdges[edgeIndex].twinIndex;
-            var edgePolygonIndex = halfEdgePolygonIndices[edgeIndex];
-            var twinPolygonIndex = halfEdgePolygonIndices[twinIndex];
-            var edgePlaneVector = surfaces[edgePolygonIndex].localPlane;
-            var twinPlaneVector = surfaces[twinPolygonIndex].localPlane;
-            var localToWorldMatrix = brush.hierarchyItem.LocalToWorldMatrix;
-            var worldToLocalMatrix = brush.hierarchyItem.WorldToLocalMatrix;
-
-            var edgeLocalPlane = new Plane((Vector3)edgePlaneVector, edgePlaneVector.w);
-            var twinLocalPlane = new Plane((Vector3)twinPlaneVector, twinPlaneVector.w);
+            var vertices                = brushMesh.vertices;
+            var halfEdges               = brushMesh.halfEdges;
+            var planes                  = brushMesh.planes;
+            var halfEdgePolygonIndices  = brushMesh.halfEdgePolygonIndices;
+            var twinIndex           = halfEdges[edgeIndex].twinIndex;
+            var edgePolygonIndex    = halfEdgePolygonIndices[edgeIndex];
+            var twinPolygonIndex    = halfEdgePolygonIndices[twinIndex];
+            var edgeLocalPlane      = new Plane(planes[edgePolygonIndex].xyz, planes[edgePolygonIndex].w);
+            var twinLocalPlane      = new Plane(planes[twinPolygonIndex].xyz, planes[twinPolygonIndex].w);
+            var localToWorldMatrix  = brush.hierarchyItem.LocalToWorldMatrix;
+            var worldToLocalMatrix  = brush.hierarchyItem.WorldToLocalMatrix;
 
             var vertex1 = vertices[halfEdges[edgeIndex].vertexIndex];
             var vertex2 = vertices[halfEdges[twinIndex].vertexIndex];
 
-            var grid = UnitySceneExtensions.Grid.defaultGrid;
-            var xAxis = worldToLocalMatrix.MultiplyVector(grid.Right);
-            var yAxis = worldToLocalMatrix.MultiplyVector(grid.Up);
-            var zAxis = worldToLocalMatrix.MultiplyVector(grid.Forward);
-            var center = worldToLocalMatrix.MultiplyPoint(grid.Center);
+            var grid    = UnitySceneExtensions.Grid.defaultGrid;
+            var xAxis   = (float3)worldToLocalMatrix.MultiplyVector(grid.Right);
+            var yAxis   = (float3)worldToLocalMatrix.MultiplyVector(grid.Up);
+            var zAxis   = (float3)worldToLocalMatrix.MultiplyVector(grid.Forward);
+            var center  = (float3)worldToLocalMatrix.MultiplyPoint(grid.Center);
             var spacing = grid.Spacing;
 
-            var edgeRay = new Ray(vertex1, (vertex2 - vertex1).normalized);
+            var edgeRay = new Ray(vertex1, math.normalize(vertex2 - vertex1));
 
             var snapAxis = Axis.X | Axis.Y | Axis.Z;
             if (Mathf.Abs(Vector3.Dot(xAxis, edgeLocalPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.X;
@@ -1252,8 +1250,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (floor * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1268,8 +1266,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (ceil * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1296,8 +1294,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (floor * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1312,8 +1310,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (ceil * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1340,8 +1338,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (floor * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1356,8 +1354,8 @@ namespace Chisel.Editors
                     var axisPlane = new Plane(axis, (ceil * axis) + offset);
                     if (axisPlane.Raycast(edgeRay, out float rayDistance))
                     {
-                        var snapPoint = edgeRay.GetPoint(rayDistance);
-                        var magnitude = (snapPoint - point).magnitude;
+                        var snapPoint = (float3)edgeRay.GetPoint(rayDistance);
+                        var magnitude = math.length(snapPoint - point);
                         if (magnitude < bestDist)
                         {
                             bestDist = magnitude;
@@ -1461,7 +1459,7 @@ namespace Chisel.Editors
         {
             var vertices = brushMesh.vertices;
             var newVertex = vertices[vertexIndex];
-            if ((prevNewVertex - newVertex).sqrMagnitude <= kEqualitySqrDistance)
+            if (math.lengthsq((float3)prevNewVertex - newVertex) <= kEqualitySqrDistance)
                 return;
 
             prevEdgeIndex = brushMesh.FindAnyHalfEdgeWithVertexIndex(vertexIndex);
@@ -1593,10 +1591,10 @@ namespace Chisel.Editors
         // Do not use polygons when they are camera aligned, or when their normal is zero (zero area)
         bool IsPolygonCameraAligned(int polygonIndex, Vector3 cameraDirection, bool isOutlineInsideOut)
         {
-            var normal = isOutlineInsideOut ? -(Vector3)brushMesh.surfaces[polygonIndex].localPlane
-                                    : (Vector3)brushMesh.surfaces[polygonIndex].localPlane;
-            return normal.sqrMagnitude == 0 ||
-                   Mathf.Abs(Vector3.Dot(cameraDirection, normal)) > 1 - kAlignmentEpsilon;
+            var normal = isOutlineInsideOut ? -brushMesh.planes[polygonIndex].xyz
+                                            :  brushMesh.planes[polygonIndex].xyz;
+            return math.lengthsq(normal) == 0 ||
+                   math.abs(math.dot(cameraDirection, normal)) > 1 - kAlignmentEpsilon;
         }
 
         public void RenderOutline(Vector3 cameraDirection, bool isCameraOrtho, bool isOutlineInsideOut)
@@ -1609,10 +1607,10 @@ namespace Chisel.Editors
             var currentFocusControl     = SceneHandleUtility.focusControl;
             var inCreateEdgeEditMode    = InCreateEdgeEditMode;
 
-            var polygons = brushMesh.polygons;
-            var surfaces = brushMesh.surfaces;
-            var vertices = brushMesh.vertices;
-            var halfEdges = brushMesh.halfEdges;
+            var polygons    = brushMesh.polygons;
+            var planes      = brushMesh.planes;
+            var vertices    = brushMesh.vertices;
+            var halfEdges   = brushMesh.halfEdges;
 
             // Render the vertices 
             for (int v = 0; v < vertices.Length; v++)
@@ -1666,7 +1664,7 @@ namespace Chisel.Editors
                 var polygonCenter   = polygonCenters[p];
                 var handleSize      = UnityEditor.HandleUtility.GetHandleSize(polygonCenter);
                 var pointSize       = handleSize * SceneHandles.kPointScale;
-                var normal          = isOutlineInsideOut ? -(Vector3)surfaces[p].localPlane : (Vector3)surfaces[p].localPlane;
+                var normal          = isOutlineInsideOut ? -planes[p].xyz : planes[p].xyz;
 
                 SceneHandles.color = polygonColors[p];
                 var rotation = Quaternion.LookRotation(normal);
@@ -1773,9 +1771,9 @@ namespace Chisel.Editors
             SelectVertex(v, currentSelectionType);
             if (currentSelectionType == SelectionType.Replace)
                 currentSelectionType = SelectionType.Additive;
-            var halfEdges = brushMesh.halfEdges;
-            var surfaces = brushMesh.surfaces;
-            var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
+            var halfEdges               = brushMesh.halfEdges;
+            var planes                  = brushMesh.planes;
+            var halfEdgePolygonIndices  = brushMesh.halfEdgePolygonIndices;
             for (int edgeIndex = 0; edgeIndex < halfEdges.Length; edgeIndex++)
             {
                 var vertexIndex = halfEdges[edgeIndex].vertexIndex;
@@ -1785,9 +1783,9 @@ namespace Chisel.Editors
                 var twinIndex = halfEdges[edgeIndex].twinIndex;
 
                 var edgePolygonIndex = halfEdgePolygonIndices[edgeIndex];
-                var edgeNormal = (Vector3)surfaces[edgePolygonIndex].localPlane;
+                var edgeNormal = planes[edgePolygonIndex].xyz;
                 var twinPolygonIndex = halfEdgePolygonIndices[twinIndex];
-                var twinNormal = (Vector3)surfaces[twinPolygonIndex].localPlane;
+                var twinNormal = planes[twinPolygonIndex].xyz;
 
                 // Check if both polygons on either side of edge are aligned with the view direction 
                 // (which means the edge is as well)
@@ -1890,7 +1888,7 @@ namespace Chisel.Editors
 
             var evt = Event.current;
 
-            var surfaces    = brushMesh.surfaces;
+            var planes      = brushMesh.planes;
             var vertices    = brushMesh.vertices;
             var halfEdges   = brushMesh.halfEdges;
             var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
@@ -1899,9 +1897,9 @@ namespace Chisel.Editors
             var twinIndex = halfEdges[edgeIndex].twinIndex;
 
             var edgePolygonIndex    = halfEdgePolygonIndices[edgeIndex];
-            var edgeNormal          = (Vector3)surfaces[edgePolygonIndex].localPlane;
+            var edgeNormal          = planes[edgePolygonIndex].xyz;
             var twinPolygonIndex    = halfEdgePolygonIndices[twinIndex];
-            var twinNormal          = (Vector3)surfaces[twinPolygonIndex].localPlane;
+            var twinNormal          = planes[twinPolygonIndex].xyz;
             var alignedIndex = -1;
 
             // Check if the polygon is aligned with the view direction
@@ -2063,7 +2061,7 @@ namespace Chisel.Editors
         // This method returns true when the brushMesh has changed
         public bool HandlePolygonMovementCameraAligned(Vector3 cameraDirection, bool isOutlineInsideOut)
         {
-            var surfaces = brushMesh.surfaces;
+            var planes = brushMesh.planes;
 
             for (int p = 0; p < s_TempPolygonsIDCount; p++)
             {
@@ -2071,7 +2069,7 @@ namespace Chisel.Editors
                     continue;
                 
                 var id      = s_TempPolygonsIDs[p];
-                var normal  = isOutlineInsideOut ? -(Vector3)surfaces[p].localPlane : (Vector3)surfaces[p].localPlane;
+                var normal  = isOutlineInsideOut ? -planes[p].xyz : planes[p].xyz;
                 var offset  = Vector3.zero;
                 EditorGUI.BeginChangeCheck();   { offset = SceneHandles.Slider2DHandleOffset(id, polygonCenters[p], normal, handleSize: -1); }
                 if (EditorGUI.EndChangeCheck()) { MoveSelectedVertices(offset); return true; }
@@ -2085,7 +2083,7 @@ namespace Chisel.Editors
         {
             // TODO: handle moving in axis aligned direction instead of along normal
 
-            var surfaces = brushMesh.surfaces;
+            var planes = brushMesh.planes;
 
             for (int p = 0; p < s_TempPolygonsIDCount; p++)
             {
@@ -2093,7 +2091,7 @@ namespace Chisel.Editors
                     continue;
 
                 var id      = s_TempPolygonsIDs[p];
-                var normal  = isOutlineInsideOut ? -(Vector3)surfaces[p].localPlane : (Vector3)surfaces[p].localPlane;
+                var normal  = isOutlineInsideOut ? -planes[p].xyz : planes[p].xyz;
 
                 var offset = Vector3.zero;
                 EditorGUI.BeginChangeCheck();   { offset = SceneHandles.Slider1DHandleOffset(id, polygonCenters[p], normal, handleSize: -1); }
@@ -2121,7 +2119,7 @@ namespace Chisel.Editors
                 // Render a dotted line along the current edge (but do not overlap it)
                 if ((s_TempEdgesState[e] & (ItemState.Hovering | ItemState.Active)) != ItemState.None)
                 {
-                    var direction = (vertex1 - vertex2).normalized * 1000.0f;
+                    var direction = math.length(vertex1 - vertex2) * 1000.0f;
                     // TODO: make this line go into infinity
                     SceneHandles.DrawDottedLine(vertex1 + direction, vertex1, 2.0f);
                     SceneHandles.DrawDottedLine(vertex2, vertex2 - direction, 2.0f);

@@ -28,10 +28,18 @@ namespace Chisel.Editors
 
         public static void Rebuild()
         {
-            var startTime = EditorApplication.timeSinceStartup;
-            ChiselNodeHierarchyManager.Rebuild();
-            var csg_endTime = EditorApplication.timeSinceStartup;
-            Debug.Log($"Full CSG rebuild done in {((csg_endTime - startTime) * 1000)} ms. ");
+            UnityEngine.Profiling.Profiler.BeginSample("Rebuild");
+            try
+            {
+                var startTime = Time.realtimeSinceStartup;
+                ChiselNodeHierarchyManager.Rebuild();
+                var csg_endTime = Time.realtimeSinceStartup;
+                Debug.Log($"Full CSG rebuild done in {((csg_endTime - startTime) * 1000)} ms. ");
+            }
+            finally
+            {
+                UnityEngine.Profiling.Profiler.EndSample();
+            }
         }
 
         static GUILayoutOption sizeButtonWidth = GUILayout.Width(12);

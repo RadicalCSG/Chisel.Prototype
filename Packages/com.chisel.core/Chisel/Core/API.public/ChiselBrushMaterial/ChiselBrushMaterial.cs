@@ -28,7 +28,19 @@ namespace Chisel.Core
         public PhysicMaterial	PhysicsMaterial             { get { return physicsMaterial; } set { if (physicsMaterial == value) return; var prevValue = physicsMaterial; physicsMaterial = value; ChiselBrushMaterialManager.OnPhysicsMaterialChanged(this, prevValue, value); } }
         public int				RenderMaterialInstanceID	{ get { return renderMaterial  ? renderMaterial .GetInstanceID() : 0; } }
         public int				PhysicsMaterialInstanceID	{ get { return physicsMaterial ? physicsMaterial.GetInstanceID() : 0; } }
-        
+
+        public SurfaceLayers    LayerDefinition
+        {
+            get
+            {
+                return new SurfaceLayers()
+                {
+                    layerUsage      = layerUsage,
+                    layerParameter1 = RenderMaterialInstanceID,
+                    layerParameter2 = PhysicsMaterialInstanceID
+                };
+            }
+        }
 
         public static ChiselBrushMaterial CreateInstance(ChiselBrushMaterial other)
         {

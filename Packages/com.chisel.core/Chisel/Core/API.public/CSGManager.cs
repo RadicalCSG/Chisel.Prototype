@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -10,7 +11,8 @@ namespace Chisel.Core
 
         /// <summary>Updates all pending changes to all <see cref="Chisel.Core.CSGTree"/>s.</summary>
         /// <returns>True if any <see cref="Chisel.Core.CSGTree"/>s have been updated, false if no changes have been found.</returns>
-        public static bool	Flush	()	{ return UpdateAllTreeMeshes(); }
+        public static bool	Flush	()	{ if (!UpdateAllTreeMeshes(out JobHandle handle)) return false; handle.Complete(); return true; }
+
 
         /// <summary>Clears all caches and rebuilds all <see cref="Chisel.Core.CSGTree"/>s.</summary>
         public static void	Rebuild	()	{ RebuildAll(); }
@@ -23,7 +25,7 @@ namespace Chisel.Core
 
         // TODO: add description
         public static bool	Destroy(int userID) { return DestroyAllNodesWithUserID(userID); }
-        
+
         /// <summary>Destroy all <see cref="Chisel.Core.CSGTreeNode"/>s contained in <paramref name="nodes"/> and its children.</summary>
         /// <param name="nodes">The top level <see cref="Chisel.Core.CSGTreeNode"/>s of all <see cref="Chisel.Core.CSGTreeNode"/>s to destroy</param>
         /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>s. See the log for more information.</returns>
@@ -36,28 +38,52 @@ namespace Chisel.Core
         public static bool	DeepDestroy(CSGTreeNode node) { return DeepDestroyNode(node); }
 
         /// <value>The number of <see cref="Chisel.Core.CSGTreeNode"/>s.</value>
-        public static int	TreeNodeCount			{ get { return GetNodeCount(); } }
+        public static int	TreeNodeCount			
+        {
+            get { return GetNodeCount(); } 
+        }
 
         /// <value>The number of <see cref="Chisel.Core.CSGTreeBrush"/>es.</value>
-        public static int	TreeBrushCount			{ get { return GetBrushCount(); } }
+        public static int	TreeBrushCount			
+        {
+            get { return GetBrushCount(); } 
+        }
         
         /// <value>The number of <see cref="Chisel.Core.CSGTreeBranch"/>es.</value>
-        public static int	TreeBranchCount			{ get { return GetBranchCount(); } }
+        public static int	TreeBranchCount			
+        {
+            get { return GetBranchCount(); } 
+        }
 
         /// <value>The number of <see cref="Chisel.Core.CSGTree"/>s.</value>
-        public static int	TreeCount				{ get { return GetTreeCount(); } }
+        public static int	TreeCount				
+        {
+            get { return GetTreeCount(); } 
+        }
 
         /// <value>The number of <see cref="Chisel.Core.BrushMesh"/>es.</value>
-        public static int	BrushMeshCount			{ get { return GetBrushMeshCount(); } }
+        public static int BrushMeshCount
+        {
+            get { return GetBrushMeshCount(); }
+        }
 
         /// <value>All the <see cref="Chisel.Core.CSGTreeNode"/>s.</value>
-        public static CSGTreeNode[] AllTreeNodes	{ get { return GetAllTreeNodes(); } }
+        public static CSGTreeNode[] AllTreeNodes
+        {
+            get { return GetAllTreeNodes(); }
+        }
 
         /// <value>All the <see cref="Chisel.Core.CSGTree"/>s.</value>
-        public static CSGTree[]		AllTrees		{ get { return GetAllTrees(); } }
+        public static CSGTree[] AllTrees
+        {
+            get { return GetAllTrees(); }
+        }
         
         /// <value>All the <see cref="Chisel.Core.BrushMeshInstance"/>s.</value>
-        public static BrushMeshInstance[] AllBrushMeshInstances	{ get { return GetAllBrushMeshInstances(); } }
+        public static BrushMeshInstance[] AllBrushMeshInstances
+        {
+            get { return GetAllBrushMeshInstances(); }
+        }
 
 
         // TODO: add description
