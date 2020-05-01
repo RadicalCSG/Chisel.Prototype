@@ -12,6 +12,7 @@ Known issues
 
 * There are some cases where triangulation fails (please collect failure cases so we can later verify we fixed them)
 * Moving a brush using the inspector will not always update it's touching brushes
+* Intersection vertices aren't yet merged between brushes, which can cause tiny gaps between polygons
 
 Packages overview:
 * `com.chisel.core` Low-level API and functionality
