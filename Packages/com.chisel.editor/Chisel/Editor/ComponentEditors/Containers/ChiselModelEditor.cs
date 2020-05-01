@@ -12,11 +12,11 @@ namespace Chisel.Editors
 {
     public sealed class ChiselModelDetails : ChiselNodeDetails<ChiselModel>
     {
-        const string ModelIconName = "csg_model";
+        const string kModelIconName = "csg_model";
 
         public override GUIContent GetHierarchyIcon(ChiselModel node)
         {
-            return ChiselEditorResources.GetIconContent(ModelIconName, node.NodeTypeName)[0];
+            return ChiselEditorResources.GetIconContent(kModelIconName, node.NodeTypeName)[0];
         }
 
         public override bool HasValidState(ChiselModel node)

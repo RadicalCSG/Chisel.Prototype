@@ -86,8 +86,7 @@ namespace Chisel.Editors
         public static Texture2D LoadImage(string name)
         {
             name = FixSlashes(name);
-            Texture2D image = null;
-            if (imagesLookup.TryGetValue(name, out image))
+            if (imagesLookup.TryGetValue(name, out Texture2D image))
                 return image;
             image = LoadScaledTexture(name);
             if (!image)
@@ -115,8 +114,9 @@ namespace Chisel.Editors
 
         public static Texture2D[] LoadIconImages(string name)
         {
-            Texture2D[] iconImages;
-            if (iconImagesLookup.TryGetValue(name, out iconImages))
+            name = name.ToLowerInvariant();
+            name = name.ToLowerInvariant();
+            if (iconImagesLookup.TryGetValue(name, out Texture2D[] iconImages))
                 return iconImages;
 
             iconImages = new[] { LoadIconImage(name, false), LoadIconImage(name, true ) };
@@ -130,9 +130,9 @@ namespace Chisel.Editors
 
         public static GUIContent[] GetIconContent(string name, string tooltip = "")
         {
-            GUIContent[] contents;
+            name = name.ToLowerInvariant();
             var id = (name.GetHashCode() * 33) + tooltip.GetHashCode();
-            if (iconContentLookup.TryGetValue(id, out contents))
+            if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
                 return contents;
 
             if (tooltip == null)

@@ -40,11 +40,13 @@ namespace Chisel.Editors
         static Matrix4x4		s_Transformation = Matrix4x4.identity;
         static ChiselModel		s_ModelBeneathCursor;
         static List<Vector3>	s_Points = new List<Vector3>();
+        static bool             s_ModifyMode = false;
         
         // TODO: somehow get rid of this
         public static void Reset()
         {
             s_Points.Clear();
+            s_ModifyMode = false;
             PointDrawing.Reset();
         }
 
@@ -126,35 +128,37 @@ namespace Chisel.Editors
                     PointDrawing.PointDrawHandle(dragArea, ref s_Points, out s_Transformation, out s_ModelBeneathCursor, releaseOnMouseUp: false, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
 
                     if (s_Points.Count <= 1)
-                    {
                         return BoxExtrusionState.HoverMode;
-                    }
-
-                    if (s_Points.Count > 2)
+                }
+                if (s_Points.Count > 2)
+                {
+                    if (!s_ModifyMode)
                     {
                         PointDrawing.Release();
                         s_Points[2] = s_Points[0];
+                        s_ModifyMode = true;
                         return BoxExtrusionState.Create;
                     }
-
-                    return BoxExtrusionState.SquareMode;
-                } else
-                {
-                    var tempPoint = s_Points[2];
-                    var oldMatrix = UnityEditor.Handles.matrix;
-                    UnityEditor.Handles.matrix = UnityEditor.Handles.matrix * s_Transformation;
-                    var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis, snappingSteps: snappingSteps);
-                    UnityEditor.Handles.matrix = oldMatrix;
-                    s_Points[2] = tempPoint;
-                
-                    switch (extrusionState)
+                    if (s_ModifyMode)
                     {
-                        case ExtrusionState.Cancel:		{ return BoxExtrusionState.Cancel; }
-                        case ExtrusionState.Commit:		{ return BoxExtrusionState.Commit; }
-                        case ExtrusionState.Modified:	{ return BoxExtrusionState.Modified; }
-                    }				
-                    return BoxExtrusionState.BoxMode;
+                        var tempPoint = s_Points[2];
+                        var oldMatrix = UnityEditor.Handles.matrix;
+                        UnityEditor.Handles.matrix *= s_Transformation;
+                        var extrusionState = ExtrusionHandle.DoHandle(dragArea, ref tempPoint, axis, snappingSteps: snappingSteps);
+                        UnityEditor.Handles.matrix = oldMatrix;
+                        s_Points[2] = tempPoint;
+                
+                        switch (extrusionState)
+                        {
+                            case ExtrusionState.Cancel:		{ s_ModifyMode = false; return BoxExtrusionState.Cancel; }
+                            case ExtrusionState.Commit:		{ s_ModifyMode = false; return BoxExtrusionState.Commit; }
+                            case ExtrusionState.Modified:	{ return BoxExtrusionState.Modified; }
+                        }
+
+                        return BoxExtrusionState.BoxMode;
+                    }
                 }
+                return BoxExtrusionState.SquareMode;
             }
             finally
             {

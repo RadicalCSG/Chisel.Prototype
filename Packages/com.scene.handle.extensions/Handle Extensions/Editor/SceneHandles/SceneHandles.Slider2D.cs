@@ -8,10 +8,12 @@ namespace UnitySceneExtensions
     {
         internal static int s_Slider2DHash = "Slider2DHash".GetHashCode();
                 
+        static readonly Vector3[] s_Slider2DPointArray = new Vector3[1];
         public static Vector3 Slider2DHandle(Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
         {
             var id = GUIUtility.GetControlID (s_Slider2DHash, FocusType.Keyboard);
-            return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
+            s_Slider2DPointArray[0] = handlePos;
+            return Slider2D.Do(id, s_Slider2DPointArray, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
         }
 
         public static Vector3[] Slider2DHandle(int id, Vector3[] points, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
@@ -21,7 +23,8 @@ namespace UnitySceneExtensions
 
         public static Vector3 Slider2DHandle(int id, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
         {
-            return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
+            s_Slider2DPointArray[0] = handlePos;
+            return Slider2D.Do(id, s_Slider2DPointArray, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
         }
 
         public static Vector3 Slider2DHandleOffset(int id, Vector3 handlePos, Vector3 handleDir, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
@@ -31,7 +34,8 @@ namespace UnitySceneExtensions
             var axes        = grid.GetTangentAxesForAxis(normalAxis, out Vector3 slideDir1, out Vector3 slideDir2);
             if (handleSize == 0)
                 handleSize = UnityEditor.HandleUtility.GetHandleSize(handlePos) * 0.05f;
-            return Slider2D.Do(id, new Vector3[] { handlePos }, handlePos, Vector3.zero, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0] - handlePos;
+            s_Slider2DPointArray[0] = handlePos;
+            return Slider2D.Do(id, s_Slider2DPointArray, handlePos, Vector3.zero, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0] - handlePos;
         }
 
         public class Slider2D
@@ -42,9 +46,12 @@ namespace UnitySceneExtensions
             private static int          s_PrevFocusControl;
             private static bool         s_MovedMouse = false;
 
+            static readonly Vector3[] s_SliderPointArray = new Vector3[1];
+
             public static Vector3 Do(int id, Vector3 point, Vector3 handleOrigin, Vector3 handleCursorOffset, Vector3 handleNormal, Vector3 slideDir1, Vector3 slideDir2, float handleSize, SceneHandles.CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, bool noSnapping = false, Vector3? snappingSteps = null)
             {
-                return Do(id, new Vector3[] { point }, handleOrigin, handleCursorOffset, handleNormal, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, noSnapping, snappingSteps)[0];
+                s_SliderPointArray[0] = point;
+                return Do(id, s_SliderPointArray, handleOrigin, handleCursorOffset, handleNormal, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, noSnapping, snappingSteps)[0];
             }
                         
             public static Vector3[] Do(int id, Vector3[] points, Vector3 handleOrigin, Vector3 handleCursorOffset, Vector3 handleNormal, Vector3 slideDir1, Vector3 slideDir2, float handleSize, SceneHandles.CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, bool noSnapping = false, Vector3? snappingSteps = null)

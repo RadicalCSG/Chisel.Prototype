@@ -253,28 +253,33 @@ namespace Chisel.Components
                     generatedMesh.renderComponents.meshFilter) 
                 {
                     var material = generatedMesh.renderComponents.meshRenderer.sharedMaterial;
-                    List<ChiselRenderComponents> components;
-                    if (!model.generatedRenderComponents.TryGetValue(material, out components))
+                    if (material != null)
                     {
-                        components = new List<ChiselRenderComponents>();
-                        model.generatedRenderComponents[material] = components;
+                        List<ChiselRenderComponents> components;
+                        if (!model.generatedRenderComponents.TryGetValue(material, out components))
+                        {
+                            components = new List<ChiselRenderComponents>();
+                            model.generatedRenderComponents[material] = components;
+                        }
+                        components.Add(generatedMesh.renderComponents);
                     }
-                    components.Add(generatedMesh.renderComponents);
                     model.generatedComponents.Add(generatedMesh.renderComponents.transform);
                 }
 
                 if (generatedMesh.colliderComponents != null &&
                     generatedMesh.colliderComponents.meshCollider)
                 {
-                    var meshCollider = generatedMesh.colliderComponents.meshCollider; 
-                    var material = meshCollider.sharedMaterial;
-                    List<ChiselColliderComponents> components;
-                    if (!model.generatedMeshColliders.TryGetValue(material, out components))
+                    var material = generatedMesh.colliderComponents.meshCollider.sharedMaterial; 
+                    if (material != null)
                     {
-                        components = new List<ChiselColliderComponents>();
-                        model.generatedMeshColliders[material] = components;
+                        List<ChiselColliderComponents> components;
+                        if (!model.generatedMeshColliders.TryGetValue(material, out components))
+                        {
+                            components = new List<ChiselColliderComponents>();
+                            model.generatedMeshColliders[material] = components;
+                        }
+                        components.Add(generatedMesh.colliderComponents);
                     }
-                    components.Add(generatedMesh.colliderComponents);
                     model.generatedComponents.Add(generatedMesh.colliderComponents.transform);
                 }
             }
@@ -491,7 +496,7 @@ namespace Chisel.Components
 
                 var transform = gameObject.GetComponent<Transform>();
                 ResetTransform(transform);
-                    
+
                 model = gameObject.AddComponent<ChiselModel>();
                 UpdateModelFlags(model);
                 return model;
@@ -763,9 +768,12 @@ namespace Chisel.Components
                 {
                     var meshCollider = meshColliders[i];
 
-                    meshCollider.cookingOptions	= colliderSettings.cookingOptions;
-                    meshCollider.convex			= colliderSettings.convex;
-                    meshCollider.isTrigger		= colliderSettings.isTrigger;
+                    if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
+                        meshCollider.cookingOptions	= colliderSettings.cookingOptions;
+                    if (meshCollider.convex != colliderSettings.convex)
+                        meshCollider.convex			= colliderSettings.convex;
+                    if (meshCollider.isTrigger != colliderSettings.isTrigger)
+                        meshCollider.isTrigger		= colliderSettings.isTrigger;
                 }
             }
         }

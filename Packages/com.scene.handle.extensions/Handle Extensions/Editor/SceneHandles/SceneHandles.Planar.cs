@@ -66,7 +66,7 @@ namespace UnitySceneExtensions
 
             var innerColor = SceneHandles.color;
             var outerColor = Color.black;
-            innerColor = new Color(innerColor.r, innerColor.g, innerColor.b, 0.1f);
+            innerColor.a = 0.1f;
             if (!isStatic && !SceneHandles.disabled)
                 SceneHandles.DrawSolidRectangleWithOutline(s_Vertices, innerColor, outerColor);
 

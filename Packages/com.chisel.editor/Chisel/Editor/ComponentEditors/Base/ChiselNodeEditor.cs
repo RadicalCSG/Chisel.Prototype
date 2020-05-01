@@ -63,12 +63,12 @@ namespace Chisel.Editors
                     gameObject.GetComponent<ChiselOperation>();
         }
 
-        [MenuItem("GameObject/Chisel/Set operation/Additive", false, -1)] static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
-        [MenuItem("GameObject/Chisel/Set operation/Additive", true)] static bool ValidateAdditiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
-        [MenuItem("GameObject/Chisel/Set operation/Subtractive", false, -1)] static void SetSubtractiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Subtractive); }
-        [MenuItem("GameObject/Chisel/Set operation/Subtractive", true)] static bool ValidateSubtractiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
-        [MenuItem("GameObject/Chisel/Set operation/Intersecting", false, -1)] static void SetIntersectingOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Intersecting); }
-        [MenuItem("GameObject/Chisel/Set operation/Intersecting", true)] static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), false, -1)] static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), true)] static bool ValidateAdditiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Subtractive), false, -1)] static void SetSubtractiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Subtractive); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Subtractive), true)] static bool ValidateSubtractiveOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), false, -1)] static void SetIntersectingOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Intersecting); }
+        [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), true)] static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
 
 
 
@@ -450,9 +450,9 @@ namespace Chisel.Editors
 
     public class ChiselDefaultGeneratorDetails : IChiselNodeDetails
     {
-        const string kAdditiveIconName		= "csg_addition";
-        const string kSubtractiveIconName	= "csg_subtraction";
-        const string kIntersectingIconName	= "csg_intersection";
+        const string kAdditiveIconName          = "csg_" + nameof(CSGOperationType.Additive);
+        const string kSubtractiveIconName       = "csg_" + nameof(CSGOperationType.Subtractive);
+        const string kIntersectingIconName      = "csg_" + nameof(CSGOperationType.Intersecting);
 
         public static GUIContent GetHierarchyIcon(CSGOperationType operation, string name)
         {
@@ -469,7 +469,7 @@ namespace Chisel.Editors
                 case CSGOperationType.Intersecting: return ChiselEditorResources.GetIconContent(kIntersectingIconName,  $"{nameof(CSGOperationType.Intersecting)} {name}");
             }
         }
-
+        
         public GUIContent GetHierarchyIconForGenericNode(ChiselNode node)
         {
             var generator = node as ChiselGeneratorComponent;
@@ -647,6 +647,9 @@ namespace Chisel.Editors
             var removeTargets = new HashSet<T>();
             foreach (var target in targets)
             {
+                if (!target)
+                    continue;
+
                 if (!knownTargets.Add(target))
                     continue;
                 
@@ -745,12 +748,14 @@ namespace Chisel.Editors
 
             var sceneView   = SceneView.currentDrawingSceneView;
 
-            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var brush       = generator.TopNode;
+            var modelMatrix     = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
+            var generatorNode   = generator.TopNode;
+            if (!generatorNode.Valid)
+                return;
             
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * brush.NodeToTreeSpaceMatrix))
+                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generatorNode.NodeToTreeSpaceMatrix))
                 {
                     EditorGUI.BeginChangeCheck();
                     {
