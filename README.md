@@ -4,10 +4,14 @@ This is a *work in progress* prototype for the Chisel level design editor.
 It is unfinished, and has bugs.
 
 Chisel requires Unity 2020.1 or newer
-with the project set to ".net standard 2.0" / scripting runtime to ".net 4.x"
 
 Notes:
 - CSG algorithm is still under development
+
+Known issues
+
+* There are some cases where triangulation fails (please collect failure cases so we can later verify we fixed them)
+* Moving a brush using the inspector will not always update it's touching brushes
 
 Packages overview:
 * `com.chisel.core` Low-level API and functionality
