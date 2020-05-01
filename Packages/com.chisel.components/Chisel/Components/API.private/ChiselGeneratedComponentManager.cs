@@ -1,8 +1,6 @@
 using Chisel.Core;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using UnityEngine;
 
 namespace Chisel.Components
@@ -65,17 +63,15 @@ namespace Chisel.Components
                 return false;
 
             var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
-#if UNITY_2019_2_OR_NEWER
             if ((staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) != UnityEditor.StaticEditorFlags.ContributeGI)
                 return false;
-#else
-            if ((staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) != UnityEditor.StaticEditorFlags.LightmapStatic)
-                return false;
-#endif
 
             for (int i = 0; i < model.generatedMeshes.Length; i++)
             {
-                var generatedMesh		= model.generatedMeshes[i];
+                var generatedMesh = model.generatedMeshes[i];
+
+                if ((generatedMesh.meshDescription.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows) == LayerUsageFlags.None)
+                    continue;
 
                 // Avoid light mapping multiple times, when the same mesh is used on multiple MeshRenderers
                 if (!ChiselSharedUnityMeshManager.HasLightmapUVs(generatedMesh.sharedMesh))
@@ -100,11 +96,7 @@ namespace Chisel.Components
                     continue;
 
                 var staticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(model.gameObject);
-#if UNITY_2019_2_OR_NEWER
                 var lightmapStatic = (staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
-#else
-                var lightmapStatic = (staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) == UnityEditor.StaticEditorFlags.LightmapStatic;
-#endif
                 if ((!model.AutoRebuildUVs && !force) || !lightmapStatic)
                     continue;
 
@@ -120,7 +112,7 @@ namespace Chisel.Components
                         (currentTime - renderComponents.uvLightmapUpdateTime) > kGenerateUVDelayTime)
                     {
                         renderComponents.uvLightmapUpdateTime = 0;
-                        GenerateLightmapUVsForInstance(model, generatedMesh.renderComponents, generatedMesh.sharedMesh);
+                        GenerateLightmapUVsForInstance(model, generatedMesh.renderComponents, generatedMesh.sharedMesh, force);
                     } else
                         haveUVsToUpdate = true;
                 }
@@ -358,14 +350,10 @@ namespace Chisel.Components
                     generatedMesh.renderComponents.meshRenderer.sharedMaterial =  renderMaterial;
                 if (generatedMesh.renderComponents.meshFilter  .sharedMesh     != generatedMesh.sharedMesh)
                     generatedMesh.renderComponents.meshFilter  .sharedMesh     =  generatedMesh.sharedMesh;
+#if UNITY_EDITOR
                 if (generatedMesh.needsUpdate || forceUpdate)
                 {
-#if UNITY_EDITOR
-#if UNITY_2019_2_OR_NEWER
                     var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
-#else
-                    var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.LightmapStatic) == UnityEditor.StaticEditorFlags.LightmapStatic;
-#endif
                     if (lightmapStatic)
                     {
                         generatedMesh.renderComponents.meshRenderer.realtimeLightmapIndex = -1;
@@ -373,9 +361,10 @@ namespace Chisel.Components
                         generatedMesh.renderComponents.uvLightmapUpdateTime = Time.realtimeSinceStartup;
                         haveUVsToUpdate = true;
                     }
-#endif
                 }
-            } else
+#endif
+            }
+            else
             if (physicsMaterial != null)
             {
                 generatedMesh.colliderComponents = null;
@@ -735,42 +724,22 @@ namespace Chisel.Components
 
         private void UpdateComponents(ChiselModel model, List<MeshRenderer> meshRenderers, List<MeshCollider> meshColliders)
         {
-            if (meshRenderers.Count > 0)
+            if (meshRenderers != null && meshRenderers.Count > 0)
             { 
                 var renderSettings = model.RenderSettings;
 #if UNITY_EDITOR
                 // Warning: calling new UnityEditor.SerializedObject with an empty array crashes Unity
-                var serializedObject = new UnityEditor.SerializedObject(meshRenderers.ToArray());
-                #if !UNITY_2017_2_OR_ABOVE
-                var dynamicOccludeeProp						 = serializedObject.FindProperty("m_DynamicOccludee");
-                if (dynamicOccludeeProp != null)
-                    dynamicOccludeeProp.boolValue			 = renderSettings.dynamicOccludee;
-                #endif
-                #if !UNITY_2018_2_OR_ABOVE
-                var renderingLayerMaskProp					 = serializedObject.FindProperty("m_RenderingLayerMask");
-                if (renderingLayerMaskProp != null)
-                    renderingLayerMaskProp.intValue			 = (int)renderSettings.renderingLayerMask;
-                #endif
-
-                var importantGIProp							 = serializedObject.FindProperty("m_ImportantGI");
-                importantGIProp.boolValue					 = renderSettings.importantGI;
-                var optimizeUVsProp							 = serializedObject.FindProperty("m_PreserveUVs");
-                optimizeUVsProp.boolValue					 = renderSettings.optimizeUVs;
-                var ignoreNormalsForChartDetectionProp		 = serializedObject.FindProperty("m_IgnoreNormalsForChartDetection");
-                ignoreNormalsForChartDetectionProp.boolValue = renderSettings.ignoreNormalsForChartDetection;
-                var scaleInLightmapProp						 = serializedObject.FindProperty("m_ScaleInLightmap");
-                scaleInLightmapProp.floatValue				 = renderSettings.scaleInLightmap;
-                var autoUVMaxDistanceProp					 = serializedObject.FindProperty("m_AutoUVMaxDistance");
-                autoUVMaxDistanceProp.floatValue			 = renderSettings.autoUVMaxDistance;
-                var autoUVMaxAngleProp						 = serializedObject.FindProperty("m_AutoUVMaxAngle");
-                autoUVMaxAngleProp.floatValue				 = renderSettings.autoUVMaxAngle;
-                var minimumChartSizeProp					 = serializedObject.FindProperty("m_MinimumChartSize");
-                minimumChartSizeProp.intValue				 = renderSettings.minimumChartSize;
-
-                #if UNITY_2017_2_OR_ABOVE
-                var stitchLightmapSeamsProp					= serializedObject.FindProperty("m_StitchLightmapSeams");
-                stitchLightmapSeamsProp.boolValue			= renderSettings.stitchLightmapSeams;
-                #endif
+                using (var serializedObject = new UnityEditor.SerializedObject(meshRenderers.ToArray()))
+                { 
+                    serializedObject.SetPropertyValue("m_ImportantGI",                      renderSettings.importantGI);
+                    serializedObject.SetPropertyValue("m_PreserveUVs",                      renderSettings.optimizeUVs);
+                    serializedObject.SetPropertyValue("m_IgnoreNormalsForChartDetection",   renderSettings.ignoreNormalsForChartDetection);
+                    serializedObject.SetPropertyValue("m_ScaleInLightmap",                  renderSettings.scaleInLightmap);
+                    serializedObject.SetPropertyValue("m_AutoUVMaxDistance",                renderSettings.autoUVMaxDistance);
+                    serializedObject.SetPropertyValue("m_AutoUVMaxAngle",                   renderSettings.autoUVMaxAngle);
+                    serializedObject.SetPropertyValue("m_MinimumChartSize",                 renderSettings.minimumChartSize);
+                    serializedObject.SetPropertyValue("m_StitchLightmapSeams",              renderSettings.stitchLightmapSeams);
+                }
 #endif
 
                 for(int i = 0; i < meshRenderers.Count; i++)
@@ -781,12 +750,9 @@ namespace Chisel.Components
                     meshRenderer.motionVectorGenerationMode		= renderSettings.motionVectorGenerationMode;
                     meshRenderer.reflectionProbeUsage			= renderSettings.reflectionProbeUsage;
                     meshRenderer.lightProbeUsage				= renderSettings.lightProbeUsage;
-                    #if UNITY_2017_2_OR_ABOVE
                     meshRenderer.allowOcclusionWhenDynamic		= renderSettings.allowOcclusionWhenDynamic;
-                    #endif
-                    #if UNITY_2018_2_OR_ABOVE
                     meshRenderer.renderingLayerMask				= renderSettings.renderingLayerMask;
-                    #endif
+                    meshRenderer.receiveGI                      = renderSettings.receiveGI;
                 }
             }
 
@@ -869,10 +835,10 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-        private static void GenerateLightmapUVsForInstance(ChiselModel model, ChiselRenderComponents renderComponents, Mesh generatedMesh)
+        private static void GenerateLightmapUVsForInstance(ChiselModel model, ChiselRenderComponents renderComponents, Mesh generatedMesh, bool force = false)
         {
             // Avoid light mapping multiple times, when the same mesh is used on multiple MeshRenderers
-            if (ChiselSharedUnityMeshManager.HasLightmapUVs(generatedMesh))
+            if (!force && ChiselSharedUnityMeshManager.HasLightmapUVs(generatedMesh))
                 return;
 
             if (renderComponents == null ||
@@ -880,9 +846,8 @@ namespace Chisel.Components
                 !renderComponents.meshRenderer)
                 return;
             
+            UnityEditor.UnwrapParam.SetDefaults(out UnityEditor.UnwrapParam param);
             var uvSettings = model.UVGenerationSettings;
-            var param = new UnityEditor.UnwrapParam();
-            UnityEditor.UnwrapParam.SetDefaults(out param);
             param.angleError	= Mathf.Clamp(uvSettings.angleError,       SerializableUnwrapParam.minAngleError, SerializableUnwrapParam.maxAngleError);
             param.areaError		= Mathf.Clamp(uvSettings.areaError,        SerializableUnwrapParam.minAreaError,  SerializableUnwrapParam.maxAreaError );
             param.hardAngle		= Mathf.Clamp(uvSettings.hardAngle,        SerializableUnwrapParam.minHardAngle,  SerializableUnwrapParam.maxHardAngle );
@@ -910,15 +875,21 @@ namespace Chisel.Components
             
             var lightmapGenerationTime = UnityEditor.EditorApplication.timeSinceStartup;
             UnityEditor.Unwrapping.GenerateSecondaryUVSet(tempMesh, param);
-            lightmapGenerationTime = UnityEditor.EditorApplication.timeSinceStartup - lightmapGenerationTime;
+            lightmapGenerationTime = UnityEditor.EditorApplication.timeSinceStartup - lightmapGenerationTime; 
             
             // TODO: make a nicer text here
             Debug.Log("Generating lightmap UVs (by Unity) for the mesh '" + generatedMesh.name + "' of the Model named \"" + model.name +"\"\n"+
                       "\tUV generation in " + (lightmapGenerationTime* 1000) + " ms\n", model);
 
             // Modify the original mesh, since it is shared
-            generatedMesh.uv2 = tempMesh.uv2;	// static lightmaps
-            generatedMesh.uv3 = tempMesh.uv3;   // real-time lightmaps
+            generatedMesh.Clear(keepVertexLayout: true);
+            generatedMesh.vertices  = tempMesh.vertices;
+            generatedMesh.normals   = tempMesh.normals;
+            generatedMesh.tangents  = tempMesh.tangents;
+            generatedMesh.uv        = tempMesh.uv;
+            generatedMesh.uv2       = tempMesh.uv2;	    // static lightmaps
+            generatedMesh.uv3       = tempMesh.uv3;     // real-time lightmaps
+            generatedMesh.triangles = tempMesh.triangles;
             ChiselSharedUnityMeshManager.SetHasLightmapUVs(generatedMesh, true);
 
             renderComponents.meshFilter.sharedMesh = null;

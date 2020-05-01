@@ -42,5 +42,21 @@ namespace Chisel.Components
             set { if (value == definition.size) return; definition.size = value; OnValidateInternal(); }
         }
         #endregion
+
+        #region HasValidState
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {
+            if (!base.HasValidState())
+                return false;
+
+            if (Size.x == 0 ||
+                Size.y == 0 ||
+                Size.z == 0)
+                return false;
+
+            return true;
+        }
+        #endregion
     }
 }

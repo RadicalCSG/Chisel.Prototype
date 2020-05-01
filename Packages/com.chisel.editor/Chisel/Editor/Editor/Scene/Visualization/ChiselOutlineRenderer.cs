@@ -91,6 +91,7 @@ namespace Chisel.Editors
         // NOTE: handle-renderers often take the orientation of the camera into account (for example: backfaced surfaces) so they need to be camera specific
         Dictionary<Camera, ChiselRenderer>	handleRenderers = new Dictionary<Camera, ChiselRenderer>();
         
+        static readonly Dictionary<SurfaceReference, ChiselWireframe> surfaceOutlineCache = new Dictionary<SurfaceReference, ChiselWireframe>();
         readonly Dictionary<SurfaceOutline, ChiselWireframe>	surfaceOutlines		= new Dictionary<SurfaceOutline, ChiselWireframe>();
         readonly Dictionary<SurfaceOutline, ChiselWireframe>	surfaceOutlineFixes	= new Dictionary<SurfaceOutline, ChiselWireframe>();
         readonly HashSet<SurfaceOutline>	foundSurfaceOutlines	= new HashSet<SurfaceOutline>();
@@ -110,6 +111,7 @@ namespace Chisel.Editors
         static bool updateSurfaceSelection	= false;
         static bool updateSurfaceWireframe	= false;
         static bool updateSurfaceLineCache	= false;
+        static bool clearSurfaceCache	    = false;
 
         static VisualizationMode visualizationMode = VisualizationMode.Outline;
         public static VisualizationMode VisualizationMode
@@ -117,7 +119,7 @@ namespace Chisel.Editors
             get { return visualizationMode; }
             set
             {
-                visualizationMode = value;
+                visualizationMode       = value;
                 updateBrushWireframe	= true;
                 updateSurfaceWireframe	= true;
             }
@@ -148,7 +150,7 @@ namespace Chisel.Editors
             Reset();
         }
 
-        internal void OnEditModeChanged(IChiselToolMode prevEditMode, IChiselToolMode newEditMode)
+        internal void OnEditModeChanged()
         {
             // Defer since we could potentially get several events before we actually render
             // also, not everything might be set up correctly just yet.
@@ -162,6 +164,7 @@ namespace Chisel.Editors
             // also, not everything might be set up correctly just yet.
             updateBrushSelection = true;
             updateSurfaceSelection = true;
+            clearSurfaceCache = true;
         }
 
         internal void OnSelectionChanged()
@@ -184,6 +187,11 @@ namespace Chisel.Editors
             updateSurfaceSelection = true;
         }
         
+        static internal void OnUndoRedoPerformed()
+        {
+            clearSurfaceCache = true;
+        }
+
 
         internal void OnGeneratedMeshesChanged()
         {
@@ -191,6 +199,7 @@ namespace Chisel.Editors
             // also, not everything might be set up correctly just yet.
             updateBrushWireframe = true;
             updateSurfaceWireframe = true;
+            clearSurfaceCache = true;
         }
 
         internal void OnTransformationChanged()
@@ -199,6 +208,7 @@ namespace Chisel.Editors
             // also, not everything might be set up correctly just yet.
             updateBrushLineCache = true;
             updateSurfaceLineCache = true;
+            clearSurfaceCache = true;
         }
 
 
@@ -222,6 +232,7 @@ namespace Chisel.Editors
             updateSurfaceSelection = true;
             updateSurfaceWireframe = false;
             updateSurfaceLineCache = false;
+            clearSurfaceCache = true;
         }
 
         void UpdateBrushSelection()
@@ -361,7 +372,7 @@ namespace Chisel.Editors
                         outline.surface.TreeBrush.BrushMesh == BrushMeshInstance.InvalidInstance)
                         continue;
                     
-                    var wireframe = ChiselWireframe.CreateWireframe(outline.surface.TreeBrush, outline.surface.surfaceID);
+                    var wireframe = GetSurfaceWireframe(outline.surface);
                     surfaceOutlines[outline] = wireframe;
                 }
             }
@@ -492,6 +503,17 @@ namespace Chisel.Editors
             brushOutlineFixes.Clear();
             updateBrushLineCache = true;
         }
+
+        // TODO: put somewhere else
+        public static ChiselWireframe GetSurfaceWireframe(SurfaceReference surface)
+        {
+            if (!surfaceOutlineCache.TryGetValue(surface, out ChiselWireframe wireframe))
+            {
+                wireframe = ChiselWireframe.CreateWireframe(surface.TreeBrush, surface.surfaceID);
+                surfaceOutlineCache[surface] = wireframe;
+            }
+            return wireframe;
+        }
         
         void UpdateSurfaceWireframe()
         {
@@ -505,7 +527,7 @@ namespace Chisel.Editors
                 {
                     if (treeBrush.Valid &&
                         treeBrush.BrushMesh != BrushMeshInstance.InvalidInstance)
-                        surfaceOutlineFixes[outline] = ChiselWireframe.CreateWireframe(treeBrush, surface.surfaceID);
+                        surfaceOutlineFixes[outline] = GetSurfaceWireframe(surface);
                     else
                         surfaceOutlineFixes[outline] = null;
                     continue;
@@ -579,7 +601,7 @@ namespace Chisel.Editors
 
                         if ((VisualizationMode & VisualizationMode.Outline) == VisualizationMode.Outline)
                         {
-                            var directSelect = !ChiselEditModeManager.EditMode.ShowCompleteOutline &&
+                            var directSelect = (ChiselUVMoveTool.IsActive() || ChiselUVRotateTool.IsActive() || ChiselUVScaleTool.IsActive()) &&
                                                ((brush == outline.brush && !anySelected) || (anySelected && ChiselSyncSelection.IsBrushVariantSelected(brush)));
 
                             // TODO: tweak look of selection, figure out how to do backfaced lighting of edges, for clarity
@@ -602,6 +624,11 @@ namespace Chisel.Editors
 
         void UpdateSurfaceState()
         {
+            if (clearSurfaceCache)
+            {
+                surfaceOutlineCache.Clear();
+                clearSurfaceCache = false;
+            }
             if (updateSurfaceSelection)
             {
                 updateSurfaceSelection = false;
@@ -644,7 +671,7 @@ namespace Chisel.Editors
                         transformation = brush.NodeToTreeSpaceMatrix;
 
                     if (selection.Contains(surface))
-                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kSelectedOutlineColor, thickness: 3);
+                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kSelectedOutlineColor, thickness: 1.0f);
                 }
                 foreach (var pair in surfaceOutlines)
                 {
@@ -671,9 +698,9 @@ namespace Chisel.Editors
 
                     if (selection.Contains(surface))
                     {
-                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kSelectedHoverOutlineColor, thickness: 3);
+                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kSelectedHoverOutlineColor, thickness: 1.0f);
                     } else
-                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kPreSelectedOutlineColor, thickness: 3);
+                        surfaceOutlineRenderer.DrawOutlines(transformation, wireframe, ColorManager.kPreSelectedOutlineColor, thickness: 1.0f);
                 }
                 surfaceOutlineRenderer.End();
             }
@@ -688,17 +715,19 @@ namespace Chisel.Editors
 
             var camera = sceneView.camera;
 
-            // defer surface updates when it's not currently visible
-            if ((VisualizationMode & (VisualizationMode.Outline | VisualizationMode.SimpleOutline)) != VisualizationMode.None)
-            {
-                UpdateBrushState();
-                brushOutlineRenderer.RenderAll(camera);
-            }
+            if (Tools.current != Tool.Custom)
+                VisualizationMode = VisualizationMode.Outline;
 
+            // defer surface updates when it's not currently visible
             if ((VisualizationMode & VisualizationMode.Surface) == VisualizationMode.Surface)
             {
                 UpdateSurfaceState();
                 surfaceOutlineRenderer.RenderAll(camera);
+            } else
+            if ((VisualizationMode & (VisualizationMode.Outline | VisualizationMode.SimpleOutline)) != VisualizationMode.None)
+            {
+                UpdateBrushState();
+                brushOutlineRenderer.RenderAll(camera);
             }
 
             var handleRenderer = GetHandleRenderer(camera);

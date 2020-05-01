@@ -22,16 +22,16 @@ namespace Chisel.Editors
     {
         #region Instance
         static SingletonManager<DataType, SingletonInstanceType> _instance;
-        public static SingletonManager<DataType, SingletonInstanceType> Instance
+        public static SingletonInstanceType Instance
         {
             get
             {
                 if (_instance)
-                    return _instance;
+                    return _instance as SingletonInstanceType;
                 
                 _instance = ScriptableObject.CreateInstance<SingletonInstanceType>();
                 _instance.hideFlags = HideFlags.HideAndDontSave;
-                return _instance;  
+                return _instance as SingletonInstanceType;  
             }
         }
         #endregion

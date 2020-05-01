@@ -132,9 +132,18 @@ namespace Chisel.Components
                     continue;
                 foreach (var polygon in brushMesh.polygons)
                 {
-                    if (polygon.surface == null ||
-                        polygon.surface.brushMaterial == null)
+                    if (polygon.surface == null)
                         continue;
+                    if (polygon.surface.brushMaterial == null)
+                    {
+                        polygon.surface.brushMaterial = ChiselBrushMaterial.CreateInstance();
+                        if (polygon.surface.brushMaterial != null)
+                        {
+                            polygon.surface.brushMaterial.LayerUsage        = polygon.surface.brushMaterial.LayerUsage;
+                            polygon.surface.brushMaterial.PhysicsMaterial   = polygon.surface.brushMaterial.PhysicsMaterial;
+                            polygon.surface.brushMaterial.RenderMaterial    = polygon.surface.brushMaterial.RenderMaterial;
+                        }
+                    }
                     ChiselBrushMaterialManager.Register(polygon.surface.brushMaterial);
                 }
             }

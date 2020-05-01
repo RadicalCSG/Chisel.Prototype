@@ -19,7 +19,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_BrushMaterialIsPartOfManager()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 yield return null;
                 ChiselBrushMaterialManager.Update();
@@ -32,7 +32,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_Destroy_BrushMaterialIsNotPartOfManager()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 yield return null;
                 ChiselBrushMaterialManager.Update();
@@ -48,7 +48,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_UnregisterBrushMaterial_BrushMaterialIsNotPartOfManager()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 ChiselBrushMaterialManager.Unregister(newBrushMaterial);
                 yield return null;
@@ -62,7 +62,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithRenderMaterial_ManagerKnowsMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -81,7 +81,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithPhysicMaterial_ManagerKnowsMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -102,7 +102,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithRenderMaterial_ChangeRenderMaterial_ManagerOnlyKnowsNewMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial1 = new Material(Shader.Find("Specular"));
                 var newRenderMaterial2 = new Material(Shader.Find("Specular"));
@@ -132,7 +132,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithPhysicMaterial_ChangePhysicMaterial_ManagerOnlyKnowsNewMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial1 = new PhysicMaterial();
                 var newPhysicsMaterial2 = new PhysicMaterial();
@@ -165,7 +165,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithRenderMaterial_RetrievePhysicsMaterialWithRenderMaterialInstanceID_ReturnsNull()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -185,7 +185,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithPhysicMateriall_RetrieveRenderMaterialWithPhysicsMaterialInstanceID_ReturnsNull()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -205,7 +205,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithRenderMaterial_DestroyBrushMaterial_ManagerDoesNotKnowMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -225,7 +225,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterialWithPhysicMaterial_DestroyBrushMaterial_ManagerDoesNotKnowMaterial()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -246,7 +246,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_ChangeUsageFlag_BrushMaterialChangeEventIsCalled()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var hasBeenCalled = false;
                 OnBrushMaterialDelegate localDelegate = delegate (ChiselBrushMaterial brushMaterial) { hasBeenCalled = true; };
@@ -266,7 +266,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_ChangeRenderMaterial_BrushMaterialChangeEventIsCalled()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -290,7 +290,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_ChangePhysicsMaterial_BrushMaterialChangeEventIsCalled()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -314,7 +314,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateBrushMaterial_Destroy_BrushMaterialRemovedEventIsCalled()
         {
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -345,7 +345,7 @@ namespace BrushMaterialTests
             ChiselBrushMaterialManager.OnBrushMaterialAdded += localDelegate;
             yield return null;
 
-            using (var newBrushMaterial = new ChiselBrushMaterial())
+            using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 Assert.IsTrue(hasBeenCalled);
 
@@ -357,7 +357,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSameRenderMaterial_RefCountIsTwo()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -376,7 +376,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSamePhysicsMaterial_RefCountIsTwo()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -396,7 +396,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator RemoveAndAddRenderMaterialToAnotherBrushMaterial_MaterialStillRegistered()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial1 = new Material(Shader.Find("Specular"));
                 var newRenderMaterial2 = new Material(Shader.Find("Specular"));
@@ -428,7 +428,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator RemoveAndAddPhysicsMaterialToAnotherBrushMaterial_MaterialStillRegistered()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial1 = new PhysicMaterial();
                 var newPhysicsMaterial2 = new PhysicMaterial();
@@ -461,7 +461,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSameRenderMaterial_DestroyOneBrushMaterial_ManagerKnowsMaterial()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -481,7 +481,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSamePhysicsMaterial_DestroyOneBrushMaterial_ManagerKnowsMaterial()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 
@@ -503,7 +503,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSameRenderMaterial_DestroyBothBrushMaterials_ManagerDoesNotKnowMaterial()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newRenderMaterial = new Material(Shader.Find("Specular"));
 
@@ -524,7 +524,7 @@ namespace BrushMaterialTests
         [UnityTest]
         public IEnumerator CreateTwoBrushMaterialsWithSamePhysicsMaterial_DestroyBothBrushMaterials_ManagerDoesNotKnowMaterial()
         {
-            using (ChiselBrushMaterial newBrushMaterial1 = new ChiselBrushMaterial(), newBrushMaterial2 = new ChiselBrushMaterial())
+            using (ChiselBrushMaterial newBrushMaterial1 = ChiselBrushMaterial.CreateInstance(), newBrushMaterial2 = ChiselBrushMaterial.CreateInstance())
             {
                 var newPhysicsMaterial = new PhysicMaterial();
 

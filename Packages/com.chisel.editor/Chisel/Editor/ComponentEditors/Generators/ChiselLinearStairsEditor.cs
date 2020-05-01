@@ -16,7 +16,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselLinearStairsEditor : ChiselGeneratorEditor<ChiselLinearStairs>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselLinearStairs.kNodeTypeName, false, 0)]
+        [MenuItem("GameObject/Chisel/Create/" + ChiselLinearStairs.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselLinearStairs.kNodeTypeName); }
 
 

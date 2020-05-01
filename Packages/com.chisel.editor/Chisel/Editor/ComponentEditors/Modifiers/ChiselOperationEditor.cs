@@ -12,19 +12,14 @@ namespace Chisel.Editors
 {
     public sealed class ChiselOperationDetails : ChiselNodeDetails<ChiselOperation>
     {
-        const string AdditiveIconName		= "csg_addition";
-        const string SubtractiveIconName	= "csg_subtraction";
-        const string IntersectingIconName	= "csg_intersection";
-
         public override GUIContent GetHierarchyIcon(ChiselOperation node)
         {
-            switch (node.Operation)
-            {
-                default:
-                case CSGOperationType.Additive:     return ChiselEditorResources.GetIconContent(AdditiveIconName,     $"Additive {node.NodeTypeName}")[0];
-                case CSGOperationType.Subtractive:  return ChiselEditorResources.GetIconContent(SubtractiveIconName,  $"Subtractive {node.NodeTypeName}")[0];
-                case CSGOperationType.Intersecting: return ChiselEditorResources.GetIconContent(IntersectingIconName, $"Intersecting {node.NodeTypeName}")[0];
-            }
+            return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.NodeTypeName);
+        }
+
+        public override bool HasValidState(ChiselOperation node)
+        {
+            return node.HasValidState();
         }
     }
 
@@ -32,7 +27,9 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselOperationEditor : ChiselNodeEditor<ChiselOperation>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselOperation.kNodeTypeName, false, 0)]
+        const string kOperationHasNoChildren = "This operation has no children and will not do anything";
+
+        [MenuItem("GameObject/Chisel/Create/" + ChiselOperation.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselOperation.kNodeTypeName); }
 
         SerializedProperty operationProp;
@@ -46,17 +43,31 @@ namespace Chisel.Editors
                 passThroughProp = null;
                 return;
             }
+
             // Fetch the objects from the GameObject script to display in the inspector
             operationProp   = serializedObject.FindProperty(ChiselOperation.kOperationFieldName);
             passThroughProp = serializedObject.FindProperty(ChiselOperation.kPassThroughFieldName);
+
+            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+            ChiselEditGeneratorTool.CurrentEditorName = "Operation";
         }
 
         internal void OnDisable()
         {
             operationProp = null;
             passThroughProp = null;
+            ChiselEditGeneratorTool.OnEditSettingsGUI = null;
+            ChiselEditGeneratorTool.CurrentEditorName = null;
         }
         
+        protected override void OnEditSettingsGUI(SceneView sceneView)
+        {
+            if (Tools.current != Tool.Custom)
+                return;
+
+            ShowInspectorHeader(operationProp);
+        }
+
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
@@ -87,6 +98,21 @@ namespace Chisel.Editors
                             ChiselNodeHierarchyManager.UpdateAvailability(operation);
                         }
                     }
+                }
+                bool hasNoChildren = false;
+                foreach (var target in serializedObject.targetObjects)
+                {
+                    var operation = target as ChiselOperation;
+                    if (!operation)
+                        continue;
+                    if (operation.transform.childCount == 0)
+                    {
+                        hasNoChildren = true;
+                    }
+                }
+                if (hasNoChildren)
+                {
+                    EditorGUILayout.HelpBox(kOperationHasNoChildren, MessageType.Warning, true);
                 }
             }
             catch (ExitGUIException) { }

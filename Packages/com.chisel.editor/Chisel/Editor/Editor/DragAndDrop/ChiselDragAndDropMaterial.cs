@@ -59,7 +59,7 @@ namespace Chisel.Editors
             if (prevBrushMaterials == null ||
                 prevBrushMaterials.Length != surface.Length)
             {
-                prevMaterials = new Material[surface.Length];
+                prevMaterials       = new Material[surface.Length];
                 prevBrushMaterials  = new ChiselBrushMaterial[surface.Length];
             }
             for (int i = 0; i < surface.Length; i++)
@@ -99,7 +99,9 @@ namespace Chisel.Editors
                 surfaces.Length != 1)
                 return surfaces;
 
-            if (!ChiselEditModeManager.EditMode.CanSelectSurfaces)
+            if (ChiselUVMoveTool.IsActive() ||
+                ChiselUVRotateTool.IsActive() ||
+                ChiselUVScaleTool.IsActive())
                 return surfaces;
 
             // TODO: implement the ability to query this from the edit mode

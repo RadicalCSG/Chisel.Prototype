@@ -15,14 +15,26 @@ namespace Chisel.Editors
     {
         // TODO: make these shared resources since this name is used in several places (with identical context)
         static readonly GUIContent  kSurfacesContent        = new GUIContent("Surfaces");
-        static readonly GUIContent  kDescriptionContent     = new GUIContent("Description");
-        static readonly GUIContent  kBrushMaterialContent   = new GUIContent("Brush Material");
         const string                kSurfacePropertyName    = "Surface {0}";
-        const string                kSurfacePathName        = "{0}[{1}]";
         static GUIContent           surfacePropertyContent  = new GUIContent();
-        
+
+
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+                return 0;
+            return base.GetPropertyHeight(property, label);
+        }
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+            {
+                EditorGUI.BeginProperty(position, label, property);
+                EditorGUI.EndProperty();
+                return;
+            }
+
             var surfacesProp = property.FindPropertyRelative(nameof(ChiselSurfaceDefinition.surfaces));
 
             EditorGUI.BeginProperty(position, label, surfacesProp);
@@ -31,11 +43,12 @@ namespace Chisel.Editors
             EditorGUI.BeginChangeCheck();
             var path                = surfacesProp.propertyPath;
             var surfacesVisible     = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, kSurfacesContent);
+            surfacesVisible = EditorGUILayout.BeginFoldoutHeaderGroup(surfacesVisible, kSurfacesContent);
             if (EditorGUI.EndChangeCheck())
                 SessionState.SetBool(path, surfacesVisible);
             if (surfacesVisible)
             {
+                EditorGUI.BeginChangeCheck();
                 EditorGUI.indentLevel++;
                 SerializedProperty elementProperty;
                 for (int i = 0; i < surfacesProp.arraySize; i++)
@@ -45,7 +58,12 @@ namespace Chisel.Editors
                     EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
                 }
                 EditorGUI.indentLevel--;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.serializedObject.ApplyModifiedProperties();
+                }
             }
+            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUI.showMixedValue = prevShowMixedValue;
             EditorGUI.EndProperty();

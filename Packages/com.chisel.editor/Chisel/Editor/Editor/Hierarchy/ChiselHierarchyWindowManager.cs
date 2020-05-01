@@ -1,41 +1,23 @@
 ﻿using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using Chisel;
-using System.Reflection;
-using Chisel.Core;
 using Chisel.Components;
 
 namespace Chisel.Editors
 {
     public sealed class GUIView
     {
-        static PropertyInfo currentProperty;
-        static PropertyInfo hasFocusProperty;
-
-        static GUIView()
-        {
-            var type = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.GUIView");
-            currentProperty = type.GetProperty("current");
-            hasFocusProperty = type.GetProperty("hasFocus");
-        }
+        static ReflectedProperty<object>        currentProperty     = ReflectionExtensions.GetStaticProperty<object>("UnityEditor.GUIView", "current");
+        static ReflectedInstanceProperty<bool>  hasFocusProperty    = ReflectionExtensions.GetProperty<bool>("UnityEditor.GUIView", "hasFocus");
 
         public static bool HasFocus
         {
             get
             {
-                var currentGuiView = currentProperty.GetMethod.Invoke(null, null);
+                var currentGuiView = currentProperty.Value;
                 if (currentGuiView == null)
                     return false;
                 
-                var hasFocusObj = hasFocusProperty.GetMethod.Invoke(currentGuiView, null);
-                if (hasFocusObj == null)
-                    return false;
-                
-                return (bool) hasFocusObj;
+                return hasFocusProperty.GetValue(currentGuiView);
             }
         }
     }
@@ -44,7 +26,7 @@ namespace Chisel.Editors
     {
         public static void RenderIcon(Rect selectionRect, GUIContent icon)
         {
-            const float iconSize = 16;
+            const float iconSize = 17;
             const float indent   = 0;
             var max = selectionRect.xMax;
             selectionRect.width = iconSize;
@@ -53,7 +35,15 @@ namespace Chisel.Editors
             selectionRect.y--;
             GUI.Label(selectionRect, icon);
         }
-        
+
+        static GUIContent sWarningContent;
+
+        [InitializeOnLoadMethod]
+        static void Initialize()
+        {
+            sWarningContent = ChiselEditorResources.GetIconContent("warning")[0];
+        }
+
         static void RenderHierarchyItem(int instanceID, ChiselNode node, Rect selectionRect)
         {
             if (!ChiselSceneGUIStyle.isInitialized)
@@ -70,9 +60,33 @@ namespace Chisel.Editors
                 }
             }
 
-            var icon = ChiselNodeDetailsManager.GetHierarchyIcon(node);
-            if (icon != null)
-                RenderIcon(selectionRect, icon);
+            var active = node.isActiveAndEnabled;
+            if (active)
+            {
+                var icon = ChiselNodeDetailsManager.GetHierarchyIcon(node, out bool hasValidState);
+                if (icon != null)
+                    RenderIcon(selectionRect, icon);
+
+                if (!hasValidState)
+                {
+                    var warningIcon = sWarningContent;
+                    if (warningIcon != null)
+                        RenderIcon(selectionRect, warningIcon);
+                }
+            }
+            else
+            {
+                var icon = ChiselNodeDetailsManager.GetHierarchyIcon(node);
+                if (icon != null)
+                {
+                    var prevColor = GUI.color;
+                    var newColor = prevColor;
+                    newColor.a *= 0.25f;
+                    GUI.color = newColor;
+                    RenderIcon(selectionRect, icon);
+                    GUI.color = prevColor;
+                }
+            }
         }
 
         internal static void OnHierarchyWindowItemGUI(int instanceID, ChiselNode node, Rect selectionRect)

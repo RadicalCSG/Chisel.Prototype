@@ -18,8 +18,22 @@ namespace Chisel.Editors
 
         static GUIContent tempPropertyContent = new GUIContent();
 
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+                return 0;
+            return base.GetPropertyHeight(property, label);
+        }
+
         public override void OnGUI(Rect position, SerializedProperty surfacesArrayProperty, GUIContent label)
         {
+            if (ChiselNodeEditorBase.InSceneSettingsContext)
+            {
+                EditorGUI.BeginProperty(position, label, surfacesArrayProperty);
+                EditorGUI.EndProperty();
+                return;
+            }
+
             NamedItemsAttribute namedItems = attribute as NamedItemsAttribute;
 
             if (surfacesArrayProperty.type != nameof(ChiselSurfaceDefinition))
@@ -48,34 +62,36 @@ namespace Chisel.Editors
             EditorGUI.BeginChangeCheck();
             var path            = surfacesArrayProperty.propertyPath;
             var surfacesVisible = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.Foldout(surfacesVisible, label);
+            surfacesVisible = EditorGUILayout.BeginFoldoutHeaderGroup(surfacesVisible, label);
             if (EditorGUI.EndChangeCheck())
                 SessionState.SetBool(path, surfacesVisible);
-            if (!surfacesVisible)
-                return;
-            
-            EditorGUI.indentLevel++;
-            SerializedProperty elementProperty;
-            int startIndex = 0;
-            if (namedItems.surfaceNames != null &&
-                namedItems.surfaceNames.Length > 0)
+
+            if (surfacesVisible)
             {
-                startIndex = namedItems.surfaceNames.Length;
-                for (int i = 0; i < Mathf.Min(namedItems.surfaceNames.Length, surfacesArrayProperty.arraySize); i++)
+                EditorGUI.indentLevel++;
+                SerializedProperty elementProperty;
+                int startIndex = 0;
+                if (namedItems.surfaceNames != null &&
+                    namedItems.surfaceNames.Length > 0)
                 {
+                    startIndex = namedItems.surfaceNames.Length;
+                    for (int i = 0; i < Mathf.Min(namedItems.surfaceNames.Length, surfacesArrayProperty.arraySize); i++)
+                    {
+                        elementProperty = surfacesArrayProperty.GetArrayElementAtIndex(i);
+                        tempPropertyContent.text = namedItems.surfaceNames[i];
+                        EditorGUILayout.PropertyField(elementProperty, tempPropertyContent, true);
+                    }
+                }
+
+                for (int i = startIndex; i < surfacesArrayProperty.arraySize; i++)
+                {
+                    tempPropertyContent.text = string.Format(namedItems.overflow, (i - startIndex) + 1);
                     elementProperty = surfacesArrayProperty.GetArrayElementAtIndex(i);
-                    tempPropertyContent.text = namedItems.surfaceNames[i];
                     EditorGUILayout.PropertyField(elementProperty, tempPropertyContent, true);
                 }
+                EditorGUI.indentLevel--;
             }
-
-            for (int i = startIndex; i < surfacesArrayProperty.arraySize; i++)
-            {
-                tempPropertyContent.text = string.Format(namedItems.overflow, (i - startIndex) + 1);
-                elementProperty = surfacesArrayProperty.GetArrayElementAtIndex(i);
-                EditorGUILayout.PropertyField(elementProperty, tempPropertyContent, true);
-            }
-            EditorGUI.indentLevel--;
+            EditorGUILayout.EndFoldoutHeaderGroup();
         }
     }
 }

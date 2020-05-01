@@ -15,7 +15,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselTorusEditor : ChiselGeneratorEditor<ChiselTorus>
     {
-        [MenuItem("GameObject/Chisel/" + ChiselTorus.kNodeTypeName, false, 0)]
+        [MenuItem("GameObject/Chisel/Create/" + ChiselTorus.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselTorus.kNodeTypeName); }
 
         const float kLineDash					= 2.0f;

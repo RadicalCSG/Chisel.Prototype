@@ -43,7 +43,6 @@ namespace Chisel.Editors
             EditorGUI.indentLevel = 0;
             
             bool prevShowMixedValue			= EditorGUI.showMixedValue;
-            bool deferredRenderingPath		= ChiselEditorUtility.IsUsingDeferredRenderingPath();
             EditorGUI.showMixedValue        = prevShowMixedValue || property.hasMultipleDifferentValues;
             try
             {

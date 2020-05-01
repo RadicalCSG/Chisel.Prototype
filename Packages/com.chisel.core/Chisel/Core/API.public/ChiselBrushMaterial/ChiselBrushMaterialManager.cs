@@ -232,6 +232,14 @@ namespace Chisel.Core
             }
         }
 
+        public static void OnSetDirty(ChiselBrushMaterial brushMaterial)
+        {
+            if (!registeredLookup.Contains(brushMaterial))
+                return;
+
+            OnBrushMaterialChanged?.Invoke(brushMaterial);
+        }
+
         public static void OnLayerUsageFlagsChanged(ChiselBrushMaterial brushMaterial, LayerUsageFlags prevValue, LayerUsageFlags value)
         {
             if (!registeredLookup.Contains(brushMaterial) || (prevValue == value))

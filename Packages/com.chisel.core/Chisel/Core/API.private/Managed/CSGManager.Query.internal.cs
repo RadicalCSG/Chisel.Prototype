@@ -259,14 +259,15 @@ namespace Chisel.Core
 
                     surfaceIntersection = new ChiselSurfaceIntersection()
                     { 
-                        localPlane          = result_isReversed ? result_localPlane.flipped : result_localPlane,
-				        treePlane           = result_isReversed ? result_treePlane.flipped : result_treePlane,
-                        worldPlane          = result_isReversed ? result_worldPlane.flipped : result_worldPlane,
+                        //localPlane            = result_isReversed ? result_localPlane.flipped : result_localPlane,
+				        treePlane               = result_isReversed ? result_treePlane.flipped : result_treePlane,
+                        //worldPlane            = result_isReversed ? result_worldPlane.flipped : result_worldPlane,
 
-                        worldIntersection	= treeLocalToWorldMatrix.MultiplyPoint(result_treeIntersection),
-			            surfaceIntersection	= result_surfaceIntersection,
+                        treePlaneIntersection   = treeLocalToWorldMatrix.MultiplyPoint(result_treeIntersection),
+                        //worldIntersection	    = treeLocalToWorldMatrix.MultiplyPoint(result_treeIntersection),
+			            //surfaceIntersection	= result_surfaceIntersection,
 
-			            distance			= resultDist,
+			            distance			    = resultDist,
                     }
                 });
             }
