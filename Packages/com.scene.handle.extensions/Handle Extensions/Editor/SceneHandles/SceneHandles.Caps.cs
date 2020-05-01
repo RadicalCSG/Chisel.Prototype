@@ -176,7 +176,7 @@ namespace UnitySceneExtensions
             
             if (circlePoints == null ||
                 circleRotatedPoints == null ||
-                circlePoints.Length != circleRotatedPoints.Length + 1)
+                circlePoints.Length + 1 != circleRotatedPoints.Length)
             {
                 const int kCircleSteps = 12;
                 
@@ -249,7 +249,8 @@ namespace UnitySceneExtensions
             }
         }
 
-        public static void NormalHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction NormalHandleCap = NormalHandleCapFunction;
+        public static void NormalHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             switch (eventType)
             {
@@ -363,7 +364,8 @@ namespace UnitySceneExtensions
             }
         }
 
-        public static void OutlinedCircleHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction OutlinedCircleHandleCap = OutlinedCircleHandleCapFunction;
+        public static void OutlinedCircleHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             switch (eventType)
             {
@@ -384,7 +386,8 @@ namespace UnitySceneExtensions
             }
         }
 
-        public static void OutlinedDotHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction OutlinedDotHandleCap = OutlinedDotHandleCapFunction;
+        public static void OutlinedDotHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             switch (eventType)
             {
@@ -406,7 +409,8 @@ namespace UnitySceneExtensions
         }
 
 #if UNITY_5_6_OR_NEWER
-        public static void DotHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction DotHandleCap = DotHandleCapFunction;
+        public static void DotHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             UnityEditor.Handles.DotHandleCap(controlID, position, rotation, size, eventType);
         }
@@ -433,7 +437,8 @@ namespace UnitySceneExtensions
 #endif
 
 #if UNITY_5_6_OR_NEWER
-        public static void CubeHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction CubeHandleCap = CubeHandleCapFunction;
+        public static void CubeHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             UnityEditor.Handles.CubeHandleCap(controlID, position, rotation, size, eventType);
         }
@@ -460,7 +465,8 @@ namespace UnitySceneExtensions
 #endif
 
 #if UNITY_5_6_OR_NEWER
-        public static void ArrowHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction ArrowHandleCap = ArrowHandleCapFunction;
+        public static void ArrowHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             UnityEditor.Handles.ArrowHandleCap(controlID, position, rotation, size, eventType);
         }
@@ -490,7 +496,8 @@ namespace UnitySceneExtensions
 #endif
 
 #if UNITY_5_6_OR_NEWER
-        public static void ConeHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction ConeHandleCap = ConeHandleCapFunction;
+        public static void ConeHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             UnityEditor.Handles.ConeHandleCap(controlID, position, rotation, size, eventType);
         }
@@ -514,9 +521,10 @@ namespace UnitySceneExtensions
             }
         }
 #endif
-        
+
 #if UNITY_5_6_OR_NEWER
-        public static void RectangleHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        public readonly static CapFunction RectangleHandleCap = RectangleHandleCapFunction;
+        public static void RectangleHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
             UnityEditor.Handles.RectangleHandleCap(controlID, position, rotation, size, eventType);
         }

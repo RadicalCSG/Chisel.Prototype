@@ -17,10 +17,10 @@ namespace Chisel.Editors
             var oldMatrix = UnityEditor.Handles.matrix;
             UnityEditor.Handles.matrix = Matrix4x4.identity;
 
-            var min_x = rect.x;
-            var max_x = rect.x + rect.width;
-            var min_y = rect.y;
-            var max_y = rect.y + rect.height;
+            var min_x = rect.xMin;
+            var max_x = rect.xMax;
+            var min_y = rect.yMin;
+            var max_y = rect.yMax;
 
             var o0 = new Vector2(min_x, min_y);
             var o1 = new Vector2(max_x, min_y);

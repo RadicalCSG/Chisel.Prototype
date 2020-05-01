@@ -55,7 +55,8 @@ namespace Chisel.Editors
             if (s_CurrentPointIndex == 0)
             {
                 s_StartIntersection = ChiselClickSelectionManager.GetPlaneIntersection(mousePosition, dragArea);
-                if (s_StartIntersection != null)
+                if (s_StartIntersection != null &&
+                    s_StartIntersection.plane.normal.sqrMagnitude > 0) // TODO: figure out how this could happen
                 {
                     // TODO: try to cache this ..
                     var activeGridUp					= UnitySceneExtensions.Grid.ActiveGrid.Up;
@@ -120,6 +121,9 @@ namespace Chisel.Editors
             if (point.HasValue)
             {
                 var localPosition = s_InvTransform.MultiplyPoint(point.Value);
+                if (points.Count < s_CurrentPointIndex)
+                    return;
+
                 if (s_CurrentPointIndex > 0 &&
                     (localPosition - points[s_CurrentPointIndex - 1]).sqrMagnitude < kDistanceEpsilon)
                     return;

@@ -201,21 +201,25 @@ namespace UnitySceneExtensions
 
         public static Vector3 PositionHandle(Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
-            return PositionHandle(new[] { position }, position, rotation, enabledAxes)[0];
+            s_PositionHandleArray[0] = position;
+            return PositionHandle(s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
         public static Vector3 PositionHandle(Vector3 position, Axes enabledAxes = Axes.XYZ)
         {
             var activeGrid  = Grid.ActiveGrid;
             var rotation    = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
-            return PositionHandle(new[] { position }, position, rotation, enabledAxes)[0];
+            s_PositionHandleArray[0] = position;
+            return PositionHandle(s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
+        static readonly Vector3[] s_PositionHandleArray = new Vector3[1];
         public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
         {
             var activeGrid = Grid.ActiveGrid;
             var rotation = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
-            return PositionHandle(handleIDs, new[] { position }, position, rotation, enabledAxes)[0];
+            s_PositionHandleArray[0] = position;
+            return PositionHandle(handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
         public static Vector3 PositionHandleOffset(Vector3 position, Axes enabledAxes = Axes.XYZ)

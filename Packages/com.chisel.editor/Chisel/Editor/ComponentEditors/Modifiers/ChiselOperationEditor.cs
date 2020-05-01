@@ -27,7 +27,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselOperationEditor : ChiselNodeEditor<ChiselOperation>
     {
-        const string kOperationHasNoChildren = "This operation has no children and will not do anything";
+        const string kOperationHasNoChildren = "This operation has no chisel nodes as children and will not create any geometry.\nAdd some chisel nodes to see something.";
 
         [MenuItem("GameObject/Chisel/Create/" + ChiselOperation.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselOperation.kNodeTypeName); }
