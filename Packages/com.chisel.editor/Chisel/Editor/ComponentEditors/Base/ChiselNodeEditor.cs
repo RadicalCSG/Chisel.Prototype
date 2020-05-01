@@ -172,24 +172,53 @@ namespace Chisel.Editors
         protected static void CreateAsGameObjectMenuCommand(MenuCommand menuCommand, string name)
         {
             T component;
-            var parentGameObject    = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            // If we use the command object on a gameobject in the hierarchy, choose that gameobject
+            // Otherwise: choose the activeModel (if available)
+            var parentGameObject    = (menuCommand.context as GameObject) ?? ChiselModelManager.ActiveModel?.gameObject;
             var parentTransform     = parentGameObject?.transform;
 
+            // If we used the command object on a generator, choose it's parent to prevent us from 
+            // adding a generator as a child to a generator
             if (parentTransform &&
                 parentTransform.GetComponent<ChiselGeneratorComponent>())
                 parentTransform = parentTransform.parent;
 
+
+            // Create the gameobject
             if (parentTransform)
-            {
                 component = ChiselComponentFactory.Create<T>(name, parentTransform);
-            } else
-            {
+            else
                 component = ChiselComponentFactory.Create<T>(name);
-            }
 
             var gameObject  = component.gameObject;
             GameObjectUtility.SetParentAndAlign(gameObject, parentTransform?.gameObject);
             Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
+
+
+            // Find the appropriate model to make active after we created the generator
+            ChiselModel model;
+            if (typeof(T) != typeof(ChiselModel))
+            {
+                model = gameObject.GetComponentInParent<ChiselModel>();
+                // If we don't have a parent model, create one and put the generator underneath it
+                if (!model)
+                {
+                    model = ChiselModelManager.CreateNewModel(gameObject.transform.parent);
+                    
+                    // Make sure we create the model at the exact same location as the generator
+                    var modelGameObject     = model.gameObject;
+                    var modelTransform      = model.transform;
+                    var childSiblingIndex   = modelTransform.GetSiblingIndex();
+                    modelTransform.SetSiblingIndex(childSiblingIndex);
+
+                    Undo.RegisterCreatedObjectUndo(modelGameObject, "Create " + modelGameObject.name);
+                    MoveTargetsUnderModel(new[] { component }, model);
+                }
+            } else
+                model = component as ChiselModel;
+
+            // Set the active model before we select the gameobject, otherwise we'll be selecting the model instead
+            ChiselModelManager.ActiveModel = model;
             Selection.activeObject = gameObject;
         }
 

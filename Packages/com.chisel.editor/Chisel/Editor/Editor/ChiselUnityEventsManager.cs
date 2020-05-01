@@ -47,14 +47,19 @@ namespace Chisel.Editors
             UnityEditor.EditorApplication.playModeStateChanged			+= OnPlayModeStateChanged;
 
             // Callback that is triggered after an undo or redo was executed.
-            UnityEditor.Undo.undoRedoPerformed							-= OnUndoRedoPerformed;                     
+            UnityEditor.Undo.undoRedoPerformed							-= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed							+= OnUndoRedoPerformed;
 
             UnityEditor.Undo.postprocessModifications					-= OnPostprocessModifications;
             UnityEditor.Undo.postprocessModifications					+= OnPostprocessModifications;
+            
+            UnityEditor.Undo.willFlushUndoRecord                        -= OnWillFlushUndoRecord;
+            UnityEditor.Undo.willFlushUndoRecord                        += OnWillFlushUndoRecord;
 
             UnityEditor.SceneView.duringSceneGui                        -= OnDuringSceneGUI;
             UnityEditor.SceneView.duringSceneGui                        += OnDuringSceneGUI;
+
+            UnityEditor.SceneManagement.EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
 
             ChiselNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
             ChiselNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
@@ -79,6 +84,11 @@ namespace Chisel.Editors
 
             // TODO: clean this up
             ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
+        }
+
+        private static void OnActiveSceneChanged(Scene prevScene, Scene newScene)
+        {
+            ChiselModelManager.OnActiveSceneChanged(prevScene, newScene);
         }
 
         static void OnTransformationChanged()
@@ -206,7 +216,12 @@ namespace Chisel.Editors
 
         static readonly HashSet<ChiselNode>	modifiedNodes		= new HashSet<ChiselNode>();
         static readonly HashSet<Transform>	processedTransforms = new HashSet<Transform>();
-        
+
+        private static void OnWillFlushUndoRecord()
+        {
+            ChiselModelManager.OnWillFlushUndoRecord();
+        }
+
         private static UnityEditor.UndoPropertyModification[] OnPostprocessModifications(UnityEditor.UndoPropertyModification[] modifications)
         {
             // Note: this is not always properly called 

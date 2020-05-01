@@ -29,7 +29,7 @@ namespace Chisel.Editors
     [CanEditMultipleObjects]
     public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModel>
     {
-        const string kModelHasNoChildren = "This model has no children and will not do anything, add some generators or brushes.";
+        const string kModelHasNoChildren = "This model has no chisel nodes as children and will not generate any geometry.\nAdd some chisel nodes to see something.";
 
         [MenuItem("GameObject/Chisel/Create/" + ChiselModel.kNodeTypeName, false, 0)]
         internal static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselModel.kNodeTypeName); }

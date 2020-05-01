@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Chisel.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Chisel.Components
 {
-    public class ChiselModelManager : ScriptableObject
+    public class ChiselModelManager : ScriptableObject, ISerializationCallbackReceiver
     {
         const string kDefaultModelName = "Model";
 
@@ -16,7 +19,7 @@ namespace Chisel.Components
             {
                 if (_instance)
                     return _instance;
-                
+
                 var foundInstances = UnityEngine.Object.FindObjectsOfType<ChiselModelManager>();
                 if (foundInstances == null ||
                     foundInstances.Length == 0)
@@ -25,48 +28,81 @@ namespace Chisel.Components
                     _instance.hideFlags = HideFlags.DontSaveInBuild;
                     return _instance;
                 }
-                
+
                 if (foundInstances.Length > 1)
                 {
                     for (int i = 1; i < foundInstances.Length; i++)
                         ChiselObjectUtility.SafeDestroy(foundInstances[i]);
                 }
-                
+
                 _instance = foundInstances[0];
                 return _instance;
             }
         }
         #endregion
 
-        [SerializeField]
-        public ChiselModel activeModel;
-        
+        // TODO: potentially have a history per scene, so when one model turns out to be invalid, go back to the previously selected model
+        readonly Dictionary<Scene, ChiselModel> activeModels = new Dictionary<Scene, ChiselModel>();
+
+        #region ActiveModel Serialization
+        [Serializable] public struct SceneModelPair { public Scene Key; public ChiselModel Value; }
+        [SerializeField] SceneModelPair[] activeModelsArray;
+
+        public void OnBeforeSerialize()
+        {
+            var foundModels = new List<SceneModelPair>();
+            foreach(var pair in activeModels)
+                foundModels.Add(new SceneModelPair { Key = pair.Key, Value = pair.Value });
+            activeModelsArray = foundModels.ToArray();
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (activeModelsArray == null)
+                return;
+            foreach (var pair in activeModelsArray)
+                activeModels[pair.Key] = pair.Value;
+            activeModelsArray = null;
+        }
+        #endregion
+
+
         public static ChiselModel ActiveModel
         { 
             get
             {
-                var activeModel = Instance.activeModel;
-                if (ReferenceEquals(activeModel, null))
+                // Find our active model for the current active scene
+                var activeScene = SceneManager.GetActiveScene();
+                Instance.activeModels.TryGetValue(activeScene, out var activeModel);
+
+                // Check if the activeModel is valid & if it's scene actually points to the active Scene
+                if (ReferenceEquals(activeModel, null) ||
+                    !activeModel || activeModel.gameObject.scene != activeScene)
                 {
-                    // TODO: handle not having an active model (try and find one in the scene?)
+                    // If active model is invalid or missing, find another model the active model
+                    Instance.activeModels[activeScene] = FindModelInScene(activeScene);
                     return null;
                 }
-                if (!activeModel)
-                {
-                    // TODO: handle active model being invalid
+
+                // If we have an active model, but it's actually disabled, do not use it
+                // This prevents users from accidentally adding generators to a model that is inactive, 
+                // and then be confused why nothing is visible.
+                if (!activeModel.isActiveAndEnabled)
                     return null;
-                }
-                // TODO: handle active model not being in active scene
                 return activeModel;
             }
             set
             {
-                Instance.activeModel = value;
+                // When we set a model to be active, make sure we use the scene of its gameobject
+                var modelScene = value.gameObject.scene;
+                Instance.activeModels[modelScene] = value;
+
+                // And then make sure that scene is active
+                if (modelScene != SceneManager.GetActiveScene())
+                    SceneManager.SetActiveScene(modelScene);
             }
         }
 
-        // TODO: fix this so we keep the active scene in mind, as in, when the active scene changes, 
-        // we should be using a model in the active scene, not in another scene.
         public static ChiselModel GetActiveModelOrCreate(ChiselModel overrideModel = null)
         {
             if (overrideModel)
@@ -78,7 +114,6 @@ namespace Chisel.Components
             var activeModel = ChiselModelManager.ActiveModel;
             if (!activeModel)
             {
-                // TODO: ensure we create this in the active scene
                 // TODO: handle scene being locked by version control
                 activeModel = CreateNewModel();
                 ChiselModelManager.ActiveModel = activeModel; 
@@ -91,14 +126,99 @@ namespace Chisel.Components
             return ChiselComponentFactory.Create<ChiselModel>(kDefaultModelName, parent);
         }
 
+
+        public static ChiselModel FindModelInScene()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            return FindModelInScene(activeScene);
+        }
+
+        public static ChiselModel FindModelInScene(Scene scene)
+        {
+            if (!scene.isLoaded ||
+                !scene.IsValid())
+                return null;
+
+            var allRootGameObjects = scene.GetRootGameObjects();
+            if (allRootGameObjects == null)
+                return null;
+
+            // We prever last model (more likely last created), so we iterate backwards
+            for (int n = allRootGameObjects.Length - 1; n >= 0; n--)
+            {
+                var rootGameObject = allRootGameObjects[n];
+                // Skip all gameobjects that are disabled
+                if (!rootGameObject.activeInHierarchy)
+                    continue;
+
+                // Go through all it's models, this method returns the top most models first
+                var models = rootGameObject.GetComponentsInChildren<ChiselModel>(includeInactive: false);
+                foreach (var model in models)
+                {
+                    // Skip all inactive models
+                    // TODO: should also skip invisible models ...
+                    if (!model || !model.isActiveAndEnabled)
+                        continue;
+
+                    return model;
+                }
+            }
+            return null;
+        }
+
+        public static void CheckActiveModels()
+        {
+            // Go through all activeModels, which we store per scene, and make sure they still make sense
+            var allScenes = Instance.activeModels.Keys.ToArray();
+            foreach (var scene in allScenes)
+            {
+                // If the scene is no longer loaded, remove it from our list
+                if (!scene.isLoaded || !scene.IsValid())
+                {
+                    Instance.activeModels.Remove(scene);
+                }
+                
+                // Check if a current activeModel still exists
+                var sceneActiveModel = Instance.activeModels[scene];
+                if (!sceneActiveModel)
+                {
+                    Instance.activeModels[scene] = FindModelInScene(scene);
+                    continue;
+                } 
+                
+                // Check if a model has been moved to another scene, and correct this if it has
+                var gameObjectScene = sceneActiveModel.gameObject.scene;
+                if (gameObjectScene != scene)
+                {
+                    Instance.activeModels[scene] = FindModelInScene(scene);
+                    Instance.activeModels[gameObjectScene] = sceneActiveModel;
+                }
+            }
+        }
+
 #if UNITY_EDITOR
+        public static void OnWillFlushUndoRecord()
+        {
+            // Called on Undo, which happens when moving model to another scene
+            CheckActiveModels();
+        }
+         
+        public static void OnActiveSceneChanged(Scene _, Scene newScene)
+        {
+            if (Instance.activeModels.TryGetValue(newScene, out var activeModel) && activeModel && activeModel.isActiveAndEnabled)
+                return;
+
+            Instance.activeModels[newScene] = FindModelInScene(newScene);
+            CheckActiveModels();
+        }
+
         static ChiselModel GetSelectedModel()
         {
             var selectedGameObjects = UnityEditor.Selection.gameObjects;
             if (selectedGameObjects == null ||
                 selectedGameObjects.Length == 1)
             { 
-                var selection   = selectedGameObjects[0];
+                var selection = selectedGameObjects[0];
                 return selection.GetComponent<ChiselModel>();
             }
             return null;
@@ -106,7 +226,7 @@ namespace Chisel.Components
 
         const string SetActiveModelMenuName = "GameObject/Set Active Model";
         [UnityEditor.MenuItem(SetActiveModelMenuName, false, -100000)]
-        static void SetActiveModel()
+        internal static void SetActiveModel()
         {
             var model = GetSelectedModel();
             if (!model)
@@ -115,7 +235,7 @@ namespace Chisel.Components
         }
 
         [UnityEditor.MenuItem(SetActiveModelMenuName, true, -100000)]
-        static bool ValidateSetActiveModel()
+        internal static bool ValidateSetActiveModel()
         {
             var model = GetSelectedModel();
             return (model != null);

@@ -150,9 +150,9 @@ namespace Chisel.Editors
                 
                         switch (extrusionState)
                         {
-                            case ExtrusionState.Cancel:		{ s_ModifyMode = false; return BoxExtrusionState.Cancel; }
-                            case ExtrusionState.Commit:		{ s_ModifyMode = false; return BoxExtrusionState.Commit; }
-                            case ExtrusionState.Modified:	{ return BoxExtrusionState.Modified; }
+                            case ExtrusionState.Cancel:     { s_ModifyMode = false; return BoxExtrusionState.Cancel; }
+                            case ExtrusionState.Commit:     { s_ModifyMode = false; return BoxExtrusionState.Commit; }
+                            case ExtrusionState.Modified:   { return BoxExtrusionState.Modified; }
                         }
 
                         return BoxExtrusionState.BoxMode;
