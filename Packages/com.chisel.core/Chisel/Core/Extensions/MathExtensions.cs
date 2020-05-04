@@ -12,7 +12,13 @@ namespace Chisel.Core
     }
 
     public static class MathExtensions
-    {       
+    {
+        public const float kDistanceEpsilon         = 0.00001f;
+
+        // We want frustum selection to have a bit more space
+        public const float kFrustumDistanceEpsilon  = kDistanceEpsilon * 100;
+
+
         //private static readonly Vector3 PositiveY = new Vector3(0, 1, 0);
         private static readonly Vector3 NegativeY = new Vector3(0, -1, 0);
         private static readonly Vector3 PositiveZ = new Vector3(0, 0, 1);
@@ -290,9 +296,6 @@ namespace Chisel.Core
             transform.localPosition = position;
             transform.localRotation = rotation;
         }
-
-    
-        public const float kDistanceEpsilon = 0.00001f;
 
         // Check if bounds is inside/outside or intersects with plane
 

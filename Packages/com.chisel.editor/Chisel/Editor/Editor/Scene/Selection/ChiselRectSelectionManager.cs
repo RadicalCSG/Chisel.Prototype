@@ -14,6 +14,7 @@ namespace Chisel.Editors
     [Serializable]
     public enum SelectionType { Replace, Additive, Subtractive };
 
+    // TODO: rewrite
     internal static class ChiselRectSelection
     {
         public static bool		Valid			{ get { return reflectionSucceeded; } }
@@ -195,7 +196,6 @@ namespace Chisel.Editors
             return false;
         }
         
-
         internal static void Update(SceneView sceneView)
         {
             if (!ChiselRectSelection.Valid)
@@ -246,8 +246,16 @@ namespace Chisel.Editors
                         if (rect.width > 3 && 
                             rect.height > 3)
                         { 
-                            var frustum = ChiselCameraUtility.GetCameraSubFrustum(Camera.current, rect);
-                            
+                            var frustum         = ChiselCameraUtility.GetCameraSubFrustum(Camera.current, rect);
+                            var selectionType   = GetCurrentSelectionType();
+
+                            if (selectionType == SelectionType.Replace)
+                            {
+                                rectFoundTreeNodes.Clear();
+                                rectFoundGameObjects.Clear();
+                            }
+
+
                             // Find all the brushes (and it's gameObjects) that are inside the frustum
                             if (!ChiselSceneQuery.GetNodesInFrustum(frustum, UnityEditor.Tools.visibleLayers, ref rectFoundTreeNodes))
                             {
@@ -261,7 +269,6 @@ namespace Chisel.Editors
                             } else
                                 modified = true;
             
-                            var selectionType = GetCurrentSelectionType();
                             foreach(var treeNode in rectFoundTreeNodes)
                             {
                                 var brush = (CSGTreeBrush)treeNode;
@@ -519,15 +526,14 @@ namespace Chisel.Editors
             }
         }
         
-        
         // TODO: make selecting variants work when selecting in hierarchy/rect-select too
         public static void DoSelectionClick(SceneView sceneView, Vector2 mousePosition)
         {
             ChiselIntersection intersection;
-            var gameobject = ChiselClickSelectionManager.PickClosestGameObject(Event.current.mousePosition, out intersection);
-            
+            var gameobject = ChiselClickSelectionManager.PickClosestGameObject(mousePosition, out intersection);
+
             // If we're a child of an operation that has a "handle as one" flag set, return that instead
-            gameobject = ChiselSceneQuery.GetContainerGameObject(gameobject); 
+            gameobject = ChiselSceneQuery.FindSelectionBase(gameobject); 
             
             var selectionType = GetCurrentSelectionType();
 
@@ -542,6 +548,7 @@ namespace Chisel.Editors
                     ChiselSyncSelection.SelectBrushVariant(intersection.brushIntersection.brush, uniqueSelection: false);
                     var instanceID = gameobject.GetInstanceID();
                     selectedObjectsOnClick.Add(instanceID);
+                    ChiselClickSelectionManager.ignoreSelectionChanged = true;
                     Selection.instanceIDs = selectedObjectsOnClick.ToArray();
                     break;
                 }
@@ -558,6 +565,7 @@ namespace Chisel.Editors
                         var instanceID = gameobject.GetInstanceID();
                         selectedObjectsOnClick.Remove(instanceID);
                     }
+                    ChiselClickSelectionManager.ignoreSelectionChanged = true;
                     Selection.instanceIDs = selectedObjectsOnClick.ToArray();
                     return;
                 }
@@ -565,6 +573,7 @@ namespace Chisel.Editors
                 { 
                     Undo.RecordObject(ChiselSyncSelection.Instance, "Selected brush variant");
                     ChiselSyncSelection.SelectBrushVariant(intersection.brushIntersection.brush, uniqueSelection: true);
+                    ChiselClickSelectionManager.ignoreSelectionChanged = true;
                     Selection.activeGameObject = gameobject;
                     break;
                 }

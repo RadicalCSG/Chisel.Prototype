@@ -166,30 +166,6 @@ namespace Chisel.Core
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions"/>
         public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
 
-        // TODO: add description
-        
-        public CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]		meshQuery, 
-                                                       Vector3			worldRayStart,
-                                                       Vector3			worldRayEnd, 
-                                                       Matrix4x4        treeLocalToWorldMatrix,
-                                                       int				filterLayerParameter0 = 0,
-                                                       CSGTreeNode[]	ignoreNodes = null)
-        {
-            CSGTreeBrushIntersection[] intersections;
-            if (!RayCastMulti(meshQuery, worldRayStart, worldRayEnd, treeLocalToWorldMatrix, filterLayerParameter0, out intersections, ignoreNodes))
-                return null;
-            return intersections;
-        }
-
-        // TODO: add description
-        public CSGTreeNode[] GetNodesInFrustum(MeshQuery[] meshQuery, Plane[] planes)
-        {
-            CSGTreeNode[] nodes;
-            if (!GetNodesInFrustum(meshQuery, planes, out nodes))
-                return null;
-            return nodes;
-        }
-
         // TODO: add description / make this more consistent
         public static CSGTree	Find(int userID)			{ return new CSGTree { treeNodeID = FindTreeByUserID(userID) }; }
 

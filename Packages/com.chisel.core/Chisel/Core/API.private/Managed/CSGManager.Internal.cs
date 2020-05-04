@@ -639,6 +639,17 @@ namespace Chisel.Core
                 return false;
             return nodeHierarchies[treeNodeID - 1].treeInfo.treeBrushes.Contains(brushNodeID);
         }
+        
+        internal static Int32		GetChildBrushNodeIDAtIndex(Int32 treeNodeID, Int32 index)			
+        { 
+            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
+                return 0; 
+            if (nodeHierarchies[treeNodeID - 1].treeInfo == null) 
+                return 0;
+            if (index < 0 || index > nodeHierarchies[treeNodeID - 1].treeInfo.treeBrushes.Count)
+                return 0;
+            return nodeHierarchies[treeNodeID - 1].treeInfo.treeBrushes[index];
+        }
 
         internal static Int32		FindTreeByUserID(Int32 userID)
         {

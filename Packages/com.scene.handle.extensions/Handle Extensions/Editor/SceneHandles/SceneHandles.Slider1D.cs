@@ -148,7 +148,7 @@ namespace UnitySceneExtensions
                         if ((UnityEditor.HandleUtility.nearestControl != id || evt.button != 0) &&
                             (GUIUtility.keyboardControl != id || evt.button != 2))
                             break;
-                                                
+
                         GUIUtility.hotControl = GUIUtility.keyboardControl = id;
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(1);
@@ -217,6 +217,31 @@ namespace UnitySceneExtensions
                         }
                         break;
                     }
+#if UNITY_2020_1_OR_NEWER
+                    case EventType.MouseMove:
+                    {
+                        if (SceneHandles.InCameraOrbitMode)
+                            break;
+
+                        var position = handleOrigin;
+                        var rotation = Quaternion.LookRotation(handleDirection);
+
+                        if (handleSize > 0)
+                        {
+                            if (capFunction != null)
+                                capFunction(id, position, rotation, handleSize, type);
+                        }
+
+                        int currentFocusControl = SceneHandleUtility.focusControl;
+                        if ((currentFocusControl == id && s_PrevFocusControl != id) ||
+                            (currentFocusControl != id && s_PrevFocusControl == id))
+                        {
+                            s_PrevFocusControl = currentFocusControl;
+                            SceneView.RepaintAll();
+                        }
+                        break;
+                    }
+#endif
                     case EventType.Layout:
                     {
                         if (SceneHandles.InCameraOrbitMode)
@@ -228,7 +253,7 @@ namespace UnitySceneExtensions
                         if (handleSize > 0)
                         {
                             if (capFunction != null)
-                                capFunction(id, position, rotation, handleSize, EventType.Layout);
+                                capFunction(id, position, rotation, handleSize, type);
                             else
                                 UnityEditor.HandleUtility.AddControl(id, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * .2f));
                         }

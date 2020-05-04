@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -8,12 +10,68 @@ namespace Chisel.Core
     // TODO: clean up
     static partial class CSGManager
     {
+        // TODO: find a better place
+        static bool IsSurfaceVisible(MeshQuery[] meshQueries, ref ChiselSurfaceRenderBuffer surface)
+        {
+            // Compare surface with 'current' meshquery (is this surface even being rendered???)
+            for (int n = 0; n < meshQueries.Length; n++)
+            {
+                var meshQuery = meshQueries[n];
+                var core_surface_flags = surface.surfaceLayers.layerUsage;
+                if ((core_surface_flags & meshQuery.LayerQueryMask) == meshQuery.LayerQuery)
+                    return true;
+            }
+            return false;
+        }
 
+        // TODO: find a better place
+        static bool PointInTriangle(float3 p, float3 a, float3 b, float3 c)
+        {
+	        var cp1A = math.cross(c - b, p - b);
+            var cp2A = math.cross(c - b, a - b);
+            var dotA = math.dot(cp1A, cp2A);
+            var sameSideA = dotA > 0;
+
+            var cp1B = math.cross(c - a, p - a);
+            var cp2B = math.cross(c - a, b - a);
+            var dotB = math.dot(cp1B, cp2B);
+            var sameSideB = dotB > 0;
+
+            var cp1C = math.cross(b - a, p - a);
+            var cp2C = math.cross(b - a, c - a);
+            var dotC = math.dot(cp1C, cp2C);
+            var sameSideC = dotC > 0;
+
+	        return	sameSideA &&
+			        sameSideB &&
+			        sameSideC;
+        }
+
+        // TODO: find a better place
+        static bool IsPointInsideSurface(ref ChiselSurfaceRenderBuffer surface, float3 treeSpacePoint)
+        {
+            ref var triangles	= ref surface.indices;
+            ref var vertices    = ref surface.vertices;
+
+            for (int i = 0, triangle_count = triangles.Length; i < triangle_count; i += 3)
+	        {
+                var v0 = vertices[triangles[i + 0]];
+                var v1 = vertices[triangles[i + 1]];
+                var v2 = vertices[triangles[i + 2]];
+
+		        if (PointInTriangle(treeSpacePoint, v0, v2, v1) ||
+                    PointInTriangle(treeSpacePoint, v0, v1, v2))
+			        return true;
+	        }
+
+	        return false;
+        }
+        
         // Requirement: out values only set when something is found, otherwise are not modified
-        static bool BrushRayCast (CSGTreeBrush      brush,
+        static bool BrushRayCast (MeshQuery[]       meshQueries,
+                                  CSGTreeBrush      brush,
 
-						          MeshQuery[]       meshQuery,              // TODO: add meshquery support here
-                                  HashSet<Int32>    ignoreBitset,
+                                  ref BlobArray<ChiselSurfaceRenderBuffer> surfaces,
 
 						          Vector3           treeSpaceRayStart,
 						          Vector3           treeSpaceRayEnd,
@@ -21,24 +79,14 @@ namespace Chisel.Core
 						          ref float	        smallestDistance,
 	
 						          out bool	        out_isReversed,
-                                  out Int32         out_surfaceIndex,
-                                  out Int32         out_surfaceID,
 
-						          out Vector2       out_surfaceIntersection,
-						          out Vector3       out_localIntersection,
 						          out Vector3       out_treeIntersection,
 
-						          out Plane         out_localPlane,
 						          out Plane         out_treePlane)
         {
             out_isReversed          = false;
-            out_surfaceIndex        = -1;
-            out_surfaceID           = -1;
-            out_surfaceIntersection = Vector2.zero;
-            out_localIntersection   = Vector3.zero;
             out_treeIntersection    = Vector3.zero;
 
-            out_localPlane          = new Plane();
             out_treePlane           = new Plane();
             
             var brushMeshInstanceID = brush.BrushMesh.brushMeshID;
@@ -55,9 +103,7 @@ namespace Chisel.Core
             var brushRayEnd     = treeToNodeSpace.MultiplyPoint(treeSpaceRayEnd);
 	        var brushRayDelta	= brushRayEnd - brushRayStart;
 
-
-	        var found						= false;
-            var result_surfaceIndex			= -1;
+            var found						= false;
             var result_localIntersection	= Vector3.zero;
             var result_isReversed			= false;
             var smallest_t					= smallestDistance;
@@ -67,6 +113,13 @@ namespace Chisel.Core
 
 	        for (var s = 0; s < brushMesh.planes.Length; s++)
 	        {
+                if (surfaces[s].indices.Length == 0)
+                    continue;
+
+                // Compare surface with 'current' meshquery (is this surface even being rendered???)
+                if (!IsSurfaceVisible(meshQueries, ref surfaces[s]))
+                    continue;
+
                 var plane       = new Plane(brushMesh.planes[s].xyz, brushMesh.planes[s].w);
                 var s_dist      = plane.GetDistanceToPoint(brush_ray_start);
                 var e_dist	    = plane.GetDistanceToPoint(brush_ray_end);
@@ -96,49 +149,17 @@ namespace Chisel.Core
                     var pl_dist = plane2.GetDistanceToPoint(intersection);
 			        if (pl_dist > MathExtensions.kDistanceEpsilon) { skipSurface = true; break; }
 		        }
+
 		        if (skipSurface)
 			        continue;
 
-                // TODO: fix these issues:
-                /*
-		        var treeIntersection	= nodeToTreeSpace.MultiplyPoint(intersection);
-                var type				= CSGCategorizationStack.CategorizePoint(in_brush, treeIntersection, ignoreBitset);
-		        if (ignoreInvisiblePolygons)
-		        {
-			        if (type == CategoryIndex.Inside || type == CategoryIndex.Outside)
-				        continue;
-		        }
+                if (surfaces[s].indices.Length == 0)
+                    continue;
 
-		        bool is_reversed = (type == CategoryIndex.ReverseAligned);
-
-		        if (is_reversed)
-		        {
-			        if (s_dist > MathExtensions.kDistanceEpsilon)
-				        continue;
-		        } else
-		        {
-			        if (s_dist <= -MathExtensions.kDistanceEpsilon)
-				        continue;
-                }
-                */
-
-                /*
-		        result_surfaceIndex		 = s;
-
-                // we can have multiple planes on the same surface
-                var mesh_surface_index = FindSurfaceForMeshPoint(brushSurfaces.planes, intersection);
-                if (mesh_surface_index > -1)
-                    result_surfaceIndex = mesh_surface_index;
-
-                // TODO: do this properly with MeshQueries
-                if (filterLayerParameter0 != 0)
-                {
-                    var layer = brushSurfaces.layers[(int)result_surfaceIndex];
-                    if (layer.layerParameters[0] != 0 &&
-                        layer.layerParameters[0] != filterLayerParameter0)
-                        continue;
-                }
-                */
+                Debug.Assert(surfaces[s].surfaceIndex == s);
+                var treeIntersection = nodeToTreeSpace.MultiplyPoint(intersection);
+                if (!IsPointInsideSurface(ref surfaces[s], treeIntersection))
+                    continue;
 
                 found = true;
 		        smallest_t  = dist;
@@ -150,8 +171,6 @@ namespace Chisel.Core
 	        if (found)
 	        {
 		        smallestDistance	    = smallest_t;
-		        out_surfaceIndex		= result_surfaceIndex;
-		        out_localIntersection   = result_localIntersection;
 		        out_treeIntersection	= nodeToTreeSpace.MultiplyPoint(result_localIntersection);
 		        out_isReversed			= result_isReversed;
 		        return true;
@@ -168,14 +187,11 @@ namespace Chisel.Core
         //							(in fact, we could still cache the generated table w/ ignored brushes while moving the mouse)
         //						3.	have a ray-brush acceleration data structure so that we reduce the number of brushes to 'try'
         //							to only the ones that the ray actually intersects with (instead of -all- brushes)
-        internal static bool RayCastMulti(CSGTree                           tree,
-                                          MeshQuery[]                       meshQuery,
-                                          Vector3                           worldRayStart,
-                                          Vector3                           worldRayEnd,
-                                          Matrix4x4                         treeLocalToWorldMatrix, // TODO: pass along worldToLocal matrix instead
-                                          int                               filterLayerParameter0,
-                                          out CSGTreeBrushIntersection[]    intersections,
-                                          CSGTreeNode[]                     ignoreNodes = null)
+        public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]   meshQueries, 
+                                                              CSGTree       tree,
+                                                              Vector3       treeSpaceRayStart,
+                                                              Vector3       treeSpaceRayEnd,
+                                                              CSGTreeNode[] ignoreNodes = null)
         {
             var ignoreNodeIndices = new HashSet<int>();
             if (ignoreNodes != null)
@@ -189,21 +205,16 @@ namespace Chisel.Core
                 }
             }
 
-            var worldToTreeLocalSpace               = treeLocalToWorldMatrix.inverse;
-            var treeToWorldSpaceInverseTransposed   = worldToTreeLocalSpace.transpose;
-
-            intersections = null;
-            var foundIntersections = new List<CSGTreeBrushIntersection>();
+            var foundIntersections  = new List<CSGTreeBrushIntersection>();
             var bounds = new Bounds();
             
-            var treeSpaceRayStart   = worldToTreeLocalSpace.MultiplyPoint(worldRayStart);
-            var treeSpaceRayEnd     = worldToTreeLocalSpace.MultiplyPoint(worldRayEnd);
             
-            var treeNodeID      = tree.NodeID;
-            var treeNodeIndex   = treeNodeID - 1;
-            var treeInfo        = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
+            var treeNodeID          = tree.NodeID;
+            var treeNodeIndex       = treeNodeID - 1;
+            var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
 
-            var treeSpaceRay    = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
+            var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
+            var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBuffers;
 
             // TODO: optimize
             for (int i = 0; i < treeInfo.treeBrushes.Count; i++)
@@ -219,6 +230,9 @@ namespace Chisel.Core
                 //if (((int)operation_type_bits & InfiniteBrushBits) == InfiniteBrushBits)
                 //    continue;
 
+                if (!brushRenderBuffers.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
+                    continue;
+
                 if (!CSGManager.GetBrushBounds(brushNodeID, ref bounds))
                     continue;
 
@@ -228,63 +242,46 @@ namespace Chisel.Core
                 var brush = new CSGTreeBrush() { brushNodeID = brushNodeID };
 
                 var resultDist = float.PositiveInfinity;
-			    if (!BrushRayCast(brush,
+			    if (!BrushRayCast(meshQueries, brush,
 
-                                  meshQuery,
-                                  ignoreNodeIndices,
+                                  ref brushRenderBuffer.Value.surfaces,
 
-								  treeSpaceRayStart,
+                                  treeSpaceRayStart,
 								  treeSpaceRayEnd,
 
 								  ref resultDist,
 
 								  out bool      result_isReversed,
-                                  out Int32     result_surfaceIndex,
-                                  out Int32     result_surfaceID,
-                                  out Vector2   result_surfaceIntersection,
-                                  out Vector3   result_localIntersection,
                                   out Vector3   result_treeIntersection,
-                                  out Plane     result_localPlane,
                                   out Plane     result_treePlane))
 				    continue;
 
-
-                var result_worldPlane = treeToWorldSpaceInverseTransposed.Transform(result_treePlane);			    
+                //var result_worldPlane = treeToWorldSpaceInverseTransposed.Transform(result_treePlane);			    
                 foundIntersections.Add(new CSGTreeBrushIntersection()
                 { 
                     tree                = tree,
                     brush               = brush,
-			        surfaceID			= result_surfaceID,
                     brushUserID         = CSGManager.GetUserIDOfNode(brushNodeID),
 
                     surfaceIntersection = new ChiselSurfaceIntersection()
                     { 
-                        //localPlane            = result_isReversed ? result_localPlane.flipped : result_localPlane,
 				        treePlane               = result_isReversed ? result_treePlane.flipped : result_treePlane,
-                        //worldPlane            = result_isReversed ? result_worldPlane.flipped : result_worldPlane,
-
-                        treePlaneIntersection   = treeLocalToWorldMatrix.MultiplyPoint(result_treeIntersection),
-                        //worldIntersection	    = treeLocalToWorldMatrix.MultiplyPoint(result_treeIntersection),
-			            //surfaceIntersection	= result_surfaceIntersection,
-
+                        treePlaneIntersection   = result_treeIntersection,
 			            distance			    = resultDist,
                     }
                 });
             }
 
             if (foundIntersections.Count == 0)
-                return false;
+                return null;
 
-            intersections = foundIntersections.ToArray();
-            return true;
+            return foundIntersections.ToArray();
         }
 
-        internal static bool GetNodesInFrustum(MeshQuery[]          meshQueries, // TODO: add meshquery support here
-                                               Plane[]              planes,
-                                               out CSGTreeNode[]    nodes)
+        public static CSGTreeNode[] GetNodesInFrustum(CSGTree       tree,
+                                                      MeshQuery[]   meshQueries, // TODO: add meshquery support here
+                                                      Plane[]       planes)
         {
-            nodes = null;
-
             if (planes == null)
                 throw new ArgumentNullException("planes");
 
@@ -298,14 +295,19 @@ namespace Chisel.Core
                 var distance    = plane.distance;
                 var n = normal.x + normal.y + normal.z + distance;
                 if (float.IsInfinity(n) || float.IsNaN(n))
-                    return false;
+                    return null;
             }
 
-            var foundNodes = new List<CSGTreeNode>();
-            var bounds = new Bounds();
-            for (int i = 0; i < CSGManager.brushes.Count; i++)
+            var brushCount  = tree.CountOfBrushesInTree;
+            if (brushCount == 0)
+                return null;
+
+
+            var foundNodes  = new List<CSGTreeNode>();
+            var bounds      = new Bounds();
+            for (int i = 0; i < brushCount; i++)
             {
-                var brushNodeID     = CSGManager.brushes[i];
+                var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
                 var brushNodeIndex  = brushNodeID - 1;
                 if (!CSGManager.GetBrushBounds(brushNodeID, ref bounds))
                     continue;
@@ -322,6 +324,7 @@ namespace Chisel.Core
                         intersectsFrustum = true;
                 }
 
+
                 var treeNodeID          = nodeHierarchies[brushNodeIndex].treeNodeID;
                 var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeID - 1];
 
@@ -333,19 +336,16 @@ namespace Chisel.Core
 
                     ref var surfaceRenderBuffers = ref brushRenderBuffers.Value.surfaces;
 
+                    bool haveVisibleSurfaces = false;
+
                     // Double check if the vertices of the brush are inside the frustum
-                    for (int s=0;s< surfaceRenderBuffers.Length;s++)
+                    for (int s = 0; s < surfaceRenderBuffers.Length; s++)
                     {
                         ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
 
                         // Compare surface with 'current' meshquery (is this surface even being rendered???)
-                        for (int n = 0; n < meshQueries.Length; n++)
-                        {
-                            var meshQuery = meshQueries[n];
-                            var core_surface_flags = surfaceRenderBuffer.surfaceLayers.layerUsage;
-                            if ((core_surface_flags & meshQuery.LayerQueryMask) != meshQuery.LayerQuery)
-                                goto SkipSurface;
-                        }
+                        if (!IsSurfaceVisible(meshQueries, ref surfaceRenderBuffer))
+                            goto SkipSurface;
 
                         ref var vertices = ref surfaceRenderBuffer.vertices;
                         for (int p = 0; p < 6; p++)
@@ -354,14 +354,24 @@ namespace Chisel.Core
                             for (int v = 0; v < vertices.Length; v++)
                             {
                                 var distance = plane.GetDistanceToPoint(vertices[v]);
-                                if (distance > MathExtensions.kDistanceEpsilon)
+                                if (distance > MathExtensions.kFrustumDistanceEpsilon)
+                                // If we have a visible surface that is outside the frustum, we skip the brush
+                                // (we only want brushes that are completely inside the frustum)
                                     goto SkipBrush;
                             }
                         }
+                        // Make sure we find at least one single visible surface inside the frustum
+                        haveVisibleSurfaces = true;
 SkipSurface:
                         ;
                     }
+
+                    // If we haven't found a single visible surface inside the frustum, skip the brush
+                    if (!haveVisibleSurfaces)
+                        goto SkipBrush;
                 }
+
+                // TODO: handle generators, where we only select a generator when ALL of it's brushes are selected
 
                 foundNodes.Add(CSGTreeNode.Encapsulate(brushNodeID));
 SkipBrush:
@@ -369,10 +379,9 @@ SkipBrush:
             }
 
             if (foundNodes.Count == 0)
-                return false;
+                return null;
 
-            nodes = foundNodes.ToArray();
-            return true;
+            return foundNodes.ToArray();
         }
     }
 }
