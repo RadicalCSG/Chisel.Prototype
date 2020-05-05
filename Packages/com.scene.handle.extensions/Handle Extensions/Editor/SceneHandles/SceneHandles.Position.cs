@@ -81,9 +81,9 @@ namespace UnitySceneExtensions
             
             UnityEditor.HandleUtility.AddControl(centerId, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * 0.055f));
 
-
             var evt = Event.current;
             var type = evt.GetTypeForControl(centerId);
+
             switch (type)
             {
                 case EventType.MouseDown:
@@ -123,12 +123,20 @@ namespace UnitySceneExtensions
             
             //,.,.., look at 2018.1 how the position handle works w/ colors
             
-            var xAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.X) == 0) || Snapping.AxisLocking[0] || (isControlHot && !xAxisIsHot && !xzAxisIsHot && !xyAxisIsHot);
-            var yAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Y) == 0) || Snapping.AxisLocking[1] || (isControlHot && !yAxisIsHot && !xyAxisIsHot && !yzAxisIsHot);
-            var zAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Z) == 0) || Snapping.AxisLocking[2] || (isControlHot && !zAxisIsHot && !xzAxisIsHot && !yzAxisIsHot);
-            var xzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XZ) != Axes.XZ) || (Snapping.AxisLocking[0] || Snapping.AxisLocking[2]) || (isControlHot && !xzAxisIsHot);
-            var xyPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XY) != Axes.XY) || (Snapping.AxisLocking[0] || Snapping.AxisLocking[1]) || (isControlHot && !xyAxisIsHot);
-            var yzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.YZ) != Axes.YZ) || (Snapping.AxisLocking[1] || Snapping.AxisLocking[2]) || (isControlHot && !yzAxisIsHot);
+            var xAxisActive	    = !Snapping.AxisLocking[0];
+            var yAxisActive     = !Snapping.AxisLocking[1];
+            var zAxisActive     = !Snapping.AxisLocking[2];
+
+            var xzPlaneActive	= xAxisActive && zAxisActive;
+            var xyPlaneActive   = xAxisActive && yAxisActive;
+            var yzPlaneActive   = yAxisActive && zAxisActive;
+
+            var xAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.X) == 0) || !xAxisActive || (isControlHot && !xAxisIsHot && !xzAxisIsHot && !xyAxisIsHot);
+            var yAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Y) == 0) || !yAxisActive || (isControlHot && !yAxisIsHot && !xyAxisIsHot && !yzAxisIsHot);
+            var zAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Z) == 0) || !zAxisActive || (isControlHot && !zAxisIsHot && !xzAxisIsHot && !yzAxisIsHot);
+            var xzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XZ) != Axes.XZ) || !xzPlaneActive || (isControlHot && !xzAxisIsHot);
+            var xyPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XY) != Axes.XY) || !xyPlaneActive || (isControlHot && !xyAxisIsHot);
+            var yzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.YZ) != Axes.YZ) || !yzPlaneActive || (isControlHot && !yzAxisIsHot);
             
             var currentFocusControl = SceneHandleUtility.focusControl;
 
@@ -153,32 +161,49 @@ namespace UnitySceneExtensions
             var xzPlaneColor	= SceneHandles.StateColor(SceneHandles.yAxisColor, xzPlaneDisabled, xzAxiSelected);
             var xyPlaneColor	= SceneHandles.StateColor(SceneHandles.zAxisColor, xyPlaneDisabled, xyAxiSelected);
             var yzPlaneColor	= SceneHandles.StateColor(SceneHandles.xAxisColor, yzPlaneDisabled, yzAxiSelected);
-            
-
-            SceneHandles.disabled = xAxisDisabled;
-            SceneHandles.color = xAxisColor;
-            points = Slider1DHandle(xAxisId, Axis.X, points, position, rotation * Vector3.right,   Snapping.MoveSnappingSteps.x, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
-               
-            SceneHandles.disabled = yAxisDisabled;
-            SceneHandles.color = yAxisColor;
-            points = Slider1DHandle(yAxisId, Axis.Y, points, position, rotation * Vector3.up,      Snapping.MoveSnappingSteps.y, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
-            
-            SceneHandles.disabled = zAxisDisabled;
-            SceneHandles.color = zAxisColor;
-            points = Slider1DHandle(zAxisId, Axis.Z, points, position, rotation * Vector3.forward, Snapping.MoveSnappingSteps.z, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
 
 
-            SceneHandles.disabled = xzPlaneDisabled;
-            SceneHandles.color = xzPlaneColor;
-            points = PlanarHandle(xzPlaneId, PlaneAxes.XZ, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            if (xAxisActive)
+            {
+                SceneHandles.disabled = xAxisDisabled;
+                SceneHandles.color = xAxisColor;
+                points = Slider1DHandle(xAxisId, Axis.X, points, position, rotation * Vector3.right, Snapping.MoveSnappingSteps.x, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
+            }
 
-            SceneHandles.disabled = xyPlaneDisabled;
-            SceneHandles.color = xyPlaneColor;
-            points = PlanarHandle(xyPlaneId, PlaneAxes.XY, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            if (yAxisActive)
+            {
+                SceneHandles.disabled = yAxisDisabled;
+                SceneHandles.color = yAxisColor;
+                points = Slider1DHandle(yAxisId, Axis.Y, points, position, rotation * Vector3.up, Snapping.MoveSnappingSteps.y, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
+            }
 
-            SceneHandles.disabled = yzPlaneDisabled;
-            SceneHandles.color = yzPlaneColor;
-            points = PlanarHandle(yzPlaneId, PlaneAxes.YZ, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            if (zAxisActive)
+            {
+                SceneHandles.disabled = zAxisDisabled;
+                SceneHandles.color = zAxisColor;
+                points = Slider1DHandle(zAxisId, Axis.Z, points, position, rotation * Vector3.forward, Snapping.MoveSnappingSteps.z, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
+            }
+
+            if (xzPlaneActive)
+            {
+                SceneHandles.disabled = xzPlaneDisabled;
+                SceneHandles.color = xzPlaneColor;
+                points = PlanarHandle(xzPlaneId, PlaneAxes.XZ, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            }
+
+            if (xyPlaneActive)
+            {
+                SceneHandles.disabled = xyPlaneDisabled;
+                SceneHandles.color = xyPlaneColor;
+                points = PlanarHandle(xyPlaneId, PlaneAxes.XY, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            }
+
+            if (yzPlaneActive)
+            {
+                SceneHandles.disabled = yzPlaneDisabled;
+                SceneHandles.color = yzPlaneColor;
+                points = PlanarHandle(yzPlaneId, PlaneAxes.YZ, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
+            }
 
 
             switch (type)

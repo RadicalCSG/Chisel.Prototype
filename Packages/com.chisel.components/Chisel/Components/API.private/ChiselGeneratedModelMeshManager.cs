@@ -50,11 +50,11 @@ namespace Chisel.Components
         
         const int kMaxVertexCount = HashedVertices.kMaxVertexCount;
 
-        static HashSet<ChiselNode>  registeredNodeLookup    = new HashSet<ChiselNode>();
-        static List<ChiselModel>    registeredModels        = new List<ChiselModel>();
+        static HashSet<ChiselNode>              registeredNodeLookup    = new HashSet<ChiselNode>();
+        internal static List<ChiselModel>       registeredModels        = new List<ChiselModel>();
 
-        static ChiselSharedUnityMeshManager	    sharedUnityMeshes   = new ChiselSharedUnityMeshManager();
-        static ChiselGeneratedComponentManager  componentGenerator  = new ChiselGeneratedComponentManager();
+        static ChiselSharedUnityMeshManager	    sharedUnityMeshes       = new ChiselSharedUnityMeshManager();
+        static ChiselGeneratedComponentManager  componentGenerator      = new ChiselGeneratedComponentManager();
         
         static List<ChiselModel> updateList = new List<ChiselModel>();
 

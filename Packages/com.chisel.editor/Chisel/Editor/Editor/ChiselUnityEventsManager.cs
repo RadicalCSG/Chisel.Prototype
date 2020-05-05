@@ -106,12 +106,15 @@ namespace Chisel.Editors
             try
             {
                 ChiselSceneGUIStyle.Update();
-                var dragArea = ChiselGUIUtility.GetRectForEditorWindow(sceneView);
                 ChiselGridSettings.GridOnSceneGUI(sceneView);
                 ChiselOutlineRenderer.Instance.OnSceneGUI(sceneView);
 
-                ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
-                ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
+                if (EditorWindow.mouseOverWindow == sceneView || // This helps prevent weird issues with overlapping sceneviews + avoid some performance issues with multiple sceneviews open
+                    (Event.current.type != EventType.MouseMove && Event.current.type != EventType.Layout))
+                {
+                    ChiselDragAndDropManager.Instance.OnSceneGUI(sceneView);
+                    ChiselClickSelectionManager.Instance.OnSceneGUI(sceneView);
+                }
 
                 if (Tools.current != Tool.Custom)
                     ChiselEditToolBase.ShowDefaultOverlay();

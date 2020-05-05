@@ -9,25 +9,103 @@ using GameObject = UnityEngine.GameObject;
 using Camera	 = UnityEngine.Camera;
 using Plane		 = UnityEngine.Plane;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace Chisel.Components
 {
     public static class ChiselSceneQuery
     {
 #if UNITY_EDITOR
-        public static GameObject GetContainerGameObject(GameObject gameObject)
+        // TODO: move somewhere else
+        internal static bool GameObjectContainsAttribute<T>(GameObject go) where T : Attribute
         {
-            // TODO: implement finding gameObject that's the container for this gameObject (if applicable, for instance component with "handle as one" flag set)
-            //		 might also want to look at HandleUtility.FindSelectionBase(GameObject go) (internal)
-            return gameObject;
+            var behaviours = go.GetComponents(typeof(Component));
+            for (var index = 0; index < behaviours.Length; index++)
+            {
+                var behaviour = behaviours[index];
+                if (behaviour == null)
+                    continue;
+
+                var behaviourType = behaviour.GetType();
+                if (behaviourType.GetCustomAttributes(typeof(T), true).Length > 0)
+                    return true;
+            }
+            return false;
         }
+
+        // TODO: consider grouping functionality
+        internal static ChiselOperation GetGroupOperationForNode(ChiselNode node)
+        {
+            /*
+            if (!node)
+                return null;
+
+            var parent = node.transform.parent;
+            while (parent)
+            {
+                var model = parent.GetComponent<ChiselModel>();
+                if (model)
+                    return null;
+
+                var parentOp = parent.GetComponent<ChiselOperation>();
+                if (parentOp &&
+                    //!parentOp.PassThrough && 
+                    parentOp.HandleAsOne)
+                    return parentOp;
+
+                parent = parent.transform.parent;
+            }
+            */
+            return null;
+        }
+
+        public static GameObject FindSelectionBase(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+#if UNITY_2018_3_OR_NEWER
+            Transform prefabBase = null;
+            if (UnityEditor.PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
+            {
+                prefabBase = UnityEditor.PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
+            }
 #endif
 
-        static Dictionary<CSGTreeNode, ChiselIntersection> __foundIntersections = new Dictionary<CSGTreeNode, ChiselIntersection>(); // to avoid allocations
-        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection[] intersections)
-        {
-            return FindMultiWorldIntersection(worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out intersections);
+            GameObject group = null;
+            Transform groupTransform = null;
+            var node = go.GetComponentInChildren<ChiselNode>();
+            if (node)
+            {
+                var operation = GetGroupOperationForNode(node);
+                group = (operation == null) ? null : operation.gameObject;
+                groupTransform = (operation == null) ? null : operation.transform;
+            }
+
+
+            Transform tr = go.transform;
+            while (tr != null)
+            {
+#if UNITY_2018_3_OR_NEWER
+                if (tr == prefabBase)
+                    return tr.gameObject;
+#endif
+                if (tr == groupTransform)
+                    return group;
+
+                if (GameObjectContainsAttribute<SelectionBaseAttribute>(tr.gameObject))
+                    return tr.gameObject;
+
+                tr = tr.parent;
+            }
+
+            return go;
         }
+
+#endif
+
+
+        static Dictionary<CSGTreeNode, ChiselIntersection> __foundIntersections = new Dictionary<CSGTreeNode, ChiselIntersection>(); // to avoid allocations
 
         static ChiselIntersection Convert(CSGTreeBrushIntersection intersection)
         {
@@ -47,6 +125,11 @@ namespace Chisel.Components
                 worldPlaneIntersection  = worldPlaneIntersection,
                 brushIntersection       = intersection
             };
+        }
+        
+        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection[] intersections)
+        {
+            return FindMultiWorldIntersection(worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out intersections);
         }
 
         public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection[] intersections)
@@ -82,7 +165,7 @@ namespace Chisel.Components
             {
                 var tree	= allTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!model || !model.isActiveAndEnabled)
+                if (!ChiselModelManager.IsVisible(model))
                     continue;
                 
                 if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
@@ -107,18 +190,17 @@ namespace Chisel.Components
 
                 var transform = model.transform;
                 if (transform)
-                { 
+                {
                     var worldToLocalMatrix = transform.worldToLocalMatrix;
-                    treeRayStart	= worldToLocalMatrix.MultiplyPoint(worldRayStart);
-                    treeRayEnd		= worldToLocalMatrix.MultiplyPoint(worldRayEnd);
+                    treeRayStart = worldToLocalMatrix.MultiplyPoint(worldRayStart);
+                    treeRayEnd = worldToLocalMatrix.MultiplyPoint(worldRayEnd);
                 } else
                 {
-                    treeRayStart	= worldRayStart;
-                    treeRayEnd		= worldRayEnd;
+                    treeRayStart = worldRayStart;
+                    treeRayEnd = worldRayEnd;
                 }
 
-                var treeLocalToWorldMatrix = model.transform.localToWorldMatrix;
-                var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, treeLocalToWorldMatrix, filterLayerParameter0);
+                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd);
                 if (treeIntersections == null)
                     continue;
 
@@ -186,7 +268,7 @@ namespace Chisel.Components
             {
                 var tree	= allTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!model || !model.isActiveAndEnabled)
+                if (!ChiselModelManager.IsVisible(model))
                     continue;
                 
                 if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
@@ -221,8 +303,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeLocalToWorldMatrix = model.transform.localToWorldMatrix;
-                var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, treeLocalToWorldMatrix, filterLayerParameter0);
+                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd);
                 if (treeIntersections == null)
                     continue;
 
@@ -247,8 +328,8 @@ namespace Chisel.Components
             }
             return found;
         }
-        
-        
+
+
         public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection foundIntersection)
         {
             return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out foundIntersection);
@@ -258,7 +339,7 @@ namespace Chisel.Components
         {
             foundIntersection = ChiselIntersection.None;
 
-            if (!model || !model.isActiveAndEnabled)
+            if (!ChiselModelManager.IsVisible(model))
                 return false;
 
             CSGTreeNode[] ignoreBrushes = null;
@@ -276,19 +357,7 @@ namespace Chisel.Components
                         //node.GetAllTreeBrushes(ignoreBrushList);
                         ignoreInstanceIDs.Add(node.GetInstanceID());
                     }
-                }/*
-                if (ignoreBrushList.Count > 0)
-                {
-                    // TODO: fix this, ignorebrushes doesn't remove the brush completely, but that's not necessarily correct
-                    //			for example: another brush that is not ignored, subtracts from a brush that's ignored (so its insides should be selectable)
-                    ignoreBrushes = new CSGTreeNode[ignoreBrushList.Count];
-                    int index = 0;
-                    foreach(var brush in ignoreBrushList)
-                    {
-                        ignoreBrushes[index] = brush;
-                        index++;
-                    }
-                }*/
+                }
             }
             if (filter != null)
             {
@@ -325,18 +394,17 @@ namespace Chisel.Components
 
             var transform = model.transform;
             if (transform)
-            { 
+            {
                 var worldToLocalMatrix = transform.worldToLocalMatrix;
-                treeRayStart	= worldToLocalMatrix.MultiplyPoint(worldRayStart);
-                treeRayEnd		= worldToLocalMatrix.MultiplyPoint(worldRayEnd);
+                treeRayStart = worldToLocalMatrix.MultiplyPoint(worldRayStart);
+                treeRayEnd = worldToLocalMatrix.MultiplyPoint(worldRayEnd);
             } else
             {
-                treeRayStart	= worldRayStart;
-                treeRayEnd		= worldRayEnd;
+                treeRayStart = worldRayStart;
+                treeRayEnd = worldRayEnd;
             }
 
-            var treeLocalToWorldMatrix = model.transform.localToWorldMatrix;
-            var treeIntersections = tree.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), treeRayStart, treeRayEnd, treeLocalToWorldMatrix, filterLayerParameter0, ignoreBrushes);
+            var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, ignoreBrushes);
             if (treeIntersections == null)
                 return false;
             
@@ -372,14 +440,14 @@ namespace Chisel.Components
             {
                 var tree	= allTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!model || !model.isActiveAndEnabled)
+                if (!ChiselModelManager.IsVisible(model))
                     continue;
 
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                     continue;
 
-                var query = ChiselMeshQueryManager.GetMeshQuery(model);
-                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
+                var query           = ChiselMeshQueryManager.GetMeshQuery(model);
+                var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
 
                 // We only accept RayCasts into this model if it's visible
                 if (visibleQueries == null ||
@@ -404,7 +472,7 @@ namespace Chisel.Components
                     planes[p].distance = srcVector.w;
                 }
 
-                var treeNodesInFrustum = tree.GetNodesInFrustum(query, planes);
+                var treeNodesInFrustum = CSGManager.GetNodesInFrustum(tree, query, planes);
                 if (treeNodesInFrustum == null)
                     continue;
 

@@ -160,9 +160,9 @@ namespace Chisel.Components
 
 
 
-        public ChiselGeneratedColliderSettings ColliderSettings { get { return colliderSettings; } }
-        public ChiselGeneratedRenderSettings RenderSettings { get { return renderSettings; } }
-        public SerializableUnwrapParam UVGenerationSettings { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
+        public ChiselGeneratedColliderSettings  ColliderSettings        { get { return colliderSettings; } }
+        public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
+        public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
 
         [HideInInspector, NonSerialized]
         public readonly Dictionary<Material, List<ChiselRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
@@ -170,18 +170,18 @@ namespace Chisel.Components
         public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
         [HideInInspector, NonSerialized]
         public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
-        [SerializeField] internal ChiselGeneratedModelMesh[]   generatedMeshes     = new ChiselGeneratedModelMesh[0];
+        [SerializeField] public ChiselGeneratedModelMesh[]  generatedMeshes     = new ChiselGeneratedModelMesh[0];
 
         // TODO: make these private + properties, these show up as settable default settings when selecting CSGModel.cs in unity
-        public GameObject GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
-        public Transform GeneratedDataTransform { get { return generatedDataTransform; } internal set { generatedDataTransform = value; } }
+        public GameObject   GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
+        public Transform    GeneratedDataTransform { get { return generatedDataTransform; } internal set { generatedDataTransform = value; } }
         [HideInInspector, SerializeField] GameObject    generatedDataContainer;
         [HideInInspector, SerializeField] Transform     generatedDataTransform;
         [HideInInspector, SerializeField] bool          initialized = false;
 
-        public bool IsInitialized { get { return initialized; } }
-        public override int NodeID { get { return Node.NodeID; } }
-        public override bool CanHaveChildNodes { get { return !SkipThisNode; } }
+        public bool             IsInitialized       { get { return initialized; } }
+        public override int     NodeID              { get { return Node.NodeID; } }
+        public override bool    CanHaveChildNodes   { get { return !SkipThisNode; } }
 
         public override void OnInitialize()
         {

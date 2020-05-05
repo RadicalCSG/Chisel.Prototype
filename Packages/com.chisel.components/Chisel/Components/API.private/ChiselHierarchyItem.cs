@@ -11,9 +11,9 @@ namespace Chisel.Components
 
     public sealed class ChiselSceneHierarchy
     {
-        public Scene                            Scene;
-        public ChiselModel                         DefaultModel;		// TODO: create this, but only when necessary.
-        public readonly List<ChiselHierarchyItem>  RootItems		= new List<ChiselHierarchyItem>();
+        public Scene                                Scene;
+        public ChiselModel                          DefaultModel;		// TODO: create this, but only when necessary.
+        public readonly List<ChiselHierarchyItem>   RootItems	    = new List<ChiselHierarchyItem>();
     }
 
     public sealed class ChiselHierarchyItem
