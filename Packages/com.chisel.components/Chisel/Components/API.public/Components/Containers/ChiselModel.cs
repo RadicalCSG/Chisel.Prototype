@@ -81,6 +81,18 @@ namespace Chisel.Components
         public const string kStitchLightmapSeamsName            = nameof(stitchLightmapSeams);
 #endif
 
+
+        // TODO: store lightmap information in settings so it can't get lost?
+        //renderComponents.meshRenderer.lightmapIndex
+        //renderComponents.meshRenderer.lightmapScaleOffset
+        //renderComponents.meshRenderer.lightmapTilingOffset
+        //renderComponents.meshRenderer.lightProbeUsage
+        //renderComponents.meshRenderer.realtimeLightmapIndex
+        //renderComponents.meshRenderer.realtimeLightmapScaleOffset
+        //renderComponents.meshRenderer.lightProbeProxyVolumeOverride
+        //renderComponents.meshRenderer.probeAnchor
+
+
         public GameObject                       lightProbeProxyVolumeOverride;
         public Transform                        probeAnchor;
         public MotionVectorGenerationMode		motionVectorGenerationMode		= MotionVectorGenerationMode.Object;
@@ -165,6 +177,8 @@ namespace Chisel.Components
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
 
         [HideInInspector, NonSerialized]
+        public bool allChildrenVisible = true;
+        [HideInInspector, NonSerialized]
         public readonly Dictionary<Material, List<ChiselRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
         [HideInInspector, NonSerialized]
         public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
@@ -178,7 +192,7 @@ namespace Chisel.Components
         [HideInInspector, SerializeField] GameObject    generatedDataContainer;
         [HideInInspector, SerializeField] Transform     generatedDataTransform;
         [HideInInspector, SerializeField] bool          initialized = false;
-
+        
         public bool             IsInitialized       { get { return initialized; } }
         public override int     NodeID              { get { return Node.NodeID; } }
         public override bool    CanHaveChildNodes   { get { return !SkipThisNode; } }
@@ -215,6 +229,8 @@ namespace Chisel.Components
                 uvGenerationSettings.hardAngle = defaults.hardAngle;
                 uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
             }
+
+            allChildrenVisible = UnityEditor.SceneVisibilityManager.instance.AreAllDescendantsVisible(gameObject);
 #endif
 
             initialized = true;

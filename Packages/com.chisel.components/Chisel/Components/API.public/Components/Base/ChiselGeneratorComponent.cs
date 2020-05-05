@@ -38,6 +38,18 @@ namespace Chisel.Components
         public CSGTreeNode	TopNode     { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Nodes[0]; } }
         bool                ValidNodes  { get { return (Nodes != null && Nodes.Length > 0) && Nodes[0].Valid; } }
 
+#if UNITY_EDITOR
+        public override void UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
+        {
+            var visible         = !instance.IsHidden(gameObject);
+            var pickingEnabled  = !instance.IsPickingDisabled(gameObject);
+            foreach (var node in Nodes)
+            {
+                CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
+            }
+        }
+#endif
+
         public override CSGTreeNode	GetTreeNodeByIndex(int index)
         {
             if (index < 0 || index > Nodes.Length)

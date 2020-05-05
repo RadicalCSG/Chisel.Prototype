@@ -300,8 +300,101 @@ namespace Chisel.Components
 #endif
         }
 
-        internal void BuildComponents(ChiselModel			model, 
-                                      ModelState		modelState,
+#if UNITY_EDITOR
+        public static void OnVisibilityChanged()
+        {
+            ChiselGeneratedModelMeshManager.UpdateVisibility();
+
+            // TODO: 1. turn off rendering regular meshes when we have partial visibility of model contents
+            //       2. find a way to render partial mesh instead
+            //          A. needs to show lightmap of original mesh, even when modified
+            //          B. updating lightmaps needs to still work as if original mesh is changed
+            /*
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            foreach (var model in models)
+            {
+                var allChildrenVisible = sceneVisibilityManager.AreAllDescendantsVisible(model.gameObject);
+                if (allChildrenVisible != model.allChildrenVisible)
+                {
+                    model.allChildrenVisible = allChildrenVisible;
+                    UpdatePartialVisibilityMeshesRendering(model);
+                }
+            }*/
+        }
+        /*
+        static void UpdatePartialVisibilityMeshesRendering(ChiselModel model)
+        {
+            var allChildrenVisible = model.allChildrenVisible;
+            foreach (var renderComponents in model.generatedRenderComponents.Values)
+            {
+                foreach (var renderComponent in renderComponents)
+                {
+                    renderComponent.meshRenderer.forceRenderingOff = !allChildrenVisible;
+                }
+            }
+        }*/
+#endif
+        internal void BuildRenderComponents(ChiselModel			        model, 
+                                            ModelState		            modelState,
+                                            Material                    renderMaterial,
+                                            Mesh                        sharedMesh,
+                                            GeneratedMeshDescription    meshDescription,
+                                            ref ChiselRenderComponents  renderComponents,
+                                            bool                        forceUpdate,
+                                            bool                        visibilityMesh = false)
+        {
+            renderComponents = null;
+            List<ChiselRenderComponents> components;
+            if (modelState.existingRenderComponents.TryGetValue(renderMaterial, out components))
+            {
+                while (components.Count > 0)
+                {
+                    var curComponents = components[0];
+                    components.RemoveAt(0);
+
+                    if (components.Count == 0)
+                    {
+                        modelState.existingRenderComponents.Remove(renderMaterial);
+                        model.generatedComponents.Remove(curComponents.transform);
+                    }
+
+                    if (curComponents.meshRenderer && curComponents.meshFilter)
+                    {
+                        renderComponents = curComponents;
+                        break;
+                    }
+                } 
+            }
+
+            forceUpdate = UpdateOrCreateRenderComponents(model, modelState, meshDescription, ref renderComponents) || forceUpdate;
+            if (renderComponents.meshRenderer.sharedMaterial != renderMaterial)
+                renderComponents.meshRenderer.sharedMaterial =  renderMaterial;
+            if (renderComponents.meshFilter  .sharedMesh     != sharedMesh)
+                renderComponents.meshFilter  .sharedMesh     =  sharedMesh;
+
+#if UNITY_EDITOR
+            /*
+            var shouldHideMesh = !(model.allChildrenVisible ^ visibilityMesh);
+            if (renderComponents.meshRenderer.forceRenderingOff != shouldHideMesh)
+                renderComponents.meshRenderer.forceRenderingOff = shouldHideMesh;
+            */
+
+            if (forceUpdate) 
+            {
+                var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
+                if (lightmapStatic)
+                {
+                    renderComponents.meshRenderer.realtimeLightmapIndex = -1;
+                    renderComponents.meshRenderer.lightmapIndex         = -1;
+                    renderComponents.uvLightmapUpdateTime = Time.realtimeSinceStartup;
+                    haveUVsToUpdate = true;
+                }
+            }
+#endif
+        }
+
+        internal void BuildComponents(ChiselModel			    model, 
+                                      ModelState		        modelState,
                                       ChiselGeneratedModelMesh	generatedMesh)
         {
             Material		renderMaterial	= null;
@@ -327,49 +420,14 @@ namespace Chisel.Components
             
             if (renderMaterial != null)
             {
-                generatedMesh.renderComponents = null;
-                List<ChiselRenderComponents> components;
-                if (modelState.existingRenderComponents.TryGetValue(renderMaterial, out components))
-                {
-                    while (components.Count > 0)
-                    {
-                        var curComponents = components[0];
-                        components.RemoveAt(0);
-
-                        if (components.Count == 0)
-                        {
-                            modelState.existingRenderComponents.Remove(renderMaterial);
-                            model.generatedComponents.Remove(curComponents.transform);
-                        }
-
-                        if (curComponents.meshRenderer && curComponents.meshFilter)
-                        {
-                            generatedMesh.renderComponents = curComponents;
-                            break;
-                        }
-                    } 
-                }
-
-                var forceUpdate = UpdateOrCreateRenderComponents(model, modelState, generatedMesh.meshDescription, ref generatedMesh.renderComponents);
-                if (generatedMesh.renderComponents.meshRenderer.sharedMaterial != renderMaterial)
-                    generatedMesh.renderComponents.meshRenderer.sharedMaterial =  renderMaterial;
-                if (generatedMesh.renderComponents.meshFilter  .sharedMesh     != generatedMesh.sharedMesh)
-                    generatedMesh.renderComponents.meshFilter  .sharedMesh     =  generatedMesh.sharedMesh;
-#if UNITY_EDITOR
-                if (generatedMesh.needsUpdate || forceUpdate)
-                {
-                    var lightmapStatic = (modelState.staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) == UnityEditor.StaticEditorFlags.ContributeGI;
-                    if (lightmapStatic)
-                    {
-                        generatedMesh.renderComponents.meshRenderer.realtimeLightmapIndex = -1;
-                        generatedMesh.renderComponents.meshRenderer.lightmapIndex         = -1;
-                        generatedMesh.renderComponents.uvLightmapUpdateTime = Time.realtimeSinceStartup;
-                        haveUVsToUpdate = true;
-                    }
-                }
-#endif
-            }
-            else
+                BuildRenderComponents(model,
+                                      modelState,
+                                      renderMaterial,
+                                      generatedMesh.sharedMesh,
+                                      generatedMesh.meshDescription,
+                                      ref generatedMesh.renderComponents,
+                                      generatedMesh.needsUpdate);            
+            } else
             if (physicsMaterial != null)
             {
                 generatedMesh.colliderComponents = null;
@@ -419,7 +477,7 @@ namespace Chisel.Components
                 transform.SetParent(modelState.modelTransform, false);
                 ResetTransform(transform);
             }
-            
+
             if (gameObject.layer     != modelState.layer   ) gameObject.layer     = modelState.layer;
             if (gameObject.hideFlags != GameObjectHideFlags) gameObject.hideFlags = GameObjectHideFlags;
             if (transform .hideFlags != TransformHideFlags ) transform .hideFlags = TransformHideFlags;
@@ -452,12 +510,12 @@ namespace Chisel.Components
                 componentTransform.SetParent(modelState.containerTransform, false);
                 ResetTransform(componentTransform);
             }
-            
+
             if (componentGameObject.layer     != modelState.layer   ) componentGameObject.layer     = modelState.layer;
             if (componentGameObject.hideFlags != GameObjectHideFlags) componentGameObject.hideFlags = GameObjectHideFlags;
             if (componentTransform .hideFlags != TransformHideFlags ) componentTransform .hideFlags = TransformHideFlags;
             if (component          .hideFlags != ComponentHideFlags ) component          .hideFlags = ComponentHideFlags;
-
+            
 #if UNITY_EDITOR
             var prevStaticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(componentGameObject);
             if (prevStaticFlags != modelState.staticFlags)
@@ -739,11 +797,9 @@ namespace Chisel.Components
                     serializedObject.SetPropertyValue("m_ImportantGI",                      renderSettings.importantGI);
                     serializedObject.SetPropertyValue("m_PreserveUVs",                      renderSettings.optimizeUVs);
                     serializedObject.SetPropertyValue("m_IgnoreNormalsForChartDetection",   renderSettings.ignoreNormalsForChartDetection);
-                    serializedObject.SetPropertyValue("m_ScaleInLightmap",                  renderSettings.scaleInLightmap);
                     serializedObject.SetPropertyValue("m_AutoUVMaxDistance",                renderSettings.autoUVMaxDistance);
                     serializedObject.SetPropertyValue("m_AutoUVMaxAngle",                   renderSettings.autoUVMaxAngle);
                     serializedObject.SetPropertyValue("m_MinimumChartSize",                 renderSettings.minimumChartSize);
-                    serializedObject.SetPropertyValue("m_StitchLightmapSeams",              renderSettings.stitchLightmapSeams);
                 }
 #endif
 
@@ -757,6 +813,8 @@ namespace Chisel.Components
                     meshRenderer.lightProbeUsage				= renderSettings.lightProbeUsage;
                     meshRenderer.allowOcclusionWhenDynamic		= renderSettings.allowOcclusionWhenDynamic;
                     meshRenderer.renderingLayerMask				= renderSettings.renderingLayerMask;
+                    meshRenderer.stitchLightmapSeams            = renderSettings.stitchLightmapSeams;
+                    meshRenderer.scaleInLightmap                = renderSettings.scaleInLightmap;
                     meshRenderer.receiveGI                      = renderSettings.receiveGI;
                 }
             }
@@ -907,11 +965,29 @@ namespace Chisel.Components
 #endif
 
 
-
         public class HideFlagsState
         {
             public Dictionary<UnityEngine.GameObject, ChiselModel>	generatedComponents;
-            public Dictionary<UnityEngine.Object, HideFlags>	hideFlags;
+            public Dictionary<UnityEngine.Object, HideFlags>	    hideFlags;
+#if UNITY_EDITOR
+            public Dictionary<UnityEngine.GameObject, bool>	        hierarchyHidden;
+            public Dictionary<UnityEngine.GameObject, bool>	        hierarchyDisabled;
+#endif
+        }
+
+        // TODO: find a better place for this
+        public static bool IsValidModelToBeSelected(ChiselModel model)
+        {
+            if (!model || !model.isActiveAndEnabled || !model.GeneratedDataContainer)
+                return false;
+#if UNITY_EDITOR
+            var gameObject = model.gameObject;
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            if (sceneVisibilityManager.AreAllDescendantsHidden(gameObject) ||
+                sceneVisibilityManager.IsPickingDisabledOnAllDescendants(gameObject))
+                return false;
+#endif
+            return true;
         }
 
         public static HideFlagsState BeginPicking()
@@ -919,13 +995,22 @@ namespace Chisel.Components
             var state = new HideFlagsState()
             {
                 generatedComponents = new Dictionary<UnityEngine.GameObject, ChiselModel>(),
-                hideFlags = new Dictionary<UnityEngine.Object, HideFlags>()
+                hideFlags = new Dictionary<UnityEngine.Object, HideFlags>(),
+#if UNITY_EDITOR
+                hierarchyHidden     = new Dictionary<UnityEngine.GameObject, bool>(),
+                hierarchyDisabled   = new Dictionary<UnityEngine.GameObject, bool>(),
+#endif
             };
 
-            foreach(var model in models)
+#if UNITY_EDITOR
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+#endif
+
+            foreach (var model in models)
             {
-                if (!model.GeneratedDataContainer)
+                if (!IsValidModelToBeSelected(model))
                     continue;
+
                 var renderers	= model.GeneratedDataContainer.GetComponentsInChildren<Renderer>();
                 if (renderers != null)
                 {
@@ -944,14 +1029,23 @@ namespace Chisel.Components
             {
                 foreach(var component in state.generatedComponents.Keys)
                 {
-                    var gameObject = component.gameObject;
-                    var transform = component.transform;
+                    var gameObject  = component.gameObject;
+                    var transform   = component.transform;
                     state.hideFlags[gameObject] = gameObject.hideFlags;
                     state.hideFlags[transform] = transform.hideFlags;
                     state.hideFlags[component] = component.hideFlags;
                     gameObject.hideFlags = HideFlags.None;
                     transform.hideFlags = HideFlags.None;
                     component.hideFlags = HideFlags.None;
+#if UNITY_EDITOR
+                    state.hierarchyHidden[gameObject] = sceneVisibilityManager.IsHidden(gameObject);
+                    if (state.hierarchyHidden[gameObject])
+                        sceneVisibilityManager.Show(gameObject, false);
+                    
+                    state.hierarchyDisabled[gameObject] = sceneVisibilityManager.IsPickingDisabled(gameObject);
+                    if (state.hierarchyDisabled[gameObject])
+                        sceneVisibilityManager.EnablePicking(gameObject, false);
+#endif
                 }
             }
             return state;
@@ -965,7 +1059,21 @@ namespace Chisel.Components
             
             foreach (var pair in state.hideFlags)
                 pair.Key.hideFlags = pair.Value;
-            
+
+#if UNITY_EDITOR
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            foreach (var pair in state.hierarchyHidden)
+            {
+                if (pair.Value)
+                    sceneVisibilityManager.Hide(pair.Key, false);
+            }
+            foreach (var pair in state.hierarchyDisabled)
+            {
+                if (pair.Value)
+                    sceneVisibilityManager.DisablePicking(pair.Key, false);
+            }
+#endif
+
             if (object.Equals(pickedObject, null))
                 return false;
 

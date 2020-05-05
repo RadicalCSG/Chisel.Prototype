@@ -20,6 +20,7 @@ namespace Chisel.Components
 
         public ChiselRenderComponents   renderComponents;
         public ChiselColliderComponents colliderComponents;
+        [NonSerialized]
         public bool                     needsUpdate = true;
     }
 
@@ -30,6 +31,7 @@ namespace Chisel.Components
         public MeshRenderer meshRenderer;
         public GameObject   gameObject;
         public Transform    transform;
+        [NonSerialized]
         public float        uvLightmapUpdateTime;
     }
 
@@ -255,5 +257,14 @@ namespace Chisel.Components
 
             model.generatedMeshes = __allocateGeneratedMeshesTable.ToArray();
         }
+
+#if UNITY_EDITOR
+        public static void UpdateVisibility()
+        {
+            var instance = UnityEditor.SceneVisibilityManager.instance;
+            foreach (var node in registeredNodeLookup)
+                node.UpdateVisibility(instance);
+        }
+#endif
     }
 }

@@ -178,6 +178,24 @@ namespace Chisel.Core
 	        return false;
         }
 
+#if UNITY_EDITOR
+        static Dictionary<int, bool> brushSelectableState = new Dictionary<int, bool>();
+        public static void SetBrushState(int brushNodeID, bool visible, bool pickingEnabled)
+        {
+            if (!CSGManager.IsValidNodeID(brushNodeID))
+                return;
+
+            var brushNodeIndex = brushNodeID - 1;
+            brushSelectableState[brushNodeIndex] = visible && pickingEnabled;
+        }
+        
+        static bool IsBrushSelectable(int brushNodeID)
+        {
+            var brushNodeIndex = brushNodeID - 1;
+            return !brushSelectableState.TryGetValue(brushNodeIndex, out bool result) || result;
+        }
+#endif
+
 
         // TODO:	problem with RayCastMulti is that this code is too slow
         //			solution:	1.	replace RayCastMulti with a way to 'simply' changing the in_rayStart 
@@ -215,6 +233,9 @@ namespace Chisel.Core
 
             var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
             var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBuffers;
+#if UNITY_EDITOR
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+#endif
 
             // TODO: optimize
             for (int i = 0; i < treeInfo.treeBrushes.Count; i++)
@@ -230,6 +251,7 @@ namespace Chisel.Core
                 //if (((int)operation_type_bits & InfiniteBrushBits) == InfiniteBrushBits)
                 //    continue;
 
+
                 if (!brushRenderBuffers.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
                     continue;
 
@@ -240,6 +262,11 @@ namespace Chisel.Core
                     continue;
 
                 var brush = new CSGTreeBrush() { brushNodeID = brushNodeID };
+
+#if UNITY_EDITOR
+                if (!IsBrushSelectable(brushNodeID))
+                    continue;
+#endif
 
                 var resultDist = float.PositiveInfinity;
 			    if (!BrushRayCast(meshQueries, brush,

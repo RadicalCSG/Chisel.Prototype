@@ -67,14 +67,20 @@ namespace Chisel.Editors
         #endregion
 
 
+
         static bool IsValidNodeToBeSelected(GameObject gameObject)
         {
-            if (!gameObject)
+            if (!gameObject || !gameObject.activeInHierarchy)
                 return false;
 
             if (gameObject.TryGetComponent<ChiselModel>(out var model) ||
                 // TODO: use a component on the generated MeshRenderer/Container instead
                 gameObject.name.StartsWith("‹[generated"))
+                return false;
+
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            if (sceneVisibilityManager.IsHidden(gameObject) ||
+                sceneVisibilityManager.IsPickingDisabled(gameObject))
                 return false;
             return true;
         }
@@ -289,7 +295,6 @@ namespace Chisel.Editors
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
                 else
                     gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
-
             }
             finally
             {
@@ -436,7 +441,7 @@ namespace Chisel.Editors
             if (object.Equals(gameObject, null))
                 return null;
 
-            if (ChiselModelManager.IsVisible(model))
+            if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
             { 
                 int filterLayerParameter0 = (sharedMaterial) ? sharedMaterial.GetInstanceID() : 0;
                 {
