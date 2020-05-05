@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System;
 using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
 using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
+using UnityEngine.Rendering;
 
 namespace Chisel.Components
 {
@@ -176,12 +177,14 @@ namespace Chisel.Components
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
 
+        [HideInInspector] public VisibilityState visibilityState = VisibilityState.Unknown;
         [HideInInspector, NonSerialized]
-        public bool allChildrenVisible = true;
+        public bool needVisibilityMeshUpdate = false;
         [HideInInspector, NonSerialized]
-        public readonly Dictionary<Material, List<ChiselRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
+        public readonly Dictionary<Material, List<ChiselRenderComponents>>          generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
+        [HideInInspector, NonSerialized] public Mesh[]                              generatedPartialVisibilityMeshes;
         [HideInInspector, NonSerialized]
-        public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
+        public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>>  generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
         [HideInInspector, NonSerialized]
         public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
         [SerializeField] public ChiselGeneratedModelMesh[]  generatedMeshes     = new ChiselGeneratedModelMesh[0];
@@ -229,8 +232,6 @@ namespace Chisel.Components
                 uvGenerationSettings.hardAngle = defaults.hardAngle;
                 uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
             }
-
-            allChildrenVisible = UnityEditor.SceneVisibilityManager.instance.AreAllDescendantsVisible(gameObject);
 #endif
 
             initialized = true;
@@ -316,5 +317,48 @@ namespace Chisel.Components
             }
             return bounds;
         }
+
+#if UNITY_EDITOR
+        public void Update()
+        {
+            Debug.Assert(visibilityState != VisibilityState.Unknown);
+            if (visibilityState != VisibilityState.Mixed)
+                return;
+
+            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
+            // but still have the same lightmap, and keep lightmap support.
+            // We do this by setting forceRenderingOff to true on all MeshRenderers.
+            // This makes them behave like before, except that they don't render. This means they are still 
+            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
+            // render the sub-mesh with the exact same settings as the MeshRenderer.
+
+            var layer   = gameObject.layer; 
+            var matrix  = transform.localToWorldMatrix;
+            var camera  = Camera.current;
+            foreach (var list in generatedRenderComponents.Values)
+            {
+                foreach (var rendererComponents in list)
+                {
+                    var renderer                = rendererComponents.meshRenderer;
+                    if (!renderer || !renderer.forceRenderingOff)
+                        continue;
+
+                    var mesh                    = (Mesh)rendererComponents.meshFilter.sharedMesh;
+                    var properties = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(properties);
+
+                    var materials               = renderer.sharedMaterials;
+                    var castShadows             = (ShadowCastingMode)renderer.shadowCastingMode;
+                    var receiveShadows          = (bool)renderer.receiveShadows;
+                    var probeAnchor             = (Transform)renderer.probeAnchor;
+                    var lightProbeUsage         = (LightProbeUsage)renderer.lightProbeUsage;
+                    var lightProbeProxyVolume   = renderer.lightProbeProxyVolumeOverride == null ? null : renderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
+                    
+                    for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
+                        Graphics.DrawMesh(mesh, matrix, materials[submeshIndex], layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+                }
+            }
+        }
+#endif
     }
 }

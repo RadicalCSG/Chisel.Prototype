@@ -25,12 +25,6 @@ namespace Chisel.Components
             set { }
         }
 
-#if UNITY_EDITOR
-        public virtual void UpdateVisibility(UnityEditor.SceneVisibilityManager instance) 
-        { 
-        }
-#endif
-
         public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
         protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         public void OnValidate()	{ OnValidateInternal(); }

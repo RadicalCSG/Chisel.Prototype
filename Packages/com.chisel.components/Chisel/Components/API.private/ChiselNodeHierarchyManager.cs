@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -832,6 +832,7 @@ namespace Chisel.Components
                 FindAndReregisterAllNodes();
                 ChiselBrushContainerAssetManager.Update();
                 ChiselBrushMaterialManager.Update();
+                ChiselGeneratedComponentManager.OnVisibilityChanged();
             }
 
             // *Workaround*
@@ -1421,7 +1422,7 @@ namespace Chisel.Components
                     createDefaultModels.Remove(sceneHierarchy);
                 }
             }
-            
+
 
             // Used to redraw windows etc.
             if (NodeHierarchyModified != null)

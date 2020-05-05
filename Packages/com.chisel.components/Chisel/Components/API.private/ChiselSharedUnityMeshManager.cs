@@ -51,6 +51,12 @@ namespace Chisel.Components
             }
         }
 
+        public void UpdatePartialVisibilityMeshes(ChiselModel model)
+        {
+
+            model.needVisibilityMeshUpdate = false;
+        }
+
         public void CreateNewMeshes(ChiselModel model)
         {
             // Separate loop so we can re-use meshes when creating new meshes

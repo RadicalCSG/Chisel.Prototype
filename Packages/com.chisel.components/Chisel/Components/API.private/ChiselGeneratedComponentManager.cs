@@ -301,38 +301,72 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
+        static Dictionary<int, VisibilityState> visibilityStateLookup = new Dictionary<int, VisibilityState>();
         public static void OnVisibilityChanged()
         {
-            ChiselGeneratedModelMeshManager.UpdateVisibility();
-
             // TODO: 1. turn off rendering regular meshes when we have partial visibility of model contents
             //       2. find a way to render partial mesh instead
             //          A. needs to show lightmap of original mesh, even when modified
             //          B. updating lightmaps needs to still work as if original mesh is changed
-            /*
+            visibilityStateLookup.Clear();
             var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            foreach (var node in ChiselGeneratedModelMeshManager.registeredNodeLookup)
+            {
+                if (!node || !node.isActiveAndEnabled)
+                    continue;
+                var generator = node as ChiselGeneratorComponent;
+                if (!generator)
+                    continue;
+
+                if (!visibilityStateLookup.TryGetValue(generator.hierarchyItem.Model.NodeID, out VisibilityState prevState))
+                    prevState = VisibilityState.Unknown;
+                visibilityStateLookup[generator.hierarchyItem.Model.NodeID] = generator.UpdateVisibility(sceneVisibilityManager) | prevState;
+            }
+
             foreach (var model in models)
             {
-                var allChildrenVisible = sceneVisibilityManager.AreAllDescendantsVisible(model.gameObject);
-                if (allChildrenVisible != model.allChildrenVisible)
+                if (!model || !model.isActiveAndEnabled)
+                    continue;
+                if (!visibilityStateLookup.TryGetValue(model.NodeID, out VisibilityState state))
                 {
-                    model.allChildrenVisible = allChildrenVisible;
+                    model.visibilityState = VisibilityState.AllVisible;
+                    continue;
+                }
+                if (state != model.visibilityState)
+                {
+                    model.visibilityState = state;
+                    model.needVisibilityMeshUpdate = (state == VisibilityState.Mixed);
                     UpdatePartialVisibilityMeshesRendering(model);
                 }
-            }*/
+            }
         }
-        /*
+
+        // TODO: put somewhere else
+        public static void UpdatePartialVisibilityMeshes()
+        {
+            foreach (var model in models)
+            {
+                if (!model.needVisibilityMeshUpdate)
+                    continue;
+
+                ChiselGeneratedModelMeshManager.UpdatePartialVisibilityMeshes(model);
+                model.needVisibilityMeshUpdate = false;
+            }
+        }
+
         static void UpdatePartialVisibilityMeshesRendering(ChiselModel model)
         {
-            var allChildrenVisible = model.allChildrenVisible;
+            var modelVisibilityState = model.visibilityState;
+            var shouldHideMesh       = modelVisibilityState != VisibilityState.AllVisible && 
+                                       modelVisibilityState != VisibilityState.Unknown;
             foreach (var renderComponents in model.generatedRenderComponents.Values)
             {
                 foreach (var renderComponent in renderComponents)
                 {
-                    renderComponent.meshRenderer.forceRenderingOff = !allChildrenVisible;
+                    renderComponent.meshRenderer.forceRenderingOff = shouldHideMesh;
                 }
             }
-        }*/
+        }
 #endif
         internal void BuildRenderComponents(ChiselModel			        model, 
                                             ModelState		            modelState,
@@ -340,8 +374,7 @@ namespace Chisel.Components
                                             Mesh                        sharedMesh,
                                             GeneratedMeshDescription    meshDescription,
                                             ref ChiselRenderComponents  renderComponents,
-                                            bool                        forceUpdate,
-                                            bool                        visibilityMesh = false)
+                                            bool                        forceUpdate)
         {
             renderComponents = null;
             List<ChiselRenderComponents> components;
@@ -373,11 +406,9 @@ namespace Chisel.Components
                 renderComponents.meshFilter  .sharedMesh     =  sharedMesh;
 
 #if UNITY_EDITOR
-            /*
-            var shouldHideMesh = !(model.allChildrenVisible ^ visibilityMesh);
+            var shouldHideMesh = (model.visibilityState != VisibilityState.AllVisible && model.visibilityState != VisibilityState.Unknown);
             if (renderComponents.meshRenderer.forceRenderingOff != shouldHideMesh)
                 renderComponents.meshRenderer.forceRenderingOff = shouldHideMesh;
-            */
 
             if (forceUpdate) 
             {
@@ -970,6 +1001,7 @@ namespace Chisel.Components
             public Dictionary<UnityEngine.GameObject, ChiselModel>	generatedComponents;
             public Dictionary<UnityEngine.Object, HideFlags>	    hideFlags;
 #if UNITY_EDITOR
+            public Dictionary<Renderer, bool>	                    rendererOff;
             public Dictionary<UnityEngine.GameObject, bool>	        hierarchyHidden;
             public Dictionary<UnityEngine.GameObject, bool>	        hierarchyDisabled;
 #endif
@@ -995,8 +1027,9 @@ namespace Chisel.Components
             var state = new HideFlagsState()
             {
                 generatedComponents = new Dictionary<UnityEngine.GameObject, ChiselModel>(),
-                hideFlags = new Dictionary<UnityEngine.Object, HideFlags>(),
+                hideFlags           = new Dictionary<UnityEngine.Object, HideFlags>(),
 #if UNITY_EDITOR
+                rendererOff         = new Dictionary<Renderer, bool>(),
                 hierarchyHidden     = new Dictionary<UnityEngine.GameObject, bool>(),
                 hierarchyDisabled   = new Dictionary<UnityEngine.GameObject, bool>(),
 #endif
@@ -1015,7 +1048,16 @@ namespace Chisel.Components
                 if (renderers != null)
                 {
                     foreach (var renderer in renderers)
+                    {
                         state.generatedComponents[renderer.gameObject] = model;
+#if UNITY_EDITOR
+                        if (renderer.forceRenderingOff)
+                        {
+                            state.rendererOff[renderer] = true;
+                            renderer.forceRenderingOff = false;
+                        }
+#endif
+                    }
                 }
 
                 var colliders	= model.GeneratedDataContainer.GetComponentsInChildren<Collider>();
@@ -1071,6 +1113,10 @@ namespace Chisel.Components
             {
                 if (pair.Value)
                     sceneVisibilityManager.DisablePicking(pair.Key, false);
+            }
+            foreach (var pair in state.rendererOff)
+            {
+                pair.Key.forceRenderingOff = pair.Value;
             }
 #endif
 

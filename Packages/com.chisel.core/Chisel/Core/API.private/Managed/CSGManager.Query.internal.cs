@@ -7,6 +7,14 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
+    public enum VisibilityState
+    {
+        Unknown         = 0,
+        AllVisible      = 1,
+        AllInvisible    = 2,
+        Mixed           = 3
+    }
+
     // TODO: clean up
     static partial class CSGManager
     {
@@ -180,13 +188,19 @@ namespace Chisel.Core
 
 #if UNITY_EDITOR
         static Dictionary<int, bool> brushSelectableState = new Dictionary<int, bool>();
-        public static void SetBrushState(int brushNodeID, bool visible, bool pickingEnabled)
+        public static VisibilityState SetBrushState(int brushNodeID, bool visible, bool pickingEnabled)
         {
             if (!CSGManager.IsValidNodeID(brushNodeID))
-                return;
+                return VisibilityState.Unknown;
 
             var brushNodeIndex = brushNodeID - 1;
-            brushSelectableState[brushNodeIndex] = visible && pickingEnabled;
+            var selectable = visible && pickingEnabled;
+            brushSelectableState[brushNodeIndex] = selectable;
+
+            if (visible)
+                return VisibilityState.AllVisible;
+            else
+                return VisibilityState.AllInvisible;
         }
         
         static bool IsBrushSelectable(int brushNodeID)
@@ -233,9 +247,6 @@ namespace Chisel.Core
 
             var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
             var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBuffers;
-#if UNITY_EDITOR
-            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
-#endif
 
             // TODO: optimize
             for (int i = 0; i < treeInfo.treeBrushes.Count; i++)

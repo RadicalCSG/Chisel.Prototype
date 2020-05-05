@@ -52,7 +52,7 @@ namespace Chisel.Components
         
         const int kMaxVertexCount = HashedVertices.kMaxVertexCount;
 
-        static HashSet<ChiselNode>              registeredNodeLookup    = new HashSet<ChiselNode>();
+        internal static HashSet<ChiselNode>     registeredNodeLookup    = new HashSet<ChiselNode>();
         internal static List<ChiselModel>       registeredModels        = new List<ChiselModel>();
 
         static ChiselSharedUnityMeshManager	    sharedUnityMeshes       = new ChiselSharedUnityMeshManager();
@@ -104,6 +104,15 @@ namespace Chisel.Components
                 sharedUnityMeshes.Register(model);
                 componentGenerator.Register(model);
             }
+        }
+
+        public static void UpdatePartialVisibilityMeshes(ChiselModel node)
+        {
+            if (!node || !node.needVisibilityMeshUpdate)
+                return;
+
+            // TODO: figure out how to reuse mesh
+            //sharedUnityMeshes.UpdatePartialVisibilityMeshes(node);
         }
 
         public static void UpdateModels()
@@ -165,6 +174,12 @@ namespace Chisel.Components
                     //	note: reuses garbage collected meshes when possible
                     Profiler.BeginSample("sharedUnityMeshes.CreateNewMeshes");
                     sharedUnityMeshes.CreateNewMeshes(model);
+                    Profiler.EndSample();
+                    
+                    // Generate new UnityEngine.Mesh instances and fill them with data from the CSG algorithm (if necessary)
+                    //	note: reuses garbage collected meshes when possible
+                    Profiler.BeginSample("sharedUnityMeshes.UpdatePartialVisibilityMeshes");
+                    sharedUnityMeshes.UpdatePartialVisibilityMeshes(model);
                     Profiler.EndSample();
 
                     // Generate (or re-use) components and set them up properly
@@ -257,14 +272,5 @@ namespace Chisel.Components
 
             model.generatedMeshes = __allocateGeneratedMeshesTable.ToArray();
         }
-
-#if UNITY_EDITOR
-        public static void UpdateVisibility()
-        {
-            var instance = UnityEditor.SceneVisibilityManager.instance;
-            foreach (var node in registeredNodeLookup)
-                node.UpdateVisibility(instance);
-        }
-#endif
     }
 }

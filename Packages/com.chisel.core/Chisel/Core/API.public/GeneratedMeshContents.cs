@@ -76,7 +76,7 @@ namespace Chisel.Core
             if (uv0      .IsCreated) mesh.SetUVs(0, uv0);
             
             mesh.SetTriangles(indices.ToArray(), 0, false);
-            mesh.bounds = bounds;
+            mesh.bounds = bounds; 
         }
 
         public void Dispose()

@@ -39,14 +39,17 @@ namespace Chisel.Components
         bool                ValidNodes  { get { return (Nodes != null && Nodes.Length > 0) && Nodes[0].Valid; } }
 
 #if UNITY_EDITOR
-        public override void UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
+        public VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
         {
+            var resultState     = VisibilityState.Unknown;
             var visible         = !instance.IsHidden(gameObject);
             var pickingEnabled  = !instance.IsPickingDisabled(gameObject);
             foreach (var node in Nodes)
             {
-                CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
+                var nodeState = CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
+                resultState |= nodeState;
             }
+            return resultState;
         }
 #endif
 

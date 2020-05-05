@@ -289,7 +289,7 @@ namespace Chisel.Editors
             GameObject gameObject = null;
             bool foundGameObject = false;
             try
-            {
+            { 
                 int materialIndex = -1;
                 if (PickClosestGO == null)
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
