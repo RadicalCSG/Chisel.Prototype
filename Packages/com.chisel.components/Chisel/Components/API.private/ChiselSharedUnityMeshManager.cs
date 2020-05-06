@@ -27,7 +27,7 @@ namespace Chisel.Components
     
     internal sealed class ChiselSharedUnityMeshManager
     {
-        Dictionary<GeneratedMeshKey, ChiselGeneratedRefCountedMesh> refCountedMeshes = new Dictionary<GeneratedMeshKey, ChiselGeneratedRefCountedMesh>();
+        Dictionary<int, ChiselGeneratedRefCountedMesh> refCountedMeshes = new Dictionary<int, ChiselGeneratedRefCountedMesh>();
 
         public void Clear() { refCountedMeshes.Clear(); }
         public void Register(ChiselModel model) { AddUnityMeshes(model); }
@@ -40,60 +40,43 @@ namespace Chisel.Components
             RemoveUnityMeshes(model);
         }
 
-        public void ReuseExistingMeshes(ChiselModel model)
-        {
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
-            {
-                var generatedMesh = model.generatedMeshes[i];
-                // See if we already know a mesh that has the same description
-                generatedMesh.sharedMesh = ReturnUnityMeshAndIncreaseRefCountIfExists(generatedMesh.meshKey);
-                generatedMesh.needsUpdate = !generatedMesh.sharedMesh;
-            }
-        }
 
         public void UpdatePartialVisibilityMeshes(ChiselModel model)
         {
-
             model.generated.needVisibilityMeshUpdate = false;
-        }
-
-        public void CreateNewMeshes(ChiselModel model)
-        {
-            // Separate loop so we can re-use meshes when creating new meshes
-
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
-            {
-                var generatedMesh = model.generatedMeshes[i];
-                if (generatedMesh.sharedMesh != null)
-                    continue;
-
-                // If not, create a new mesh ...
-                generatedMesh.sharedMesh = CreateNewUnityMesh(generatedMesh.meshKey);
-
-                RetrieveUnityMesh(model, generatedMesh.meshDescription, generatedMesh.sharedMesh);
-            }
         }
 
         public void AddUnityMeshes(ChiselModel model)
         {
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
+            for (int i = 0; i < model.generatedRenderMeshes.Length; i++)
             {
-                var generatedMesh = model.generatedMeshes[i];
+                var generatedMesh = model.generatedRenderMeshes[i];
+                generatedMesh.sharedMesh = ReturnOrRegisterUnityMeshAndIncreaseRefCount(generatedMesh.meshKey, generatedMesh.sharedMesh);
+            }
+            for (int i = 0; i < model.generatedColliderMeshes.Length; i++)
+            {
+                var generatedMesh = model.generatedColliderMeshes[i];
                 generatedMesh.sharedMesh = ReturnOrRegisterUnityMeshAndIncreaseRefCount(generatedMesh.meshKey, generatedMesh.sharedMesh);
             }
         }
 
         public void RemoveUnityMeshes(ChiselModel model)
         {
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
+            for (int i = 0; i < model.generatedRenderMeshes.Length; i++)
             {
-                var generatedMesh	= model.generatedMeshes[i];
+                var generatedMesh = model.generatedRenderMeshes[i];
+                DecreaseRefCount(generatedMesh.meshKey);
+                generatedMesh.sharedMesh = null;
+            }
+            for (int i = 0; i < model.generatedColliderMeshes.Length; i++)
+            {
+                var generatedMesh = model.generatedColliderMeshes[i];
                 DecreaseRefCount(generatedMesh.meshKey);
                 generatedMesh.sharedMesh = null;
             }
         }
 
-        public UnityEngine.Mesh ReturnOrRegisterUnityMeshAndIncreaseRefCount(GeneratedMeshKey meshKey, UnityEngine.Mesh generatedMesh)
+        public UnityEngine.Mesh ReturnOrRegisterUnityMeshAndIncreaseRefCount(int meshKey, UnityEngine.Mesh generatedMesh)
         {
             ChiselGeneratedRefCountedMesh refCountedMesh;
             refCountedMeshes.TryGetValue(meshKey, out refCountedMesh);
@@ -115,7 +98,7 @@ namespace Chisel.Components
             return refCountedMesh.sharedMesh;
         }
 
-        public UnityEngine.Mesh ReturnUnityMeshAndIncreaseRefCountIfExists(GeneratedMeshKey meshKey)
+        public UnityEngine.Mesh ReturnUnityMeshAndIncreaseRefCountIfExists(int meshKey)
         {
             ChiselGeneratedRefCountedMesh refCountedMesh;
             if (!refCountedMeshes.TryGetValue(meshKey, out refCountedMesh))
@@ -124,7 +107,7 @@ namespace Chisel.Components
             return refCountedMesh.sharedMesh;
         }
 
-        public void DecreaseRefCount(GeneratedMeshKey meshKey)
+        public void DecreaseRefCount(int meshKey)
         {
             ChiselGeneratedRefCountedMesh refCountedMesh;
             if (!refCountedMeshes.TryGetValue(meshKey, out refCountedMesh))
@@ -132,7 +115,7 @@ namespace Chisel.Components
             refCountedMesh.refCount--;
         }
         
-        static List<GeneratedMeshKey> garbage		= new List<GeneratedMeshKey>();
+        static List<int> garbage		= new List<int>();
         static List<UnityEngine.Mesh> garbageMeshes	= new List<UnityEngine.Mesh>();
 
         // Find all Unity Meshes that are no longer used
@@ -165,7 +148,7 @@ namespace Chisel.Components
             garbageMeshes.Clear();
         }
 
-        public UnityEngine.Mesh CreateNewUnityMesh(GeneratedMeshKey meshKey)
+        public UnityEngine.Mesh CreateNewUnityMesh(int meshKey)
         {
             UnityEngine.Mesh sharedMesh = null;
             if (garbageMeshes.Count > 0)
@@ -180,23 +163,45 @@ namespace Chisel.Components
             return ReturnOrRegisterUnityMeshAndIncreaseRefCount(meshKey, sharedMesh);
         }
 
-        public bool RetrieveUnityMesh(ChiselModel model, GeneratedMeshDescription meshDescription, UnityEngine.Mesh sharedMesh)
+        public bool RetrieveUnityMeshPositionOnly(ChiselModel model, GeneratedMeshDescription meshDescription, UnityEngine.Mesh sharedMesh)
         {
-            if (model.generatedMeshContents != null)
-            {
-                model.generatedMeshContents.Dispose();
-                model.generatedMeshContents = null;
-            }
-
             // Retrieve the generatedMesh, and store it in the Unity Mesh
-            model.generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription);
-            if (model.generatedMeshContents == null)
+            var generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription);
+            if (generatedMeshContents == null)
                 return false;
 
-            model.generatedMeshContents.CopyTo(sharedMesh);
+            sharedMesh.CopyFromPositionOnly(generatedMeshContents);
+            generatedMeshContents.Dispose();
             SetHasLightmapUVs(sharedMesh, false);
             return true;
         }
+
+        static readonly List<GeneratedMeshContents> sGeneratedContents = new List<GeneratedMeshContents>();
+        public bool RetrieveUnityMesh(ChiselModel model, GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex, UnityEngine.Mesh sharedMesh)
+        {
+            // Retrieve the generatedMesh, and store it in the Unity Mesh
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                var generatedMeshContents = model.Node.GetGeneratedMesh(meshDescriptions[i]);
+                if (generatedMeshContents == null)
+                    continue;
+                sGeneratedContents.Add(generatedMeshContents);
+            }
+            if (sGeneratedContents.Count == 0)
+                return false;
+
+            sharedMesh.CopyFrom(sGeneratedContents);
+
+            for (int i = 0; i < sGeneratedContents.Count; i++)
+            {
+                sGeneratedContents[i].Dispose();
+            }
+            sGeneratedContents.Clear();
+
+            SetHasLightmapUVs(sharedMesh, false);
+            return true;
+        }
+
 
         // Hacky way to store that a mesh has lightmap UV created
         public static bool HasLightmapUVs(UnityEngine.Mesh sharedMesh)

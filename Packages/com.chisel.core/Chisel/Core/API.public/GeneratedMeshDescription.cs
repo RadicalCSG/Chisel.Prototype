@@ -8,99 +8,37 @@ namespace Chisel.Core
     /// <summary>Contains data that describes a unique mesh that can, or has been, generated.</summary>
     /// <note>The hash values can be used to determine if an existing mesh has changed, and to decide if a new mesh should be created or not.</note>
     [Serializable]
-    public struct GeneratedMeshKey : IEqualityComparer<GeneratedMeshKey>, IEquatable<GeneratedMeshKey>
+    public static class MeshKey 
     {
-        public GeneratedMeshKey(GeneratedMeshDescription meshDescription)
-        {
-            geometryHashValue	= meshDescription.geometryHashValue;
-            surfaceHashValue	= meshDescription.surfaceHashValue;
-            vertexCount			= meshDescription.vertexCount;
-            indexCount			= meshDescription.indexCount;
-            usedVertexChannels	= meshDescription.meshQuery.UsedVertexChannels;
-        }
-
-        /// <value>Value that can be used to detect changes in vertex positions / indices.</value>
-        public UInt64       geometryHashValue;
-
-        /// <value>Value that can be used to detect changes in normal, tangent or uv.</value>
-        public UInt64       surfaceHashValue;
-
-        /// <value>Number of vertices of this generated mesh.</value><remarks>This can be used to pre-allocate arrays.</remarks>
-        public Int32        vertexCount;
-
-        /// <value>Number of vertices of this generated mesh.</value><remarks>This be used to pre-allocate arrays.</remarks>
-        public Int32        indexCount;
-
-        /// <value>Which vertex channels need to be used for the meshes we'd like to generate</value>
-        public VertexChannelFlags   usedVertexChannels;
-
-        #region Comparison
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj)
-        {
-            if (!(obj is GeneratedMeshKey))
-            {
-                return false;
-            }
-
-            var other = (GeneratedMeshKey)obj;
-            return Equals(other);
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public bool Equals(GeneratedMeshKey x, GeneratedMeshKey y)
-        {
-            return x.Equals(y);
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public bool Equals(GeneratedMeshKey other)
-        {
-            return geometryHashValue	== other.geometryHashValue &&
-                   surfaceHashValue		== other.surfaceHashValue &&
-                   vertexCount			== other.vertexCount &&
-                   indexCount			== other.indexCount &&
-                   usedVertexChannels	== other.usedVertexChannels;
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode()
-        {
-            return GetHashCode(this);
-        }
-
-        public int GetHashCode(GeneratedMeshKey obj)
+        public static int Calculate(GeneratedMeshDescription meshDescription)
         {
             var hashCode = -190551774;
-            hashCode = hashCode * -1521134295;
-            hashCode = hashCode * -1521134295 + (int)obj.geometryHashValue;
-            hashCode = hashCode * -1521134295 + (int)obj.surfaceHashValue;
-            hashCode = hashCode * -1521134295 + (int)obj.vertexCount;
-            hashCode = hashCode * -1521134295 + (int)obj.indexCount;
-            hashCode = hashCode * -1521134295 + (int)obj.usedVertexChannels;
+            hashCode = hashCode * -1521134295 + (int)meshDescription.meshQuery.UsedVertexChannels;
+            hashCode = hashCode * -1521134295 + (int)meshDescription.geometryHashValue;
+            hashCode = hashCode * -1521134295 + (int)meshDescription.surfaceHashValue;
+            hashCode = hashCode * -1521134295 + (int)meshDescription.vertexCount;
+            hashCode = hashCode * -1521134295 + (int)meshDescription.indexCount;
             return hashCode;
         }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator ==(GeneratedMeshKey left, GeneratedMeshKey right)
+        public static int Calculate(GeneratedMeshDescription[] meshDescriptions)
         {
-            return left.geometryHashValue == right.geometryHashValue &&
-                    left.surfaceHashValue == right.surfaceHashValue &&
-                    left.vertexCount == right.vertexCount &&
-                    left.indexCount == right.indexCount &&
-                    left.usedVertexChannels == right.usedVertexChannels;
-        }
+            if (meshDescriptions == null ||
+                meshDescriptions.Length == 0)
+                return 0;
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator !=(GeneratedMeshKey left, GeneratedMeshKey right)
-        {
-            return left.geometryHashValue != right.geometryHashValue ||
-                    left.surfaceHashValue != right.surfaceHashValue ||
-                    left.vertexCount != right.vertexCount ||
-                    left.indexCount != right.indexCount ||
-                    left.usedVertexChannels != right.usedVertexChannels;
+            var usedVertexChannels	= meshDescriptions[0].meshQuery.UsedVertexChannels;
+            var hashCode = -190551774;
+            hashCode = hashCode * -1521134295 + (int)usedVertexChannels;
+            for (int i = 0; i < meshDescriptions.Length; i++)
+            {
+                hashCode = hashCode * -1521134295 + (int)meshDescriptions[i].geometryHashValue;
+                hashCode = hashCode * -1521134295 + (int)meshDescriptions[i].surfaceHashValue;
+                hashCode = hashCode * -1521134295 + (int)meshDescriptions[i].vertexCount;
+                hashCode = hashCode * -1521134295 + (int)meshDescriptions[i].indexCount;
+            }
+            return hashCode;
         }
-        #endregion
     }
 
     /// <summary>Describes a generated mesh, that may not already have been created.</summary>

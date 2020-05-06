@@ -190,7 +190,6 @@ namespace Chisel.Components
         public VertexChannelFlags   VertexChannelMask           = VertexChannelFlags.All;
 
         [HideInInspector] public CSGTree                    Node;
-        [HideInInspector] internal GeneratedMeshContents    generatedMeshContents;
 
         [HideInInspector, SerializeField] GameObject        generatedDataContainer;
         [HideInInspector, SerializeField] Transform         generatedDataTransform;
@@ -200,12 +199,10 @@ namespace Chisel.Components
         [HideInInspector, SerializeField] ChiselGeneratedRenderSettings     renderSettings;
         [HideInInspector, SerializeField] SerializableUnwrapParam           uvGenerationSettings;
 
-        [HideInInspector, SerializeField] public ChiselGeneratedModelMesh[] generatedMeshes = new ChiselGeneratedModelMesh[0];
-        
+        [HideInInspector, SerializeField] public ChiselGeneratedRenderMesh[]    generatedRenderMeshes   = new ChiselGeneratedRenderMesh[0];
+        [HideInInspector, SerializeField] public ChiselGeneratedColliderMesh[]  generatedColliderMeshes = new ChiselGeneratedColliderMesh[0];
+
         [HideInInspector, NonSerialized] public GeneratedData generated = new GeneratedData();
-        
-
-
 
 
         public override void OnInitialize()
@@ -245,7 +242,7 @@ namespace Chisel.Components
             initialized = true;
         }
         public ChiselModel() : base() { }
-        protected override void OnDisable() { base.OnDisable(); if (generatedMeshContents != null) generatedMeshContents.Dispose(); }
+        protected override void OnDisable() { base.OnDisable(); }
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()
@@ -329,7 +326,7 @@ namespace Chisel.Components
         static List<Material> sSharedMaterials = new List<Material>();
         public void Update()
         {
-            Debug.Assert(generated.visibilityState != VisibilityState.Unknown);
+            Debug.Assert(generated.visibilityState != VisibilityState.Unknown, "Unknown Visibility state");
             if (generated.visibilityState != VisibilityState.Mixed)
                 return;
 

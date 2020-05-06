@@ -66,11 +66,11 @@ namespace Chisel.Components
             if ((staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) != UnityEditor.StaticEditorFlags.ContributeGI)
                 return false;
 
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
+            for (int i = 0; i < model.generatedRenderMeshes.Length; i++)
             {
-                var generatedMesh = model.generatedMeshes[i];
+                var generatedMesh = model.generatedRenderMeshes[i];
 
-                if ((generatedMesh.meshDescription.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows) == LayerUsageFlags.None)
+                if ((generatedMesh.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows) == LayerUsageFlags.None)
                     continue;
 
                 // Avoid light mapping multiple times, when the same mesh is used on multiple MeshRenderers
@@ -100,9 +100,9 @@ namespace Chisel.Components
                 if ((!model.AutoRebuildUVs && !force) || !lightmapStatic)
                     continue;
 
-                for (int i = 0; i < model.generatedMeshes.Length; i++)
+                for (int i = 0; i < model.generatedRenderMeshes.Length; i++)
                 {
-                    var generatedMesh = model.generatedMeshes[i];
+                    var generatedMesh = model.generatedRenderMeshes[i];
                     var renderComponents = generatedMesh.renderComponents;
                     if (renderComponents == null || 
                         (!force && renderComponents.uvLightmapUpdateTime == 0))
@@ -123,8 +123,8 @@ namespace Chisel.Components
         static readonly ModelState __modelState = new ModelState(); // static to avoid allocations
         public void Rebuild(ChiselModel model)
         {
-            if (model.generatedMeshes == null ||
-                model.generatedMeshes.Length == 0)
+            if ((model.generatedRenderMeshes == null || model.generatedRenderMeshes.Length == 0) &&
+                (model.generatedColliderMeshes == null || model.generatedColliderMeshes.Length == 0))
             {
                 // Destroy leftover components in model lookups
                 DestroyAllRegisteredGeneratedComponentsInModel(model);
@@ -161,7 +161,8 @@ namespace Chisel.Components
 
                 updateMeshRenderers.Clear();
                 updateMeshColliders.Clear();
-                BuildComponents(model, __modelState, model.generatedMeshes);
+                BuildRenderComponents(model, __modelState, model.generatedRenderMeshes);
+                BuildColliderComponents(model, __modelState, model.generatedColliderMeshes);
                 UpdateComponents(model, updateMeshRenderers, updateMeshColliders);
                 updateMeshRenderers.Clear();
                 updateMeshColliders.Clear();
@@ -237,20 +238,24 @@ namespace Chisel.Components
         static List<Material> sSharedMaterials = new List<Material>();
         internal void BuildGeneratedComponentLookupTables(ChiselModel model)
         {
-            for (int i = 0; i < model.generatedMeshes.Length; i++)
+            for (int i = 0; i < model.generatedRenderMeshes.Length; i++)
             {
-                var generatedMesh = model.generatedMeshes[i];
+                var generatedMesh = model.generatedRenderMeshes[i];
                 if (generatedMesh.renderComponents != null &&
                     generatedMesh.renderComponents.meshRenderer &&
                     generatedMesh.renderComponents.meshFilter)
                 {
                     generatedMesh.renderComponents.meshRenderer.GetSharedMaterials(sSharedMaterials);
-                    foreach(var material in sSharedMaterials)
+                    foreach (var material in sSharedMaterials)
                         model.generated.materials.Add(material);
                     model.generated.renderComponents.Add(generatedMesh.renderComponents);
                     model.generated.components.Add(generatedMesh.renderComponents.transform);
                 }
+            }
 
+            for (int i = 0; i < model.generatedColliderMeshes.Length; i++)
+            {
+                var generatedMesh = model.generatedColliderMeshes[i];
                 if (generatedMesh.colliderComponents != null &&
                     generatedMesh.colliderComponents.meshCollider)
                 {
@@ -337,78 +342,35 @@ namespace Chisel.Components
                                        modelVisibilityState != VisibilityState.Unknown;
             foreach (var renderComponents in model.generated.renderComponents)
             {
-                renderComponents.meshRenderer.forceRenderingOff = shouldHideMesh;
+                if (renderComponents.meshRenderer)
+                    renderComponents.meshRenderer.forceRenderingOff = shouldHideMesh;
             }
         }
 #endif
 
-        struct RenderComponentSetup
+        static readonly List<ChiselGeneratedRenderMesh>   sUnassignedRenderComponents   = new List<ChiselGeneratedRenderMesh>();
+        static readonly List<ChiselGeneratedColliderMesh> sUnassignedColliderComponents = new List<ChiselGeneratedColliderMesh>();
+
+        //
+        // 1. figure out what you where trying to do here, and remove need for the dictionary
+        // 2. then do the same for the rendering equiv.
+        // 3. separate building/updating the components from building a combined (phsyics)materials/mesh/rendersetting
+        // 4. move colliders to single gameobject
+        // 5. build meshes with submeshes, have a fixed number of meshes. one mesh per renderingsetting type (shadow-only etc.)
+        // 6. have a secondary version of these fixed number of meshes that has partial meshes & use those for rendering in chiselmodel
+        // 7. have a way to identify which triangles belong to which brush. so we can build partial meshes
+        // 8. profit!
+        //
+
+        internal void BuildRenderComponents(ChiselModel			        model, 
+                                            ModelState		            modelState,
+                                            ChiselGeneratedRenderMesh[]	generatedMeshes)
         {
-            public ChiselGeneratedModelMesh generatedMesh;
-            public Material                 renderMaterial;
-
-            public bool HasIdenticalMaterials(MeshRenderer meshRenderer)
-            {
-                return (meshRenderer.sharedMaterial == renderMaterial);
-            }
-
-            public void SetMaterialsTo(MeshRenderer meshRenderer)
-            {
-                meshRenderer.sharedMaterial = renderMaterial;
-            }
-        }
-
-        struct ColliderComponentSetup
-        {
-            public ChiselGeneratedModelMesh generatedMesh;
-            public PhysicMaterial           physicsMaterial;
-        }
-
-        static readonly List<RenderComponentSetup>   sRenderComponents   = new List<RenderComponentSetup>();
-        static readonly List<ColliderComponentSetup> sColliderComponents = new List<ColliderComponentSetup>();
-        static readonly List<RenderComponentSetup>   sUnassignedRenderComponents   = new List<RenderComponentSetup>();
-        static readonly List<ColliderComponentSetup> sUnassignedColliderComponents = new List<ColliderComponentSetup>();
-
-
-        internal void BuildComponents(ChiselModel			        model, 
-                                      ModelState		            modelState,
-                                      ChiselGeneratedModelMesh[]	generatedMeshes)
-        {
-            sRenderComponents.Clear();
-            sColliderComponents.Clear();
-            for (int i = 0; i < generatedMeshes.Length; i++)
-            {
-                var generatedMesh   = generatedMeshes[i];
-                var type		    = generatedMesh.meshDescription.meshQuery.LayerParameterIndex;
-                var parameter	    = generatedMesh.meshDescription.surfaceParameter;
-                switch (type)
-                {
-                    case LayerParameterIndex.LayerParameter1:
-                    {
-                        sRenderComponents.Add(new RenderComponentSetup() 
-                        { 
-                            renderMaterial  = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(parameter), 
-                            generatedMesh   = generatedMesh 
-                        }); 
-                        break;
-                    }
-                    case LayerParameterIndex.LayerParameter2:
-                    {
-                        sColliderComponents.Add(new ColliderComponentSetup() 
-                        { 
-                            physicsMaterial = ChiselBrushMaterialManager.GetPhysicsMaterialByInstanceID(parameter),
-                            generatedMesh   = generatedMesh
-                        });
-                        break;
-                    }
-                }
-            }
-
             sUnassignedRenderComponents.Clear();
             var existingRenderComponents = modelState.existingRenderComponents;
-            for (int i = 0; i < sRenderComponents.Count; i++)
+            for (int i = 0; i < generatedMeshes.Length; i++)
             {
-                var generatedMesh = sRenderComponents[i].generatedMesh;
+                var generatedMesh = generatedMeshes[i];
                 if (generatedMesh.renderComponents != null &&
                     generatedMesh.renderComponents.IsValid())
                 {
@@ -416,7 +378,7 @@ namespace Chisel.Components
                 } else
                 {
                     generatedMesh.renderComponents = null;
-                    sUnassignedRenderComponents.Add(sRenderComponents[i]);
+                    sUnassignedRenderComponents.Add(generatedMeshes[i]);
                 }
             }
 
@@ -430,13 +392,13 @@ namespace Chisel.Components
                     var query           = GetRendererUsageFlags(meshRenderer);
                     for (int i = sUnassignedRenderComponents.Count - 1; i >= 0; i--)
                     {
-                        var generatedMesh = sUnassignedRenderComponents[i].generatedMesh;
+                        var generatedMesh = sUnassignedRenderComponents[i];
                         if (generatedMesh.renderComponents != null)
                             continue;
 
-                        if (meshFilter.sharedMesh == sUnassignedRenderComponents[i].generatedMesh.sharedMesh &&
+                        if (meshFilter.sharedMesh == sUnassignedRenderComponents[i].sharedMesh &&
                             sUnassignedRenderComponents[i].HasIdenticalMaterials(meshRenderer) &&
-                            generatedMesh.meshDescription.meshQuery.LayerQuery == query)
+                            generatedMesh.meshQuery.LayerQuery == query)
                         {
                             generatedMesh.renderComponents = curComponents;
                             existingRenderComponents.RemoveAt(n);
@@ -458,11 +420,11 @@ namespace Chisel.Components
                     var query           = GetRendererUsageFlags(meshRenderer);
                     for (int i = sUnassignedRenderComponents.Count - 1; i >= 0; i--)
                     {
-                        var generatedMesh = sUnassignedRenderComponents[i].generatedMesh;
+                        var generatedMesh = sUnassignedRenderComponents[i];
                         if (generatedMesh.renderComponents != null)
                             continue;
 
-                        if (generatedMesh.meshDescription.meshQuery.LayerQuery == query &&
+                        if (generatedMesh.meshQuery.LayerQuery == query &&
                             sUnassignedRenderComponents[i].HasIdenticalMaterials(meshRenderer))
                         {
                             generatedMesh.renderComponents = curComponents;
@@ -485,11 +447,11 @@ namespace Chisel.Components
                     var query           = GetRendererUsageFlags(meshRenderer);
                     for (int i = sUnassignedRenderComponents.Count - 1; i >= 0; i--)
                     {
-                        var generatedMesh = sUnassignedRenderComponents[i].generatedMesh;
+                        var generatedMesh = sUnassignedRenderComponents[i];
                         if (generatedMesh.renderComponents != null)
                             continue;
 
-                        if (generatedMesh.meshDescription.meshQuery.LayerQuery == query)
+                        if (generatedMesh.meshQuery.LayerQuery == query)
                         {
                             generatedMesh.renderComponents = curComponents;
                             existingRenderComponents.RemoveAt(n);
@@ -510,7 +472,7 @@ namespace Chisel.Components
                     var curComponents   = existingRenderComponents[n];
                     for (int i = sUnassignedRenderComponents.Count - 1; i >= 0; i--)
                     {
-                        var generatedMesh = sUnassignedRenderComponents[i].generatedMesh;
+                        var generatedMesh = sUnassignedRenderComponents[i];
                         if (generatedMesh.renderComponents != null)
                             continue;
 
@@ -524,12 +486,19 @@ namespace Chisel.Components
                 }
             }
 
-
+            for (int i = 0; i < generatedMeshes.Length; i++)
+                UpdateOrCreateRenderComponents(model, modelState, generatedMeshes[i]);
+        }
+        
+        internal void BuildColliderComponents(ChiselModel			        model, 
+                                              ModelState		            modelState,
+                                              ChiselGeneratedColliderMesh[]	generatedMeshes)
+        {
             sUnassignedColliderComponents.Clear();
             var existingMeshColliders = modelState.existingMeshColliders;
-            for (int i = 0; i < sColliderComponents.Count; i++)
+            for (int i = 0; i < generatedMeshes.Length; i++)
             {
-                var generatedMesh = sColliderComponents[i].generatedMesh;
+                var generatedMesh = generatedMeshes[i];
                 if (generatedMesh.colliderComponents != null &&
                     generatedMesh.colliderComponents.IsValid())
                 {
@@ -537,36 +506,33 @@ namespace Chisel.Components
                 } else
                 {
                     generatedMesh.colliderComponents = null;
-                    sUnassignedColliderComponents.Add(sColliderComponents[i]);
+                    sUnassignedColliderComponents.Add(generatedMeshes[i]);
                 }
             }
 
-            if (sUnassignedRenderComponents.Count > 0)
+            if (sUnassignedColliderComponents.Count > 0)
             {
                 for (int n = existingMeshColliders.Count - 1; n >= 0; n--)
                 {
                     var curComponents = existingMeshColliders[n];
                     for (int i = sUnassignedColliderComponents.Count - 1; i >= 0; i--)
                     {
-                        var generatedMesh = sColliderComponents[i].generatedMesh;
+                        var generatedMesh = sUnassignedColliderComponents[i];
                         if (generatedMesh.colliderComponents != null)
                             continue;
 
                         generatedMesh.colliderComponents = curComponents;
                         existingMeshColliders.RemoveAt(n);
-                        sUnassignedRenderComponents.RemoveAt(i);
+                        sUnassignedColliderComponents.RemoveAt(i);
                         break;
                     }
-                    if (sUnassignedRenderComponents.Count == 0)
+                    if (sUnassignedColliderComponents.Count == 0)
                         break;
                 }
             }
 
-            for (int i = 0; i < sRenderComponents.Count; i++)
-                UpdateOrCreateRenderComponents(model, modelState, sRenderComponents[i]);
-
-            for (int i = 0; i < sColliderComponents.Count; i++)
-                UpdateOrCreateColliderComponents(model, modelState, sColliderComponents[i]);
+            for (int i = 0; i < generatedMeshes.Length; i++)
+                UpdateOrCreateColliderComponents(model, modelState, generatedMeshes[i]);
         }
 
         private void UpdateContainerFlags(ChiselModel model, ModelState modelState)
@@ -773,11 +739,6 @@ namespace Chisel.Components
                 ChiselNodeHierarchyManager.ignoreNextChildrenChanged = false;
                 model.GeneratedDataContainer = null;
                 model.GeneratedDataTransform = null;
-                if (model.generatedMeshContents != null)
-                {
-                    model.generatedMeshContents.Dispose();
-                    model.generatedMeshContents = null;
-                }
             }
         }
 
@@ -862,7 +823,7 @@ namespace Chisel.Components
         }
 
 
-        private ChiselRenderComponents CreateRenderComponents(ChiselModel model, GeneratedMeshDescription meshDescription)
+        private ChiselRenderComponents CreateRenderComponents(ChiselModel model)
         {
             var gameObject	= CreateComponentGameObject(model, GeneratedMeshRendererName, typeof(MeshFilter), typeof(MeshRenderer));
             var renderComponents = new ChiselRenderComponents
@@ -875,7 +836,7 @@ namespace Chisel.Components
             return renderComponents;
         }
 
-        private ChiselColliderComponents CreateColliderComponents(ChiselModel model, GeneratedMeshDescription meshDescription)
+        private ChiselColliderComponents CreateColliderComponents(ChiselModel model)
         {
             var gameObject		= CreateComponentGameObject(model, GeneratedMeshColliderName, typeof(MeshCollider));
             var colliderComponents = new ChiselColliderComponents
@@ -958,14 +919,14 @@ namespace Chisel.Components
             return query;
         }
 
-        private void UpdateRenderComponents(ChiselModel model, ModelState modelState, GeneratedMeshDescription meshDescription, ChiselRenderComponents renderComponents)
+        private void UpdateRenderComponents(ChiselModel model, ModelState modelState, MeshQuery meshQuery, ChiselRenderComponents renderComponents)
         {
             var meshRenderer = renderComponents.meshRenderer;
 #if UNITY_EDITOR
             updateMeshRenderers.Add(meshRenderer);
 #endif
 
-            var query = meshDescription.meshQuery.LayerQuery;
+            var query = meshQuery.LayerQuery;
             meshRenderer.receiveShadows		= ((query & LayerUsageFlags.ReceiveShadows) == LayerUsageFlags.ReceiveShadows);
             switch (query & (LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows))
             {
@@ -979,7 +940,7 @@ namespace Chisel.Components
 #endif
         }
 
-        private void UpdateColliderComponents(ChiselModel model, ModelState modelState, GeneratedMeshDescription meshDescription, ChiselColliderComponents colliderComponents)
+        private void UpdateColliderComponents(ChiselColliderComponents colliderComponents)
         {
             var meshCollider = colliderComponents.meshCollider;
             updateMeshColliders.Add(meshCollider);
@@ -1009,18 +970,18 @@ namespace Chisel.Components
         // NOTE: assumes that if a renderComponents are passed to this, they are -valid-
         //		 do any checking outside of this method, and make sure everything that 
         //		 needs to be cleaned up, IS cleaned up
-        private void UpdateOrCreateRenderComponents(ChiselModel model, ModelState modelState, RenderComponentSetup renderComponentSetup)
+        private void UpdateOrCreateRenderComponents(ChiselModel model, ModelState modelState, ChiselGeneratedRenderMesh renderComponentSetup)
         {
-            var generatedMesh   = renderComponentSetup.generatedMesh;
-            var meshDescription = generatedMesh.meshDescription;
+            var generatedMesh   = renderComponentSetup;
+            var meshQuery       = generatedMesh.meshQuery;
             bool forceUpdate    = generatedMesh.needsUpdate;
             if (generatedMesh.renderComponents == null)
             {
-                generatedMesh.renderComponents = CreateRenderComponents(model, meshDescription);
+                generatedMesh.renderComponents = CreateRenderComponents(model);
                 forceUpdate = true;
             }
 
-            UpdateRenderComponents(model, modelState, meshDescription, generatedMesh.renderComponents);
+            UpdateRenderComponents(model, modelState, meshQuery, generatedMesh.renderComponents);
             UpdateComponentFlags(model, modelState, generatedMesh.renderComponents.meshRenderer, generatedMesh.renderComponents.gameObject, generatedMesh.renderComponents.transform, GeneratedMeshRendererName, notEditable: true);
             
             if (!generatedMesh.renderComponents.meshRenderer.enabled) generatedMesh.renderComponents.meshRenderer.enabled = true;
@@ -1042,17 +1003,16 @@ namespace Chisel.Components
         // NOTE: assumes that if a meshCollider is passed to this, it is -valid-
         //		 do any checking outside of this method, and make sure everything that 
         //		 needs to be cleaned up, IS cleaned up
-        private bool UpdateOrCreateColliderComponents(ChiselModel model, ModelState modelState, ColliderComponentSetup colliderSetup)
+        private bool UpdateOrCreateColliderComponents(ChiselModel model, ModelState modelState, ChiselGeneratedColliderMesh colliderSetup)
         {
-            var generatedMesh   = colliderSetup.generatedMesh;
-            var meshDescription = generatedMesh.meshDescription;
+            var generatedMesh   = colliderSetup;
             bool updated = false;
             if (generatedMesh.colliderComponents == null)
             {
-                generatedMesh.colliderComponents = CreateColliderComponents(model, meshDescription);
+                generatedMesh.colliderComponents = CreateColliderComponents(model);
                 updated = true;
             }
-            UpdateColliderComponents(model, modelState, meshDescription, generatedMesh.colliderComponents);
+            UpdateColliderComponents(generatedMesh.colliderComponents);
             UpdateComponentFlags(model, modelState, generatedMesh.colliderComponents.meshCollider, generatedMesh.colliderComponents.gameObject, generatedMesh.colliderComponents.transform, GeneratedMeshColliderName, notEditable: true);
             
             if (!generatedMesh.colliderComponents.meshCollider.enabled) generatedMesh.colliderComponents.meshCollider.enabled = true;

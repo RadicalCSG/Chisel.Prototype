@@ -117,8 +117,8 @@ namespace Chisel.Core
         internal static GeneratedMeshContents GetGeneratedMesh(int treeNodeID, GeneratedMeshDescription meshDescription)
         {
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) return null;
-            if (meshDescription.vertexCount <= 0 ||
-                meshDescription.indexCount <= 0)
+            if (meshDescription.vertexCount <= 3 ||
+                meshDescription.indexCount <= 3)
             {
                 Debug.LogWarning(string.Format("{0} called with a {1} that isn't valid", typeof(CSGTree).Name, typeof(GeneratedMeshDescription).Name));
                 return null;
@@ -301,6 +301,19 @@ namespace Chisel.Core
             for (int i = (int)treeInfo.subMeshCounts.Count - 1; i >= 0; i--)
             {
                 var subMesh = treeInfo.subMeshCounts[i];
+
+                // Make sure the meshDescription actually holds a mesh
+                if (subMesh.vertexCount == 0 ||
+                    subMesh.indexCount == 0)
+                    continue;
+
+                // Make sure the mesh is valid
+                if (subMesh.vertexCount >= kMaxVertexCount)
+                {
+                    Debug.LogError("Mesh has too many vertices (" + subMesh.vertexCount + " > " + kMaxVertexCount + ")");
+                    continue;
+                }
+
                 var description = new GeneratedMeshDescription
                 {
                     meshQuery           = subMesh.meshQuery,
@@ -316,7 +329,6 @@ namespace Chisel.Core
                 };
 
                 treeInfo.meshDescriptions.Add(description);
-
             }
 
             if (treeInfo.meshDescriptions == null ||
