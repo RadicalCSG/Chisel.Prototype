@@ -350,16 +350,13 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderComponents = model.generated.renderComponents;
+                for (int r = 0; r < renderComponents.Count; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
-                    }
+                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
                 }
             }
             if (largestSurfaceArea >= 0)
@@ -376,17 +373,14 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderComponents = model.generated.renderComponents;
+                for (int r = 0; r < renderComponents.Count; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        if (HasClampedResolution(meshRenderer))
-                            return true;
-                    }
+                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    if (HasClampedResolution(meshRenderer))
+                        return true;
                 }
             }
             return false;
@@ -401,17 +395,14 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderComponents = model.generated.renderComponents;
+                for (int r = 0; r < renderComponents.Count; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        if (HasUVOverlaps(meshRenderer))
-                            return true;
-                    }
+                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    if (HasUVOverlaps(meshRenderer))
+                        return true;
                 }
             }
             return false;
@@ -426,7 +417,7 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Keys;
+                var renderComponents = model.generated.materials;
                 foreach (var material in renderComponents)
                 {
                     if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))

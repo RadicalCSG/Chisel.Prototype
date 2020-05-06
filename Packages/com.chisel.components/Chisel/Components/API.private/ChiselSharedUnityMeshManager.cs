@@ -54,7 +54,7 @@ namespace Chisel.Components
         public void UpdatePartialVisibilityMeshes(ChiselModel model)
         {
 
-            model.needVisibilityMeshUpdate = false;
+            model.generated.needVisibilityMeshUpdate = false;
         }
 
         public void CreateNewMeshes(ChiselModel model)

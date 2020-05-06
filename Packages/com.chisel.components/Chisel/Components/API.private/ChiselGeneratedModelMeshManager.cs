@@ -33,6 +33,11 @@ namespace Chisel.Components
         public Transform    transform;
         [NonSerialized]
         public float        uvLightmapUpdateTime;
+
+        public bool IsValid()
+        {
+            return (gameObject && meshFilter && meshRenderer);
+        }
     }
 
     [Serializable]
@@ -41,6 +46,11 @@ namespace Chisel.Components
         public MeshCollider meshCollider;
         public GameObject   gameObject;
         public Transform    transform;
+
+        public bool IsValid()
+        {
+            return (gameObject && meshCollider);
+        }
     }
 
     public static class ChiselGeneratedModelMeshManager
@@ -108,7 +118,7 @@ namespace Chisel.Components
 
         public static void UpdatePartialVisibilityMeshes(ChiselModel node)
         {
-            if (!node || !node.needVisibilityMeshUpdate)
+            if (!node || !node.generated.needVisibilityMeshUpdate)
                 return;
 
             // TODO: figure out how to reuse mesh

@@ -139,6 +139,19 @@ namespace Chisel.Components
         }
     }
 
+    public class GeneratedData
+    {
+        public VisibilityState  visibilityState          = VisibilityState.Unknown;
+        public bool             needVisibilityMeshUpdate = false;
+
+        public Mesh[]           generatedPartialVisibilityMeshes;
+
+        public readonly HashSet<Material>               materials           = new HashSet<Material>();
+        public readonly List<ChiselRenderComponents>    renderComponents    = new List<ChiselRenderComponents>();
+        public readonly List<ChiselColliderComponents>  meshColliders       = new List<ChiselColliderComponents>();
+        public readonly HashSet<Transform>              components          = new HashSet<Transform>();
+    }
+
 
     // TODO: give model an icon
     [ExecuteInEditMode]
@@ -158,47 +171,42 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Model";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings   colliderSettings;
-        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings     renderSettings;
-        [HideInInspector, SerializeField] SerializableUnwrapParam           uvGenerationSettings;
-
-        [HideInInspector] public CSGTree Node;
-        [HideInInspector] internal GeneratedMeshContents generatedMeshContents;
-
-        // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
-        public bool CreateRenderComponents      = true;
-        public bool CreateColliderComponents    = true;
-        public bool AutoRebuildUVs              = true;
-        public VertexChannelFlags VertexChannelMask = VertexChannelFlags.All; // NOTE: do not rename, name is used directly in CSGModelEditor
-
-
 
         public ChiselGeneratedColliderSettings  ColliderSettings        { get { return colliderSettings; } }
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
-
-        [HideInInspector] public VisibilityState visibilityState = VisibilityState.Unknown;
-        [HideInInspector, NonSerialized]
-        public bool needVisibilityMeshUpdate = false;
-        [HideInInspector, NonSerialized]
-        public readonly Dictionary<Material, List<ChiselRenderComponents>>          generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
-        [HideInInspector, NonSerialized] public Mesh[]                              generatedPartialVisibilityMeshes;
-        [HideInInspector, NonSerialized]
-        public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>>  generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
-        [HideInInspector, NonSerialized]
-        public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
-        [SerializeField] public ChiselGeneratedModelMesh[]  generatedMeshes     = new ChiselGeneratedModelMesh[0];
+        public bool                 IsInitialized               { get { return initialized; } }
+        public override int         NodeID                      { get { return Node.NodeID; } }
+        public override bool        CanHaveChildNodes           { get { return !SkipThisNode; } }
 
         // TODO: make these private + properties, these show up as settable default settings when selecting CSGModel.cs in unity
-        public GameObject   GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
-        public Transform    GeneratedDataTransform { get { return generatedDataTransform; } internal set { generatedDataTransform = value; } }
-        [HideInInspector, SerializeField] GameObject    generatedDataContainer;
-        [HideInInspector, SerializeField] Transform     generatedDataTransform;
-        [HideInInspector, SerializeField] bool          initialized = false;
+        public GameObject           GeneratedDataContainer      { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
+        public Transform            GeneratedDataTransform      { get { return generatedDataTransform; } internal set { generatedDataTransform = value; } }
+
+        // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
+        public bool                 CreateRenderComponents      = true;
+        public bool                 CreateColliderComponents    = true;
+        public bool                 AutoRebuildUVs              = true;
+        public VertexChannelFlags   VertexChannelMask           = VertexChannelFlags.All;
+
+        [HideInInspector] public CSGTree                    Node;
+        [HideInInspector] internal GeneratedMeshContents    generatedMeshContents;
+
+        [HideInInspector, SerializeField] GameObject        generatedDataContainer;
+        [HideInInspector, SerializeField] Transform         generatedDataTransform;
+        [HideInInspector, SerializeField] bool              initialized = false;
+
+        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings   colliderSettings;
+        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings     renderSettings;
+        [HideInInspector, SerializeField] SerializableUnwrapParam           uvGenerationSettings;
+
+        [HideInInspector, SerializeField] public ChiselGeneratedModelMesh[] generatedMeshes = new ChiselGeneratedModelMesh[0];
         
-        public bool             IsInitialized       { get { return initialized; } }
-        public override int     NodeID              { get { return Node.NodeID; } }
-        public override bool    CanHaveChildNodes   { get { return !SkipThisNode; } }
+        [HideInInspector, NonSerialized] public GeneratedData generated = new GeneratedData();
+        
+
+
+
 
         public override void OnInitialize()
         {
@@ -237,7 +245,6 @@ namespace Chisel.Components
             initialized = true;
         }
         public ChiselModel() : base() { }
-
         protected override void OnDisable() { base.OnDisable(); if (generatedMeshContents != null) generatedMeshContents.Dispose(); }
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
@@ -319,10 +326,11 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
+        static List<Material> sSharedMaterials = new List<Material>();
         public void Update()
         {
-            Debug.Assert(visibilityState != VisibilityState.Unknown);
-            if (visibilityState != VisibilityState.Mixed)
+            Debug.Assert(generated.visibilityState != VisibilityState.Unknown);
+            if (generated.visibilityState != VisibilityState.Mixed)
                 return;
 
             // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
@@ -335,29 +343,28 @@ namespace Chisel.Components
             var layer   = gameObject.layer; 
             var matrix  = transform.localToWorldMatrix;
             var camera  = Camera.current;
-            foreach (var list in generatedRenderComponents.Values)
+            foreach (var rendererComponents in generated.renderComponents)
             {
-                foreach (var rendererComponents in list)
-                {
-                    var renderer                = rendererComponents.meshRenderer;
-                    if (!renderer || !renderer.forceRenderingOff)
-                        continue;
+                var renderer                = rendererComponents.meshRenderer;
+                if (!renderer || !renderer.forceRenderingOff)
+                    continue;
 
-                    var mesh                    = (Mesh)rendererComponents.meshFilter.sharedMesh;
-                    var properties = new MaterialPropertyBlock();
-                    renderer.GetPropertyBlock(properties);
+                var mesh                    = (Mesh)rendererComponents.meshFilter.sharedMesh;
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
 
-                    var materials               = renderer.sharedMaterials;
-                    var castShadows             = (ShadowCastingMode)renderer.shadowCastingMode;
-                    var receiveShadows          = (bool)renderer.receiveShadows;
-                    var probeAnchor             = (Transform)renderer.probeAnchor;
-                    var lightProbeUsage         = (LightProbeUsage)renderer.lightProbeUsage;
-                    var lightProbeProxyVolume   = renderer.lightProbeProxyVolumeOverride == null ? null : renderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
+                renderer.GetSharedMaterials(sSharedMaterials);
+
+                var castShadows             = (ShadowCastingMode)renderer.shadowCastingMode;
+                var receiveShadows          = (bool)renderer.receiveShadows;
+                var probeAnchor             = (Transform)renderer.probeAnchor;
+                var lightProbeUsage         = (LightProbeUsage)renderer.lightProbeUsage;
+                var lightProbeProxyVolume   = renderer.lightProbeProxyVolumeOverride == null ? null : renderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
                     
-                    for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
-                        Graphics.DrawMesh(mesh, matrix, materials[submeshIndex], layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
-                }
+                for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
+                    Graphics.DrawMesh(mesh, matrix, sSharedMaterials[submeshIndex], layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
             }
+            sSharedMaterials.Clear(); // We don't want to keep references to Materials alive
         }
 #endif
     }
