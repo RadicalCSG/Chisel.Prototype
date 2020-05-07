@@ -350,10 +350,12 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generated.renderComponents;
-                for (int r = 0; r < renderComponents.Count; r++)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
                     if (!meshRenderer)
                         continue;
                     largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
@@ -373,10 +375,12 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generated.renderComponents;
-                for (int r = 0; r < renderComponents.Count; r++)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
                     if (!meshRenderer)
                         continue;
                     if (HasClampedResolution(meshRenderer))
@@ -395,10 +399,12 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generated.renderComponents;
-                for (int r = 0; r < renderComponents.Count; r++)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    var meshRenderer = renderComponents[r].meshRenderer;
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
                     if (!meshRenderer)
                         continue;
                     if (HasUVOverlaps(meshRenderer))
@@ -417,7 +423,7 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generated.materials;
+                var renderComponents = model.generated.renderMaterials;
                 foreach (var material in renderComponents)
                 {
                     if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))

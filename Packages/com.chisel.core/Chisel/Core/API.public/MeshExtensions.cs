@@ -51,8 +51,11 @@ namespace Chisel.Core
             sBaseVertices   .Clear();
             for (int i = 0; i < contents.Count; i++)
             {
-                if (contents[i] == null)
+                if (contents[i] == null ||
+                    contents[i].positions.Length == 0 ||
+                    contents[i].indices.Length == 0)
                     continue;
+
                 sBaseVertices.Add(sPositionsList.Count);
                 sPositionsList.AddRange(contents[i].positions);
                 if (contents[i].normals .IsCreated) sNormalsList .AddRange(contents[i].normals);
@@ -63,6 +66,7 @@ namespace Chisel.Core
                 else bounds.Encapsulate(contents[i].bounds);
             }
 
+            mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(sPositionsList);
             if (sNormalsList.Count  == sPositionsList.Count) mesh.SetNormals(sNormalsList);
             if (sTangentsList.Count == sPositionsList.Count) mesh.SetTangents(sTangentsList);
