@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -215,6 +215,15 @@ namespace Chisel.Components
                 uvGenerationSettings.hardAngle = defaults.hardAngle;
                 uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
             }
+#else
+            if (generated != null && generated.meshRenderers != null)
+            {
+                foreach(var renderable in generated.renderables)
+                {                    
+                    renderable.meshRenderer.forceRenderingOff = true;
+                    renderable.meshRenderer.enabled = renderable.sharedMesh.vertexCount == 0;
+                }
+            }
 #endif
 
             initialized = true;
@@ -222,6 +231,7 @@ namespace Chisel.Components
 
         public ChiselModel() : base() { }
         protected override void OnDisable() { base.OnDisable(); }
+
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()

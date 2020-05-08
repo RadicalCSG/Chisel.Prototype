@@ -8,22 +8,32 @@ using System.Transactions;
 
 namespace Chisel.Components
 {        
+    //
+    // 1. figure out what you where trying to do here, and remove need for the dictionary
+    // 2. then do the same for the rendering equiv.
+    // 3. separate building/updating the components from building a combined (phsyics)materials/mesh/rendersetting
+    // 4. move colliders to single gameobject
+    // 5. build meshes with submeshes, have a fixed number of meshes. one mesh per renderingsetting type (shadow-only etc.)
+    // 6. have a secondary version of these fixed number of meshes that has partial meshes & use those for rendering in chiselmodel
+    // 7. have a way to identify which triangles belong to which brush. so we can build partial meshes
+    // 8. profit!
+    //
     [Serializable]
     public class ChiselModelGeneratedObjects
     {
-        public const string kGeneratedContainerName     = "ï¿½[generated]ï¿½";
+        public const string kGeneratedContainerName     = "‹[generated]›";
         public static readonly string[] kGeneratedMeshRendererNames = new string[]
         {
             null,                                                   // 0 (invalid option)
-            "ï¿½[generated-Renderable]ï¿½",                             // 1
-            "ï¿½[generated-CastShadows]ï¿½",                            // 2
-            "ï¿½[generated-Renderable|CastShadows]ï¿½",                 // 3
+            "‹[generated-Renderable]›",                             // 1
+            "‹[generated-CastShadows]›",                            // 2
+            "‹[generated-Renderable|CastShadows]›",                 // 3
             null,                                                   // 4 (invalid option)
-            "ï¿½[generated-Renderable|ReceiveShadows]ï¿½",              // 5
+            "‹[generated-Renderable|ReceiveShadows]›",              // 5
             null,                                                   // 6 (invalid option)
-            "ï¿½[generated-Renderable|CastShadows|ReceiveShadows]ï¿½"   // 7
+            "‹[generated-Renderable|CastShadows|ReceiveShadows]›"   // 7
         };
-        public const string kGeneratedMeshColliderName	= "ï¿½[generated-Collider]ï¿½";
+        public const string kGeneratedMeshColliderName	= "‹[generated-Collider]›";
 
         public GameObject               generatedDataContainer;
         public GameObject               colliderContainer;
@@ -330,7 +340,7 @@ namespace Chisel.Components
             Debug.Assert(descriptionIndex == meshDescriptions.Length);
         }
 
-
+#if UNITY_EDITOR
         public void UpdateVisibilityMeshes()
         {
             if (!needVisibilityMeshUpdate)
@@ -362,5 +372,6 @@ namespace Chisel.Components
 
             needVisibilityMeshUpdate = false;
         }
+#endif
     }
 }

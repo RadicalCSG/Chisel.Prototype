@@ -217,7 +217,7 @@ namespace Chisel.Components
 
         public static void RemoveContainerFlags(GameObject gameObject)
         {
-            var transform = gameObject?.transform;
+            var transform = (gameObject) ? gameObject.transform : null;
             if (gameObject) gameObject.hideFlags = HideFlags.None;
             if (transform) transform.hideFlags = HideFlags.None;
         }

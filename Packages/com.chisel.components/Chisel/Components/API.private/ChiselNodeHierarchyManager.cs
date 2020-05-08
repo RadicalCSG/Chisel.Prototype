@@ -832,7 +832,9 @@ namespace Chisel.Components
                 FindAndReregisterAllNodes();
                 ChiselBrushContainerAssetManager.Update();
                 ChiselBrushMaterialManager.Update();
+#if UNITY_EDITOR
                 ChiselGeneratedComponentManager.OnVisibilityChanged();
+#endif
             }
 
             // *Workaround*

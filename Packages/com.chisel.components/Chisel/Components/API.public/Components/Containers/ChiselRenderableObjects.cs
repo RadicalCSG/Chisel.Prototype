@@ -44,7 +44,9 @@ namespace Chisel.Components
                 meshFilter      = meshFilter,
                 meshRenderer    = meshRenderer,
                 sharedMesh      = sharedMesh,
+#if UNITY_EDITOR
                 partialMesh     = partialMesh,
+#endif
                 renderMaterials = new Material[0]
             };
             renderObjects.Initialize();
@@ -55,12 +57,12 @@ namespace Chisel.Components
         {
 #if UNITY_EDITOR
             ChiselObjectUtility.SafeDestroy(partialMesh);
+            partialMesh     = null;
 #endif
             ChiselObjectUtility.SafeDestroy(sharedMesh);
             ChiselObjectUtility.SafeDestroy(container, ignoreHierarchyEvents: true);
             container       = null;
             sharedMesh      = null;
-            partialMesh     = null;
             meshFilter      = null;
             meshRenderer    = null;
             renderMaterials = null;
@@ -155,11 +157,17 @@ namespace Chisel.Components
                 meshRenderer.lightProbeUsage				= renderSettings.lightProbeUsage;
                 meshRenderer.allowOcclusionWhenDynamic		= renderSettings.allowOcclusionWhenDynamic;
                 meshRenderer.renderingLayerMask				= renderSettings.renderingLayerMask;
+#if UNITY_EDITOR
                 meshRenderer.stitchLightmapSeams            = renderSettings.stitchLightmapSeams;
                 meshRenderer.scaleInLightmap                = renderSettings.scaleInLightmap;
                 meshRenderer.receiveGI                      = renderSettings.receiveGI;
+#endif
             }
         }
+
+
+
+
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
@@ -192,7 +200,9 @@ namespace Chisel.Components
                 } else
                 {
                     sharedMesh.CopyFrom(__foundContents, triangleBrushes);
+#if UNITY_EDITOR
                     ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
+#endif
                 }
                 if (renderMaterials != null && 
                     renderMaterials.Length == __foundMaterials.Count)

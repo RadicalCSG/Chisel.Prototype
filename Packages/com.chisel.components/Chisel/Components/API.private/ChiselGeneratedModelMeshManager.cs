@@ -9,7 +9,6 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
-
     public static class ChiselGeneratedModelMeshManager
     {
         public static event Action              PreReset;

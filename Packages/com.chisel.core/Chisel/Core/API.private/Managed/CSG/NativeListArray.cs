@@ -377,8 +377,10 @@ namespace Chisel.Core
             m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
-#endif
             return new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+            return new NativeList(m_Array->Ptr[index]);
+#endif
         }
 
         public NativeList AddAndAllocateWithCapacity(int capacity)
@@ -393,8 +395,10 @@ namespace Chisel.Core
             m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
-#endif
             return new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+            return new NativeList(m_Array->Ptr[index]);
+#endif
         }
 
         public int AllocateItemAndAddValues(NativeListArray<T>.NativeList other)
@@ -408,8 +412,10 @@ namespace Chisel.Core
             m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
-#endif
             var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+            var dstList = new NativeList(m_Array->Ptr[index]);
+#endif
             dstList.AddRangeNoResize(other);
             return index;
         }
@@ -428,7 +434,11 @@ namespace Chisel.Core
 #endif
             if (otherLength > 0)
             {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
                 var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+                var dstList = new NativeList(m_Array->Ptr[index]);
+#endif
                 dstList.AddRangeNoResize(otherPtr, otherLength);
             }
             Debug.Assert(IsAllocated(index));
