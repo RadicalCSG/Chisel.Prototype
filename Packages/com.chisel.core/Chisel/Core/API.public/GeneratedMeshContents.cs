@@ -18,6 +18,9 @@ namespace Chisel.Core
 
         /// <value>Triplet indices to the vertices that make up the triangles in this mesh.</value>
         public NativeArray<int> 		indices;
+
+        /// <value>A brush index per triangle.</value>
+        public NativeArray<int> 		brushIndices;
         
         /// <value>Position for each vertex.</value>
         public NativeArray<float3>	    positions;
@@ -76,22 +79,24 @@ namespace Chisel.Core
             if (uv0      .IsCreated) mesh.SetUVs(0, uv0);
             
             mesh.SetTriangles(indices.ToArray(), 0, false);
-            mesh.bounds = bounds;
+            mesh.bounds = bounds; 
         }
 
         public void Dispose()
         {
-            if (indices  .IsCreated) indices.Dispose();
-            if (positions.IsCreated) positions.Dispose();
-            if (tangents .IsCreated) tangents.Dispose();
-            if (normals  .IsCreated) normals.Dispose();
-            if (uv0      .IsCreated) uv0.Dispose();
+            if (indices     .IsCreated) indices.Dispose();
+            if (brushIndices.IsCreated) brushIndices.Dispose();
+            if (positions   .IsCreated) positions.Dispose();
+            if (tangents    .IsCreated) tangents.Dispose();
+            if (normals     .IsCreated) normals.Dispose();
+            if (uv0         .IsCreated) uv0.Dispose();
             
-            indices   = default;
-            positions = default;
-            tangents  = default;
-            normals   = default;
-            uv0       = default;
+            indices      = default;
+            brushIndices = default;
+            positions    = default;
+            tangents     = default;
+            normals      = default;
+            uv0          = default;
         }
     };
 }

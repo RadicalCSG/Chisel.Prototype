@@ -350,16 +350,15 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
-                    }
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
                 }
             }
             if (largestSurfaceArea >= 0)
@@ -376,17 +375,16 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        if (HasClampedResolution(meshRenderer))
-                            return true;
-                    }
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    if (HasClampedResolution(meshRenderer))
+                        return true;
                 }
             }
             return false;
@@ -401,17 +399,16 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Values;
-                foreach (var renderComponentList in renderComponents)
+                var renderables = model.generated.renderables;
+                for (int r = 0; r < renderables.Length; r++)
                 {
-                    for (int r = 0; r < renderComponentList.Count; r++)
-                    {
-                        var meshRenderer = renderComponentList[r].meshRenderer;
-                        if (!meshRenderer)
-                            continue;
-                        if (HasUVOverlaps(meshRenderer))
-                            return true;
-                    }
+                    if (renderables[r] == null)
+                        continue;
+                    var meshRenderer = renderables[r].meshRenderer;
+                    if (!meshRenderer)
+                        continue;
+                    if (HasUVOverlaps(meshRenderer))
+                        return true;
                 }
             }
             return false;
@@ -424,9 +421,9 @@ namespace Chisel.Editors
             foreach (var target in targets)
             {
                 var model = target as ChiselModel;
-                if (!model)
+                if (!model || model.generated == null)
                     continue;
-                var renderComponents = model.generatedRenderComponents.Keys;
+                var renderComponents = model.generated.renderMaterials;
                 foreach (var material in renderComponents)
                 {
                     if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))

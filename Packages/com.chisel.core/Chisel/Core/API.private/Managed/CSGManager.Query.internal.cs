@@ -7,6 +7,14 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
+    public enum VisibilityState
+    {
+        Unknown         = 0,
+        AllVisible      = 1,
+        AllInvisible    = 2,
+        Mixed           = 3
+    }
+
     // TODO: clean up
     static partial class CSGManager
     {
@@ -178,6 +186,30 @@ namespace Chisel.Core
 	        return false;
         }
 
+#if UNITY_EDITOR
+        static Dictionary<int, bool> brushSelectableState = new Dictionary<int, bool>();
+        public static VisibilityState SetBrushState(int brushNodeID, bool visible, bool pickingEnabled)
+        {
+            if (!CSGManager.IsValidNodeID(brushNodeID))
+                return VisibilityState.Unknown;
+
+            var brushNodeIndex = brushNodeID - 1;
+            var selectable = visible && pickingEnabled;
+            brushSelectableState[brushNodeIndex] = selectable;
+
+            if (visible)
+                return VisibilityState.AllVisible;
+            else
+                return VisibilityState.AllInvisible;
+        }
+        
+        static bool IsBrushSelectable(int brushNodeID)
+        {
+            var brushNodeIndex = brushNodeID - 1;
+            return !brushSelectableState.TryGetValue(brushNodeIndex, out bool result) || result;
+        }
+#endif
+
 
         // TODO:	problem with RayCastMulti is that this code is too slow
         //			solution:	1.	replace RayCastMulti with a way to 'simply' changing the in_rayStart 
@@ -230,6 +262,7 @@ namespace Chisel.Core
                 //if (((int)operation_type_bits & InfiniteBrushBits) == InfiniteBrushBits)
                 //    continue;
 
+
                 if (!brushRenderBuffers.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
                     continue;
 
@@ -240,6 +273,11 @@ namespace Chisel.Core
                     continue;
 
                 var brush = new CSGTreeBrush() { brushNodeID = brushNodeID };
+
+#if UNITY_EDITOR
+                if (!IsBrushSelectable(brushNodeID))
+                    continue;
+#endif
 
                 var resultDist = float.PositiveInfinity;
 			    if (!BrushRayCast(meshQueries, brush,

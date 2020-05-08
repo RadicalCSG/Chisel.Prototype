@@ -67,14 +67,20 @@ namespace Chisel.Editors
         #endregion
 
 
+
         static bool IsValidNodeToBeSelected(GameObject gameObject)
         {
-            if (!gameObject)
+            if (!gameObject || !gameObject.activeInHierarchy)
                 return false;
 
             if (gameObject.TryGetComponent<ChiselModel>(out var model) ||
                 // TODO: use a component on the generated MeshRenderer/Container instead
                 gameObject.name.StartsWith("‹[generated"))
+                return false;
+
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            if (sceneVisibilityManager.IsHidden(gameObject) ||
+                sceneVisibilityManager.IsPickingDisabled(gameObject))
                 return false;
             return true;
         }
@@ -275,6 +281,7 @@ namespace Chisel.Editors
             return intersection.brushIntersection.surfaceID != -1;
         }
 
+        static List<Material> sSharedMaterials = new List<Material>();
         static GameObject PickModelOrGameObject(Camera camera, Vector2 pickposition, int layers, ref GameObject[] ignore, ref GameObject[] filter, out ChiselModel model, out Material material)
         {
             model = null;
@@ -282,14 +289,13 @@ namespace Chisel.Editors
             var flagState = ChiselGeneratedComponentManager.BeginPicking();
             GameObject gameObject = null;
             bool foundGameObject = false;
+            int materialIndex = -1;
             try
-            {
-                int materialIndex = -1;
+            { 
                 if (PickClosestGO == null)
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
                 else
                     gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
-
             }
             finally
             {
@@ -301,9 +307,12 @@ namespace Chisel.Editors
             if (!foundGameObject)
                 return gameObject;
             
-            if (gameObject.TryGetComponent<Renderer>(out var renderer))
+            if (materialIndex >= 0 &&
+                gameObject.TryGetComponent<Renderer>(out var renderer))
             {
-                material = renderer.sharedMaterial;
+                renderer.GetSharedMaterials(sSharedMaterials);
+                material = materialIndex < sSharedMaterials.Count ? sSharedMaterials[materialIndex] : null;
+                sSharedMaterials.Clear(); // We don't want to keep references to Materials alive
                 if (!material) material = null;
             }
             return gameObject;
@@ -436,7 +445,7 @@ namespace Chisel.Editors
             if (object.Equals(gameObject, null))
                 return null;
 
-            if (ChiselModelManager.IsVisible(model))
+            if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
             { 
                 int filterLayerParameter0 = (sharedMaterial) ? sharedMaterial.GetInstanceID() : 0;
                 {

@@ -207,7 +207,9 @@ namespace Chisel.Core
             intersectionInfo.interiorCategory = intersectionCategory;
 
 
-            if (currentHoleIndices.Length > 0)
+            if (currentHoleIndices.Length > 0 &&
+                // TODO: fix touching not being updated properly
+                brushesTouchedByBrushes.ContainsKey(currentInfo.brushNodeIndex))
             {
                 // Figure out why this is seemingly not necessary?
                 var intersectedHoleIndices = stackalloc int[currentHoleIndices.Length];
@@ -539,6 +541,12 @@ namespace Chisel.Core
                 {
                     var holeIndex   = holeIndicesList[h];
                     var holeEdges   = allEdges[holeIndex];
+
+
+                    // TODO: why is baseLoopEdges sometimes not properly allocated?
+                    if (baseLoopEdges.Capacity < baseLoopEdges.Length + holeEdges.Length)
+                        baseLoopEdges.Capacity = baseLoopEdges.Capacity + (holeEdges.Length * 2);
+
                     // Note: can have duplicate edges when multiple holes share an edge
                     //          (only edges between holes and base-loop are guaranteed to not be duplciate)
                     AddEdgesNoResize(baseLoopEdges, holeEdges);

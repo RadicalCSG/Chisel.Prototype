@@ -117,8 +117,8 @@ namespace Chisel.Core
         internal static GeneratedMeshContents GetGeneratedMesh(int treeNodeID, GeneratedMeshDescription meshDescription)
         {
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) return null;
-            if (meshDescription.vertexCount <= 0 ||
-                meshDescription.indexCount <= 0)
+            if (meshDescription.vertexCount <= 3 ||
+                meshDescription.indexCount <= 3)
             {
                 Debug.LogWarning(string.Format("{0} called with a {1} that isn't valid", typeof(CSGTree).Name, typeof(GeneratedMeshDescription).Name));
                 return null;
@@ -177,6 +177,7 @@ namespace Chisel.Core
             generatedMesh.uv0			= useUV0      ? new NativeArray<float2>(vertexCount, Allocator.Persistent) : default;
             generatedMesh.positions		= new NativeArray<float3>(vertexCount, Allocator.Persistent);
             generatedMesh.indices		= new NativeArray<int>   (indexCount, Allocator.Persistent);
+            generatedMesh.brushIndices  = new NativeArray<int>   (indexCount / 3, Allocator.Persistent);
 
             generatedMesh.bounds = new Bounds();
             
@@ -197,19 +198,20 @@ namespace Chisel.Core
 
             var generateVertexBuffersJob = new GenerateVertexBuffersJob
             {   
-                meshQuery               = subMeshCount.meshQuery,
-                surfaceIdentifier       = subMeshCount.surfaceIdentifier,
+                meshQuery                   = subMeshCount.meshQuery,
+                surfaceIdentifier           = subMeshCount.surfaceIdentifier,
 
-                submeshIndexCount       = subMeshCount.indexCount, 
-                submeshVertexCount      = subMeshCount.vertexCount,
+                submeshIndexCount           = subMeshCount.indexCount, 
+                submeshVertexCount          = subMeshCount.vertexCount,
 
-                submeshSurfaces         = submeshSurfaces,
+                submeshSurfaces             = submeshSurfaces,
 
-                generatedMeshIndices    = generatedMesh.indices,
-                generatedMeshPositions  = generatedMesh.positions,
-                generatedMeshTangents   = generatedMesh.tangents,
-                generatedMeshNormals    = generatedMesh.normals,
-                generatedMeshUV0        = generatedMesh.uv0
+                generatedMeshIndices        = generatedMesh.indices,
+                generatedMeshBrushIndices   = generatedMesh.brushIndices,
+                generatedMeshPositions      = generatedMesh.positions,
+                generatedMeshTangents       = generatedMesh.tangents,
+                generatedMeshNormals        = generatedMesh.normals,
+                generatedMeshUV0            = generatedMesh.uv0
             };
             generateVertexBuffersJob.Run();
 
@@ -301,6 +303,19 @@ namespace Chisel.Core
             for (int i = (int)treeInfo.subMeshCounts.Count - 1; i >= 0; i--)
             {
                 var subMesh = treeInfo.subMeshCounts[i];
+
+                // Make sure the meshDescription actually holds a mesh
+                if (subMesh.vertexCount == 0 ||
+                    subMesh.indexCount == 0)
+                    continue;
+
+                // Make sure the mesh is valid
+                if (subMesh.vertexCount >= kMaxVertexCount)
+                {
+                    Debug.LogError("Mesh has too many vertices (" + subMesh.vertexCount + " > " + kMaxVertexCount + ")");
+                    continue;
+                }
+
                 var description = new GeneratedMeshDescription
                 {
                     meshQuery           = subMesh.meshQuery,
@@ -316,7 +331,6 @@ namespace Chisel.Core
                 };
 
                 treeInfo.meshDescriptions.Add(description);
-
             }
 
             if (treeInfo.meshDescriptions == null ||
@@ -445,6 +459,7 @@ namespace Chisel.Core
                             newSubMesh.surfaces.Add(new SubMeshSurface
                             {
                                 surfaceIndex = j,
+                                brushNodeID = brushNodeID,
                                 brushRenderBuffer = brushRenderBuffer
                             });
                             subMeshCounts.Add(newSubMesh);
@@ -459,6 +474,7 @@ namespace Chisel.Core
                         currentSubMesh.surfaces.Add(new SubMeshSurface
                         {
                             surfaceIndex = j,
+                            brushNodeID = brushNodeID,
                             brushRenderBuffer = brushRenderBuffer
                         });
                     }

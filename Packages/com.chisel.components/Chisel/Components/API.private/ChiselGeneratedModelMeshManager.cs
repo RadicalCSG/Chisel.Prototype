@@ -9,38 +9,6 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
-    [Serializable]
-    public sealed class ChiselGeneratedModelMesh
-    {
-        public GeneratedMeshDescription meshDescription;
-        public GeneratedMeshKey         meshKey;
-
-        /// <note>users should never directly use this mesh since it might be destroyed by Chisel</note>
-        internal UnityEngine.Mesh       sharedMesh;
-
-        public ChiselRenderComponents   renderComponents;
-        public ChiselColliderComponents colliderComponents;
-        public bool                     needsUpdate = true;
-    }
-
-    [Serializable]
-    public sealed class ChiselRenderComponents
-    {
-        public MeshFilter   meshFilter;
-        public MeshRenderer meshRenderer;
-        public GameObject   gameObject;
-        public Transform    transform;
-        public float        uvLightmapUpdateTime;
-    }
-
-    [Serializable]
-    public sealed class ChiselColliderComponents
-    {
-        public MeshCollider meshCollider;
-        public GameObject   gameObject;
-        public Transform    transform;
-    }
-
     public static class ChiselGeneratedModelMeshManager
     {
         public static event Action              PreReset;
@@ -48,19 +16,16 @@ namespace Chisel.Components
         public static event Action<ChiselModel> PostUpdateModel;
         public static event Action              PostUpdateModels;
         
-        const int kMaxVertexCount = HashedVertices.kMaxVertexCount;
-
-        static HashSet<ChiselNode>              registeredNodeLookup    = new HashSet<ChiselNode>();
+        internal static HashSet<ChiselNode>     registeredNodeLookup    = new HashSet<ChiselNode>();
         internal static List<ChiselModel>       registeredModels        = new List<ChiselModel>();
 
-        static ChiselSharedUnityMeshManager	    sharedUnityMeshes       = new ChiselSharedUnityMeshManager();
         static ChiselGeneratedComponentManager  componentGenerator      = new ChiselGeneratedComponentManager();
         
         static List<ChiselModel> updateList = new List<ChiselModel>();
 
         internal static void Reset()
         {
-            if (PreReset != null) PreReset();
+            PreReset?.Invoke();
 
             foreach (var model in registeredModels) 
             {
@@ -69,7 +34,6 @@ namespace Chisel.Components
 
             registeredNodeLookup.Clear();
             registeredModels.Clear();
-            sharedUnityMeshes.Clear();
             updateList.Clear();
             
             
@@ -85,7 +49,6 @@ namespace Chisel.Components
             if (!ReferenceEquals(model, null))
             {
                 componentGenerator.Unregister(model);
-                sharedUnityMeshes.Unregister(model);
                 registeredModels.Remove(model);
             }
         }
@@ -99,7 +62,6 @@ namespace Chisel.Components
             if (!ReferenceEquals(model, null))
             {
                 registeredModels.Add(model);
-                sharedUnityMeshes.Register(model);
                 componentGenerator.Register(model);
             }
         }
@@ -113,8 +75,6 @@ namespace Chisel.Components
                 if (!CSGManager.Flush())
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
-                    if (sharedUnityMeshes.FindAllUnusedUnityMeshes())
-                        sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
                     return; // Nothing to update ..
                 }
             }
@@ -122,6 +82,11 @@ namespace Chisel.Components
             {
                 Profiler.EndSample();
             }
+
+#if UNITY_EDITOR
+            ChiselGeneratedComponentManager.OnVisibilityChanged();
+#endif
+
 
             for (int m = 0; m < registeredModels.Count; m++)
             {
@@ -139,31 +104,15 @@ namespace Chisel.Components
                 UpdateModelMeshDescriptions(model);
                 Profiler.EndSample();
 
-                // Re-use existing UnityEngine.Mesh if they exist
-                sharedUnityMeshes.ReuseExistingMeshes(model);
-
                 updateList.Add(model);
             }
             
             bool modifications = false;
             try
             {
-                // Find all meshes whose refCounts are 0
-                Profiler.BeginSample("sharedUnityMeshes.FindAllUnusedUnityMeshes");
-                sharedUnityMeshes.FindAllUnusedUnityMeshes();
-                Profiler.EndSample();
-
-                // Separate loop so we can re-use garbage collected UnityEngine.Meshes to avoid allocation costs
-
                 for (int m = 0; m < updateList.Count; m++)
                 {
                     var model = updateList[m];
-
-                    // Generate new UnityEngine.Mesh instances and fill them with data from the CSG algorithm (if necessary)
-                    //	note: reuses garbage collected meshes when possible
-                    Profiler.BeginSample("sharedUnityMeshes.CreateNewMeshes");
-                    sharedUnityMeshes.CreateNewMeshes(model);
-                    Profiler.EndSample();
 
                     // Generate (or re-use) components and set them up properly
                     Profiler.BeginSample("componentGenerator.Rebuild");
@@ -180,8 +129,7 @@ namespace Chisel.Components
                     {
                         modifications = true;
                         Profiler.BeginSample("PostUpdateModel");
-                        if (PostUpdateModel != null)
-                            PostUpdateModel(model);
+                        PostUpdateModel?.Invoke(model);
                         Profiler.EndSample();
                     }
                     catch (Exception ex) // if there's a bug in user-code we don't want to end up in a bad state
@@ -192,24 +140,34 @@ namespace Chisel.Components
                 updateList.Clear();
             }
 
-            // Destroy all meshes whose refCounts are 0
-            Profiler.BeginSample("DestroyNonRecycledUnusedUnityMeshes");
-            sharedUnityMeshes.DestroyNonRecycledUnusedUnityMeshes();
-            Profiler.EndSample();
-
             if (modifications)
             {
                 Profiler.BeginSample("PostUpdateModels");
-                if (PostUpdateModels != null)
-                    PostUpdateModels();
+                PostUpdateModels?.Invoke();
                 Profiler.EndSample();
             }
         }
 
-        static ChiselGeneratedModelMesh[]		__emptyGeneratedMeshesTable		= new ChiselGeneratedModelMesh[0];		// static to avoid allocations
-        static List<ChiselGeneratedModelMesh>	__allocateGeneratedMeshesTable	= new List<ChiselGeneratedModelMesh>();	// static to avoid allocations
+        static int MeshDescriptionSorter(GeneratedMeshDescription x, GeneratedMeshDescription y)
+        {
+            if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
+            if (x.meshQuery.LayerQuery          != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
+            if (x.surfaceParameter  != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
+            if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
+            return 0;
+        }
+
+        static Comparison<GeneratedMeshDescription> kMeshDescriptionSorterDelegate = MeshDescriptionSorter;
+
         internal static void UpdateModelMeshDescriptions(ChiselModel model)
         {
+            if (!ChiselModelGeneratedObjects.IsValid(model.generated))
+            {
+                if (model.generated != null)
+                    model.generated.Destroy();
+                model.generated = ChiselModelGeneratedObjects.Create(model);
+            }
+
             var tree				= model.Node;
             if (!tree.Valid)
                 return;
@@ -217,43 +175,18 @@ namespace Chisel.Components
             var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
             var meshDescriptions	= tree.GetMeshDescriptions(meshTypes, model.VertexChannelMask);
 
-            // Make sure we remove all old generated meshes
-            sharedUnityMeshes.DecreaseMeshRefCount(model);
-
             // Check if the tree creates *any* meshes
-            if (meshDescriptions == null)
+            if (meshDescriptions == null || meshDescriptions.Length == 0)
             {
-                model.generatedMeshes = __emptyGeneratedMeshesTable; 
                 componentGenerator.RemoveAllGeneratedComponents(model);
-                if (PostUpdateModel != null)
-                    PostUpdateModel(model);
+                PostUpdateModel?.Invoke(model);
                 return;
             }
-            
-            __allocateGeneratedMeshesTable.Clear();
-            for (int d = 0; d < meshDescriptions.Length; d++)
-            {
-                var meshDescription = meshDescriptions[d];
 
-                // Make sure the meshDescription actually holds a mesh
-                if (meshDescription.vertexCount == 0 || 
-                    meshDescription.indexCount == 0)
-                    continue;
-                
-                // Make sure the mesh is valid
-                if (meshDescription.vertexCount >= kMaxVertexCount)
-                {
-                    Debug.LogError("Mesh has too many vertices (" + meshDescription.vertexCount + " > " + kMaxVertexCount + ")");
-                    continue;
-                }
+            // Sort all meshDescriptions so that meshes that can be merged are next to each other
+            Array.Sort(meshDescriptions, kMeshDescriptionSorterDelegate);
 
-                // Add the generated mesh to the list
-                __allocateGeneratedMeshesTable.Add(new ChiselGeneratedModelMesh { meshDescription = meshDescription, meshKey = new GeneratedMeshKey(meshDescription) });
-            }
-
-            // TODO: compare with existing generated meshes, only rebuild stuff for things that have actually changed
-
-            model.generatedMeshes = __allocateGeneratedMeshesTable.ToArray();
+            model.generated.Update(model, meshDescriptions);
         }
     }
 }

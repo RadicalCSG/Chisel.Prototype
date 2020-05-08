@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System;
 using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
 using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
+using UnityEngine.Rendering;
 
 namespace Chisel.Components
 {
@@ -81,6 +82,18 @@ namespace Chisel.Components
         public const string kStitchLightmapSeamsName            = nameof(stitchLightmapSeams);
 #endif
 
+
+        // TODO: store lightmap information in settings so it can't get lost?
+        //renderComponents.meshRenderer.lightmapIndex
+        //renderComponents.meshRenderer.lightmapScaleOffset
+        //renderComponents.meshRenderer.lightmapTilingOffset
+        //renderComponents.meshRenderer.lightProbeUsage
+        //renderComponents.meshRenderer.realtimeLightmapIndex
+        //renderComponents.meshRenderer.realtimeLightmapScaleOffset
+        //renderComponents.meshRenderer.lightProbeProxyVolumeOverride
+        //renderComponents.meshRenderer.probeAnchor
+
+
         public GameObject                       lightProbeProxyVolumeOverride;
         public Transform                        probeAnchor;
         public MotionVectorGenerationMode		motionVectorGenerationMode		= MotionVectorGenerationMode.Object;
@@ -127,7 +140,6 @@ namespace Chisel.Components
     }
 
 
-    // TODO: give model an icon
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
@@ -145,52 +157,40 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Model";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        [HideInInspector, SerializeField] ChiselGeneratedColliderSettings   colliderSettings;
-        [HideInInspector, SerializeField] ChiselGeneratedRenderSettings     renderSettings;
-        [HideInInspector, SerializeField] SerializableUnwrapParam           uvGenerationSettings;
-
-        [HideInInspector] public CSGTree Node;
-        [HideInInspector] internal GeneratedMeshContents generatedMeshContents;
-
-        // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
-        public bool CreateRenderComponents      = true;
-        public bool CreateColliderComponents    = true;
-        public bool AutoRebuildUVs              = true;
-        public VertexChannelFlags VertexChannelMask = VertexChannelFlags.All; // NOTE: do not rename, name is used directly in CSGModelEditor
-
-
 
         public ChiselGeneratedColliderSettings  ColliderSettings        { get { return colliderSettings; } }
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
+        public bool                 IsInitialized               { get { return initialized; } }
+        public override int         NodeID                      { get { return Node.NodeID; } }
+        public override bool        CanHaveChildNodes           { get { return !SkipThisNode; } }
 
-        [HideInInspector, NonSerialized]
-        public readonly Dictionary<Material, List<ChiselRenderComponents>>         generatedRenderComponents = new Dictionary<Material, List<ChiselRenderComponents>>();
-        [HideInInspector, NonSerialized]
-        public readonly Dictionary<PhysicMaterial, List<ChiselColliderComponents>> generatedMeshColliders    = new Dictionary<PhysicMaterial, List<ChiselColliderComponents>>();
-        [HideInInspector, NonSerialized]
-        public readonly HashSet<Transform>                  generatedComponents = new HashSet<Transform>();
-        [SerializeField] public ChiselGeneratedModelMesh[]  generatedMeshes     = new ChiselGeneratedModelMesh[0];
+        // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
+        public bool                 CreateRenderComponents      = true;
+        public bool                 CreateColliderComponents    = true;
+        public bool                 AutoRebuildUVs              = true;
+        public VertexChannelFlags   VertexChannelMask           = VertexChannelFlags.All;
 
-        // TODO: make these private + properties, these show up as settable default settings when selecting CSGModel.cs in unity
-        public GameObject   GeneratedDataContainer { get { return generatedDataContainer; } internal set { generatedDataContainer = value; } }
-        public Transform    GeneratedDataTransform { get { return generatedDataTransform; } internal set { generatedDataTransform = value; } }
-        [HideInInspector, SerializeField] GameObject    generatedDataContainer;
-        [HideInInspector, SerializeField] Transform     generatedDataTransform;
-        [HideInInspector, SerializeField] bool          initialized = false;
+        public ChiselGeneratedColliderSettings    colliderSettings;
+        public ChiselGeneratedRenderSettings      renderSettings;
+        public SerializableUnwrapParam            uvGenerationSettings;
 
-        public bool             IsInitialized       { get { return initialized; } }
-        public override int     NodeID              { get { return Node.NodeID; } }
-        public override bool    CanHaveChildNodes   { get { return !SkipThisNode; } }
+        
+        [HideInInspector] public CSGTree                    Node;
+
+        [HideInInspector] bool                              initialized = false;
+
+        [HideInInspector] public ChiselModelGeneratedObjects generated;
+
 
         public override void OnInitialize()
         {
-            if (!generatedDataContainer)
-            {
-                generatedDataContainer = ChiselGeneratedComponentManager.FindContainerGameObject(this);
-                if (generatedDataContainer != null)
-                    generatedDataTransform = generatedDataContainer.transform;
-            }
+            if (generated != null &&
+                !generated.generatedDataContainer)
+                generated.Destroy();
+
+            if (generated == null)
+                generated = ChiselModelGeneratedObjects.Create(this);
 
             if (colliderSettings == null)
             {
@@ -215,13 +215,23 @@ namespace Chisel.Components
                 uvGenerationSettings.hardAngle = defaults.hardAngle;
                 uvGenerationSettings.packMarginPixels = defaults.packMargin * 256;
             }
+#else
+            if (generated != null && generated.meshRenderers != null)
+            {
+                foreach(var renderable in generated.renderables)
+                {                    
+                    renderable.meshRenderer.forceRenderingOff = true;
+                    renderable.meshRenderer.enabled = renderable.sharedMesh.vertexCount == 0;
+                }
+            }
 #endif
 
             initialized = true;
         }
-        public ChiselModel() : base() { }
 
-        protected override void OnDisable() { base.OnDisable(); if (generatedMeshContents != null) generatedMeshContents.Dispose(); }
+        public ChiselModel() : base() { }
+        protected override void OnDisable() { base.OnDisable(); }
+
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()
@@ -265,6 +275,7 @@ namespace Chisel.Components
         protected override void OnCleanup()
         {
             ChiselGeneratedComponentManager.RemoveContainerFlags(this);
+            generated.Destroy();
         }
 
         public override int GetAllTreeBrushCount()
@@ -300,5 +311,56 @@ namespace Chisel.Components
             }
             return bounds;
         }
+
+#if UNITY_EDITOR
+        public void Update()
+        {
+            if (generated == null)
+                return;
+
+            generated.UpdateVisibilityMeshes();
+
+            // TODO: figure out why this can happen
+            Debug.Assert(generated.visibilityState != VisibilityState.Unknown, "Unknown Visibility state");
+            if (generated.visibilityState != VisibilityState.Mixed)
+                return;
+
+            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
+            // but still have the same lightmap, and keep lightmap support.
+            // We do this by setting forceRenderingOff to true on all MeshRenderers.
+            // This makes them behave like before, except that they don't render. This means they are still 
+            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
+            // render the sub-mesh with the exact same settings as the MeshRenderer.
+
+            var layer   = gameObject.layer; 
+            var matrix  = transform.localToWorldMatrix;
+            var camera  = Camera.current;
+            foreach (var renderable in generated.renderables)
+            {
+                if (renderable == null)
+                    continue;
+
+                var mesh = (Mesh)renderable.partialMesh;
+                if (mesh == null || mesh.vertexCount == 0)
+                    continue;
+
+                var meshRenderer = renderable.meshRenderer;
+                if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
+                    continue;
+
+                var properties = new MaterialPropertyBlock();
+                meshRenderer.GetPropertyBlock(properties);
+
+                var castShadows             = (ShadowCastingMode)meshRenderer.shadowCastingMode;
+                var receiveShadows          = (bool)meshRenderer.receiveShadows;
+                var probeAnchor             = (Transform)meshRenderer.probeAnchor;
+                var lightProbeUsage         = (LightProbeUsage)meshRenderer.lightProbeUsage;
+                var lightProbeProxyVolume   = meshRenderer.lightProbeProxyVolumeOverride == null ? null : meshRenderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
+                    
+                for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
+                    Graphics.DrawMesh(mesh, matrix, renderable.renderMaterials[submeshIndex], layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+            }
+        }
+#endif
     }
 }

@@ -33,7 +33,7 @@ namespace Chisel.Components
 #if UNITY_EDITOR
                 return UnityEditor.Undo.AddComponent<T>(gameObject);
 #else
-                return newGameObject.AddComponent<T>();
+                return gameObject.AddComponent<T>();
 #endif
             }
             finally

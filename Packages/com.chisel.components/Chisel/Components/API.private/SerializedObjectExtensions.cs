@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Chisel.Components
 {
+#if UNITY_EDITOR
     public static class SerializedObjectExtensions
     {
         public static void SetPropertyValue(this UnityEditor.SerializedObject serializedObject, string name, bool value)
@@ -28,4 +29,5 @@ namespace Chisel.Components
                 prop.intValue = value;
         }
     }
+#endif
 }

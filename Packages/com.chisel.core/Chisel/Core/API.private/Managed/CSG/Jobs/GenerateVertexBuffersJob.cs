@@ -13,6 +13,7 @@ namespace Chisel.Core
     internal struct SubMeshSurface
     {
         public int surfaceIndex;
+        public int brushNodeID;
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
 
@@ -28,6 +29,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> submeshSurfaces;
 
         [NoAlias] public NativeArray<int>		generatedMeshIndices; 
+        [NoAlias] public NativeArray<int>		generatedMeshBrushIndices; 
         [NoAlias] public NativeArray<float3>    generatedMeshPositions;
         [NativeDisableContainerSafetyRestriction]
         [NoAlias] public NativeArray<float4>    generatedMeshTangents;
@@ -127,7 +129,7 @@ namespace Chisel.Core
             var dstVertices = (float3*)generatedMeshPositions.GetUnsafePtr();
             { 
                 // copy all the vertices & indices to the sub-meshes for each material
-                for (int surfaceIndex = 0, indexOffset = 0, vertexOffset = 0, surfaceCount = (int)submeshSurfaces.Length;
+                for (int surfaceIndex = 0, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, surfaceCount = (int)submeshSurfaces.Length;
                         surfaceIndex < surfaceCount;
                         ++surfaceIndex)
                 {
@@ -136,10 +138,17 @@ namespace Chisel.Core
                     if (sourceBuffer.indices.Length == 0 ||
                         sourceBuffer.vertices.Length == 0)
                         continue;
-                    for (int i = 0, sourceIndexCount = sourceBuffer.indices.Length; i < sourceIndexCount; i++)
+
+                    var brushNodeID = subMeshSurface.brushNodeID;
+
+                    for (int i = 0, sourceIndexCount = sourceBuffer.indices.Length; i < sourceIndexCount; i += 3)
                     {
-                        generatedMeshIndices[indexOffset] = (int)(sourceBuffer.indices[i] + vertexOffset);
-                        indexOffset++;
+                        generatedMeshBrushIndices[brushIDIndexOffset] = brushNodeID; brushIDIndexOffset++;
+                    }
+
+                    for (int i = 0, sourceIndexCount = sourceBuffer.indices.Length; i < sourceIndexCount; i ++)
+                    {
+                        generatedMeshIndices[indexOffset] = (int)(sourceBuffer.indices[i] + vertexOffset); indexOffset++;
                     }
 
                     var sourceVertexCount = sourceBuffer.vertices.Length;

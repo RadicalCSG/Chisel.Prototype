@@ -46,6 +46,12 @@ namespace Chisel.Editors
             UnityEditor.EditorApplication.playModeStateChanged			-= OnPlayModeStateChanged;
             UnityEditor.EditorApplication.playModeStateChanged			+= OnPlayModeStateChanged;
 
+
+            // Triggered when changing visibility/picking in hierarchy
+            UnityEditor.SceneVisibilityManager.visibilityChanged        += OnVisibilityChanged;
+            UnityEditor.SceneVisibilityManager.pickingChanged           += OnPickingChanged;
+
+
             // Callback that is triggered after an undo or redo was executed.
             UnityEditor.Undo.undoRedoPerformed							-= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed							+= OnUndoRedoPerformed;
@@ -84,6 +90,16 @@ namespace Chisel.Editors
 
             // TODO: clean this up
             ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
+        }
+
+        private static void OnPickingChanged()
+        {
+            ChiselGeneratedComponentManager.OnVisibilityChanged();
+        }
+
+        private static void OnVisibilityChanged()
+        {
+            ChiselGeneratedComponentManager.OnVisibilityChanged();
         }
 
         private static void OnActiveSceneChanged(Scene prevScene, Scene newScene)

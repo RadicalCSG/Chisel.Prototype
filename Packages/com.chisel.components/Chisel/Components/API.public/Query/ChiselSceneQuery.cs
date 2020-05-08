@@ -339,7 +339,7 @@ namespace Chisel.Components
         {
             foundIntersection = ChiselIntersection.None;
 
-            if (!ChiselModelManager.IsVisible(model))
+            if (!ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
                 return false;
 
             CSGTreeNode[] ignoreBrushes = null;
@@ -381,8 +381,8 @@ namespace Chisel.Components
             if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                 return false;
             
-            var query = ChiselMeshQueryManager.GetMeshQuery(model);
-            var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
+            var query           = ChiselMeshQueryManager.GetMeshQuery(model);
+            var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
 
             // We only accept RayCasts into this model if it's visible
             if (visibleQueries == null ||

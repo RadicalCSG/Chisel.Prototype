@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Mathematics;
+using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -20,6 +22,40 @@ namespace Chisel.Core
             for (int i = 0; i < list.Count; i++)
                 nativeList[i] = list[i];
             return nativeList;
+        }
+
+        public unsafe static void AddRange<T>(this List<T> list, NativeArray<T> collection) 
+            where T : unmanaged
+        {
+            if (list.Capacity < list.Count + collection.Length)
+                list.Capacity = list.Count + collection.Length;
+            for (int i = 0; i < collection.Length; i++)
+                list.Add(collection[i]);
+        }
+
+
+        public unsafe static void AddRange(this List<Vector2> list, NativeArray<float2> collection)
+        {
+            if (list.Capacity < list.Count + collection.Length)
+                list.Capacity = list.Count + collection.Length;
+            for (int i = 0; i < collection.Length; i++)
+                list.Add(collection[i]);
+        }
+
+        public unsafe static void AddRange(this List<Vector3> list, NativeArray<float3> collection)
+        {
+            if (list.Capacity < list.Count + collection.Length)
+                list.Capacity = list.Count + collection.Length;
+            for (int i = 0; i < collection.Length; i++)
+                list.Add(collection[i]);
+        }
+
+        public unsafe static void AddRange(this List<Vector4> list, NativeArray<float4> collection)
+        {
+            if (list.Capacity < list.Count + collection.Length)
+                list.Capacity = list.Count + collection.Length;
+            for (int i = 0; i < collection.Length; i++)
+                list.Add(collection[i]);
         }
     }
 }
