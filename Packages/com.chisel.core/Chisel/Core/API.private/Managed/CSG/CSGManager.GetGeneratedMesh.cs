@@ -177,6 +177,7 @@ namespace Chisel.Core
             generatedMesh.uv0			= useUV0      ? new NativeArray<float2>(vertexCount, Allocator.Persistent) : default;
             generatedMesh.positions		= new NativeArray<float3>(vertexCount, Allocator.Persistent);
             generatedMesh.indices		= new NativeArray<int>   (indexCount, Allocator.Persistent);
+            generatedMesh.brushIndices  = new NativeArray<int>   (indexCount / 3, Allocator.Persistent);
 
             generatedMesh.bounds = new Bounds();
             
@@ -197,19 +198,20 @@ namespace Chisel.Core
 
             var generateVertexBuffersJob = new GenerateVertexBuffersJob
             {   
-                meshQuery               = subMeshCount.meshQuery,
-                surfaceIdentifier       = subMeshCount.surfaceIdentifier,
+                meshQuery                   = subMeshCount.meshQuery,
+                surfaceIdentifier           = subMeshCount.surfaceIdentifier,
 
-                submeshIndexCount       = subMeshCount.indexCount, 
-                submeshVertexCount      = subMeshCount.vertexCount,
+                submeshIndexCount           = subMeshCount.indexCount, 
+                submeshVertexCount          = subMeshCount.vertexCount,
 
-                submeshSurfaces         = submeshSurfaces,
+                submeshSurfaces             = submeshSurfaces,
 
-                generatedMeshIndices    = generatedMesh.indices,
-                generatedMeshPositions  = generatedMesh.positions,
-                generatedMeshTangents   = generatedMesh.tangents,
-                generatedMeshNormals    = generatedMesh.normals,
-                generatedMeshUV0        = generatedMesh.uv0
+                generatedMeshIndices        = generatedMesh.indices,
+                generatedMeshBrushIndices   = generatedMesh.brushIndices,
+                generatedMeshPositions      = generatedMesh.positions,
+                generatedMeshTangents       = generatedMesh.tangents,
+                generatedMeshNormals        = generatedMesh.normals,
+                generatedMeshUV0            = generatedMesh.uv0
             };
             generateVertexBuffersJob.Run();
 
@@ -457,6 +459,7 @@ namespace Chisel.Core
                             newSubMesh.surfaces.Add(new SubMeshSurface
                             {
                                 surfaceIndex = j,
+                                brushNodeID = brushNodeID,
                                 brushRenderBuffer = brushRenderBuffer
                             });
                             subMeshCounts.Add(newSubMesh);
@@ -471,6 +474,7 @@ namespace Chisel.Core
                         currentSubMesh.surfaces.Add(new SubMeshSurface
                         {
                             surfaceIndex = j,
+                            brushNodeID = brushNodeID,
                             brushRenderBuffer = brushRenderBuffer
                         });
                     }

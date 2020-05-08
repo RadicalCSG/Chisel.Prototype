@@ -7,23 +7,23 @@ using UnityEngine.Rendering;
 using System.Transactions;
 
 namespace Chisel.Components
-{
+{        
     [Serializable]
     public class ChiselModelGeneratedObjects
     {
-        public const string kGeneratedContainerName     = "‹[generated]›";
+        public const string kGeneratedContainerName     = "ï¿½[generated]ï¿½";
         public static readonly string[] kGeneratedMeshRendererNames = new string[]
         {
             null,                                                   // 0 (invalid option)
-            "‹[generated-Renderable]›",                             // 1
-            "‹[generated-CastShadows]›",                            // 2
-            "‹[generated-Renderable|CastShadows]›",                 // 3
+            "ï¿½[generated-Renderable]ï¿½",                             // 1
+            "ï¿½[generated-CastShadows]ï¿½",                            // 2
+            "ï¿½[generated-Renderable|CastShadows]ï¿½",                 // 3
             null,                                                   // 4 (invalid option)
-            "‹[generated-Renderable|ReceiveShadows]›",              // 5
+            "ï¿½[generated-Renderable|ReceiveShadows]ï¿½",              // 5
             null,                                                   // 6 (invalid option)
-            "‹[generated-Renderable|CastShadows|ReceiveShadows]›"   // 7
+            "ï¿½[generated-Renderable|CastShadows|ReceiveShadows]ï¿½"   // 7
         };
-        public const string kGeneratedMeshColliderName	= "‹[generated-Collider]›";
+        public const string kGeneratedMeshColliderName	= "ï¿½[generated-Collider]ï¿½";
 
         public GameObject               generatedDataContainer;
         public GameObject               colliderContainer;
@@ -244,7 +244,7 @@ namespace Chisel.Components
                     var renderIndex = (int)(prevQuery.LayerQueryMask & LayerUsageFlags.RenderReceiveCastShadows);
 
                     // Group by all meshDescriptions with same query
-                    renderables[renderIndex].Update(model, meshDescriptions, startIndex, descriptionIndex);
+                    renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);
                     renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                     startIndex = descriptionIndex;
                 }
@@ -253,7 +253,7 @@ namespace Chisel.Components
                     var renderIndex = (int)(prevQuery.LayerQueryMask & LayerUsageFlags.RenderReceiveCastShadows);
 
                     // Group by all meshDescriptions with same query
-                    renderables[renderIndex].Update(model, meshDescriptions, startIndex, descriptionIndex);
+                    renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);
                     renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                 }
             }
@@ -328,6 +328,39 @@ namespace Chisel.Components
             }
             
             Debug.Assert(descriptionIndex == meshDescriptions.Length);
+        }
+
+
+        public void UpdateVisibilityMeshes()
+        {
+            if (!needVisibilityMeshUpdate)
+                return;
+            
+            var shouldHideMesh  = visibilityState != VisibilityState.AllVisible &&
+                                  visibilityState != VisibilityState.Unknown;
+            for (int i = 0; i < renderables.Length; i++)
+            {
+                var renderable = renderables[i];
+                if (renderable == null)
+                    continue;
+
+                if (renderable.meshRenderer)
+                    renderable.meshRenderer.forceRenderingOff = shouldHideMesh;
+            }
+
+            if (visibilityState == VisibilityState.Mixed)
+            {
+                for (int i = 0; i < renderables.Length; i++)
+                {
+                    var renderable = renderables[i];
+                    if (renderable == null)
+                        continue;
+
+                    renderable.UpdateVisibilityMesh();
+                }
+            }
+
+            needVisibilityMeshUpdate = false;
         }
     }
 }

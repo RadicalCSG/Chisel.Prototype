@@ -421,7 +421,7 @@ namespace Chisel.Editors
             foreach (var target in targets)
             {
                 var model = target as ChiselModel;
-                if (!model)
+                if (!model || model.generated == null)
                     continue;
                 var renderComponents = model.generated.renderMaterials;
                 foreach (var material in renderComponents)

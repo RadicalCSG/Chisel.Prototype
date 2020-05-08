@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -265,6 +265,7 @@ namespace Chisel.Components
         protected override void OnCleanup()
         {
             ChiselGeneratedComponentManager.RemoveContainerFlags(this);
+            generated.Destroy();
         }
 
         public override int GetAllTreeBrushCount()
@@ -307,6 +308,8 @@ namespace Chisel.Components
             if (generated == null)
                 return;
 
+            generated.UpdateVisibilityMeshes();
+
             // TODO: figure out why this can happen
             Debug.Assert(generated.visibilityState != VisibilityState.Unknown, "Unknown Visibility state");
             if (generated.visibilityState != VisibilityState.Mixed)
@@ -327,11 +330,14 @@ namespace Chisel.Components
                 if (renderable == null)
                     continue;
 
-                var meshRenderer = renderable.meshRenderer;
-                if (!meshRenderer || !meshRenderer.forceRenderingOff)
+                var mesh = (Mesh)renderable.partialMesh;
+                if (mesh == null || mesh.vertexCount == 0)
                     continue;
 
-                var mesh                    = (Mesh)renderable.sharedMesh;
+                var meshRenderer = renderable.meshRenderer;
+                if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
+                    continue;
+
                 var properties = new MaterialPropertyBlock();
                 meshRenderer.GetPropertyBlock(properties);
 

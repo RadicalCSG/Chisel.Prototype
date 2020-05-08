@@ -31,7 +31,7 @@ namespace Chisel.Core
         static readonly List<Vector4>   sTangentsList   = new List<Vector4>();
         static readonly List<Vector2>   sUV0List        = new List<Vector2>();
         static readonly List<int>       sBaseVertices   = new List<int>();
-        public static void CopyFrom(this UnityEngine.Mesh mesh, List<GeneratedMeshContents> contents)
+        public static void CopyFrom(this UnityEngine.Mesh mesh, List<GeneratedMeshContents> contents, List<int> triangleBrushes)
         { 
             if (object.ReferenceEquals(contents, null))
                 throw new ArgumentNullException("contents");
@@ -75,8 +75,10 @@ namespace Chisel.Core
             mesh.subMeshCount = sBaseVertices.Count;
             for (int i = 0,n=0; i < contents.Count; i++)
             {
-                if (contents[i] == null)
+                if (contents[i] == null ||
+                    contents[i].indices.Length == 0)
                     continue;
+                triangleBrushes.AddRange(contents[i].brushIndices);
                 var triangles       = contents[i].indices.ToArray();
                 var submesh         = n;
                 var calculateBounds = false;

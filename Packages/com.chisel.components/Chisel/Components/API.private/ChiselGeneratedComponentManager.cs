@@ -119,6 +119,7 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
         static Dictionary<int, VisibilityState> visibilityStateLookup = new Dictionary<int, VisibilityState>();
+        public static bool IsBrushVisible(int brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
         public static void OnVisibilityChanged()
         {
             // TODO: 1. turn off rendering regular meshes when we have partial visibility of model contents
@@ -137,7 +138,9 @@ namespace Chisel.Components
 
                 if (!visibilityStateLookup.TryGetValue(generator.hierarchyItem.Model.NodeID, out VisibilityState prevState))
                     prevState = VisibilityState.Unknown;
-                visibilityStateLookup[generator.hierarchyItem.Model.NodeID] = generator.UpdateVisibility(sceneVisibilityManager) | prevState;
+                var state = generator.UpdateVisibility(sceneVisibilityManager);
+                visibilityStateLookup[node.NodeID] = state;
+                visibilityStateLookup[generator.hierarchyItem.Model.NodeID] = state | prevState;
             }
 
             foreach (var model in models)
@@ -149,29 +152,10 @@ namespace Chisel.Components
                     model.generated.visibilityState = VisibilityState.AllVisible;
                     continue;
                 }
-                if (state != model.generated.visibilityState)
-                {
-                    model.generated.visibilityState = state;
-                    model.generated.needVisibilityMeshUpdate = (state == VisibilityState.Mixed);
-                    UpdatePartialVisibilityMeshesRendering(model);
-                }
-            }
-        }
-
-
-        static void UpdatePartialVisibilityMeshesRendering(ChiselModel model)
-        {
-            if (model.generated == null ||
-                model.generated.renderables == null)
-                return;
-            var modelVisibilityState = model.generated.visibilityState;
-            var shouldHideMesh       = modelVisibilityState != VisibilityState.AllVisible && 
-                                       modelVisibilityState != VisibilityState.Unknown;
-            foreach (var renderable in model.generated.renderables)
-            {
-                if (renderable != null &&
-                    renderable.meshRenderer)
-                    renderable.meshRenderer.forceRenderingOff = shouldHideMesh;
+                if (state == VisibilityState.Mixed ||
+                    state != model.generated.visibilityState)
+                    model.generated.needVisibilityMeshUpdate = true;
+                model.generated.visibilityState = state;
             }
         }
 #endif

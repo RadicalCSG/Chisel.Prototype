@@ -15,9 +15,13 @@ namespace Chisel.Components
         public LayerUsageFlags  query;
         public GameObject       container;
         public Mesh             sharedMesh;
+#if UNITY_EDITOR
+        public Mesh             partialMesh;
+#endif
         public MeshFilter       meshFilter;
         public MeshRenderer     meshRenderer;
         public Material[]       renderMaterials;
+        public readonly List<int> triangleBrushes = new List<int>();
         [NonSerialized] public float uvLightmapUpdateTime;
 
         private ChiselRenderObjects() { }
@@ -25,6 +29,10 @@ namespace Chisel.Components
         {
             var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state);
             var sharedMesh      = new Mesh { name = name };
+#if UNITY_EDITOR
+            var partialMesh     = new Mesh { name = name };
+            partialMesh.hideFlags = HideFlags.DontSave;
+#endif
             var meshFilter      = renderContainer.AddComponent<MeshFilter>();
             var meshRenderer    = renderContainer.AddComponent<MeshRenderer>();
             meshRenderer.enabled = false;
@@ -36,6 +44,7 @@ namespace Chisel.Components
                 meshFilter      = meshFilter,
                 meshRenderer    = meshRenderer,
                 sharedMesh      = sharedMesh,
+                partialMesh     = partialMesh,
                 renderMaterials = new Material[0]
             };
             renderObjects.Initialize();
@@ -44,10 +53,14 @@ namespace Chisel.Components
 
         public void Destroy()
         {
-            ChiselObjectUtility.SafeDestroy(container, ignoreHierarchyEvents: true);
+#if UNITY_EDITOR
+            ChiselObjectUtility.SafeDestroy(partialMesh);
+#endif
             ChiselObjectUtility.SafeDestroy(sharedMesh);
+            ChiselObjectUtility.SafeDestroy(container, ignoreHierarchyEvents: true);
             container       = null;
             sharedMesh      = null;
+            partialMesh     = null;
             meshFilter      = null;
             meshRenderer    = null;
             renderMaterials = null;
@@ -103,8 +116,6 @@ namespace Chisel.Components
 #endif
         }
 
-
-
         void UpdateSettings(ChiselModel model, GameObjectState state, bool meshIsModified)
         {
 #if UNITY_EDITOR
@@ -153,8 +164,9 @@ namespace Chisel.Components
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
         static readonly List<GeneratedMeshContents> __foundContents     = new List<GeneratedMeshContents>(); // static to avoid allocations
-        public void Update(ChiselModel model, GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex)
+        public void Update(ChiselModel model, GameObjectState state, GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex)
         {
+            bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
             try
             {
@@ -173,12 +185,13 @@ namespace Chisel.Components
                     __foundContents.Add(generatedMeshContents);
                     __foundMaterials.Add(renderMaterial);
                 }
+                triangleBrushes.Clear();
                 if (__foundContents.Count == 0)
                 {
                     if (sharedMesh.vertexCount > 0) sharedMesh.Clear(keepVertexLayout: true);
                 } else
                 {
-                    sharedMesh.CopyFrom(__foundContents);
+                    sharedMesh.CopyFrom(__foundContents, triangleBrushes);
                     ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
                 }
                 if (renderMaterials != null && 
@@ -188,7 +201,10 @@ namespace Chisel.Components
                 } else
                     renderMaterials = __foundMaterials.ToArray();
                 if (meshFilter.sharedMesh != sharedMesh)
+                {
                     meshFilter.sharedMesh = sharedMesh;
+                    meshIsModified = true;
+                }
                 meshRenderer.sharedMaterials = renderMaterials;
                 meshRenderer.enabled = sharedMesh.vertexCount > 0; 
             }
@@ -199,6 +215,57 @@ namespace Chisel.Components
                 __foundContents.Clear();
                 __foundMaterials.Clear();
             }
+            UpdateSettings(model, state, meshIsModified);
         }
+
+#if UNITY_EDITOR
+        static readonly List<Vector3>   sVertices       = new List<Vector3>();
+        static readonly List<Vector3>   sNormals        = new List<Vector3>();
+        static readonly List<Vector4>   sTangents       = new List<Vector4>();
+        static readonly List<Vector2>   sUV0            = new List<Vector2>();
+        static readonly List<int>       sSrcTriangles   = new List<int>();
+        static readonly List<int>       sDstTriangles   = new List<int>();
+        internal void UpdateVisibilityMesh()
+        {
+            var srcMesh = sharedMesh;
+            var dstMesh = partialMesh;
+
+            srcMesh.GetVertices(sVertices);
+            dstMesh.SetVertices(sVertices);
+
+            srcMesh.GetNormals(sNormals);
+            dstMesh.SetNormals(sNormals);
+
+            srcMesh.GetTangents(sTangents);
+            dstMesh.SetTangents(sTangents);
+
+            srcMesh.GetUVs(0, sUV0);
+            dstMesh.SetUVs(0, sUV0);
+
+            dstMesh.subMeshCount = srcMesh.subMeshCount;
+            for (int subMesh = 0, n = 0; subMesh < srcMesh.subMeshCount; subMesh++)
+            {
+                bool calculateBounds    = false;
+                int baseVertex          = (int)srcMesh.GetBaseVertex(subMesh);
+                srcMesh.GetTriangles(sSrcTriangles, subMesh, applyBaseVertex: false);
+                sDstTriangles.Clear();
+                for (int i = 0; i < sSrcTriangles.Count; i += 3, n++)
+                {
+                    if (n < triangleBrushes.Count)
+                    { 
+                        int     brushID         = triangleBrushes[n];
+                        bool    isBrushVisible  = ChiselGeneratedComponentManager.IsBrushVisible(brushID);
+                        if (!isBrushVisible)
+                            continue;
+                    }
+                    sDstTriangles.Add(sSrcTriangles[i + 0]);
+                    sDstTriangles.Add(sSrcTriangles[i + 1]);
+                    sDstTriangles.Add(sSrcTriangles[i + 2]);
+                }
+                dstMesh.SetTriangles(sDstTriangles, subMesh, calculateBounds, baseVertex);
+            }
+            dstMesh.RecalculateBounds();
+        }
+#endif
     }
 }
