@@ -240,6 +240,7 @@ namespace Chisel.Components
             var srcMesh = sharedMesh;
             var dstMesh = partialMesh;
 
+            dstMesh.Clear(keepVertexLayout: true);
             srcMesh.GetVertices(sVertices);
             dstMesh.SetVertices(sVertices);
 
