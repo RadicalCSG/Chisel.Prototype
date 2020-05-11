@@ -15,7 +15,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushIndices;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoops>>      intersectionLoopBlobs;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>     brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
@@ -199,7 +199,7 @@ namespace Chisel.Core
 
                                 var intersectionJob = new FindLoopPlaneIntersectionsJob()
                                 {
-                                    brushWorldPlanes    = brushWorldPlanes, 
+                                    brushTreeSpacePlanes    = brushTreeSpacePlanes, 
                                     otherBrushNodeIndex = intersectionBrushIndex1,
                                     selfBrushNodeIndex  = intersectionBrushIndex0,
                                     hashedVertices      = hashedVertices,
@@ -223,7 +223,7 @@ namespace Chisel.Core
                         {
                             var intersectionJob = new FindBasePolygonPlaneIntersectionsJob()
                             {
-                                brushWorldPlanes    = brushWorldPlanes,
+                                brushTreeSpacePlanes    = brushTreeSpacePlanes,
                                 otherBrushNodeIndex = uniqueBrushIndices[i],
                                 selfBrushNodeIndex  = brushNodeIndex,
                                 hashedVertices      = hashedVertices,
@@ -249,7 +249,7 @@ namespace Chisel.Core
                             var in_edges                = intersectionEdges[intersectionSurfaceOffset + l0];
                             var intersectionJob2 = new FindLoopVertexOverlapsJob
                             {
-                                brushWorldPlanes    = brushWorldPlanes,
+                                brushTreeSpacePlanes    = brushTreeSpacePlanes,
                                 selfBrushNodeIndex  = intersectionBrushIndex,
                                 hashedVertices      = hashedVertices,
                                 otherEdges          = bp_edges,

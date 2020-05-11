@@ -22,7 +22,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
-        [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushWorldBounds;
+        [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushTreeSpaceBounds;
 
 
         // Per thread scratch memory
@@ -155,7 +155,7 @@ namespace Chisel.Core
             var mesh                    = brushMeshLookup[brushNodeIndex];
             ref var vertices            = ref mesh.Value.vertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
-            ref var planes              = ref mesh.Value.localPlanes;
+            ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
             var nodeToTreeSpaceMatrix   = transform.Value.nodeToTree;
 
@@ -182,7 +182,7 @@ namespace Chisel.Core
             for (int p = 0; p < polygons.Length; p++)
             {
                 var polygon = polygons[p];
-                if (polygon.edgeCount < 3 || p >= planes.Length)
+                if (polygon.edgeCount < 3 || p >= localPlanes.Length)
                     continue;
 
                 // Note: can end up with duplicate vertices when close enough vertices are snapped together
@@ -242,10 +242,11 @@ namespace Chisel.Core
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
                 };
-                surfaceArray[i] = new BaseSurface()
+                surfaceArray[i] = new BaseSurface
                 {
-                    layers  = polygon.layerDefinition,
-                    UV0     = polygon.UV0
+                    layers      = polygon.layerDefinition,
+                    localPlane  = localPlanes[validPolygons[i].basePlaneIndex],
+                    UV0         = polygon.UV0
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
@@ -257,7 +258,7 @@ namespace Chisel.Core
 
 
             var bounds = new MinMaxAABB() { Min = min, Max = max };
-            brushWorldBounds.TryAdd(brushNodeIndex, bounds);
+            brushTreeSpaceBounds.TryAdd(brushNodeIndex, bounds);
         }
     }
 }

@@ -56,7 +56,7 @@ namespace Chisel.Core
         }
 
         // TODO: find a better place
-        static bool IsPointInsideSurface(ref ChiselSurfaceRenderBuffer surface, float3 treeSpacePoint)
+        static bool IsPointInsideSurface(ref ChiselSurfaceRenderBuffer surface, float3 treeSpacePoint, out float3 treeSpaceNormal)
         {
             ref var triangles	= ref surface.indices;
             ref var vertices    = ref surface.vertices;
@@ -67,12 +67,15 @@ namespace Chisel.Core
                 var v1 = vertices[triangles[i + 1]];
                 var v2 = vertices[triangles[i + 2]];
 
-		        if (PointInTriangle(treeSpacePoint, v0, v2, v1) ||
-                    PointInTriangle(treeSpacePoint, v0, v1, v2))
-			        return true;
+                if (PointInTriangle(treeSpacePoint, v0, v2, v1)) 
+                {
+                    treeSpaceNormal = math.normalizesafe(math.cross(v2 - v0, v2 - v1));
+                    return true;
+                }
 	        }
 
-	        return false;
+            treeSpaceNormal = float3.zero;
+            return false;
         }
         
         // Requirement: out values only set when something is found, otherwise are not modified
@@ -86,15 +89,12 @@ namespace Chisel.Core
 
 						          ref float	        smallestDistance,
 	
-						          out bool	        out_isReversed,
-
+                                  out int           out_surfaceIndex,
 						          out Vector3       out_treeIntersection,
-
 						          out Plane         out_treePlane)
         {
-            out_isReversed          = false;
             out_treeIntersection    = Vector3.zero;
-
+            out_surfaceIndex        = -1;
             out_treePlane           = new Plane();
             
             var brushMeshInstanceID = brush.BrushMesh.brushMeshID;
@@ -104,8 +104,8 @@ namespace Chisel.Core
                 brushMesh.planes.Length == 0)
 		        return false;
 
-            var treeToNodeSpace = brush.TreeToNodeSpaceMatrix;
-            var nodeToTreeSpace = brush.NodeToTreeSpaceMatrix;
+            var treeToNodeSpace                     = brush.TreeToNodeSpaceMatrix;
+            var nodeToTreeSpace                     = brush.NodeToTreeSpaceMatrix;
 
             var brushRayStart	= treeToNodeSpace.MultiplyPoint(treeSpaceRayStart);
             var brushRayEnd     = treeToNodeSpace.MultiplyPoint(treeSpaceRayEnd);
@@ -114,13 +114,15 @@ namespace Chisel.Core
             var found						= false;
             var result_localIntersection	= Vector3.zero;
             var result_isReversed			= false;
+            var result_surfaceIndex         = -1;
+            var result_localPlane           = new Plane();
             var smallest_t					= smallestDistance;
 
             var brush_ray_start	= brushRayStart;
             var brush_ray_end	= brushRayEnd;
 
-	        for (var s = 0; s < brushMesh.planes.Length; s++)
-	        {
+            for (var s = 0; s < brushMesh.planes.Length; s++)
+            {
                 if (surfaces[s].indices.Length == 0)
                     continue;
 
@@ -128,60 +130,72 @@ namespace Chisel.Core
                 if (!IsSurfaceVisible(meshQueries, ref surfaces[s]))
                     continue;
 
-                var plane       = new Plane(brushMesh.planes[s].xyz, brushMesh.planes[s].w);
-                var s_dist      = plane.GetDistanceToPoint(brush_ray_start);
-                var e_dist	    = plane.GetDistanceToPoint(brush_ray_end);
-                var length	    = s_dist - e_dist;
+                var plane = new Plane(brushMesh.planes[s].xyz, brushMesh.planes[s].w);
+                var s_dist = plane.GetDistanceToPoint(brush_ray_start);
+                var e_dist = plane.GetDistanceToPoint(brush_ray_end);
+                var length = s_dist - e_dist;
 
-                var t		= s_dist / length;
-		        if (!(t >= 0.0f && t <= 1.0f)) // NaN will return false on both comparisons, outer not is intentional
-			        continue;
+                var t = s_dist / length;
+                if (!(t >= 0.0f && t <= 1.0f)) // NaN will return false on both comparisons, outer not is intentional
+                    continue;
 
-                var delta	= brushRayDelta * t;
+                var delta = brushRayDelta * t;
 
                 // only pick the plane that is closest
                 var dist = delta.sqrMagnitude;
-		        if (dist > smallest_t) // NaN will return false, smallest_t = Positive Infinity will return false
-			        continue;
+                if (dist > smallest_t) // NaN will return false, smallest_t = Positive Infinity will return false
+                    continue;
 
                 var intersection = brush_ray_start + delta;
 
-		        // make sure the point is on the brush
-		        bool skipSurface = false;
-		        for (var s2 = 0; s2 < brushMesh.planes.Length; s2++)
-		        {
-			        if (s == s2)
-				        continue;
+                // make sure the point is on the brush
+                //if (!brushMesh.localBounds.Contains(intersection))
+                //    continue;
+                bool skipSurface = false;
+                for (var s2 = 0; s2 < brushMesh.planes.Length; s2++)
+                {
+                    if (s == s2)
+                        continue;
 
-                    var plane2  = new Plane(brushMesh.planes[s2].xyz, brushMesh.planes[s2].w);
+                    var plane2 = new Plane(brushMesh.planes[s2].xyz, brushMesh.planes[s2].w);
                     var pl_dist = plane2.GetDistanceToPoint(intersection);
-			        if (pl_dist > MathExtensions.kDistanceEpsilon) { skipSurface = true; break; }
-		        }
+                    if (pl_dist > MathExtensions.kDistanceEpsilon) { skipSurface = true; break; }
+                }
 
-		        if (skipSurface)
-			        continue;
+                if (skipSurface)
+                    continue;
 
                 if (surfaces[s].indices.Length == 0)
                     continue;
 
                 Debug.Assert(surfaces[s].surfaceIndex == s);
                 var treeIntersection = nodeToTreeSpace.MultiplyPoint(intersection);
-                if (!IsPointInsideSurface(ref surfaces[s], treeIntersection))
+                if (!IsPointInsideSurface(ref surfaces[s], treeIntersection, out var treeSpaceNormal))
+                    continue;
+
+                var localSpaceNormal = treeToNodeSpace.MultiplyVector(treeSpaceNormal);
+                
+                // Ignore backfaced culled triangles
+                if (math.dot(localSpaceNormal, brushRayStart - intersection) < 0)
                     continue;
 
                 found = true;
-		        smallest_t  = dist;
-
-		        result_isReversed		 = false;//is_reversed;
-		        result_localIntersection = intersection;
-	        }
+		        smallest_t                  = dist;
+                result_isReversed		    = math.dot(localSpaceNormal, plane.normal) < 0;
+                result_localPlane           = plane;
+                result_surfaceIndex         = surfaces[s].surfaceIndex;
+                result_localIntersection    = intersection;
+            }
 
 	        if (found)
 	        {
-		        smallestDistance	    = smallest_t;
-		        out_treeIntersection	= nodeToTreeSpace.MultiplyPoint(result_localIntersection);
-		        out_isReversed			= result_isReversed;
-		        return true;
+                var treePlane           = nodeToTreeSpace.TransformPlane(result_localPlane);
+
+                smallestDistance	    = smallest_t;
+                out_surfaceIndex        = result_surfaceIndex;
+                out_treeIntersection	= nodeToTreeSpace.MultiplyPoint(result_localIntersection);
+                out_treePlane           = result_isReversed ? treePlane.flipped : treePlane;
+                return true;
 	        }
 	        return false;
         }
@@ -289,21 +303,21 @@ namespace Chisel.Core
 
 								  ref resultDist,
 
-								  out bool      result_isReversed,
+                                  out int       result_surfaceIndex,
                                   out Vector3   result_treeIntersection,
                                   out Plane     result_treePlane))
 				    continue;
-
-                //var result_worldPlane = treeToWorldSpaceInverseTransposed.Transform(result_treePlane);			    
+		    
                 foundIntersections.Add(new CSGTreeBrushIntersection()
                 { 
                     tree                = tree,
                     brush               = brush,
                     brushUserID         = CSGManager.GetUserIDOfNode(brushNodeID),
+                    surfaceIndex        = result_surfaceIndex,
 
                     surfaceIntersection = new ChiselSurfaceIntersection()
-                    { 
-				        treePlane               = result_isReversed ? result_treePlane.flipped : result_treePlane,
+                    {
+                        treePlane               = result_treePlane,
                         treePlaneIntersection   = result_treeIntersection,
 			            distance			    = resultDist,
                     }

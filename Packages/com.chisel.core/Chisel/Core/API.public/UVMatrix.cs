@@ -50,7 +50,7 @@ namespace Chisel.Core
 
         public static UVMatrix TRS(Vector2 translation, Vector3 normal, float rotation, Vector2 scale)
         {
-            var orientation     = Quaternion.Inverse(Quaternion.LookRotation(normal));
+            var orientation     = normal.sqrMagnitude < 0.0001 ? Quaternion.identity : Quaternion.Inverse(Quaternion.LookRotation(normal));
             var rotation2d      = Quaternion.AngleAxis(rotation, Vector3.forward);
             var scale3d         = new Vector3(scale.x, scale.y, 1.0f);
 
@@ -66,7 +66,7 @@ namespace Chisel.Core
         public void Decompose(out Vector2 translation, out Vector3 normal, out float rotation, out Vector2 scale)
         {
             normal              = planeNormal;
-            var orientation     = Quaternion.LookRotation(normal);
+            var orientation     = normal.sqrMagnitude < 0.0001 ? Quaternion.identity : Quaternion.LookRotation(normal);
             var inv_orientation = Quaternion.Inverse(orientation);
 
             var u = inv_orientation * (Vector3)U;

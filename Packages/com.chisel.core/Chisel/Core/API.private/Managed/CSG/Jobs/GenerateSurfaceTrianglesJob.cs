@@ -37,13 +37,13 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)] // Fails for some reason
     unsafe struct GenerateSurfaceTrianglesJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                                         treeBrushNodeIndices;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>> basePolygons;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>> brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushNodeIndices;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
+        [NoAlias, ReadOnly] public NativeStream.Reader input;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter brushRenderBuffers;
 
-        [NoAlias, ReadOnly] public NativeStream.Reader input;
         
         [BurstDiscard]
         public static void InvalidFinalCategory(CategoryIndex _interiorCategory)
@@ -131,8 +131,11 @@ namespace Chisel.Core
             }
 
 
-            ref var baseSurfaces            = ref basePolygons[brushNodeIndex].Value.surfaces;
-            ref var brushWorldPlanesBlob    = ref brushWorldPlanes[brushNodeIndex].Value;
+            ref var baseSurfaces                = ref basePolygons[brushNodeIndex].Value.surfaces;
+            ref var brushTransformations        = ref transformations[brushNodeIndex].Value;
+            var treeToNode                      = brushTransformations.treeToNode;
+            var nodeToTreeInverseTransposed     = math.transpose(treeToNode);
+                
 
             var pointCount                  = brushVertices.Length + 2;
             var context_points              = new NativeArray<float2>(pointCount, allocator);
@@ -179,15 +182,18 @@ namespace Chisel.Core
                 }
 
                 // TODO: why are we doing this in tree-space? better to do this in brush-space, then we can more easily cache this
-                var surfaceIndex        = s;
-                var surfaceLayers       = baseSurfaces[surfaceIndex].layers;
-                var surfaceWorldPlane   = brushWorldPlanesBlob.worldPlanes[surfaceIndex];
-                var UV0                 = baseSurfaces[surfaceIndex].UV0;
-                var localSpaceToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(surfaceWorldPlane);
-                var uv0Matrix           = math.mul(UV0.ToFloat4x4(), localSpaceToPlaneSpace);
+                var surfaceIndex            = s;
+                var surfaceLayers           = baseSurfaces[surfaceIndex].layers;
+                var localSpacePlane         = baseSurfaces[surfaceIndex].localPlane;
+                var UV0                     = baseSurfaces[surfaceIndex].UV0;
+                var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(localSpacePlane);
+                var treeSpaceToPlaneSpace   = math.mul(localSpaceToPlaneSpace, treeToNode);
+                var uv0Matrix               = math.mul(UV0.ToFloat4x4(), treeSpaceToPlaneSpace);
+
+                var surfaceTreeSpacePlane   = math.mul(nodeToTreeInverseTransposed, localSpacePlane);
 
                 // Ensure we have the rotation properly calculated, and have a valid normal
-                float3 normal = surfaceWorldPlane.xyz;
+                float3 normal = surfaceTreeSpacePlane.xyz;
                 quaternion rotation;
                 if (((Vector3)normal) == Vector3.forward)
                     rotation = quaternion.identity;

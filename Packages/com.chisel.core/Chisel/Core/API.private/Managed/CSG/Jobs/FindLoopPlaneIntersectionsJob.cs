@@ -22,12 +22,12 @@ namespace Chisel.Core
         const float kVertexEqualEpsilonSqr  = (float)CSGConstants.kVertexEqualEpsilonSqr;
         const float kPlaneDistanceEpsilon   = CSGConstants.kDistanceEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>> brushWorldPlanes;
-        [NoAlias, ReadOnly] public int                  otherBrushNodeIndex;
-        [NoAlias, ReadOnly] public int                  selfBrushNodeIndex;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public int                      otherBrushNodeIndex;
+        [NoAlias, ReadOnly] public int                      selfBrushNodeIndex;
         
         //[NativeDisableContainerSafetyRestriction]
-        [NoAlias] public HashedVertices                         hashedVertices; // <-- TODO: we're reading AND writing to the same NativeList!?!?!
+        [NoAlias] public HashedVertices                     hashedVertices; // <-- TODO: we're reading AND writing to the same NativeList!?!?!
         [NoAlias] public NativeListArray<Edge>.NativeList   edges;
         
         // TODO: find a way to share found intersections between loops, to avoid accuracy issues
@@ -43,8 +43,8 @@ namespace Chisel.Core
 
             var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
 
-            ref var otherPlanesNative    = ref brushWorldPlanes[otherBrushNodeIndex].Value.worldPlanes;// allWorldSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushWorldPlanes[selfBrushNodeIndex].Value.worldPlanes;//allWorldSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeIndex].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeIndex].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;
@@ -182,7 +182,7 @@ namespace Chisel.Core
         const float kVertexEqualEpsilonSqr  = (float)CSGConstants.kVertexEqualEpsilonSqr;
         const float kPlaneDistanceEpsilon   = CSGConstants.kDistanceEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>> brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public int                  otherBrushNodeIndex;
         [NoAlias, ReadOnly] public int                  selfBrushNodeIndex;
         
@@ -204,8 +204,8 @@ namespace Chisel.Core
 
             var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
 
-            ref var otherPlanesNative    = ref brushWorldPlanes[otherBrushNodeIndex].Value.worldPlanes;// allWorldSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushWorldPlanes[selfBrushNodeIndex].Value.worldPlanes;//allWorldSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeIndex].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeIndex].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;

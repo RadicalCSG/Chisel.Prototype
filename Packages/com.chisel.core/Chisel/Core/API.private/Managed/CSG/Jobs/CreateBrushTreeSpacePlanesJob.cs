@@ -15,20 +15,20 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    public struct CreateBrushWorldPlanesJob : IJobParallelFor   
+    public struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
         [NoAlias,ReadOnly] public NativeArray<int> treeBrushIndices;
         [NoAlias,ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
         [NoAlias,ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>   transformations;
 
-        [NoAlias,WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>.ParallelWriter brushWorldPlanes;
+        [NoAlias,WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>.ParallelWriter brushTreeSpacePlanes;
 
         public void Execute(int index)
         {
             var brushNodeIndex  = treeBrushIndices[index];
-            var worldPlanes     = BrushWorldPlanes.Build(brushMeshLookup[brushNodeIndex], 
+            var worldPlanes     = BrushTreeSpacePlanes.Build(brushMeshLookup[brushNodeIndex], 
                                                          transformations[brushNodeIndex].Value.nodeToTree);
-            brushWorldPlanes.TryAdd(brushNodeIndex, worldPlanes);
+            brushTreeSpacePlanes.TryAdd(brushNodeIndex, worldPlanes);
         }
     }
 }

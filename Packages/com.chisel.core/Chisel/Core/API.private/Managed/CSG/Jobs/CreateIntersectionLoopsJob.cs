@@ -25,7 +25,7 @@ namespace Chisel.Core
         const float kDistanceEpsilon        = CSGConstants.kDistanceEpsilon;
         const float kNormalEpsilon          = CSGConstants.kNormalEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>> brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushPairIntersection>> intersectingBrushes;
 
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter outputSurfaces;
@@ -226,12 +226,12 @@ namespace Chisel.Core
                 if (segment.y == 0)
                     continue;
 
-                var worldVertex         = math.mul(nodeToTreeSpaceMatrix1, localVertices[j]).xyz;
-                var worldVertexIndex    = hashedVertices.AddNoResize(worldVertex);
+                var treeSpaceVertex         = math.mul(nodeToTreeSpaceMatrix1, localVertices[j]).xyz;
+                var treeSpaceVertexIndex    = hashedVertices.AddNoResize(treeSpaceVertex);
                 for (int i = segment.x; i < segment.x + segment.y; i++)
                 {
                     var planeIndex = vertexIntersectionPlanes[i];
-                    foundIndices0[foundIndices0Length] = new PlaneVertexIndexPair { planeIndex = (ushort)planeIndex, vertexIndex = (ushort)worldVertexIndex };
+                    foundIndices0[foundIndices0Length] = new PlaneVertexIndexPair { planeIndex = (ushort)planeIndex, vertexIndex = (ushort)treeSpaceVertexIndex };
                     foundIndices0Length++;
                 }
             }
@@ -348,8 +348,8 @@ namespace Chisel.Core
 
                 // TODO: should be having a Loop for each plane that intersects this vertex, and add that vertex 
                 //       to ensure they are identical
-                var worldVertex = math.mul(nodeToTreeSpaceMatrix0, localVertex).xyz;
-                var vertexIndex = hashedVertices.AddNoResize(worldVertex);
+                var treeSpaceVertex = math.mul(nodeToTreeSpaceMatrix0, localVertex).xyz;
+                var vertexIndex     = hashedVertices.AddNoResize(treeSpaceVertex);
 
                 foundIndices0[foundIndices0Length] = new PlaneVertexIndexPair { planeIndex = planeIndex2, vertexIndex = vertexIndex };
                 foundIndices0Length++;
@@ -366,7 +366,7 @@ namespace Chisel.Core
         void GenerateLoop(int                               brushNodeIndex0,
                           int                               brushNodeIndex1,
                           ref BlobArray<SurfaceInfo>        surfaceInfos,
-                          ref BrushWorldPlanes              brushWorldPlanes,
+                          ref BrushTreeSpacePlanes              brushTreeSpacePlanes,
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
                           ref int                           foundIndices0Length,
                           //ref HashedVertices              hashedVertices,
@@ -468,7 +468,7 @@ namespace Chisel.Core
                 var planeIndex          = planeIndexOffset.planeIndex;
                     
                 // TODO: use plane information instead
-                SortIndices(vertices, sortedStack, uniqueIndices, offset, length, brushWorldPlanes.worldPlanes[planeIndex].xyz);
+                SortIndices(vertices, sortedStack, uniqueIndices, offset, length, brushTreeSpacePlanes.treeSpacePlanes[planeIndex].xyz);
             }
 
             
@@ -617,11 +617,11 @@ namespace Chisel.Core
 
             if (foundIndices0Length >= 3)
             {
-                ref var brushWorldPlanes0 = ref brushWorldPlanes[brushNodeIndex0].Value;
+                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushNodeIndex0].Value;
                 GenerateLoop(brushNodeIndex0,
                              brushNodeIndex1,
                              ref intersection.brushes[0].surfaceInfos,
-                             ref brushWorldPlanes0,
+                             ref brushTreeSpacePlanes0,
                              foundIndices0, ref foundIndices0Length,
                              //ref hashedVertices,
                              outputSurfaces);
@@ -629,11 +629,11 @@ namespace Chisel.Core
 
             if (foundIndices1Length >= 3)
             {
-                ref var brushWorldPlanes1 = ref brushWorldPlanes[brushNodeIndex1].Value;
+                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushNodeIndex1].Value;
                 GenerateLoop(brushNodeIndex1,
                              brushNodeIndex0,
                              ref intersection.brushes[1].surfaceInfos,
-                             ref brushWorldPlanes1,
+                             ref brushTreeSpacePlanes1,
                              foundIndices1, 
                              ref foundIndices1Length,
                              //ref hashedVertices,
