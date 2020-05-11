@@ -12,22 +12,26 @@ namespace Chisel.Core
     public struct UVMatrix
     {
         public UVMatrix(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); }
-        public UVMatrix(float4 u, float4 v) { U = u; V = v; }
+        public UVMatrix(Vector4 u, Vector4 v) { U = u; V = v; }
 
         /// <value>Used to convert a vertex coordinate to a U texture coordinate</value>
-        public float4 U;
+        public Vector4 U;
 
         /// <value>Used to convert a vertex coordinate to a V texture coordinate</value>
-        public float4 V;
+        public Vector4 V;
 
 
         // TODO: add description
         public Matrix4x4 ToMatrix() { return (Matrix4x4)ToFloat4x4(); }
         
         // TODO: add description
-        public float4x4 ToFloat4x4() { var W = planeNormal; return new float4x4 { c0 = U, c1 = V, c2 = new float4(W, 0), c3 = new Vector4(0, 0, 0, 1) }; }
+        public float4x4 ToFloat4x4() 
+        { 
+            var W = planeNormal; 
+            return math.transpose(new float4x4 { c0 = U, c1 = V, c2 = new float4(W, 0), c3 = new Vector4(0, 0, 0, 1) }); 
+        }
 
-        public float3 planeNormal { get { return math.normalizesafe(math.cross(U.xyz, V.xyz)); } }
+        public float3 planeNormal { get { return math.normalizesafe(math.cross(((float4)U).xyz, ((float4)V).xyz)); } }
 
         // TODO: add description
         public UVMatrix Set(Matrix4x4 input) { U = input.GetRow(0); V = input.GetRow(1); return this; }
@@ -65,8 +69,8 @@ namespace Chisel.Core
             var orientation     = Quaternion.LookRotation(normal);
             var inv_orientation = Quaternion.Inverse(orientation);
 
-            var u = inv_orientation * U.xyz;
-            var v = inv_orientation * V.xyz;
+            var u = inv_orientation * (Vector3)U;
+            var v = inv_orientation * (Vector3)V;
 
             rotation = -Vector3.SignedAngle(Vector3.right, u, Vector3.forward);
 
@@ -89,8 +93,8 @@ namespace Chisel.Core
 
             // TODO: figure out a better way to find if we scale negatively
             var newUvMatrix = UVMatrix.TRS(translation, normal, rotation, scale);
-            if (Vector3.Dot(V.xyz, newUvMatrix.V.xyz) < 0) scale.y = -scale.y;
-            if (Vector3.Dot(U.xyz, newUvMatrix.U.xyz) < 0) scale.x = -scale.x;
+            if (Vector3.Dot((Vector3)V, (Vector3)newUvMatrix.V) < 0) scale.y = -scale.y;
+            if (Vector3.Dot((Vector3)U, (Vector3)newUvMatrix.U) < 0) scale.x = -scale.x;
         }
 
         public override string ToString()

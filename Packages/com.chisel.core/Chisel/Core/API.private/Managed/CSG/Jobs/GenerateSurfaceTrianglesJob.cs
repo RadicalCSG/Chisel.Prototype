@@ -184,7 +184,7 @@ namespace Chisel.Core
                 var surfaceWorldPlane   = brushWorldPlanesBlob.worldPlanes[surfaceIndex];
                 var UV0                 = baseSurfaces[surfaceIndex].UV0;
                 var localSpaceToPlaneSpace = MathExtensions.GenerateLocalToPlaneSpaceMatrix(surfaceWorldPlane);
-                var uv0Matrix = math.mul(UV0.ToFloat4x4(), localSpaceToPlaneSpace);
+                var uv0Matrix           = math.mul(UV0.ToFloat4x4(), localSpaceToPlaneSpace);
 
                 // Ensure we have the rotation properly calculated, and have a valid normal
                 float3 normal = surfaceWorldPlane.xyz;

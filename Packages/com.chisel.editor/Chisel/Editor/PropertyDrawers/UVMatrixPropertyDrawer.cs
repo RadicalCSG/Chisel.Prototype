@@ -62,7 +62,7 @@ namespace Chisel.Editors
 
             var uvMatrix    = new UVMatrix(UProp.vector4Value, VProp.vector4Value);
             var state       = (UVMatrixState)EditorGUIUtility.GetStateObject(typeof(UVMatrixState), translationID);
-            if (!state.initialized || math.all(state.uvMatrix.U != uvMatrix.U) || math.all(state.uvMatrix.V != uvMatrix.V))
+            if (!state.initialized || state.uvMatrix.U != uvMatrix.U || state.uvMatrix.V != uvMatrix.V)
             {
                 uvMatrix.Decompose(out state.translation, out state.normal, out state.rotation, out state.scale);
                 state.uvMatrix = uvMatrix;
