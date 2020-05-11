@@ -437,7 +437,7 @@ namespace Chisel.Core
             if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false;
             var treeNodeID = nodeHierarchies[brushNodeID - 1].treeNodeID;
             var chiselLookupValues = ChiselTreeLookup.Value[treeNodeID - 1];
-            if (!chiselLookupValues.brushWorldBounds.TryGetValue(brushNodeID - 1, out MinMaxAABB result))
+            if (!chiselLookupValues.brushTreeSpaceBounds.TryGetValue(brushNodeID - 1, out MinMaxAABB result))
                 return false;
 
             bounds = new Bounds();

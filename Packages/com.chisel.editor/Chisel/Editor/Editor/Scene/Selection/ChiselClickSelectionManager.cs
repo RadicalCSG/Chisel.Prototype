@@ -278,7 +278,7 @@ namespace Chisel.Editors
             if (!PickClosestGameObjectDelegated(position, ref ignore, ref filter, out intersection))
                 return false;
 
-            return intersection.brushIntersection.surfaceID != -1;
+            return intersection.brushIntersection.surfaceIndex != -1;
         }
 
         static List<Material> sSharedMaterials = new List<Material>();
@@ -387,7 +387,7 @@ namespace Chisel.Editors
                     return true;
                 } else
                 {
-                    var surface = node.FindBrushMaterial(brush, intersection.brushIntersection.surfaceID);
+                    var surface = node.FindBrushMaterialBySurfaceIndex(brush, intersection.brushIntersection.surfaceIndex);
                     if (surface == null)
                         return false;
                     brushContainerAssets = node.GetUsedGeneratedBrushes();
@@ -419,7 +419,7 @@ namespace Chisel.Editors
 
                 var brush = intersection.brushIntersection.brush;
 
-                surfaceReference = node.FindSurfaceReference(brush, intersection.brushIntersection.surfaceID);
+                surfaceReference = node.FindSurfaceReference(brush, intersection.brushIntersection.surfaceIndex);
                 if (selectAllSurfaces)
                     return node.GetAllSurfaceReferences(brush);
 

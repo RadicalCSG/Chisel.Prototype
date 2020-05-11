@@ -103,7 +103,7 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
-        [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushWorldBounds;
+        [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushTreeSpaceBounds;
 
         [NoAlias] public NativeList<int> updateBrushIndices;
 
@@ -274,8 +274,8 @@ namespace Chisel.Core
             if (!brushMesh0.IsCreated || !brushMesh1.IsCreated)
                 return IntersectionType.NoIntersection;
 
-            var bounds0 = brushWorldBounds[brush0NodeIndex];
-            var bounds1 = brushWorldBounds[brush1NodeIndex];
+            var bounds0 = brushTreeSpaceBounds[brush0NodeIndex];
+            var bounds1 = brushTreeSpaceBounds[brush1NodeIndex];
 
             if (!bounds0.Intersects(bounds1, kPlaneDistanceEpsilon))
                 return IntersectionType.NoIntersection;

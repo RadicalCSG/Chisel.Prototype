@@ -21,9 +21,9 @@ namespace Chisel.Core
         public const int kMaxVertexCount = short.MaxValue;
         const float kPlaneDistanceEpsilon = CSGConstants.kDistanceEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>> brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public int                              selfBrushNodeIndex;
-        [NoAlias, ReadOnly] public HashedVertices                       hashedVertices;
+        [NoAlias, ReadOnly] public HashedVertices                   hashedVertices;
         [NoAlias, ReadOnly] public NativeListArray<Edge>.NativeList otherEdges;
 
 
@@ -35,7 +35,7 @@ namespace Chisel.Core
                 otherEdges.Length < 3)
                 return;
 
-            ref var selfPlanes = ref brushWorldPlanes[selfBrushNodeIndex].Value.worldPlanes;
+            ref var selfPlanes = ref brushTreeSpacePlanes[selfBrushNodeIndex].Value.treeSpacePlanes;
 
             var otherVerticesLength = 0;
             var otherVertices       = stackalloc ushort[otherEdges.Length];

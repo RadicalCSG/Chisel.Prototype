@@ -14,7 +14,7 @@ namespace Chisel.Core
     {
         [NoAlias, ReadOnly] public NativeArray<int>                                                 treeBrushNodeIndices;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>         brushWorldPlanes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>     brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
 
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
@@ -115,11 +115,11 @@ namespace Chisel.Core
                 return;
 
             int inside2 = 0, outside2 = 0;
-            var categories2     = stackalloc EdgeCategory[currentLoopEdges.Length];
-            var worldPlanes1    = brushWorldPlanes[intersectionInfo.brushNodeIndex];
+            var categories2         = stackalloc EdgeCategory[currentLoopEdges.Length];
+            var treeSpacePlanes1    = brushTreeSpacePlanes[intersectionInfo.brushNodeIndex];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref worldPlanes1.Value.worldPlanes, intersectionLoop, brushVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, brushVertices);
                 categories2[e] = category;
                 if      (category == EdgeCategory.Inside) inside2++;
                 else if (category == EdgeCategory.Outside) outside2++;
@@ -127,11 +127,11 @@ namespace Chisel.Core
             var aligned2 = currentLoopEdges.Length - (inside2 + outside2);
 
             int inside1 = 0, outside1 = 0;
-            var categories1     = stackalloc EdgeCategory[intersectionLoop.Length];
-            var worldPlanes2    = brushWorldPlanes[currentInfo.brushNodeIndex];
+            var categories1         = stackalloc EdgeCategory[intersectionLoop.Length];
+            var treeSpacePlanes2    = brushTreeSpacePlanes[currentInfo.brushNodeIndex];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref worldPlanes2.Value.worldPlanes, currentLoopEdges, brushVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, brushVertices);
                 categories1[e] = category;
                 if      (category == EdgeCategory.Inside) inside1++;
                 else if (category == EdgeCategory.Outside) outside1++;
@@ -360,8 +360,8 @@ namespace Chisel.Core
                 int totalPlaneCount = 0;
                 int totalEdgeCount = baseLoopEdges.Length;
                 {
-                    ref var worldPlanes = ref brushWorldPlanes[allInfos[baseloopIndex].brushNodeIndex].Value.worldPlanes;
-                    totalPlaneCount += worldPlanes.Length;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushNodeIndex].Value.treeSpacePlanes;
+                    totalPlaneCount += treeSpacePlanes.Length;
                 }
                 for (int h = 0; h < holeIndicesList.Length; h++)
                 {
@@ -369,16 +369,16 @@ namespace Chisel.Core
                     var holeEdges = allEdges[holeIndex];
                     totalEdgeCount += holeEdges.Length;
 
-                    ref var worldPlanes = ref brushWorldPlanes[allInfos[holeIndex].brushNodeIndex].Value.worldPlanes;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushNodeIndex].Value.treeSpacePlanes;
 
-                    totalPlaneCount += worldPlanes.Length;
+                    totalPlaneCount += treeSpacePlanes.Length;
                 }
 
 
 
-                var allWorldPlanes   = new NativeList<float4>(totalPlaneCount, Allocator.Temp);
-                var allSegments      = new NativeList<LoopSegment>(holeIndicesList.Length + 1, Allocator.Temp);
-                var allCombinedEdges = new NativeList<Edge>(totalEdgeCount, Allocator.Temp);
+                var alltreeSpacePlanes  = new NativeList<float4>(totalPlaneCount, Allocator.Temp);
+                var allSegments         = new NativeList<LoopSegment>(holeIndicesList.Length + 1, Allocator.Temp);
+                var allCombinedEdges    = new NativeList<Edge>(totalEdgeCount, Allocator.Temp);
                 {                
                     int edgeOffset = 0;
                     int planeOffset = 0;
@@ -402,9 +402,9 @@ namespace Chisel.Core
                             }
                         }
 
-                        ref var worldPlanes = ref brushWorldPlanes[allInfos[holeIndex].brushNodeIndex].Value.worldPlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushNodeIndex].Value.treeSpacePlanes;
                         
-                        var planesLength    = worldPlanes.Length;
+                        var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = holeEdges.Length;
 
                         allSegments.AddNoResize(new LoopSegment
@@ -418,16 +418,16 @@ namespace Chisel.Core
                         allCombinedEdges.AddRangeNoResize(holeEdges);
 
                         // TODO: ideally we'd only use the planes that intersect our edges
-                        allWorldPlanes.AddRangeNoResize(worldPlanes.GetUnsafePtr(), planesLength);
+                        alltreeSpacePlanes.AddRangeNoResize(treeSpacePlanes.GetUnsafePtr(), planesLength);
 
                         edgeOffset += edgesLength;
                         planeOffset += planesLength;
                     }
                     if (baseLoopEdges.Length > 0)
                     {
-                        ref var worldPlanes = ref brushWorldPlanes[allInfos[baseloopIndex].brushNodeIndex].Value.worldPlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushNodeIndex].Value.treeSpacePlanes;
 
-                        var planesLength    = worldPlanes.Length;
+                        var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = baseLoopEdges.Length;
 
                         allSegments.AddNoResize(new LoopSegment()
@@ -441,7 +441,7 @@ namespace Chisel.Core
                         allCombinedEdges.AddRangeNoResize(baseLoopEdges);
 
                         // TODO: ideally we'd only use the planes that intersect our edges
-                        allWorldPlanes.AddRangeNoResize(worldPlanes.GetUnsafePtr(), planesLength);
+                        alltreeSpacePlanes.AddRangeNoResize(treeSpacePlanes.GetUnsafePtr(), planesLength);
 
                         edgeOffset += edgesLength;
                         planeOffset += planesLength;
@@ -461,7 +461,7 @@ namespace Chisel.Core
 
                                 for (int e = 0; e < segment1.edgeLength; e++)
                                 {
-                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], allWorldPlanes, allCombinedEdges, segment2, brushVertices);
+                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment2, brushVertices);
                                     if (category == EdgeCategory.Outside || category == EdgeCategory.Aligned)
                                         continue;
                                     destroyedEdges[segment1.edgeOffset + e] = 1;
@@ -469,7 +469,7 @@ namespace Chisel.Core
 
                                 for (int e = 0; e < segment2.edgeLength; e++)
                                 {
-                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], allWorldPlanes, allCombinedEdges, segment1, brushVertices);
+                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
                                     if (category == EdgeCategory.Inside)
                                         continue;
                                     destroyedEdges[segment2.edgeOffset + e] = 1;
@@ -491,7 +491,7 @@ namespace Chisel.Core
                                 {
                                     for (int e = 0; e < segment1.edgeLength; e++)
                                     {
-                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], allWorldPlanes, allCombinedEdges, segment2, brushVertices);
+                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment2, brushVertices);
                                         if (category == EdgeCategory.Outside ||
                                             category == EdgeCategory.Aligned)
                                             continue;
@@ -500,7 +500,7 @@ namespace Chisel.Core
 
                                     for (int e = 0; e < segment2.edgeLength; e++)
                                     {
-                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], allWorldPlanes, allCombinedEdges, segment1, brushVertices);
+                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
                                         if (category == EdgeCategory.Outside)
                                             continue;
                                         destroyedEdges[segment2.edgeOffset + e] = 1;
@@ -533,7 +533,7 @@ namespace Chisel.Core
                         }
                     }
                 }
-                //allWorldPlanes  .Dispose();
+                //alltreeSpacePlanes  .Dispose();
                 //allSegments     .Dispose();
                 //allCombinedEdges.Dispose();
 

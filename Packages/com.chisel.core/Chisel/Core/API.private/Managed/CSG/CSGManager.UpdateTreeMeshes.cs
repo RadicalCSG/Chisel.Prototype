@@ -38,8 +38,8 @@ namespace Chisel.Core
             public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>            brushMeshLookup;
             public NativeHashMap<int, BlobAssetReference<NodeTransformations>>      transformations;
             public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>         basePolygons;
-            public NativeHashMap<int, MinMaxAABB>                                   brushWorldBounds;
-            public NativeHashMap<int, BlobAssetReference<BrushWorldPlanes>>         brushWorldPlanes;
+            public NativeHashMap<int, MinMaxAABB>                                   brushTreeSpaceBounds;
+            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>     brushTreeSpacePlanes;
             public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
             public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
 
@@ -57,7 +57,7 @@ namespace Chisel.Core
             public JobHandle findAllIntersectionsJobHandle;
             public JobHandle findIntersectingBrushesJobHandle;
 
-            public JobHandle updateBrushWorldPlanesJobHandle;
+            public JobHandle updateBrushTreeSpacePlanesJobHandle;
 
             public JobHandle updateBrushCategorizationTablesJobHandle;
 
@@ -130,7 +130,7 @@ namespace Chisel.Core
                 ref var brushMeshBlobs          = ref chiselMeshValues.brushMeshBlobs;
                 ref var transformations         = ref chiselLookupValues.transformations;
                 ref var basePolygons            = ref chiselLookupValues.basePolygons;
-                ref var brushWorldBounds        = ref chiselLookupValues.brushWorldBounds;
+                ref var brushTreeSpaceBounds    = ref chiselLookupValues.brushTreeSpaceBounds;
                 ref var brushesTouchedByBrushes = ref chiselLookupValues.brushesTouchedByBrushes;
 
                 // Removes all brushes that have MeshID == 0 from treeBrushesArray
@@ -173,9 +173,9 @@ namespace Chisel.Core
                         if (basePolygonsBlob.IsCreated)
                             basePolygonsBlob.Dispose();
                     }
-                    if (brushWorldBounds.TryGetValue(brushNodeIndex, out var brushWorldBoundsBlob))
+                    if (brushTreeSpaceBounds.TryGetValue(brushNodeIndex, out var brushTreeSpaceBoundsBlob))
                     {
-                        brushWorldBounds.Remove(brushNodeIndex);
+                        brushTreeSpaceBounds.Remove(brushNodeIndex);
                     }                    
 
                     if ((nodeFlags.status & NodeStatusFlags.ShapeModified) != NodeStatusFlags.None)
@@ -231,7 +231,7 @@ namespace Chisel.Core
                 chiselLookupValues.RemoveSurfaceRenderBuffersByBrushID(rebuildTreeBrushIndicesList);
                 chiselLookupValues.RemoveRoutingTablesByBrushID(rebuildTreeBrushIndicesList);
                 chiselLookupValues.RemoveBrushTouchesByBrushID(allBrushBrushIndicesList);
-                chiselLookupValues.RemoveBrushWorldPlanesByBrushID(rebuildTreeBrushIndicesList);
+                chiselLookupValues.RemoveBrushTreeSpacePlanesByBrushID(rebuildTreeBrushIndicesList);
 
                 chiselLookupValues.RemoveTransformationsByBrushID(transformTreeBrushIndicesList);
 
@@ -346,8 +346,8 @@ namespace Chisel.Core
                     brushMeshLookup                 = brushMeshLookup,
                     transformations                 = chiselLookupValues.transformations,
                     basePolygons                    = chiselLookupValues.basePolygons,
-                    brushWorldBounds                = chiselLookupValues.brushWorldBounds,
-                    brushWorldPlanes                = chiselLookupValues.brushWorldPlanes,
+                    brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBounds,
+                    brushTreeSpacePlanes            = chiselLookupValues.brushTreeSpacePlanes,
                     routingTableLookup              = chiselLookupValues.routingTableLookup,
                     brushesTouchedByBrushes         = chiselLookupValues.brushesTouchedByBrushes,
                     brushRenderBuffers              = chiselLookupValues.brushRenderBuffers,
@@ -381,13 +381,13 @@ namespace Chisel.Core
                     var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobs 
                     {
                         // Read
-                        treeBrushIndices    = treeUpdate.rebuildTreeBrushIndices,
-                        brushMeshLookup     = treeUpdate.brushMeshLookup,
-                        transformations     = treeUpdate.transformations,
+                        treeBrushIndices        = treeUpdate.rebuildTreeBrushIndices,
+                        brushMeshLookup         = treeUpdate.brushMeshLookup,
+                        transformations         = treeUpdate.transformations,
 
                         // Write
-                        basePolygons        = treeUpdate.basePolygons.AsParallelWriter(),
-                        brushWorldBounds    = treeUpdate.brushWorldBounds.AsParallelWriter()
+                        basePolygons            = treeUpdate.basePolygons.AsParallelWriter(),
+                        brushTreeSpaceBounds    = treeUpdate.brushTreeSpaceBounds.AsParallelWriter()
                     };
                     treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
                         Schedule(treeUpdate.rebuildTreeBrushIndices, 16);
@@ -410,7 +410,7 @@ namespace Chisel.Core
                         allTreeBrushIndices     = treeUpdate.allTreeBrushIndices,
                         transformations         = treeUpdate.transformations,
                         brushMeshLookup         = treeUpdate.brushMeshLookup,
-                        brushWorldBounds        = treeUpdate.brushWorldBounds,
+                        brushTreeSpaceBounds    = treeUpdate.brushTreeSpaceBounds,
                         
                         // Write
                         brushBrushIntersections = treeUpdate.brushBrushIntersections.AsParallelWriter()
@@ -440,14 +440,14 @@ namespace Chisel.Core
             } finally { Profiler.EndSample(); }
 
             // TODO: should only do this at creation time + when moved / store with brush component itself
-            Profiler.BeginSample("Tag_UpdateBrushWorldPlanes");
+            Profiler.BeginSample("Tag_UpdateBrushTreeSpacePlanes");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];
                     var dependencies = treeUpdate.findIntersectingBrushesJobHandle;
-                    var createBrushWorldPlanesJob = new CreateBrushWorldPlanesJob
+                    var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                     {
                         // Read
                         treeBrushIndices        = treeUpdate.rebuildTreeBrushIndices.AsDeferredJobArray(),
@@ -455,9 +455,9 @@ namespace Chisel.Core
                         transformations         = treeUpdate.transformations,
 
                         // Write
-                        brushWorldPlanes        = treeUpdate.brushWorldPlanes.AsParallelWriter()
+                        brushTreeSpacePlanes    = treeUpdate.brushTreeSpacePlanes.AsParallelWriter()
                     };
-                    treeUpdate.updateBrushWorldPlanesJobHandle = createBrushWorldPlanesJob.
+                    treeUpdate.updateBrushTreeSpacePlanesJobHandle = createBrushTreeSpacePlanesJob.
                         Schedule(treeUpdate.rebuildTreeBrushIndices, 16, dependencies);
                 }
             }
@@ -530,11 +530,11 @@ namespace Chisel.Core
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];
-                    var dependencies = JobHandle.CombineDependencies(treeUpdate.updateBrushWorldPlanesJobHandle, treeUpdate.prepareBrushPairIntersectionsJobHandle);
+                    var dependencies = JobHandle.CombineDependencies(treeUpdate.updateBrushTreeSpacePlanesJobHandle, treeUpdate.prepareBrushPairIntersectionsJobHandle);
                     var findAllIntersectionLoopsJob = new CreateIntersectionLoopsJob
                     {
                         // Read
-                        brushWorldPlanes        = treeUpdate.brushWorldPlanes,
+                        brushTreeSpacePlanes    = treeUpdate.brushTreeSpacePlanes,
                         intersectingBrushes     = treeUpdate.intersectingBrushes.AsDeferredJobArray(),
 
                         // Write
@@ -557,7 +557,7 @@ namespace Chisel.Core
                         // Read
                         treeBrushIndices            = treeUpdate.rebuildTreeBrushIndices.AsDeferredJobArray(),
                         intersectionLoopBlobs       = treeUpdate.intersectionLoopBlobs.AsDeferredJobArray(),
-                        brushWorldPlanes            = treeUpdate.brushWorldPlanes,
+                        brushTreeSpacePlanes        = treeUpdate.brushTreeSpacePlanes,
                         basePolygons                = treeUpdate.basePolygons,// by nodeIndex (non-bounds, non-surfaceinfo)
 
                         // Write
@@ -584,7 +584,7 @@ namespace Chisel.Core
                         // Read
                         treeBrushNodeIndices        = treeUpdate.rebuildTreeBrushIndices.AsDeferredJobArray(),
                         routingTableLookup          = treeUpdate.routingTableLookup,
-                        brushWorldPlanes            = treeUpdate.brushWorldPlanes,
+                        brushTreeSpacePlanes        = treeUpdate.brushTreeSpacePlanes,
                         brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
                         input                       = treeUpdate.dataStream1.AsReader(),
 
@@ -609,8 +609,8 @@ namespace Chisel.Core
                     {
                         // Read
                         treeBrushNodeIndices    = treeUpdate.rebuildTreeBrushIndices.AsDeferredJobArray(),
-                        brushWorldPlanes        = treeUpdate.brushWorldPlanes,
                         basePolygons            = treeUpdate.basePolygons,
+                        transformations         = treeUpdate.transformations,
                         input                   = treeUpdate.dataStream2.AsReader(),
 
                         // Write

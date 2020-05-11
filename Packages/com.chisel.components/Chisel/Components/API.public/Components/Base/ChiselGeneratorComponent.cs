@@ -500,7 +500,7 @@ namespace Chisel.Components
             }
         }
 
-        public override ChiselBrushMaterial FindBrushMaterial(CSGTreeBrush brush, int surfaceID)
+        public override ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeBrush brush, int surfaceID)
         {
             if (!brushContainerAsset)
                 return null;

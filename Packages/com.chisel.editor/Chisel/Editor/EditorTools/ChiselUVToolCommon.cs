@@ -928,12 +928,10 @@ namespace Chisel.Editors
             worldIntersection = GetCurrentWorldClick(jumpedMousePosition);
             var worldSpaceMovement = worldIntersection - worldStartPosition;
 
-            Vector3 tangent;
-            Vector3 biNormal;
-            MathExtensions.CalculateTangents(worldDragPlane.normal, out tangent, out biNormal);
+            MathExtensions.CalculateTangents(worldDragPlane.normal, out var tangent, out var binormal);
 
             var deltaVector = tangent  * Vector3.Dot(tangent,  worldSpaceMovement) +
-                              biNormal * Vector3.Dot(biNormal, worldSpaceMovement);
+                              binormal * Vector3.Dot(binormal, worldSpaceMovement);
 
             if (Snapping.AxisLockX) deltaVector.x = 0;
             if (Snapping.AxisLockY) deltaVector.y = 0;

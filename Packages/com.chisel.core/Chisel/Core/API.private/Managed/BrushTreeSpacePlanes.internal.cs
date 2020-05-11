@@ -6,28 +6,28 @@ using Unity.Mathematics;
 
 namespace Chisel.Core
 {
-    public struct BrushWorldPlanes
+    public struct BrushTreeSpacePlanes
     {
-        public BlobArray<float4> worldPlanes;
+        public BlobArray<float4> treeSpacePlanes;
 
-        public static BlobAssetReference<BrushWorldPlanes> Build(BlobAssetReference<BrushMeshBlob> brushMeshBlob, float4x4 nodeToTreeTransformation)
+        public static BlobAssetReference<BrushTreeSpacePlanes> Build(BlobAssetReference<BrushMeshBlob> brushMeshBlob, float4x4 nodeToTreeTransformation)
         {
             if (!brushMeshBlob.IsCreated)
-                return BlobAssetReference<BrushWorldPlanes>.Null;
+                return BlobAssetReference<BrushTreeSpacePlanes>.Null;
 
             var nodeToTreeInverseTransposed = math.transpose(math.inverse(nodeToTreeTransformation));
 
             var totalSize = 16 + (brushMeshBlob.Value.localPlanes.Length * UnsafeUtility.SizeOf<float4>());
 
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
-            ref var root = ref builder.ConstructRoot<BrushWorldPlanes>();
-            var worldPlaneArray = builder.Allocate(ref root.worldPlanes, brushMeshBlob.Value.localPlanes.Length);
+            ref var root = ref builder.ConstructRoot<BrushTreeSpacePlanes>();
+            var treeSpacePlaneArray = builder.Allocate(ref root.treeSpacePlanes, brushMeshBlob.Value.localPlanes.Length);
             for (int i = 0; i < brushMeshBlob.Value.localPlanes.Length; i++)
             {
                 var localPlane = brushMeshBlob.Value.localPlanes[i];
-                worldPlaneArray[i] = math.mul(nodeToTreeInverseTransposed, localPlane);
+                treeSpacePlaneArray[i] = math.mul(nodeToTreeInverseTransposed, localPlane);
             }
-            var result = builder.CreateBlobAssetReference<BrushWorldPlanes>(Allocator.Persistent);
+            var result = builder.CreateBlobAssetReference<BrushTreeSpacePlanes>(Allocator.Persistent);
             builder.Dispose();
             return result;
         }
