@@ -34,17 +34,18 @@ namespace Chisel.Editors
         }
 
         public static ChiselOverlay.WindowFunction AdditionalSettings;
-
+        public static Tool ShowSnappingTool = Tool.None;
+        public static bool ShowSnappingToolUV = true;
 
         const int kPrimaryOrder = int.MaxValue;
         
         const string                    kOverlayTitle   = "Chisel";
         static readonly ChiselOverlay   OverlayWindow   = new ChiselOverlay(kOverlayTitle, DisplayControls, kPrimaryOrder);
 
-        static GUIContent kRebuildButton;
 
         static SortedList<string, ChiselEditToolBase> editModes = new SortedList<string, ChiselEditToolBase>();
 
+        static GUIContent kRebuildButton;
         [InitializeOnLoadMethod]
         internal static void Initialize()
         {
@@ -59,6 +60,7 @@ namespace Chisel.Editors
             editModes[editMode.ToolName] = editMode;
         }
 
+
         public static void UpdateCreateToolIcon()
         {
             if (!editModes.TryGetValue(ChiselCreateTool.kToolName, out ChiselEditToolBase toolBase))
@@ -66,28 +68,22 @@ namespace Chisel.Editors
             toolBase.UpdateIcon();
         }
 
-        const float kButtonSize = 32;
-        static GUILayoutOption[] buttonOptions = new[]
-        {
-            GUILayout.Width(kButtonSize),
-            GUILayout.Height(kButtonSize)
-        };
 
 
-        static bool Toggle(ChiselEditToolBase editMode, Type editModeType)
+        static bool Toggle(Rect position, ChiselEditToolBase editMode, Type editModeType)
         {
-            var content = editMode.m_ToolIcon;
             var selected = EditorTools.activeToolType == editModeType;
-            return GUILayout.Toggle(selected, content, styles.toggleStyle, buttonOptions);
+            var content = selected ? editMode.ActiveIconContent : editMode.IconContent;
+            return GUI.Toggle(position, selected, content, styles.toggleStyle);
         }
 
-        static void EditModeButton(ChiselEditToolBase editMode, bool enabled)
+        static void EditModeButton(Rect position, ChiselEditToolBase editMode, bool enabled)
         { 
             var editModeType = editMode.GetType();
             using (new EditorGUI.DisabledScope(!enabled))
             {
                 EditorGUI.BeginChangeCheck();
-                var value = Toggle(editMode, editModeType);
+                var value = Toggle(position, editMode, editModeType);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
                     EditorTools.SetActiveTool(editModeType);
@@ -95,12 +91,17 @@ namespace Chisel.Editors
                 }
             }
         }
+
         class Styles
         {
             public GUIStyle toggleStyle;
+            public GUIStyle buttonRowStyle;
         }
 
         static Styles styles = null;
+        public const int kButtonSize    = 32 + (kButtonPadding * 2);
+        public const int kButtonMargin  = 1;
+        public const int kButtonPadding = 2;
         static void InitStyles()
         {
             if (styles == null)
@@ -110,8 +111,12 @@ namespace Chisel.Editors
                 {
                     toggleStyle = new GUIStyle(GUI.skin.button)
                     {
-                        padding = new RectOffset(3, 3, 3, 3)
-                    }
+                        padding     = new RectOffset(kButtonPadding, kButtonPadding, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(kButtonMargin,  kButtonMargin,  kButtonMargin,  kButtonMargin - 2),
+                        fixedWidth  = kButtonSize,
+                        fixedHeight = kButtonSize,
+                    },
+                    buttonRowStyle = new GUIStyle(GUIStyle.none)
                 };
             }
         }
@@ -136,21 +141,31 @@ namespace Chisel.Editors
                 {
                     using (new EditorGUI.DisabledScope(!enabled))
                     {
-                        GUILayout.BeginHorizontal(ChiselOverlay.kMinWidthLayout);
+                        var style       = styles.toggleStyle;
+                        var groupRect   = EditorGUILayout.GetControlRect(false, kButtonSize + style.margin.vertical, ChiselOverlay.kMinWidthLayout);
+                        groupRect.xMin -= 3;
+                        groupRect.yMin += 3;
 
+                        var startX      = style.margin.left + groupRect.x + 3;
+                        var buttonStep  = kButtonSize + style.margin.left;
+                        var position    = new Rect(startX, groupRect.y, kButtonSize, style.fixedHeight);
+
+                        int xPos = 0;
                         foreach (var editMode in editModes.Values)
                         {
-                            EditModeButton(editMode, enabled);
+                            position.x = startX + (xPos * buttonStep);
+                            EditModeButton(position, editMode, enabled);
+                            xPos++;
                         }
-                        GUILayout.FlexibleSpace();
 
                         // TODO: assign hotkey to rebuild, and possibly move it elsewhere to avoid it seemingly like a necessary action.
 
-                        if (GUILayout.Toggle(false, kRebuildButton, styles.toggleStyle, buttonOptions))
+                        xPos = 7;
+                        position.x = startX + (xPos * buttonStep);
+                        if (GUI.Toggle(position, false, kRebuildButton, styles.toggleStyle))
                         {
                             Rebuild();
                         }
-                        GUILayout.EndHorizontal();
                     }
                 }
 

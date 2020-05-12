@@ -115,6 +115,8 @@ namespace Chisel.Editors
             }
 
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselOptionsOverlay.ShowSnappingToolUV = false;
             ChiselOptionsOverlay.SetTitle($"Create {generatorMode.ToolName}");
             generatorMode.ShowSceneGUI(sceneView, dragArea);
 

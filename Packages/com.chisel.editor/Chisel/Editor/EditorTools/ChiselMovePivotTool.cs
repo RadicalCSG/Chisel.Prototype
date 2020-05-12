@@ -150,6 +150,8 @@ namespace Chisel.Editors
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselOptionsOverlay.ShowSnappingToolUV = false;
 
             var position = Tools.handlePosition;
             var rotation = Tools.handleRotation;

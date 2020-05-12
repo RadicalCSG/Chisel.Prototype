@@ -1452,7 +1452,8 @@ namespace Chisel.Editors
 
             prevEdgeIndex = edgeIndex;
             prevNewVertex = newVertex;
-            SceneView.RepaintAll();
+            if (Event.current.type != EventType.Repaint)
+                SceneView.RepaintAll();
         }
 
         void FindSnappedPointOnVertex(int vertexIndex)
@@ -1464,7 +1465,8 @@ namespace Chisel.Editors
 
             prevEdgeIndex = brushMesh.FindAnyHalfEdgeWithVertexIndex(vertexIndex);
             prevNewVertex = newVertex;
-            SceneView.RepaintAll();
+            if (Event.current.type != EventType.Repaint)
+                SceneView.RepaintAll();
         }
 
         void UpdateEdgeHoverPointOnEdge(int edgeIndex)

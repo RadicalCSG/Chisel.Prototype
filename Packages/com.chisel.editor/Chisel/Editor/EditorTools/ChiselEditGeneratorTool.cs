@@ -53,6 +53,8 @@ namespace Chisel.Editors
             else
                 ChiselOptionsOverlay.SetTitle($"Edit {CurrentEditorName}");
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselOptionsOverlay.ShowSnappingToolUV = false;
         }
     }
 }

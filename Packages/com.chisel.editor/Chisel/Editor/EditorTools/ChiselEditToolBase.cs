@@ -12,24 +12,52 @@ namespace Chisel.Editors
     {
         // Serialize this value to set a default value in the Inspector.
         [SerializeField] internal Texture2D m_ToolIcon = null;
+        [SerializeField] internal Texture2D m_ToolIconActive = null;
+        [SerializeField] internal Texture2D m_ToolIconDark = null;
+        [SerializeField] internal Texture2D m_ToolIconDarkActive = null;
 
         public abstract string ToolName { get; }
 
-        public override GUIContent toolbarIcon { get { return cachedIconContent; } }
-        
-        GUIContent cachedIconContent = new GUIContent();
+        public Texture2D Icon
+        {
+            get
+            {
+                var icon = m_ToolIcon;
+                if (EditorGUIUtility.isProSkin)
+                    icon = m_ToolIconDark;
+                return icon;
+            }
+        }
+
+        public Texture2D ActiveIcon
+        {
+            get
+            {
+                var icon = m_ToolIconActive;
+                if (EditorGUIUtility.isProSkin)
+                    icon = m_ToolIconDarkActive;
+                return icon;
+            }
+        }
+
+        public override GUIContent toolbarIcon { get { return cachedToolbarContent; } }
+
+        GUIContent cachedToolbarContent = new GUIContent();
         public virtual GUIContent Content
         {
             get 
             {
                 return new GUIContent()
                 {
-                    image = m_ToolIcon,
-                    text = $"Chisel {ToolName} Tool",
+                    image   = Icon,
+                    text    = $"Chisel {ToolName} Tool",
                     tooltip = $"Chisel {ToolName} Tool"
                 };
             }
         }
+
+        public GUIContent IconContent { get; private set; } = new GUIContent();
+        public GUIContent ActiveIconContent { get; private set; } = new GUIContent();
 
         public void OnEnable()
         {
@@ -50,9 +78,21 @@ namespace Chisel.Editors
         public void UpdateIcon()
         {
             var newContent = Content;
-            cachedIconContent.image     = newContent.image;
-            cachedIconContent.text      = newContent.text;
-            cachedIconContent.tooltip   = newContent.tooltip;
+            cachedToolbarContent.image     = newContent.image;
+            cachedToolbarContent.text      = newContent.text;
+            cachedToolbarContent.tooltip   = newContent.tooltip;
+
+            {
+                var iconContent = IconContent;
+                iconContent.image       = Icon;
+                iconContent.tooltip     = ToolName;
+            }
+
+            {
+                var activeIconContent = ActiveIconContent;
+                activeIconContent.image     = ActiveIcon;
+                activeIconContent.tooltip   = ToolName;
+            }
         }
 
         public abstract void OnSceneSettingsGUI(SceneView sceneView);
@@ -71,10 +111,12 @@ namespace Chisel.Editors
                 return;
 
             ChiselOptionsOverlay.AdditionalSettings = ChiselEditGeneratorTool.DefaultSceneSettingsGUI;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselOptionsOverlay.ShowSnappingToolUV = false;
             ChiselOptionsOverlay.SetTitle(Convert.ToString(Tools.current)); // TODO: cache these strings
 
             ChiselOptionsOverlay.Show();
-            ChiselGridOptionsOverlay.Show();
+            ChiselSnappingOptionsOverlay.Show();
         }
 
 
@@ -107,11 +149,13 @@ namespace Chisel.Editors
             dragArea.position = Vector2.zero;
 
             ChiselOptionsOverlay.AdditionalSettings = null;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.None;
+            ChiselOptionsOverlay.ShowSnappingToolUV = false;
             ChiselOptionsOverlay.SetTitle(ToolName);
             OnSceneGUI(sceneView, dragArea);
 
             ChiselOptionsOverlay.Show();
-            ChiselGridOptionsOverlay.Show();
+            ChiselSnappingOptionsOverlay.Show();
         }
 
         public virtual void OnActivate()

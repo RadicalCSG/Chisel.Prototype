@@ -26,6 +26,10 @@ namespace Chisel.Editors
 
         public static void RepaintAll()
         {
+            // Prevent infinite loops
+            if (Event.current != null &&
+                Event.current.type == EventType.Repaint)
+                return;
             foreach (var window in windows)
             {
                 if (window)

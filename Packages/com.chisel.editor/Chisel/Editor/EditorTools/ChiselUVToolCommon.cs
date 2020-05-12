@@ -8,24 +8,13 @@ using UnityEngine;
 using UnitySceneExtensions;
 using Chisel.Utilities;
 using UnityEditor.ShortcutManagement;
-using Snapping = UnitySceneExtensions.Snapping;
 using UnityEditor.EditorTools;
-using Grid = UnitySceneExtensions.Grid;
+using Snapping          = UnitySceneExtensions.Snapping;
+using Grid              = UnitySceneExtensions.Grid;
+using UVSnapSettings    = UnitySceneExtensions.UVSnapSettings;
 
 namespace Chisel.Editors
 {
-
-    // TODO: put somewhere else, so we can enable/disable default uv snapping behavour in the editor
-    [Flags]
-    internal enum UVSnapSettings
-    {
-        None = 0,
-        GeometryGrid = 1,
-        GeometryEdges = 2,
-        GeometryVertices = 4,
-        UVGrid = 8,    // TODO: implement
-        UVBounds = 16    // TODO: implement
-    }
 
     sealed class ChiselSurfaceContainer : ScriptableObject
     {
@@ -209,10 +198,9 @@ namespace Chisel.Editors
         
         #region Snapping
 
-        internal static UVSnapSettings editorSnapSettings  = (UVSnapSettings)~0;
         internal static UVSnapSettings toolSnapOverrides   = (UVSnapSettings)~0;
 
-        internal static UVSnapSettings CurrentSnapSettings { get { return editorSnapSettings & toolSnapOverrides; } }
+        internal static UVSnapSettings CurrentSnapSettings { get { return Snapping.UVSnapSettings & toolSnapOverrides; } }
         internal static bool pointHasSnapped     = false;
         internal static bool forceVertexSnapping = false;
 

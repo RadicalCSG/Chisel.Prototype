@@ -51,12 +51,14 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
         }
 
-        static readonly int kSurfaceEditModeHash		= "SurfaceEditMode".GetHashCode();
+        static readonly int kSurfaceEditModeHash		= "SurfaceRotateEditMode".GetHashCode();
         static readonly int kSurfaceRotateHash			= "SurfaceRotate".GetHashCode();
         
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            ChiselOptionsOverlay.ShowSnappingTool = Tool.Rotate;
+            ChiselOptionsOverlay.ShowSnappingToolUV = true;
 
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Passive, dragArea);
             HandleUtility.AddDefaultControl(defaultID);

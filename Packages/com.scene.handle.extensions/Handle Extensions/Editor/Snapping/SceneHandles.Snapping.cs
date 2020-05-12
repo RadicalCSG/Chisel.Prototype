@@ -6,6 +6,17 @@ using UnityEngine;
 
 namespace UnitySceneExtensions
 {
+    [Flags]
+    public enum UVSnapSettings
+    {
+        None                = 0,
+        GeometryGrid        = 1,
+        GeometryEdges       = 2,
+        GeometryVertices    = 4,
+        UVGrid              = 8,    // TODO: implement
+        UVBounds            = 16    // TODO: implement
+    }
+
     public static class Snapping
     {
         public static event Action SnappingSettingsModified;
@@ -39,7 +50,7 @@ namespace UnitySceneExtensions
                 return BoundsSnappingEnabled;
             }
         }
-                
+
         #region PivotSnappingEnabled
         private static bool		_pivotSnappingEnabled = true;
         public static bool		PivotSnappingEnabled
@@ -67,7 +78,87 @@ namespace UnitySceneExtensions
                 return PivotSnappingEnabled;
             }
         }
-        
+
+        #region VertexSnappingEnabled
+        private static bool _vertexSnappingEnabled = true;
+        public static bool VertexSnappingEnabled
+        {
+            get
+            {
+                return _vertexSnappingEnabled;
+            }
+            set
+            {
+                if (_vertexSnappingEnabled == value)
+                    return;
+                _vertexSnappingEnabled = value;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool VertexSnappingActive
+        {
+            get
+            {
+                return VertexSnappingEnabled;
+            }
+        }
+
+        #region EdgeSnappingEnabled
+        private static bool _edgeSnappingEnabled = true;
+        public static bool EdgeSnappingEnabled
+        {
+            get
+            {
+                return _edgeSnappingEnabled;
+            }
+            set
+            {
+                if (_edgeSnappingEnabled == value)
+                    return;
+                _edgeSnappingEnabled = value;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool EdgeSnappingActive
+        {
+            get
+            {
+                return EdgeSnappingEnabled;
+            }
+        }
+
+        #region SurfaceSnappingEnabled
+        private static bool _surfaceSnappingEnabled = true;
+        public static bool SurfaceSnappingEnabled
+        {
+            get
+            {
+                return _surfaceSnappingEnabled;
+            }
+            set
+            {
+                if (_surfaceSnappingEnabled == value)
+                    return;
+                _surfaceSnappingEnabled = value;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool SurfaceSnappingActive
+        {
+            get
+            {
+                return SurfaceSnappingEnabled;
+            }
+        }
+
+
+
         #region RotateSnappingEnabled
         private static bool		_rotateSnappingEnabled = true;		
         public static bool		RotateSnappingEnabled
@@ -123,8 +214,99 @@ namespace UnitySceneExtensions
                 return _scaleSnappingEnabled;
             }
         }
-        
-        
+
+
+
+        public static UVSnapSettings UVSnapSettings { get; set; } = (UVSnapSettings)~0;
+
+        #region UVGridSnappingEnabled
+        public static bool UVGridSnappingEnabled
+        {
+            get
+            {
+                return (UVSnapSettings & UVSnapSettings.GeometryGrid) == UVSnapSettings.GeometryGrid;
+            }
+            set
+            {
+                var prevEnabled = (UVSnapSettings & UVSnapSettings.GeometryGrid) == UVSnapSettings.GeometryGrid;
+                if (prevEnabled == value)
+                    return;
+                if (value)
+                    UVSnapSettings |= UVSnapSettings.GeometryGrid;
+                else
+                    UVSnapSettings &= ~UVSnapSettings.GeometryGrid;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool UVGridSnappingActive
+        {
+            get
+            {
+                return UVGridSnappingEnabled;
+            }
+        }
+
+        #region UVVertexSnappingEnabled
+        public static bool UVVertexSnappingEnabled
+        {
+            get
+            {
+                return (UVSnapSettings & UVSnapSettings.GeometryVertices) == UVSnapSettings.GeometryVertices;
+            }
+            set
+            {
+                var prevEnabled = (UVSnapSettings & UVSnapSettings.GeometryVertices) == UVSnapSettings.GeometryVertices;
+                if (prevEnabled == value)
+                    return;
+                if (value)
+                    UVSnapSettings |= UVSnapSettings.GeometryVertices;
+                else
+                    UVSnapSettings &= ~UVSnapSettings.GeometryVertices;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool UVVertexSnappingActive
+        {
+            get
+            {
+                return UVVertexSnappingEnabled;
+            }
+        }
+
+        #region UVEdgeSnappingEnabled
+        public static bool UVEdgeSnappingEnabled
+        {
+            get
+            {
+                return (UVSnapSettings & UVSnapSettings.GeometryEdges) == UVSnapSettings.GeometryEdges;
+            }
+            set
+            {
+                var prevEnabled = (UVSnapSettings & UVSnapSettings.GeometryEdges) == UVSnapSettings.GeometryEdges;
+                if (prevEnabled == value)
+                    return;
+                if (value)
+                    UVSnapSettings |= UVSnapSettings.GeometryEdges;
+                else
+                    UVSnapSettings &= ~UVSnapSettings.GeometryEdges;
+                if (SnappingSettingsModified != null)
+                    SnappingSettingsModified();
+            }
+        }
+        #endregion
+        public static bool UVEdgeSnappingActive
+        {
+            get
+            {
+                return UVEdgeSnappingEnabled;
+            }
+        }
+
+
         #region MoveSnappingSteps
         public static Vector3	MoveSnappingSteps
         {

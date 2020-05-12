@@ -70,8 +70,8 @@ namespace Chisel.Editors
             ChiselNodeHierarchyManager.NodeHierarchyReset -= OnHierarchyReset;
             ChiselNodeHierarchyManager.NodeHierarchyReset += OnHierarchyReset;
 
-            ChiselNodeHierarchyManager.NodeHierarchyModified -= OnNodeHierarcyModified;
-            ChiselNodeHierarchyManager.NodeHierarchyModified += OnNodeHierarcyModified;
+            ChiselNodeHierarchyManager.NodeHierarchyModified -= OnNodeHierarchyModified;
+            ChiselNodeHierarchyManager.NodeHierarchyModified += OnNodeHierarchyModified;
 
             ChiselNodeHierarchyManager.TransformationChanged -= OnTransformationChanged;
             ChiselNodeHierarchyManager.TransformationChanged += OnTransformationChanged;
@@ -179,9 +179,15 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.Instance.OnReset();
         }
     
-        private static void OnNodeHierarcyModified()
+        private static void OnNodeHierarchyModified()
         {
             ChiselOutlineRenderer.Instance.OnReset();
+
+            // Prevent infinite loops
+            if (Event.current != null &&
+                Event.current.type == EventType.Repaint)
+                return;
+
             Editors.ChiselManagedHierarchyView.RepaintAll();
             Editors.ChiselInternalHierarchyView.RepaintAll();
             //SceneView.RepaintAll();
@@ -189,7 +195,11 @@ namespace Chisel.Editors
         }
 
         private static void OnHierarchyReset()
-        {			
+        {
+            // Prevent infinite loops
+            if (Event.current != null &&
+                Event.current.type == EventType.Repaint)
+                return;
             Editors.ChiselManagedHierarchyView.RepaintAll();
             Editors.ChiselInternalHierarchyView.RepaintAll(); 
         }
