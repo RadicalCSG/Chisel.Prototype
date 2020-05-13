@@ -647,7 +647,7 @@ namespace Chisel.Editors
                 return;
             }
 
-            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+            if (Tools.current == Tool.Custom) ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
             UpdateSelection();

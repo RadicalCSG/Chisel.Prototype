@@ -16,6 +16,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "Edit Generator";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => CurrentEditorName == null ? "Options" : $"{CurrentEditorName} Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselEditGeneratorTool); }
 
@@ -31,11 +32,6 @@ namespace Chisel.Editors
          
         public override void OnSceneSettingsGUI(SceneView sceneView)
         {
-            DefaultSceneSettingsGUI(sceneView);
-        }
-
-        public static void DefaultSceneSettingsGUI(SceneView sceneView)
-        {
             OnEditSettingsGUI?.Invoke(sceneView);
         }
 
@@ -48,13 +44,9 @@ namespace Chisel.Editors
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             // NOTE: Actual work is done by Editor classes
-            if (string.IsNullOrEmpty(CurrentEditorName))
-                ChiselOptionsOverlay.SetTitle("Edit");
-            else
-                ChiselOptionsOverlay.SetTitle($"Edit {CurrentEditorName}");
-            ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselOptionsOverlay.ShowSnappingToolUV = false;
+            ChiselOptionsOverlay.AdditionalSettings = OnEditSettingsGUI;
+            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselToolsOverlay.ShowSnappingToolUV = false;
         }
     }
 }

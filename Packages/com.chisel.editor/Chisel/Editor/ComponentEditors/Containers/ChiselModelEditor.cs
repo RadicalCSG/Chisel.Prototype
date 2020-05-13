@@ -258,7 +258,7 @@ namespace Chisel.Editors
                     modelTarget.OnInitialize();
             }
 
-            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+            ChiselEditGeneratorTool.OnEditSettingsGUI = null;// OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = "Model";
         }
 

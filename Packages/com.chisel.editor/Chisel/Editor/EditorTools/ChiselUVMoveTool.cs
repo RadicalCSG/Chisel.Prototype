@@ -21,6 +21,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "UV Move";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => $"UV Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVMoveTool); }
 
@@ -55,8 +56,8 @@ namespace Chisel.Editors
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselOptionsOverlay.ShowSnappingToolUV = true;
+            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselToolsOverlay.ShowSnappingToolUV = true;
 
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Keyboard, dragArea);
             HandleUtility.AddDefaultControl(defaultID);

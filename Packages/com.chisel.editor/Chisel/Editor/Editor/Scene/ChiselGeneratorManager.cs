@@ -109,7 +109,7 @@ namespace Chisel.Editors
                 currentTool.OnActivate();
             Instance.data.currentGenerator = currentTool;
 
-            ChiselOptionsOverlay.UpdateCreateToolIcon();
+            ChiselToolsOverlay.UpdateCreateToolIcon();
 
             GeneratorSelectionChanged?.Invoke(prevTool, currentTool);
         }

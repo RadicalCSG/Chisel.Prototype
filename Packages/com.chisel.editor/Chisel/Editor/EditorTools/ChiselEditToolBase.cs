@@ -17,6 +17,7 @@ namespace Chisel.Editors
         [SerializeField] internal Texture2D m_ToolIconDarkActive = null;
 
         public abstract string ToolName { get; }
+        public abstract string OptionsTitle { get; }
 
         public Texture2D Icon
         {
@@ -62,7 +63,7 @@ namespace Chisel.Editors
         public void OnEnable()
         {
             lastSelectedNode = null;
-            ChiselOptionsOverlay.Register(this);
+            ChiselToolsOverlay.Register(this);
             ToolNotActivatingBugWorkAround(); 
             UpdateIcon();
             NotifyOnSelectionChanged();
@@ -110,12 +111,14 @@ namespace Chisel.Editors
             if (!haveNodeSelection)
                 return;
 
-            ChiselOptionsOverlay.AdditionalSettings = ChiselEditGeneratorTool.DefaultSceneSettingsGUI;
-            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselOptionsOverlay.ShowSnappingToolUV = false;
+            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselToolsOverlay.ShowSnappingToolUV = false;
+
+            ChiselOptionsOverlay.AdditionalSettings = ChiselEditGeneratorTool.OnEditSettingsGUI;
             ChiselOptionsOverlay.SetTitle(Convert.ToString(Tools.current)); // TODO: cache these strings
 
             ChiselOptionsOverlay.Show();
+            ChiselToolsOverlay.Show();
             ChiselSnappingOptionsOverlay.Show();
         }
 
@@ -148,13 +151,17 @@ namespace Chisel.Editors
             var dragArea = sceneView.position;
             dragArea.position = Vector2.zero;
 
+            ChiselToolsOverlay.ShowSnappingTool = Tool.None;
+            ChiselToolsOverlay.ShowSnappingToolUV = false;
+
             ChiselOptionsOverlay.AdditionalSettings = null;
-            ChiselOptionsOverlay.ShowSnappingTool = Tool.None;
-            ChiselOptionsOverlay.ShowSnappingToolUV = false;
-            ChiselOptionsOverlay.SetTitle(ToolName);
+            ChiselOptionsOverlay.SetTitle(OptionsTitle);
+
+
             OnSceneGUI(sceneView, dragArea);
 
             ChiselOptionsOverlay.Show();
+            ChiselToolsOverlay.Show();
             ChiselSnappingOptionsOverlay.Show();
         }
 

@@ -16,8 +16,8 @@ namespace Chisel.Editors
         const float kSingleSpacing      = 0.0f;
         
         public const int   kButtonSize      = 32 + (kButtonPadding * 2);
-        public const int   kButtonMargin    = ChiselOptionsOverlay.kButtonMargin;
-        public const int   kButtonPadding   = ChiselOptionsOverlay.kButtonPadding;
+        public const int   kButtonMargin    = ChiselToolsOverlay.kButtonMargin;
+        public const int   kButtonPadding   = ChiselToolsOverlay.kButtonPadding;
 
 
         [MenuItem("Window/Chisel/Placement Tools")]

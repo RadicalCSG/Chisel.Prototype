@@ -16,6 +16,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "Move Pivot";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => $"Pivot Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselMovePivotTool); }
 
@@ -143,15 +144,16 @@ namespace Chisel.Editors
         }
         #endregion
 
+
         public override void OnSceneSettingsGUI(SceneView sceneView)
         {
         }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-            ChiselOptionsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselOptionsOverlay.ShowSnappingToolUV = false;
+            ChiselOptionsOverlay.AdditionalSettings = null;// OnSceneSettingsGUI;
+            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
+            ChiselToolsOverlay.ShowSnappingToolUV = false;
 
             var position = Tools.handlePosition;
             var rotation = Tools.handleRotation;
