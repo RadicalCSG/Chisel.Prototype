@@ -143,7 +143,7 @@ namespace Chisel.Components
 
                 var localPlaneVector = brushMesh.planes[surfaceIndex];
                 var localPlane       = new Plane(localPlaneVector.xyz, localPlaneVector.w);
-                localPlane.Translate(-node.PivotOffset);
+                //localPlane.Translate(node.PivotOffset);
                 return LocalToWorldSpace.TransformPlane(localPlane);
             }
         }
@@ -164,7 +164,10 @@ namespace Chisel.Components
             {
                 if (node == null)
                     return Matrix4x4.identity;
-                
+
+                var generator = node as ChiselGeneratorComponent;
+                if (generator != null)
+                    return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation; 
                 return node.hierarchyItem.LocalToWorldMatrix;
             }
         }
@@ -175,7 +178,10 @@ namespace Chisel.Components
             {
                 if (node == null)
                     return Matrix4x4.identity;
-                
+
+                var generator = node as ChiselGeneratorComponent;
+                if (generator != null)
+                    return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
                 return node.hierarchyItem.WorldToLocalMatrix;
             }
         }
@@ -201,17 +207,9 @@ namespace Chisel.Components
                     return Matrix4x4.identity;
                 
                 var localToPlaneSpace   = (Matrix4x4)MathExtensions.GenerateLocalToPlaneSpaceMatrix(brushMesh.planes[surfaceIndex]);
-                var worldToLocal        = node.hierarchyItem.WorldToLocalMatrix;
+                var worldToLocal        = WorldToLocalSpace;
                 return localToPlaneSpace * worldToLocal;
             }	
-        }
-
-        public Matrix4x4 PlaneToWorldSpace
-        {
-            get
-            {
-                return Matrix4x4.Inverse(WorldToPlaneSpace);
-            }
         }
 
         public Matrix4x4 WorldSpaceToPlaneSpace(in Matrix4x4 worldSpaceTransformation)

@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
+using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
@@ -16,6 +17,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "Move Pivot";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => $"Pivot Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselMovePivotTool); }
 
@@ -24,6 +26,8 @@ namespace Chisel.Editors
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToPivotEditMode, displayName = kEditModeShotcutName)]
         public static void ActivateTool() { EditorTools.SetActiveTool<ChiselMovePivotTool>(); }
         #endregion
+
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry & ~SnapSettings.GeometryBoundsToGrid; } }
 
         public override void OnActivate()
         {
@@ -143,14 +147,46 @@ namespace Chisel.Editors
         }
         #endregion
 
+
         public override void OnSceneSettingsGUI(SceneView sceneView)
         {
         }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            var evt = Event.current;
+            switch (evt.type)
+            {
+                case EventType.KeyDown:
+                {
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        if (GUIUtility.hotControl == 0)
+                        {
+                            evt.Use();
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case EventType.KeyUp:
+                {
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        if (GUIUtility.hotControl == 0)
+                        {
+                            Selection.activeTransform = null;
+                            evt.Use();
+                            GUIUtility.ExitGUI(); // avoids a nullreference exception in sceneview
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
 
+            ChiselOptionsOverlay.AdditionalSettings = null;// OnSceneSettingsGUI;
+            
             var position = Tools.handlePosition;
             var rotation = Tools.handleRotation;
             if (Event.current.type == EventType.Repaint)

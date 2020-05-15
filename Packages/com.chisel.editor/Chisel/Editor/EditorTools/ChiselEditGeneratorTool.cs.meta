@@ -6,6 +6,10 @@ MonoImporter:
   defaultReferences:
   - m_Target: {instanceID: 0}
   - m_ToolIcon: {fileID: 2800000, guid: 4e5d9645ba6894bf69eba8326f1ab23b, type: 3}
+  - m_ToolIconActive: {fileID: 2800000, guid: e84355c619f74634a85036ad171c5498, type: 3}
+  - m_ToolIconDark: {fileID: 2800000, guid: c2fe643b2370b7d4ba98154fb8e64cb3, type: 3}
+  - m_ToolIconDarkActive: {fileID: 2800000, guid: 3285059a9a09cd540ba1408aff295372,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

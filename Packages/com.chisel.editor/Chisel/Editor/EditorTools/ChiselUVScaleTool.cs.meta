@@ -5,7 +5,11 @@ MonoImporter:
   serializedVersion: 2
   defaultReferences:
   - m_Target: {instanceID: 0}
-  - m_ToolIcon: {fileID: 2800000, guid: ae612be1275e74b538ffa8d9cb7f62b7, type: 3}
+  - m_ToolIcon: {fileID: 2800000, guid: acfb40d625fda894daf3399e90a51fe8, type: 3}
+  - m_ToolIconActive: {fileID: 2800000, guid: 62c9ae6e9268dfb4297f93d9fed38f3d, type: 3}
+  - m_ToolIconDark: {fileID: 2800000, guid: 2183c84a8776f6042a0cadfebf23a9da, type: 3}
+  - m_ToolIconDarkActive: {fileID: 2800000, guid: 62c9ae6e9268dfb4297f93d9fed38f3d,
+      type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

@@ -15,7 +15,7 @@ namespace Chisel.Components
         public const string kDocumentationExtension = ".html";
 
         public abstract string NodeTypeName { get; }
-
+        /*
         public virtual Vector3 PivotOffset
         {
             get
@@ -24,7 +24,7 @@ namespace Chisel.Components
             }
             set { }
         }
-
+        */
         public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
         protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         public void OnValidate()	{ OnValidateInternal(); }

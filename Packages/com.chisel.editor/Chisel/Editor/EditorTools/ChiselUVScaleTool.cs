@@ -21,6 +21,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "UV Scale";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => $"UV Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVScaleTool); }
 
@@ -44,6 +45,8 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnDeactivate();
         }
         #endregion
+        
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
         #region Scene GUI
         public override void OnSceneSettingsGUI(SceneView sceneView)
@@ -51,13 +54,13 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
         }
 
-        static readonly int kSurfaceEditModeHash		= "SurfaceEditMode".GetHashCode();
+        static readonly int kSurfaceEditModeHash		= "SurfaceScaleEditMode".GetHashCode();
         static readonly int kSurfaceScaleHash			= "SurfaceScale".GetHashCode();
         
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-
+            
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Passive, dragArea);
             HandleUtility.AddDefaultControl(defaultID);
 

@@ -63,10 +63,12 @@ namespace Chisel.Editors
             ScaleSnap		= EditorPrefs.GetFloat("ScaleSnap",			0.1f);
 
             ShowGrid 		= EditorPrefs.GetBool ("ShowGrid",			true);
+            Snapping.SnapSettings = (SnapSettings)EditorPrefs.GetInt("SnapSettings", (int)SnapSettings.All);
+            Snapping.TransformSettings = (ActiveTransformSnapping)EditorPrefs.GetInt("TransformSettings", (int)ActiveTransformSnapping.All);
 
             var toolBoxValues = EditorPrefs.GetString("InToolBox").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             inToolBoxSettings.Clear();
-            if (toolBoxValues.Length > 0) 
+            if (toolBoxValues.Length > 0)
             {
                 foreach (var item in toolBoxValues)
                 {
@@ -95,6 +97,9 @@ namespace Chisel.Editors
 
             EditorPrefs.SetBool("ScaleSnapping",	ScaleSnapping);
             EditorPrefs.SetFloat("ScaleSnap",		ScaleSnap);
+
+            EditorPrefs.SetInt("SnapSettings",	    (int)Snapping.SnapSettings);
+            EditorPrefs.SetInt("TransformSettings",	(int)Snapping.TransformSettings);
 
             EditorPrefs.SetBool("ShowGrid",   		ShowGrid);
 

@@ -21,6 +21,7 @@ namespace Chisel.Editors
     {
         const string kToolName = "UV Move";
         public override string ToolName => kToolName;
+        public override string OptionsTitle => $"UV Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVMoveTool); }
 
@@ -29,6 +30,7 @@ namespace Chisel.Editors
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToUVMoveMode, displayName = kEditModeShotcutName)]
         public static void ActivateTool() { EditorTools.SetActiveTool<ChiselUVMoveTool>(); }
         #endregion
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
         public override void OnActivate()
         {
@@ -49,8 +51,9 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnSceneSettingsGUI(sceneView);
         }
 
-        static readonly int kSurfaceEditModeHash		= "SurfaceEditMode".GetHashCode();
+        static readonly int kSurfaceEditModeHash		= "SurfaceMoveEditMode".GetHashCode();
         static readonly int kSurfaceMoveHash			= "SurfaceMove".GetHashCode();
+
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {

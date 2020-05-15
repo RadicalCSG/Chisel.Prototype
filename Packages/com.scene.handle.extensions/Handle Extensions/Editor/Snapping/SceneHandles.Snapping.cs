@@ -6,27 +6,86 @@ using UnityEngine;
 
 namespace UnitySceneExtensions
 {
+    [Flags]
+    public enum SnapSettings
+    {
+        None                    = 0,
+
+        GeometryPivotToGrid     = 1,
+        GeometryBoundsToGrid    = 2,
+        GeometryVertex          = 4,    // TODO: implement
+        GeometryEdge            = 8,    // TODO: implement
+        GeometrySurface         = 16,   // TODO: implement
+
+        AllGeometry             = GeometryPivotToGrid | GeometryBoundsToGrid | GeometryVertex | GeometryEdge | GeometrySurface,
+
+        UVGeometryGrid          = 32,
+        UVGeometryEdges         = 64,
+        UVGeometryVertices      = 128,
+        UVGrid                  = 256,  // TODO: implement
+        UVBounds                = 512,  // TODO: implement
+
+        AllUV                   = UVGeometryGrid | UVGeometryEdges | UVGeometryVertices | UVGrid | UVBounds,
+
+        All                     = ~0
+    }
+
+    [Flags]
+    public enum ActiveTransformSnapping
+    {
+        None                    = 0,
+
+        Scale                   = 1, // TODO: implement
+        Rotate                  = 2, // TODO: implement
+        Translate               = 4,
+
+        All                     = ~0
+    }
+
     public static class Snapping
     {
         public static event Action SnappingSettingsModified;
+
+        public static SnapSettings SnapMask { get; set; } = SnapSettings.All;
+        public static SnapSettings SnapSettings { get; set; } = SnapSettings.All;
+        static bool IsFlagEnabled(SnapSettings flag) { return (SnapSettings & flag) == flag; }
+        static void SetFlagEnabled(SnapSettings flag, bool enabled)
+        {
+            var prevEnabled = IsFlagEnabled(flag);
+            if (prevEnabled == enabled)
+                return;
+            if (enabled)
+                SnapSettings |= flag;
+            else
+                SnapSettings &= ~flag;
+            SnappingSettingsModified?.Invoke();
+        }
         
+        public static ActiveTransformSnapping TransformSettings { get; set; } = ActiveTransformSnapping.All;
+        static bool IsFlagEnabled(ActiveTransformSnapping flag) { return (TransformSettings & flag) == flag; }
+        static void SetFlagEnabled(ActiveTransformSnapping flag, bool enabled)
+        {
+            var prevEnabled = IsFlagEnabled(flag);
+            if (prevEnabled == enabled)
+                return;
+            if (enabled)
+                TransformSettings |= flag;
+            else
+                TransformSettings &= ~flag;
+        }
+
         internal static bool	SnappingToggled			{ get { return EditorGUI.actionKey; } }
 
         #region BoundsSnappingEnabled
-        private static bool		_boundsSnappingEnabled = true;
         public static bool		BoundsSnappingEnabled
         {
             get
             {
-                return _boundsSnappingEnabled;
+                return IsFlagEnabled(SnapSettings.GeometryBoundsToGrid);
             }
             set
             {
-                if (_boundsSnappingEnabled == value)
-                    return;
-                _boundsSnappingEnabled = value;
-                if (SnappingSettingsModified != null)
-                    SnappingSettingsModified();
+                SetFlagEnabled(SnapSettings.GeometryBoundsToGrid, value);
             }
         }
         #endregion
@@ -34,27 +93,24 @@ namespace UnitySceneExtensions
         {
             get
             {
+                if (!TranslateSnappingEnabled)
+                    return false;
                 if (SnappingToggled)
                     return !(BoundsSnappingEnabled || PivotSnappingEnabled);
                 return BoundsSnappingEnabled;
             }
         }
-                
+
         #region PivotSnappingEnabled
-        private static bool		_pivotSnappingEnabled = true;
         public static bool		PivotSnappingEnabled
         {
             get
             {
-                return _pivotSnappingEnabled;
+                return IsFlagEnabled(SnapSettings.GeometryPivotToGrid);
             }
             set
             {
-                if (_pivotSnappingEnabled == value)
-                    return;
-                _pivotSnappingEnabled = value;
-                if (SnappingSettingsModified != null)
-                    SnappingSettingsModified();
+                SetFlagEnabled(SnapSettings.GeometryPivotToGrid, value);
             }
         }
         #endregion
@@ -62,27 +118,95 @@ namespace UnitySceneExtensions
         {
             get
             {
+                if (!TranslateSnappingEnabled)
+                    return false;
                 if (SnappingToggled)
                     return !(BoundsSnappingEnabled || PivotSnappingEnabled);
                 return PivotSnappingEnabled;
             }
         }
-        
+
+        #region VertexSnappingEnabled
+        public static bool VertexSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.GeometryVertex);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.GeometryVertex, value);
+            }
+        }
+        #endregion
+        public static bool VertexSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return VertexSnappingEnabled;
+            }
+        }
+
+        #region EdgeSnappingEnabled
+        public static bool EdgeSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.GeometryEdge);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.GeometryEdge, value);
+            }
+        }
+        #endregion
+        public static bool EdgeSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return EdgeSnappingEnabled;
+            }
+        }
+
+        #region SurfaceSnappingEnabled
+        public static bool SurfaceSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.GeometrySurface);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.GeometrySurface, value);
+            }
+        }
+        #endregion
+        public static bool SurfaceSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return SurfaceSnappingEnabled;
+            }
+        }
+
+
+
         #region RotateSnappingEnabled
-        private static bool		_rotateSnappingEnabled = true;		
         public static bool		RotateSnappingEnabled
         {
             get
             {
-                return _rotateSnappingEnabled;
+                return IsFlagEnabled(ActiveTransformSnapping.Rotate);
             }
             set
             {
-                if (_rotateSnappingEnabled == value)
-                    return;
-                _rotateSnappingEnabled = value;
-                if (SnappingSettingsModified != null)
-                    SnappingSettingsModified();
+                SetFlagEnabled(ActiveTransformSnapping.Rotate, value);
             }
         }
         #endregion
@@ -97,20 +221,15 @@ namespace UnitySceneExtensions
         }
         
         #region ScaleSnappingEnabled
-        private static bool		_scaleSnappingEnabled = true;
         public static bool		ScaleSnappingEnabled
         {
             get
             {
-                return _scaleSnappingEnabled;
+                return IsFlagEnabled(ActiveTransformSnapping.Scale);
             }
             set
             {
-                if (_scaleSnappingEnabled == value)
-                    return;
-                _scaleSnappingEnabled = value;
-                if (SnappingSettingsModified != null)
-                    SnappingSettingsModified();
+                SetFlagEnabled(ActiveTransformSnapping.Scale, value);
             }
         }
         #endregion
@@ -120,11 +239,95 @@ namespace UnitySceneExtensions
             {
                 if (SnappingToggled)
                     return !(BoundsSnappingEnabled || PivotSnappingEnabled);
-                return _scaleSnappingEnabled;
+                return ScaleSnappingEnabled;
             }
         }
+
+
+        #region TranslateSnappingEnabled
+        public static bool TranslateSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(ActiveTransformSnapping.Translate);
+            }
+            set
+            {
+                SetFlagEnabled(ActiveTransformSnapping.Translate, value);
+            }
+        }
+        #endregion
         
-        
+        #region UVGridSnappingEnabled
+        public static bool UVGridSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.UVGeometryGrid);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.UVGeometryGrid, value);
+            }
+        }
+        #endregion
+        public static bool UVGridSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return UVGridSnappingEnabled;
+            }
+        }
+
+        #region UVVertexSnappingEnabled
+        public static bool UVVertexSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.UVGeometryVertices);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.UVGeometryVertices, value);
+            }
+        }
+        #endregion
+        public static bool UVVertexSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return UVVertexSnappingEnabled;
+            }
+        }
+
+        #region UVEdgeSnappingEnabled
+        public static bool UVEdgeSnappingEnabled
+        {
+            get
+            {
+                return IsFlagEnabled(SnapSettings.UVGeometryEdges);
+            }
+            set
+            {
+                SetFlagEnabled(SnapSettings.UVGeometryEdges, value);
+            }
+        }
+        #endregion
+        public static bool UVEdgeSnappingActive
+        {
+            get
+            {
+                if (!TranslateSnappingEnabled)
+                    return false;
+                return UVEdgeSnappingEnabled;
+            }
+        }
+
+
         #region MoveSnappingSteps
         public static Vector3	MoveSnappingSteps
         {

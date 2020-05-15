@@ -133,7 +133,13 @@ namespace Chisel.Editors
                     case float  castValue:  value = EditorPrefs.GetFloat(field.settingsName, castValue); break;
                     case bool   castValue:  value = EditorPrefs.GetBool(field.settingsName, castValue); break;
                     case string castValue:  value = EditorPrefs.GetString(field.settingsName, castValue); break;
-                    case Enum   _:          value = EditorPrefs.GetInt(field.settingsName, (int)field.defaultValue); break;
+                    case Enum   _:
+                    {
+                        var defaultValue = Convert.ToInt32(field.defaultValue as Enum);
+                        var intValue     = EditorPrefs.GetInt(field.settingsName, defaultValue);
+                        value = Enum.ToObject(field.fieldInfo.FieldType, intValue) as Enum;
+                        break;
+                    }
                     default:
                     {
                         Debug.LogWarning("Unsupported type");
@@ -157,7 +163,11 @@ namespace Chisel.Editors
                     case float  castValue: EditorPrefs.SetFloat(field.settingsName, castValue); break;
                     case bool   castValue: EditorPrefs.SetBool(field.settingsName, castValue); break;
                     case string castValue: EditorPrefs.SetString(field.settingsName, castValue); break;
-                    case Enum _: EditorPrefs.SetInt(field.settingsName, (int)value); break;
+                    case Enum _:
+                    {
+                        var intValue = Convert.ToInt32(value as Enum);
+                        EditorPrefs.SetInt(field.settingsName, intValue); break;
+                    }
                 }
             }
         }

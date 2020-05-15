@@ -94,9 +94,6 @@ namespace Chisel.Editors
                 EditorGUI.indentLevel = 0;
                 state.scale = EditorGUI.Vector2Field(fieldRect,        GUIContent.none,     state.scale);
 
-                state.scale.x = (float)Math.Max(Math.Abs(state.scale.x), UVMatrix.kMinScale) * Math.Sign(state.scale.x);
-                state.scale.y = (float)Math.Max(Math.Abs(state.scale.y), UVMatrix.kMinScale) * Math.Sign(state.scale.y);
-
                 EditorGUI.indentLevel = prevIndenLevel;
                 position.y += position.height + kSpacing;
 
@@ -111,6 +108,9 @@ namespace Chisel.Editors
 
                 if (EditorGUI.EndChangeCheck())
                 {
+                    state.scale.x = (float)Math.Max(Math.Abs(state.scale.x), UVMatrix.kMinScale) * Math.Sign(state.scale.x);
+                    state.scale.y = (float)Math.Max(Math.Abs(state.scale.y), UVMatrix.kMinScale) * Math.Sign(state.scale.y);
+
                     uvMatrix = UVMatrix.TRS(state.translation, state.rotation, state.scale);
                     UProp.vector4Value = uvMatrix.U;
                     VProp.vector4Value = uvMatrix.V;
