@@ -11,7 +11,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
 using Snapping          = UnitySceneExtensions.Snapping;
 using Grid              = UnitySceneExtensions.Grid;
-using UVSnapSettings    = UnitySceneExtensions.UVSnapSettings;
+using SnapSettings    = UnitySceneExtensions.SnapSettings;
 
 namespace Chisel.Editors
 {
@@ -164,6 +164,11 @@ namespace Chisel.Editors
             if (PreviewTextureManager.Update())
                 sceneView.Repaint();
 
+            if (surfaces.Length == 0)
+            {
+                GUILayout.Box("No surfaces selected. Please select a surface", GUILayout.ExpandWidth(true));
+            }
+
             if (!initialized)
                 return;
 
@@ -198,9 +203,9 @@ namespace Chisel.Editors
         
         #region Snapping
 
-        internal static UVSnapSettings toolSnapOverrides   = (UVSnapSettings)~0;
+        internal static SnapSettings toolSnapOverrides = SnapSettings.All;
 
-        internal static UVSnapSettings CurrentSnapSettings { get { return Snapping.UVSnapSettings & toolSnapOverrides; } }
+        internal static SnapSettings CurrentSnapSettings { get { return Snapping.SnapSettings & toolSnapOverrides; } }
         internal static bool pointHasSnapped     = false;
         internal static bool forceVertexSnapping = false;
 
@@ -211,7 +216,7 @@ namespace Chisel.Editors
 
         struct UVSnapState
         {
-            public UVSnapSettings   SnapCause;
+            public SnapSettings   SnapCause;
             public Vector3          SnapPosition;
             public Vector3          StartEdge;
             public Vector3          EndEdge;
@@ -220,9 +225,9 @@ namespace Chisel.Editors
 
         static UVSnapState snapState = new UVSnapState();
 
-        static void SnapGridIntersection(UVSnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
+        static void SnapGridIntersection(SnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
         {
-            if ((snapSettings & UVSnapSettings.GeometryGrid) == UVSnapSettings.None)
+            if ((snapSettings & SnapSettings.UVGeometryGrid) == SnapSettings.None)
                 return;
 
             var grid				= UnitySceneExtensions.Grid.defaultGrid;
@@ -237,14 +242,13 @@ namespace Chisel.Editors
             if (Mathf.Abs(Vector3.Dot(xAxis, worldPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.X;
             if (Mathf.Abs(Vector3.Dot(yAxis, worldPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Y;
             if (Mathf.Abs(Vector3.Dot(zAxis, worldPlane.normal)) >= kAlignmentEpsilon) snapAxis &= ~Axis.Z;
-
             if (Mathf.Abs(worldPlane.GetDistanceToPoint(gridSnappedPoint)) < kDistanceEpsilon)
             {
-                var abs_dist = (gridSnappedPoint - intersectionPoint).magnitude * preferenceFactor;
+                var abs_dist = (gridSnappedPoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                 if (abs_dist < bestDist)
                 {
                     bestDist = abs_dist;
-                    snapState.SnapCause = UVSnapSettings.GeometryGrid;
+                    snapState.SnapCause = SnapSettings.UVGeometryGrid;
                     snapState.SnapPosition = gridSnappedPoint;
                     snappedPoint = gridSnappedPoint;
                 }
@@ -255,11 +259,11 @@ namespace Chisel.Editors
                 if ((snapAxis & Axis.X) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
-                    var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                    var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                     if (abs_dist < bestDist)
                     {
                         bestDist = abs_dist;
-                        snapState.SnapCause = UVSnapSettings.GeometryGrid;
+                        snapState.SnapCause = SnapSettings.UVGeometryGrid;
                         snapState.SnapPosition = planePoint;
                         snappedPoint = planePoint;
                     }
@@ -268,11 +272,11 @@ namespace Chisel.Editors
                 if ((snapAxis & Axis.Y) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
-                    var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                    var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                     if (abs_dist < bestDist)
                     {
                         bestDist = abs_dist;
-                        snapState.SnapCause = UVSnapSettings.GeometryGrid;
+                        snapState.SnapCause = SnapSettings.UVGeometryGrid;
                         snapState.SnapPosition = planePoint;
                         snappedPoint = planePoint;
                     }
@@ -281,11 +285,11 @@ namespace Chisel.Editors
                 if ((snapAxis & Axis.Z) != Axis.None && worldPlane.SignedRaycast(ray, out dist))
                 {
                     var planePoint = ray.GetPoint(dist);
-                    var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                    var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                     if (abs_dist < bestDist)
                     {
                         bestDist = abs_dist;
-                        snapState.SnapCause = UVSnapSettings.GeometryGrid;
+                        snapState.SnapCause = SnapSettings.UVGeometryGrid;
                         snapState.SnapPosition = planePoint;
                         snappedPoint = planePoint;
                     }
@@ -293,12 +297,12 @@ namespace Chisel.Editors
             }
         }
 
-        static bool SnapSurfaceVertices(UVSnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
+        static bool SnapSurfaceVertices(SnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
         {
             if (surfaceReference == null)
                 return false;
 
-            if ((snapSettings & UVSnapSettings.GeometryVertices) == UVSnapSettings.None)
+            if ((snapSettings & SnapSettings.UVGeometryVertices) == SnapSettings.None)
                 return false;
 
             var brushMesh           = surfaceReference.BrushMesh;
@@ -310,11 +314,11 @@ namespace Chisel.Editors
             var bestDistSqr			= float.PositiveInfinity;
             var bestVertex			= snappedPoint;
 
-            // TODO: when we use new CSG algorithm, use it's intersection loops instead
+            // TODO: when we use new CSG algorithm, use its intersection loops instead
             var outline = ChiselOutlineRenderer.GetSurfaceWireframe(surfaceReference);
             if (outline != null)
             {
-                var vertices            = outline.Vertices;
+                var vertices = outline.Vertices;
             
                 for (int v = 0; v < vertices.Length; v++)
                 {
@@ -348,14 +352,14 @@ namespace Chisel.Editors
                 }
             }
 
-            if (float.IsInfinity(bestDistSqr))
+            if (bestDistSqr >= 0.25f)
                 return false;
 
-            var closestVertexDistance = Mathf.Sqrt(bestDistSqr) * preferenceFactor;
+            var closestVertexDistance = bestDistSqr * preferenceFactor;
             if (closestVertexDistance < bestDist)
             {
                 bestDist = closestVertexDistance;
-                snapState.SnapCause = UVSnapSettings.GeometryVertices;
+                snapState.SnapCause = SnapSettings.UVGeometryVertices;
                 snapState.SnapPosition = bestVertex;
                 snappedPoint = bestVertex;
                 return true;
@@ -375,20 +379,19 @@ namespace Chisel.Editors
                    ((axisZ) ? SnapAxis.Z : SnapAxis.None);
         }
 
-        static bool SnapSurfaceEdges(UVSnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
+        static bool SnapSurfaceEdges(SnapSettings snapSettings, SurfaceReference surfaceReference, Vector3 intersectionPoint, float preferenceFactor, ref Vector3 snappedPoint, ref float bestDist, ref UVSnapState snapState)
         {
             if (surfaceReference == null)
                 return false;
 
-            if ((snapSettings & UVSnapSettings.GeometryEdges) == UVSnapSettings.None)
+            if ((snapSettings & SnapSettings.UVGeometryEdges) == SnapSettings.None)
                 return false;
 
             var brushMesh           = surfaceReference.BrushMesh;
             if (brushMesh == null)
                 return false;
             
-            var generatorComponent  = surfaceReference.node as ChiselGeneratorComponent;
-            var localToWorldSpace	= generatorComponent ? generatorComponent.LocalTransformationWithPivot : surfaceReference.LocalToWorldSpace;
+            var localToWorldSpace	= surfaceReference.LocalToWorldSpace;
 
             Debug.Assert(surfaceReference.surfaceIndex >= 0 && surfaceReference.surfaceIndex < brushMesh.polygons.Length);
 
@@ -407,11 +410,13 @@ namespace Chisel.Editors
             var polygon                 = polygons[surfaceReference.surfaceIndex];
             var halfEdgePolygonIndices  = brushMesh.halfEdgePolygonIndices;
             var halfEdges               = brushMesh.halfEdges;
+            var vertices                = brushMesh.vertices;
+            var planes                  = brushMesh.planes;
             var firstEdge               = polygon.firstEdge;
             var lastEdge                = firstEdge + polygon.edgeCount;
 
             bool found = false;
-            if ((CurrentSnapSettings & UVSnapSettings.GeometryGrid) != UVSnapSettings.None)
+            if ((CurrentSnapSettings & SnapSettings.UVGeometryGrid) != SnapSettings.None)
             {
                 var minSnappedPoint = snappedPoint - grid.Center;
                 var dotX            = Vector3.Dot(minSnappedPoint, grid.Right);
@@ -431,7 +436,7 @@ namespace Chisel.Editors
                     var polygonIndex    = halfEdgePolygonIndices[twin];
 
                     var surfaceIndex    = polygonIndex; // FIXME: throughout the code we're making assumptions about polygonIndices being the same as surfaceIndices, 
-                                                        //         this needs to be fixed
+                                                        //        this needs to be fixed
 
                     var localPlaneVector = brushMesh.planes[surfaceIndex];
                     var edgeLocalPlane   = new Plane(localPlaneVector.xyz, localPlaneVector.w);
@@ -454,12 +459,12 @@ namespace Chisel.Editors
                             Mathf.Abs(edgeWorldPlane.GetDistanceToPoint(planePoint)) < kDistanceEpsilon &&
                             Mathf.Abs(axisPlaneX    .GetDistanceToPoint(planePoint)) < kDistanceEpsilon)
                         { 
-                            var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                            var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                             if (abs_dist < bestDist)
                             {
                                 bestDist = abs_dist;
                                 snappedPoint = planePoint;
-                                snapState.SnapCause     = UVSnapSettings.GeometryEdges;
+                                snapState.SnapCause     = SnapSettings.UVGeometryEdges;
                                 snapState.SnapPosition  = planePoint;
                                 snapState.StartEdge     = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[firstEdge + ((e - firstEdge + polygon.edgeCount - 1) % polygon.edgeCount)].vertexIndex]);
                                 snapState.EndEdge       = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex]);                                
@@ -476,12 +481,12 @@ namespace Chisel.Editors
                             Mathf.Abs(edgeWorldPlane.GetDistanceToPoint(planePoint)) < kDistanceEpsilon &&
                             Mathf.Abs(axisPlaneY    .GetDistanceToPoint(planePoint)) < kDistanceEpsilon)
                         {
-                            var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                            var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                             if (abs_dist < bestDist)
                             {
                                 bestDist = abs_dist;
                                 snappedPoint = planePoint;
-                                snapState.SnapCause     = UVSnapSettings.GeometryEdges;
+                                snapState.SnapCause     = SnapSettings.UVGeometryEdges;
                                 snapState.SnapPosition  = planePoint;
                                 snapState.StartEdge     = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[firstEdge + ((e - firstEdge + polygon.edgeCount - 1) % polygon.edgeCount)].vertexIndex]);
                                 snapState.EndEdge       = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex]);
@@ -498,12 +503,12 @@ namespace Chisel.Editors
                             Mathf.Abs(edgeWorldPlane.GetDistanceToPoint(planePoint)) < kDistanceEpsilon &&
                             Mathf.Abs(axisPlaneZ    .GetDistanceToPoint(planePoint)) < kDistanceEpsilon)
                         {
-                            var abs_dist = (planePoint - intersectionPoint).magnitude * preferenceFactor;
+                            var abs_dist = (planePoint - intersectionPoint).sqrMagnitude * preferenceFactor;
                             if (abs_dist < bestDist)
                             {
                                 bestDist = abs_dist;
                                 snappedPoint = planePoint;
-                                snapState.SnapCause     = UVSnapSettings.GeometryEdges;
+                                snapState.SnapCause     = SnapSettings.UVGeometryEdges;
                                 snapState.SnapPosition  = planePoint;
                                 snapState.StartEdge     = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[firstEdge + ((e - firstEdge + polygon.edgeCount - 1) % polygon.edgeCount)].vertexIndex]);
                                 snapState.EndEdge       = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex]);
@@ -515,20 +520,25 @@ namespace Chisel.Editors
                 }
             } else
             {
-                var prevVertex = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[lastEdge - 1].vertexIndex]);
+                var prevVertex = localToWorldSpace.MultiplyPoint(vertices[halfEdges[lastEdge - 1].vertexIndex]);
                 for (int e = firstEdge; e < lastEdge; e++)
                 {
-                    var currVertex      = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex]);
+                    var localPlaneVector = planes[halfEdgePolygonIndices[halfEdges[e].twinIndex]];
+                    var edgeLocalPlane   = new Plane(localPlaneVector.xyz, localPlaneVector.w);
+                    var edgeWorldPlane   = localToWorldSpace.TransformPlane(edgeLocalPlane);
+                    
+                    var currVertex      = localToWorldSpace.MultiplyPoint(vertices[halfEdges[e].vertexIndex]);
                     var closestPoint    = Chisel.Core.GeometryMath.ProjectPointLine(intersectionPoint, prevVertex, currVertex);
-                    var abs_dist        = (closestPoint - intersectionPoint).magnitude * preferenceFactor;
+                    var abs_dist        = (closestPoint - intersectionPoint).sqrMagnitude * preferenceFactor;
+                    
                     if (abs_dist < bestDist)
                     {
                         bestDist = abs_dist;
                         snappedPoint = closestPoint;
-                        snapState.SnapCause     = UVSnapSettings.GeometryEdges;
+                        snapState.SnapCause     = SnapSettings.UVGeometryEdges;
                         snapState.SnapPosition  = snappedPoint;
-                        snapState.StartEdge     = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[firstEdge + ((e - firstEdge + polygon.edgeCount - 1) % polygon.edgeCount)].vertexIndex]);
-                        snapState.EndEdge       = localToWorldSpace.MultiplyPoint(brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex]);
+                        snapState.StartEdge     = prevVertex;
+                        snapState.EndEdge       = currVertex;
 
                         found = true;
                     }
@@ -583,21 +593,22 @@ namespace Chisel.Editors
             var snappedPoint		= intersectionPoint;
             var handleSize          = HandleUtility.GetHandleSize(intersectionPoint);
             // When holding V we force to ONLY and ALWAYS snap against vertices
-            var snapSettings        = forceVertexSnapping ? UVSnapSettings.GeometryVertices : CurrentSnapSettings;
+            var snapSettings        = forceVertexSnapping ? SnapSettings.UVGeometryVertices : CurrentSnapSettings;
 
             // snap to edges of surface that are closest to the intersection point
             SnapSurfaceEdges(snapSettings, surfaceReference, intersectionPoint, 1.25f, ref snappedPoint, ref bestDist, ref snapState);
 
-            // snap to vertices of surface that are closest to the intersection point
-            SnapSurfaceVertices(snapSettings, surfaceReference, intersectionPoint, 1.0f, ref snappedPoint, ref bestDist, ref snapState);
-
             // Snap to closest point on grid
             SnapGridIntersection(snapSettings, surfaceReference, intersectionPoint, 1.5f, ref snappedPoint, ref bestDist, ref snapState);
+
+            // snap to vertices of surface that are closest to the intersection point
+            SnapSurfaceVertices(snapSettings, surfaceReference, intersectionPoint, 0.5f, ref snappedPoint, ref bestDist, ref snapState);
+            SnapSurfaceVertices(snapSettings, surfaceReference, snappedPoint, 0.5f, ref snappedPoint, ref bestDist, ref snapState);
 
             // TODO: snap to UV space bounds (and more?)
 
 
-            var gridSnappingenabled = (CurrentSnapSettings & UVSnapSettings.GeometryGrid) != UVSnapSettings.None;
+            var gridSnappingenabled = (CurrentSnapSettings & SnapSettings.UVGeometryGrid) != SnapSettings.None;
             var minSnapDistance     = (forceVertexSnapping || gridSnappingenabled) ? float.PositiveInfinity : (handleSize * kMinSnapDistance);
 
             if (bestDist < minSnapDistance)
@@ -605,7 +616,10 @@ namespace Chisel.Editors
                 haveWeSnapped = true;
                 intersectionPoint = snappedPoint;
             } else
+            {
+                snapState.SnapCause = SnapSettings.None;
                 haveWeSnapped = false;
+            }
 
             return intersectionPoint;
         }
@@ -651,7 +665,7 @@ namespace Chisel.Editors
             Event.current.Use(); // make sure no-one else can use our event
 
 
-            toolSnapOverrides = (UVSnapSettings)~0;
+            toolSnapOverrides = SnapSettings.All;
             pointHasSnapped = false;
         }
 
@@ -662,7 +676,7 @@ namespace Chisel.Editors
             Event.current.Use(); // make sure no-one else can use our event
 
 
-            toolSnapOverrides = (UVSnapSettings)~0;
+            toolSnapOverrides = SnapSettings.All;
             pointHasSnapped = false;
         }
 
@@ -671,6 +685,9 @@ namespace Chisel.Editors
             DisableTool();
             Undo.RevertAllInCurrentGroup();
         }
+
+        //[Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
+        //public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselExtrudedShapeGeneratorMode); }
 
         const float kMaxControlDistance = 3.0f;
         internal static bool SurfaceToolBase(int id, SelectionType selectionType, Rect dragArea)
@@ -894,7 +911,7 @@ namespace Chisel.Editors
         {
             if (GetCurrentWorldClick(worldDragPlane, mousePosition, out Vector3 currentWorldIntersection))
             {
-                snapState.SnapCause = UVSnapSettings.None;
+                snapState.SnapCause = SnapSettings.None;
                 currentWorldIntersection = SnapIntersection(currentWorldIntersection, startSurfaceReference, out pointHasSnapped, ref snapState);
                 return currentWorldIntersection;
             }
@@ -1050,7 +1067,7 @@ namespace Chisel.Editors
 
         internal static void RenderSnapEvent()
         {
-            if (snapState.SnapCause == UVSnapSettings.None)
+            if (snapState.SnapCause == SnapSettings.None)
                 return;
 
             var prevMatrix = Handles.matrix;
@@ -1059,12 +1076,12 @@ namespace Chisel.Editors
             Handles.color = Color.white;
             switch (snapState.SnapCause)
             {
-                case UVSnapSettings.GeometryEdges:
+                case SnapSettings.UVGeometryEdges:
                 {
                     ChiselOutlineRenderer.DrawLine(snapState.StartEdge, snapState.EndEdge, LineMode.NoZTest, 4, 0);
                     break;
                 }
-                case UVSnapSettings.GeometryVertices:
+                case SnapSettings.UVGeometryVertices:
                 {
                     RenderVertexBox(snapState.SnapPosition);
                     break;
@@ -1154,7 +1171,7 @@ namespace Chisel.Editors
 
                 if (!float.IsInfinity(intersection.brushIntersection.surfaceIntersection.distance))
                 {
-                    snapState.SnapCause = UVSnapSettings.None;
+                    snapState.SnapCause = SnapSettings.None;
                     if (!isSurfaceSelected && forceVertexSnapping)
                     {
                         if (SelectedSnapIntersection(mousePosition, intersection.worldPlaneIntersection, out surfaceReference, out Vector3 worldIntersectionPoint, ref snapState))

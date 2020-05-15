@@ -35,9 +35,10 @@ namespace Chisel.Editors
             OverlayWindow.Title = title;
         }
 
-        public static void Show()
+        public static void Show() 
         {
-            if (AdditionalSettings != null)
+            if (//Tools.current != Tool.Custom &&
+                AdditionalSettings != null)
                 OverlayWindow.Show();
         }
     }

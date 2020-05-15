@@ -15,7 +15,7 @@ namespace Chisel.Editors
     public class ChiselOverlay
     {
         // TODO: CLEAN THIS UP
-        public const int kMinWidth = ((248 + 29) - ((32 + 2) * ChiselPlacementToolsSelectionWindow.kToolsWide)) + (ChiselPlacementToolsSelectionWindow.kButtonSize * ChiselPlacementToolsSelectionWindow.kToolsWide);
+        public const int kMinWidth = ((248 + 32) - ((32 + 2) * ChiselPlacementToolsSelectionWindow.kToolsWide)) + (ChiselPlacementToolsSelectionWindow.kButtonSize * ChiselPlacementToolsSelectionWindow.kToolsWide);
         public static readonly GUILayoutOption kMinWidthLayout = GUILayout.MinWidth(kMinWidth);
 
         public delegate void WindowFunction(SceneView sceneView);

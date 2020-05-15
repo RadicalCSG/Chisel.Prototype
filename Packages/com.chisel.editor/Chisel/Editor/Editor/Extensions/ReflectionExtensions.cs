@@ -329,6 +329,39 @@ namespace Chisel.Editors
             return new ReflectedField<T>(instance, type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public));
         }
         #endregion
+        
+
+        #region Fields
+        public static ReflectedField<T> GetStaticField<T>(this Type type, string name)
+        {
+            if (type == null)
+            { 
+                Debug.LogError("type == null");
+                return null;
+            }
+            var field = type.GetField(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            if (field == null)
+            {
+                Debug.LogError($"field {name} not found");
+                return null;
+            }
+            return new ReflectedField<T>(null, field);
+        }
+
+        public static ReflectedField<T> GetStaticField<T>(string fullTypeName, string fieldName)
+        {
+            var type = ReflectionExtensions.GetTypeByName(fullTypeName);
+            if (type == null)
+            {
+                Debug.LogError("type == null");
+                return null;
+            }
+            var field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Public);
+            if (field == null)
+                return null;
+            return new ReflectedField<T>(null, field);
+        }
+        #endregion
 
 
         public static MethodInfo GetStaticMethod(this Type type, string name)
@@ -338,8 +371,33 @@ namespace Chisel.Editors
                 Debug.LogError("type == null");
                 return null;
             }
-            return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+            return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreReturn);
         }
+
+        public static MethodInfo GetStaticMethod(this Type type, string name, int parameterCount)
+        {
+            if (type == null)
+            {
+                Debug.LogError("type == null");
+                return null;
+            }
+
+            var flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.IgnoreReturn;
+            var allMethods = type.GetMethods(name, flags);
+            if (allMethods == null)
+            {
+                return null;
+            }
+
+            foreach(var method in allMethods)
+            {
+                if (method.GetParameters().Length == parameterCount)
+                    return method;
+            }
+
+            return null;
+        }
+
 
         public static MethodInfo GetMethod(this Type type, string name)
         {
@@ -358,7 +416,9 @@ namespace Chisel.Editors
                 Debug.LogError("type == null");
                 return null;
             }
-            return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.IgnoreReturn, null, parameterTypes, null);
+
+            var bindingFlags    = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.IgnoreReturn;
+            return type.GetMethod(name, bindingFlags, null, parameterTypes, null);
         }
 
         public static MethodInfo GetMethod(this Type type, string name, params Type[] parameterTypes)
@@ -381,7 +441,7 @@ namespace Chisel.Editors
             return (from method in type.GetMethods(bindingFlags) where method.Name == name select method).ToArray();
         }
 
-        public static T CreateDelegate<T>(MethodInfo methodInfo) where T:Delegate
+        public static T CreateDelegate<T>(MethodInfo methodInfo) where T : Delegate
         {
             if (methodInfo == null)
             {
@@ -408,6 +468,7 @@ namespace Chisel.Editors
             }
             return (T)Delegate.CreateDelegate(typeof(T), null, methodInfo, true);
         }
+
 
         public static T CreateDelegate<T>(this Type type, string methodName, params Type[] parameterTypes) where T : Delegate
         {

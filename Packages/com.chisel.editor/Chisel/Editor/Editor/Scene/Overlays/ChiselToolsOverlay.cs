@@ -32,9 +32,6 @@ namespace Chisel.Editors
             }
         }
 
-        public static Tool ShowSnappingTool = Tool.None;
-        public static bool ShowSnappingToolUV = true;
-
         const int kPrimaryOrder = 98;
         
         const string                    kOverlayTitle   = "Chisel Tools";
@@ -68,20 +65,20 @@ namespace Chisel.Editors
 
 
 
-        static bool Toggle(Rect position, ChiselEditToolBase editMode, Type editModeType)
+        static bool Toggle(Rect position, ChiselEditToolBase editMode, Type editModeType, GUIStyle style)
         {
             var selected = EditorTools.activeToolType == editModeType;
             var content = selected ? editMode.ActiveIconContent : editMode.IconContent;
-            return GUI.Toggle(position, selected, content, styles.toggleStyle);
+            return GUI.Toggle(position, selected, content, style);
         }
 
-        static void EditModeButton(Rect position, ChiselEditToolBase editMode, bool enabled)
+        static void EditModeButton(Rect position, bool enabled, ChiselEditToolBase editMode, GUIStyle style)
         { 
             var editModeType = editMode.GetType();
             using (new EditorGUI.DisabledScope(!enabled))
             {
                 EditorGUI.BeginChangeCheck();
-                var value = Toggle(position, editMode, editModeType);
+                var value = Toggle(position, editMode, editModeType, style);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
                     EditorTools.SetActiveTool(editModeType);
@@ -93,6 +90,9 @@ namespace Chisel.Editors
         class Styles
         {
             public GUIStyle toggleStyle;
+            public GUIStyle toggleStyleLeft;
+            public GUIStyle toggleStyleMid;
+            public GUIStyle toggleStyleRight;
             public GUIStyle buttonRowStyle;
         }
 
@@ -107,11 +107,32 @@ namespace Chisel.Editors
                 ChiselEditorSettings.Load();
                 styles = new Styles
                 {
-                    toggleStyle = new GUIStyle(GUI.skin.button)
+                    toggleStyle = new GUIStyle("AppCommand")
                     {
-                        padding     = new RectOffset(kButtonPadding, kButtonPadding, kButtonPadding, kButtonPadding),
-                        margin      = new RectOffset(kButtonMargin,  kButtonMargin,  kButtonMargin,  kButtonMargin - 2),
-                        fixedWidth  = kButtonSize,
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin,
+                        fixedHeight = kButtonSize,
+                    },
+                    toggleStyleLeft = new GUIStyle("AppCommandLeft")
+                    {
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin,
+                        fixedHeight = kButtonSize,
+                    },
+                    toggleStyleMid = new GUIStyle("AppCommandMid")
+                    {
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin,
+                        fixedHeight = kButtonSize,
+                    },
+                    toggleStyleRight = new GUIStyle("AppCommandRight")
+                    {
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin,
                         fixedHeight = kButtonSize,
                     },
                     buttonRowStyle = new GUIStyle(GUIStyle.none)
@@ -137,20 +158,26 @@ namespace Chisel.Editors
                 {
                     using (new EditorGUI.DisabledScope(!enabled))
                     {
-                        var style       = styles.toggleStyle;
-                        var groupRect   = EditorGUILayout.GetControlRect(false, kButtonSize + style.margin.vertical, ChiselOverlay.kMinWidthLayout);
+                        var style       = styles.toggleStyleMid;
+                        var groupRect   = EditorGUILayout.GetControlRect(false, style.fixedHeight + style.margin.vertical, ChiselOverlay.kMinWidthLayout);
                         groupRect.xMin -= 3;
                         groupRect.yMin += 3;
 
-                        var startX      = style.margin.left + groupRect.x + 3;
-                        var buttonStep  = kButtonSize + style.margin.left;
-                        var position    = new Rect(startX, groupRect.y, kButtonSize, style.fixedHeight);
+                        var startX      = style.margin.left + groupRect.x + 4;
+                        var buttonStep  = style.fixedWidth + style.margin.left;
+                        var position    = new Rect(startX, groupRect.y, style.fixedWidth, style.fixedHeight);
 
                         int xPos = 0;
+                        var count = editModes.Values.Count;
+                        var index = 0;
                         foreach (var editMode in editModes.Values)
                         {
+                            var toggleStyle = (index ==         0) ? styles.toggleStyleLeft : 
+                                              (index == count - 1) && (count < 7) ? styles.toggleStyleRight : 
+                                              styles.toggleStyleMid;
                             position.x = startX + (xPos * buttonStep);
-                            EditModeButton(position, editMode, enabled);
+                            EditModeButton(position, enabled, editMode, toggleStyle);
+                            index++;
                             xPos++;
                         }
 
@@ -158,7 +185,9 @@ namespace Chisel.Editors
 
                         xPos = 7;
                         position.x = startX + (xPos * buttonStep);
-                        if (GUI.Toggle(position, false, kRebuildButton, styles.toggleStyle))
+                        var buttonStyle = (index == 7) ? styles.toggleStyleRight :
+                                          styles.toggleStyle;
+                        if (GUI.Toggle(position, false, kRebuildButton, buttonStyle))
                         {
                             Rebuild();
                         }

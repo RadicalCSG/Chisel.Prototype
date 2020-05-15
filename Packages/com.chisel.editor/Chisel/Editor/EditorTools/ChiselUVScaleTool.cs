@@ -45,6 +45,8 @@ namespace Chisel.Editors
             ChiselUVToolCommon.Instance.OnDeactivate();
         }
         #endregion
+        
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
         #region Scene GUI
         public override void OnSceneSettingsGUI(SceneView sceneView)
@@ -58,9 +60,7 @@ namespace Chisel.Editors
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-            ChiselToolsOverlay.ShowSnappingTool = Tool.Scale;
-            ChiselToolsOverlay.ShowSnappingToolUV = true;
-
+            
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Passive, dragArea);
             HandleUtility.AddDefaultControl(defaultID);
 

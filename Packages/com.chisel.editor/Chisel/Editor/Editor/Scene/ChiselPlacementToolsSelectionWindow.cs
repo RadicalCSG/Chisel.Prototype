@@ -177,7 +177,9 @@ namespace Chisel.Editors
         class Styles
         {
             public GUIStyle namedToggleStyle;
-            public GUIStyle toggleStyle;
+            public GUIStyle toggleStyleLeft;
+            public GUIStyle toggleStyleMid;
+            public GUIStyle toggleStyleRight;
             public GUIStyle addStyle;
             public GUIStyle groupTitleStyle;
         }
@@ -197,12 +199,26 @@ namespace Chisel.Editors
                         padding     = new RectOffset(kButtonPadding, kButtonPadding, kButtonPadding, kButtonPadding),
                         margin      = new RectOffset(kButtonMargin, kButtonMargin, kButtonMargin, kButtonMargin)
                     },
-                    toggleStyle = new GUIStyle(GUI.skin.button)
+                    toggleStyleLeft = new GUIStyle(EditorStyles.miniButtonLeft)
                     {
-                        fixedWidth  = kButtonSize,
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin + kButtonMargin,
                         fixedHeight = kButtonSize,
-                        padding     = new RectOffset(kButtonPadding, kButtonPadding, kButtonPadding, kButtonPadding),
-                        margin      = new RectOffset(kButtonMargin, kButtonMargin, kButtonMargin, kButtonMargin)
+                    },
+                    toggleStyleMid = new GUIStyle(EditorStyles.miniButtonMid)
+                    {
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin + kButtonMargin,
+                        fixedHeight = kButtonSize,
+                    },
+                    toggleStyleRight = new GUIStyle(EditorStyles.miniButtonRight)
+                    {
+                        padding     = new RectOffset(kButtonPadding + kButtonMargin, kButtonPadding + kButtonMargin, kButtonPadding, kButtonPadding),
+                        margin      = new RectOffset(0,  0,  kButtonMargin,  0),
+                        fixedWidth  = kButtonSize + kButtonMargin + kButtonMargin,
+                        fixedHeight = kButtonSize,
                     },
                     addStyle = new GUIStyle(GUI.skin.button)
                     {
@@ -283,7 +299,7 @@ namespace Chisel.Editors
             var generatorModes  = ChiselGeneratorManager.generatorModes;
             var isActive        = ChiselCreateTool.IsActive();
 
-            var style           = styles.toggleStyle;
+            var style           = styles.toggleStyleMid;
 
             int usedModes = 0;
             for (int i = 0; i < generatorModes.Length; i++)
@@ -297,7 +313,7 @@ namespace Chisel.Editors
             int rows = Mathf.CeilToInt((usedModes + 1) / (float)kToolsWide);
             var boxStyle = new GUIStyle(GUI.skin.box);
             var groupRect = EditorGUILayout.GetControlRect(false, (rows * style.fixedHeight) + boxStyle.margin.vertical, ChiselOverlay.kMinWidthLayout);
-            groupRect.xMin -= 3;
+            groupRect.xMin -= 2;
             groupRect.yMin += 5;
             groupRect.xMax += 3;
             groupRect.yMax += 6;
@@ -319,10 +335,10 @@ namespace Chisel.Editors
             var topY            = groupRect.y + 3;
 
 
-            var leftMargin      = style.margin.left + topX;
+            var leftMargin      = style.margin.left + topX + 1;
             var topMargin       = style.margin.top  + topY;
-            var buttonWidth     = style.fixedWidth  + style.margin.left;
-            var buttonHeight    = style.fixedHeight + style.margin.top;
+            var buttonWidth     = style.fixedWidth  + style.margin.horizontal - 1;
+            var buttonHeight    = style.fixedHeight + style.margin.vertical;
             var position        = new Rect(0, 0, buttonWidth, buttonHeight);
 
             int xpos = 0, ypos = 0;
@@ -334,7 +350,13 @@ namespace Chisel.Editors
                 if (xpos >= kToolsWide) { ypos++; xpos = 0; }
                 position.x = leftMargin + xpos * buttonWidth;
                 position.y = topMargin  + ypos * buttonHeight;
-                GeneratorButton(position, generatorModes[i], style, isActive);
+
+
+                var toggleStyle = (xpos == 0) ? styles.toggleStyleLeft :
+                                  (xpos == kToolsWide - 1) || (i == generatorModes.Length - 1) ? styles.toggleStyleRight :
+                                  styles.toggleStyleMid;
+
+                GeneratorButton(position, generatorModes[i], toggleStyle, isActive);
                 xpos++;
             }
             if (xpos >= kToolsWide) { ypos++; xpos = 0; }

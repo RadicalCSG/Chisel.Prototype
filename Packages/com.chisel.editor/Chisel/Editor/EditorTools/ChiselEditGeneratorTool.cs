@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnitySceneExtensions;
 
 namespace Chisel.Editors
 {
@@ -19,6 +20,8 @@ namespace Chisel.Editors
         public override string OptionsTitle => CurrentEditorName == null ? "Options" : $"{CurrentEditorName} Options";
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselEditGeneratorTool); }
+
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
 
         #region Keyboard Shortcut
@@ -43,10 +46,39 @@ namespace Chisel.Editors
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
+            var evt = Event.current;
+            switch (evt.type)
+            {
+                case EventType.KeyDown:
+                {
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        if (GUIUtility.hotControl == 0)
+                        {
+                            evt.Use();
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case EventType.KeyUp:
+                {
+                    if (evt.keyCode == KeyCode.Escape)
+                    {
+                        if (GUIUtility.hotControl == 0) 
+                        {
+                            Selection.activeTransform = null;
+                            evt.Use();
+                            GUIUtility.ExitGUI(); // avoids a nullreference exception in sceneview
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+
             // NOTE: Actual work is done by Editor classes
             ChiselOptionsOverlay.AdditionalSettings = OnEditSettingsGUI;
-            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselToolsOverlay.ShowSnappingToolUV = false;
         }
     }
 }

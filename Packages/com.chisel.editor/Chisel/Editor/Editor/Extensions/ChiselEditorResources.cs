@@ -11,7 +11,7 @@ namespace Chisel.Editors
     {
         internal const string kLargeIconID      = "@2x";
         internal const string kIconPath         = "Icons/";
-        internal const string kActiveIconID     = "_ON";
+        internal const string kActiveIconID     = " On";
         internal const string kDarkIconID       = "d_";
 
         internal static string[] resourcePaths;
@@ -27,7 +27,7 @@ namespace Chisel.Editors
         // Should be safe since when these parameters change, Unity will do a domain reload, 
         // which will call the constructor in which these are set.
         static float    editorPixelsPerPoint;
-        static bool     isProSkin;
+        public static bool     isProSkin;
 
         public static float    ImageScale
         {
@@ -86,14 +86,24 @@ namespace Chisel.Editors
         public static Texture2D LoadImage(string name)
         {
             name = FixSlashes(name);
+            if (debug) Debug.Log($"try {name}");
             if (imagesLookup.TryGetValue(name, out Texture2D image))
+            {
+                if (debug) Debug.Log($"cached {name}");
                 return image;
+            }
             image = LoadScaledTexture(name);
             if (!image)
+            {
+                if (debug) Debug.Log($"not loaded {name}");
                 return image;
+            }
+            if (debug) Debug.Log($"loaded {name}");
             imagesLookup[name] = image;
             return image;
         }
+
+        public static bool debug = false;
 
         public static Texture2D LoadIconImage(string name, bool active)
         {
@@ -101,14 +111,17 @@ namespace Chisel.Editors
             name = name.ToLowerInvariant().Replace(' ', '_');  
             if (isProSkin)
             {
+                if (debug) Debug.Log("isProSkin");
                 if (active        ) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}{kActiveIconID}");
                 if (result == null) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}");
             }
             if (result == null)
             {
+                if (debug) Debug.Log("result == null");
                 if (active        ) result = LoadImage($@"{kIconPath}{name}{kActiveIconID}");
                 if (result == null) result = LoadImage($@"{kIconPath}{name}");
             }
+            if (debug) Debug.Log($"{name} = {result}");
             return result;
         } 
 

@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnitySceneExtensions;
 using UnityObject = UnityEngine.Object;
  
 namespace Chisel.Editors
@@ -17,6 +18,8 @@ namespace Chisel.Editors
         public const string kToolName = "Create";
         public override string ToolName => kToolName;
         public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode} Options";
+
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
         public override GUIContent Content
         {
@@ -101,7 +104,9 @@ namespace Chisel.Editors
                 case EventType.KeyDown:
                 {
                     if (Event.current.keyCode == KeyCode.Escape)
+                    {
                         Event.current.Use();
+                    }
                     break;
                 }
                 case EventType.KeyUp:
@@ -115,8 +120,8 @@ namespace Chisel.Editors
                 }
             }
 
-            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselToolsOverlay.ShowSnappingToolUV = false;
+
+
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
             generatorMode.ShowSceneGUI(sceneView, dragArea);
 

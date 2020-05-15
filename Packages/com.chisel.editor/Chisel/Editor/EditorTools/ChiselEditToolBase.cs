@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEngine;
+using UnitySceneExtensions;
 using UnityObject = UnityEngine.Object;
  
 namespace Chisel.Editors
@@ -18,6 +19,8 @@ namespace Chisel.Editors
 
         public abstract string ToolName { get; }
         public abstract string OptionsTitle { get; }
+
+        public abstract SnapSettings ToolUsedSnappingModes { get; }
 
         public Texture2D Icon
         {
@@ -62,7 +65,7 @@ namespace Chisel.Editors
 
         public void OnEnable()
         {
-            lastSelectedNode = null;
+            lastSelectedTool = null;
             ChiselToolsOverlay.Register(this);
             ToolNotActivatingBugWorkAround(); 
             UpdateIcon();
@@ -71,7 +74,7 @@ namespace Chisel.Editors
 
         public void Awake()
         {
-            lastSelectedNode = null;
+            lastSelectedTool = null;
             ToolNotActivatingBugWorkAround();
             NotifyOnSelectionChanged();
         }
@@ -111,11 +114,7 @@ namespace Chisel.Editors
             if (!haveNodeSelection)
                 return;
 
-            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselToolsOverlay.ShowSnappingToolUV = false;
-
-            ChiselOptionsOverlay.AdditionalSettings = ChiselEditGeneratorTool.OnEditSettingsGUI;
-            ChiselOptionsOverlay.SetTitle(Convert.ToString(Tools.current)); // TODO: cache these strings
+            ChiselOptionsOverlay.AdditionalSettings = null;
 
             ChiselOptionsOverlay.Show();
             ChiselToolsOverlay.Show();
@@ -123,40 +122,36 @@ namespace Chisel.Editors
         }
 
 
-        static ChiselEditToolBase lastSelectedNode = null;
+        static ChiselEditToolBase lastSelectedTool = null;
 
         public void ToolNotActivatingBugWorkAround()
         {
-            if (lastSelectedNode == null)
+            if (lastSelectedTool == null)
             {
                 if (EditorTools.activeToolType == this.GetType())
                 {
                     OnActivate();
-                    lastSelectedNode = this;
+                    lastSelectedTool = this;
                 }
             }
         }
 
         public override void OnToolGUI(EditorWindow window)
         {
-            if (lastSelectedNode == null ||
-                lastSelectedNode != this)
+            if (lastSelectedTool == null ||
+                lastSelectedTool != this)
             {
-                if (lastSelectedNode != null)
-                    lastSelectedNode.OnDeactivate();
-                lastSelectedNode = this;
+                if (lastSelectedTool != null)
+                    lastSelectedTool.OnDeactivate();
+                lastSelectedTool = this;
                 OnActivate();
             }
             var sceneView = window as SceneView;
             var dragArea = sceneView.position;
             dragArea.position = Vector2.zero;
 
-            ChiselToolsOverlay.ShowSnappingTool = Tool.None;
-            ChiselToolsOverlay.ShowSnappingToolUV = false;
-
             ChiselOptionsOverlay.AdditionalSettings = null;
             ChiselOptionsOverlay.SetTitle(OptionsTitle);
-
 
             OnSceneGUI(sceneView, dragArea);
 
@@ -167,11 +162,13 @@ namespace Chisel.Editors
 
         public virtual void OnActivate()
         {
-            lastSelectedNode = this;
+            lastSelectedTool = this;
+            UnitySceneExtensions.Snapping.SnapMask = ToolUsedSnappingModes;
         }
 
         public virtual void OnDeactivate()
         {
+            UnitySceneExtensions.Snapping.SnapMask = UnitySceneExtensions.SnapSettings.All;
         } 
 
         public abstract void OnSceneGUI(SceneView sceneView, Rect dragArea);

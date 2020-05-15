@@ -22,28 +22,28 @@ namespace Chisel.Components
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
         // This ensures names remain identical, or a compile error occurs.
-        public const string kOperationFieldName         = nameof(operation);
+        public const string kOperationFieldName = nameof(operation);
 
         // This ensures names remain identical, or a compile error occurs.
-        public const string kBrushContainerAssetName    = nameof(brushContainerAsset);
+        public const string kBrushContainerAssetName = nameof(brushContainerAsset);
 
 
         [HideInInspector] CSGTreeNode[] Nodes = new CSGTreeNode[] { new CSGTreeBrush() };
 
-        [SerializeField,HideInInspector] protected CSGOperationType		operation;		    // NOTE: do not rename, name is directly used in editors
-        [SerializeField,HideInInspector] protected ChiselBrushContainerAsset brushContainerAsset;	// NOTE: do not rename, name is directly used in editors
-        [SerializeField,HideInInspector] protected Matrix4x4			localTransformation = Matrix4x4.identity;
-        [SerializeField,HideInInspector] protected Vector3				pivotOffset			= Vector3.zero;
+        [SerializeField, HideInInspector] protected CSGOperationType operation;		    // NOTE: do not rename, name is directly used in editors
+        [SerializeField, HideInInspector] protected ChiselBrushContainerAsset brushContainerAsset;	// NOTE: do not rename, name is directly used in editors
+        [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
+        [SerializeField, HideInInspector] protected Vector3 pivotOffset = Vector3.zero;
 
-        public CSGTreeNode	TopNode     { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Nodes[0]; } }
-        bool                ValidNodes  { get { return (Nodes != null && Nodes.Length > 0) && Nodes[0].Valid; } }
+        public CSGTreeNode TopNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Nodes[0]; } }
+        bool ValidNodes { get { return (Nodes != null && Nodes.Length > 0) && Nodes[0].Valid; } }
 
 #if UNITY_EDITOR
         public VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
         {
-            var resultState     = VisibilityState.Unknown;
-            var visible         = !instance.IsHidden(gameObject);
-            var pickingEnabled  = !instance.IsPickingDisabled(gameObject);
+            var resultState = VisibilityState.Unknown;
+            var visible = !instance.IsHidden(gameObject);
+            var pickingEnabled = !instance.IsPickingDisabled(gameObject);
             foreach (var node in Nodes)
             {
                 var nodeState = CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
@@ -53,13 +53,13 @@ namespace Chisel.Components
         }
 #endif
 
-        public override CSGTreeNode	GetTreeNodeByIndex(int index)
+        public override CSGTreeNode GetTreeNodeByIndex(int index)
         {
             if (index < 0 || index > Nodes.Length)
                 return CSGTreeNode.InvalidNode;
             return Nodes[index];
         }
-        
+
         protected override void OnResetInternal()
         {
             UpdateGenerator();
@@ -90,8 +90,7 @@ namespace Chisel.Components
 #if UNITY_EDITOR
             {
                 var currentInstanceID = this.GetInstanceID();
-                if (instanceID == 0) { instanceID = currentInstanceID; genGuidHashCode = Guid.NewGuid().GetHashCode(); }
-                else if (instanceID != currentInstanceID)
+                if (instanceID == 0) { instanceID = currentInstanceID; genGuidHashCode = Guid.NewGuid().GetHashCode(); } else if (instanceID != currentInstanceID)
                 {
                     var prevObject = UnityEditor.EditorUtility.InstanceIDToObject(instanceID) as ChiselGeneratorComponent;
                     // if our stored instanceID is the same as an existing generator and has the same guid, 
@@ -124,7 +123,7 @@ namespace Chisel.Components
             base.OnValidateInternal();
         }
 
-        public CSGOperationType     Operation
+        public CSGOperationType Operation
         {
             get
             {
@@ -144,8 +143,8 @@ namespace Chisel.Components
                 ChiselNodeHierarchyManager.NotifyContentsModified(this);
             }
         }
-        
-        public override Vector3 PivotOffset
+
+        public Vector3 PivotOffset
         {
             get
             {
@@ -156,7 +155,7 @@ namespace Chisel.Components
                 if (value == pivotOffset)
                     return;
                 pivotOffset = value;
-                
+
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
@@ -203,6 +202,30 @@ namespace Chisel.Components
                 return;
 
             UpdateInternalTransformation();
+        }
+
+        public Matrix4x4 PivotTransformation
+        {
+            get
+            {
+                // TODO: fix this mess
+
+                if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
+                    return Matrix4x4.TRS(pivotOffset, Quaternion.identity, Vector3.one);
+                return Matrix4x4.identity;
+            }
+        }
+
+        public Matrix4x4 InversePivotTransformation
+        {
+            get
+            {
+                // TODO: fix this mess
+
+                if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
+                    return Matrix4x4.TRS(-pivotOffset, Quaternion.identity, Vector3.one);
+                return Matrix4x4.identity;
+            }
         }
 
         public Matrix4x4 LocalTransformationWithPivot

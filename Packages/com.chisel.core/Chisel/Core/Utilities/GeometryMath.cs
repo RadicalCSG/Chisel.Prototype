@@ -27,13 +27,13 @@ namespace Chisel.Core
         {
             Vector3 relativePoint = point - lineStart;
             Vector3 lineDirection = lineEnd - lineStart;
-            //float length = lineDirection.magnitude;
+            float length = lineDirection.magnitude;
             Vector3 normalizedLineDirection = lineDirection;
-            //if (length > Vector3.kEpsilon)
-            //    normalizedLineDirection /= length;
+            if (length > Vector3.kEpsilon)
+                normalizedLineDirection /= length;
 
             float dot = Vector3.Dot(normalizedLineDirection, relativePoint);
-            //dot = Mathf.Clamp(dot, 0.0F, length);
+            dot = Mathf.Clamp(dot, 0.0F, length);
 
             return lineStart + normalizedLineDirection * dot;
         }
@@ -170,7 +170,7 @@ namespace Chisel.Core
         // Also returns false if bSegment is true and either intersection does not occur within segment
 
         public static bool LineLineIntersection(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4,
-                                                out Vector3 intersectionPoint1, double epsilon, bool debug = false)
+                                                out Vector3 intersectionPoint1, double epsilon)
         {
             var p13x = (double)p1.x - (double)p3.x;
             var p13y = (double)p1.y - (double)p3.y;
@@ -214,19 +214,11 @@ namespace Chisel.Core
             // Don't intersect within line segments
             if (double.IsNaN(mua) || double.IsInfinity(mua) || mua < 0.0 || mua > 1.0)
             {
-                if (debug)
-                {
-                    Debug.Log($"D {mua}");
-                }
                 return false;
             }
             
             if (double.IsNaN(mub) || double.IsInfinity(mub) || mub < 0.0 || mub > 1.0)
             {
-                if (debug)
-                {
-                    Debug.Log($"E {mub}");
-                }
                 return false;
             }
 
@@ -246,16 +238,7 @@ namespace Chisel.Core
             var sqrMagnitude = (dx * dx) + (dy * dy) + (dz * dz);
             if (double.IsNaN(sqrMagnitude) || double.IsInfinity(sqrMagnitude) || sqrMagnitude > (epsilon * epsilon))
             {
-                if (debug)
-                {
-                    Debug.Log($"F {sqrMagnitude} {(epsilon * epsilon)}");
-                }
                 return false;
-            }
-
-            if (debug)
-            {
-                Debug.Log("G");
             }
             intersectionPoint1 = new Vector3((float)intersectionPoint1x, (float)intersectionPoint1y, (float)intersectionPoint1z);
 

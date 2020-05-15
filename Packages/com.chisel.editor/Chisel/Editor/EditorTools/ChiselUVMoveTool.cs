@@ -30,6 +30,7 @@ namespace Chisel.Editors
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToUVMoveMode, displayName = kEditModeShotcutName)]
         public static void ActivateTool() { EditorTools.SetActiveTool<ChiselUVMoveTool>(); }
         #endregion
+        public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
         public override void OnActivate()
         {
@@ -53,11 +54,10 @@ namespace Chisel.Editors
         static readonly int kSurfaceEditModeHash		= "SurfaceMoveEditMode".GetHashCode();
         static readonly int kSurfaceMoveHash			= "SurfaceMove".GetHashCode();
 
+
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
-            ChiselToolsOverlay.ShowSnappingTool = Tool.Move;
-            ChiselToolsOverlay.ShowSnappingToolUV = true;
 
             var defaultID = GUIUtility.GetControlID(kSurfaceEditModeHash, FocusType.Keyboard, dragArea);
             HandleUtility.AddDefaultControl(defaultID);

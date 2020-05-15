@@ -16,21 +16,27 @@ namespace Chisel.Editors
         [Shortcut(HalfGridSizeName, typeof(SceneView), ChiselKeyboardDefaults.HalfGridSizeKey, ChiselKeyboardDefaults.HalfGridSizeModifiers, displayName = HalfGridSizeName)]
         public static void HalfGridSize()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyGridSnapDistance(0.5f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
+        public static float HalfGridSizeRet() { HalfGridSize(); return ChiselEditorSettings.UniformSnapSize; }
 
 
         const string DoubleGridSizeName = ShortCutBaseName + "Grid Size/Double";
         [Shortcut(DoubleGridSizeName, typeof(SceneView), ChiselKeyboardDefaults.DoubleGridSizeKey, ChiselKeyboardDefaults.DoubleGridSizeModifiers, displayName = DoubleGridSizeName)]
         public static void DoubleGridSize()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyGridSnapDistance(2.0f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
-        
+
+        public static float DoubleGridSizeRet() { DoubleGridSize(); return ChiselEditorSettings.UniformSnapSize; } 
+
+
         public static void MultiplyGridSnapDistance(float modifier)
         {
             ChiselEditorSettings.UniformSnapSize = ChiselEditorSettings.UniformSnapSize * modifier;
@@ -43,20 +49,24 @@ namespace Chisel.Editors
         [Shortcut(HalfRotateSnapName, typeof(SceneView), displayName = HalfRotateSnapName)]
         public static void HalfRotateSnap()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyRotateSnapDistance(0.5f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
+        public static float HalfRotateSnapRet() { HalfRotateSnap(); return ChiselEditorSettings.RotateSnap; }
 
 
         const string DoubleRotateSnapName = ShortCutBaseName + "Rotate Snap/Double";
         [Shortcut(DoubleRotateSnapName, typeof(SceneView), displayName = DoubleRotateSnapName)]
         public static void DoubleRotateSnap()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyRotateSnapDistance(2.0f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
+        public static float DoubleRotateSnapRet() { DoubleRotateSnap(); return ChiselEditorSettings.RotateSnap; }
 
         public static void MultiplyRotateSnapDistance(float modifier)
         {
@@ -69,20 +79,24 @@ namespace Chisel.Editors
         [Shortcut(HalfScaleSnapName, typeof(SceneView), displayName = HalfScaleSnapName)]
         public static void HalfScaleSnap()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyScaleSnapDistance(0.5f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
+        public static float HalfScaleSnapRet() { HalfScaleSnap(); return ChiselEditorSettings.ScaleSnap; }
 
 
         const string DoubleScaleSnapName = ShortCutBaseName + "Scale Snap/Double";
         [Shortcut(DoubleScaleSnapName, typeof(SceneView), displayName = DoubleScaleSnapName)]
         public static void DoubleScaleSnap()
         {
+            GUIUtility.keyboardControl = 0;
             MultiplyScaleSnapDistance(2.0f);
             ChiselEditorSettings.Save();
             SceneView.RepaintAll();
         }
+        public static float DoubleScaleSnapRet() { DoubleScaleSnap(); return ChiselEditorSettings.ScaleSnap; }
 
         public static void MultiplyScaleSnapDistance(float modifier)
         {

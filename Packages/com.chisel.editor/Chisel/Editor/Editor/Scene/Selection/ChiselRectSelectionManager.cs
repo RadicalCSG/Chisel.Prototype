@@ -172,7 +172,7 @@ namespace Chisel.Editors
                 var foundObjects = selectedObjects;
 
                 RemoveGeneratedMeshesFromArray(ref foundObjects);
-
+                
                 if (foundObjects.Length != selectedObjects.Length)
                     Selection.objects = foundObjects;
             }
@@ -406,13 +406,18 @@ namespace Chisel.Editors
                     Event.current.Use();
                     break;
                 }
-
                 case EventType.KeyUp:
                 {
                     if (hotControl == 0 &&
                         Event.current.keyCode == UnityEngine.KeyCode.Escape)
                     {
-                        Selection.activeTransform = null;
+                        if (GUIUtility.hotControl == 0 && // make sure we're not actively doing anything
+                            Tools.current != Tool.Custom)
+                        {
+                            // This deselects everything and disables all tool modes
+                            Selection.activeTransform = null;
+                            Event.current.Use();
+                        }
                     }
                     break;
                 }
@@ -447,7 +452,7 @@ namespace Chisel.Editors
                     var foundObjects = transforms.ToArray();
                         
                     RemoveGeneratedMeshesFromArray(ref foundObjects);
-                        
+
                     Selection.objects = foundObjects;
 
                     Event.current.Use();
