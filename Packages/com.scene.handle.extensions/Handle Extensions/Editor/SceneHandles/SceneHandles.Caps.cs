@@ -1,4 +1,5 @@
 ﻿using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
 namespace UnitySceneExtensions
@@ -270,16 +271,29 @@ namespace UnitySceneExtensions
                     var prevColor = SceneHandles.color;
                     var color = prevColor;
                     color.a = 1.0f;
-                    var normal = rotation * Vector3.forward;
-                    SceneHandles.color = color;
 
                     var currentFocusControl = SceneHandleUtility.focusControl;
                     if (currentFocusControl == controlID)
-                        SceneHandles.ArrowHandleCap(controlID, position, Quaternion.LookRotation(normal), size * 20, Event.current.type);
-                    else
+                    {
+                        using (new SceneHandles.DrawingScope(color))
+                        {
+                            // Matrices with an uneven axi being scaled negatively, will invert the normals of the cone, 
+                            //  and this will always render it as black. To avoid this situation, we decuce the direction 
+                            // and origin that we would've had if we used the matrix and set the matrix to identity
+                            var matrix = Handles.matrix;
+                            rotation = Quaternion.LookRotation(matrix.MultiplyVector(rotation * Vector3.forward));
+                            position = matrix.MultiplyPoint(position);
+                            Handles.matrix = Matrix4x4.identity;
+                            ArrowHandleCap(controlID, position, rotation, size * 20, Event.current.type);
+                        }
+                    } else
+                    {
+                        SceneHandles.color = color;
+                        var normal = rotation * Vector3.forward;
                         DrawAAPolyLine(3.5f, position, position + (normal * size * 10));
 
-                    SceneHandles.color = prevColor;
+                        SceneHandles.color = prevColor;
+                    }
                     break;
                 }
             }
@@ -482,7 +496,7 @@ namespace UnitySceneExtensions
             }
         }
 
-#if UNITY_2020_2_OR_NEWER
+#if UNITY_2020_1_OR_NEWER
         public readonly static CapFunction ArrowHandleCap = ArrowHandleCapFunction;
         public static void ArrowHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
