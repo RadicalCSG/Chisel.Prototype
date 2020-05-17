@@ -148,8 +148,77 @@ namespace Chisel.Editors
         #endregion
 
 
+        List<ChiselNode> SelectedNodes
+        {
+            get
+            {
+                var objs = Selection.objects;
+                if (objs == null || objs.Length == 0)
+                    return null;
+
+                var nodes = new List<ChiselNode>();
+                for (int i = 0; i < objs.Length; i++)
+                {
+                    var gameObject = objs[i] as GameObject;
+                    if (gameObject)
+                    {
+                        var node = gameObject.GetComponent<ChiselNode>();
+                        if (node) nodes.Add(node);
+                    }
+
+                    var component = objs[i] as Component;
+                    if (component)
+                    {
+                        var node = component.GetComponent<ChiselNode>();
+                        if (node) nodes.Add(node);
+                    }
+                }
+                if (nodes.Count == 0)
+                    return null;
+                return nodes;
+            }
+        }
+
+        Vector3 FindSelectionCenter(List<ChiselNode> selectedNodes)
+        {
+            if (selectedNodes == null || selectedNodes.Count == 0)
+                return Vector3.zero;
+
+            Vector3 center;
+            if (selectedNodes.Count > 1)
+            {
+                var bounds = selectedNodes[0].CalculateBounds();
+                var min = bounds.min;
+                var max = bounds.max;
+                for (int i = 1; i < selectedNodes.Count; i++)
+                {
+                    bounds = selectedNodes[i].CalculateBounds();
+
+                    min.x = Mathf.Min(min.x, bounds.min.x);
+                    min.y = Mathf.Min(min.y, bounds.min.y);
+                    min.z = Mathf.Min(min.z, bounds.min.z);
+
+                    max.x = Mathf.Max(max.x, bounds.max.x);
+                    max.y = Mathf.Max(max.y, bounds.max.y);
+                    max.z = Mathf.Max(max.z, bounds.max.z);
+                }
+                center = (min + max) * 0.5f;
+            } else
+                center = selectedNodes[0].CalculateBounds().center;
+            return center;
+        }
+
         public override void OnSceneSettingsGUI(SceneView sceneView)
         {
+            if (GUILayout.Button("Center Pivot On Selection"))
+            {
+                var selectedNodes = SelectedNodes;
+                if (selectedNodes != null && selectedNodes.Count != 0)
+                {
+                    var center = FindSelectionCenter(selectedNodes);
+                    MovePivotTo(selectedNodes, center);
+                }
+            }
         }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
@@ -185,7 +254,7 @@ namespace Chisel.Editors
                 }
             }
 
-            ChiselOptionsOverlay.AdditionalSettings = null;// OnSceneSettingsGUI;
+            ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
             
             var position = Tools.handlePosition;
             var rotation = Tools.handleRotation;
@@ -201,30 +270,10 @@ namespace Chisel.Editors
             var newPosition = UnitySceneExtensions.SceneHandles.PositionHandle(position, rotation);
             if (EditorGUI.EndChangeCheck())
             {
-                var objs = Selection.objects;
-                if (objs != null && objs.Length > 0)
-                {
-                    var nodes = new List<ChiselNode>();
-                    for (int i = 0; i < objs.Length; i++)
-                    {
-                        var gameObject = objs[i] as GameObject;
-                        if (gameObject)
-                        {
-                            var node = gameObject.GetComponent<ChiselNode>();
-                            if (node) nodes.Add(node);
-                        }
-
-                        var component = objs[i] as Component;
-                        if (component)
-                        {
-                            var node = component.GetComponent<ChiselNode>();
-                            if (node) nodes.Add(node);
-                        }
-                    }
-
-                    if (nodes != null && nodes.Count > 0)					
-                        MovePivotTo(nodes, newPosition);
-                }
+                var nodes = SelectedNodes;
+                if (nodes == null || nodes.Count == 0)
+                    return;
+                MovePivotTo(nodes, newPosition);
             }
         }
 
