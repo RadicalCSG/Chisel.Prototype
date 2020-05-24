@@ -19,7 +19,7 @@ namespace Chisel.Editors
         [MenuItem("GameObject/Chisel/Create/" + ChiselSpiralStairs.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselSpiralStairs.kNodeTypeName); }
 
-                        
+
         // TODO: put somewhere else
 
         static readonly int s_RotatedEdge2DHash = "RotatedEdge2D".GetHashCode();
@@ -62,7 +62,7 @@ namespace Chisel.Editors
             if (handleSize == 0.0f)
                 handleSize = UnityEditor.HandleUtility.GetHandleSize(position) * 0.05f;
 
-            
+
             if (evt.GetTypeForControl(id) == EventType.MouseDown &&
                 GUIUtility.hotControl == 0 &&
                 ((UnityEditor.HandleUtility.nearestControl == id && evt.button == 0) ||
@@ -78,8 +78,8 @@ namespace Chisel.Editors
                 return angle;
 
             rotatedAngleOffset += Utilities.GeometryMath.SignedAngle(vector, (newPosition - origin).normalized, handleDir);
-            
-            
+
+
             // TODO: put somewhere else
             if (!Snapping.RotateSnappingActive)
             {
@@ -92,13 +92,13 @@ namespace Chisel.Editors
             return snappedAngle;
         }
 
-        
+
 
 
         Vector3[] innerVertices;
         Vector3[] outerVertices;
 
-        
+
         protected override void OnScene(SceneView sceneView, ChiselSpiralStairs generator)
         {
             var normal					= Vector3.up;
@@ -117,7 +117,7 @@ namespace Chisel.Editors
             var originalTopPoint		= normal * cylinderTop.height;
             var originalLowPoint		= normal * cylinderLow.height;
             var originalMidPoint		= (originalTopPoint + originalLowPoint) * 0.5f;
-                    
+
             var outerDiameter		= originalOuterDiameter;
             var innerDiameter		= originalInnerDiameter;
             var topPoint			= originalTopPoint;
@@ -130,7 +130,7 @@ namespace Chisel.Editors
             {
                 var startRotateEdgeID	= GUIUtility.GetControlID ("SpiralStairsStartAngle".GetHashCode(), FocusType.Keyboard);
                 var endRotateEdgeID		= GUIUtility.GetControlID ("SpiralStairsEndAngle".GetHashCode(), FocusType.Keyboard);
-                        
+
                 // TODO: properly show things as backfaced
                 // TODO: temporarily show inner or outer diameter as disabled when resizing one or the other
                 // TODO: FIXME: why aren't there any arrows?
@@ -139,10 +139,10 @@ namespace Chisel.Editors
                 lowPoint		= UnitySceneExtensions.SceneHandles.DirectionHandle(lowPoint, -normal, snappingStep: originalStepHeight);
                 lowPoint.y		= Mathf.Min(topPoint.y - originalStepHeight, lowPoint.y);
 
-                float minOuterDiameter = innerDiameter + ChiselSpiralStairsDefinition.kMinStairsDepth;						
+                float minOuterDiameter = innerDiameter + ChiselSpiralStairsDefinition.kMinStairsDepth;
                 outerDiameter		= Mathf.Max(minOuterDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, topPoint, outerDiameter * 0.5f, renderDisc: false) * 2.0f);
                 outerDiameter		= Mathf.Max(minOuterDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, lowPoint, outerDiameter * 0.5f, renderDisc: false) * 2.0f);
-                        
+
                 float maxInnerDiameter = outerDiameter - ChiselSpiralStairsDefinition.kMinStairsDepth;
                 innerDiameter		= Mathf.Min(maxInnerDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, midPoint, innerDiameter * 0.5f, renderDisc: false) * 2.0f);
 
@@ -158,7 +158,7 @@ namespace Chisel.Editors
 
                 cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalOuterDiameter;
                 BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, generator.OuterSegments, ref outerVertices);
-                
+
                 var originalColor	= UnityEditor.Handles.yAxisColor;
                 var color			= Color.Lerp(originalColor, UnitySceneExtensions.SceneHandles.staticColor, UnitySceneExtensions.SceneHandles.staticBlend);
                 var outlineColor	= Color.black;
@@ -248,6 +248,39 @@ namespace Chisel.Editors
                 }
 
                 generator.OnValidate();
+            }
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselSpiralStairs;
+                    if(!generator)
+                        continue;
+
+                    if( generator.InnerSegments < 3 )
+                        generator.InnerSegments = 3;
+
+                    if( generator.OuterSegments < 3 )
+                        generator.OuterSegments = 3;
+
+                    if( generator.OuterSegments > 64 )
+                        generator.OuterSegments = 64;
+
+                    if( generator.InnerSegments > 64 )
+                        generator.OuterSegments = 64;
+
+                    if( generator.Height < 0.001f )
+                        generator.Height = 0.001f;
+
+                    if( generator.Height == 0 )
+                        generator.Height = 1;
+                }
             }
         }
     }

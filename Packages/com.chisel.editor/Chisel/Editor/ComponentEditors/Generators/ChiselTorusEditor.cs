@@ -32,10 +32,10 @@ namespace Chisel.Editors
 
             var horzSegments	= definition.horizontalSegments;
             var vertSegments	= definition.verticalSegments;
-            
+
             if (definition.totalAngle != 360)
                 horzSegments++;
-            
+
             var prevColor		= UnityEditor.Handles.color;
             prevColor.a *= 0.8f;
             var color			= prevColor;
@@ -73,7 +73,7 @@ namespace Chisel.Editors
             Vector3[] vertices = null;
             if (!BrushMeshFactory.GenerateTorusVertices(generator.definition, ref vertices))
                 return;
-            
+
             UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);
             DrawOutline(generator.definition, vertices, lineMode: LineMode.ZTest);
 
@@ -85,7 +85,7 @@ namespace Chisel.Editors
             var innerRadius = generator.definition.innerDiameter * 0.5f;
             var topPoint	= normal * ( generator.definition.tubeHeight * 0.5f);
             var bottomPoint	= normal * (-generator.definition.tubeHeight * 0.5f);
-            
+
             EditorGUI.BeginChangeCheck();
             {
                 UnityEditor.Handles.color = baseColor;
@@ -102,6 +102,22 @@ namespace Chisel.Editors
                 generator.definition.tubeHeight		= (topPoint.y - bottomPoint.y);
                 // TODO: handle sizing down
                 generator.OnValidate();
+            }
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselTorus;
+                    if(!generator)
+                        continue;
+
+                }
             }
         }
     }

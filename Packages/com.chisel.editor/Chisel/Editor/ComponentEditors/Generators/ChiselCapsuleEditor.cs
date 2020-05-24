@@ -22,18 +22,18 @@ namespace Chisel.Editors
         static void DrawOutline(ChiselCapsuleDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             var sides			= definition.sides;
-            
+
             // TODO: share this logic with GenerateCapsuleVertices
-            
+
             var topHemisphere		= definition.haveRoundedTop;
             var bottomHemisphere	= definition.haveRoundedBottom;
             var topSegments			= topHemisphere    ? definition.topSegments    : 0;
             var bottomSegments		= bottomHemisphere ? definition.bottomSegments : 0;
-            
+
             var extraVertices		= definition.extraVertexCount;
             var bottomVertex		= definition.bottomVertex;
             var topVertex			= definition.topVertex;
-            
+
             var rings				= definition.ringCount;
             var bottomRing			= (bottomHemisphere) ? (rings - bottomSegments) : rings - 1;
             var topRing				= (topHemisphere   ) ? (topSegments - 1) : 0;
@@ -127,10 +127,10 @@ namespace Chisel.Editors
                     var topLoopHasFocus = (topHasFocus && !generator.HaveRoundedTop) || (focusControl == topLoopID);
 
                     var thickness = topLoopHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
-                        
+
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, topLoopHasFocus, true, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.topVertexOffset, generator.definition.sides, lineMode: LineMode.NoZTest, thickness: thickness);
-                        
+
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, topLoopHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.topVertexOffset, generator.definition.sides, lineMode: LineMode.ZTest,   thickness: thickness);
 
@@ -151,7 +151,7 @@ namespace Chisel.Editors
                         GUI.changed = prevGUIChanged;
                     }
                 }
-                
+
                 var bottomId = GUIUtility.GetControlID(s_BottomHash, FocusType.Passive);
                 {
                     var isBottomBackfaced	= ChiselCylinderEditor.IsSufaceBackFaced(bottomPoint, -normal);
@@ -166,7 +166,7 @@ namespace Chisel.Editors
 
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, bottomLoopHasFocus, true, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.bottomVertexOffset, generator.definition.sides, lineMode: LineMode.NoZTest, thickness: thickness);
-                    
+
                     UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, bottomLoopHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(vertices, generator.definition.bottomVertexOffset, generator.definition.sides, lineMode: LineMode.ZTest,   thickness: thickness);
 
@@ -199,6 +199,36 @@ namespace Chisel.Editors
                 generator.definition.bottomHeight   = bottomHeight;
                 generator.OnValidate();
                 // TODO: handle sizing down (needs to modify transformation?)
+            }
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselCapsule;
+                    if(!generator)
+                        continue;
+
+                    if( generator.Sides < 3 )
+                        generator.Sides = 3;
+
+                    if( generator.Sides > 64 )
+                        generator.Sides = 64;
+
+                    if( generator.Height < 0.001f )
+                        generator.Height = 0.001f;
+
+                    if( generator.DiameterX == 0 || generator.DiameterZ == 0 )
+                    {
+                        generator.DiameterX = 1;
+                        generator.DiameterZ = 1;
+                    }
+                }
             }
         }
     }

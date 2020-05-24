@@ -37,7 +37,7 @@ namespace Chisel.Editors
             var extraVertices	= ((topCap) ? 1 : 0) + ((bottomCap) ? 1 : 0);
             var bottomVertex	= 0;
             //var topVertex		= (bottomCap) ? 1 : 0;
-            
+
             var rings			= (vertices.Length - extraVertices) / sides;
             var bottomRing		= 0;
 
@@ -61,12 +61,12 @@ namespace Chisel.Editors
             }
             UnityEditor.Handles.color = prevColor;
         }
-        
+
         internal static int s_TopHash		= "TopHemisphereHash".GetHashCode();
 
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
-        
+
         protected override void OnScene(SceneView sceneView, ChiselHemisphere generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
@@ -76,14 +76,14 @@ namespace Chisel.Editors
 
             if (!BrushMeshFactory.GenerateHemisphereVertices(ref generator.definition, ref vertices))
                 return;
-            
-            
+
+
             UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);
             DrawOutline(generator.definition, vertices, lineMode: LineMode.ZTest);
 
             UnityEditor.Handles.color = ChiselCylinderEditor.GetColorForState(baseColor, false, true, isDisabled);
             DrawOutline(generator.definition, vertices, lineMode: LineMode.NoZTest);
-            
+
 
             var topPoint	= normal * generator.DiameterXYZ.y;
             var radius2D	= new Vector2(generator.definition.diameterXYZ.x, generator.definition.diameterXYZ.z) * 0.5f;
@@ -114,6 +114,42 @@ namespace Chisel.Editors
                 diameter.x = radius2D.x * 2.0f;
                 diameter.z = radius2D.x * 2.0f;
                 generator.DiameterXYZ = diameter;
+            }
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselHemisphere;
+                    if(!generator)
+                        continue;
+
+                    if( generator.VerticalSegments < 3 )
+                        generator.VerticalSegments = 3;
+
+                    if( generator.VerticalSegments > 64 )
+                        generator.VerticalSegments = 64;
+
+                    if( generator.HorizontalSegments > 64 )
+                        generator.HorizontalSegments = 64;
+
+                    if( generator.HorizontalSegments < 3 )
+                        generator.HorizontalSegments = 3;
+
+                    if( generator.Height < 0.001f )
+                        generator.Height = 0.001f;
+
+                    if( generator.DiameterX == 0 || generator.DiameterZ == 0 )
+                    {
+                        generator.DiameterX = 1;
+                        generator.DiameterZ = 1;
+                    }
+                }
             }
         }
     }

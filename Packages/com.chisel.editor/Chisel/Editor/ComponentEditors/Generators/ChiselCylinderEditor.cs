@@ -19,7 +19,7 @@ namespace Chisel.Editors
     {
         [MenuItem("GameObject/Chisel/Create/" + ChiselCylinder.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselCylinder.kNodeTypeName); }
-        
+
         // TODO: put somewhere else
         public static Color GetColorForState(Color baseColor, bool hasFocus, bool isBackfaced, bool isDisabled)
         {
@@ -37,7 +37,7 @@ namespace Chisel.Editors
             var cameraLocalPos			= inverseMatrix.MultiplyPoint(camera.transform.position);
             var cameraLocalForward		= inverseMatrix.MultiplyVector(camera.transform.forward);
             var isCameraOrthographic	= camera.orthographic;
-                
+
             var cosV = isCameraOrthographic ? Vector3.Dot(normal, -cameraLocalForward) :
                                               Vector3.Dot(normal, (cameraLocalPos - point));
 
@@ -108,7 +108,7 @@ namespace Chisel.Editors
 
             Vector3[] vertices;
             Vector3[] dottedVertices;
-            
+
             internal static int s_TopHash				= "TopCylinderHash".GetHashCode();
             internal static int s_BottomHash			= "BottomCylinderHash".GetHashCode();
             internal static int s_TopRotationHash		= "TopRotationCylinderHash".GetHashCode();
@@ -148,7 +148,7 @@ namespace Chisel.Editors
                             {
                                 bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(topPoint,     normal, bottomXVector, renderDisc: false);
                                 bottomXVector = UnitySceneExtensions.SceneHandles.Radius2DHandle(bottomPoint, -normal, bottomXVector, renderDisc: false);
-                                
+
                                 bottomZVector = bottomXVector;
                             }
                             topXVector = bottomXVector;
@@ -254,27 +254,27 @@ namespace Chisel.Editors
                         }
                     }
                 }
-                
+
                 const float kLineDash					= 2.0f;
                 const float kLineThickness				= 1.0f;
                 const float kCircleThickness			= 1.5f;
                 const float kCapLineThickness			= 2.0f;
                 const float kCapLineThicknessSelected	= 2.5f;
-                 
+
                 const int kMaxOutlineSides	= 32;
                 const int kMinimumSides		= 8;
-                
+
                 var baseColor				= UnityEditor.Handles.yAxisColor;
-                
+
                 BrushMeshFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, sides, ref vertices);
 
                 if (generator.TopHeight < generator.BottomHeight)
                     normal = -normal;
-                    
+
                 var isTopBackfaced	= IsSufaceBackFaced(topPoint, normal);
                 var topHasFocus		= (focusControl == topId);
                 var topThickness	= topHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
-                    
+
                 var isBottomBackfaced	= IsSufaceBackFaced(bottomPoint, -normal);
                 var bottomHasFocus		= (focusControl == bottomId);
                 var bottomThickness		= bottomHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
@@ -285,11 +285,11 @@ namespace Chisel.Editors
 
                 UnityEditor.Handles.color = GetColorForState(baseColor, topHasFocus, isTopBackfaced, isDisabled);
                 ChiselOutlineRenderer.DrawLineLoop(vertices, sides, sides, thickness: topThickness);
-                                        
+
                 UnityEditor.Handles.color = GetColorForState(baseColor, false, false, isDisabled);
                 for (int i = 0; i < sides; i++)
                     ChiselOutlineRenderer.DrawLine(vertices[i], vertices[i + sides], lineMode: LineMode.ZTest, thickness: kLineThickness);
-                    
+
                 UnityEditor.Handles.color = GetColorForState(baseColor, false, true, isDisabled);
                 for (int i = 0; i < sides; i++)
                     ChiselOutlineRenderer.DrawLine(vertices[i], vertices[i + sides], lineMode: LineMode.NoZTest, thickness: kLineThickness);
@@ -308,17 +308,17 @@ namespace Chisel.Editors
 
                     UnityEditor.Handles.color = GetColorForState(baseColor, topHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(dottedVertices, outlineSides, outlineSides, lineMode: LineMode.ZTest,   thickness: kCircleThickness, dashSize: kLineDash);
-                        
+
                     UnityEditor.Handles.color = GetColorForState(baseColor, topHasFocus, true, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(dottedVertices, outlineSides, outlineSides, lineMode: LineMode.NoZTest, thickness: kCircleThickness, dashSize: kLineDash);
 
                     UnityEditor.Handles.color = GetColorForState(baseColor, bottomHasFocus, false, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(dottedVertices, 0, outlineSides, lineMode: LineMode.ZTest, thickness: kCircleThickness, dashSize: kLineDash);
-                        
+
                     UnityEditor.Handles.color = GetColorForState(baseColor, bottomHasFocus, true, isDisabled);
                     ChiselOutlineRenderer.DrawLineLoop(dottedVertices, 0, outlineSides, lineMode: LineMode.NoZTest, thickness: kCircleThickness, dashSize: kLineDash);
                 }
-                
+
                 EditorGUI.BeginChangeCheck();
                 {
                     UnityEditor.Handles.color = GetColorForState(baseColor, bottomHasFocus, isBottomBackfaced, isDisabled);
@@ -347,6 +347,36 @@ namespace Chisel.Editors
         protected override void OnScene(SceneView sceneView, ChiselCylinder generator)
         {
             cylinderHandle.ShowInstance();
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselCylinder;
+                    if(!generator)
+                        continue;
+
+                    if( generator.Sides < 3 )
+                        generator.Sides = 3;
+
+                    if( generator.Sides > 64 )
+                        generator.Sides = 64;
+
+                    if( generator.Height < 0.001f )
+                        generator.Height = 0.001f;
+
+                    if( generator.DiameterX == 0 || generator.DiameterZ == 0 )
+                    {
+                        generator.DiameterX = 1;
+                        generator.DiameterZ = 1;
+                    }
+                }
+            }
         }
     }
 }

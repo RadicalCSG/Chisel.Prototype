@@ -27,11 +27,11 @@ namespace Chisel.Editors
         static void DrawOutline(ChiselSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             var sides			= definition.horizontalSegments;
-            
+
             var extraVertices	= 2;
             var bottomVertex	= 1;
             var topVertex		= 0;
-            
+
             var rings			= (vertices.Length - extraVertices) / sides;
 
             var prevColor = UnityEditor.Handles.color;
@@ -59,7 +59,7 @@ namespace Chisel.Editors
 
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
-        
+
         protected override void OnScene(SceneView sceneView, ChiselSphere generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
@@ -128,6 +128,42 @@ namespace Chisel.Editors
                 generator.definition.offsetY    = bottomPoint.y;
                 generator.DiameterXYZ = diameter;
                 // TODO: handle sizing down (needs to modify transformation?)
+            }
+        }
+
+        protected override void OnInspector()
+        {
+            base.OnInspector();
+
+            if( !HasValidState() )
+            {
+                foreach( var target in targets )
+                {
+                    var generator = target as ChiselSphere;
+                    if(!generator)
+                        continue;
+
+                    if( generator.VerticalSegments < 3 )
+                        generator.VerticalSegments = 3;
+
+                    if( generator.VerticalSegments > 64 )
+                        generator.VerticalSegments = 64;
+
+                    if( generator.HorizontalSegments > 64 )
+                        generator.HorizontalSegments = 64;
+
+                    if( generator.HorizontalSegments < 3 )
+                        generator.HorizontalSegments = 3;
+
+                    if( generator.Height < 0.001f )
+                        generator.Height = 0.001f;
+
+                    if( generator.DiameterX == 0 || generator.DiameterZ == 0 )
+                    {
+                        generator.DiameterX = 1;
+                        generator.DiameterZ = 1;
+                    }
+                }
             }
         }
     }
