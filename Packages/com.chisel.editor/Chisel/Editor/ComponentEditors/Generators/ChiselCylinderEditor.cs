@@ -364,9 +364,6 @@ namespace Chisel.Editors
                     if( generator.Sides < 3 )
                         generator.Sides = 3;
 
-                    if( generator.Sides > 64 )
-                        generator.Sides = 64;
-
                     if( generator.Height < 0.001f )
                         generator.Height = 0.001f;
 

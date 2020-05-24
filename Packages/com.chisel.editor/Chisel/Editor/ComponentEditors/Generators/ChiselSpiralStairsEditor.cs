@@ -269,12 +269,6 @@ namespace Chisel.Editors
                     if( generator.OuterSegments < 3 )
                         generator.OuterSegments = 3;
 
-                    if( generator.OuterSegments > 64 )
-                        generator.OuterSegments = 64;
-
-                    if( generator.InnerSegments > 64 )
-                        generator.OuterSegments = 64;
-
                     if( generator.Height < 0.001f )
                         generator.Height = 0.001f;
 

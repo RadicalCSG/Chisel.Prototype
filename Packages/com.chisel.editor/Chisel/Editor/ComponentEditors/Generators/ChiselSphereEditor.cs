@@ -146,12 +146,6 @@ namespace Chisel.Editors
                     if( generator.VerticalSegments < 3 )
                         generator.VerticalSegments = 3;
 
-                    if( generator.VerticalSegments > 64 )
-                        generator.VerticalSegments = 64;
-
-                    if( generator.HorizontalSegments > 64 )
-                        generator.HorizontalSegments = 64;
-
                     if( generator.HorizontalSegments < 3 )
                         generator.HorizontalSegments = 3;
 
