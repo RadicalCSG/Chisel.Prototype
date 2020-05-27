@@ -9,6 +9,7 @@ Chisel requires Unity 2020.1 or newer
 
 Notes:
 - CSG algorithm is still under development
+- UX is still under development
 
 Known issues
 
