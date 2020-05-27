@@ -32,7 +32,32 @@ namespace UnitySceneExtensions
         public Extents1D x { get { return new Extents1D(min.x, max.x); } set { min.x = value.min; max.x = value.max; } }
         public Extents1D y { get { return new Extents1D(min.y, max.y); } set { min.y = value.min; max.y = value.max; } }
         public Extents1D z { get { return new Extents1D(min.z, max.z); } set { min.z = value.min; max.z = value.max; } }
-        
+
+
+        public Extents1D this[int index]
+        {
+            get
+            {
+                switch (index)
+                {
+                    case 0: return x;
+                    case 1: return y;
+                    case 2: return z;
+                    default: throw new ArgumentException("index must be 0,1 or 2");
+                }
+            }
+            set
+            {
+                switch (index)
+                {
+                    case 0: x = value; return;
+                    case 1: y = value; return;
+                    case 2: z = value; return;
+                    default: throw new ArgumentException("index must be 0,1 or 2");
+                }
+            }
+        }
+
         public Vector3 size		{ get { return max - min; } }
         public Vector3 center	{ get { return (max + min) * 0.5f; } }
         

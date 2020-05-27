@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
@@ -315,11 +316,11 @@ namespace UnitySceneExtensions
         static readonly List<Vector3>   s_CustomSnapPoints  = new List<Vector3>();
         static readonly List<Vector3>   s_CustomDistances   = new List<Vector3>();
 
-        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, Plane worldSlidePlane, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ, bool ignoreStartPoint = false)
+        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, Grid worldSlideGrid, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ, bool ignoreStartPoint = false)
         {
             s_CustomSnapPoints.Clear();
             // TODO: have a method that handles multiple dimensions at the same time
-            var haveCustomSnapping = Snapping.GetCustomSnappingPoints(worldCurrentPosition, worldSlidePlane, 0, s_CustomSnapPoints);
+            var haveCustomSnapping = Snapping.GetCustomSnappingPoints(worldCurrentPosition, worldSlideGrid, 0, s_CustomSnapPoints);
             
             var boundsActive    = Snapping.BoundsSnappingActive;
             var pivotActive     = Snapping.PivotSnappingActive;
@@ -356,20 +357,21 @@ namespace UnitySceneExtensions
 
                 if (pivotActive)
                 {
-                    (float abs_pivot_offset, float snappedPivot, float quantized_offset) = Snapping.SnapPivot(pivotInGridSpace[i], _spacing[i]);
+                    (float abs_pivot_offset, float snappedPivot, float quantized_offset) = Snapping.SnapPoint(pivotInGridSpace[i], _spacing[i]);
                     quantized_pivot[i] = quantized_offset;
                     if (absSnappedOffset[i] > abs_pivot_offset) { absSnappedOffset[i] = abs_pivot_offset; snappedOffset[i] = snappedPivot; }
                 }
 
                 if (boundsActive)
                 {
-                    (float abs_bounds_distance, float snappedBoundsOffset, float quantized_min, float quantized_max) = Snapping.SnapBounds(movedExtentsInGridspace.x, _spacing[i]);
+                    (float abs_bounds_distance, float snappedBoundsOffset, float quantized_min, float quantized_max) = Snapping.SnapBounds(movedExtentsInGridspace[i], _spacing[i]);
                     quantized_min_extents[i] = quantized_min;
                     quantized_max_extents[i] = quantized_max;
+
                     if (absSnappedOffset[i] > abs_bounds_distance) { absSnappedOffset[i] = abs_bounds_distance; snappedOffset[i] = snappedBoundsOffset; }
                 }
             }
-            
+
             if (haveCustomSnapping)
             {
                 (Vector3 abs_distance, Vector3 snappedCustomOffset) = Snapping.SnapCustom(s_CustomSnapPoints, pivotInGridSpace, enabledAxes, minPointSnap, s_CustomDistances);
@@ -383,7 +385,6 @@ namespace UnitySceneExtensions
                 if (Mathf.Abs(snappedOffset.y) > Mathf.Abs(offsetInGridSpace.y)) { offsetInGridSpace.y = snappedOffset.y = 0; }
                 if (Mathf.Abs(snappedOffset.z) > Mathf.Abs(offsetInGridSpace.z)) { offsetInGridSpace.z = snappedOffset.z = 0; }
             }
-
 
             var quantizedOffset = new Vector3(SnappingUtility.Quantize(snappedOffset.x),
                                               SnappingUtility.Quantize(snappedOffset.y),
@@ -415,11 +416,15 @@ namespace UnitySceneExtensions
             if (haveCustomSnapping) 
                 Snapping.SendCustomSnappedEvents(quantizedOffset, s_CustomDistances, 0);
 
-            if (absSnappedOffset == Vector3.zero)
+            if (absSnappedOffset.x == 0 &&
+                absSnappedOffset.y == 0 &&
+                absSnappedOffset.z == 0)
                 return worldStartPosition;
 
             var snappedOffsetInWorldSpace	=_gridToWorldSpace.MultiplyVector(offsetInGridSpace - snappedOffset);
             var snappedPositionInWorldSpace	= (worldStartPosition + snappedOffsetInWorldSpace);
+
+            //Debug.Log($"{(float3)snappedOffsetInWorldSpace} {(float3)snappedOffset} {(float3)snappedPositionInWorldSpace}");
 
             return snappedPositionInWorldSpace;
         }

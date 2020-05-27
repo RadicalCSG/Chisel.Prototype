@@ -300,14 +300,14 @@ namespace Chisel.Editors
                     var selectedColor = UnityEditor.Handles.selectedColor;
                     selectedColor.a = 0.5f;
                     Handles.color = selectedColor;
-
+                    /*
                     if ((handleIDs.xAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
                         HandleRendering.DrawInfiniteLine(position, Axis.X);
                     if ((handleIDs.yAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
                         HandleRendering.DrawInfiniteLine(position, Axis.Y);
                     if ((handleIDs.zAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
                         HandleRendering.DrawInfiniteLine(position, Axis.Z);
-
+                    */
                     DrawCustomSnappedEvent();
 
                     Handles.color = prevColor;
@@ -562,7 +562,7 @@ namespace Chisel.Editors
         //          2 intersections => create virutal edge to and find closest vertex to pivot (surface vertex)
         static List<CSGTreeNode>    s_SelectedNodes     = new List<CSGTreeNode>();
         static List<CSGTreeBrush>   s_SelectedBrushes   = new List<CSGTreeBrush>();
-        static void FindClosestSnapPointsToPlane(GameObject[] selection, Vector3 worldPoint, Plane worldPlane, float maxSnapDistance, List<SurfaceSnap> allSurfaceSnapEvents, List<EdgeSnap> allEdgeSnapEvents, List<VertexSnap> allVertexSnapEvents)
+        static void FindClosestSnapPointsToPlane(GameObject[] selection, Vector3 worldPoint, Grid worldSlideGrid, float maxSnapDistance, List<SurfaceSnap> allSurfaceSnapEvents, List<EdgeSnap> allEdgeSnapEvents, List<VertexSnap> allVertexSnapEvents)
         {
             if (selection == null || selection.Length == 0)
                 return;
@@ -572,7 +572,21 @@ namespace Chisel.Editors
                 allVertexSnapEvents  == null)
                 return;
 
-            worldPlane = new Plane(worldPlane.normal, worldPoint);
+            var worldSlidePlane = worldSlideGrid.PlaneXZ;
+
+            var gridSnapping = Snapping.GridSnappingActive;
+            if (gridSnapping)
+            {
+                var vectorX      = worldSlideGrid.Right * maxSnapDistance;
+                var vectorZ      = worldSlideGrid.Forward * maxSnapDistance;
+
+                var snappedWorldPoint = Snapping.SnapPoint(worldPoint, worldSlideGrid);
+                FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorX, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
+                FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorZ, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
+            }
+
+
+            worldSlidePlane = new Plane(worldSlidePlane.normal, worldPoint);
 
             s_SelectedBrushes.Clear();
             foreach (var go in selection)
@@ -618,24 +632,42 @@ namespace Chisel.Editors
                 var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
                 
                 var brushPoint      = worldToNode.MultiplyPoint(worldPoint);
-                var brushPlane      = worldToNode.TransformPlane(worldPlane);
-                
+                var brushPlane      = worldToNode.TransformPlane(worldSlidePlane);
+
                 if (allVertexSnapEvents != null)
                 {
-                    for (int i = 0; i < vertices.Length; i++)
+                    if (gridSnapping)
                     {
-                        var vertex = vertices[i];
-                        if (math.lengthsq(vertex - (float3)brushPoint) > snapDistanceSqr)
-                            continue;
-                        var dist0 = brushPlane.GetDistanceToPoint(vertex);
-                        if (math.abs(dist0) > snapDistanceSqr)
-                            continue;
-                        allVertexSnapEvents.Add(new VertexSnap
+                        for (int i = 0; i < vertices.Length; i++)
                         {
-                            brush           = csgBrush,
-                            vertexIndex     = i,
-                            intersection    = nodeToWorld.MultiplyPoint(vertex)
-                        });
+                            var vertex = vertices[i];
+                            var dist0 = brushPlane.GetDistanceToPoint(vertex);
+                            if (math.abs(dist0) > snapDistanceSqr)
+                                continue;
+                            allVertexSnapEvents.Add(new VertexSnap
+                            {
+                                brush           = csgBrush,
+                                vertexIndex     = i,
+                                intersection    = nodeToWorld.MultiplyPoint(vertex)
+                            });
+                        }
+                    } else
+                    { 
+                        for (int i = 0; i < vertices.Length; i++)
+                        {
+                            var vertex = vertices[i];
+                            if (math.lengthsq(vertex - (float3)brushPoint) > snapDistanceSqr)
+                                continue;
+                            var dist0 = brushPlane.GetDistanceToPoint(vertex);
+                            if (math.abs(dist0) > snapDistanceSqr)
+                                continue;
+                            allVertexSnapEvents.Add(new VertexSnap
+                            {
+                                brush           = csgBrush,
+                                vertexIndex     = i,
+                                intersection    = nodeToWorld.MultiplyPoint(vertex)
+                            });
+                        }
                     }
                 }
 
@@ -672,19 +704,24 @@ namespace Chisel.Editors
                             if (i0 < i1 && // skip duplicate edges
                                 allEdgeSnapEvents != null)
                             {
-                                if (ClosestPointToLine(brushPoint, vertex0, vertex1, out Vector3 newVertex))
+                                if (gridSnapping)
                                 {
-                                    allEdgeSnapEvents.Add(new EdgeSnap
+                                } else
+                                { 
+                                    if (ClosestPointToLine(brushPoint, vertex0, vertex1, out Vector3 newVertex))
                                     {
-                                        brush           = csgBrush,
-                                        surfaceIndex0   = surfaceIndex,
-                                        surfaceIndex1   = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
-                                        vertexIndex0    = i0,
-                                        vertexIndex1    = i1,
-                                        intersection    = nodeToWorld.MultiplyPoint(newVertex),
-                                        from            = nodeToWorld.MultiplyPoint(vertex0),
-                                        to              = nodeToWorld.MultiplyPoint(vertex1)
-                                    });
+                                        allEdgeSnapEvents.Add(new EdgeSnap
+                                        {
+                                            brush           = csgBrush,
+                                            surfaceIndex0   = surfaceIndex,
+                                            surfaceIndex1   = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
+                                            vertexIndex0    = i0,
+                                            vertexIndex1    = i1,
+                                            intersection    = nodeToWorld.MultiplyPoint(newVertex),
+                                            from            = nodeToWorld.MultiplyPoint(vertex0),
+                                            to              = nodeToWorld.MultiplyPoint(vertex1)
+                                        });
+                                    }
                                 }
                             }
                             continue;
@@ -734,7 +771,7 @@ namespace Chisel.Editors
                         }
                     }
 
-                    if (allSurfaceSnapEvents != null && foundEdgeCount > 0)
+                    if (allSurfaceSnapEvents != null && foundEdgeCount > 0 && !gridSnapping)
                     {
                         if (foundEdgeCount == 2)
                         {
@@ -743,6 +780,7 @@ namespace Chisel.Editors
                     
                             var vertex0 = foundEdges[0].intersection;
                             var vertex1 = foundEdges[1].intersection;
+
                             if (ClosestPointToLine(worldPoint, vertex0, vertex1, out Vector3 closestWorldPoint))
                             {
                                 allSurfaceSnapEvents.Add(new SurfaceSnap
@@ -850,7 +888,7 @@ namespace Chisel.Editors
             return true;
         }
 
-        static bool FindCustomSnappingPoints(Vector3 point, Plane worldSlidePlane, int contextIndex, List<Vector3> foundWorldspacePoints)
+        static bool FindCustomSnappingPoints(Vector3 point, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints)
         {
             if (!s_SnappingContext.TryGetValue(contextIndex, out var snappingContext))
                 s_SnappingContext[contextIndex] = snappingContext = new SnappingContext();
@@ -874,7 +912,7 @@ namespace Chisel.Editors
             var vertexSnapEvents    = vertexSnappingActive  ? snappingContext.s_AllVertexSnapEvents  : null;
 
             var selection = Selection.gameObjects; 
-            FindClosestSnapPointsToPlane(selection, point, worldSlidePlane, kArbitrarySnapDistance, surfaceSnapEvents, edgeSnapEvents, vertexSnapEvents); 
+            FindClosestSnapPointsToPlane(selection, point, worldSlideGrid, kArbitrarySnapDistance, surfaceSnapEvents, edgeSnapEvents, vertexSnapEvents); 
 
             snappingContext.CollectAllSnapPoints(foundWorldspacePoints);
             return true;
@@ -917,7 +955,8 @@ namespace Chisel.Editors
         static readonly HashSet<(int, int)> s_usedSurfaces = new HashSet<(int, int)>();
         static void DrawCustomSnappedEvent()
         {
-            /*
+#if false
+            // Debug code to render snapping points close to mouse position
             if (s_SnappingContext.TryGetValue(0, out var snappingContext))
             {
                 var foundWorldspacePoints = new List<Vector3>();
@@ -927,7 +966,7 @@ namespace Chisel.Editors
                     HandleRendering.DrawIntersectionPoint(vertex);
                 }
             }
-            */
+#endif
 
             s_usedVertices.Clear();
             s_usedSurfaces.Clear();
@@ -967,8 +1006,8 @@ namespace Chisel.Editors
                 var rotation        = Quaternion.LookRotation(surfaceSnapEvent.normal);
                 var transformation = Matrix4x4.TRS(center, rotation, Vector3.one);
                 Handles.matrix = transformation;
-                HandleRendering.DrawInfiniteLine(Vector3.zero, Axis.X);
-                HandleRendering.DrawInfiniteLine(Vector3.zero, Axis.Y);
+                //HandleRendering.DrawInfiniteLine(Vector3.zero, Axis.X);
+                //HandleRendering.DrawInfiniteLine(Vector3.zero, Axis.Y);
 
                 var brush           = surfaceSnapEvent.brush;
                 var surfaceIndex    = surfaceSnapEvent.surfaceIndex;
