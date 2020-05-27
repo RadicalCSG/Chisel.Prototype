@@ -1,8 +1,21 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEngine;
 
 namespace UnitySceneExtensions
 {
+    [Flags]
+    public enum ControlState : byte
+    {
+        None            = 0,
+        Disabled        = 1,
+        Hot             = 4,
+        Focused         = 8,
+        Locked          = 16,
+        Active          = 32,
+        Selected = Active | Focused
+    }
+
     public sealed partial class SceneHandles
     {
         internal static int s_xAxisMoveHandleHash	= "xAxisFreeMoveHandleHash".GetHashCode();
@@ -29,9 +42,38 @@ namespace UnitySceneExtensions
                         id == xzPlaneId || id == xyPlaneId || id == yzPlaneId ||
                         id == centerId;
             }
+
+
+            public Axes HotAxes
+            {
+                get
+                {
+                    var hotControl = GUIUtility.hotControl;
+                    return  (xAxisId == hotControl) ? Axes.X :
+                            (yAxisId == hotControl) ? Axes.Y :
+                            (zAxisId == hotControl) ? Axes.Z :
+                            (xzPlaneId == hotControl) ? Axes.XZ :
+                            (xyPlaneId == hotControl) ? Axes.XY :
+                            (yzPlaneId == hotControl) ? Axes.YZ :
+                            Axes.None;
+                }
+            }
+
+            public ControlState xAxisState;
+            public ControlState yAxisState;
+            public ControlState zAxisState;
+            public ControlState xzPlaneState;
+            public ControlState xyPlaneState;
+            public ControlState yzPlaneState;
+            public ControlState centerState;
+
+            public ControlState xAxisIndirectState  { get { return (ControlState)(((int)xAxisState) | ((int)xyPlaneState) | ((int)xzPlaneState)); } }
+            public ControlState yAxisIndirectState  { get { return (ControlState)(((int)yAxisState) | ((int)xyPlaneState) | ((int)yzPlaneState)); } }
+            public ControlState zAxisIndirectState  { get { return (ControlState)(((int)zAxisState) | ((int)yzPlaneState) | ((int)xzPlaneState)); } }
+            public ControlState combinedState       { get { return (ControlState)(((int)xAxisState) | ((int)yAxisState) | ((int)zAxisState) | ((int)xyPlaneState) | ((int)yzPlaneState) | ((int)xzPlaneState) | ((int)centerState)); } }
         }
 
-        public static void SetPositionHandleIDs(ref PositionHandleIDs handleIDs)
+        public static void Initialize(ref PositionHandleIDs handleIDs)
         {
             GUI.SetNextControlName("xAxis");   handleIDs.xAxisId   = GUIUtility.GetControlID (s_xAxisMoveHandleHash, FocusType.Passive);
             GUI.SetNextControlName("yAxis");   handleIDs.yAxisId   = GUIUtility.GetControlID (s_yAxisMoveHandleHash, FocusType.Passive);
@@ -40,12 +82,85 @@ namespace UnitySceneExtensions
             GUI.SetNextControlName("xyPlane"); handleIDs.xyPlaneId = GUIUtility.GetControlID (s_xyAxisMoveHandleHash, FocusType.Passive);
             GUI.SetNextControlName("yzPlane"); handleIDs.yzPlaneId = GUIUtility.GetControlID (s_yzAxisMoveHandleHash, FocusType.Passive);
             GUI.SetNextControlName("center");  handleIDs.centerId  = GUIUtility.GetControlID (s_centerMoveHandleHash, FocusType.Passive);
+
+            handleIDs.xAxisState    = ControlState.None;
+            handleIDs.yAxisState    = ControlState.None;
+            handleIDs.zAxisState    = ControlState.None;
+            handleIDs.xzPlaneState  = ControlState.None;
+            handleIDs.xyPlaneState  = ControlState.None;
+            handleIDs.yzPlaneState  = ControlState.None;
+            handleIDs.centerState   = ControlState.None;
+
+            var hotControl		= GUIUtility.hotControl;
+            if (handleIDs.xAxisId   == hotControl) handleIDs.xAxisState   |= ControlState.Hot;
+            if (handleIDs.yAxisId   == hotControl) handleIDs.yAxisState   |= ControlState.Hot;
+            if (handleIDs.zAxisId   == hotControl) handleIDs.zAxisState   |= ControlState.Hot;
+            if (handleIDs.xzPlaneId == hotControl) handleIDs.xzPlaneState |= ControlState.Hot;
+            if (handleIDs.xyPlaneId == hotControl) handleIDs.xyPlaneState |= ControlState.Hot;
+            if (handleIDs.yzPlaneId == hotControl) handleIDs.yzPlaneState |= ControlState.Hot;
+            if (handleIDs.centerId  == hotControl) handleIDs.centerState  |= ControlState.Hot;
+            var xzPlaneIsHot	    = (handleIDs.xzPlaneState & ControlState.Hot) == ControlState.Hot;
+            var xyPlaneIsHot	    = (handleIDs.xyPlaneState & ControlState.Hot) == ControlState.Hot;
+            var yzPlaneIsHot	    = (handleIDs.yzPlaneState & ControlState.Hot) == ControlState.Hot;
+            var xAxisIndirectlyHot  = (handleIDs.xAxisIndirectState & ControlState.Hot) == ControlState.Hot;
+            var yAxisIndirectlyHot  = (handleIDs.yAxisIndirectState & ControlState.Hot) == ControlState.Hot;
+            var zAxisIndirectlyHot  = (handleIDs.zAxisIndirectState & ControlState.Hot) == ControlState.Hot;
+            var centerIsHot         = (handleIDs.centerState & ControlState.Hot) == ControlState.Hot;
+            var isAnyHot	        = (handleIDs.combinedState & ControlState.Hot) == ControlState.Hot;
+            
+            var focusControl = SceneHandleUtility.focusControl;            
+            if (handleIDs.xAxisId   == focusControl) handleIDs.xAxisState   |= ControlState.Focused;
+            if (handleIDs.yAxisId   == focusControl) handleIDs.yAxisState   |= ControlState.Focused;
+            if (handleIDs.zAxisId   == focusControl) handleIDs.zAxisState   |= ControlState.Focused;
+            if (handleIDs.xzPlaneId == focusControl) handleIDs.xzPlaneState |= ControlState.Focused;
+            if (handleIDs.xyPlaneId == focusControl) handleIDs.xyPlaneState |= ControlState.Focused;
+            if (handleIDs.yzPlaneId == focusControl) handleIDs.yzPlaneState |= ControlState.Focused;
+            if (handleIDs.centerId  == focusControl) handleIDs.centerState  |= ControlState.Focused;
+            
+            var xAxisLocked	    = Snapping.AxisLocking[0];
+            var yAxisLocked     = Snapping.AxisLocking[1];
+            var zAxisLocked     = Snapping.AxisLocking[2];
+            var xzPlaneLocked   = xAxisLocked && zAxisLocked;
+            var xyPlaneLocked   = xAxisLocked && yAxisLocked;
+            var yzPlaneLocked   = yAxisLocked && zAxisLocked;
+            if (xAxisLocked  ) handleIDs.xAxisState   |= ControlState.Locked;
+            if (yAxisLocked  ) handleIDs.yAxisState   |= ControlState.Locked;
+            if (zAxisLocked  ) handleIDs.zAxisState   |= ControlState.Locked;
+            if (xzPlaneLocked) handleIDs.xzPlaneState |= ControlState.Locked;
+            if (xyPlaneLocked) handleIDs.xyPlaneState |= ControlState.Locked;
+            if (yzPlaneLocked) handleIDs.yzPlaneState |= ControlState.Locked;
+
+            var activeAxes      = Snapping.ActiveAxes;
+            if (activeAxes == Axes.X ) handleIDs.xAxisState   |= ControlState.Active;
+            if (activeAxes == Axes.Y ) handleIDs.yAxisState   |= ControlState.Active;
+            if (activeAxes == Axes.Z ) handleIDs.zAxisState   |= ControlState.Active;
+            if (activeAxes == Axes.XZ) handleIDs.xzPlaneState |= ControlState.Active;
+            if (activeAxes == Axes.XY) handleIDs.xyPlaneState |= ControlState.Active;
+            if (activeAxes == Axes.YZ) handleIDs.yzPlaneState |= ControlState.Active;
+            
+            var isStatic		= (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
+            var isDisabled	    = SceneHandles.disabled;
+
+            var xAxisDisabled	= isStatic || isDisabled || xAxisLocked   || (isAnyHot && !xAxisIndirectlyHot);
+            var yAxisDisabled	= isStatic || isDisabled || yAxisLocked   || (isAnyHot && !yAxisIndirectlyHot);
+            var zAxisDisabled	= isStatic || isDisabled || zAxisLocked   || (isAnyHot && !zAxisIndirectlyHot);
+            var xzPlaneDisabled	= isStatic || isDisabled || xzPlaneLocked || (isAnyHot && !xzPlaneIsHot);
+            var xyPlaneDisabled	= isStatic || isDisabled || xyPlaneLocked || (isAnyHot && !xyPlaneIsHot);
+            var yzPlaneDisabled	= isStatic || isDisabled || yzPlaneLocked || (isAnyHot && !yzPlaneIsHot);
+            var centerDisabled	= isStatic || isDisabled || (isAnyHot && !centerIsHot);
+            if (xAxisDisabled  ) handleIDs.xAxisState   |= ControlState.Disabled;
+            if (yAxisDisabled  ) handleIDs.yAxisState   |= ControlState.Disabled;
+            if (zAxisDisabled  ) handleIDs.zAxisState   |= ControlState.Disabled;
+            if (xzPlaneDisabled) handleIDs.xzPlaneState |= ControlState.Disabled;
+            if (xyPlaneDisabled) handleIDs.xyPlaneState |= ControlState.Disabled;
+            if (yzPlaneDisabled) handleIDs.yzPlaneState |= ControlState.Disabled;
+            if (centerDisabled ) handleIDs.centerState  |= ControlState.Disabled;
         }
 
         public static Vector3[] PositionHandle(Vector3[] points, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
             var handleIDs = new PositionHandleIDs();
-            SetPositionHandleIDs(ref handleIDs);
+            Initialize(ref handleIDs);
             return PositionHandle(handleIDs, points, position, rotation, enabledAxes);
         }
 
@@ -58,27 +173,10 @@ namespace UnitySceneExtensions
             var xyPlaneId = handleIDs.xyPlaneId;
             var yzPlaneId = handleIDs.yzPlaneId;
             var centerId  = handleIDs.centerId;
-            
-            var isStatic		= (!Tools.hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
-            var prevDisabled	= SceneHandles.disabled;
-
-            var hotControl		= GUIUtility.hotControl;
-
-            var xAxisIsHot		= (xAxisId   == hotControl);
-            var yAxisIsHot		= (yAxisId   == hotControl);
-            var zAxisIsHot		= (zAxisId   == hotControl);
-            var xzAxisIsHot		= (xzPlaneId == hotControl);
-            var xyAxisIsHot		= (xyPlaneId == hotControl);
-            var yzAxisIsHot		= (yzPlaneId == hotControl);
-            var centerIsHot		= (centerId  == hotControl);
-
-            var isControlHot	= xAxisIsHot || yAxisIsHot || zAxisIsHot || xzAxisIsHot || xyAxisIsHot || yzAxisIsHot || centerIsHot;
-
-            var handleSize		= UnityEditor.HandleUtility.GetHandleSize(position);
+ 
             var originalColor	= SceneHandles.color;
-
-            var activeAxes		= Snapping.ActiveAxes;
             
+            var handleSize		= UnityEditor.HandleUtility.GetHandleSize(position);
             UnityEditor.HandleUtility.AddControl(centerId, UnityEditor.HandleUtility.DistanceToCircle(position, handleSize * 0.055f));
 
             var evt = Event.current;
@@ -120,85 +218,76 @@ namespace UnitySceneExtensions
                     break;
                 }
             }
-            
+
             //,.,.., look at 2018.1 how the position handle works w/ colors
             
-            var xAxisActive	    = !Snapping.AxisLocking[0];
-            var yAxisActive     = !Snapping.AxisLocking[1];
-            var zAxisActive     = !Snapping.AxisLocking[2];
+            var xAxisLocked	    = (handleIDs.xAxisState   & ControlState.Locked) == ControlState.Locked;
+            var yAxisLocked     = (handleIDs.yAxisState   & ControlState.Locked) == ControlState.Locked;
+            var zAxisLocked     = (handleIDs.zAxisState   & ControlState.Locked) == ControlState.Locked;
+            var xzPlaneLocked   = (handleIDs.xzPlaneState & ControlState.Locked) == ControlState.Locked;
+            var xyPlaneLocked   = (handleIDs.xyPlaneState & ControlState.Locked) == ControlState.Locked;
+            var yzPlaneLocked   = (handleIDs.yzPlaneState & ControlState.Locked) == ControlState.Locked;
 
-            var xzPlaneActive	= xAxisActive && zAxisActive;
-            var xyPlaneActive   = xAxisActive && yAxisActive;
-            var yzPlaneActive   = yAxisActive && zAxisActive;
+            var xAxisDisabled   = ((enabledAxes & Axes.X ) != Axes.X ) || (handleIDs.xAxisState   & ControlState.Disabled) == ControlState.Disabled;
+            var yAxisDisabled   = ((enabledAxes & Axes.Y ) != Axes.Y ) || (handleIDs.yAxisState   & ControlState.Disabled) == ControlState.Disabled;
+            var zAxisDisabled   = ((enabledAxes & Axes.Z ) != Axes.Z ) || (handleIDs.zAxisState   & ControlState.Disabled) == ControlState.Disabled;
+            var xyPlaneDisabled = ((enabledAxes & Axes.XY) != Axes.XY) || (handleIDs.xyPlaneState & ControlState.Disabled) == ControlState.Disabled;
+            var yzPlaneDisabled = ((enabledAxes & Axes.YZ) != Axes.YZ) || (handleIDs.yzPlaneState & ControlState.Disabled) == ControlState.Disabled;
+            var xzPlaneDisabled = ((enabledAxes & Axes.XZ) != Axes.XZ) || (handleIDs.xzPlaneState & ControlState.Disabled) == ControlState.Disabled;
 
-            var xAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.X) == 0) || !xAxisActive || (isControlHot && !xAxisIsHot && !xzAxisIsHot && !xyAxisIsHot);
-            var yAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Y) == 0) || !yAxisActive || (isControlHot && !yAxisIsHot && !xyAxisIsHot && !yzAxisIsHot);
-            var zAxisDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.Z) == 0) || !zAxisActive || (isControlHot && !zAxisIsHot && !xzAxisIsHot && !yzAxisIsHot);
-            var xzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XZ) != Axes.XZ) || !xzPlaneActive || (isControlHot && !xzAxisIsHot);
-            var xyPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.XY) != Axes.XY) || !xyPlaneActive || (isControlHot && !xyAxisIsHot);
-            var yzPlaneDisabled	= isStatic || prevDisabled || ((enabledAxes & Axes.YZ) != Axes.YZ) || !yzPlaneActive || (isControlHot && !yzAxisIsHot);
-            
-            var currentFocusControl = SceneHandleUtility.focusControl;
+            var xAxisSelected	= (handleIDs.xAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
+            var yAxisSelected	= (handleIDs.yAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
+            var zAxisSelected	= (handleIDs.zAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
+            var xzPlaneSelected	= (handleIDs.xzPlaneState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
+            var xyPlaneSelected	= (handleIDs.xyPlaneState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
+            var yzPlaneSelected	= (handleIDs.yzPlaneState & (ControlState.Focused | ControlState.Active)) != ControlState.None;
 
-            var xAxisIndirectlyFocused = (currentFocusControl == xyPlaneId || currentFocusControl == xzPlaneId);
-            var yAxisIndirectlyFocused = (currentFocusControl == xyPlaneId || currentFocusControl == yzPlaneId);
-            var zAxisIndirectlyFocused = (currentFocusControl == xzPlaneId || currentFocusControl == yzPlaneId);
-
-            var xAxisIndirectlyActive = activeAxes == Axes.XY || activeAxes == Axes.XZ;
-            var yAxisIndirectlyActive = activeAxes == Axes.XY || activeAxes == Axes.YZ;
-            var zAxisIndirectlyActive = activeAxes == Axes.XZ || activeAxes == Axes.YZ;
-
-            var xAxisSelected	= xAxisIndirectlyFocused || xAxisIndirectlyActive || activeAxes == Axes.X;
-            var yAxisSelected	= yAxisIndirectlyFocused || yAxisIndirectlyActive || activeAxes == Axes.Y;
-            var zAxisSelected	= zAxisIndirectlyFocused || zAxisIndirectlyActive || activeAxes == Axes.Z;
-            var xzAxiSelected	= activeAxes == Axes.XZ;
-            var xyAxiSelected	= activeAxes == Axes.XZ;
-            var yzAxiSelected	= activeAxes == Axes.YZ;
-
-            var xAxisColor		= SceneHandles.StateColor(SceneHandles.xAxisColor, xAxisDisabled, xAxisSelected);
-            var yAxisColor		= SceneHandles.StateColor(SceneHandles.yAxisColor, yAxisDisabled, yAxisSelected);
-            var zAxisColor		= SceneHandles.StateColor(SceneHandles.zAxisColor, zAxisDisabled, zAxisSelected);
-            var xzPlaneColor	= SceneHandles.StateColor(SceneHandles.yAxisColor, xzPlaneDisabled, xzAxiSelected);
-            var xyPlaneColor	= SceneHandles.StateColor(SceneHandles.zAxisColor, xyPlaneDisabled, xyAxiSelected);
-            var yzPlaneColor	= SceneHandles.StateColor(SceneHandles.xAxisColor, yzPlaneDisabled, yzAxiSelected);
+            var xAxisColor		= SceneHandles.StateColor(SceneHandles.xAxisColor, xAxisDisabled,   xAxisSelected);
+            var yAxisColor		= SceneHandles.StateColor(SceneHandles.yAxisColor, yAxisDisabled,   yAxisSelected);
+            var zAxisColor		= SceneHandles.StateColor(SceneHandles.zAxisColor, zAxisDisabled,   zAxisSelected);
+            var xzPlaneColor	= SceneHandles.StateColor(SceneHandles.yAxisColor, xzPlaneDisabled, xzPlaneSelected);
+            var xyPlaneColor	= SceneHandles.StateColor(SceneHandles.zAxisColor, xyPlaneDisabled, xyPlaneSelected);
+            var yzPlaneColor	= SceneHandles.StateColor(SceneHandles.xAxisColor, yzPlaneDisabled, yzPlaneSelected);
 
 
-            if (xAxisActive)
+            var prevDisabled = SceneHandles.disabled;
+
+            if (!xAxisLocked)
             {
                 SceneHandles.disabled = xAxisDisabled;
                 SceneHandles.color = xAxisColor;
                 points = Slider1DHandle(xAxisId, Axis.X, points, position, rotation * Vector3.right, Snapping.MoveSnappingSteps.x, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
             }
 
-            if (yAxisActive)
+            if (!yAxisLocked)
             {
                 SceneHandles.disabled = yAxisDisabled;
                 SceneHandles.color = yAxisColor;
                 points = Slider1DHandle(yAxisId, Axis.Y, points, position, rotation * Vector3.up, Snapping.MoveSnappingSteps.y, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
             }
 
-            if (zAxisActive)
+            if (!zAxisLocked)
             {
                 SceneHandles.disabled = zAxisDisabled;
                 SceneHandles.color = zAxisColor;
                 points = Slider1DHandle(zAxisId, Axis.Z, points, position, rotation * Vector3.forward, Snapping.MoveSnappingSteps.z, handleSize, ArrowHandleCap, selectLockingAxisOnClick: true);
             }
 
-            if (xzPlaneActive)
+            if (!xzPlaneLocked)
             {
                 SceneHandles.disabled = xzPlaneDisabled;
                 SceneHandles.color = xzPlaneColor;
                 points = PlanarHandle(xzPlaneId, PlaneAxes.XZ, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
             }
 
-            if (xyPlaneActive)
+            if (!xyPlaneLocked)
             {
                 SceneHandles.disabled = xyPlaneDisabled;
                 SceneHandles.color = xyPlaneColor;
                 points = PlanarHandle(xyPlaneId, PlaneAxes.XY, points, position, rotation, handleSize * 0.3f, selectLockingAxisOnClick: true);
             }
 
-            if (yzPlaneActive)
+            if (!yzPlaneLocked)
             {
                 SceneHandles.disabled = yzPlaneDisabled;
                 SceneHandles.color = yzPlaneColor;
@@ -206,16 +295,19 @@ namespace UnitySceneExtensions
             }
 
 
-            switch (type)
+            if ((handleIDs.centerState & ControlState.Disabled) != ControlState.Disabled)
             {
-                case EventType.Repaint:
+                switch (type)
                 {
-                    SceneHandles.color = SceneHandles.StateColor(SceneHandles.centerColor, false, centerId == SceneHandleUtility.focusControl);
-                    SceneHandles.RenderBorderedCircle(position, handleSize * 0.05f);
-                    break;
+                    case EventType.Repaint:
+                    {
+                        var focused = (handleIDs.centerState & ControlState.Focused) == ControlState.Focused;
+                        SceneHandles.color = SceneHandles.StateColor(SceneHandles.centerColor, false, focused);
+                        SceneHandles.RenderBorderedCircle(position, handleSize * 0.05f);
+                        break;
+                    }
                 }
             }
-
 
 
             SceneHandles.disabled = prevDisabled;
@@ -224,6 +316,8 @@ namespace UnitySceneExtensions
             return points;
         }
 
+
+        static readonly Vector3[] s_PositionHandleArray = new Vector3[1];
         public static Vector3 PositionHandle(Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
             s_PositionHandleArray[0] = position;
@@ -238,11 +332,16 @@ namespace UnitySceneExtensions
             return PositionHandle(s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
-        static readonly Vector3[] s_PositionHandleArray = new Vector3[1];
         public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
         {
             var activeGrid = Grid.ActiveGrid;
             var rotation = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
+            s_PositionHandleArray[0] = position;
+            return PositionHandle(handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
+        }
+
+        public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
+        {
             s_PositionHandleArray[0] = position;
             return PositionHandle(handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }

@@ -4,7 +4,20 @@ namespace UnitySceneExtensions
 {
     public static class HandleRendering
     {
-        static void InfiniteLine(float x, float y, float z, Axis axis)
+        public static void DrawInfiniteLine(Vector3 center, Axis axis)
+        {
+            if (axis == Axis.X) center.x = 0;
+            if (axis == Axis.Y) center.y = 0;
+            if (axis == Axis.Z) center.z = 0;
+            DrawInfiniteLine(center.x, center.y, center.z, axis);
+        }
+
+        public static void RenderVertexBox(Vector3 position)
+        {
+            UnityEditor.Handles.RectangleHandleCap(-1, position, Camera.current.transform.rotation, UnityEditor.HandleUtility.GetHandleSize(position) * 0.1f, EventType.Repaint);
+        }
+
+        public static void DrawInfiniteLine(float x, float y, float z, Axis axis)
         {
             const float kLineSize		= 1000;
             const int	kLineParts		= 10;
@@ -47,16 +60,23 @@ namespace UnitySceneExtensions
             }
         }
 
+        public static void DrawIntersectionPoint(Vector3 position)
+        {
+            var rotation = Quaternion.LookRotation(Camera.current.transform.forward);
+            var size = UnityEditor.HandleUtility.GetHandleSize(position) *0.05f;
+            SceneHandles.DotHandleCap(-1, position, rotation, size, Event.current.type);
+        }
+
         public static void RenderCrossXZ(Extents3D extents, float y, Vector3 handleOrigin, SnapResult3D snapResult)
         {
-            if ((snapResult & SnapResult3D.MinX) != 0) InfiniteLine(extents.min.x, y, handleOrigin.z, Axis.Z);
-            if ((snapResult & SnapResult3D.MaxX) != 0) InfiniteLine(extents.max.x, y, handleOrigin.z, Axis.Z);
+            if ((snapResult & SnapResult3D.MinX) != 0) DrawInfiniteLine(extents.min.x, y, handleOrigin.z, Axis.Z);
+            if ((snapResult & SnapResult3D.MaxX) != 0) DrawInfiniteLine(extents.max.x, y, handleOrigin.z, Axis.Z);
 
-            if ((snapResult & SnapResult3D.MinZ) != 0) InfiniteLine(handleOrigin.x, y, extents.min.z, Axis.X);
-            if ((snapResult & SnapResult3D.MaxZ) != 0) InfiniteLine(handleOrigin.x, y, extents.max.z, Axis.X);
+            if ((snapResult & SnapResult3D.MinZ) != 0) DrawInfiniteLine(handleOrigin.x, y, extents.min.z, Axis.X);
+            if ((snapResult & SnapResult3D.MaxZ) != 0) DrawInfiniteLine(handleOrigin.x, y, extents.max.z, Axis.X);
             
-            if ((snapResult & SnapResult3D.PivotX) != 0) InfiniteLine(handleOrigin.x, y, handleOrigin.z, Axis.Z);
-            if ((snapResult & SnapResult3D.PivotZ) != 0) InfiniteLine(handleOrigin.x, y, handleOrigin.z, Axis.X);
+            if ((snapResult & SnapResult3D.PivotX) != 0) DrawInfiniteLine(handleOrigin.x, y, handleOrigin.z, Axis.Z);
+            if ((snapResult & SnapResult3D.PivotZ) != 0) DrawInfiniteLine(handleOrigin.x, y, handleOrigin.z, Axis.X);
         }
 
         public static void RenderSquareXZ(Matrix4x4 transformation, Vector3 start, Vector3 end)

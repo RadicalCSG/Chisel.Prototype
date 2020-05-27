@@ -99,7 +99,7 @@ namespace Chisel.Editors
             }
         }
 
-        public abstract void OnSceneSettingsGUI(SceneView sceneView);
+        public abstract void OnInSceneOptionsGUI(SceneView sceneView);
 
 
         static bool haveNodeSelection = false;

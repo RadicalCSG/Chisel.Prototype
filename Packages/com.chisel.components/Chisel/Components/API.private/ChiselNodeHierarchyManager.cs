@@ -1439,7 +1439,7 @@ namespace Chisel.Components
                 if (!childComponent)
                     continue;
 
-                childComponent.CollectChildNodesForParent(__childNodes);
+                childComponent.CollectCSGTreeNodes(__childNodes);
             }
         }
 

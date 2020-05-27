@@ -647,7 +647,7 @@ namespace Chisel.Editors
             var vertices = brushMesh.vertices;
             var halfEdges = brushMesh.halfEdges;
 
-            SceneHandles.SetPositionHandleIDs(ref s_TempPositionHandleIDs);
+            SceneHandles.Initialize(ref s_TempPositionHandleIDs);
 
             s_TempPolygonsIDCount   = polygons.Length;
             s_TempVerticesIDCount   = vertices.Length;

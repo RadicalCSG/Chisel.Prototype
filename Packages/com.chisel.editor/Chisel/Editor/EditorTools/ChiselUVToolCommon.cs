@@ -1083,7 +1083,7 @@ namespace Chisel.Editors
                 }
                 case SnapSettings.UVGeometryVertices:
                 {
-                    RenderVertexBox(snapState.SnapPosition);
+                    HandleRendering.RenderVertexBox(snapState.SnapPosition);
                     break;
                 }
             }
@@ -1113,11 +1113,6 @@ namespace Chisel.Editors
             Handles.matrix = prevMatrix;
         }
         
-        static void RenderVertexBox(Vector3 position)
-        {
-            Handles.RectangleHandleCap(-1, position, Camera.current.transform.rotation, HandleUtility.GetHandleSize(position) * 0.1f, EventType.Repaint);
-        }
-
         static void RenderIntersection()
         {
             if (Event.current.type != EventType.Repaint)

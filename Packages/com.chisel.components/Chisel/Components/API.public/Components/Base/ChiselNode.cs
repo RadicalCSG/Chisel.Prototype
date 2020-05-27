@@ -99,7 +99,7 @@ namespace Chisel.Components
 
         internal virtual void SetChildren(List<CSGTreeNode> childNodes) { }
 
-        internal virtual void CollectChildNodesForParent(List<CSGTreeNode> childNodes) { }
+        public virtual void CollectCSGTreeNodes(List<CSGTreeNode> childNodes) { }
 
         public virtual ChiselBrushContainerAsset[] GetUsedGeneratedBrushes() { return null; }
         
@@ -121,7 +121,7 @@ namespace Chisel.Components
         public virtual SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
         {
             return null;
-        }
+        }   
 
         public virtual SurfaceReference[] GetAllSurfaceReferences(CSGTreeBrush brush)
         {

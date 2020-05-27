@@ -542,6 +542,26 @@ namespace UnitySceneExtensions
             currentLineMesh = lineMeshIndex;
         }
 
+        public void DrawLineLoop(Matrix4x4 matrix, List<Vector3> vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+            var lineMeshIndex = currentLineMesh;
+            var lineMesh = lineMeshes[currentLineMesh];
+            var last = startIndex + length;
+
+            float dashOffset = 0;
+            for (int j = last - 1, i = startIndex; i < last; j = i, i ++)
+            {
+                if (lineMesh.VertexCount + 4 >= LineMesh.MaxVertexCount) { currentLineMesh++; if (currentLineMesh >= lineMeshes.Count) lineMeshes.Add(new LineMesh()); lineMesh = lineMeshes[currentLineMesh]; lineMesh.Clear(); }
+                var p0 = matrix.MultiplyPoint(vertices[j]);
+                var p1 = matrix.MultiplyPoint(vertices[i]);	
+                dashOffset = lineMesh.AddLine(p0, p1, thickness, dashSize, color, dashOffset);
+            }
+
+            currentLineMesh = lineMeshIndex;
+        }
+
         public void DrawLineLoop(Matrix4x4 matrix, float3[] vertices, int startIndex, int length, Color32 color, float thickness = 1.0f, float dashSize = 0.0f)
         {
             if (Event.current.type != EventType.Repaint)

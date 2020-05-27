@@ -126,13 +126,14 @@ namespace Chisel.Components
                 brushIntersection       = intersection
             };
         }
-        
-        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection[] intersections)
+
+        /*
+        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, out ChiselIntersection[] intersections)
         {
-            return FindMultiWorldIntersection(worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out intersections);
+            return FindMultiWorldIntersection(worldRayStart, worldRayEnd, visibleLayers, null, null, out intersections);
         }
 
-        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection[] intersections)
+        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection[] intersections)
         {
             intersections = null;
             __foundIntersections.Clear();
@@ -229,37 +230,50 @@ namespace Chisel.Components
             intersections = sortedIntersections;
             return true;
         }
-
-        public static bool FindFirstWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection foundIntersection)
+        
+        public static bool FindFirstWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, out ChiselIntersection foundIntersection)
         {
-            return FindFirstWorldIntersection(worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out foundIntersection);
+            return FindFirstWorldIntersection(worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
         }
+        */
 
-        public static bool FindFirstWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
+        static HashSet<int> s_IgnoreInstanceIDs = new HashSet<int>();
+        static HashSet<int> s_FilterInstanceIDs = new HashSet<int>();
+        static List<CSGTreeNode> s_IgnoreNodes = new List<CSGTreeNode>();
+        static List<CSGTreeNode> s_FilterNodes  = new List<CSGTreeNode>();
+        public static bool FindFirstWorldIntersection(List<ChiselIntersection> foundIntersections, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers = ~0, bool ignoreBackfaced = false, bool ignoreCulled = false, GameObject[] ignore = null, GameObject[] filter = null)
         {
             bool found = false;
-            foundIntersection = ChiselIntersection.None;
 
-            HashSet<int> ignoreInstanceIDs = null;
-            HashSet<int> filterInstanceIDs = null;
+            s_IgnoreInstanceIDs.Clear();
+            s_FilterInstanceIDs.Clear();
+            s_IgnoreNodes.Clear();
+            s_FilterNodes.Clear();
             if (ignore != null)
             {
-                ignoreInstanceIDs = new HashSet<int>();
                 foreach (var go in ignore)
                 {
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
-                        ignoreInstanceIDs.Add(node.GetInstanceID());
+                    {
+                        node.CollectCSGTreeNodes(s_IgnoreNodes);
+                        s_IgnoreInstanceIDs.Add(node.GetInstanceID());
+                    }
                 }
             }
             if (filter != null)
             {
-                filterInstanceIDs = new HashSet<int>();
                 foreach (var go in filter)
                 {
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
-                        filterInstanceIDs.Add(node.GetInstanceID());
+                    {
+                        node.CollectCSGTreeNodes(s_FilterNodes);
+                        s_FilterInstanceIDs.Add(node.GetInstanceID());
+                        if (node.hierarchyItem != null &&
+                            node.hierarchyItem.Model)
+                            s_FilterInstanceIDs.Add(node.hierarchyItem.Model.GetInstanceID());
+                    }
                 }
             }
 
@@ -270,14 +284,13 @@ namespace Chisel.Components
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!ChiselModelManager.IsVisible(model))
                     continue;
-                
-                if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
-                    return false;
-
-                if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(model.GetInstanceID())))
-                    return false;
 
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
+                    continue;
+
+                var modelInstanceID = model.GetInstanceID();
+                if (s_IgnoreInstanceIDs.Contains(modelInstanceID) ||
+                    (s_FilterInstanceIDs.Count > 0 && !s_FilterInstanceIDs.Contains(modelInstanceID)))
                     continue;
 
                 var query = ChiselMeshQueryManager.GetMeshQuery(model);
@@ -303,7 +316,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd);
+                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced, ignoreCulled);
                 if (treeIntersections == null)
                     continue;
 
@@ -313,74 +326,70 @@ namespace Chisel.Components
                     var brush			= intersection.brush;
                     var instanceID		= brush.UserID;
 
-                    if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(instanceID)))
+                    if ((s_FilterInstanceIDs.Count > 0 && !s_FilterInstanceIDs.Contains(instanceID)) ||
+                        s_IgnoreInstanceIDs.Contains(instanceID))
                         continue;
 
-                    if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(instanceID)))
-                        continue;
-
-                    if (intersection.surfaceIntersection.distance < foundIntersection.brushIntersection.surfaceIntersection.distance)
-                    {
-                        foundIntersection = Convert(intersection);
-                        found = true;
-                    }
+                    foundIntersections.Add(Convert(intersection));
+                    found = true;
                 }
             }
             return found;
         }
 
-
-        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, out ChiselIntersection foundIntersection)
+        /*
+        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, out ChiselIntersection foundIntersection)
         {
-            return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, visibleLayers, null, null, out foundIntersection);
+            return FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
         }
-
-        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int filterLayerParameter0, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
+        */
+        public static bool FindFirstWorldIntersection(ChiselModel model, Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection foundIntersection)
         {
             foundIntersection = ChiselIntersection.None;
 
             if (!ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
                 return false;
 
-            CSGTreeNode[] ignoreBrushes = null;
-            HashSet<int> ignoreInstanceIDs = null;
-            HashSet<int> filterInstanceIDs = null;
+            s_FilterNodes.Clear();
+            s_IgnoreNodes.Clear();
+            s_IgnoreInstanceIDs.Clear();
+            s_FilterInstanceIDs.Clear();
             if (ignore != null)
             {
-                //var ignoreBrushList = new HashSet<CSGTreeBrush>();
-                ignoreInstanceIDs = new HashSet<int>();
                 foreach (var go in ignore)
                 {
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        //node.GetAllTreeBrushes(ignoreBrushList);
-                        ignoreInstanceIDs.Add(node.GetInstanceID());
+                        node.CollectCSGTreeNodes(s_IgnoreNodes);
+                        s_IgnoreInstanceIDs.Add(node.GetInstanceID());
                     }
                 }
             }
             if (filter != null)
             {
-                filterInstanceIDs = new HashSet<int>();
                 foreach (var go in filter)
                 {
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
-                        filterInstanceIDs.Add(node.GetInstanceID());
+                    {
+                        node.CollectCSGTreeNodes(s_FilterNodes);
+                        s_FilterInstanceIDs.Add(node.GetInstanceID());
+                        if (node.hierarchyItem != null &&
+                            node.hierarchyItem.Model)
+                            s_FilterInstanceIDs.Add(node.hierarchyItem.Model.GetInstanceID());
+                    }
                 }
             }
-            
 
             var tree	= model.Node;
-            if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
-                return false;
-
-            if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(model.GetInstanceID())))
+            if (s_IgnoreInstanceIDs.Contains(model.GetInstanceID()) ||
+                (s_FilterInstanceIDs.Count > 0 && !s_FilterInstanceIDs.Contains(model.GetInstanceID())))
                 return false;
 
             if (((1 << model.gameObject.layer) & visibleLayers) == 0)
                 return false;
-            
+
             var query           = ChiselMeshQueryManager.GetMeshQuery(model);
             var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
 
@@ -404,10 +413,10 @@ namespace Chisel.Components
                 treeRayEnd = worldRayEnd;
             }
 
-            var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, ignoreBrushes);
+            var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced: true, ignoreCulled: true);
             if (treeIntersections == null)
                 return false;
-            
+
             bool found = false;
             for (var i = 0; i < treeIntersections.Length; i++)
             {
@@ -415,10 +424,8 @@ namespace Chisel.Components
                 var brush			= intersection.brush;
                 var instanceID		= brush.UserID;
                 
-                if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(instanceID)))
-                    continue;
-
-                if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(instanceID)))
+                if ((s_FilterInstanceIDs.Count > 0 && !s_FilterInstanceIDs.Contains(instanceID)) ||
+                    s_IgnoreInstanceIDs.Contains(instanceID))
                     continue;
 
                 if (intersection.surfaceIntersection.distance < foundIntersection.brushIntersection.surfaceIntersection.distance)

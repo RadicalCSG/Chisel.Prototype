@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
@@ -19,7 +21,11 @@ namespace UnitySceneExtensions
 
         PivotX	= 64,
         PivotY	= 128,
-        PivotZ	= 256
+        PivotZ	= 256,
+
+        CustomX	= 512,
+        CustomY = 1024,
+        CustomZ = 2048
     }
     
     public enum SnapResult1D
@@ -27,7 +33,8 @@ namespace UnitySceneExtensions
         None	= 0,
         Min		= 1,
         Max		= 2,
-        Pivot	= 4
+        Pivot	= 4,
+        Custom  = 8
     }
 
     public class Grid
@@ -306,84 +313,118 @@ namespace UnitySceneExtensions
             return new Extents3D(min, max);
         }
         
-        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, Axes enabledAxes = Axes.XYZ)
-        {
-            SnapResult3D result;
-            return SnapExtents3D(extentsInGridSpace, worldCurrentPosition, worldStartPosition, out result, enabledAxes);
-        }
+        static readonly List<Vector3>   s_CustomSnapPoints  = new List<Vector3>();
+        static readonly List<Vector3>   s_CustomDistances   = new List<Vector3>();
 
-        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ, bool ignoreStartPoint = false)
+        public Vector3 SnapExtents3D(Extents3D extentsInGridSpace, Vector3 worldCurrentPosition, Vector3 worldStartPosition, Grid worldSlideGrid, out SnapResult3D snapResult, Axes enabledAxes = Axes.XYZ, bool ignoreStartPoint = false)
         {
+            s_CustomSnapPoints.Clear();
+            // TODO: have a method that handles multiple dimensions at the same time
+            var haveCustomSnapping = Snapping.GetCustomSnappingPoints(worldCurrentPosition, worldSlideGrid, 0, s_CustomSnapPoints);
+            
+            var boundsActive    = Snapping.BoundsSnappingActive;
+            var pivotActive     = Snapping.PivotSnappingActive;
+
             snapResult = SnapResult3D.None;
-            if (!Snapping.BoundsSnappingActive && !Snapping.PivotSnappingActive)
+            if (!boundsActive && !pivotActive && !haveCustomSnapping)
                 return worldCurrentPosition;
 
-            var offsetInWorldSpace		= worldCurrentPosition - worldStartPosition;			
+            const float kMinPointSnap = 0.25f;
+            float minPointSnap = !(boundsActive || pivotActive) ? kMinPointSnap : float.PositiveInfinity;
+
+
+            var offsetInWorldSpace		= worldCurrentPosition - worldStartPosition;
             var offsetInGridSpace		= _worldToGridSpace.MultiplyVector(offsetInWorldSpace);
             var pivotInGridSpace		= _worldToGridSpace.MultiplyVector(worldCurrentPosition - Center);
             
             // Snap our extents in grid space
             var movedExtentsInGridspace	= extentsInGridSpace + offsetInGridSpace;
-            
-            if ((enabledAxes & Axes.X) > 0)
-            {
-                var snappedPivot		= SnappingUtility.SnapValue(pivotInGridSpace.x, _spacing.x) - pivotInGridSpace.x;
-                var snappedMinExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.min.x, _spacing.x) - movedExtentsInGridspace.min.x;
-                var snappedMaxExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.max.x, _spacing.x) - movedExtentsInGridspace.max.x;
 
-                // Figure out on which side of the extents is closest to the grid, use that offset for each axis
-                var abs_pivot		= Snapping.PivotSnappingActive  ? SnappingUtility.Quantize(Mathf.Abs(snappedPivot     )) : float.PositiveInfinity;
-                var abs_min_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMinExtents)) : float.PositiveInfinity;
-                var abs_max_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMaxExtents)) : float.PositiveInfinity;
-                offsetInGridSpace.x += (abs_pivot < abs_min_extents && abs_pivot < abs_max_extents) ? snappedPivot : ((abs_min_extents < abs_max_extents) ? snappedMinExtents : snappedMaxExtents);
-                if (abs_min_extents <= abs_max_extents && abs_min_extents <= abs_pivot) snapResult |= SnapResult3D.MinX;
-                if (abs_max_extents <= abs_min_extents && abs_max_extents <= abs_pivot) snapResult |= SnapResult3D.MaxX;
-                if (abs_pivot       <= abs_min_extents && abs_pivot <= abs_max_extents) snapResult |= SnapResult3D.PivotX;
+
+            var snappedOffset       = Vector3.zero;
+            var absSnappedOffset    = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+
+            var enabledAxisLookup   = new[] { (enabledAxes & Axes.X) > 0, (enabledAxes & Axes.Y) > 0, (enabledAxes & Axes.Z) > 0 };
+
+            var quantized_pivot         = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var quantized_min_extents   = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var quantized_max_extents   = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (!enabledAxisLookup[i])
+                    continue;
+
+                if (pivotActive)
+                {
+                    (float abs_pivot_offset, float snappedPivot, float quantized_offset) = Snapping.SnapPoint(pivotInGridSpace[i], _spacing[i]);
+                    quantized_pivot[i] = quantized_offset;
+                    if (absSnappedOffset[i] > abs_pivot_offset) { absSnappedOffset[i] = abs_pivot_offset; snappedOffset[i] = snappedPivot; }
+                }
+
+                if (boundsActive)
+                {
+                    (float abs_bounds_distance, float snappedBoundsOffset, float quantized_min, float quantized_max) = Snapping.SnapBounds(movedExtentsInGridspace[i], _spacing[i]);
+                    quantized_min_extents[i] = quantized_min;
+                    quantized_max_extents[i] = quantized_max;
+
+                    if (absSnappedOffset[i] > abs_bounds_distance) { absSnappedOffset[i] = abs_bounds_distance; snappedOffset[i] = snappedBoundsOffset; }
+                }
             }
 
-            if ((enabledAxes & Axes.Y) > 0)
+            if (haveCustomSnapping)
             {
-                var snappedPivot		= SnappingUtility.SnapValue(pivotInGridSpace.y, _spacing.y) - pivotInGridSpace.y;
-                var snappedMinExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.min.y, _spacing.y) - movedExtentsInGridspace.min.y;
-                var snappedMaxExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.max.y, _spacing.y) - movedExtentsInGridspace.max.y;
-
-                // Figure out on which side of the extents is closest to the grid, use that offset for each axis
-                var abs_pivot		= Snapping.PivotSnappingActive  ? SnappingUtility.Quantize(Mathf.Abs(snappedPivot     )) : float.PositiveInfinity;
-                var abs_min_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMinExtents)) : float.PositiveInfinity;
-                var abs_max_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMaxExtents)) : float.PositiveInfinity;
-                offsetInGridSpace.y += (abs_pivot < abs_min_extents && abs_pivot < abs_max_extents) ? snappedPivot : ((abs_min_extents < abs_max_extents) ? snappedMinExtents : snappedMaxExtents);
-                if (abs_min_extents <= abs_max_extents && abs_min_extents <= abs_pivot) snapResult |= SnapResult3D.MinY;
-                if (abs_max_extents <= abs_min_extents && abs_max_extents <= abs_pivot) snapResult |= SnapResult3D.MaxY;
-                if (abs_pivot       <= abs_min_extents && abs_pivot <= abs_max_extents) snapResult |= SnapResult3D.PivotY;
+                (Vector3 abs_distance, Vector3 snappedCustomOffset) = Snapping.SnapCustom(s_CustomSnapPoints, pivotInGridSpace, enabledAxes, minPointSnap, s_CustomDistances);
+                if (absSnappedOffset.sqrMagnitude > abs_distance.sqrMagnitude) { absSnappedOffset = abs_distance; snappedOffset = snappedCustomOffset; }
             }
 
-            if ((enabledAxes & Axes.Z) > 0)
-            {
-                var snappedPivot		= SnappingUtility.SnapValue(pivotInGridSpace.z, _spacing.z) - pivotInGridSpace.z;
-                var snappedMinExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.min.z, _spacing.z) - movedExtentsInGridspace.min.z;
-                var snappedMaxExtents	= SnappingUtility.SnapValue(movedExtentsInGridspace.max.z, _spacing.z) - movedExtentsInGridspace.max.z;
-
-                // Figure out on which side of the extents is closest to the grid, use that offset for each axis
-                var abs_pivot		= Snapping.PivotSnappingActive  ? SnappingUtility.Quantize(Mathf.Abs(snappedPivot     )) : float.PositiveInfinity;
-                var abs_min_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMinExtents)) : float.PositiveInfinity;
-                var abs_max_extents = Snapping.BoundsSnappingActive ? SnappingUtility.Quantize(Mathf.Abs(snappedMaxExtents)) : float.PositiveInfinity;
-                offsetInGridSpace.z += (abs_pivot < abs_min_extents && abs_pivot < abs_max_extents) ? snappedPivot : ((abs_min_extents < abs_max_extents) ? snappedMinExtents : snappedMaxExtents);
-                if (abs_min_extents <= abs_max_extents && abs_min_extents <= abs_pivot) snapResult |= SnapResult3D.MinZ;
-                if (abs_max_extents <= abs_min_extents && abs_max_extents <= abs_pivot) snapResult |= SnapResult3D.MaxZ;
-                if (abs_pivot       <= abs_min_extents && abs_pivot <= abs_max_extents) snapResult |= SnapResult3D.PivotZ;
-            }
-
-
-            
-            var snappedOffsetInWorldSpace	=_gridToWorldSpace.MultiplyVector(offsetInGridSpace);
-            var snappedPositionInWorldSpace	= (worldStartPosition + snappedOffsetInWorldSpace);
-
+            // Snap against drag start position
             if (!ignoreStartPoint)
             {
-                if (Mathf.Abs(worldCurrentPosition.x - snappedPositionInWorldSpace.x) > Mathf.Abs(offsetInWorldSpace.x)) snappedPositionInWorldSpace.x = worldStartPosition.x;
-                if (Mathf.Abs(worldCurrentPosition.y - snappedPositionInWorldSpace.y) > Mathf.Abs(offsetInWorldSpace.y)) snappedPositionInWorldSpace.y = worldStartPosition.y;
-                if (Mathf.Abs(worldCurrentPosition.z - snappedPositionInWorldSpace.z) > Mathf.Abs(offsetInWorldSpace.z)) snappedPositionInWorldSpace.z = worldStartPosition.z;
+                if (Mathf.Abs(snappedOffset.x) > Mathf.Abs(offsetInGridSpace.x)) { offsetInGridSpace.x = snappedOffset.x = 0; }
+                if (Mathf.Abs(snappedOffset.y) > Mathf.Abs(offsetInGridSpace.y)) { offsetInGridSpace.y = snappedOffset.y = 0; }
+                if (Mathf.Abs(snappedOffset.z) > Mathf.Abs(offsetInGridSpace.z)) { offsetInGridSpace.z = snappedOffset.z = 0; }
             }
+
+            var quantizedOffset = new Vector3(SnappingUtility.Quantize(snappedOffset.x),
+                                              SnappingUtility.Quantize(snappedOffset.y),
+                                              SnappingUtility.Quantize(snappedOffset.z));
+
+            // Figure out what kind of snapping visualization to show, this needs to be done afterwards since 
+            // while we're snapping each type of snap can override the next one. 
+            // Yet at the same time it's possible to snap with multiple snap-types at the same time.
+
+            if (boundsActive)
+            {
+                if (quantized_min_extents.x == quantizedOffset.x) snapResult |= SnapResult3D.MinX;
+                if (quantized_max_extents.x == quantizedOffset.x) snapResult |= SnapResult3D.MaxX;
+
+                if (quantized_min_extents.y == quantizedOffset.y) snapResult |= SnapResult3D.MinY;
+                if (quantized_max_extents.y == quantizedOffset.y) snapResult |= SnapResult3D.MaxY;
+
+                if (quantized_min_extents.z == quantizedOffset.z) snapResult |= SnapResult3D.MinZ;
+                if (quantized_max_extents.z == quantizedOffset.z) snapResult |= SnapResult3D.MaxZ;
+            }
+
+            if (pivotActive)
+            {
+                if (quantized_pivot.x == quantizedOffset.x) snapResult |= SnapResult3D.PivotX;
+                if (quantized_pivot.y == quantizedOffset.y) snapResult |= SnapResult3D.PivotY;
+                if (quantized_pivot.z == quantizedOffset.z) snapResult |= SnapResult3D.PivotZ;
+            }
+
+            if (haveCustomSnapping) 
+                Snapping.SendCustomSnappedEvents(quantizedOffset, s_CustomDistances, 0);
+
+            if (absSnappedOffset.x == 0 &&
+                absSnappedOffset.y == 0 &&
+                absSnappedOffset.z == 0)
+                return worldStartPosition;
+
+            var snappedOffsetInWorldSpace	=_gridToWorldSpace.MultiplyVector(offsetInGridSpace - snappedOffset);
+            var snappedPositionInWorldSpace	= (worldStartPosition + snappedOffsetInWorldSpace);
+
+            //Debug.Log($"{(float3)snappedOffsetInWorldSpace} {(float3)snappedOffset} {(float3)snappedPositionInWorldSpace}");
 
             return snappedPositionInWorldSpace;
         }

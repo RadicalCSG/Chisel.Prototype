@@ -442,7 +442,7 @@ namespace Chisel.Components
             }
         }
 
-        internal override void CollectChildNodesForParent(List<CSGTreeNode> childNodes)
+        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
             childNodes.Add(TopNode);
         }
