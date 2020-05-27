@@ -447,14 +447,14 @@ namespace Chisel.Editors
 
             if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
             { 
-                int filterLayerParameter0 = (sharedMaterial) ? sharedMaterial.GetInstanceID() : 0;
+                //int filterLayerParameter0 = (sharedMaterial) ? sharedMaterial.GetInstanceID() : 0;
                 {
                     var worldRay		= camera.ScreenPointToRay(pickposition);
                     var worldRayStart	= worldRay.origin;
                     var worldRayVector	= (worldRay.direction * (camera.farClipPlane - camera.nearClipPlane));
                     var worldRayEnd		= worldRayStart + worldRayVector;
 
-                    if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, filterLayerParameter0, layers, ignore, filter, out var tempIntersection))
+                    if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, layers, ignore, filter, out var tempIntersection))
                     {
                         node = tempIntersection.node;
                         if (node)

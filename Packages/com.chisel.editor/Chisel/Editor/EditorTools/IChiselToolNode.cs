@@ -18,7 +18,7 @@ namespace Chisel.Editors
         void OnActivate();
         void OnDeactivate();
 
-        void OnSceneSettingsGUI(SceneView sceneView);
+        void OnInSceneOptionsGUI(SceneView sceneView);
         void OnSceneGUI(SceneView sceneView, Rect dragArea);
     }
 }

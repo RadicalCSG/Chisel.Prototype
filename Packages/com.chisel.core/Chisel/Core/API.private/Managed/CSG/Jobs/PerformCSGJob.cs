@@ -247,6 +247,8 @@ namespace Chisel.Core
                     }
                 }
                 // This loop is a hole 
+                if (currentHoleIndices.Capacity < allEdges.Length) // TODO: figure out why capacity is sometimes not enough
+                    currentHoleIndices.Capacity = allEdges.Length;
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
                 allInfos.AddNoResize(intersectionInfo);

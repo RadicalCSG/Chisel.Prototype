@@ -7,7 +7,7 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
-    internal partial class BrushMeshManager
+    public partial class BrushMeshManager
     {
         static List<BrushMesh>	brushMeshes		= new List<BrushMesh>();
         static List<int>		userIDs			= new List<int>();
@@ -36,6 +36,11 @@ namespace Chisel.Core
             if (!AssertBrushMeshIDValid(brushMeshInstanceID))
                 return CSGManager.kDefaultUserID;
             return userIDs[brushMeshInstanceID - 1];
+        }
+
+        public static BrushMesh		GetBrushMesh			(BrushMeshInstance instance)
+        {
+            return GetBrushMesh(instance.brushMeshID);
         }
 
         public static BrushMesh		GetBrushMesh			(Int32 brushMeshInstanceID)

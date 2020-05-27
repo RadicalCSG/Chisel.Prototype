@@ -17,7 +17,6 @@ namespace Chisel.Editors
     {
         public const string kToolName = "Create";
         public override string ToolName => kToolName;
-        public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode} Options";
 
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
@@ -82,10 +81,13 @@ namespace Chisel.Editors
             DeactivateTool(selectNode: true);
         }
 
-        public override void OnSceneSettingsGUI(SceneView sceneView)
+        #region In-scene Options GUI
+        public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode} Options";
+        public override void OnInSceneOptionsGUI(SceneView sceneView)
         {
             ChiselGeneratorManager.GeneratorMode.OnSceneSettingsGUI(sceneView);
         }
+        #endregion
 
         public virtual void Cancel()
         {
@@ -122,7 +124,7 @@ namespace Chisel.Editors
 
 
 
-            ChiselOptionsOverlay.AdditionalSettings = OnSceneSettingsGUI;
+            ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
             generatorMode.ShowSceneGUI(sceneView, dragArea);
 
             /// TODO: pressing escape when not in the middle of creation something, should cancel this edit mode instead

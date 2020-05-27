@@ -80,6 +80,7 @@ namespace Chisel.Core
         
         // Requirement: out values only set when something is found, otherwise are not modified
         static bool BrushRayCast (MeshQuery[]       meshQueries,
+                                  CSGTree           tree,
                                   CSGTreeBrush      brush,
 
                                   ref BlobArray<ChiselSurfaceRenderBuffer> surfaces,
@@ -87,16 +88,11 @@ namespace Chisel.Core
 						          Vector3           treeSpaceRayStart,
 						          Vector3           treeSpaceRayEnd,
 
-						          ref float	        smallestDistance,
-	
-                                  out int           out_surfaceIndex,
-						          out Vector3       out_treeIntersection,
-						          out Plane         out_treePlane)
+                                  bool              ignoreBackfaced,
+                                  bool              ignoreCulled,
+
+                                  List<CSGTreeBrushIntersection> foundIntersections)
         {
-            out_treeIntersection    = Vector3.zero;
-            out_surfaceIndex        = -1;
-            out_treePlane           = new Plane();
-            
             var brushMeshInstanceID = brush.BrushMesh.brushMeshID;
             var brushMesh           = BrushMeshManager.GetBrushMesh(brushMeshInstanceID);
 
@@ -104,31 +100,30 @@ namespace Chisel.Core
                 brushMesh.planes.Length == 0)
 		        return false;
 
-            var treeToNodeSpace                     = brush.TreeToNodeSpaceMatrix;
-            var nodeToTreeSpace                     = brush.NodeToTreeSpaceMatrix;
+            var treeToNodeSpace = brush.TreeToNodeSpaceMatrix;
+            var nodeToTreeSpace = brush.NodeToTreeSpaceMatrix;
 
             var brushRayStart	= treeToNodeSpace.MultiplyPoint(treeSpaceRayStart);
             var brushRayEnd     = treeToNodeSpace.MultiplyPoint(treeSpaceRayEnd);
 	        var brushRayDelta	= brushRayEnd - brushRayStart;
 
-            var found						= false;
-            var result_localIntersection	= Vector3.zero;
-            var result_isReversed			= false;
-            var result_surfaceIndex         = -1;
-            var result_localPlane           = new Plane();
-            var smallest_t					= smallestDistance;
+            var found		    = false;
 
             var brush_ray_start	= brushRayStart;
             var brush_ray_end	= brushRayEnd;
-
             for (var s = 0; s < brushMesh.planes.Length; s++)
             {
-                if (surfaces[s].indices.Length == 0)
-                    continue;
-
                 // Compare surface with 'current' meshquery (is this surface even being rendered???)
-                if (!IsSurfaceVisible(meshQueries, ref surfaces[s]))
-                    continue;
+                if (ignoreCulled)
+                {
+                    if (surfaces[s].indices.Length == 0)
+                        continue;
+
+                    if (!IsSurfaceVisible(meshQueries, ref surfaces[s]))
+                        continue;
+
+                    Debug.Assert(surfaces[s].surfaceIndex == s);
+                }
 
                 var plane = new Plane(brushMesh.planes[s].xyz, brushMesh.planes[s].w);
                 var s_dist = plane.GetDistanceToPoint(brush_ray_start);
@@ -140,11 +135,6 @@ namespace Chisel.Core
                     continue;
 
                 var delta = brushRayDelta * t;
-
-                // only pick the plane that is closest
-                var dist = delta.sqrMagnitude;
-                if (dist > smallest_t) // NaN will return false, smallest_t = Positive Infinity will return false
-                    continue;
 
                 var intersection = brush_ray_start + delta;
 
@@ -164,40 +154,50 @@ namespace Chisel.Core
 
                 if (skipSurface)
                     continue;
-
-                if (surfaces[s].indices.Length == 0)
-                    continue;
-
-                Debug.Assert(surfaces[s].surfaceIndex == s);
+                
                 var treeIntersection = nodeToTreeSpace.MultiplyPoint(intersection);
                 if (!IsPointInsideSurface(ref surfaces[s], treeIntersection, out var treeSpaceNormal))
-                    continue;
+                {
+                    if (ignoreCulled)
+                        continue;
+                }
 
                 var localSpaceNormal = treeToNodeSpace.MultiplyVector(treeSpaceNormal);
-                
+
                 // Ignore backfaced culled triangles
-                if (math.dot(localSpaceNormal, brushRayStart - intersection) < 0)
+                if (ignoreBackfaced && math.dot(localSpaceNormal, brushRayStart - intersection) < 0)
                     continue;
 
                 found = true;
-		        smallest_t                  = dist;
-                result_isReversed		    = math.dot(localSpaceNormal, plane.normal) < 0;
-                result_localPlane           = plane;
-                result_surfaceIndex         = surfaces[s].surfaceIndex;
-                result_localIntersection    = intersection;
+                var result_isReversed		    = math.dot(localSpaceNormal, plane.normal) < 0;
+                var result_localPlane           = plane;
+                var result_surfaceIndex         = s;
+                var result_localIntersection    = intersection;
+
+                var treePlane               = nodeToTreeSpace.TransformPlane(result_localPlane);
+
+                var result_dist             = delta.sqrMagnitude;
+                var result_treeIntersection = nodeToTreeSpace.MultiplyPoint(result_localIntersection);
+                var result_treePlane        = result_isReversed ? treePlane.flipped : treePlane;
+
+                foundIntersections.Add(new CSGTreeBrushIntersection()
+                { 
+                    tree            = tree,
+                    brush           = brush,
+
+                    brushUserID     = CSGManager.GetUserIDOfNode(brush.brushNodeID),
+                    surfaceIndex    = result_surfaceIndex,
+
+                    surfaceIntersection = new ChiselSurfaceIntersection()
+                    {
+                        treePlane               = result_treePlane,
+                        treePlaneIntersection   = result_treeIntersection,
+			            distance			    = result_dist,
+                    }
+                });
             }
 
-	        if (found)
-	        {
-                var treePlane           = nodeToTreeSpace.TransformPlane(result_localPlane);
-
-                smallestDistance	    = smallest_t;
-                out_surfaceIndex        = result_surfaceIndex;
-                out_treeIntersection	= nodeToTreeSpace.MultiplyPoint(result_localIntersection);
-                out_treePlane           = result_isReversed ? treePlane.flipped : treePlane;
-                return true;
-	        }
-	        return false;
+	        return found;
         }
 
 #if UNITY_EDITOR
@@ -233,21 +233,40 @@ namespace Chisel.Core
         //							(in fact, we could still cache the generated table w/ ignored brushes while moving the mouse)
         //						3.	have a ray-brush acceleration data structure so that we reduce the number of brushes to 'try'
         //							to only the ones that the ray actually intersects with (instead of -all- brushes)
-        public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]   meshQueries, 
-                                                              CSGTree       tree,
-                                                              Vector3       treeSpaceRayStart,
-                                                              Vector3       treeSpaceRayEnd,
-                                                              CSGTreeNode[] ignoreNodes = null)
+        static readonly HashSet<int> s_IgnoreNodeIndices = new HashSet<int>();
+        static readonly HashSet<int> s_FilterNodeIndices = new HashSet<int>();
+
+        public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]       meshQueries, 
+                                                              CSGTree           tree,
+                                                              Vector3           treeSpaceRayStart,
+                                                              Vector3           treeSpaceRayEnd,
+                                                              List<CSGTreeNode> ignoreNodes = null,
+                                                              List<CSGTreeNode> filterNodes = null,
+                                                              bool              ignoreBackfaced = true, 
+                                                              bool              ignoreCulled = true)
         {
-            var ignoreNodeIndices = new HashSet<int>();
+            s_IgnoreNodeIndices.Clear();
             if (ignoreNodes != null)
             {
-                for (var i = 0; i < ignoreNodes.Length; i++)
+                for (var i = 0; i < ignoreNodes.Count; i++)
                 {
-                    if (!ignoreNodes[i].Valid)
+                    if (!ignoreNodes[i].Valid ||
+                        ignoreNodes[i].Type != CSGNodeType.Brush)
                         continue;
 
-                    ignoreNodeIndices.Add(ignoreNodes[i].NodeID);
+                    s_IgnoreNodeIndices.Add(ignoreNodes[i].NodeID);
+                }
+            }
+            s_FilterNodeIndices.Clear();
+            if (filterNodes != null)
+            {
+                for (var i = 0; i < filterNodes.Count; i++)
+                {
+                    if (!filterNodes[i].Valid ||
+                        filterNodes[i].Type != CSGNodeType.Brush)
+                        continue; 
+
+                    s_FilterNodeIndices.Add(filterNodes[i].NodeID);
                 }
             }
 
@@ -269,7 +288,8 @@ namespace Chisel.Core
                 if (!CSGManager.IsValidNodeID(brushNodeID))
                     continue;
 
-                if (ignoreNodeIndices.Contains(brushNodeID))
+                if (s_IgnoreNodeIndices.Contains(brushNodeID) ||
+                    (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brushNodeID)))
                     continue;
 
                 //var operation_type_bits = CSGManager.GetNodeOperationByIndex(brushNodeID);
@@ -293,35 +313,17 @@ namespace Chisel.Core
                     continue;
 #endif
 
-                var resultDist = float.PositiveInfinity;
-			    if (!BrushRayCast(meshQueries, brush,
+                BrushRayCast(meshQueries, tree, brush,
 
-                                  ref brushRenderBuffer.Value.surfaces,
+                                ref brushRenderBuffer.Value.surfaces,
 
-                                  treeSpaceRayStart,
-								  treeSpaceRayEnd,
+                                treeSpaceRayStart,
+                                treeSpaceRayEnd,
 
-								  ref resultDist,
+                                ignoreBackfaced,
+                                ignoreCulled,
 
-                                  out int       result_surfaceIndex,
-                                  out Vector3   result_treeIntersection,
-                                  out Plane     result_treePlane))
-				    continue;
-		    
-                foundIntersections.Add(new CSGTreeBrushIntersection()
-                { 
-                    tree                = tree,
-                    brush               = brush,
-                    brushUserID         = CSGManager.GetUserIDOfNode(brushNodeID),
-                    surfaceIndex        = result_surfaceIndex,
-
-                    surfaceIntersection = new ChiselSurfaceIntersection()
-                    {
-                        treePlane               = result_treePlane,
-                        treePlaneIntersection   = result_treeIntersection,
-			            distance			    = resultDist,
-                    }
-                });
+                                foundIntersections);
             }
 
             if (foundIntersections.Count == 0)

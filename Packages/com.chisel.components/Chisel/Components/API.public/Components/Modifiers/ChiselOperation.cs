@@ -84,7 +84,7 @@ namespace Chisel.Components
                 Debug.LogError("Failed to assign list of children to tree node");
         }
 
-        internal override void CollectChildNodesForParent(List<CSGTreeNode> childNodes)
+        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
             childNodes.Add(Node);
         }
