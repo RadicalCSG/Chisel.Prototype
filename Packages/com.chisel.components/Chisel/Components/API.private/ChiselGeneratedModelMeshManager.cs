@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -178,7 +178,7 @@ namespace Chisel.Components
             // Check if the tree creates *any* meshes
             if (meshDescriptions == null || meshDescriptions.Length == 0)
             {
-                componentGenerator.RemoveAllGeneratedComponents(model);
+                //componentGenerator.RemoveAllGeneratedComponents(model);
                 PostUpdateModel?.Invoke(model);
                 return;
             }
