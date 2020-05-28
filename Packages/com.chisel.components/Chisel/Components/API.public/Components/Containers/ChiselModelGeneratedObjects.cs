@@ -75,6 +75,19 @@ namespace Chisel.Components
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, modelState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows | LayerUsageFlags.ReceiveShadows),
             };
 
+            // These queries are invalid, and should always be null
+            Debug.Assert(renderables[0] == null);
+            Debug.Assert(renderables[4] == null);
+            Debug.Assert(renderables[6] == null);
+
+            // These queries are valid, and should never be null
+            Debug.Assert(renderables[1] != null);
+            Debug.Assert(renderables[2] != null);
+            Debug.Assert(renderables[3] != null);
+            Debug.Assert(renderables[5] != null);
+            Debug.Assert(renderables[7] != null);
+
+
             var meshRenderers = new MeshRenderer[]
             {
                 renderables[1].meshRenderer,
@@ -84,7 +97,7 @@ namespace Chisel.Components
                 renderables[7].meshRenderer
             };
 
-            return new ChiselModelGeneratedObjects
+            var result = new ChiselModelGeneratedObjects
             {
                 generatedDataContainer  = container,
                 colliderContainer       = colliderContainer,
@@ -92,6 +105,10 @@ namespace Chisel.Components
                 renderables             = renderables,
                 meshRenderers           = meshRenderers
             };
+
+            Debug.Assert(IsValid(result));
+
+            return result;
         }
 
         public void Destroy()
@@ -147,26 +164,27 @@ namespace Chisel.Components
             if (satelliteObjects == null)
                 return false;
 
-            if (!satelliteObjects.generatedDataContainer || 
+            if (!satelliteObjects.generatedDataContainer ||
                 !satelliteObjects.colliderContainer ||
-
                 satelliteObjects.colliders == null ||   // must be an array, even if 0 length
-
-                satelliteObjects.renderables == null ||                
+                satelliteObjects.renderables == null ||
                 satelliteObjects.renderables.Length != 8 ||
+                satelliteObjects.meshRenderers == null ||
+                satelliteObjects.meshRenderers.Length != 5) { return false; }
 
-                // These queries are invalid, and should always be null
-                satelliteObjects.renderables[0] != null ||
-                satelliteObjects.renderables[4] != null ||
-                satelliteObjects.renderables[6] != null ||
-
-                // These queries are valid, and should never be null
-                satelliteObjects.renderables[1] == null ||
+            // These queries are valid, and should never be null
+            if (satelliteObjects.renderables[1] == null ||
                 satelliteObjects.renderables[2] == null ||
                 satelliteObjects.renderables[3] == null ||
                 satelliteObjects.renderables[5] == null ||
-                satelliteObjects.renderables[7] == null)
-                return false;
+                satelliteObjects.renderables[7] == null) { return false; }
+
+
+            // These queries are invalid, and should always be null
+            satelliteObjects.renderables[0] = null; 
+            satelliteObjects.renderables[4] = null;
+            satelliteObjects.renderables[6] = null;
+
 
             for (int i = 0; i < satelliteObjects.renderables.Length; i++)
             {

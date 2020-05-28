@@ -328,7 +328,11 @@ namespace Chisel.Editors
         {
             get
             {
-                return Lightmapping.realtimeGI || (Lightmapping.bakedGI && Lightmapping.lightingSettings.lightmapper == (LightingSettings.Lightmapper)0) || IsPrefabAsset;
+                if (Lightmapping.realtimeGI || IsPrefabAsset)
+                    return true;
+                if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
+                    return false;
+                return lightingSettings.lightmapper == (LightingSettings.Lightmapper)0;
             }
         }
 
@@ -336,7 +340,13 @@ namespace Chisel.Editors
         {
             get
             {
-                return (Lightmapping.bakedGI && Lightmapping.lightingSettings.lightmapper != (LightingSettings.Lightmapper)0) || IsPrefabAsset;
+                if (IsPrefabAsset)
+                    return true;
+                if (!Lightmapping.bakedGI)
+                    return false;
+                if (!Lightmapping.TryGetLightingSettings(out LightingSettings lightingSettings))
+                    return false;
+                return lightingSettings.lightmapper != (LightingSettings.Lightmapper)0;
             }
         }
 
