@@ -32,17 +32,23 @@ namespace Chisel.Editors
 
     public sealed class GUIClip
     {
+#if UNITY_2020_2_OR_NEWER
+        const string kFindSelectionBase = "FindSelectionBaseForPicking";
+#else
+        const string kFindSelectionBase = "FindSelectionBase";
+#endif
+
         public delegate Vector2 UnclipDelegate(Vector2 pos);
         public static readonly UnclipDelegate GUIClipUnclip = ReflectionExtensions.CreateDelegate<UnclipDelegate>("UnityEngine.GUIClip", "Unclip");
 
         public delegate GameObject FindSelectionBaseDelegate(GameObject go);
-        public static readonly FindSelectionBaseDelegate FindSelectionBase = typeof(HandleUtility).CreateDelegate<FindSelectionBaseDelegate>("FindSelectionBase");
+        public static readonly FindSelectionBaseDelegate FindSelectionBase = typeof(HandleUtility).CreateDelegate<FindSelectionBaseDelegate>(kFindSelectionBase);
     }
 
     // TODO: clean up, rename
     public sealed class ChiselClickSelectionManager : ScriptableObject // TODO: doesn't need to be a scriptableobject?
     {
-        #region Instance
+#region Instance
         static ChiselClickSelectionManager _instance;
         public static ChiselClickSelectionManager Instance
         {
@@ -64,7 +70,7 @@ namespace Chisel.Editors
                 return _instance;
             }
         }
-        #endregion
+#endregion
 
 
 
@@ -197,7 +203,7 @@ namespace Chisel.Editors
         }
         
 
-        #region DeepSelection (private)
+#region DeepSelection (private)
         private static List<GameObject>     deepClickIgnoreGameObjectList   = new List<GameObject>();
         private static Vector2  _prevSceenPos = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
         private static Camera   _prevCamera;
@@ -211,7 +217,7 @@ namespace Chisel.Editors
                 _prevCamera = null;
             }
         }
-        #endregion
+#endregion
         
 
         public static GameObject PickClosestGameObject(Vector2 screenPos, out ChiselIntersection intersection)
