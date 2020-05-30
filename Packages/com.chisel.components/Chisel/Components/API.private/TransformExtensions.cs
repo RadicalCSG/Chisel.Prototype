@@ -22,12 +22,12 @@ namespace Chisel.Components
 
         public static GameObject FindChildByName(this GameObject gameObject, string name)
         {
-            return gameObject?.transform.FindChildByName(name);
+            return (gameObject == null) ? null : gameObject.transform.FindChildByName(name);
         }
 
         public static GameObject FindChildByName(this Component component, string name)
         {
-            return component?.transform.FindChildByName(name);
+            return (component == null) ? null : component.transform.FindChildByName(name);
         }
     }
 }

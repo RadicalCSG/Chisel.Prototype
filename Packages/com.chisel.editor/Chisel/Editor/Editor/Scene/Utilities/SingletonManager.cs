@@ -37,7 +37,7 @@ namespace Chisel.Editors
         #endregion
         
 
-        [SerializeField] public DataType data = new DataType();
+        public DataType data = new DataType();
 
         public static DataType Data { get { return Instance.data; } }
 

@@ -100,7 +100,9 @@ namespace Chisel.Editors
         [InitializeOnLoadMethod]
         public static void Initialize()
         {
-            if (assemblies != null)
+            if (assemblies != null &&
+                typeLookups != null &&
+                allNonAbstractTypes != null)
                 return;
 
             assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
@@ -145,6 +147,11 @@ namespace Chisel.Editors
         public static Type GetTypeByName(string fullName)
         {
             Initialize();
+            if (typeLookups == null)
+            {
+                Debug.LogError("Failed to initialize Reflection information");
+                return null;
+            }
             if (typeLookups.TryGetValue(fullName, out Type type))
                 return type;
             return null;

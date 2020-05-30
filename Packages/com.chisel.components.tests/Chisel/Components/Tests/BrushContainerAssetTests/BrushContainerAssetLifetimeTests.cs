@@ -37,7 +37,7 @@ namespace BrushContainerAssetTests
             };
             boxDefinition.Validate();
 
-            var brushContainerAsset = new ChiselBrushContainerAsset();
+            var brushContainerAsset = ChiselBrushContainerAsset.Create("Box");
             brushContainerAsset.Generate(boxDefinition);
             return brushContainerAsset;
         }

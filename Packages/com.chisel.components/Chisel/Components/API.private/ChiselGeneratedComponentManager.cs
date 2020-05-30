@@ -34,8 +34,6 @@ namespace Chisel.Components
 
         public void RemoveAllGeneratedComponents(ChiselModel model)
         {
-            model.generated.Destroy();
-            model.generated = null;
             RemoveContainerGameObject(model);
         }
 

@@ -12,7 +12,7 @@ namespace Chisel.Components
     {
         public const string kDefinitionName = nameof(definition);
 
-        [SerializeField] public DefinitionType definition = new DefinitionType();
+        public DefinitionType definition = new DefinitionType();
 
         protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
         protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }

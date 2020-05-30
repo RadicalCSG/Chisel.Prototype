@@ -35,7 +35,8 @@ namespace Chisel.Editors
 
         static void SetMenuOperation(MenuCommand menuCommand, CSGOperationType operationType)
         {
-            var gameObject = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            var context     = (menuCommand.context as GameObject);
+            var gameObject  = (context == null) ? Selection.activeGameObject : context;
             if (!gameObject)
                 return;
 
@@ -55,7 +56,8 @@ namespace Chisel.Editors
 
         static bool MenuValidateOperation(MenuCommand menuCommand)
         {
-            var gameObject = (menuCommand.context as GameObject) ?? Selection.activeGameObject;
+            var context     = (menuCommand.context as GameObject);
+            var gameObject  = (context == null) ? Selection.activeGameObject : context;
             if (!gameObject)
                 return false;
 
@@ -174,15 +176,18 @@ namespace Chisel.Editors
             T component;
             // If we use the command object on a gameobject in the hierarchy, choose that gameobject
             // Otherwise: choose the activeModel (if available)
-            var parentGameObject    = (menuCommand.context as GameObject) ?? ChiselModelManager.ActiveModel?.gameObject;
-            var parentTransform     = parentGameObject?.transform;
+            var context             = (menuCommand.context as GameObject);
+            var parentGameObject    = (context != null) ? context : (ChiselModelManager.ActiveModel != null) ? ChiselModelManager.ActiveModel.gameObject : null;
+            var parentTransform     = (parentGameObject == null) ? null : parentGameObject.transform;
 
             // If we used the command object on a generator, choose it's parent to prevent us from 
             // adding a generator as a child to a generator
             if (parentTransform &&
                 parentTransform.GetComponent<ChiselGeneratorComponent>())
+            {
                 parentTransform = parentTransform.parent;
-
+                parentGameObject = (parentTransform == null) ? null : parentTransform.gameObject;
+            }
 
             // Create the gameobject
             if (parentTransform)
@@ -191,7 +196,7 @@ namespace Chisel.Editors
                 component = ChiselComponentFactory.Create<T>(name);
 
             var gameObject  = component.gameObject;
-            GameObjectUtility.SetParentAndAlign(gameObject, parentTransform?.gameObject);
+            GameObjectUtility.SetParentAndAlign(gameObject, parentGameObject);
             Undo.RegisterCreatedObjectUndo(gameObject, "Create " + gameObject.name);
 
 
