@@ -24,11 +24,11 @@ namespace Chisel.Core
         }
         #endregion
 
-        [SerializeField] public Material defaultFloorMaterial;
-        [SerializeField] public Material defaultStepMaterial;
-        [SerializeField] public Material defaultTreadMaterial;
-        [SerializeField] public Material defaultWallMaterial;
-        [SerializeField] public PhysicMaterial defaultPhysicMaterial;
+        public Material defaultFloorMaterial;
+        public Material defaultStepMaterial;
+        public Material defaultTreadMaterial;
+        public Material defaultWallMaterial;
+        public PhysicMaterial defaultPhysicMaterial;
 
         public static Material DefaultFloorMaterial		    { get { return Instance.defaultFloorMaterial; } }
         public static Material DefaultStepMaterial		    { get { return Instance.defaultStepMaterial; } }

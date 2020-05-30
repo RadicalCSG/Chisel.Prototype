@@ -599,10 +599,7 @@ namespace Chisel.Core
         readonly Dictionary<int, int>   chiselTreeLookup    = new Dictionary<int, int>();
         readonly List<Data>             chiselTreeData      = new List<Data>();
 
-        internal void OnEnable()
-        {
-        }
-
+        
         internal void OnDisable()
         {
             foreach (var data in chiselTreeData)

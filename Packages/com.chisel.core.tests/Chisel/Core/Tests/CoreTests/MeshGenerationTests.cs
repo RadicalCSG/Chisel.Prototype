@@ -58,7 +58,7 @@ namespace FoundationTests
 
         static CSGTreeBrush CreateBoxBrush(Vector3 size, CSGOperationType operation = CSGOperationType.Additive, Material material = null)
         {
-            return CSGTreeBrush.Create(operation: operation, brushMesh: CreateBox(size, operation, material ?? material2));
+            return CSGTreeBrush.Create(operation: operation, brushMesh: CreateBox(size, operation, (material == null) ? null : material2));
         }
 
 

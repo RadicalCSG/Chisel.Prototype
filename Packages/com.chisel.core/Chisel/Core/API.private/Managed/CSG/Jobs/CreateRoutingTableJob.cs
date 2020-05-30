@@ -539,7 +539,9 @@ namespace Chisel.Core
                     }
                     if (allEqual)
                     {
-                        outputStack.RemoveRange(startNodeIndex, outputStack.Length - startNodeIndex);
+                        // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
+                        // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
+                        NativeListExtensions.RemoveRange(outputStack, startNodeIndex, outputStack.Length - startNodeIndex);
                         RemapIndices(outputStack, combineIndexRemap, prevNodeIndex, startNodeIndex);
 
 #if SHOW_DEBUG_MESSAGES
@@ -556,7 +558,11 @@ namespace Chisel.Core
                         outputStack[firstRemoveCount].routingRow.AreAllValue(0))
                     firstRemoveCount++;
                 if (firstRemoveCount > 0)
-                    outputStack.RemoveRange(0, firstRemoveCount);
+                {
+                    // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
+                    // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
+                    NativeListExtensions.RemoveRange(outputStack, 0, firstRemoveCount);
+                }
 #endif
 
 #if SHOW_DEBUG_MESSAGES

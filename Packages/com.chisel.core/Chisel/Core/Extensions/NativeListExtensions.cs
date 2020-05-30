@@ -23,7 +23,7 @@ namespace Chisel.Core
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
-        public static void RemoveRange<T>(this NativeList<T> list, int index, int count) where T : unmanaged
+        public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)
                 return;
