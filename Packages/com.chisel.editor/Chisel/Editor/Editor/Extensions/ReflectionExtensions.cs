@@ -508,7 +508,15 @@ namespace Chisel.Editors
                 Debug.LogError($"methodInfo == null (methodName: {methodName})");
                 return null;
             }
-            return (T)Delegate.CreateDelegate(typeof(T), null, methodInfo, true);
+            try
+            {
+                return (T)Delegate.CreateDelegate(typeof(T), null, methodInfo, true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{methodName}'s signature might've been modified between Unity versions");
+                throw ex;
+            }
         }
 
         public static T CreateDelegate<T>(object instance, MethodInfo methodInfo) where T : Delegate
