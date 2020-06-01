@@ -176,17 +176,23 @@ namespace Chisel.Editors
         bool showUnwrapParams;
 
 
-        delegate bool LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
         delegate float GetCachedMeshSurfaceAreaDelegate(MeshRenderer meshRenderer);
         delegate bool HasClampedResolutionDelegate(Renderer renderer);
         delegate bool HasUVOverlapsDelegate(Renderer renderer);
         delegate bool HasInstancingDelegate(Shader s);
 
-#if UNITY_2020_1_OR_NEWER
+#if UNITY_2020_2_OR_NEWER
+        delegate void LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
+        static LightmapParametersGUIDelegate	LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.SharedLightingSettingsEditor", "LightmapParametersGUI");
+        static HasClampedResolutionDelegate     HasClampedResolution    = typeof(Lightmapping).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
+        static HasUVOverlapsDelegate            HasUVOverlaps           = typeof(Lightmapping).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
+#elif UNITY_2020_1_OR_NEWER
+        delegate bool LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
         static LightmapParametersGUIDelegate	LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.SharedLightingSettingsEditor", "LightmapParametersGUI");
         static HasClampedResolutionDelegate     HasClampedResolution    = typeof(Lightmapping).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
         static HasUVOverlapsDelegate            HasUVOverlaps           = typeof(Lightmapping).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
 #else
+        delegate bool LightmapParametersGUIDelegate(SerializedProperty prop, GUIContent content);
         static LightmapParametersGUIDelegate    LightmapParametersGUI   = ReflectionExtensions.CreateDelegate<LightmapParametersGUIDelegate>("UnityEditor.LightingSettingsInspector", "LightmapParametersGUI");
         static HasClampedResolutionDelegate     HasClampedResolution    = typeof(LightmapEditorSettings).CreateDelegate<HasClampedResolutionDelegate>("HasClampedResolution");
         static HasUVOverlapsDelegate            HasUVOverlaps           = typeof(LightmapEditorSettings).CreateDelegate<HasUVOverlapsDelegate>("HasUVOverlaps");
