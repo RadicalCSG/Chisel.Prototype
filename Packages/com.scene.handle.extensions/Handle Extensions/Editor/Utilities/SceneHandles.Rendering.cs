@@ -4,6 +4,117 @@ namespace UnitySceneExtensions
 {
     public static class HandleRendering
     {
+        #region Pivot rendering
+
+        static Vector2[] circlePoints = null;
+
+        static void SetupCirclePoints()
+        {
+            const int steps = 16;
+            circlePoints = new Vector2[steps];
+            for (int i = 0; i < steps; i++)
+            {
+                circlePoints[i] = new Vector2(
+                        (float)Mathf.Cos((i / (float)steps) * Mathf.PI * 2),
+                        (float)Mathf.Sin((i / (float)steps) * Mathf.PI * 2)
+                    );
+            }
+        }
+
+        public static void DrawCameraAlignedCircle(Vector3 position, float size, Color innerColor, Color outerColor)
+        {
+            var camera = Camera.current;
+            var right = camera.transform.right;
+            var up = camera.transform.up;
+
+            if (circlePoints == null)
+                SetupCirclePoints();
+
+            var points = new Vector3[circlePoints.Length];
+            for (int i = 0; i < circlePoints.Length; i++)
+            {
+                var circle = circlePoints[i];
+                points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
+            }
+
+            position = UnityEditor.Handles.matrix.MultiplyPoint(position);
+
+            {
+                Color c = outerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
+
+                UnityEditor.Handles.color = c;
+                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
+                {
+                    UnityEditor.Handles.DrawAAPolyLine(6.0f, points[i], points[j]);
+                }
+            }
+
+            {
+                Color c = innerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
+
+                UnityEditor.Handles.color = c;
+                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
+                {
+                    UnityEditor.Handles.DrawAAPolyLine(2.0f, points[i], points[j]);
+                }
+            }
+        }
+
+        public static void DrawFilledCameraAlignedCircle(Vector3 position, float size)
+        {
+            var camera = Camera.current;
+            var right = camera.transform.right;
+            var up = camera.transform.up;
+
+            if (circlePoints == null)
+                SetupCirclePoints();
+
+            var points = new Vector3[circlePoints.Length];
+            for (int i = 0; i < circlePoints.Length; i++)
+            {
+                var circle = circlePoints[i];
+                points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
+            }
+
+            position = UnityEditor.Handles.matrix.MultiplyPoint(position);
+
+            Color c = UnityEditor.Handles.color * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
+
+            var material = SceneHandleMaterialManager.CustomDotMaterial;
+            if (material && material.SetPass(0))
+            {
+                GL.Begin(GL.TRIANGLES);
+                {
+                    GL.Color(c);
+                    for (int i = 1; i < points.Length - 1; i++)
+                    {
+                        GL.Vertex(points[0]);
+                        GL.Vertex(points[i]);
+                        GL.Vertex(points[i + 1]);
+                    }
+                }
+                GL.End();
+            }
+
+            material = SceneHandleMaterialManager.SurfaceNoDepthMaterial;
+            if (material && material.SetPass(0))
+            {
+                GL.Begin(GL.LINES);
+                {
+                    GL.Color(Color.black);
+                    GL.Vertex(points[0]);
+                    for (int i = 1; i < points.Length; i++)
+                    {
+                        GL.Vertex(points[i]);
+                        GL.Vertex(points[i]);
+                    }
+                    GL.Vertex(points[0]);
+                }
+                GL.End();
+            }
+        }
+        #endregion
+
         public static void DrawInfiniteLine(Vector3 center, Axis axis)
         {
             if (axis == Axis.X) center.x = 0;

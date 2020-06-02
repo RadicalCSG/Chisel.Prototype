@@ -1,14 +1,14 @@
 
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Chisel;
 using Chisel.Core;
 using Chisel.Components;
-using UnityEditor.EditorTools;
+using SceneHandles = UnitySceneExtensions.SceneHandles;
+using ControlState = UnitySceneExtensions.ControlState;
+using HandleRendering = UnitySceneExtensions.HandleRendering;
 
 namespace Chisel.Editors
 {
@@ -427,6 +427,7 @@ namespace Chisel.Editors
             ShowDefaultModelMessage(serializedObject.targetObjects);
         }
 
+        static SceneHandles.PositionHandleIDs s_HandleIDs = new SceneHandles.PositionHandleIDs();
         static void OnMoveTool()
         {
             var position = Tools.handlePosition;
@@ -434,7 +435,8 @@ namespace Chisel.Editors
 
             EditorGUI.BeginChangeCheck();
             // TODO: make this work with bounds!
-            var newPosition = UnitySceneExtensions.SceneHandles.PositionHandle(position, rotation);
+            SceneHandles.Initialize(ref s_HandleIDs);
+            var newPosition = SceneHandles.PositionHandle(ref s_HandleIDs, position, rotation);
             if (EditorGUI.EndChangeCheck())
             {
                 var delta = newPosition - position;
@@ -443,6 +445,14 @@ namespace Chisel.Editors
                 {				
                     MoveTransformsTo(transforms, delta);
                 }
+            }
+
+            if ((s_HandleIDs.combinedState & ControlState.Hot) == ControlState.Hot)
+            {
+                var handleSize = UnityEditor.HandleUtility.GetHandleSize(s_HandleIDs.originalPosition);
+                SceneHandles.RenderBorderedCircle(s_HandleIDs.originalPosition, handleSize * 0.05f);
+                var newHandleSize = UnityEditor.HandleUtility.GetHandleSize(newPosition);
+                HandleRendering.DrawCameraAlignedCircle(newPosition, newHandleSize * 0.1f, Color.white, Color.black);
             }
         }
 

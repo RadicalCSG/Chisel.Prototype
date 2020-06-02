@@ -43,119 +43,6 @@ namespace Chisel.Editors
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry & ~SnapSettings.GeometryBoundsToGrid; } }
 
 
-        // TODO: put somewhere else
-        #region Pivot rendering
-
-        static Vector2[] circlePoints = null;
-
-        static void SetupCirclePoints()
-        {
-            const int steps = 16;
-            circlePoints = new Vector2[steps];
-            for (int i = 0; i < steps; i++)
-            {
-                circlePoints[i] = new Vector2(
-                        (float)Mathf.Cos((i / (float)steps) * Mathf.PI * 2),
-                        (float)Mathf.Sin((i / (float)steps) * Mathf.PI * 2)
-                    );
-            }
-        }
-
-        public static void DrawCameraAlignedCircle(Vector3 position, float size, Color innerColor, Color outerColor)
-        {
-            var camera = Camera.current;
-            var right = camera.transform.right;
-            var up = camera.transform.up;
-
-            if (circlePoints == null)
-                SetupCirclePoints();
-
-            var points = new Vector3[circlePoints.Length];
-            for (int i = 0; i < circlePoints.Length; i++)
-            {
-                var circle = circlePoints[i];
-                points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
-            }
-
-            position = UnityEditor.Handles.matrix.MultiplyPoint(position);
-
-            {
-                Color c = outerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
-
-                UnityEditor.Handles.color = c;
-                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
-                {
-                    UnityEditor.Handles.DrawAAPolyLine(6.0f, points[i], points[j]);
-                }
-            }
-
-            {
-                Color c = innerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
-
-                UnityEditor.Handles.color = c;
-                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
-                {
-                    UnityEditor.Handles.DrawAAPolyLine(2.0f, points[i], points[j]);
-                }
-            }
-        }
-
-        public static void DrawFilledCameraAlignedCircle(Vector3 position, float size)
-        {
-            var camera = Camera.current;
-            var right = camera.transform.right;
-            var up = camera.transform.up;
-
-            if (circlePoints == null)
-                SetupCirclePoints();
-
-            var points = new Vector3[circlePoints.Length];
-            for (int i = 0; i < circlePoints.Length; i++)
-            {
-                var circle = circlePoints[i];
-                points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
-            }
-
-            position = UnityEditor.Handles.matrix.MultiplyPoint(position);
-
-            Color c = UnityEditor.Handles.color * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
-
-            var material = UnitySceneExtensions.SceneHandleMaterialManager.CustomDotMaterial;
-            if (material && material.SetPass(0))
-            {
-                GL.Begin(GL.TRIANGLES);
-                {
-                    GL.Color(c);
-                    for (int i = 1; i < points.Length - 1; i++)
-                    {
-                        GL.Vertex(points[0]);
-                        GL.Vertex(points[i]);
-                        GL.Vertex(points[i + 1]);
-                    }
-                }
-                GL.End();
-            }
-
-            material = UnitySceneExtensions.SceneHandleMaterialManager.SurfaceNoDepthMaterial;
-            if (material && material.SetPass(0))
-            {
-                GL.Begin(GL.LINES);
-                {
-                    GL.Color(Color.black);
-                    GL.Vertex(points[0]);
-                    for (int i = 1; i < points.Length; i++)
-                    {
-                        GL.Vertex(points[i]);
-                        GL.Vertex(points[i]);
-                    }
-                    GL.Vertex(points[0]);
-                }
-                GL.End();
-            }
-        }
-        #endregion
-
-
         #region In-scene Options GUI
         public override string OptionsTitle => $"Pivot Options";
         public override void OnInSceneOptionsGUI(SceneView sceneView)
@@ -277,7 +164,7 @@ namespace Chisel.Editors
             Snapping.FindCustomSnappingPointsRayMethod = FindCustomSnappingRayPoints;
             Snapping.FindCustomSnappingPointsMethod = FindCustomSnappingPoints;
             Snapping.CustomSnappedEvent = OnCustomSnappedEvent;
-            var newPosition = SceneHandles.PositionHandle(handleIDs, position, rotation);
+            var newPosition = SceneHandles.PositionHandle(ref handleIDs, position, rotation);
             Snapping.FindCustomSnappingPointsRayMethod = null;
             Snapping.FindCustomSnappingPointsMethod = null;
             Snapping.CustomSnappedEvent = null;
@@ -292,7 +179,7 @@ namespace Chisel.Editors
             if (Event.current.type == EventType.Repaint)
             {
                 var handleSize = UnityEditor.HandleUtility.GetHandleSize(position);
-                DrawCameraAlignedCircle(position, handleSize * 0.1f, Color.white, Color.black);
+                HandleRendering.DrawCameraAlignedCircle(position, handleSize * 0.1f, Color.white, Color.black);
 
                 if ((handleIDs.combinedState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
                 {
@@ -300,14 +187,14 @@ namespace Chisel.Editors
                     var selectedColor = UnityEditor.Handles.selectedColor;
                     selectedColor.a = 0.5f;
                     Handles.color = selectedColor;
-                    /*
-                    if ((handleIDs.xAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
-                        HandleRendering.DrawInfiniteLine(position, Axis.X);
-                    if ((handleIDs.yAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
-                        HandleRendering.DrawInfiniteLine(position, Axis.Y);
-                    if ((handleIDs.zAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
-                        HandleRendering.DrawInfiniteLine(position, Axis.Z);
-                    */
+                    
+                    //if ((handleIDs.xAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
+                    //    HandleRendering.DrawInfiniteLine(position, Axis.X);
+                    //if ((handleIDs.yAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
+                    //    HandleRendering.DrawInfiniteLine(position, Axis.Y);
+                    //if ((handleIDs.zAxisIndirectState & (ControlState.Focused | ControlState.Active)) != ControlState.None)
+                    //    HandleRendering.DrawInfiniteLine(position, Axis.Z);
+
                     DrawCustomSnappedEvent();
 
                     Handles.color = prevColor;
@@ -458,48 +345,6 @@ namespace Chisel.Editors
                     if (result == ClosestLineResult.Aligned)
                     {
                         // TODO: draw edge as being intersecting if we're on the edge right now
-                        /*
-                        if (allVertexSnapEvents != null)
-                        { 
-                            var vertDist = ((Vector3)v0 - B).magnitude;
-                            if (vertDist < kVertexDistanceEpsilon)
-                            {
-                                allVertexSnapEvents.Add(new VertexSnap
-                                {
-                                    brush        = csgBrush,
-                                    surfaceIndex = p,
-                                    vertexIndex  = i0,
-                                    intersection = nodeToWorld.MultiplyPoint(v0)
-                                });
-                            }
-                            vertDist = ((Vector3)v1 - B).magnitude;
-                            if (vertDist < kVertexDistanceEpsilon)
-                            {
-                                allVertexSnapEvents.Add(new VertexSnap
-                                {
-                                    brush        = csgBrush,
-                                    surfaceIndex = p,
-                                    vertexIndex  = i1,
-                                    intersection = nodeToWorld.MultiplyPoint(v1)
-                                });
-                            }
-                        }
-                            
-                        if (allEdgeSnapEvents != null)
-                        { 
-                            allEdgeSnapEvents.Add(new EdgeSnap
-                            {
-                                brush           = csgBrush,
-                                surfaceIndex0   = p,
-                                surfaceIndex1   = halfEdgePolygonIndices[halfEdges[e1].twinIndex],
-                                vertexIndex0    = i0,
-                                vertexIndex1    = i1,
-                                intersection    = nodeToWorld.MultiplyPoint(B),
-                                from            = nodeToWorld.MultiplyPoint(v0),
-                                to              = nodeToWorld.MultiplyPoint(v1)
-                            });
-                        }
-                        */
                         continue;
                     }
 
@@ -562,7 +407,7 @@ namespace Chisel.Editors
         //          2 intersections => create virutal edge to and find closest vertex to pivot (surface vertex)
         static List<CSGTreeNode>    s_SelectedNodes     = new List<CSGTreeNode>();
         static List<CSGTreeBrush>   s_SelectedBrushes   = new List<CSGTreeBrush>();
-        static void FindClosestSnapPointsToPlane(GameObject[] selection, Vector3 worldPoint, Grid worldSlideGrid, float maxSnapDistance, List<SurfaceSnap> allSurfaceSnapEvents, List<EdgeSnap> allEdgeSnapEvents, List<VertexSnap> allVertexSnapEvents)
+        static void FindClosestSnapPointsToPlane(GameObject[] selection, Vector3 startWorldPoint, Vector3 currentWorldPoint, Grid worldSlideGrid, float maxSnapDistance, List<SurfaceSnap> allSurfaceSnapEvents, List<EdgeSnap> allEdgeSnapEvents, List<VertexSnap> allVertexSnapEvents)
         {
             if (selection == null || selection.Length == 0)
                 return;
@@ -580,13 +425,17 @@ namespace Chisel.Editors
                 var vectorX      = worldSlideGrid.Right * maxSnapDistance;
                 var vectorZ      = worldSlideGrid.Forward * maxSnapDistance;
 
-                var snappedWorldPoint = Snapping.SnapPoint(worldPoint, worldSlideGrid);
+                var snappedWorldPoint = Snapping.SnapPoint(currentWorldPoint, worldSlideGrid);
+                FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorX, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
+                FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorZ, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
+
+                snappedWorldPoint = Snapping.SnapPoint(startWorldPoint, worldSlideGrid);
                 FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorX, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
                 FindSnapPointsAlongRay(selection, snappedWorldPoint, vectorZ, allSurfaceSnapEvents, allEdgeSnapEvents, allVertexSnapEvents);
             }
 
 
-            worldSlidePlane = new Plane(worldSlidePlane.normal, worldPoint);
+            worldSlidePlane = new Plane(worldSlidePlane.normal, currentWorldPoint);
 
             s_SelectedBrushes.Clear();
             foreach (var go in selection)
@@ -631,7 +480,7 @@ namespace Chisel.Editors
                 var worldToNode     = csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
                 var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
                 
-                var brushPoint      = worldToNode.MultiplyPoint(worldPoint);
+                var brushPoint      = worldToNode.MultiplyPoint(currentWorldPoint);
                 var brushPlane      = worldToNode.TransformPlane(worldSlidePlane);
 
                 if (allVertexSnapEvents != null)
@@ -781,7 +630,7 @@ namespace Chisel.Editors
                             var vertex0 = foundEdges[0].intersection;
                             var vertex1 = foundEdges[1].intersection;
 
-                            if (ClosestPointToLine(worldPoint, vertex0, vertex1, out Vector3 closestWorldPoint))
+                            if (ClosestPointToLine(currentWorldPoint, vertex0, vertex1, out Vector3 closestWorldPoint))
                             {
                                 allSurfaceSnapEvents.Add(new SurfaceSnap
                                 {
@@ -888,7 +737,7 @@ namespace Chisel.Editors
             return true;
         }
 
-        static bool FindCustomSnappingPoints(Vector3 point, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints)
+        static bool FindCustomSnappingPoints(Vector3 startWorldPoint, Vector3 currentWorldPoint, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints)
         {
             if (!s_SnappingContext.TryGetValue(contextIndex, out var snappingContext))
                 s_SnappingContext[contextIndex] = snappingContext = new SnappingContext();
@@ -912,7 +761,7 @@ namespace Chisel.Editors
             var vertexSnapEvents    = vertexSnappingActive  ? snappingContext.s_AllVertexSnapEvents  : null;
 
             var selection = Selection.gameObjects; 
-            FindClosestSnapPointsToPlane(selection, point, worldSlideGrid, kArbitrarySnapDistance, surfaceSnapEvents, edgeSnapEvents, vertexSnapEvents); 
+            FindClosestSnapPointsToPlane(selection, startWorldPoint, currentWorldPoint, worldSlideGrid, kArbitrarySnapDistance, surfaceSnapEvents, edgeSnapEvents, vertexSnapEvents); 
 
             snappingContext.CollectAllSnapPoints(foundWorldspacePoints);
             return true;

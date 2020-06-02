@@ -36,6 +36,8 @@ namespace UnitySceneExtensions
             public int yzPlaneId;
             public int centerId;
 
+            public Vector3 originalPosition;
+
             public bool Contains(int id)
             {
                 return  id == xAxisId   || id == yAxisId   || id == zAxisId ||
@@ -161,10 +163,10 @@ namespace UnitySceneExtensions
         {
             var handleIDs = new PositionHandleIDs();
             Initialize(ref handleIDs);
-            return PositionHandle(handleIDs, points, position, rotation, enabledAxes);
+            return PositionHandle(ref handleIDs, points, position, rotation, enabledAxes);
         }
 
-        public static Vector3[] PositionHandle(PositionHandleIDs handleIDs, Vector3[] points, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
+        public static Vector3[] PositionHandle(ref PositionHandleIDs handleIDs, Vector3[] points, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
             var xAxisId   = handleIDs.xAxisId;
             var yAxisId   = handleIDs.yAxisId;
@@ -193,9 +195,15 @@ namespace UnitySceneExtensions
                         (GUIUtility.keyboardControl != centerId || evt.button != 2))
                         break;
 
+                    handleIDs.originalPosition = position;
                     GUIUtility.hotControl = GUIUtility.keyboardControl = centerId;
                     evt.Use();
                     EditorGUIUtility.SetWantsMouseJumping(1);
+                    break;
+                }
+                case EventType.MouseMove:
+                {
+                    handleIDs.originalPosition = position;
                     break;
                 }
                 case EventType.MouseDrag:
@@ -214,6 +222,7 @@ namespace UnitySceneExtensions
                         Snapping.ActiveAxes = Axes.XYZ;
                         EditorGUIUtility.SetWantsMouseJumping(0);
                         SceneView.RepaintAll();
+                        handleIDs.originalPosition = position;
                     }
                     break;
                 }
@@ -332,18 +341,18 @@ namespace UnitySceneExtensions
             return PositionHandle(s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
-        public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
+        public static Vector3 PositionHandle(ref PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
         {
             var activeGrid = Grid.ActiveGrid;
             var rotation = Quaternion.LookRotation(activeGrid.Forward, activeGrid.Up);
             s_PositionHandleArray[0] = position;
-            return PositionHandle(handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
+            return PositionHandle(ref handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
-        public static Vector3 PositionHandle(PositionHandleIDs handleIDs, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
+        public static Vector3 PositionHandle(ref PositionHandleIDs handleIDs, Vector3 position, Quaternion rotation, Axes enabledAxes = Axes.XYZ)
         {
             s_PositionHandleArray[0] = position;
-            return PositionHandle(handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
+            return PositionHandle(ref handleIDs, s_PositionHandleArray, position, rotation, enabledAxes)[0];
         }
 
         public static Vector3 PositionHandleOffset(Vector3 position, Axes enabledAxes = Axes.XYZ)
@@ -351,9 +360,9 @@ namespace UnitySceneExtensions
             return PositionHandle(position, enabledAxes) - position;
         }
 
-        public static Vector3 PositionHandleOffset(PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
+        public static Vector3 PositionHandleOffset(ref PositionHandleIDs handleIDs, Vector3 position, Axes enabledAxes = Axes.XYZ)
         {
-            return PositionHandle(handleIDs, position, enabledAxes) - position;
+            return PositionHandle(ref handleIDs, position, enabledAxes) - position;
         }
     }
 }

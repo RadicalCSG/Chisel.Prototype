@@ -48,7 +48,7 @@ namespace UnitySceneExtensions
     {
         public static event Action SnappingSettingsModified;
         public delegate bool GetCustomSnappingPointsRayDelegate(Vector3 worldRayStart, Vector3 worldRayDirection, int contextIndex, List<Vector3> foundWorldspacePoints);
-        public delegate bool GetCustomSnappingPointsDelegate(Vector3 worldRayStart, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints);
+        public delegate bool GetCustomSnappingPointsDelegate(Vector3 startWorldPoint, Vector3 currentWorldPoint, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints);
         public delegate void CustomSnappedEventDelegate(int index, int context);
 
         public static GetCustomSnappingPointsRayDelegate FindCustomSnappingPointsRayMethod;
@@ -63,11 +63,11 @@ namespace UnitySceneExtensions
                     && foundWorldspacePoints.Count > 0;
         }
 
-        public static bool GetCustomSnappingPoints(Vector3 worldRayStart, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints)
+        public static bool GetCustomSnappingPoints(Vector3 startWorldPoint, Vector3 currentWorldPoint, Grid worldSlideGrid, int contextIndex, List<Vector3> foundWorldspacePoints)
         {
             foundWorldspacePoints.Clear();
             return Snapping.FindCustomSnappingPointsMethod == null ? false :
-                    Snapping.FindCustomSnappingPointsMethod(worldRayStart, worldSlideGrid, contextIndex, foundWorldspacePoints)
+                    Snapping.FindCustomSnappingPointsMethod(startWorldPoint, currentWorldPoint, worldSlideGrid, contextIndex, foundWorldspacePoints)
                     && foundWorldspacePoints.Count > 0;
         }
 
@@ -928,12 +928,12 @@ namespace UnitySceneExtensions
         
         public void Initialize(Grid worldSlideGrid, Vector2 currentGUIPosition, Vector3 localSlideOrigin, Matrix4x4 localToWorldMatrix)
         {
-            this.localToWorldMatrix		= localToWorldMatrix;			
-            this.worldSlidePosition		= this.worldSlideOrigin;
+            this.localToWorldMatrix		= localToWorldMatrix;
             this.worldSlideGrid			= worldSlideGrid;
             
             var worldSlideOrigin		= this.localToWorldMatrix.MultiplyPoint(localSlideOrigin);
             var gridSlideOrigin			= this.worldSlideGrid.WorldToGridSpace.MultiplyPoint(worldSlideOrigin);
+            this.worldSlidePosition		= worldSlideOrigin;
             this.gridSlideExtents.min	= gridSlideOrigin;
             this.gridSlideExtents.max	= gridSlideOrigin;
             this.worldSlideOrigin		= worldSlideOrigin;
