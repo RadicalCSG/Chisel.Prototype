@@ -20,14 +20,31 @@ namespace Chisel.Editors
         class Styles
         {
             public GUIStyle   leftButton;
+            public GUIStyle   leftButtonLabel;
             public GUIStyle   midButton;
             public GUIStyle   rightButton;
             
             public Styles()
             {
+                var button = GUI.skin.button;
                 leftButton = new GUIStyle("AppCommandLeft");
+                leftButton.fixedWidth = 0;
+                leftButtonLabel = new GUIStyle(EditorStyles.label);
+                leftButtonLabel.padding.top += 2;
+                leftButtonLabel.alignment = TextAnchor.MiddleCenter;
+                leftButtonLabel.fixedWidth = 0;
+                leftButtonLabel.active.textColor = EditorGUIUtility.isProSkin ? button.active.textColor : Color.white;
+                leftButtonLabel.onActive.textColor = EditorGUIUtility.isProSkin ? button.onActive.textColor : Color.white;
+                leftButtonLabel.normal.textColor = button.normal.textColor;
+                leftButtonLabel.onNormal.textColor = button.onNormal.textColor;
+                leftButtonLabel.hover.textColor = button.hover.textColor;
+                leftButtonLabel.onHover.textColor = button.onHover.textColor;
+                leftButtonLabel.focused.textColor = button.focused.textColor;
+                leftButtonLabel.onFocused.textColor = button.onFocused.textColor;
                 midButton = new GUIStyle("AppCommandMid");
+                midButton.fixedWidth = 0;
                 rightButton = new GUIStyle("AppCommandMid");
+                rightButton.fixedWidth = 0;
             }
         };
 
@@ -43,12 +60,17 @@ namespace Chisel.Editors
 
             return EditorGUI.EndChangeCheck() && result;
         }
-
-        static bool Toggle(bool selected, GUIContent[] content, GUIStyle style)
+        static bool ToggleLabel(ref Rect toggleRect, bool selected, GUIContent[] content, GUIStyle style)
         {
             var selectedContent = selected ? content[1] : content[0];
 
-            return GUILayout.Button(selectedContent, style);
+            EditorGUI.BeginChangeCheck();
+            var result = GUI.Toggle(toggleRect, selected, GUIContent.none, style);
+            if (Event.current.type == EventType.Repaint)
+                styles.leftButtonLabel.Draw(toggleRect, selectedContent, false, selected, false, false);
+            toggleRect.x += toggleRect.width;
+
+            return EditorGUI.EndChangeCheck() && result;
         }
 
         public static void ChooseGeneratorOperation(ref CSGOperationType? operation)
@@ -61,7 +83,7 @@ namespace Chisel.Editors
             rect.yMax -= kBottomPadding;
             EditorGUI.BeginChangeCheck();
             rect.yMin+=2;
-            GUI.Label(rect, "Operation");
+            EditorGUI.PrefixLabel(rect, EditorGUIUtility.TrTextContent("Operation"));
             rect.yMin-=2;
             var result = ChiselOperationGUI.ShowOperationChoicesInternal(rect, operation);
             if (EditorGUI.EndChangeCheck()) { operation = result; }
@@ -118,7 +140,7 @@ namespace Chisel.Editors
                 {
                     toggleRect.width = kAutomaticToggleWidth;
                     var autoIcon = ChiselEditorResources.GetIconContent(kAutoIconName, $"Automatic boolean operation");
-                    if (Toggle(ref toggleRect, !operation.HasValue, autoIcon, styles.leftButton))
+                    if (ToggleLabel(ref toggleRect, !operation.HasValue, autoIcon, styles.leftButton))
                         return null;
                     toggleRect.width = kOperationToggleWidth;
                 } else

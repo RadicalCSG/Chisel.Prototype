@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System;
@@ -152,9 +152,9 @@ namespace Chisel.Editors
 
             var images = LoadIconImages(nameID);
             if (images == null)
-                contents = new GUIContent[] { new GUIContent(name, tooltip), new GUIContent(name, tooltip) };
+                contents = new GUIContent[] { new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)), new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)) };
             else
-                contents = new GUIContent[] { new GUIContent(images[0], tooltip), new GUIContent(images[1], tooltip) };
+                contents = new GUIContent[] { new GUIContent(images[0], L10n.Tr(tooltip)), new GUIContent(images[1], L10n.Tr(tooltip)) };
 
             iconContentLookup[id] = contents;
             return contents;
