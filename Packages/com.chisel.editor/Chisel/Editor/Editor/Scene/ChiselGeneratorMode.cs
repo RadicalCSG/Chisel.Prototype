@@ -61,10 +61,17 @@ namespace Chisel.Editors
                 Cancel();
                 return;
             }
+            UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
+            UnityEditor.Selection.selectionChanged += OnDelayedSelectionChanged;
             UnityEditor.Selection.activeGameObject = newGameObject;
             Reset();
-            
-            // Throws an error because selection apparently hasn't arrived to EditorTools API yet??
+        }
+
+        // Unity bug workaround
+        void OnDelayedSelectionChanged()
+        {
+            UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
+
             EditorTools.SetActiveTool(typeof(ChiselEditGeneratorTool));
         }
 
