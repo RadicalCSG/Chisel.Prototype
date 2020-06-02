@@ -20,13 +20,7 @@ namespace Chisel.Editors
 
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
-        public override GUIContent Content
-        {
-            get 
-            {
-                return ChiselGeneratorManager.GeneratorMode.Content;
-            } 
-        }
+        public override GUIContent Content { get { return ChiselGeneratorManager.GeneratorMode.Content; } }
 
         public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselCreateTool); }
         

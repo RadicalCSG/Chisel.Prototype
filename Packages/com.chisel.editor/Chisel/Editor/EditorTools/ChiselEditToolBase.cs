@@ -1,4 +1,4 @@
-﻿using Chisel.Components;
+using Chisel.Components;
 using System;
 using System.Linq;
 using UnityEditor;
@@ -67,16 +67,29 @@ namespace Chisel.Editors
         {
             lastSelectedTool = null;
             ChiselToolsOverlay.Register(this);
-            ToolNotActivatingBugWorkAround(); 
-            UpdateIcon();
-            NotifyOnSelectionChanged();
+            EditorApplication.delayCall -= OnDelayedEnable;
+            EditorApplication.delayCall += OnDelayedEnable;
+        }
+
+        void OnDisable()
+        {
+            EditorApplication.delayCall -= OnDelayedEnable;
         }
 
         public void Awake()
         {
             lastSelectedTool = null;
+        }
+
+        // Unity bug workaround
+        void OnDelayedEnable()
+        {
+            EditorApplication.delayCall -= OnDelayedEnable;
+
             ToolNotActivatingBugWorkAround();
+            UpdateIcon();
             NotifyOnSelectionChanged();
+            SceneView.RepaintAll();
         }
 
         public void UpdateIcon()
@@ -123,15 +136,26 @@ namespace Chisel.Editors
 
 
         static ChiselEditToolBase lastSelectedTool = null;
+        static Type lastRememberedToolType = null;
+
+        public static void ClearLastRememberedType()
+        { 
+            lastRememberedToolType = null; 
+        }
 
         public void ToolNotActivatingBugWorkAround()
         {
             if (lastSelectedTool == null)
             {
+                if (Tools.current != Tool.Custom &&
+                    lastRememberedToolType != null)
+                {
+                    EditorTools.SetActiveTool(lastRememberedToolType);
+                    lastRememberedToolType = null;
+                } else
                 if (EditorTools.activeToolType == this.GetType())
                 {
                     OnActivate();
-                    lastSelectedTool = this;
                 }
             }
         }
@@ -143,7 +167,6 @@ namespace Chisel.Editors
             {
                 if (lastSelectedTool != null)
                     lastSelectedTool.OnDeactivate();
-                lastSelectedTool = this;
                 OnActivate();
             }
             var sceneView = window as SceneView;
@@ -163,6 +186,7 @@ namespace Chisel.Editors
         public virtual void OnActivate()
         {
             lastSelectedTool = this;
+            lastRememberedToolType = this.GetType();
             UnitySceneExtensions.Snapping.SnapMask = ToolUsedSnappingModes;
         }
 

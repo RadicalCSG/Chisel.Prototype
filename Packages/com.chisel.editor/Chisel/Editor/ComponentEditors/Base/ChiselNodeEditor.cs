@@ -9,6 +9,7 @@ using Chisel.Components;
 using SceneHandles = UnitySceneExtensions.SceneHandles;
 using ControlState = UnitySceneExtensions.ControlState;
 using HandleRendering = UnitySceneExtensions.HandleRendering;
+using UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
@@ -655,6 +656,8 @@ namespace Chisel.Editors
             ChiselEditGeneratorTool.OnEditSettingsGUI = null;
             ChiselEditGeneratorTool.CurrentEditorName = null;
             Tools.hidden = false;
+
+            EditorTools.activeToolChanged -= OnToolModeChanged;
         }
 
         void OnEnable()
@@ -665,6 +668,9 @@ namespace Chisel.Editors
                 return;
             }
 
+            EditorTools.activeToolChanged -= OnToolModeChanged;
+            EditorTools.activeToolChanged += OnToolModeChanged;
+
             if (Tools.current == Tool.Custom) ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
@@ -673,6 +679,19 @@ namespace Chisel.Editors
             UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
             InitInspector();
+        }
+
+        void OnToolModeChanged()
+        {
+            if (Tools.current != Tool.Custom)
+            {
+                ChiselEditToolBase.ClearLastRememberedType();
+                return;
+            }
+            if (!typeof(ChiselEditToolBase).IsAssignableFrom(EditorTools.activeToolType))
+            {
+                ChiselEditToolBase.ClearLastRememberedType();
+            }
         }
 
         protected bool HasValidState()
