@@ -7,6 +7,7 @@ Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non d
 ---
 **[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
 
+[Click here for information on how to get started](GettingStarted.md)
 
 Notes:
 - Chisel requires Unity 2020.2 or newer
