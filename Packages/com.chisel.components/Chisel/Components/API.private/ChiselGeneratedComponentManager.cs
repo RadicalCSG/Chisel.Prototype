@@ -146,10 +146,7 @@ namespace Chisel.Components
             foreach (var model in models)
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
-                {
-                    model.generated.visibilityState = VisibilityState.AllInvisible;
                     continue;
-                }
                 if (!visibilityStateLookup.TryGetValue(model.NodeID, out VisibilityState state))
                 {
                     visibilityStateLookup[model.NodeID] = VisibilityState.AllVisible;
