@@ -464,10 +464,12 @@ namespace Chisel.Components
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
             var bounds			= ChiselHierarchyItem.EmptyBounds;
 
-            var foundBrushes = new HashSet<CSGTreeBrush>();
+            var foundBrushes    = new HashSet<CSGTreeBrush>();
             GetAllTreeBrushes(foundBrushes, false);
             foreach (var brush in foundBrushes)
             {
+                if (!brush.Valid)
+                    continue;
                 var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
                 var assetBounds = brushContainerAsset.CalculateBounds(transformation);
                 var magnitude = assetBounds.size.sqrMagnitude;

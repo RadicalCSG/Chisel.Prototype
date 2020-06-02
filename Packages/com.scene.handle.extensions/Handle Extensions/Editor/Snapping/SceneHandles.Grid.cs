@@ -320,7 +320,7 @@ namespace UnitySceneExtensions
         {
             s_CustomSnapPoints.Clear();
             // TODO: have a method that handles multiple dimensions at the same time
-            var haveCustomSnapping = Snapping.GetCustomSnappingPoints(worldCurrentPosition, worldSlideGrid, 0, s_CustomSnapPoints);
+            var haveCustomSnapping = Snapping.GetCustomSnappingPoints(worldStartPosition, worldCurrentPosition, worldSlideGrid, 0, s_CustomSnapPoints);
             
             var boundsActive    = Snapping.BoundsSnappingActive;
             var pivotActive     = Snapping.PivotSnappingActive;

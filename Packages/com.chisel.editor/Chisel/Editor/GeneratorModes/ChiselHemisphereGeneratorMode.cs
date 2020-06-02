@@ -22,7 +22,7 @@ namespace Chisel.Editors
     {
         const string kToolName = ChiselHemisphere.kNodeTypeName;
         public override string ToolName => kToolName;
-        public override string Group => "Primitives";
+        public override string Group => "Basic Primitives";
 
         #region Keyboard Shortcut
         const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;

@@ -1,13 +1,14 @@
-﻿
+
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using Chisel;
 using Chisel.Core;
 using Chisel.Components;
+using SceneHandles = UnitySceneExtensions.SceneHandles;
+using ControlState = UnitySceneExtensions.ControlState;
+using HandleRendering = UnitySceneExtensions.HandleRendering;
 using UnityEditor.EditorTools;
 
 namespace Chisel.Editors
@@ -361,9 +362,9 @@ namespace Chisel.Editors
 
 
         // TODO: put somewhere else
-        static GUILayoutOption kHeaderHeight = GUILayout.Height(22.0f);
-        internal static void ConvertIntoBrushesButton(SerializedObject serializedObject)
+        internal static void ConvertIntoBrushesButton(Rect rect, SerializedObject serializedObject)
         {
+            rect.height = 22;
             bool singular = false;
             bool multiple = false;
             foreach (var targetObject in serializedObject.targetObjects)
@@ -377,12 +378,12 @@ namespace Chisel.Editors
             }
             if (multiple)
             {
-                if (!GUILayout.Button(convertToBrushesContent, kHeaderHeight))
+                if (!GUI.Button(rect, convertToBrushesContent))
                     return;
             } else
             if (singular)
             {
-                if (!GUILayout.Button(convertToBrushContent, kHeaderHeight))
+                if (!GUI.Button(rect, convertToBrushContent))
                     return;
             } else
                 return;
@@ -401,19 +402,22 @@ namespace Chisel.Editors
                 EditorGUIUtility.ExitGUI();
         }
 
-        public static void ShowOperationChoices(SerializedProperty operationProp)
-        {
-            EditorGUILayout.BeginHorizontal();
-            ChiselOperationGUI.ShowOperationChoicesInternal(operationProp);
-            EditorGUILayout.EndHorizontal();
-        }
-
         public void ShowInspectorHeader(SerializedProperty operationProp)
         {
-            GUILayout.BeginHorizontal();
-            ChiselOperationGUI.ShowOperationChoicesInternal(operationProp);
-            if (typeof(T) != typeof(ChiselBrush)) ConvertIntoBrushesButton(serializedObject);
-            GUILayout.EndHorizontal();
+            GUILayout.Space(3);
+            const float kBottomPadding = 3;
+            var rect = EditorGUILayout.GetControlRect(hasLabel: false, height: EditorGUIUtility.singleLineHeight + kBottomPadding);
+            rect.yMax -= kBottomPadding;
+            var buttonRect = rect;
+            buttonRect.xMax -= ChiselOperationGUI.GetOperationChoicesInternalWidth(showAuto: false);
+            if (typeof(T) != typeof(ChiselBrush))
+            {
+                ConvertIntoBrushesButton(buttonRect, serializedObject);
+                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);
+            } else
+            {
+                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: true);
+            }
         }
 
         protected abstract void OnEditSettingsGUI(SceneView sceneView);
@@ -424,6 +428,7 @@ namespace Chisel.Editors
             ShowDefaultModelMessage(serializedObject.targetObjects);
         }
 
+        static SceneHandles.PositionHandleIDs s_HandleIDs = new SceneHandles.PositionHandleIDs();
         static void OnMoveTool()
         {
             var position = Tools.handlePosition;
@@ -431,7 +436,8 @@ namespace Chisel.Editors
 
             EditorGUI.BeginChangeCheck();
             // TODO: make this work with bounds!
-            var newPosition = UnitySceneExtensions.SceneHandles.PositionHandle(position, rotation);
+            SceneHandles.Initialize(ref s_HandleIDs);
+            var newPosition = SceneHandles.PositionHandle(ref s_HandleIDs, position, rotation);
             if (EditorGUI.EndChangeCheck())
             {
                 var delta = newPosition - position;
@@ -440,6 +446,14 @@ namespace Chisel.Editors
                 {				
                     MoveTransformsTo(transforms, delta);
                 }
+            }
+
+            if ((s_HandleIDs.combinedState & ControlState.Hot) == ControlState.Hot)
+            {
+                var handleSize = UnityEditor.HandleUtility.GetHandleSize(s_HandleIDs.originalPosition);
+                SceneHandles.RenderBorderedCircle(s_HandleIDs.originalPosition, handleSize * 0.05f);
+                var newHandleSize = UnityEditor.HandleUtility.GetHandleSize(newPosition);
+                HandleRendering.DrawCameraAlignedCircle(newPosition, newHandleSize * 0.1f, Color.white, Color.black);
             }
         }
 
@@ -613,8 +627,8 @@ namespace Chisel.Editors
                 return;
 
             // TODO: figure out how to make this work with multiple (different) editors when selecting a combination of nodes
-            ShowInspectorHeader(operationProp);
             OnDefaultSettingsGUI(target, sceneView);
+            ShowInspectorHeader(operationProp);
         }
 
         protected virtual void OnInspector() { OnDefaultInspector(); }
@@ -642,6 +656,8 @@ namespace Chisel.Editors
             ChiselEditGeneratorTool.OnEditSettingsGUI = null;
             ChiselEditGeneratorTool.CurrentEditorName = null;
             Tools.hidden = false;
+
+            EditorTools.activeToolChanged -= OnToolModeChanged;
         }
 
         void OnEnable()
@@ -652,6 +668,9 @@ namespace Chisel.Editors
                 return;
             }
 
+            EditorTools.activeToolChanged -= OnToolModeChanged;
+            EditorTools.activeToolChanged += OnToolModeChanged;
+
             if (Tools.current == Tool.Custom) ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
@@ -660,6 +679,19 @@ namespace Chisel.Editors
             UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
             InitInspector();
+        }
+
+        void OnToolModeChanged()
+        {
+            if (Tools.current != Tool.Custom)
+            {
+                ChiselEditToolBase.ClearLastRememberedType();
+                return;
+            }
+            if (!typeof(ChiselEditToolBase).IsAssignableFrom(EditorTools.activeToolType))
+            {
+                ChiselEditToolBase.ClearLastRememberedType();
+            }
         }
 
         protected bool HasValidState()

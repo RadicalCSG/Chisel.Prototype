@@ -2170,7 +2170,7 @@ namespace Chisel.Editors
             using (new EditorGUI.DisabledScope(!enablePositionHandle))
             {
                 var offset = Vector3.zero;
-                EditorGUI.BeginChangeCheck();   { offset = SceneHandles.PositionHandleOffset(s_TempPositionHandleIDs, vertexSelectionCenter); }
+                EditorGUI.BeginChangeCheck();   { offset = SceneHandles.PositionHandleOffset(ref s_TempPositionHandleIDs, vertexSelectionCenter); }
                 if (EditorGUI.EndChangeCheck()) { MoveSelectedVertices(offset); return true; }
             }
             return false;
