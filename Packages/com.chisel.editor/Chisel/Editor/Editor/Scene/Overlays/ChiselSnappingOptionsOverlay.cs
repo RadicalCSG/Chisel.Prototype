@@ -49,30 +49,17 @@ namespace Chisel.Editors
             public GUIStyle plus;
             public GUIStyle minus;
 
-            GUIContent[] boundsSnapIcons;
-            GUIContent[] pivotSnapIcons;
-            GUIContent[] edgeSnapIcons;
-            GUIContent[] vertexSnapIcons;
-            GUIContent[] surfaceSnapIcons;
-            GUIContent[] uvGridSnapIcons;
-            GUIContent[] uvEdgeSnapIcons;
-            GUIContent[] uvVertexSnapIcons;
-            GUIContent[] translateIcons;
-            GUIContent[] rotateIcons;
-            GUIContent[] scaleIcons;
-
-            public GUIContent boundsSnapIcon { get { return boundsSnapIcons[0]; } }
-            public GUIContent pivotSnapIcon { get { return pivotSnapIcons[0]; } }
-            public GUIContent edgeSnapIcon { get { return edgeSnapIcons[0]; } }
-            public GUIContent vertexSnapIcon { get { return vertexSnapIcons[0]; } }
-            public GUIContent surfaceSnapIcon { get { return surfaceSnapIcons[0]; } }
-            public GUIContent uvGridSnapIcon { get { return uvGridSnapIcons[0]; } }
-            public GUIContent uvEdgeSnapIcon { get { return uvEdgeSnapIcons[0]; } }
-            public GUIContent uvVertexSnapIcon { get { return uvVertexSnapIcons[0]; } }
-
-            public GUIContent translateIcon { get { return translateIcons[0]; } }
-            public GUIContent rotateIcon { get { return rotateIcons[0]; } }
-            public GUIContent scaleIcon { get { return scaleIcons[0]; } }
+            public GUIContent[] boundsSnapIcons;
+            public GUIContent[] pivotSnapIcons;
+            public GUIContent[] edgeSnapIcons;
+            public GUIContent[] vertexSnapIcons;
+            public GUIContent[] surfaceSnapIcons;
+            public GUIContent[] uvGridSnapIcons;
+            public GUIContent[] uvEdgeSnapIcons;
+            public GUIContent[] uvVertexSnapIcons;
+            public GUIContent[] translateIcons;
+            public GUIContent[] rotateIcons;
+            public GUIContent[] scaleIcons;
 
             Dictionary<GUIStyle, GUIStyle> emptyCopies = new Dictionary<GUIStyle, GUIStyle>();
 
@@ -151,19 +138,19 @@ namespace Chisel.Editors
                     fixedHeight = 20
                 };
 
-                boundsSnapIcons = ChiselEditorResources.GetIconContent("BoundsSnap", "Snap bounds against grid");
-                pivotSnapIcons = ChiselEditorResources.GetIconContent("PivotSnap", "Snap pivots against grid");
-                edgeSnapIcons = ChiselEditorResources.GetIconContent("EdgeSnap", "Snap against edges");
-                vertexSnapIcons = ChiselEditorResources.GetIconContent("VertexSnap", "Snap against vertices");
-                surfaceSnapIcons = ChiselEditorResources.GetIconContent("SurfaceSnap", "Snap against surfaces");
+                boundsSnapIcons     = ChiselEditorResources.GetIconContent("BoundsSnap", "Snap bounds against grid");
+                pivotSnapIcons      = ChiselEditorResources.GetIconContent("PivotSnap", "Snap pivots against grid");
+                edgeSnapIcons       = ChiselEditorResources.GetIconContent("EdgeSnap", "Snap against edges");
+                vertexSnapIcons     = ChiselEditorResources.GetIconContent("VertexSnap", "Snap against vertices");
+                surfaceSnapIcons    = ChiselEditorResources.GetIconContent("SurfaceSnap", "Snap against surfaces");
 
-                uvGridSnapIcons = ChiselEditorResources.GetIconContent("UVGridSnap", "Snap UV against grid");
-                uvEdgeSnapIcons = ChiselEditorResources.GetIconContent("UVEdgeSnap", "Snap UV against surface edges");
-                uvVertexSnapIcons = ChiselEditorResources.GetIconContent("UVVertexSnap", "Snap UV against surface vertices");
+                uvGridSnapIcons     = ChiselEditorResources.GetIconContent("UVGridSnap", "Snap UV against grid");
+                uvEdgeSnapIcons     = ChiselEditorResources.GetIconContent("UVEdgeSnap", "Snap UV against surface edges");
+                uvVertexSnapIcons   = ChiselEditorResources.GetIconContent("UVVertexSnap", "Snap UV against surface vertices");
 
-                translateIcons = ChiselEditorResources.GetIconContent("moveTool", "Enable/Disable move snapping");
-                rotateIcons = ChiselEditorResources.GetIconContent("rotateTool", "Enable/Disable rotate snapping");
-                scaleIcons  = ChiselEditorResources.GetIconContent("scaleTool", "Enable/Disable scale snapping");
+                translateIcons      = ChiselEditorResources.GetIconContent("moveTool", "Enable/Disable move snapping");
+                rotateIcons         = ChiselEditorResources.GetIconContent("rotateTool", "Enable/Disable rotate snapping");
+                scaleIcons          = ChiselEditorResources.GetIconContent("scaleTool", "Enable/Disable scale snapping");
 
                 //ChiselEditorResources.debug = true;
                 var plusIcons   = ChiselEditorResources.LoadIconImages("ol_plus");
@@ -269,6 +256,10 @@ namespace Chisel.Editors
             return GUILayout.Toggle(value, content, styles.smallToggleStyle, kSmallButtonWidthOption);
         }
 
+        public static bool SmallToggleButton(bool value, GUIContent[] content)
+        {
+            return GUILayout.Toggle(value, value ? content[1] : content[0], styles.smallToggleStyle, kSmallButtonWidthOption);
+        }
 
         public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent content, GUIStyle style)
         {
@@ -280,6 +271,19 @@ namespace Chisel.Editors
                 }
             } else
                 value = GUILayout.Toggle(value, content, style);
+            return value;
+        }
+
+        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent[] content, GUIStyle style)
+        {
+            if ((active & flag) != flag)
+            {
+                using (var disableScope = new EditorGUI.DisabledScope(true))
+                {
+                    GUILayout.Toggle(!ChiselEditorResources.isProSkin, content[0], style);
+                }
+            } else
+                value = GUILayout.Toggle(value, value ? content[1] : content[0], style);
             return value;
         }
 
@@ -299,15 +303,15 @@ namespace Chisel.Editors
                 GUILayout.BeginHorizontal();
                 {
                     GUILayout.Space(1);
-                    Snapping.BoundsSnappingEnabled      = ToggleButton(Snapping.BoundsSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryBoundsToGrid,  styles.boundsSnapIcon,   styles.toggleStyleMid);
-                    Snapping.PivotSnappingEnabled       = ToggleButton(Snapping.PivotSnappingEnabled,    usedSnappingModes, SnapSettings.GeometryPivotToGrid,   styles.pivotSnapIcon,    styles.toggleStyleLeft);
-                    Snapping.EdgeSnappingEnabled        = ToggleButton(Snapping.EdgeSnappingEnabled,     usedSnappingModes, SnapSettings.GeometryEdge,          styles.edgeSnapIcon,     styles.toggleStyleMid);
-                    Snapping.VertexSnappingEnabled      = ToggleButton(Snapping.VertexSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryVertex,        styles.vertexSnapIcon,   styles.toggleStyleMid);
-                    Snapping.SurfaceSnappingEnabled     = ToggleButton(Snapping.SurfaceSnappingEnabled,  usedSnappingModes, SnapSettings.GeometrySurface,       styles.surfaceSnapIcon,  styles.toggleStyleMid);
+                    Snapping.BoundsSnappingEnabled      = ToggleButton(Snapping.BoundsSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryBoundsToGrid,  styles.boundsSnapIcons,   styles.toggleStyleLeft);
+                    Snapping.PivotSnappingEnabled       = ToggleButton(Snapping.PivotSnappingEnabled,    usedSnappingModes, SnapSettings.GeometryPivotToGrid,   styles.pivotSnapIcons,    styles.toggleStyleMid);
+                    Snapping.EdgeSnappingEnabled        = ToggleButton(Snapping.EdgeSnappingEnabled,     usedSnappingModes, SnapSettings.GeometryEdge,          styles.edgeSnapIcons,     styles.toggleStyleMid);
+                    Snapping.VertexSnappingEnabled      = ToggleButton(Snapping.VertexSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryVertex,        styles.vertexSnapIcons,   styles.toggleStyleMid);
+                    Snapping.SurfaceSnappingEnabled     = ToggleButton(Snapping.SurfaceSnappingEnabled,  usedSnappingModes, SnapSettings.GeometrySurface,       styles.surfaceSnapIcons,  styles.toggleStyleMid);
                     
-                    Snapping.UVGridSnappingEnabled      = ToggleButton(Snapping.UVGridSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryGrid,        styles.uvGridSnapIcon,   styles.toggleStyleMid);
-                    Snapping.UVEdgeSnappingEnabled      = ToggleButton(Snapping.UVEdgeSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryEdges,       styles.uvEdgeSnapIcon,   styles.toggleStyleMid);
-                    Snapping.UVVertexSnappingEnabled    = ToggleButton(Snapping.UVVertexSnappingEnabled, usedSnappingModes, SnapSettings.UVGeometryVertices,    styles.uvVertexSnapIcon, styles.toggleStyleRight);
+                    Snapping.UVGridSnappingEnabled      = ToggleButton(Snapping.UVGridSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryGrid,        styles.uvGridSnapIcons,   styles.toggleStyleMid);
+                    Snapping.UVEdgeSnappingEnabled      = ToggleButton(Snapping.UVEdgeSnappingEnabled,   usedSnappingModes, SnapSettings.UVGeometryEdges,       styles.uvEdgeSnapIcons,   styles.toggleStyleMid);
+                    Snapping.UVVertexSnappingEnabled    = ToggleButton(Snapping.UVVertexSnappingEnabled, usedSnappingModes, SnapSettings.UVGeometryVertices,    styles.uvVertexSnapIcons, styles.toggleStyleRight);
                     GUILayout.Space(1);
                 }
                 GUILayout.EndHorizontal();
@@ -315,7 +319,7 @@ namespace Chisel.Editors
                 {
                     GUILayout.Space(1);
                     {
-                        Snapping.TranslateSnappingEnabled = SmallToggleButton(Snapping.TranslateSnappingEnabled, styles.translateIcon);
+                        Snapping.TranslateSnappingEnabled = SmallToggleButton(Snapping.TranslateSnappingEnabled, styles.translateIcons);
                         ChiselEditorSettings.UniformSnapSize = PlusMinusFloatField(ChiselEditorSettings.UniformSnapSize, kDoubleGridSize, kHalfGridSize, SnappingKeyboard.DoubleGridSizeRet, SnappingKeyboard.HalfGridSizeRet);
                     }
                     GUILayout.Space(1);
@@ -325,11 +329,11 @@ namespace Chisel.Editors
                 {
                     GUILayout.Space(1);
                     {
-                        Snapping.RotateSnappingEnabled = SmallToggleButton(Snapping.RotateSnappingEnabled, styles.rotateIcon);
+                        Snapping.RotateSnappingEnabled = SmallToggleButton(Snapping.RotateSnappingEnabled, styles.rotateIcons);
                         ChiselEditorSettings.RotateSnap = PlusMinusFloatField(ChiselEditorSettings.RotateSnap, kDoubleRotateSnap, kHalfRotateSnap, SnappingKeyboard.DoubleRotateSnapRet, SnappingKeyboard.HalfRotateSnapRet);
                     }
                     {
-                        Snapping.ScaleSnappingEnabled = SmallToggleButton(Snapping.ScaleSnappingEnabled, styles.scaleIcon);
+                        Snapping.ScaleSnappingEnabled = SmallToggleButton(Snapping.ScaleSnappingEnabled, styles.scaleIcons);
                         ChiselEditorSettings.ScaleSnap = PlusMinusFloatField(ChiselEditorSettings.ScaleSnap, kDoubleScaleSnap, kHalfScaleSnap, SnappingKeyboard.DoubleScaleSnapRet, SnappingKeyboard.HalfScaleSnapRet);
                     }
                     GUILayout.Space(1);

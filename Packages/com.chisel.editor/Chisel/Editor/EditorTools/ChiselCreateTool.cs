@@ -82,7 +82,7 @@ namespace Chisel.Editors
         }
 
         #region In-scene Options GUI
-        public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode} Options";
+        public override string OptionsTitle => $"{ChiselGeneratorManager.GeneratorMode.ToolName} Options";
         public override void OnInSceneOptionsGUI(SceneView sceneView)
         {
             ChiselGeneratorManager.GeneratorMode.OnSceneSettingsGUI(sceneView);

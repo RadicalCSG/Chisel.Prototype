@@ -108,18 +108,18 @@ namespace Chisel.Editors
         public static Texture2D LoadIconImage(string name, bool active)
         {
             Texture2D result = null;
-            name = name.ToLowerInvariant().Replace(' ', '_');  
+            var nameID = name.ToLowerInvariant().Replace(' ', '_');
             if (isProSkin)
             {
                 if (debug) Debug.Log("isProSkin");
-                if (active        ) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}{kActiveIconID}");
-                if (result == null) result = LoadImage($@"{kIconPath}{kDarkIconID}{name}");
+                if (active        ) result = LoadImage($@"{kIconPath}{kDarkIconID}{nameID}{kActiveIconID}");
+                if (result == null) result = LoadImage($@"{kIconPath}{kDarkIconID}{nameID}");
             }
             if (result == null)
             {
                 if (debug) Debug.Log("result == null");
-                if (active        ) result = LoadImage($@"{kIconPath}{name}{kActiveIconID}");
-                if (result == null) result = LoadImage($@"{kIconPath}{name}");
+                if (active        ) result = LoadImage($@"{kIconPath}{nameID}{kActiveIconID}");
+                if (result == null) result = LoadImage($@"{kIconPath}{nameID}");
             }
             if (debug) Debug.Log($"{name} = {result}");
             return result;
@@ -127,31 +127,30 @@ namespace Chisel.Editors
 
         public static Texture2D[] LoadIconImages(string name)
         {
-            name = name.ToLowerInvariant();
-            name = name.ToLowerInvariant();
-            if (iconImagesLookup.TryGetValue(name, out Texture2D[] iconImages))
+            var nameID = name.ToLowerInvariant();
+            if (iconImagesLookup.TryGetValue(nameID, out Texture2D[] iconImages))
                 return iconImages;
 
-            iconImages = new[] { LoadIconImage(name, false), LoadIconImage(name, true ) };
+            iconImages = new[] { LoadIconImage(nameID, false), LoadIconImage(nameID, true ) };
 
             if (iconImages[0] == null || iconImages[1] == null)
                 iconImages = null;
 
-            iconImagesLookup[name] = iconImages;
+            iconImagesLookup[nameID] = iconImages;
             return iconImages;
         }
 
         public static GUIContent[] GetIconContent(string name, string tooltip = "")
         {
-            name = name.ToLowerInvariant();
-            var id = (name.GetHashCode() * 33) + tooltip.GetHashCode();
+            var nameID = name.ToLowerInvariant();
+            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
             if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
                 return contents;
 
             if (tooltip == null)
                 tooltip = string.Empty;
 
-            var images = LoadIconImages(name);
+            var images = LoadIconImages(nameID);
             if (images == null)
                 contents = new GUIContent[] { new GUIContent(name, tooltip), new GUIContent(name, tooltip) };
             else
@@ -164,14 +163,15 @@ namespace Chisel.Editors
         public static GUIContent[] GetIconContentWithName(string name, string tooltip = "")
         {
             GUIContent[] contents;
-            var id = (name.GetHashCode() * 33) + tooltip.GetHashCode();
+            var nameID = name.ToLowerInvariant();
+            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
             if (iconContentWithNameLookup.TryGetValue(id, out contents))
                 return contents;
 
             if (tooltip == null)
                 tooltip = string.Empty;
 
-            var images = LoadIconImages(name);
+            var images = LoadIconImages(nameID);
             if (images == null)
                 contents = new GUIContent[] { new GUIContent(name, tooltip), new GUIContent(name, tooltip) };
             else

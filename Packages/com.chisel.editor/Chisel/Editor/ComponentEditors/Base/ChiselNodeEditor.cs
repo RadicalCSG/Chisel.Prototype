@@ -1,4 +1,4 @@
-﻿
+
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -361,9 +361,9 @@ namespace Chisel.Editors
 
 
         // TODO: put somewhere else
-        static GUILayoutOption kHeaderHeight = GUILayout.Height(22.0f);
-        internal static void ConvertIntoBrushesButton(SerializedObject serializedObject)
+        internal static void ConvertIntoBrushesButton(Rect rect, SerializedObject serializedObject)
         {
+            rect.height = 22;
             bool singular = false;
             bool multiple = false;
             foreach (var targetObject in serializedObject.targetObjects)
@@ -377,12 +377,12 @@ namespace Chisel.Editors
             }
             if (multiple)
             {
-                if (!GUILayout.Button(convertToBrushesContent, kHeaderHeight))
+                if (!GUI.Button(rect, convertToBrushesContent))
                     return;
             } else
             if (singular)
             {
-                if (!GUILayout.Button(convertToBrushContent, kHeaderHeight))
+                if (!GUI.Button(rect, convertToBrushContent))
                     return;
             } else
                 return;
@@ -401,19 +401,22 @@ namespace Chisel.Editors
                 EditorGUIUtility.ExitGUI();
         }
 
-        public static void ShowOperationChoices(SerializedProperty operationProp)
-        {
-            EditorGUILayout.BeginHorizontal();
-            ChiselOperationGUI.ShowOperationChoicesInternal(operationProp);
-            EditorGUILayout.EndHorizontal();
-        }
-
         public void ShowInspectorHeader(SerializedProperty operationProp)
         {
-            GUILayout.BeginHorizontal();
-            ChiselOperationGUI.ShowOperationChoicesInternal(operationProp);
-            if (typeof(T) != typeof(ChiselBrush)) ConvertIntoBrushesButton(serializedObject);
-            GUILayout.EndHorizontal();
+            GUILayout.Space(3);
+            const float kBottomPadding = 3;
+            var rect = EditorGUILayout.GetControlRect(hasLabel: false, height: EditorGUIUtility.singleLineHeight + kBottomPadding);
+            rect.yMax -= kBottomPadding;
+            var buttonRect = rect;
+            buttonRect.xMax -= ChiselOperationGUI.GetOperationChoicesInternalWidth(showAuto: false);
+            if (typeof(T) != typeof(ChiselBrush))
+            {
+                ConvertIntoBrushesButton(buttonRect, serializedObject);
+                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);
+            } else
+            {
+                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: true);
+            }
         }
 
         protected abstract void OnEditSettingsGUI(SceneView sceneView);
@@ -613,8 +616,8 @@ namespace Chisel.Editors
                 return;
 
             // TODO: figure out how to make this work with multiple (different) editors when selecting a combination of nodes
-            ShowInspectorHeader(operationProp);
             OnDefaultSettingsGUI(target, sceneView);
+            ShowInspectorHeader(operationProp);
         }
 
         protected virtual void OnInspector() { OnDefaultInspector(); }

@@ -13,74 +13,93 @@ namespace Chisel.Editors
 {
     public static class ChiselOperationGUI
     {
+        const int       kOperationToggleWidth   = 32;
+        const int       kAutomaticToggleWidth   = 80;
+        const string    kAutoIconName           = "Automatic";
+
         class Styles
         {
-            public GUIStyle[] leftButton    = new GUIStyle[2];
-            public GUIStyle[] midButton     = new GUIStyle[2];
-            public GUIStyle[] rightButton   = new GUIStyle[2];
-
+            public GUIStyle   leftButton;
+            public GUIStyle   midButton;
+            public GUIStyle   rightButton;
+            
             public Styles()
             {
-                leftButton[0] = new GUIStyle(EditorStyles.miniButtonLeft) { stretchWidth = false, stretchHeight = true };
-                leftButton[0].padding.top += 3;
-                leftButton[0].padding.bottom += 3;
-                leftButton[0].padding.left += 3;
-                leftButton[0].padding.right += 4;
-                leftButton[0].fixedHeight += 5;
-
-                leftButton[1] = new GUIStyle(leftButton[0]);
-                leftButton[1].normal.background = leftButton[0].active.background;
-
-
-                midButton[0] = new GUIStyle(EditorStyles.miniButtonMid) { stretchWidth = false, stretchHeight = true };
-                midButton[0].padding.top += 3;
-                midButton[0].padding.bottom += 3;
-                midButton[0].padding.left += 3;
-                midButton[0].padding.right += 4;
-                midButton[0].fixedHeight += 5;
-
-                midButton[1] = new GUIStyle(midButton[0]);
-                midButton[1].normal.background = midButton[0].active.background;
-
-
-                rightButton[0] = new GUIStyle(EditorStyles.miniButtonRight) { stretchWidth = false, stretchHeight = true };
-                rightButton[0].padding.top += 3;
-                rightButton[0].padding.bottom += 3;
-                rightButton[0].padding.left += 3;
-                rightButton[0].padding.right += 4;
-                rightButton[0].fixedHeight += 5;
-
-                rightButton[1] = new GUIStyle(rightButton[0]);
-                rightButton[1].normal.background = rightButton[0].active.background;
+                leftButton = new GUIStyle("AppCommandLeft");
+                midButton = new GUIStyle("AppCommandMid");
+                rightButton = new GUIStyle("AppCommandMid");
             }
         };
 
         static Styles styles;
 
-        static bool Toggle(bool selected, GUIContent[] content, GUIStyle[] style)
+        static bool Toggle(ref Rect toggleRect, bool selected, GUIContent[] content, GUIStyle style)
         {
             var selectedContent = selected ? content[1] : content[0];
-            var selectedStyle = selected ? style[1] : style[0];
 
-            return GUILayout.Button(selectedContent, selectedStyle);
+            EditorGUI.BeginChangeCheck();
+            var result = GUI.Toggle(toggleRect, selected, selectedContent, style);
+            toggleRect.x += toggleRect.width;
+
+            return EditorGUI.EndChangeCheck() && result;
         }
 
-        // TODO: put somewhere else
-        public static void ShowOperationChoicesInternal(SerializedProperty operationProp)
+        static bool Toggle(bool selected, GUIContent[] content, GUIStyle style)
+        {
+            var selectedContent = selected ? content[1] : content[0];
+
+            return GUILayout.Button(selectedContent, style);
+        }
+
+        public static void ChooseGeneratorOperation(ref CSGOperationType? operation)
+        {
+            if (styles == null)
+                styles = new Styles();
+
+            const float kBottomPadding = 3;
+            var rect = EditorGUILayout.GetControlRect(hasLabel: true, height: EditorGUIUtility.singleLineHeight + kBottomPadding);
+            rect.yMax -= kBottomPadding;
+            EditorGUI.BeginChangeCheck();
+            rect.yMin+=2;
+            GUI.Label(rect, "Operation");
+            rect.yMin-=2;
+            var result = ChiselOperationGUI.ShowOperationChoicesInternal(rect, operation);
+            if (EditorGUI.EndChangeCheck()) { operation = result; }
+        }
+
+        public static void ShowOperationChoicesInternal(Rect rect, SerializedProperty operationProp, bool showLabel = false)
         {
             if (operationProp == null)
                 return;
 
             EditorGUI.BeginChangeCheck();
-            var result = ShowOperationChoicesInternal(operationProp.hasMultipleDifferentValues ? (CSGOperationType?)null : (CSGOperationType)operationProp.enumValueIndex, false);
+            if (showLabel)
+            {
+                rect.yMin += 2;
+                EditorGUI.PrefixLabel(rect, EditorGUIUtility.TrTextContent(operationProp.displayName));
+                rect.yMin -= 2;
+            }
+            var result  = ShowOperationChoicesInternal(rect, operationProp.hasMultipleDifferentValues ? (CSGOperationType?)null : (CSGOperationType)operationProp.enumValueIndex, false);
             if (EditorGUI.EndChangeCheck() && result.HasValue)
             {
                 operationProp.enumValueIndex = (int)result.Value;
+                operationProp.serializedObject.ApplyModifiedProperties();
+                GUI.changed = true;
             }
         }
 
-        // TODO: put somewhere else
-        public static CSGOperationType? ShowOperationChoicesInternal(CSGOperationType? operation, bool showAuto = true)
+        const int kLeftStylePadding = 0;
+        public static int GetOperationChoicesInternalWidth(bool showAuto = true)
+        {
+            var width = (kOperationToggleWidth * 3);
+            if (showAuto)
+                width += kAutomaticToggleWidth;
+            else
+                width += kLeftStylePadding;
+            return width;
+        }
+
+        public static CSGOperationType? ShowOperationChoicesInternal(Rect rect, CSGOperationType? operation, bool showAuto = true)
         {
             if (styles == null)
                 styles = new Styles();
@@ -92,32 +111,30 @@ namespace Chisel.Editors
             using (new EditorGUIUtility.IconSizeScope(new Vector2(16, 16)))     // This ensures that the icons will be the same size on regular displays and HDPI displays
                                                                                 // Note that the loaded images are different sizes on different displays
             {
+                Rect toggleRect = rect;
+                toggleRect.xMin = toggleRect.xMax - GetOperationChoicesInternalWidth(showAuto);
+
                 if (showAuto)
                 {
-                    const string kAutoIconName = "Automatic";
+                    toggleRect.width = kAutomaticToggleWidth;
                     var autoIcon = ChiselEditorResources.GetIconContent(kAutoIconName, $"Automatic boolean operation");
-                    if (Toggle(!operation.HasValue, autoIcon, styles.leftButton))
+                    if (Toggle(ref toggleRect, !operation.HasValue, autoIcon, styles.leftButton))
                         return null;
-                }
+                    toggleRect.width = kOperationToggleWidth;
+                } else
+                    toggleRect.width = kOperationToggleWidth + kLeftStylePadding;
+
                 var operationType = !operation.HasValue ? ((CSGOperationType)255) : (operation.Value);
-                if (Toggle((operationType == CSGOperationType.Additive), additiveIcon, showAuto ? styles.midButton : styles.leftButton))
+                if (Toggle(ref toggleRect, (operationType == CSGOperationType.Additive), additiveIcon, showAuto ? styles.midButton : styles.leftButton))
                     return CSGOperationType.Additive;
-                if (Toggle((operationType == CSGOperationType.Subtractive), subtractiveIcon, styles.midButton))
+                if (!showAuto)
+                    toggleRect.width -= kLeftStylePadding;
+                if (Toggle(ref toggleRect, (operationType == CSGOperationType.Subtractive), subtractiveIcon, styles.midButton))
                     return CSGOperationType.Subtractive;
-                if (Toggle((operationType == CSGOperationType.Intersecting), intersectingIcon, styles.rightButton))
+                if (Toggle(ref toggleRect, (operationType == CSGOperationType.Intersecting), intersectingIcon, styles.rightButton))
                     return CSGOperationType.Intersecting;
                 return operationType;
             }
-        }
-
-        public static void ChooseGeneratorOperation(ref  CSGOperationType? operation)
-        {
-            GUILayout.BeginHorizontal();
-            EditorGUI.BeginChangeCheck();
-            GUILayout.Label("Boolean");
-            var result = ChiselOperationGUI.ShowOperationChoicesInternal(operation);
-            if (EditorGUI.EndChangeCheck()) { operation = result; }
-            GUILayout.EndHorizontal();
         }
     }
 }
