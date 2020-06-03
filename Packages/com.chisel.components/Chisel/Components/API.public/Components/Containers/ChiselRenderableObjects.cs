@@ -12,6 +12,14 @@ namespace Chisel.Components
     [Serializable]
     public class ChiselRenderObjects
     {
+        [HideInInspector] internal bool invalid = true;
+        public bool Valid 
+        { 
+            get
+            {
+                return (this != null) && !invalid;
+            }
+        }
         public LayerUsageFlags  query;
         public GameObject       container;
         public Mesh             sharedMesh;
@@ -22,9 +30,13 @@ namespace Chisel.Components
         public MeshRenderer     meshRenderer;
         public Material[]       renderMaterials;
         public readonly List<int> triangleBrushes = new List<int>();
+        
+        public ulong            geometryHashValue;
+        public ulong            surfaceHashValue;
+
         [NonSerialized] public float uvLightmapUpdateTime;
 
-        private ChiselRenderObjects() { }
+        internal ChiselRenderObjects() { }
         public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, LayerUsageFlags query)
         {
             var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state);
@@ -39,6 +51,7 @@ namespace Chisel.Components
 
             var renderObjects = new ChiselRenderObjects
             {
+                invalid         = false,            
                 query           = query,
                 container       = renderContainer,
                 meshFilter      = meshFilter,
@@ -55,6 +68,8 @@ namespace Chisel.Components
 
         public void Destroy()
         {
+            if (invalid)
+                return;
 #if UNITY_EDITOR
             ChiselObjectUtility.SafeDestroy(partialMesh);
             partialMesh     = null;
@@ -66,6 +81,17 @@ namespace Chisel.Components
             meshFilter      = null;
             meshRenderer    = null;
             renderMaterials = null;
+        }
+
+        public void DestroyWithUndo()
+        {
+            if (invalid)
+                return;
+#if UNITY_EDITOR
+            ChiselObjectUtility.SafeDestroyWithUndo(partialMesh);
+#endif
+            ChiselObjectUtility.SafeDestroyWithUndo(sharedMesh);
+            ChiselObjectUtility.SafeDestroyWithUndo(container, ignoreHierarchyEvents: true);
         }
 
         public void RemoveContainerFlags()
@@ -113,8 +139,10 @@ namespace Chisel.Components
                 case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;	break;
                 case LayerUsageFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
             }
+
 #if UNITY_EDITOR
             UnityEditor.EditorUtility.SetSelectedRenderState(meshRenderer, UnityEditor.EditorSelectedRenderState.Hidden);
+            ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
 #endif
         }
 
@@ -124,8 +152,12 @@ namespace Chisel.Components
             // If we need to render partial meshes (where some brushes are hidden) then we should show the full mesh
             ChiselGeneratedComponentManager.CheckIfFullMeshNeedsToBeHidden(model, this);
             if (meshIsModified)
+            {
+                UnityEditor.EditorUtility.SetDirty(model);
+                ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
                 ChiselGeneratedComponentManager.ClearLightmapData(state, this);
-#endif
+            }
+#endif 
         }
 
         public static void UpdateProperties(ChiselModel model, MeshRenderer[] meshRenderers)
@@ -190,6 +222,7 @@ namespace Chisel.Components
                         continue;
                     }
                     var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
+
                     __foundContents.Add(generatedMeshContents);
                     __foundMaterials.Add(renderMaterial);
                 }
@@ -199,10 +232,7 @@ namespace Chisel.Components
                     if (sharedMesh.vertexCount > 0) sharedMesh.Clear(keepVertexLayout: true);
                 } else
                 {
-                    sharedMesh.CopyFrom(__foundContents, triangleBrushes);
-#if UNITY_EDITOR
-                    ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
-#endif
+                    meshIsModified = sharedMesh.CopyFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
                 }
                 if (renderMaterials != null && 
                     renderMaterials.Length == __foundMaterials.Count)
@@ -215,8 +245,10 @@ namespace Chisel.Components
                     meshFilter.sharedMesh = sharedMesh;
                     meshIsModified = true;
                 }
-                meshRenderer.sharedMaterials = renderMaterials;
-                meshRenderer.enabled = sharedMesh.vertexCount > 0; 
+                var expectedEnabled = sharedMesh.vertexCount > 0;
+                SetMaterialsIfModified(meshRenderer, renderMaterials);
+                if (meshRenderer.enabled != expectedEnabled)
+                    meshRenderer.enabled = expectedEnabled;
             }
             finally
             {
@@ -226,6 +258,23 @@ namespace Chisel.Components
                 __foundMaterials.Clear();
             }
             UpdateSettings(model, state, meshIsModified);
+        }
+
+        private void SetMaterialsIfModified(MeshRenderer meshRenderer, Material[] renderMaterials)
+        {
+            var currentSharedMaterials = meshRenderer.sharedMaterials;
+            if (currentSharedMaterials != null &&
+                currentSharedMaterials.Length == renderMaterials.Length)
+            {
+                for (int i = 0; i < renderMaterials.Length; i++)
+                {
+                    if (renderMaterials[i] != currentSharedMaterials[i])
+                        goto SetMaterials;
+                }
+                return;
+            }
+            SetMaterials:
+            meshRenderer.sharedMaterials = renderMaterials;
         }
 
 #if UNITY_EDITOR

@@ -8,7 +8,7 @@ namespace Chisel.Core
 {
     public static class MeshExtensions
     {
-        public static void CopyFromPositionOnly(this UnityEngine.Mesh mesh, GeneratedMeshContents contents)
+        public static bool CopyFromPositionOnly(this UnityEngine.Mesh mesh, ref ulong geometryHashValue, GeneratedMeshContents contents)
         { 
             if (object.ReferenceEquals(contents, null))
                 throw new ArgumentNullException("contents");
@@ -16,14 +16,21 @@ namespace Chisel.Core
             if (contents.description.vertexCount < 3 ||
                 contents.description.indexCount < 3)
             {
+                if (mesh.vertexCount == 0)
+                    return false;
                 mesh.Clear();
-                return;
+                return true;
             }
-            
-            mesh.SetVertices(contents.positions);
 
+            if (geometryHashValue == contents.description.geometryHashValue)
+                return false;
+
+            geometryHashValue = contents.description.geometryHashValue;
+
+            mesh.SetVertices(contents.positions);
             mesh.SetTriangles(contents.indices.ToArray(), 0, false);
-            mesh.bounds = contents.bounds; 
+            mesh.bounds = contents.bounds;
+            return true;
         }
 
         static readonly List<Vector3>   sPositionsList  = new List<Vector3>();
@@ -31,15 +38,18 @@ namespace Chisel.Core
         static readonly List<Vector4>   sTangentsList   = new List<Vector4>();
         static readonly List<Vector2>   sUV0List        = new List<Vector2>();
         static readonly List<int>       sBaseVertices   = new List<int>();
-        public static void CopyFrom(this UnityEngine.Mesh mesh, List<GeneratedMeshContents> contents, List<int> triangleBrushes)
+        
+        public static bool CopyFrom(this UnityEngine.Mesh mesh, ref ulong geometryHashValue, ref ulong surfaceHashValue, List<GeneratedMeshContents> contents, List<int> triangleBrushes)
         { 
             if (object.ReferenceEquals(contents, null))
                 throw new ArgumentNullException("contents");
 
             if (contents.Count == 0)
             {
+                if (mesh.vertexCount == 0)
+                    return false;
                 mesh.Clear();
-                return;
+                return true; 
             }
 
             var bounds = new Bounds();
@@ -49,12 +59,20 @@ namespace Chisel.Core
             sTangentsList   .Clear();
             sUV0List        .Clear();
             sBaseVertices   .Clear();
+
+            const long kHashMagicValue = (long)1099511628211ul;
+            UInt64 combinedGeometryHashValue = 0;
+            UInt64 combinedSurfaceHashValue = 0;
+
             for (int i = 0; i < contents.Count; i++)
             {
                 if (contents[i] == null ||
                     contents[i].positions.Length == 0 ||
                     contents[i].indices.Length == 0)
                     continue;
+
+                combinedGeometryHashValue   = (combinedGeometryHashValue ^ contents[i].description.geometryHashValue) * kHashMagicValue;
+                combinedSurfaceHashValue    = (combinedSurfaceHashValue ^ contents[i].description.surfaceHashValue) * kHashMagicValue;
 
                 sBaseVertices.Add(sPositionsList.Count);
                 sPositionsList.AddRange(contents[i].positions);
@@ -65,6 +83,13 @@ namespace Chisel.Core
                 if (i == 0) bounds = contents[i].bounds;
                 else bounds.Encapsulate(contents[i].bounds);
             }
+
+            if (geometryHashValue == combinedGeometryHashValue &&
+                surfaceHashValue == combinedSurfaceHashValue)
+                return false;
+
+            geometryHashValue = combinedGeometryHashValue;
+            surfaceHashValue = combinedSurfaceHashValue;
 
             mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(sPositionsList);
@@ -87,7 +112,8 @@ namespace Chisel.Core
                 mesh.SetTriangles(triangles: triangles, submesh: submesh, calculateBounds: calculateBounds, baseVertex: baseVertex);
                 n++;
             }
-            mesh.bounds = bounds; 
+            mesh.bounds = bounds;
+            return true;
         }
     }
 }

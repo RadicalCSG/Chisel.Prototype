@@ -27,11 +27,6 @@ namespace Chisel.Components
         {
             PreReset?.Invoke();
 
-            foreach (var model in registeredModels) 
-            {
-                componentGenerator.RemoveAllGeneratedComponents(model);
-            }
-
             registeredNodeLookup.Clear();
             registeredModels.Clear();
             updateList.Clear();

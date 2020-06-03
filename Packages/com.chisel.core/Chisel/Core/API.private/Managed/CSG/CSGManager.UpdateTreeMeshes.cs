@@ -159,7 +159,13 @@ namespace Chisel.Core
                 }
 
                 if (rebuildTreeBrushIndicesList.Count == 0)
+                {
+                    var flags = nodeFlags[treeNodeIndex];
+                    flags.UnSetNodeFlag(NodeStatusFlags.TreeNeedsUpdate);
+                    flags.UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
+                    nodeFlags[treeNodeIndex] = flags;
                     continue;
+                }
 
                 var anyHierarchyModified = false;
                 for (int b = 0; b < rebuildTreeBrushIndicesList.Count; b++)

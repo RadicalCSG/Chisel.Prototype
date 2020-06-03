@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
@@ -274,8 +274,11 @@ namespace Chisel.Components
 
         protected override void OnCleanup()
         {
-            ChiselGeneratedComponentManager.RemoveContainerFlags(this);
-            generated.Destroy();
+            if (generated != null)
+            {
+                if (!this && generated.generatedDataContainer)
+                    generated.DestroyWithUndo();
+            }
         }
 
         public override int GetAllTreeBrushCount()
@@ -315,12 +318,17 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public void Update()
         {
-            if (generated == null)
+            if (generated == null || 
+                UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
+
+            // Sometimes Unity 'forgets' to send some messages.
+            if (generated.visibilityState == VisibilityState.Unknown)
+                ChiselGeneratedComponentManager.OnVisibilityChanged();
+
 
             generated.UpdateVisibilityMeshes();
 
-            // TODO: figure out why this can happen
             Debug.Assert(generated.visibilityState != VisibilityState.Unknown, "Unknown Visibility state");
             if (generated.visibilityState != VisibilityState.Mixed)
                 return;

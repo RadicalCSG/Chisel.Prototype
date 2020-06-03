@@ -366,12 +366,15 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderables = model.generated.renderables;
+                var renderables = model.generated?.renderables;
+                if (renderables == null)
+                    continue;
                 for (int r = 0; r < renderables.Length; r++)
                 {
-                    if (renderables[r] == null)
+                    var renderable = renderables[r];
+                    if (renderable == null || !renderable.Valid)
                         continue;
-                    var meshRenderer = renderables[r].meshRenderer;
+                    var meshRenderer = renderable.meshRenderer;
                     if (!meshRenderer)
                         continue;
                     largestSurfaceArea = Mathf.Max(largestSurfaceArea, GetCachedMeshSurfaceArea(meshRenderer));
@@ -391,12 +394,15 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderables = model.generated.renderables;
+                var renderables = model.generated?.renderables;
+                if (renderables == null)
+                    continue;
                 for (int r = 0; r < renderables.Length; r++)
                 {
-                    if (renderables[r] == null)
+                    var renderable = renderables[r];
+                    if (renderable == null || !renderable.Valid)
                         continue;
-                    var meshRenderer = renderables[r].meshRenderer;
+                    var meshRenderer = renderable.meshRenderer;
                     if (!meshRenderer)
                         continue;
                     if (HasClampedResolution(meshRenderer))
@@ -415,12 +421,15 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderables = model.generated.renderables;
+                var renderables = model.generated?.renderables;
+                if (renderables == null)
+                    continue;
                 for (int r = 0; r < renderables.Length; r++)
                 {
-                    if (renderables[r] == null)
+                    var renderable = renderables[r];
+                    if (renderable == null || !renderable.Valid)
                         continue;
-                    var meshRenderer = renderables[r].meshRenderer;
+                    var meshRenderer = renderable.meshRenderer;
                     if (!meshRenderer)
                         continue;
                     if (HasUVOverlaps(meshRenderer))
@@ -437,10 +446,12 @@ namespace Chisel.Editors
             foreach (var target in targets)
             {
                 var model = target as ChiselModel;
-                if (!model || model.generated == null)
+                if (!model)
                     continue;
-                var renderComponents = model.generated.renderMaterials;
-                foreach (var material in renderComponents)
+                var renderMaterials = model.generated?.renderMaterials;
+                if (renderMaterials == null)
+                    continue;
+                foreach (var material in renderMaterials)
                 {
                     if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))
                         return true;
@@ -647,12 +658,33 @@ namespace Chisel.Editors
             return lightmapScaleValue;
         }
 
+        // To be used by internal code when just reading settings, not settings them
+        static LightingSettings GetLightingSettingsOrDefaultsFallback()
+        {
+            LightingSettings lightingSettings;
+            try
+            {
+                lightingSettings = Lightmapping.lightingSettings;
+            }
+            catch 
+            {
+                lightingSettings = null;
+            }
+
+            if (lightingSettings != null)
+                return lightingSettings;
+
+            return Lightmapping.lightingSettingsDefaults;
+        }
+
         void ShowClampedSizeInLightmapGUI(float lightmapScale)
         {
+            var lightingSettings = GetLightingSettingsOrDefaultsFallback();
+
             var cachedSurfaceArea = GetLargestCachedMeshSurfaceAreaForTargets(defaultValue: 1.0f);
-            var sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * Lightmapping.lightingSettings.lightmapResolution * lightmapScale;
+            var sizeInLightmap = Mathf.Sqrt(cachedSurfaceArea) * lightingSettings.lightmapResolution * lightmapScale;
             
-            if (sizeInLightmap > Lightmapping.lightingSettings.lightmapMaxSize)
+            if (sizeInLightmap > lightingSettings.lightmapMaxSize)
                 EditorGUILayout.HelpBox(ClampedSizeContents.text, MessageType.Info);
         }
 
