@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-    public static unsafe class NativeListExtensions
+    public static unsafe class ChiselNativeListExtensions
     {
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
 

@@ -37,7 +37,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)] // Fails for some reason
     unsafe struct GenerateSurfaceTrianglesJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushNodeIndices;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushNodeIndices;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
         [NoAlias, ReadOnly] public NativeStream.Reader input;

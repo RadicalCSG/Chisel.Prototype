@@ -65,13 +65,13 @@ namespace Chisel.Components
 
             var renderables = new ChiselRenderObjects[]
             {
-                new ChiselRenderObjects(),
+                new ChiselRenderObjects() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, modelState, LayerUsageFlags.Renderable                               ),
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, modelState,                              LayerUsageFlags.CastShadows ),
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, modelState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows ),
-                new ChiselRenderObjects(),
+                new ChiselRenderObjects() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, modelState, LayerUsageFlags.Renderable |                               LayerUsageFlags.ReceiveShadows),
-                new ChiselRenderObjects(),
+                new ChiselRenderObjects() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, modelState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows | LayerUsageFlags.ReceiveShadows),
             };
 
@@ -83,6 +83,12 @@ namespace Chisel.Components
                 renderables[5].meshRenderer,
                 renderables[7].meshRenderer
             };
+
+            renderables[1].invalid = false;
+            renderables[2].invalid = false;
+            renderables[3].invalid = false;
+            renderables[5].invalid = false;
+            renderables[7].invalid = false;
 
             var result = new ChiselModelGeneratedObjects
             {
@@ -195,6 +201,15 @@ namespace Chisel.Components
                 satelliteObjects.renderables[5] == null ||
                 satelliteObjects.renderables[7] == null)
                 return false;
+
+            satelliteObjects.renderables[0].invalid = true;
+            satelliteObjects.renderables[1].invalid = false;
+            satelliteObjects.renderables[2].invalid = false;
+            satelliteObjects.renderables[3].invalid = false;
+            satelliteObjects.renderables[4].invalid = true;
+            satelliteObjects.renderables[5].invalid = false;
+            satelliteObjects.renderables[6].invalid = true;
+            satelliteObjects.renderables[7].invalid = false;
 
             for (int i = 0; i < satelliteObjects.renderables.Length; i++)
             {
@@ -320,7 +335,8 @@ namespace Chisel.Components
                         if (meshDescription.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter2)
                             break;
 
-                        if (colliders[i].surfaceParameter != meshDescription.surfaceParameter)
+                        if (colliders[i].surfaceParameter != meshDescription.surfaceParameter ||
+                            colliders[i].geometryHashValue != meshDescription.geometryHashValue)
                         {
                             rebuild = true;
                             break;

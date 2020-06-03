@@ -12,7 +12,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     unsafe struct PerformCSGJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                                                 treeBrushNodeIndices;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          treeBrushNodeIndices;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>     brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
@@ -116,7 +116,7 @@ namespace Chisel.Core
 
             int inside2 = 0, outside2 = 0;
             var categories2         = stackalloc EdgeCategory[currentLoopEdges.Length];
-            var treeSpacePlanes1    = brushTreeSpacePlanes[intersectionInfo.brushNodeIndex];
+            var treeSpacePlanes1    = brushTreeSpacePlanes[intersectionInfo.brushIndexOrder.NodeIndex];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
                 var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, brushVertices);
@@ -128,7 +128,7 @@ namespace Chisel.Core
 
             int inside1 = 0, outside1 = 0;
             var categories1         = stackalloc EdgeCategory[intersectionLoop.Length];
-            var treeSpacePlanes2    = brushTreeSpacePlanes[currentInfo.brushNodeIndex];
+            var treeSpacePlanes2    = brushTreeSpacePlanes[currentInfo.brushIndexOrder.NodeIndex];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
                 var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, brushVertices);
@@ -209,7 +209,7 @@ namespace Chisel.Core
 
             if (currentHoleIndices.Length > 0 &&
                 // TODO: fix touching not being updated properly
-                brushesTouchedByBrushes.ContainsKey(currentInfo.brushNodeIndex))
+                brushesTouchedByBrushes.ContainsKey(currentInfo.brushIndexOrder.NodeIndex))
             {
                 // Figure out why this is seemingly not necessary?
                 var intersectedHoleIndices = stackalloc int[currentHoleIndices.Length];
@@ -218,8 +218,8 @@ namespace Chisel.Core
                 // the output of cutting operations are both holes for the original polygon (categorized_loop)
                 // and new polygons on the surface of the brush that need to be categorized
                 
-                ref var brushesTouchedByBrush   = ref brushesTouchedByBrushes[currentInfo.brushNodeIndex].Value;
-                ref var brushIntersections      = ref brushesTouchedByBrushes[currentInfo.brushNodeIndex].Value.brushIntersections;
+                ref var brushesTouchedByBrush   = ref brushesTouchedByBrushes[currentInfo.brushIndexOrder.NodeIndex].Value;
+                ref var brushIntersections      = ref brushesTouchedByBrushes[currentInfo.brushIndexOrder.NodeIndex].Value.brushIntersections;
                 for (int h = 0; h < currentHoleIndices.Length; h++)
                 {
                     // Need to make a copy so we can edit it without causing side effects
@@ -229,9 +229,9 @@ namespace Chisel.Core
                         continue;
 
                     var holeInfo            = allInfos[holeIndex];
-                    var holeBrushNodeIndex  = holeInfo.brushNodeIndex;
+                    var holeBrushNodeIndex  = holeInfo.brushIndexOrder;
 
-                    bool touches = brushesTouchedByBrush.Get(holeBrushNodeIndex) != IntersectionType.NoIntersection;
+                    bool touches = brushesTouchedByBrush.Get(holeBrushNodeIndex.NodeIndex) != IntersectionType.NoIntersection;
                     
                     // Only add if they touch
                     if (touches)
@@ -239,6 +239,8 @@ namespace Chisel.Core
                         intersectedHoleIndices[intersectedHoleIndicesLength] = allEdges.Length;
                         intersectedHoleIndicesLength++;
                         holeIndices.AddAndAllocateWithCapacity(1);
+                        if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                            allInfos.Capacity = allInfos.Length + 8;
                         allInfos.AddNoResize(holeInfo);
                         allEdges.AllocateItemAndAddValues(holeEdges);
                         //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -251,6 +253,8 @@ namespace Chisel.Core
                     currentHoleIndices.Capacity = allEdges.Length;
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    allInfos.Capacity = allInfos.Length + 8;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -260,6 +264,8 @@ namespace Chisel.Core
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
+                if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    allInfos.Capacity = allInfos.Length + 8;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -270,6 +276,8 @@ namespace Chisel.Core
                 // This loop is a hole 
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    allInfos.Capacity = allInfos.Length + 8;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -279,6 +287,8 @@ namespace Chisel.Core
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    allInfos.Capacity = allInfos.Length + 8;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -362,7 +372,7 @@ namespace Chisel.Core
                 int totalPlaneCount = 0;
                 int totalEdgeCount = baseLoopEdges.Length;
                 {
-                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushNodeIndex].Value.treeSpacePlanes;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushIndexOrder.NodeIndex].Value.treeSpacePlanes;
                     totalPlaneCount += treeSpacePlanes.Length;
                 }
                 for (int h = 0; h < holeIndicesList.Length; h++)
@@ -371,7 +381,7 @@ namespace Chisel.Core
                     var holeEdges = allEdges[holeIndex];
                     totalEdgeCount += holeEdges.Length;
 
-                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushNodeIndex].Value.treeSpacePlanes;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushIndexOrder.NodeIndex].Value.treeSpacePlanes;
 
                     totalPlaneCount += treeSpacePlanes.Length;
                 }
@@ -404,7 +414,7 @@ namespace Chisel.Core
                             }
                         }
 
-                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushNodeIndex].Value.treeSpacePlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[holeIndex].brushIndexOrder.NodeIndex].Value.treeSpacePlanes;
                         
                         var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = holeEdges.Length;
@@ -427,7 +437,7 @@ namespace Chisel.Core
                     }
                     if (baseLoopEdges.Length > 0)
                     {
-                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushNodeIndex].Value.treeSpacePlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[allInfos[baseloopIndex].brushIndexOrder.NodeIndex].Value.treeSpacePlanes;
 
                         var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = baseLoopEdges.Length;
@@ -646,6 +656,7 @@ namespace Chisel.Core
             ref var routingTableNodeIndices = ref routingTableRef.Value.nodes;
             ref var routingLookups          = ref routingTableRef.Value.routingLookups;
             var routingLookupsLength        = routingLookups.Length;
+            var routingLookupsStep          = routingLookupsLength;
 
             var intersectionSurfaceInfo = stackalloc SurfaceInfo[routingTableNodeIndices.Length * surfaceCount];
             var intersectionLoops       = new NativeListArray<Edge>(0, Allocator.Temp);
@@ -656,34 +667,37 @@ namespace Chisel.Core
                 for (int i = 0; i < routingTableNodeIndices.Length; i++)
                     maxIndex = math.max(maxIndex, routingTableNodeIndices[i]);
 
-                var nodeIDtoIndex = stackalloc int[maxIndex+1];
+                var nodeIndexToRoutingIndex = stackalloc int[maxIndex + 1];
                 for (int i = 0; i < routingTableNodeIndices.Length; i++)
-                    nodeIDtoIndex[routingTableNodeIndices[i]] = i + 1;
+                    nodeIndexToRoutingIndex[routingTableNodeIndices[i]] = i + 1;
 
-                // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIDtoIndex[surfaceInfo.brushNodeID], 
+                // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIndexToRoutingIndex[surfaceInfo.brushNodeID], 
                 //       have a sequential list of all data. 
                 //       Have segment list to determine which part of array belong to which brushNodeID
                 //       Don't need bottom part, can determine this in Job
 
                 for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
                 {
-                    var surfaceInfo     = intersectionSurfaceInfos[i];
-                    var brushNodeIndex1 = surfaceInfo.brushNodeIndex;
+                    var surfaceInfo         = intersectionSurfaceInfos[i];
+                    var brushIndexOrder1    = surfaceInfo.brushIndexOrder;
+                    var brushNodeIndex1     = brushIndexOrder1.NodeIndex;
 
                     // brush does not exist in routing table (has been deduced to not have any effect)
-                    if (!NativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
+                    if (!ChiselNativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
                         continue;
 
-                    var routingTableIndex = nodeIDtoIndex[brushNodeIndex1];
+                    var routingTableIndex = nodeIndexToRoutingIndex[brushNodeIndex1];
                     if (routingTableIndex == 0)
                         continue;
 
                     routingTableIndex--;
 
                     var surfaceIndex    = surfaceInfo.basePlaneIndex;
-                    int offset          = routingTableIndex + (surfaceIndex * routingLookupsLength);
-
+                    int offset          = routingTableIndex + (surfaceIndex * routingLookupsStep);
+                    
                     var srcEdges = intersectionEdges[i];
+
+                    // TODO: rethink this, this is causing issues somehow
                     var loops = intersectionLoops.AllocateWithCapacityForIndex(offset, srcEdges.Length);
                     loops.AddRangeNoResize(srcEdges);
                     intersectionSurfaceInfo[offset] = surfaceInfo;
@@ -691,7 +705,7 @@ namespace Chisel.Core
             }
 
 
-            var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount); // TODO: find a more reliable "max"
+            var maxLoops            = (routingLookupsStep + routingLookupsStep) * (surfaceCount + surfaceCount); // TODO: find a more reliable "max"
             var holeIndices         = new NativeListArray<int>(maxLoops, Allocator.Temp);
             var surfaceLoopIndices  = new NativeListArray<int>(Allocator.Temp);
             surfaceLoopIndices.ResizeExact(surfaceCount);
@@ -710,13 +724,15 @@ namespace Chisel.Core
                 var info = basePolygonSurfaceInfos[surfaceIndex];
                 info.interiorCategory = CategoryGroupIndex.First; // TODO: make sure that it's always set to "First" so we don't need to do this
 
-                var maxAllocation       = 1 + (2 * (routingLookupsLength + allEdges.Length)); // TODO: find a more reliable "max"
+                var maxAllocation       = 1 + (2 * (routingLookupsStep + allEdges.Length)); // TODO: find a more reliable "max"
                 var maxEdgeAllocation   = 1 + (brushVertices.Length * 2);
 
                 var loopIndices = surfaceLoopIndices.AllocateWithCapacityForIndex(surfaceIndex, maxAllocation);
 
                 loopIndices.AddNoResize(allEdges.Length);                
                 holeIndices.AddAndAllocateWithCapacity(maxAllocation);
+                if (allInfos.Capacity < allInfos.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    allInfos.Capacity = allInfos.Length + 8;
                 allInfos   .AddNoResize(info);
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
@@ -728,7 +744,7 @@ namespace Chisel.Core
 
                 for (int routingTableIndex = 0; routingTableIndex < routingLookupsLength; routingTableIndex++)
                 {
-                    int offset              = routingTableIndex + (surfaceIndex * routingLookupsLength);
+                    int offset              = routingTableIndex + (surfaceIndex * routingLookupsStep);
                     ref var routingLookup   = ref routingLookups[routingTableIndex];
                     var intersectionLoop    = intersectionLoops.SafeGet(offset);
                     var intersectionInfo    = intersectionSurfaceInfo[offset];

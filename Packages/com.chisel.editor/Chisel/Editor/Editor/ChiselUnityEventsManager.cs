@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 
 namespace Chisel.Editors
 { 

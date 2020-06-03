@@ -18,7 +18,7 @@ namespace Chisel.Core
             {
                 if (mesh.vertexCount == 0)
                     return false;
-                mesh.Clear();
+                mesh.Clear(keepVertexLayout: true);
                 return true;
             }
 
@@ -27,6 +27,7 @@ namespace Chisel.Core
 
             geometryHashValue = contents.description.geometryHashValue;
 
+            mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(contents.positions);
             mesh.SetTriangles(contents.indices.ToArray(), 0, false);
             mesh.bounds = contents.bounds;

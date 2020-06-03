@@ -239,7 +239,7 @@ namespace Chisel.Editors
             GameObject[] ignore = deepClickIgnoreGameObjectList.ToArray();
             GameObject[] filter = null;
             var foundObject = PickClosestGameObjectDelegated(screenPos, ref ignore, ref filter, out intersection);
-            
+
             // If we haven't found anything, try getting the first item in our list that's either a brush or a regular gameobject (loop around)
             if (object.Equals(foundObject, null))
             {

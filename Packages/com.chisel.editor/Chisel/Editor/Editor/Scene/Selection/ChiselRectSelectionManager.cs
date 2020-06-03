@@ -538,8 +538,9 @@ namespace Chisel.Editors
             var gameobject = ChiselClickSelectionManager.PickClosestGameObject(mousePosition, out intersection);
 
             // If we're a child of an operation that has a "handle as one" flag set, return that instead
-            gameobject = ChiselSceneQuery.FindSelectionBase(gameobject); 
-            
+            gameobject = ChiselSceneQuery.FindSelectionBase(gameobject);
+
+
             var selectionType = GetCurrentSelectionType();
 
             var selectedObjectsOnClick = new List<int>(Selection.instanceIDs);
@@ -549,7 +550,7 @@ namespace Chisel.Editors
                 {
                     if (!gameobject)
                         break;
-                    
+
                     ChiselSyncSelection.SelectBrushVariant(intersection.brushIntersection.brush, uniqueSelection: false);
                     var instanceID = gameobject.GetInstanceID();
                     selectedObjectsOnClick.Add(instanceID);

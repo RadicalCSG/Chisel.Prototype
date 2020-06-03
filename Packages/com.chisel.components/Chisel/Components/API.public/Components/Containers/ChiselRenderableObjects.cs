@@ -12,7 +12,7 @@ namespace Chisel.Components
     [Serializable]
     public class ChiselRenderObjects
     {
-        [HideInInspector] internal bool invalid = true;
+        [HideInInspector] [SerializeField] internal bool invalid = false;
         public bool Valid 
         { 
             get
