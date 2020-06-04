@@ -12,7 +12,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     internal unsafe struct FindLoopOverlapIntersectionsJob : IJobParallelFor
     { 
-        [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoops>>      intersectionLoopBlobs;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
@@ -30,7 +30,7 @@ namespace Chisel.Core
             if (diff != 0)
                 return diff;
 
-            diff = vx.surfaceInfo.brushIndexOrder - vy.surfaceInfo.brushIndexOrder;
+            diff = vx.surfaceInfo.brushIndexOrder.nodeIndex - vy.surfaceInfo.brushIndexOrder.nodeIndex;
             if (diff != 0)
                 return diff;
             return 0;
@@ -57,7 +57,7 @@ namespace Chisel.Core
         public unsafe void Execute(int index)
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
-            int brushNodeIndex      = brushIndexOrder;
+            int brushNodeIndex      = brushIndexOrder.nodeIndex;
 
             ref var basePolygonBlob = ref basePolygons[brushNodeIndex].Value;
 
@@ -89,10 +89,12 @@ namespace Chisel.Core
                     ref var pair            = ref outputSurface.pair;
 
                     // TODO: get rid of this somehow
-                    if (pair.brushNodeIndexOrder0 != brushNodeIndex)
+                    int otherNodeIndex0 = pair.brushNodeIndexOrder0.nodeIndex;
+                    if (otherNodeIndex0 != brushNodeIndex)
                         continue;
 
-                    uniqueBrushIndicesHashMap.TryAdd(pair.brushNodeIndexOrder1, new Empty());
+                    int otherNodeIndex1 = pair.brushNodeIndexOrder1.nodeIndex;
+                    uniqueBrushIndicesHashMap.TryAdd(otherNodeIndex1, new Empty());
                     brushIntersectionLoops.Add(new int2(k, n)); /*OUTPUT*/
                 }
             }
@@ -188,7 +190,7 @@ namespace Chisel.Core
                             var intersectionIndex0      = brushIntersectionLoops[intersectionSurfaceOffset + l0];
                             ref var intersection0       = ref intersectionLoopBlobs[intersectionIndex0.x].Value.loops[intersectionIndex0.y];
                             var intersectionIndexOrder0 = intersection0.surfaceInfo.brushIndexOrder;
-                            int intersectionBrushIndex0 = intersectionIndexOrder0;
+                            int intersectionBrushIndex0 = intersectionIndexOrder0.nodeIndex;
                             var edges                   = intersectionEdges[intersectionSurfaceOffset + l0];
                             for (int l1 = 0; l1 < intersectionSurfaceCount; l1++)
                             {
@@ -198,7 +200,7 @@ namespace Chisel.Core
                                 var intersectionIndex1      = brushIntersectionLoops[intersectionSurfaceOffset + l1];
                                 ref var intersection1       = ref intersectionLoopBlobs[intersectionIndex1.x].Value.loops[intersectionIndex1.y];
                                 var intersectionIndexOrder1 = intersection1.surfaceInfo.brushIndexOrder;
-                                int intersectionBrushIndex1 = intersectionIndexOrder1;
+                                int intersectionBrushIndex1 = intersectionIndexOrder1.nodeIndex;
 
                                 var intersectionJob = new FindLoopPlaneIntersectionsJob()
                                 {
@@ -249,7 +251,7 @@ namespace Chisel.Core
                             var intersectionIndex       = brushIntersectionLoops[intersectionSurfaceOffset + l0];
                             ref var intersection        = ref intersectionLoopBlobs[intersectionIndex.x].Value.loops[intersectionIndex.y];
                             var intersectionIndexOrder  = intersection.surfaceInfo.brushIndexOrder;
-                            int intersectionBrushIndex  = intersectionIndexOrder;
+                            int intersectionBrushIndex  = intersectionIndexOrder.nodeIndex;
                             var in_edges                = intersectionEdges[intersectionSurfaceOffset + l0];
                             var intersectionJob2 = new FindLoopVertexOverlapsJob
                             {

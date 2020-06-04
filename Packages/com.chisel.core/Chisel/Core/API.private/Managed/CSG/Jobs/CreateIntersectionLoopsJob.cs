@@ -355,8 +355,8 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void GenerateLoop(int                               brushIndexOrder0,
-                          int                               brushIndexOrder1,
+        void GenerateLoop(IndexOrder                        brushIndexOrder0,
+                          IndexOrder                        brushIndexOrder1,
                           ref BlobArray<SurfaceInfo>        surfaceInfos,
                           ref BrushTreeSpacePlanes          brushTreeSpacePlanes,
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
@@ -513,8 +513,8 @@ namespace Chisel.Core
             ref var brushPairIntersection1      = ref intersection.brushes[1];
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
-            int brushNodeIndex0                 = brushIndexOrder0;
-            int brushNodeIndex1                 = brushIndexOrder1;
+            int brushNodeIndex0                 = brushIndexOrder0.nodeIndex;
+            int brushNodeIndex1                 = brushIndexOrder1.nodeIndex;
 
             int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVertices.Length);
             int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVertices.Length);

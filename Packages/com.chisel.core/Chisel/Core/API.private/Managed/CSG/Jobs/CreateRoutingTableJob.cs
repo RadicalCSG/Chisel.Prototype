@@ -14,7 +14,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     internal unsafe struct CreateRoutingTableJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                         treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
@@ -28,7 +28,7 @@ namespace Chisel.Core
                 return;
 
             var processedIndexOrder = treeBrushIndexOrders[index];
-            int processedNodeIndex  = processedIndexOrder;
+            int processedNodeIndex  = processedIndexOrder.nodeIndex;
 
             int categoryStackNodeCount, polygonGroupCount;
             if (!brushesTouchedByBrushes.TryGetValue(processedNodeIndex, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))

@@ -27,21 +27,33 @@ namespace Chisel.Core
 
         public bool Equals(IndexOrder other)
         {
-            return nodeOrder == other.nodeOrder;
+            return nodeIndex == other.nodeIndex;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is IndexOrder))
+                return false;
+            return Equals((IndexOrder)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return nodeIndex.GetHashCode();
         }
     }
     
     public struct BrushSurfacePair
     {
-        public int          brushNodeIndexOrder0;
-        public int          brushNodeIndexOrder1;
+        public IndexOrder   brushNodeIndexOrder0;
+        public IndexOrder   brushNodeIndexOrder1;
         public int          basePlaneIndex;
     }
     
     public struct BrushPair : IEquatable<BrushPair>, IEqualityComparer<BrushPair>, IComparable<BrushPair>, IComparer<BrushPair>
     {
-        public int              brushIndexOrder0;
-        public int              brushIndexOrder1;
+        public IndexOrder       brushIndexOrder0;
+        public IndexOrder       brushIndexOrder1;
         public IntersectionType type;
 
         public void Flip()
@@ -58,49 +70,30 @@ namespace Chisel.Core
                 return false;
 
             var other = (BrushPair)obj;
-            return ((brushIndexOrder0 == other.brushIndexOrder0) && 
-                    (brushIndexOrder1 == other.brushIndexOrder1));
+            return Equals(other);
         }
 
-        public bool Equals(BrushPair x, BrushPair y)
-        {
-            return ((x.brushIndexOrder0 == y.brushIndexOrder0) && 
-                    (x.brushIndexOrder1 == y.brushIndexOrder1));
-        }
+        public bool Equals(BrushPair x, BrushPair y) { return x.Equals(y); }
 
         public bool Equals(BrushPair other)
         {
-            return ((brushIndexOrder0 == other.brushIndexOrder0) && 
-                    (brushIndexOrder1 == other.brushIndexOrder1));
+            return ((brushIndexOrder0.nodeIndex == other.brushIndexOrder0.nodeIndex) && 
+                    (brushIndexOrder1.nodeIndex == other.brushIndexOrder1.nodeIndex));
         }
         #endregion
 
         #region Compare
-        public int Compare(BrushPair x, BrushPair y)
-        {
-            if (x.brushIndexOrder0 < y.brushIndexOrder0)
-                return -1;
-            if (x.brushIndexOrder0 > y.brushIndexOrder0)
-                return 1;
-            if (x.brushIndexOrder1 < y.brushIndexOrder1)
-                return -1;
-            if (x.brushIndexOrder1 > y.brushIndexOrder1)
-                return 1;
-            if (x.type < y.type)
-                return -1;
-            if (x.type > y.type)
-                return 1;
-            return 0;
-        }
+        public int Compare(BrushPair x, BrushPair y) { return x.CompareTo(y); }
+
         public int CompareTo(BrushPair other)
         {
-            if (brushIndexOrder0 < other.brushIndexOrder0)
+            if (brushIndexOrder0.nodeIndex < other.brushIndexOrder0.nodeIndex)
                 return -1;
-            if (brushIndexOrder0 > other.brushIndexOrder0)
+            if (brushIndexOrder0.nodeIndex > other.brushIndexOrder0.nodeIndex)
                 return 1;
-            if (brushIndexOrder1 < other.brushIndexOrder1)
+            if (brushIndexOrder1.nodeIndex < other.brushIndexOrder1.nodeIndex)
                 return -1;
-            if (brushIndexOrder1 > other.brushIndexOrder1)
+            if (brushIndexOrder1.nodeIndex > other.brushIndexOrder1.nodeIndex)
                 return 1;
             if (type < other.type)
                 return -1;
@@ -118,7 +111,7 @@ namespace Chisel.Core
 
         public int GetHashCode(BrushPair obj)
         {
-            return ((ulong)obj.brushIndexOrder0 + ((ulong)obj.brushIndexOrder1 << 32)).GetHashCode();
+            return ((ulong)obj.brushIndexOrder0.nodeIndex + ((ulong)obj.brushIndexOrder1.nodeIndex << 32)).GetHashCode();
         }
         #endregion
     }
@@ -312,7 +305,7 @@ namespace Chisel.Core
 
     struct BrushIntersection
     {
-        public int              nodeIndexOrder;
+        public IndexOrder       nodeIndexOrder;
         public IntersectionType type;
         public int              bottomUpStart;
         public int              bottomUpEnd;
@@ -361,7 +354,7 @@ namespace Chisel.Core
 
     public struct SurfaceInfo
     {
-        public int                  brushIndexOrder;
+        public IndexOrder           brushIndexOrder;
         public ushort               basePlaneIndex;
         public CategoryGroupIndex   interiorCategory;
     }
@@ -400,7 +393,7 @@ namespace Chisel.Core
 
     public struct BrushIntersectionInfo
     {
-        public int                      brushIndexOrder;
+        public IndexOrder               brushIndexOrder;
         public float4x4                 nodeToTreeSpace;
         public float4x4                 toOtherBrushSpace;
 
@@ -565,7 +558,7 @@ namespace Chisel.Core
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
-                    var brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
+                    int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
                     if (routingTableLookup.TryGetValue(brushNodeIndex, out var routingTable))
                     {
                         routingTableLookup.Remove(brushNodeIndex);
@@ -581,7 +574,7 @@ namespace Chisel.Core
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
-                    var brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
+                    int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
                     if (brushTreeSpacePlanes.TryGetValue(brushNodeIndex, out var treeSpacePlanes))
                     {
                         brushTreeSpacePlanes.Remove(brushNodeIndex);
@@ -597,7 +590,7 @@ namespace Chisel.Core
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
-                    var brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
+                    int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
                     if (brushesTouchedByBrushes.TryGetValue(brushNodeIndex, out var brushesTouchedByBrush))
                     {
                         brushesTouchedByBrushes.Remove(brushNodeIndex);
@@ -613,7 +606,7 @@ namespace Chisel.Core
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
-                    var brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
+                    int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
                     if (brushRenderBuffers.TryGetValue(brushNodeIndex, out var surfaceRenderBuffer))
                     {
                         brushRenderBuffers.Remove(brushNodeIndex);

@@ -17,13 +17,13 @@ namespace Chisel.Core
     {
         const double kPlaneDistanceEpsilon = CSGConstants.kPlaneDistanceEpsilon;
 
-        [NoAlias, ReadOnly] public NativeArray<int>                                             allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allTreeBrushIndexOrders;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
         [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushTreeSpaceBounds;
 
-        [NoAlias] public NativeList<int>                                                        updateBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                                                 updateBrushIndexOrders;
 
         [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter           brushBrushIntersections;
 
@@ -127,11 +127,11 @@ namespace Chisel.Core
                 for (int index0 = 0; index0 < updateBrushIndicesArray.Length; index0++)
                 {
                     var brush0IndexOrder    = updateBrushIndicesArray[index0];
-                    int brush0NodeIndex     = brush0IndexOrder;
+                    int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                     for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                     {
                         var brush1IndexOrder = updateBrushIndicesArray[index1];
-                        int brush1NodeIndex  = brush1IndexOrder;
+                        int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                         if (brush0NodeIndex <= brush1NodeIndex)
                             continue;
                         var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
@@ -142,16 +142,16 @@ namespace Chisel.Core
             }
             //*
 
-            var brushesThatNeedIndirectUpdate = new NativeList<int>(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            var brushesThatNeedIndirectUpdate = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
-                int brush0NodeIndex     = brush0IndexOrder;
+                int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                 var found = false;
                 for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                 {
                     var brush1IndexOrder = updateBrushIndicesArray[index1];
-                    int brush1NodeIndex  = brush1IndexOrder;
+                    int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                     var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
                     if (result == IntersectionType.NoIntersection)
                         continue;
@@ -161,8 +161,16 @@ namespace Chisel.Core
                 }
                 if (found)
                 {
-                    if (!updateBrushIndicesArray.Contains(brush0IndexOrder))
+                    // TODO: Optimize
+                    //if (!updateBrushIndicesArray.Contains(brush0IndexOrder)) // <-- won't work
+                    for (int n=0;n< updateBrushIndicesArray.Length;n++)
+                    {
+                        if (updateBrushIndicesArray[n].nodeIndex == brush0NodeIndex)
+                            goto SkipAdd; 
+                    }
                         brushesThatNeedIndirectUpdate.Add(brush0IndexOrder);
+                    SkipAdd:
+                    ;
                 }
             }
 
@@ -176,11 +184,11 @@ namespace Chisel.Core
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
-                int brush0NodeIndex     = brush0IndexOrder;
+                int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                 for (int index1 = 0; index1 < brushesThatNeedIndirectUpdateArray.Length; index1++)
                 {
                     var brush1IndexOrder = brushesThatNeedIndirectUpdateArray[index1];
-                    int brush1NodeIndex  = brush1IndexOrder;
+                    int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                     if (brush0NodeIndex <= brush1NodeIndex)
                         continue;
                     var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
@@ -222,12 +230,12 @@ namespace Chisel.Core
             return result;
         }
 
-        void StoreIntersection(int brush0IndexOrder, int brush1IndexOrder, IntersectionType result)
+        void StoreIntersection(IndexOrder brush0IndexOrder, IndexOrder brush1IndexOrder, IntersectionType result)
         {
-            int brush0NodeIndex = brush0IndexOrder;
-            int brush1NodeIndex = brush1IndexOrder;
             if (result != IntersectionType.NoIntersection)
             {
+                int brush0NodeIndex = brush0IndexOrder.nodeIndex;
+                int brush1NodeIndex = brush1IndexOrder.nodeIndex;
                 if (result == IntersectionType.Intersection)
                 {
                     brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
@@ -251,7 +259,7 @@ namespace Chisel.Core
     unsafe struct StoreBrushIntersectionsJob : IJobParallelFor
     {
         [NoAlias,ReadOnly] public int                                   treeNodeIndex;
-        [NoAlias,ReadOnly] public NativeArray<int>                      treeBrushIndexOrders;
+        [NoAlias,ReadOnly] public NativeArray<IndexOrder>               treeBrushIndexOrders;
         [NoAlias,ReadOnly] public BlobAssetReference<CompactTree>       compactTree;
         [NoAlias,ReadOnly] public NativeMultiHashMap<int, BrushPair>    brushBrushIntersections;
 
@@ -278,7 +286,7 @@ namespace Chisel.Core
             {
                 var otherIntersectionInfo = brushIntersections[i];
                 var otherIndexOrder = otherIntersectionInfo.nodeIndexOrder;
-                int otherNodeIndex  = otherIndexOrder;
+                int otherNodeIndex  = otherIndexOrder.nodeIndex;
                 bitset.Set(otherNodeIndex, otherIntersectionInfo.type);
                 for (int b = otherIntersectionInfo.bottomUpStart; b < otherIntersectionInfo.bottomUpEnd; b++)
                     bitset.Set(bottomUpNodes[b], IntersectionType.Intersection);
@@ -305,7 +313,7 @@ namespace Chisel.Core
                 {
                     var touchingBrush   = touchingBrushes.Current;
                     var otherIndexOrder = touchingBrush.brushIndexOrder1;
-                    int otherBrushIndex = otherIndexOrder;
+                    int otherBrushIndex = otherIndexOrder.nodeIndex;
                     if ((otherBrushIndex < indexOffset || (otherBrushIndex-indexOffset) >= brushIndexToBottomUpIndex.Length))
                         continue;
 
@@ -354,7 +362,7 @@ namespace Chisel.Core
         public void Execute(int index)
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
-            int brushNodeIndex      = brushIndexOrder;
+            int brushNodeIndex      = brushIndexOrder.nodeIndex;
             var brushIntersections  = brushBrushIntersections.GetValuesForKey(brushNodeIndex);
             {
                 var result = GenerateBrushesTouchedByBrush(compactTree, brushNodeIndex, treeNodeIndex, brushIntersections);

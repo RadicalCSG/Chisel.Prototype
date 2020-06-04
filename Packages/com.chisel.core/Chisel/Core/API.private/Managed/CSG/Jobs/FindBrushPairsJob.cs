@@ -25,7 +25,7 @@ namespace Chisel.Core
     {
         public struct Empty { }
 
-        [NoAlias, ReadOnly] public NativeArray<int>                                              treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
         [NoAlias, WriteOnly] public NativeList<BrushPair>                                        uniqueBrushPairs;
 
@@ -37,7 +37,7 @@ namespace Chisel.Core
             for (int b0 = 0; b0 < treeBrushIndexOrders.Length; b0++)
             {
                 var brushIndexOrder0        = treeBrushIndexOrders[b0];
-                int brushNodeIndex0         = brushIndexOrder0;
+                int brushNodeIndex0         = brushIndexOrder0.nodeIndex;
                 //var brushesTouchedByBrush = touchedBrushesByTreeBrushes[b0];
                 if (!brushesTouchedByBrushes.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
                     continue;
@@ -51,7 +51,7 @@ namespace Chisel.Core
                 {
                     var intersection        = intersections[i];
                     var brushIndexOrder1    = intersection.nodeIndexOrder;
-                    int brushNodeIndex1     = brushIndexOrder1;
+                    int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
 
                     var brushPair       = new BrushPair
                     {
@@ -222,8 +222,8 @@ namespace Chisel.Core
             var brushPair           = uniqueBrushPairs[index];
             var brushIndexOrder0    = brushPair.brushIndexOrder0;
             var brushIndexOrder1    = brushPair.brushIndexOrder1;
-            int brushNodeIndex0     = brushIndexOrder0;
-            int brushNodeIndex1     = brushIndexOrder1;
+            int brushNodeIndex0     = brushIndexOrder0.nodeIndex;
+            int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
 
             if (!brushMeshBlobLookup.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushMeshBlob> blobMesh0) ||
                 !brushMeshBlobLookup.TryGetValue(brushNodeIndex1, out BlobAssetReference<BrushMeshBlob> blobMesh1))

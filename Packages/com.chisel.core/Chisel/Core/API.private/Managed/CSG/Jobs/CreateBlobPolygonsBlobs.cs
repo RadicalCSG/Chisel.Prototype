@@ -17,7 +17,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct CreateBlobPolygonsBlobs : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
 
@@ -150,7 +150,7 @@ namespace Chisel.Core
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeIndex  = brushIndexOrder;
+            int brushNodeIndex  = brushIndexOrder.nodeIndex;
             var transform       = transformations[brushNodeIndex];
 
             var mesh                    = brushMeshLookup[brushNodeIndex];
