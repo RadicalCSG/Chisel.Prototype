@@ -17,9 +17,9 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct CreateBlobPolygonsBlobs : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                                              treeBrushIndices;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>   transformations;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<int>                                             treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
         [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushTreeSpaceBounds;
@@ -149,7 +149,8 @@ namespace Chisel.Core
 
         public void Execute(int b)
         {
-            var brushNodeIndex  = treeBrushIndices[b];
+            var brushIndexOrder = treeBrushIndexOrders[b];
+            int brushNodeIndex  = brushIndexOrder;
             var transform       = transformations[brushNodeIndex];
 
             var mesh                    = brushMeshLookup[brushNodeIndex];
@@ -236,7 +237,7 @@ namespace Chisel.Core
                     surfaceInfo = new SurfaceInfo()
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
-                        brushNodeIndex      = brushNodeIndex,
+                        brushIndexOrder     = brushIndexOrder,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
