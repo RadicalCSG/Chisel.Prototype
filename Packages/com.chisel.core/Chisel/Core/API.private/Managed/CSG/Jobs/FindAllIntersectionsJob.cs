@@ -128,11 +128,13 @@ namespace Chisel.Core
                 {
                     var brush0IndexOrder    = updateBrushIndicesArray[index0];
                     int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
+                    int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                     for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                     {
                         var brush1IndexOrder = updateBrushIndicesArray[index1];
                         int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
-                        if (brush0NodeIndex <= brush1NodeIndex)
+                        int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
+                        if (brush0NodeOrder <= brush1NodeOrder)
                             continue;
                         var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
                         StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
@@ -147,16 +149,18 @@ namespace Chisel.Core
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                 int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
+                int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                 var found = false;
                 for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                 {
                     var brush1IndexOrder = updateBrushIndicesArray[index1];
                     int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
+                    int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                     var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
                     if (result == IntersectionType.NoIntersection)
                         continue;
                     found = true;
-                    if (brush0NodeIndex > brush1NodeIndex)
+                    if (brush0NodeOrder > brush1NodeOrder)
                         StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                 }
                 if (found)
@@ -185,11 +189,13 @@ namespace Chisel.Core
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                 int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
+                int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                 for (int index1 = 0; index1 < brushesThatNeedIndirectUpdateArray.Length; index1++)
                 {
                     var brush1IndexOrder = brushesThatNeedIndirectUpdateArray[index1];
                     int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
-                    if (brush0NodeIndex <= brush1NodeIndex)
+                    int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
+                    if (brush0NodeOrder <= brush1NodeOrder)
                         continue;
                     var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
                     StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);

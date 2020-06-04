@@ -30,7 +30,7 @@ namespace Chisel.Core
             if (diff != 0)
                 return diff;
 
-            diff = vx.surfaceInfo.brushIndexOrder.nodeIndex - vy.surfaceInfo.brushIndexOrder.nodeIndex;
+            diff = vx.surfaceInfo.brushIndexOrder.nodeOrder - vy.surfaceInfo.brushIndexOrder.nodeOrder;
             if (diff != 0)
                 return diff;
             return 0;
@@ -58,6 +58,7 @@ namespace Chisel.Core
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
             int brushNodeIndex      = brushIndexOrder.nodeIndex;
+            int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
             ref var basePolygonBlob = ref basePolygons[brushNodeIndex].Value;
 
@@ -89,8 +90,8 @@ namespace Chisel.Core
                     ref var pair            = ref outputSurface.pair;
 
                     // TODO: get rid of this somehow
-                    int otherNodeIndex0 = pair.brushNodeIndexOrder0.nodeIndex;
-                    if (otherNodeIndex0 != brushNodeIndex)
+                    int otherNodeOrder0 = pair.brushNodeIndexOrder0.nodeOrder;
+                    if (otherNodeOrder0 != brushNodeOrder)
                         continue;
 
                     int otherNodeIndex1 = pair.brushNodeIndexOrder1.nodeIndex;
