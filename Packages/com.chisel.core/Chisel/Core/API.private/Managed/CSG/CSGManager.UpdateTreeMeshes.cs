@@ -129,7 +129,9 @@ namespace Chisel.Core
                 
                 var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeIndex];
                 var chiselMeshValues    = ChiselMeshLookup.Value;
-                
+
+                chiselLookupValues.EnsureCapacity(treeBrushes.Count);
+
                 ref var brushMeshBlobs          = ref chiselMeshValues.brushMeshBlobs;
                 ref var transformations         = ref chiselLookupValues.transformations;
                 ref var basePolygons            = ref chiselLookupValues.basePolygons;

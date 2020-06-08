@@ -68,6 +68,10 @@ namespace Chisel.Core
             int brushNodeIndex      = brushIndexOrder.nodeIndex;
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
+            // Can happen when BrushMeshes are not initialized correctly
+            if (!basePolygons.ContainsKey(brushNodeIndex))
+                return;
+
             ref var basePolygonBlob = ref basePolygons[brushNodeIndex].Value;
 
             var surfaceCount        = basePolygonBlob.polygons.Length;

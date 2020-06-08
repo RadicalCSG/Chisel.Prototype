@@ -634,6 +634,30 @@ namespace Chisel.Core
                 brushRenderBuffers      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
             }
 
+            internal void EnsureCapacity(int brushCount)
+            {
+                if (basePolygons.Capacity < brushCount)
+                    basePolygons.Capacity = brushCount;
+
+                if (brushTreeSpaceBounds.Capacity < brushCount)
+                    brushTreeSpaceBounds.Capacity = brushCount;
+
+                if (routingTableLookup.Capacity < brushCount)
+                    routingTableLookup.Capacity = brushCount;
+
+                if (brushTreeSpacePlanes.Capacity < brushCount)
+                    brushTreeSpacePlanes.Capacity = brushCount;
+
+                if (brushesTouchedByBrushes.Capacity < brushCount)
+                    brushesTouchedByBrushes.Capacity = brushCount;
+
+                if (transformations.Capacity < brushCount)
+                    transformations.Capacity = brushCount;
+
+                if (brushRenderBuffers.Capacity < brushCount)
+                    brushRenderBuffers.Capacity = brushCount;
+            }
+
             internal void Dispose()
             {
                 if (basePolygons.IsCreated)
