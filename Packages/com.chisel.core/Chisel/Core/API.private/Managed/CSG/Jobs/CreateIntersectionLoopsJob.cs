@@ -10,14 +10,6 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
-    public struct BrushSurfacePair
-    {
-        public int brushNodeIndex0;
-        public int brushNodeIndex1;
-        public int basePlaneIndex;
-    }
-
-
     [BurstCompile(CompileSynchronously = true)]
     public unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
     {
@@ -25,10 +17,11 @@ namespace Chisel.Core
         const float kDistanceEpsilon        = CSGConstants.kDistanceEpsilon;
         const float kNormalEpsilon          = CSGConstants.kNormalEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushPairIntersection>> intersectingBrushes;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>             brushTreeSpacePlanes;
+        
+        [NoAlias] public NativeArray<BlobAssetReference<BrushPairIntersection>>                             intersectingBrushes;
 
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter outputSurfaces;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter   outputSurfaces;
 
         struct PlaneVertexIndexPair
         {
@@ -363,10 +356,10 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void GenerateLoop(int                               brushNodeIndex0,
-                          int                               brushNodeIndex1,
+        void GenerateLoop(IndexOrder                        brushIndexOrder0,
+                          IndexOrder                        brushIndexOrder1,
                           ref BlobArray<SurfaceInfo>        surfaceInfos,
-                          ref BrushTreeSpacePlanes              brushTreeSpacePlanes,
+                          ref BrushTreeSpacePlanes          brushTreeSpacePlanes,
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
                           ref int                           foundIndices0Length,
                           //ref HashedVertices              hashedVertices,
@@ -495,16 +488,16 @@ namespace Chisel.Core
 
                 dstSurfaces[j].pair = new BrushSurfacePair
                 {
-                    brushNodeIndex0 = brushNodeIndex0,
-                    brushNodeIndex1 = brushNodeIndex1,
-                    basePlaneIndex = basePlaneIndex
+                    brushNodeIndex0     = brushIndexOrder0.nodeIndex,
+                    brushNodeIndex1     = brushIndexOrder1.nodeIndex,
+                    basePlaneIndex      = basePlaneIndex
                 };
                 dstSurfaces[j].surfaceInfo = surfaceInfo;
                 var dstVertices = builder.Allocate(ref dstSurfaces[j].loopVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
                     dstVertices[d] = srcVertices[uniqueIndices[offset + d]];
             }
-            outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.Persistent));
+            outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.TempJob));
             //builder.Dispose(); // Allocated with Temp, so don't need dispose
         }
 
@@ -516,11 +509,14 @@ namespace Chisel.Core
                 return;
 
             var intersectionAsset               = intersectingBrushes[index];
+            intersectingBrushes[index] = default;
             ref var intersection                = ref intersectionAsset.Value;
             ref var brushPairIntersection0      = ref intersection.brushes[0];
             ref var brushPairIntersection1      = ref intersection.brushes[1];
-            var brushNodeIndex0                 = brushPairIntersection0.brushNodeIndex;
-            var brushNodeIndex1                 = brushPairIntersection1.brushNodeIndex;
+            var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
+            var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
+            int brushNodeIndex0                 = brushIndexOrder0.nodeIndex;
+            int brushNodeIndex1                 = brushIndexOrder1.nodeIndex;
 
             int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVertices.Length);
             int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVertices.Length);
@@ -618,8 +614,8 @@ namespace Chisel.Core
             if (foundIndices0Length >= 3)
             {
                 ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushNodeIndex0].Value;
-                GenerateLoop(brushNodeIndex0,
-                             brushNodeIndex1,
+                GenerateLoop(brushIndexOrder0,
+                             brushIndexOrder1,
                              ref intersection.brushes[0].surfaceInfos,
                              ref brushTreeSpacePlanes0,
                              foundIndices0, ref foundIndices0Length,
@@ -630,8 +626,8 @@ namespace Chisel.Core
             if (foundIndices1Length >= 3)
             {
                 ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushNodeIndex1].Value;
-                GenerateLoop(brushNodeIndex1,
-                             brushNodeIndex0,
+                GenerateLoop(brushIndexOrder1,
+                             brushIndexOrder0,
                              ref intersection.brushes[1].surfaceInfos,
                              ref brushTreeSpacePlanes1,
                              foundIndices1, 

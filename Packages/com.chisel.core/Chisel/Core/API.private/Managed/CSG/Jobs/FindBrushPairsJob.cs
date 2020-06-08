@@ -25,18 +25,22 @@ namespace Chisel.Core
     {
         public struct Empty { }
 
-        [NoAlias, ReadOnly] public NativeArray<int>      treeBrushIndices;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, WriteOnly] public NativeList<BrushPair> uniqueBrushPairs;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>                                        uniqueBrushPairs;
 
         public void Execute()
         {
-            var maxPairs = GeometryMath.GetTriangleArraySize(treeBrushIndices.Length);
+            var maxPairs = GeometryMath.GetTriangleArraySize(treeBrushIndexOrders.Length);
             var brushPairMap = new NativeHashMap<BrushPair, FindBrushPairsJob.Empty>(maxPairs, Allocator.Temp);
             var empty = new Empty();
-            for (int b0 = 0; b0 < treeBrushIndices.Length; b0++)
+            for (int b0 = 0; b0 < treeBrushIndexOrders.Length; b0++)
             {
-                var brushNodeIndex0         = treeBrushIndices[b0];
+                var brushIndexOrder0        = treeBrushIndexOrders[b0];
+                int brushNodeIndex0         = brushIndexOrder0.nodeIndex;
+                int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
                 //var brushesTouchedByBrush = touchedBrushesByTreeBrushes[b0];
                 if (!brushesTouchedByBrushes.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
                     continue;
@@ -48,17 +52,19 @@ namespace Chisel.Core
                 // Find all intersections between brushes
                 for (int i = 0; i < intersections.Length; i++)
                 {
-                    var intersection    = intersections[i];
-                    var brushNodeIndex1 = intersection.nodeIndex;
+                    var intersection        = intersections[i];
+                    int brushIndex1         = intersection.nodeIndex;
+                    int brushOrder1         = nodeIndexToNodeOrder[brushIndex1 - nodeIndexToNodeOrderOffset];
+                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushIndex1 };
 
                     var brushPair       = new BrushPair
                     {
-                        type            = intersection.type,
-                        brushNodeIndex0 = brushNodeIndex0,
-                        brushNodeIndex1 = brushNodeIndex1
+                        type             = intersection.type,
+                        brushIndexOrder0 = brushIndexOrder0,
+                        brushIndexOrder1 = brushNodeOrder1
                     };
 
-                    if (brushNodeIndex0 > brushNodeIndex1) // ensures we do calculations exactly the same for each brush pair
+                    if (brushNodeOrder0 > brushOrder1) // ensures we do calculations exactly the same for each brush pair
                         brushPair.Flip();
 
                     if (brushPairMap.TryAdd(brushPair, empty))
@@ -217,14 +223,17 @@ namespace Chisel.Core
             if (index >= uniqueBrushPairs.Length)
                 return;
 
-            var brushPair       = uniqueBrushPairs[index];
-            var brushNodeIndex0 = brushPair.brushNodeIndex0;
-            var brushNodeIndex1 = brushPair.brushNodeIndex1;
+            var brushPair           = uniqueBrushPairs[index];
+            var brushIndexOrder0    = brushPair.brushIndexOrder0;
+            var brushIndexOrder1    = brushPair.brushIndexOrder1;
+            int brushNodeIndex0     = brushIndexOrder0.nodeIndex;
+            int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
 
             if (!brushMeshBlobLookup.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushMeshBlob> blobMesh0) ||
                 !brushMeshBlobLookup.TryGetValue(brushNodeIndex1, out BlobAssetReference<BrushMeshBlob> blobMesh1))
                 //continue;
                 return;
+
 
             var type = brushPair.type;
             if (type != IntersectionType.Intersection &&
@@ -251,13 +260,13 @@ namespace Chisel.Core
             var brushIntersections = builder.Allocate(ref root.brushes, 2);
             brushIntersections[0] = new BrushIntersectionInfo
             {
-                brushNodeIndex      = brushNodeIndex0,
+                brushIndexOrder     = brushIndexOrder0,
                 nodeToTreeSpace     = transformations0.Value.nodeToTree,
                 toOtherBrushSpace   = node0ToNode1
             };
             brushIntersections[1] = new BrushIntersectionInfo
             {
-                brushNodeIndex      = brushNodeIndex1,
+                brushIndexOrder     = brushIndexOrder1,
                 nodeToTreeSpace     = transformations1.Value.nodeToTree,
                 toOtherBrushSpace   = node1ToNode0
             };
@@ -303,7 +312,7 @@ namespace Chisel.Core
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
                     basePlaneIndex      = (ushort)i,
-                    brushNodeIndex      = brushNodeIndex1
+                    brushIndex          = brushIndexOrder1.nodeIndex
                 };
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
@@ -312,7 +321,7 @@ namespace Chisel.Core
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
                     basePlaneIndex      = (ushort)i,
-                    brushNodeIndex      = brushNodeIndex0
+                    brushIndex          = brushIndexOrder0.nodeIndex
                 };
             }
 
@@ -513,7 +522,7 @@ namespace Chisel.Core
             }
 
 
-            var result = builder.CreateBlobAssetReference<BrushPairIntersection>(Allocator.Persistent);
+            var result = builder.CreateBlobAssetReference<BrushPairIntersection>(Allocator.TempJob);
             builder.Dispose();
 
             intersectingBrushes.AddNoResize(result);

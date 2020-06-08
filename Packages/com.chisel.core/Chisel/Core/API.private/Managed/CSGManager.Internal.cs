@@ -435,9 +435,11 @@ namespace Chisel.Core
         internal static bool		GetBrushBounds	(Int32 brushNodeID, ref Bounds bounds)
         {
             if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false;
-            var treeNodeID = nodeHierarchies[brushNodeID - 1].treeNodeID;
-            var chiselLookupValues = ChiselTreeLookup.Value[treeNodeID - 1];
-            if (!chiselLookupValues.brushTreeSpaceBounds.TryGetValue(brushNodeID - 1, out MinMaxAABB result))
+            var brushNodeIndex  = brushNodeID - 1;
+            var treeNodeID      = nodeHierarchies[brushNodeIndex].treeNodeID;
+            var treeNodeIndex   = treeNodeID - 1;
+            var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
+            if (!chiselLookupValues.brushTreeSpaceBounds.TryGetValue(brushNodeIndex, out MinMaxAABB result))
                 return false;
 
             bounds = new Bounds();

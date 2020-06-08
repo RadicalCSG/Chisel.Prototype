@@ -675,7 +675,7 @@ namespace Poly2Tri
             {
                 if (index != advancingFrontNodes[nodeIndex].pointIndex)
                 {
-                    CheckValidIndex(advancingFrontNodes[nodeIndex].prevNodeIndex);
+                    //CheckValidIndex(advancingFrontNodes[nodeIndex].prevNodeIndex);
                     // We might have two nodes with same x value for a short time
                     if (advancingFrontNodes[nodeIndex].prevNodeIndex != int.MaxValue &&
                         index == advancingFrontNodes[advancingFrontNodes[nodeIndex].prevNodeIndex].pointIndex)
@@ -1307,7 +1307,6 @@ namespace Poly2Tri
         {
             if (index == int.MaxValue)
                 throw new Exception("invalid index (== int.MaxValue)");
-            //UnityEngine.Debug.Assert(index != int.MaxValue, "invalid index (== int.MaxValue)");
         }
 
         //[BurstDiscard]
@@ -1319,7 +1318,7 @@ namespace Poly2Tri
 
         void PerformEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pointIndex)
         {
-            CheckValidIndex(triangleIndex);
+            //CheckValidIndex(triangleIndex);
             if (triangleIndex == int.MaxValue)
                 return;
 
@@ -1729,9 +1728,9 @@ namespace Poly2Tri
                 nodeNextIndex == int.MaxValue ||
                 node.pointIndex == int.MaxValue)
             {
-                CheckValidIndex(nodePrevIndex);
-                CheckValidIndex(nodeNextIndex);
-                CheckValidIndex(node.pointIndex);
+                //CheckValidIndex(nodePrevIndex);
+                //CheckValidIndex(nodeNextIndex);
+                //CheckValidIndex(node.pointIndex);
                 return;
             }
 

@@ -27,14 +27,11 @@ namespace Chisel.Components
 
         public void Unregister(ChiselModel model)
         {
-            RemoveContainerGameObject(model);
+            // If we removed our model component, we should remove the containers
+            if (!model && model.hierarchyItem.GameObject)
+                RemoveContainerGameObjectWithUndo(model);
             
             models.Remove(model);
-        }
-
-        public void RemoveAllGeneratedComponents(ChiselModel model)
-        {
-            RemoveContainerGameObject(model);
         }
 
         public static void ForceUpdateDelayedUVGeneration()
@@ -56,7 +53,7 @@ namespace Chisel.Components
             if ((staticFlags & UnityEditor.StaticEditorFlags.ContributeGI) != UnityEditor.StaticEditorFlags.ContributeGI)
                 return false;
 
-            if (model.generated.HasLightmapUVs)
+            if (!model.generated.HasLightmapUVs)
                 return true;
 #endif
             return false;
@@ -81,10 +78,15 @@ namespace Chisel.Components
                 if ((!model.AutoRebuildUVs && !force) || !lightmapStatic)
                     continue;
 
-                for (int i = 0; i < model.generated.renderables.Length; i++)
+                var renderables = model.generated.renderables;
+                if (renderables == null)
+                    continue;
+
+                for (int i = 0; i < renderables.Length; i++)
                 {
-                    var renderable  = model.generated.renderables[i];
+                    var renderable  = renderables[i];
                     if (renderable == null || 
+                        renderable.invalid ||
                         (!force && renderable.uvLightmapUpdateTime == 0))
                         continue;
 
@@ -236,6 +238,12 @@ namespace Chisel.Components
             }
         }
 
+        private void RemoveContainerGameObjectWithUndo(ChiselModel model)
+        {
+            if (model.generated != null)
+                model.generated.DestroyWithUndo();
+        }
+
         private void RemoveContainerGameObject(ChiselModel model)
         {
             if (model.generated != null)
@@ -299,6 +307,8 @@ namespace Chisel.Components
         // Hacky way to store that a mesh has lightmap UV created
         public static bool HasLightmapUVs(UnityEngine.Mesh sharedMesh)
         {
+            if (!sharedMesh)
+                return true;
             var name = sharedMesh.name;
             if (!string.IsNullOrEmpty(name) &&
                 name[name.Length - 1] == '*')
@@ -309,20 +319,16 @@ namespace Chisel.Components
         public static void SetHasLightmapUVs(UnityEngine.Mesh sharedMesh, bool haveLightmapUVs)
         {
             var name = sharedMesh.name;
-            if (haveLightmapUVs)
+            if (!haveLightmapUVs)
             {
-                if (!string.IsNullOrEmpty(name) &&
-                    name[name.Length - 1] == '*')
+                if (!string.IsNullOrEmpty(name) && name[name.Length - 1] == '*')
                     return;
                 sharedMesh.name = name + "*";
             } else
             {
-                if (string.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(name) || name[name.Length - 1] != '*')
                     return;
-                if (name[name.Length - 1] != '*')
-                    return;
-                int index = name.IndexOf('*');
-                name = name.Remove(index);
+                name = name.Remove(name.Length - 1);
                 sharedMesh.name = name;
             }
         }
@@ -446,7 +452,7 @@ namespace Chisel.Components
                 {
                     foreach (var renderer in renderers)
                     {
-                        if (renderer == null || !renderer.container)
+                        if (renderer == null || renderer.invalid || !renderer.container)
                             continue;
                         state.generatedComponents[renderer.container] = model;
 #if UNITY_EDITOR

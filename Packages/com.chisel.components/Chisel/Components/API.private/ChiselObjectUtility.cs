@@ -38,6 +38,25 @@ namespace Chisel.Components
                 UnityEngine.Object.Destroy(obj);
         }
 
+        public static void SafeDestroyWithUndo(UnityEngine.Object obj)
+        {
+            if (!obj)
+                return;
+#if UNITY_EDITOR
+            if (!UnityEditor.EditorApplication.isPlaying)
+            {
+                UnityEditor.Undo.RecordObject(obj, "Destroying object");
+                obj.hideFlags = UnityEngine.HideFlags.None;
+                UnityEditor.Undo.DestroyObjectImmediate(obj);
+            } else
+#endif
+            {
+                Debug.Log("Undo not possible");
+                obj.hideFlags = UnityEngine.HideFlags.None;
+                UnityEngine.Object.Destroy(obj);
+            }
+        }
+
         public static void SafeDestroy(UnityEngine.GameObject obj, bool ignoreHierarchyEvents = false)
         {
             if (!obj)
@@ -54,6 +73,37 @@ namespace Chisel.Components
                 else
 #endif
                     UnityEngine.Object.Destroy(obj);
+            }
+            finally
+            {
+                if (ignoreHierarchyEvents)
+                    ChiselNodeHierarchyManager.ignoreNextChildrenChanged = false;
+            }
+        }
+
+        public static void SafeDestroyWithUndo(UnityEngine.GameObject obj, bool ignoreHierarchyEvents = false)
+        {
+            if (!obj)
+                return;
+            if (ignoreHierarchyEvents)
+                ChiselNodeHierarchyManager.ignoreNextChildrenChanged = true;
+            try
+            {
+#if UNITY_EDITOR
+                if (!UnityEditor.EditorApplication.isPlaying)
+                {
+                    UnityEditor.Undo.RecordObjects(new UnityEngine.Object[] { obj, obj.transform }, "Destroying object");
+                    obj.hideFlags = UnityEngine.HideFlags.None;
+                    obj.transform.hideFlags = HideFlags.None;
+                    UnityEditor.Undo.DestroyObjectImmediate(obj);
+                } else
+#endif
+                {
+                    Debug.Log("Undo not possible");
+                    obj.hideFlags = UnityEngine.HideFlags.None;
+                    obj.transform.hideFlags = HideFlags.None;
+                    UnityEngine.Object.Destroy(obj);
+                }
             }
             finally
             {

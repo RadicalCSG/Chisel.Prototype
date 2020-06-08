@@ -14,8 +14,8 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     internal unsafe struct CreateRoutingTableJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<int>                          treeBrushIndices;
-        [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>           compactTree;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<RoutingTable>>.ParallelWriter routingTableLookup;
@@ -24,10 +24,11 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            if (index >= treeBrushIndices.Length)
+            if (index >= treeBrushIndexOrders.Length)
                 return;
 
-            var processedNodeIndex = treeBrushIndices[index];
+            var processedIndexOrder = treeBrushIndexOrders[index];
+            int processedNodeIndex  = processedIndexOrder.nodeIndex;
 
             int categoryStackNodeCount, polygonGroupCount;
             if (!brushesTouchedByBrushes.TryGetValue(processedNodeIndex, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
@@ -541,7 +542,7 @@ namespace Chisel.Core
                     {
                         // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
                         // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
-                        NativeListExtensions.RemoveRange(outputStack, startNodeIndex, outputStack.Length - startNodeIndex);
+                        ChiselNativeListExtensions.RemoveRange(outputStack, startNodeIndex, outputStack.Length - startNodeIndex);
                         RemapIndices(outputStack, combineIndexRemap, prevNodeIndex, startNodeIndex);
 
 #if SHOW_DEBUG_MESSAGES
@@ -561,7 +562,7 @@ namespace Chisel.Core
                 {
                     // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
                     // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
-                    NativeListExtensions.RemoveRange(outputStack, 0, firstRemoveCount);
+                    ChiselNativeListExtensions.RemoveRange(outputStack, 0, firstRemoveCount);
                 }
 #endif
 

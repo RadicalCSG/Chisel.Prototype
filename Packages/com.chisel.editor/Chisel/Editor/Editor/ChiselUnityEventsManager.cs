@@ -215,6 +215,8 @@ namespace Chisel.Editors
 
         private static void OnEditorApplicationUpdate()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
             ChiselNodeHierarchyManager.Update();
             ChiselGeneratedModelMeshManager.UpdateModels();
             ChiselNodeEditorBase.HandleCancelEvent();
