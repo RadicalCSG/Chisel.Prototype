@@ -671,7 +671,7 @@ namespace Chisel.Core
                     var brushNodeIndex1 = surfaceInfo.brushNodeIndex;
 
                     // brush does not exist in routing table (has been deduced to not have any effect)
-                    if (!NativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
+                    if (!ChiselNativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
                         continue;
 
                     var routingTableIndex = nodeIDtoIndex[brushNodeIndex1];

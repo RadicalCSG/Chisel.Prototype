@@ -1,11 +1,6 @@
 using UnityEngine;
-using System.Collections;
 using Chisel.Core;
-using System.Collections.Generic;
 using System;
-using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
-using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
-using UnityEngine.Rendering;
 
 namespace Chisel.Components
 {
@@ -16,6 +11,8 @@ namespace Chisel.Components
         public Mesh             sharedMesh;
         public MeshCollider     meshCollider;
         public PhysicMaterial   physicsMaterial;
+
+        public ulong            geometryHashValue;
 
         private ChiselColliderObjects() { }
         public static ChiselColliderObjects Create(GameObject container, int surfaceParameter)
@@ -43,6 +40,12 @@ namespace Chisel.Components
             physicsMaterial = null;
         }
 
+        public void DestroyWithUndo()
+        {
+            ChiselObjectUtility.SafeDestroyWithUndo(meshCollider);
+            ChiselObjectUtility.SafeDestroyWithUndo(sharedMesh);
+        }
+
         public void RemoveContainerFlags()
         {
             ChiselObjectUtility.RemoveContainerFlags(meshCollider);
@@ -68,17 +71,37 @@ namespace Chisel.Components
 
         public void Update(ChiselModel model, GeneratedMeshDescription meshDescription)
         {
+            var meshIsModified = false;
+
             // Retrieve the generatedMesh, and store it in the Unity Mesh
             var generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription);
             if (generatedMeshContents == null || generatedMeshContents.indices.Length == 0)
             {
-                if (sharedMesh.vertexCount > 0) sharedMesh.Clear(keepVertexLayout: true);
+                if (sharedMesh.vertexCount > 0)
+                {
+                    sharedMesh.Clear(keepVertexLayout: true);
+                    meshIsModified = true;
+                }
             } else
-                sharedMesh.CopyFromPositionOnly(generatedMeshContents);
+            {
+                meshIsModified = sharedMesh.CopyFromPositionOnly(ref geometryHashValue, generatedMeshContents);
+            }
+
             if (meshCollider.sharedMesh != sharedMesh)
+            {
                 meshCollider.sharedMesh = sharedMesh;
-            meshCollider.enabled = sharedMesh.vertexCount > 0;
+                meshIsModified = true;
+            }
+
+            var expectedEnabled = sharedMesh.vertexCount > 0;
+            if (meshCollider.enabled != expectedEnabled)
+                meshCollider.enabled = expectedEnabled;
             generatedMeshContents?.Dispose();
+
+#if UNITY_EDITOR
+            if (meshIsModified)
+                UnityEditor.EditorUtility.SetDirty(model);
+#endif
         }
 
         public static void UpdateColliders(ChiselModel model, ChiselColliderObjects[] colliders)

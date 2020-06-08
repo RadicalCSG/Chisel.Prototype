@@ -541,7 +541,7 @@ namespace Chisel.Core
                     {
                         // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
                         // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
-                        NativeListExtensions.RemoveRange(outputStack, startNodeIndex, outputStack.Length - startNodeIndex);
+                        ChiselNativeListExtensions.RemoveRange(outputStack, startNodeIndex, outputStack.Length - startNodeIndex);
                         RemapIndices(outputStack, combineIndexRemap, prevNodeIndex, startNodeIndex);
 
 #if SHOW_DEBUG_MESSAGES
@@ -561,7 +561,7 @@ namespace Chisel.Core
                 {
                     // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
                     // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
-                    NativeListExtensions.RemoveRange(outputStack, 0, firstRemoveCount);
+                    ChiselNativeListExtensions.RemoveRange(outputStack, 0, firstRemoveCount);
                 }
 #endif
 
