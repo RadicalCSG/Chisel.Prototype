@@ -237,7 +237,7 @@ namespace Chisel.Core
                     surfaceInfo = new SurfaceInfo()
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
-                        brushIndexOrder     = brushIndexOrder,
+                        brushIndex          = brushIndexOrder.nodeIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,

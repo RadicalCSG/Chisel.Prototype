@@ -42,12 +42,13 @@ namespace Chisel.Core
             return nodeIndex.GetHashCode();
         }
     }
-    
+
+    // Note: Stored in BlobAsset at runtime/editor-time
     public struct BrushSurfacePair
     {
-        public IndexOrder   brushNodeIndexOrder0;
-        public IndexOrder   brushNodeIndexOrder1;
-        public int          basePlaneIndex;
+        public int brushNodeIndex0;
+        public int brushNodeIndex1;
+        public int basePlaneIndex;
     }
     
     public struct BrushPair : IEquatable<BrushPair>, IEqualityComparer<BrushPair>, IComparable<BrushPair>, IComparer<BrushPair>
@@ -130,11 +131,11 @@ namespace Chisel.Core
 
     struct BottomUpNodeIndex
     {
-        public int          nodeIndexOrder; // TODO: might not be needed
-        public int          bottomUpStart;
-        public int          bottomUpEnd;
+        public int  nodeIndex;      // TODO: might not be needed
+        public int  bottomUpStart;
+        public int  bottomUpEnd;
 
-        public override string ToString() { return $"({nameof(nodeIndexOrder)}: {nodeIndexOrder}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
+        public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
     }
 
     struct CompactTree
@@ -206,7 +207,7 @@ namespace Chisel.Core
                 brushIndexToBottomUpIndex[brushNodeIndex - minBrushIndex] = bottomUpNodeIndices.Count;
                 bottomUpNodeIndices.Add(new BottomUpNodeIndex()
                 {
-                    nodeIndexOrder  = brushNodeIndex,
+                    nodeIndex  = brushNodeIndex,
                     bottomUpEnd     = bottomUpNodes.Count,
                     bottomUpStart   = parentStart
                 });
@@ -303,14 +304,15 @@ namespace Chisel.Core
         public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd}, {nameof(intersectionStart)}: {intersectionStart}, {nameof(intersectionEnd)}: {intersectionEnd})"; }
     }
 
+    // Note: Stored in BlobAsset at runtime/editor-time
     struct BrushIntersection
     {
-        public IndexOrder       nodeIndexOrder;
+        public int              nodeIndex;
         public IntersectionType type;
         public int              bottomUpStart;
         public int              bottomUpEnd;
 
-        public override string ToString() { return $"({nameof(nodeIndexOrder)}: {nodeIndexOrder}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
+        public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
     }
 
     struct BrushesTouchedByBrush
@@ -352,20 +354,23 @@ namespace Chisel.Core
         }
     };
 
+    // Note: Stored in BlobAsset at runtime/editor-time
     public struct SurfaceInfo
     {
-        public IndexOrder           brushIndexOrder;
+        public int                  brushIndex;
         public ushort               basePlaneIndex;
         public CategoryGroupIndex   interiorCategory;
     }
 
+    // Note: Stored in BlobAsset at runtime/editor-time
     struct BasePolygon
     {
         public SurfaceInfo      surfaceInfo;
         public int              startEdgeIndex;
         public int              endEdgeIndex;
     }
-    
+
+    // Note: Stored in BlobAsset at runtime/editor-time
     struct BaseSurface
     {
         public SurfaceLayers    layers;

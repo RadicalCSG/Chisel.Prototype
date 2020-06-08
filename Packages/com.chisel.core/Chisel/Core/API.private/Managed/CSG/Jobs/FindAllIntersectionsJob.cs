@@ -165,16 +165,8 @@ namespace Chisel.Core
                 }
                 if (found)
                 {
-                    // TODO: Optimize
-                    //if (!updateBrushIndicesArray.Contains(brush0IndexOrder)) // <-- won't work
-                    for (int n=0;n< updateBrushIndicesArray.Length;n++)
-                    {
-                        if (updateBrushIndicesArray[n].nodeIndex == brush0NodeIndex)
-                            goto SkipAdd; 
-                    }
+                    if (!updateBrushIndicesArray.Contains(brush0IndexOrder))
                         brushesThatNeedIndirectUpdate.Add(brush0IndexOrder);
-                    SkipAdd:
-                    ;
                 }
             }
 
@@ -291,8 +283,7 @@ namespace Chisel.Core
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var otherIntersectionInfo = brushIntersections[i];
-                var otherIndexOrder = otherIntersectionInfo.nodeIndexOrder;
-                int otherNodeIndex  = otherIndexOrder.nodeIndex;
+                int otherNodeIndex = otherIntersectionInfo.nodeIndex;
                 bitset.Set(otherNodeIndex, otherIntersectionInfo.type);
                 for (int b = otherIntersectionInfo.bottomUpStart; b < otherIntersectionInfo.bottomUpEnd; b++)
                     bitset.Set(bottomUpNodes[b], IntersectionType.Intersection);
@@ -326,7 +317,7 @@ namespace Chisel.Core
                     var otherBottomUpIndex = brushIndexToBottomUpIndex[otherBrushIndex - indexOffset];
                     brushIntersections.Add(new BrushIntersection()
                     { 
-                        nodeIndexOrder  = otherIndexOrder,
+                        nodeIndex       = otherIndexOrder.nodeIndex,
                         type            = touchingBrush.type,
                         bottomUpStart   = bottomUpNodeIndices[otherBottomUpIndex].bottomUpStart, 
                         bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].bottomUpEnd

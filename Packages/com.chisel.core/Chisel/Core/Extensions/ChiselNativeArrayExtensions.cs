@@ -24,6 +24,11 @@ namespace Chisel.Core
             return nativeList;
         }
 
+        public unsafe static NativeArray<T> ToNativeArray<T>(this T[] array, Allocator allocator) where T : unmanaged
+        {
+            return new NativeArray<T>(array, allocator);
+        }
+
         public unsafe static void AddRange<T>(this List<T> list, NativeArray<T> collection) 
             where T : unmanaged
         {

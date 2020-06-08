@@ -18,7 +18,8 @@ namespace Chisel.Core
         const float kNormalEpsilon          = CSGConstants.kNormalEpsilon;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>             brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushPairIntersection>>                   intersectingBrushes;
+        
+        [NoAlias] public NativeArray<BlobAssetReference<BrushPairIntersection>>                             intersectingBrushes;
 
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter   outputSurfaces;
 
@@ -487,16 +488,16 @@ namespace Chisel.Core
 
                 dstSurfaces[j].pair = new BrushSurfacePair
                 {
-                    brushNodeIndexOrder0 = brushIndexOrder0,
-                    brushNodeIndexOrder1 = brushIndexOrder1,
-                    basePlaneIndex       = basePlaneIndex
+                    brushNodeIndex0     = brushIndexOrder0.nodeIndex,
+                    brushNodeIndex1     = brushIndexOrder1.nodeIndex,
+                    basePlaneIndex      = basePlaneIndex
                 };
                 dstSurfaces[j].surfaceInfo = surfaceInfo;
                 var dstVertices = builder.Allocate(ref dstSurfaces[j].loopVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
                     dstVertices[d] = srcVertices[uniqueIndices[offset + d]];
             }
-            outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.Persistent));
+            outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.TempJob));
             //builder.Dispose(); // Allocated with Temp, so don't need dispose
         }
 
@@ -508,6 +509,7 @@ namespace Chisel.Core
                 return;
 
             var intersectionAsset               = intersectingBrushes[index];
+            intersectingBrushes[index] = default;
             ref var intersection                = ref intersectionAsset.Value;
             ref var brushPairIntersection0      = ref intersection.brushes[0];
             ref var brushPairIntersection1      = ref intersection.brushes[1];
