@@ -697,6 +697,7 @@ namespace Chisel.Components
 
             try
             {
+                bool haveCreatedTreeNodes = false;
                 Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
                 ChiselBrushContainerAssetManager.Update();
                 Profiler.EndSample();
@@ -706,21 +707,24 @@ namespace Chisel.Components
                 Profiler.EndSample();
 
                 Profiler.BeginSample("UpdateTrampoline");
-                UpdateTrampoline();
+                haveCreatedTreeNodes = UpdateTrampoline();
                 Profiler.EndSample();
 
                 // TODO: fix that generators create brushes inside the trampoline, requiring us to call things twice
-                Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                ChiselBrushContainerAssetManager.Update();
-                Profiler.EndSample();
+                if (haveCreatedTreeNodes)
+                {
+                    Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
+                    ChiselBrushContainerAssetManager.Update();
+                    Profiler.EndSample();
 
-                Profiler.BeginSample("ChiselBrushMaterialManager.Update");
-                ChiselBrushMaterialManager.Update();
-                Profiler.EndSample();
+                    Profiler.BeginSample("ChiselBrushMaterialManager.Update");
+                    ChiselBrushMaterialManager.Update();
+                    Profiler.EndSample();
 
-                Profiler.BeginSample("UpdateTrampoline");
-                UpdateTrampoline();
-                Profiler.EndSample();
+                    Profiler.BeginSample("UpdateTrampoline");
+                    UpdateTrampoline();
+                    Profiler.EndSample();
+                }
             }
             // If we get an exception we don't want to end up infinitely spawning this exception ..
             finally
@@ -784,8 +788,9 @@ namespace Chisel.Components
         static readonly List<CSGTreeNode>	__childNodes			= new List<CSGTreeNode>();  // static to avoid allocations
 
         internal static bool prevPlaying = false;
-        internal static void UpdateTrampoline()
+        internal static bool UpdateTrampoline()
         {
+            bool haveCreatedTreeNodes = false;
             if (createDefaultModels.Count > 0)
             {
                 foreach (var sceneHierarchy in createDefaultModels)
@@ -814,7 +819,7 @@ namespace Chisel.Components
             if (currentPlaying != prevPlaying)
             {
                 prevPlaying = currentPlaying;
-                return;
+                return false;
             }
 #endif
             // *Workaround*
@@ -944,7 +949,7 @@ namespace Chisel.Components
                 updateTransformationNodes.Count == 0 &&
                 destroyNodesList.Count == 0 &&
                 rebuildTreeNodes.Count == 0)
-                return;
+                return false;
             
 
             __registerNodes   .Clear();
@@ -1096,7 +1101,10 @@ namespace Chisel.Components
                     }
 
                     if (node.CreatesTreeNode)
+                    {
                         CreateTreeNodes(node);
+                        haveCreatedTreeNodes = true;
+                    }
                 }
                  
                 // Separate loop to ensure all parent components are already initialized
@@ -1427,8 +1435,8 @@ namespace Chisel.Components
 
 
             // Used to redraw windows etc.
-            if (NodeHierarchyModified != null)
-                NodeHierarchyModified();
+            NodeHierarchyModified?.Invoke();
+            return haveCreatedTreeNodes;
         }
 
         static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)

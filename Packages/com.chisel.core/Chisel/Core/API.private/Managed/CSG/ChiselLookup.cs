@@ -243,10 +243,11 @@ namespace Chisel.Core
 
                 int firstIndex = 0;
                 // Skip all nodes that are not additive at the start of the branch since they will never produce any geometry
-                for (; firstIndex < nodeCount && parent.node[firstIndex].Valid && 
+                for (; firstIndex < nodeCount && parent.node[firstIndex].Valid &&
                                     (parent.node[firstIndex].Operation != CSGOperationType.Additive &&
                                      parent.node[firstIndex].Operation != CSGOperationType.Copy); firstIndex++)
-                    firstIndex++;
+                    // NOP
+                    ;
 
                 var firstChildIndex = topDownNodes.Count;
                 for (int i = firstIndex; i < nodeCount; i++)

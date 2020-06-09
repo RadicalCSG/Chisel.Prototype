@@ -110,15 +110,37 @@ namespace Chisel.Components
                 var child = hierarchyItem.Children[c];
                 if (!child.Component)
                     continue;
-                var assetBounds = child.Component.CalculateBounds();
-                if (assetBounds.size.sqrMagnitude == 0)
+                var childBounds = child.Component.CalculateBounds();
+                if (childBounds.size.sqrMagnitude == 0)
                     continue;
                 if (!haveBounds)
                 {
-                    bounds = assetBounds;
+                    bounds = childBounds;
                     haveBounds = true;
                 } else
-                    bounds.Encapsulate(assetBounds);
+                    bounds.Encapsulate(childBounds);
+            }
+            return bounds;
+        }
+        // TODO: cache this
+        public override Bounds CalculateBounds(Matrix4x4 transformation)
+        {
+            var bounds = ChiselHierarchyItem.EmptyBounds;
+            var haveBounds = false;
+            for (int c = 0; c < hierarchyItem.Children.Count; c++)
+            {
+                var child = hierarchyItem.Children[c];
+                if (!child.Component)
+                    continue;
+                var childBounds = child.Component.CalculateBounds(transformation);
+                if (childBounds.size.sqrMagnitude == 0)
+                    continue;
+                if (!haveBounds)
+                {
+                    bounds = childBounds;
+                    haveBounds = true;
+                } else
+                    bounds.Encapsulate(childBounds);
             }
             return bounds;
         }

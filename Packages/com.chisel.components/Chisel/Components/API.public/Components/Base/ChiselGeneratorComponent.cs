@@ -46,6 +46,8 @@ namespace Chisel.Components
             var pickingEnabled = !instance.IsPickingDisabled(gameObject);
             foreach (var node in Nodes)
             {
+                if (!node.Valid)
+                    continue;
                 var nodeState = CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
                 resultState |= nodeState;
             }
@@ -470,21 +472,56 @@ namespace Chisel.Components
             {
                 if (!brush.Valid)
                     continue;
-                var transformation = modelMatrix * brush.NodeToTreeSpaceMatrix;
-                var assetBounds = brushContainerAsset.CalculateBounds(transformation);
-                var magnitude = assetBounds.size.sqrMagnitude;
+                var transformation  = modelMatrix * brush.NodeToTreeSpaceMatrix;
+                var childBounds     = brushContainerAsset.CalculateBounds(transformation);
+                var magnitude       = childBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
                     float.IsNaN(magnitude))
                 {
                     var center = transformation.GetColumn(3);
-                    assetBounds = new Bounds(center, Vector3.zero);
+                    childBounds = new Bounds(center, Vector3.zero);
                 }
-                if (assetBounds.size.sqrMagnitude != 0)
+                if (childBounds.size.sqrMagnitude != 0)
                 {
                     if (bounds.size.sqrMagnitude == 0)
-                        bounds = assetBounds;
+                        bounds = childBounds;
                     else
-                        bounds.Encapsulate(assetBounds);
+                        bounds.Encapsulate(childBounds);
+                }
+            }
+
+            return bounds;
+        }
+        
+        public override Bounds CalculateBounds(Matrix4x4 boundsTransformation)
+        {
+            if (!brushContainerAsset)
+                return ChiselHierarchyItem.EmptyBounds;
+
+            var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
+            var bounds			= ChiselHierarchyItem.EmptyBounds;
+
+            var foundBrushes    = new HashSet<CSGTreeBrush>();
+            GetAllTreeBrushes(foundBrushes, false);
+            foreach (var brush in foundBrushes)
+            {
+                if (!brush.Valid)
+                    continue;
+                var transformation  = modelMatrix * brush.NodeToTreeSpaceMatrix * boundsTransformation;
+                var childBounds     = brushContainerAsset.CalculateBounds(transformation);
+                var magnitude       = childBounds.size.sqrMagnitude;
+                if (float.IsInfinity(magnitude) ||
+                    float.IsNaN(magnitude))
+                {
+                    var center = transformation.GetColumn(3);
+                    childBounds = new Bounds(center, Vector3.zero);
+                }
+                if (childBounds.size.sqrMagnitude != 0)
+                {
+                    if (bounds.size.sqrMagnitude == 0)
+                        bounds = childBounds;
+                    else
+                        bounds.Encapsulate(childBounds);
                 }
             }
 

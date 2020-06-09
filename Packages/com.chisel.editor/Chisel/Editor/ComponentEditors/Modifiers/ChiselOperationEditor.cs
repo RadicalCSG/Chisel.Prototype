@@ -48,7 +48,7 @@ namespace Chisel.Editors
             operationProp   = serializedObject.FindProperty(ChiselOperation.kOperationFieldName);
             passThroughProp = serializedObject.FindProperty(ChiselOperation.kPassThroughFieldName);
 
-            if (Tools.current == Tool.Custom) ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = "Operation";
         }
 
@@ -98,6 +98,7 @@ namespace Chisel.Editors
                             ChiselNodeHierarchyManager.UpdateAvailability(operation);
                         }
                     }
+                    OnShapeChanged();
                 }
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)

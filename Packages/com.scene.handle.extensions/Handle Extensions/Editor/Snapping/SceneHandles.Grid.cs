@@ -39,6 +39,8 @@ namespace UnitySceneExtensions
 
     public class Grid
     {
+        public static event Action GridModified;
+
         const float kMinSpacing = (1 / 8192.0f);
 
 
@@ -62,7 +64,22 @@ namespace UnitySceneExtensions
         public Grid(Matrix4x4 gridToWorldSpace) { this.GridToWorldSpace = gridToWorldSpace; this.Spacing = defaultGrid.Spacing; }
 
         public static readonly Grid defaultGrid = new Grid();
-        public static Grid currentGrid = null;
+
+        static Grid currentGrid = null;
+        public static Grid CurrentGrid
+        {
+            get
+            {
+                return currentGrid;
+            }
+            set
+            {
+                if (value == currentGrid)
+                    return;
+                currentGrid = value;
+                GridModified?.Invoke();
+            }
+        }
 
         public static Grid HoverGrid { get; set; }
 
@@ -103,14 +120,59 @@ namespace UnitySceneExtensions
             }
             set
             {
-                _spacing.x = UnityEngine.Mathf.Max(kMinSpacing, value.x);
-                _spacing.y = UnityEngine.Mathf.Max(kMinSpacing, value.y);
-                _spacing.z = UnityEngine.Mathf.Max(kMinSpacing, value.z);
+                var spacingX = UnityEngine.Mathf.Max(kMinSpacing, value.x);
+                var spacingY = UnityEngine.Mathf.Max(kMinSpacing, value.y);
+                var spacingZ = UnityEngine.Mathf.Max(kMinSpacing, value.z);
+                if (_spacing.x == spacingX && 
+                    _spacing.y == spacingY && 
+                    _spacing.z == spacingZ)
+                    return;
+                _spacing.x = spacingX;
+                _spacing.y = spacingY;
+                _spacing.z = spacingZ;
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
             }
         }
-        public float SpacingX { get { return _spacing.x; } set { _spacing.x = UnityEngine.Mathf.Max(kMinSpacing, value);} }
-        public float SpacingY { get { return _spacing.y; } set { _spacing.y = UnityEngine.Mathf.Max(kMinSpacing, value); } }
-        public float SpacingZ { get { return _spacing.z; } set { _spacing.z = UnityEngine.Mathf.Max(kMinSpacing, value); } }
+        public float SpacingX
+        {
+            get { return _spacing.x; }
+            set
+            {
+                var spacingX = UnityEngine.Mathf.Max(kMinSpacing, value); ;
+                if (_spacing.x == spacingX)
+                    return;
+                _spacing.x = spacingX;
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
+            }
+        }
+        public float SpacingY
+        {
+            get { return _spacing.y; }
+            set
+            {
+                var spacingY = UnityEngine.Mathf.Max(kMinSpacing, value);
+                if (_spacing.y == spacingY)
+                    return;
+                _spacing.y = spacingY;
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
+            }
+        }
+        public float SpacingZ
+        {
+            get { return _spacing.z; }
+            set
+            {
+                var spacingZ = UnityEngine.Mathf.Max(kMinSpacing, value);
+                if (_spacing.z == spacingZ)
+                    return;
+                _spacing.z = spacingZ;
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
+            }
+        }
 
         Matrix4x4 _gridToWorldSpace = Matrix4x4.identity;
         Matrix4x4 _worldToGridSpace = Matrix4x4.identity;
@@ -123,8 +185,12 @@ namespace UnitySceneExtensions
             }
             set
             {
+                if (_gridToWorldSpace == value)
+                    return;
                 _gridToWorldSpace = value;
                 _worldToGridSpace = Matrix4x4.Inverse(_gridToWorldSpace);
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
             }
         }
 
@@ -136,8 +202,12 @@ namespace UnitySceneExtensions
             }
             set
             {
+                if (_worldToGridSpace == value)
+                    return;
                 _worldToGridSpace = value;
                 _gridToWorldSpace = Matrix4x4.Inverse(_worldToGridSpace);
+                if (this == ActiveGrid)
+                    GridModified?.Invoke();
             }
         }
         
