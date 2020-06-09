@@ -671,7 +671,7 @@ namespace Chisel.Editors
             EditorTools.activeToolChanged -= OnToolModeChanged;
             EditorTools.activeToolChanged += OnToolModeChanged;
 
-            if (Tools.current == Tool.Custom) ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
             UpdateSelection();
