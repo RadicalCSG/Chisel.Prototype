@@ -49,10 +49,17 @@ namespace Chisel.Components
 
 
         public abstract Bounds CalculateBounds();
+        public abstract Bounds CalculateBounds(Matrix4x4 transformation);
 
         public bool EncapsulateBounds(ref Bounds outBounds)
         {
             hierarchyItem.EncapsulateBounds(ref outBounds);
+            return true;
+        }
+
+        public bool EncapsulateBounds(ref Bounds outBounds, Matrix4x4 transformation)
+        {
+            hierarchyItem.EncapsulateBounds(ref outBounds, transformation);
             return true;
         }
 

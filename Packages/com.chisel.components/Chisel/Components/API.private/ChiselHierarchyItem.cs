@@ -83,6 +83,23 @@ namespace Chisel.Components
             }
         }
 
+        // TODO: Move bounds handling code to separate class, keep this clean
+        public Bounds CalculateBounds(Matrix4x4 transformation)
+        {
+            var gridBounds = new Bounds();
+            if (Component)
+            {
+                if (!Transform)
+                    Transform = Component.transform;
+                gridBounds = Component.CalculateBounds(transformation);
+            }
+
+            // TODO: make this non-iterative
+            for (int i = 0; i < Children.Count; i++)
+                Children[i].EncapsulateBounds(ref gridBounds, transformation);
+            return gridBounds;
+        }
+
         public void		EncapsulateBounds(ref Bounds outBounds)
         {
             UpdateBounds();
@@ -98,6 +115,23 @@ namespace Chisel.Components
                 }
                 if (outBounds.size.sqrMagnitude == 0) outBounds = ChildBounds;
                 else								  outBounds.Encapsulate(ChildBounds);
+            }
+        }
+        
+        public void		EncapsulateBounds(ref Bounds outBounds, Matrix4x4 transformation)
+        {
+            var gridBounds = CalculateBounds(transformation);
+            if (gridBounds.size.sqrMagnitude != 0)
+            {
+                float magnitude = gridBounds.size.sqrMagnitude;
+                if (float.IsInfinity(magnitude) ||
+                    float.IsNaN(magnitude))
+                {
+                    var center = LocalToWorldMatrix.GetColumn(3);
+                    gridBounds = new Bounds(center, Vector3.zero);
+                }
+                if (outBounds.size.sqrMagnitude == 0) outBounds = gridBounds;
+                else								  outBounds.Encapsulate(gridBounds);
             }
         }
 
