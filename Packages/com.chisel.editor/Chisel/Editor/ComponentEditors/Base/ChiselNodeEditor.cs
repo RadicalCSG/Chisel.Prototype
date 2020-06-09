@@ -158,6 +158,9 @@ namespace Chisel.Editors
 
         public static Vector3[] CalculateGridBounds(ChiselNode[] targetNodes)
         {
+            if (targetNodes == null)
+                return new[] { Vector3.zero };
+
             var worldToGridSpace = Grid.ActiveGrid.WorldToGridSpace;
             var gridToWorldSpace = Grid.ActiveGrid.GridToWorldSpace;
             var bounds = new Bounds();
@@ -639,6 +642,7 @@ namespace Chisel.Editors
         protected void ResetDefaultInspector()
         {
             definitionSerializedProperty = null;
+            position = Vector2.zero;
             children.Clear();
         }
 
@@ -720,13 +724,22 @@ namespace Chisel.Editors
         protected virtual void ResetInspector() { ResetDefaultInspector(); } 
         protected override void InitInspector() { base.InitInspector(); InitDefaultInspector(); }
 
+
+        static Vector2 position = Vector2.zero;
+
         protected override void OnEditSettingsGUI(SceneView sceneView)
         {
             if (Tools.current != Tool.Custom)
                 return;
 
+            GUILayoutUtility.GetRect(298, 0);
+
             // TODO: figure out how to make this work with multiple (different) editors when selecting a combination of nodes
-            OnDefaultSettingsGUI(target, sceneView);
+            using (var scope = new EditorGUILayout.ScrollViewScope(position, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(150)))
+            {
+                OnDefaultSettingsGUI(target, sceneView);
+                position = scope.scrollPosition;
+            }
             ShowInspectorHeader(operationProp);
         }
 
