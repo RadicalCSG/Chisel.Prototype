@@ -170,16 +170,11 @@ namespace Chisel.Components
             var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
             var meshDescriptions	= tree.GetMeshDescriptions(meshTypes, model.VertexChannelMask);
 
-            // Check if the tree creates *any* meshes
-            if (meshDescriptions == null || meshDescriptions.Length == 0)
+            if (meshDescriptions != null)
             {
-                //componentGenerator.RemoveAllGeneratedComponents(model);
-                PostUpdateModel?.Invoke(model);
-                return;
+                // Sort all meshDescriptions so that meshes that can be merged are next to each other
+                Array.Sort(meshDescriptions, kMeshDescriptionSorterDelegate);
             }
-
-            // Sort all meshDescriptions so that meshes that can be merged are next to each other
-            Array.Sort(meshDescriptions, kMeshDescriptionSorterDelegate);
 
             model.generated.Update(model, meshDescriptions);
         }

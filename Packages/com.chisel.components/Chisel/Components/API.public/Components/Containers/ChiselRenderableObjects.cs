@@ -197,7 +197,38 @@ namespace Chisel.Components
             }
         }
 
+        public void Clear(ChiselModel model, GameObjectState state)
+        {
+            bool meshIsModified = false;
+            try
+            {
+                triangleBrushes.Clear();
 
+                if (sharedMesh.vertexCount > 0)
+                {
+                    meshIsModified = true;
+                    sharedMesh.Clear(keepVertexLayout: true);
+                }
+                renderMaterials = Array.Empty<Material>();
+                if (meshFilter.sharedMesh != sharedMesh)
+                {
+                    meshFilter.sharedMesh = sharedMesh;
+                    meshIsModified = true;
+                }
+                var expectedEnabled = sharedMesh.vertexCount > 0;
+                SetMaterialsIfModified(meshRenderer, renderMaterials);
+                if (meshRenderer.enabled != expectedEnabled)
+                    meshRenderer.enabled = expectedEnabled;
+            }
+            finally
+            {
+                for (int i = 0; i < __foundContents.Count; i++)
+                    __foundContents[i].Dispose();
+                __foundContents.Clear();
+                __foundMaterials.Clear();
+            }
+            UpdateSettings(model, state, meshIsModified);
+        }
 
 
 
@@ -229,7 +260,11 @@ namespace Chisel.Components
                 triangleBrushes.Clear();
                 if (__foundContents.Count == 0)
                 {
-                    if (sharedMesh.vertexCount > 0) sharedMesh.Clear(keepVertexLayout: true);
+                    if (sharedMesh.vertexCount > 0)
+                    {
+                        meshIsModified = true;
+                        sharedMesh.Clear(keepVertexLayout: true);
+                    }
                 } else
                 {
                     meshIsModified = sharedMesh.CopyFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
