@@ -921,7 +921,7 @@ namespace Chisel.Editors
             
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generatorNode.NodeToTreeSpaceMatrix))
+                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generator.LocalTransformationWithPivot))
                 {
                     EditorGUI.BeginChangeCheck();
                     {

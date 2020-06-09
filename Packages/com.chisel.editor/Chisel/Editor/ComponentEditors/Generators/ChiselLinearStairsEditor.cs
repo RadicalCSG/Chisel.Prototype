@@ -160,7 +160,7 @@ namespace Chisel.Editors
                     GUI.changed = true;
 
                     Undo.RecordObject(generatorTransform, "Rotated transform");
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center), generatorTransform.up, 90);
+                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, 90);
                 }
 
                 if (SceneHandles.ClickableLabel(pLabel0, (pLabel0 - center).normalized, antiClockWiseRotation, fontSize: 32, fontStyle: FontStyle.Bold))
@@ -172,7 +172,7 @@ namespace Chisel.Editors
                     GUI.changed = true;
 
                     Undo.RecordObject(generatorTransform, "Rotated transform");
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center), generatorTransform.up, -90);
+                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, -90);
                 }
                  
 
