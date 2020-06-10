@@ -80,9 +80,9 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct PrepareBrushPairIntersectionsJob : IJobParallelFor
     {
-        const float kDistanceEpsilon        = CSGConstants.kDistanceEpsilon;
-        const float kPlaneDistanceEpsilon   = CSGConstants.kPlaneDistanceEpsilon;
-        const float kNormalEpsilon          = CSGConstants.kNormalEpsilon;
+        const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
+        const float kPlaneWAlignEpsilon         = CSGConstants.kPlaneDAlignEpsilon;
+        const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         [NoAlias, ReadOnly] public NativeArray<BrushPair>                                                uniqueBrushPairs;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>                 brushMeshBlobLookup;
@@ -113,7 +113,7 @@ namespace Chisel.Core
                                         (transformedPlane.z < 0) ? max.z : min.z,
                                         1.0f);
                 float forward = math.dot(transformedPlane, corner);
-                if (forward > kDistanceEpsilon) // closest point is outside
+                if (forward > kFatPlaneWidthEpsilon) // closest point is outside
                 {
                     intersectingPlaneLength = 0;
                     return;
@@ -125,7 +125,7 @@ namespace Chisel.Core
                                     (transformedPlane.z >= 0) ? max.z : min.z,
                                     1.0f);
                 float backward = math.dot(transformedPlane, corner);
-                if (backward < -kDistanceEpsilon) // closest point is inside
+                if (backward < -kFatPlaneWidthEpsilon) // closest point is inside
                     continue;
 
                 float minDistance = float.PositiveInfinity;
@@ -136,11 +136,11 @@ namespace Chisel.Core
                     float distance = math.dot(transformedPlane, new float4(vertices[v], 1));
                     minDistance = math.min(distance, minDistance);
                     maxDistance = math.max(distance, maxDistance);
-                    onCount += (distance >= -kDistanceEpsilon && distance <= kDistanceEpsilon) ? 1 : 0;
+                    onCount += (distance >= -kFatPlaneWidthEpsilon && distance <= kFatPlaneWidthEpsilon) ? 1 : 0;
                 }
 
                 // if all vertices are 'inside' this plane, then we're not truly intersecting with it
-                if ((minDistance > kDistanceEpsilon || maxDistance < -kDistanceEpsilon))
+                if ((minDistance > kFatPlaneWidthEpsilon || maxDistance < -kFatPlaneWidthEpsilon))
                     continue;
 
                 intersectingPlanesPtr[intersectingPlaneLength] = i;
@@ -420,12 +420,12 @@ namespace Chisel.Core
                     {
                         var p2          = intersectingPlaneIndices1[i2];
                         var localPlane2 = localSpacePlanes1[p2];
-                        if (math.abs(localPlane1.w - localPlane2.w) >= kPlaneDistanceEpsilon ||
-                            math.dot(localPlane1.xyz, localPlane2.xyz) < kNormalEpsilon)
+                        if (math.abs(localPlane1.w - localPlane2.w) >= kPlaneWAlignEpsilon ||
+                            math.dot(localPlane1.xyz, localPlane2.xyz) < kNormalDotAlignEpsilon)
                         {
                             localPlane2 = -localPlane2;
-                            if (math.abs(localPlane1.w - localPlane2.w) >= kPlaneDistanceEpsilon ||
-                                math.dot(localPlane1.xyz, localPlane2.xyz) < kNormalEpsilon)
+                            if (math.abs(localPlane1.w - localPlane2.w) >= kPlaneWAlignEpsilon ||
+                                math.dot(localPlane1.xyz, localPlane2.xyz) < kNormalDotAlignEpsilon)
                                 continue;
 
                             var surfaceInfo0 = surfaceInfos0[p1];
@@ -452,7 +452,6 @@ namespace Chisel.Core
                 var vertexIntersectionPlanes0       = stackalloc ushort[usedVertices0.Length * localSpacePlanes0Length];
                 var vertexIntersectionSegments0     = stackalloc int2[usedVertices0.Length];
                 var vertexIntersectionPlaneCount    = 0;
-                const float kPlaneDistanceEpsilon = CSGConstants.kPlaneDistanceEpsilon;
 
                 for (int i = 0; i < usedVertices0.Length; i++)
                 {
@@ -461,7 +460,7 @@ namespace Chisel.Core
                     {
                         var planeIndex = intersectingPlaneIndices0[j];
                         var distance = math.dot(mesh0.localPlanes[planeIndex], new float4(usedVertices0[i], 1));
-                        if (distance >= -kPlaneDistanceEpsilon && distance <= kPlaneDistanceEpsilon) // Note: this is false on NaN/Infinity, so don't invert
+                        if (distance >= -kPlaneWAlignEpsilon && distance <= kPlaneWAlignEpsilon) // Note: this is false on NaN/Infinity, so don't invert
                         {
                             vertexIntersectionPlanes0[vertexIntersectionPlaneCount] = (ushort)planeIndex;
                             vertexIntersectionPlaneCount++;
@@ -489,7 +488,6 @@ namespace Chisel.Core
                 var vertexIntersectionPlanes1       = stackalloc ushort[usedVertices1.Length * localSpacePlanes1Length];
                 var vertexIntersectionSegments1     = stackalloc int2[usedVertices1.Length];
                 var vertexIntersectionPlaneCount    = 0;
-                const float kPlaneDistanceEpsilon = CSGConstants.kPlaneDistanceEpsilon;
 
                 for (int i = 0; i < usedVertices1.Length; i++)
                 {
@@ -498,7 +496,7 @@ namespace Chisel.Core
                     {
                         var planeIndex = intersectingPlaneIndices1[j];
                         var distance = math.dot(mesh1.localPlanes[planeIndex], new float4(usedVertices1[i], 1));
-                        if (distance >= -kPlaneDistanceEpsilon && distance <= kPlaneDistanceEpsilon) // Note: this is false on NaN/Infinity, so don't invert
+                        if (distance >= -kPlaneWAlignEpsilon && distance <= kPlaneWAlignEpsilon) // Note: this is false on NaN/Infinity, so don't invert
                         {
                             vertexIntersectionPlanes1[vertexIntersectionPlaneCount] = (ushort)planeIndex;
                             vertexIntersectionPlaneCount++;

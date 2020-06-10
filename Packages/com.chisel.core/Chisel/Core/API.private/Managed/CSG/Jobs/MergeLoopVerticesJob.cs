@@ -24,7 +24,7 @@ namespace Chisel.Core
         // TODO: optimize
         public unsafe void Execute()
         {
-            const float kVertexEqualEpsilonSqr = (float)CSGConstants.kVertexEqualEpsilonSqr;
+            const float kSqrVertexEqualEpsilon = CSGConstants.kSqrVertexEqualEpsilon;
             var verticesSrcPtr  = (float4*)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(verticesSrc);
             var verticesDstPtr  = (float4*)NativeArrayUnsafeUtility.GetUnsafePtr(verticesDst);
 
@@ -37,7 +37,7 @@ namespace Chisel.Core
                 for (int v1 = 0; v1 < verticesSrcCount; v1++)
                 {
                     var vertex1 = verticesDstPtr[v1];
-                    if (math.lengthsq(vertex1 - vertex2) >= kVertexEqualEpsilonSqr)
+                    if (math.lengthsq(vertex1 - vertex2) >= kSqrVertexEqualEpsilon)
                         continue;
 
                     verticesDstPtr[v2] = vertex1;

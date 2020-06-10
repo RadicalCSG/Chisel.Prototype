@@ -55,6 +55,7 @@ namespace Chisel.Core
             public NativeStream   dataStream1;
             public NativeStream   dataStream2;
 
+            public JobHandle generateBoundsJobHandle;
             public JobHandle generateBasePolygonLoopsJobHandle;
 
             public JobHandle findAllIntersectionsJobHandle;
@@ -414,16 +415,15 @@ namespace Chisel.Core
 
             Profiler.BeginSample("Tag_Jobified");
 
-
             // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-            Profiler.BeginSample("Tag_GenerateBasePolygonLoops");
+            Profiler.BeginSample("Tag_GenerateBoundsLoops");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate  = ref treeUpdates[t];
 
-                    var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobs 
+                    var createBoundsJob = new CreateBoundsJob
                     {
                         // Read
                         treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders,
@@ -431,10 +431,9 @@ namespace Chisel.Core
                         transformations         = treeUpdate.transformations,
 
                         // Write
-                        basePolygons            = treeUpdate.basePolygons.AsParallelWriter(),
                         brushTreeSpaceBounds    = treeUpdate.brushTreeSpaceBounds.AsParallelWriter()
                     };
-                    treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
+                    treeUpdate.generateBoundsJobHandle = createBoundsJob.
                         Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16);
                 }
             }
@@ -464,7 +463,7 @@ namespace Chisel.Core
                         brushBrushIntersections = treeUpdate.brushBrushIntersections.AsParallelWriter()
                     };
                     treeUpdate.findAllIntersectionsJobHandle = findAllIntersectionsJob.
-                        Schedule(treeUpdate.generateBasePolygonLoopsJobHandle);
+                        Schedule(treeUpdate.generateBoundsJobHandle);
                 }
                 
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -474,18 +473,48 @@ namespace Chisel.Core
                     var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
                     {
                         // Read
-                        treeNodeIndex           = treeUpdate.treeNodeIndex,
-                        treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
-                        compactTree             = treeUpdate.compactTree,
-                        brushBrushIntersections = treeUpdate.brushBrushIntersections,
+                        treeNodeIndex               = treeUpdate.treeNodeIndex,
+                        treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                        nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
+                        nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
+                        compactTree                 = treeUpdate.compactTree,
+                        brushBrushIntersections     = treeUpdate.brushBrushIntersections,
 
                         // Write
-                        brushesTouchedByBrushes = treeUpdate.brushesTouchedByBrushes.AsParallelWriter()
+                        brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes.AsParallelWriter()
                     };
                     treeUpdate.findIntersectingBrushesJobHandle = storeBrushIntersectionsJob.
                         Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+                    treeUpdate.findIntersectingBrushesJobHandle.Complete();
                 }
             } finally { Profiler.EndSample(); }
+
+            // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
+            Profiler.BeginSample("Tag_GenerateBasePolygonLoops");
+            try
+            {
+                for (int t = 0; t < treeUpdateLength; t++)
+                {
+                    ref var treeUpdate = ref treeUpdates[t];
+                    var dependencies            = treeUpdate.findIntersectingBrushesJobHandle;
+                    var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobs
+                    {
+                        // Read
+                        treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                        nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
+                        nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
+                        brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
+                        brushMeshLookup             = treeUpdate.brushMeshLookup,
+                        transformations             = treeUpdate.transformations,
+
+                        // Write
+                        basePolygons                = treeUpdate.basePolygons.AsParallelWriter()
+                    };
+                    treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
+                        Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+                }
+            }
+            finally { Profiler.EndSample(); }
 
             // TODO: should only do this at creation time + when moved / store with brush component itself
             Profiler.BeginSample("Tag_UpdateBrushTreeSpacePlanes");
@@ -601,7 +630,7 @@ namespace Chisel.Core
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];                    
-                    var dependencies = JobHandle.CombineDependencies(treeUpdate.findAllIntersectionLoopsJobHandle, treeUpdate.prepareBrushPairIntersectionsJobHandle);
+                    var dependencies = JobHandle.CombineDependencies(treeUpdate.findAllIntersectionLoopsJobHandle, treeUpdate.prepareBrushPairIntersectionsJobHandle, treeUpdate.generateBasePolygonLoopsJobHandle);
                     var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
                     {
                         // Read
@@ -654,7 +683,7 @@ namespace Chisel.Core
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];
-                    var dependencies = treeUpdate.allPerformAllCSGJobHandle;
+                    var dependencies = JobHandle.CombineDependencies(treeUpdate.allPerformAllCSGJobHandle, treeUpdate.generateBasePolygonLoopsJobHandle);
 
                     // TODO: Make this work with burst so we can, potentially, merge it with PerformCSGJob?
                     var generateSurfaceRenderBuffers = new GenerateSurfaceTrianglesJob

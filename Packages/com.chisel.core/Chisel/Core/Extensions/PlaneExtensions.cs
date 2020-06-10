@@ -29,7 +29,7 @@ namespace Chisel.Core
             var tz = inPlane1.yzwx * -Nx.wxyz;
 
             var E = tx + ty + tz;
-            if (math.isnan(E.y) || E.y > -CSGConstants.kEpsilon && E.y < CSGConstants.kEpsilon)
+            if (math.isnan(E.y) || E.y > -CSGConstants.kDivideMinimumEpsilon && E.y < CSGConstants.kDivideMinimumEpsilon)
                 return NanFloat3;
             return (float3)(E.zwx / E.y);
 #endif

@@ -15,23 +15,9 @@ namespace Chisel.Core
         public ushort index1;
         public ushort index2;
 
-        public bool Equals(Edge other)
-        {
-            return index1 == other.index1 && index2 == other.index2;
-        }
-        public override int GetHashCode()
-        {
-            return (int)math.hash(new int2(index1, index2));
-        }
-
+        public bool Equals(Edge other) => (index1 == other.index1 && index2 == other.index2);
+        public override int GetHashCode() => (int)math.hash(new int2(index1, index2));
         public override string ToString() => $"({index1}, {index2})";
-
-        internal void Flip()
-        {
-            //if (index1 < index2)
-            //    return;
-            var t = index1; index1 = index2; index2 = t;
-        }
     }
 
     [BurstCompile(CompileSynchronously = true)] // Fails for some reason

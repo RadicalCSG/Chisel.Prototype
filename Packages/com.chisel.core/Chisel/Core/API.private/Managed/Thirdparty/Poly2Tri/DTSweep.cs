@@ -554,49 +554,54 @@ namespace Poly2Tri
             Clear();
             PrepareTriangulation(inputEdgesList);
             CreateAdvancingFront(0);
-            Sweep();
+            bool success = Sweep(inputEdgesList.Length * 10);
             FixupConstrainedEdges();
             FinalizationPolygon(triangleIndices);
-
-            //TODO: Optimize
-            for (int i = startIndex; i < triangleIndices.Length; i += 3)
+            if (!success)
             {
-                var index0 = triangleIndices[i + 0];
-                var index1 = triangleIndices[i + 1];
-                var index2 = triangleIndices[i + 2];
-                for (int e = inputEdgesList.Length - 1; e >= 0; e--)
+                UnityEngine.Debug.LogError("StackOverflow in triangulation");
+            } else
+            {
+                //TODO: Optimize
+                for (int i = startIndex; i < triangleIndices.Length; i += 3)
                 {
-                    var edge = inputEdgesList[e]; 
-                    if (index0 == edge.index1)
+                    var index0 = triangleIndices[i + 0];
+                    var index1 = triangleIndices[i + 1];
+                    var index2 = triangleIndices[i + 2];
+                    for (int e = inputEdgesList.Length - 1; e >= 0; e--)
                     {
-                        if (index1 == edge.index2 ||
-                            index2 == edge.index2)
+                        var edge = inputEdgesList[e];
+                        if (index0 == edge.index1)
                         {
-                            inputEdgesList.RemoveAtSwapBack(e);
-                        }
-                    } else
-                    if (index1 == edge.index1)
-                    {
-                        if (index0 == edge.index2 ||
-                            index2 == edge.index2)
+                            if (index1 == edge.index2 ||
+                                index2 == edge.index2)
+                            {
+                                inputEdgesList.RemoveAtSwapBack(e);
+                            }
+                        } else
+                        if (index1 == edge.index1)
                         {
-                            inputEdgesList.RemoveAtSwapBack(e);
-                        }
-                    } else
-                    if (index2 == edge.index1)
-                    {
-                        if (index1 == edge.index2 ||
-                            index0 == edge.index2)
+                            if (index0 == edge.index2 ||
+                                index2 == edge.index2)
+                            {
+                                inputEdgesList.RemoveAtSwapBack(e);
+                            }
+                        } else
+                        if (index2 == edge.index1)
                         {
-                            inputEdgesList.RemoveAtSwapBack(e);
+                            if (index1 == edge.index2 ||
+                                index0 == edge.index2)
+                            {
+                                inputEdgesList.RemoveAtSwapBack(e);
+                            }
                         }
                     }
                 }
-            }
-            if (inputEdgesList.Length > 3 && prevEdgeCount != inputEdgesList.Length)
-            {
-                prevEdgeCount = inputEdgesList.Length;
-                goto AddMoreTriangles;
+                if (inputEdgesList.Length > 3 && prevEdgeCount != inputEdgesList.Length)
+                {
+                    prevEdgeCount = inputEdgesList.Length;
+                    goto AddMoreTriangles;
+                }
             }
             inputEdgesList.Dispose();
         }
@@ -907,7 +912,7 @@ namespace Poly2Tri
         /// <summary>
         /// Start sweeping the Y-sorted point set from bottom to top
         /// </summary>
-        void Sweep()
+        bool Sweep(int maxStackDepth)
         {
             var sortedPoints = this.sortedPoints;
             for (int i = 1; i < sortedPoints.Length; i++)
@@ -1004,9 +1009,14 @@ namespace Poly2Tri
                     }
                 }
 
+                int stackDepth = maxStackDepth;
                 var edgeIndex = this.edges[pointIndex];
                 while (edgeIndex != int.MaxValue)
                 {
+                    stackDepth--;
+                    if (stackDepth <= 0)
+                        return false;
+
                     var pIndex  = allEdges[edgeIndex].index2;
                     edgeIndex = allEdges[edgeIndex].next;
                     var qIndex  = pointIndex;
@@ -1025,14 +1035,21 @@ namespace Poly2Tri
                     // TODO: integrate with flip process might give some better performance 
                     //       but for now this avoid the issue with cases that needs both flips and fills
                     if (edgeEventRight)
-                        FillRightAboveEdgeEvent(edge, nodeIndex);
-                    else
-                        FillLeftAboveEdgeEvent(edge, nodeIndex);
+                    {
+                        if (!FillRightAboveEdgeEvent(edge, nodeIndex, maxStackDepth))
+                            return false;
+                    } else
+                    {
+                        if (!FillLeftAboveEdgeEvent(edge, nodeIndex, maxStackDepth))
+                            return false;
+                    }
 
 
-                    PerformEdgeEvent(pIndex, qIndex, advancingFrontNodes[nodeIndex].triangleIndex, qIndex);
+                    if (!PerformEdgeEvent(pIndex, qIndex, advancingFrontNodes[nodeIndex].triangleIndex, qIndex, maxStackDepth))
+                        return false;
                 }
             }
+            return true;
         }
 
 
@@ -1085,9 +1102,14 @@ namespace Poly2Tri
         }
 
 
-        
-        void FillRightConcaveEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+
+        // returns false on failure
+        bool FillRightConcaveEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var nodeNextIndex = advancingFrontNodes[nodeIndex].nextNodeIndex;
             Fill(nodeNextIndex); 
             nodeNextIndex = advancingFrontNodes[nodeIndex].nextNodeIndex;
@@ -1103,7 +1125,7 @@ namespace Poly2Tri
                     if (Orient2d(node.nodePoint, nodeNext.nodePoint, nodeNextNext.nodePoint) == Orientation.CCW)
                     {
                         // Next is concave
-                        FillRightConcaveEdgeEvent(edge, nodeIndex);
+                        return FillRightConcaveEdgeEvent(edge, nodeIndex, stackDepth);
                     }
                     else
                     {
@@ -1111,11 +1133,17 @@ namespace Poly2Tri
                     }
                 }
             }
+            return true;
         }
 
 
-        void FillRightConvexEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+        // returns false on failure
+        bool FillRightConvexEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var node                = advancingFrontNodes[nodeIndex];
             var nodeNext            = advancingFrontNodes[node.nextNodeIndex];
             var nodeNextNext        = advancingFrontNodes[nodeNext.nextNodeIndex];
@@ -1124,7 +1152,7 @@ namespace Poly2Tri
             if (Orient2d(nodeNext.nodePoint, nodeNextNext.nodePoint, nodeNextNextNext.nodePoint) == Orientation.CCW)
             {
                 // Concave
-                FillRightConcaveEdgeEvent(edge, node.nextNodeIndex);
+                return FillRightConcaveEdgeEvent(edge, node.nextNodeIndex, stackDepth);
             } else
             {
                 // Convex
@@ -1132,16 +1160,22 @@ namespace Poly2Tri
                 if (Orient2d(points[edge.Q], nodeNextNext.nodePoint, points[edge.P]) == Orientation.CCW)
                 {
                     // Below
-                    FillRightConvexEdgeEvent(edge, node.nextNodeIndex);
+                    return FillRightConvexEdgeEvent(edge, node.nextNodeIndex, stackDepth);
                 } else
                 {
                     // Above
                 }
             }
+            return true;
         }
 
-        void FillRightBelowEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+        // returns false on failure
+        bool FillRightBelowEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var node = advancingFrontNodes[nodeIndex];
             if (node.nodePoint.x < points[edge.P].x)
             {
@@ -1151,39 +1185,52 @@ namespace Poly2Tri
                 if (Orient2d(node.nodePoint, nodeNext.nodePoint, nodeNextNext.nodePoint) == Orientation.CCW)
                 {
                     // Concave 
-                    FillRightConcaveEdgeEvent(edge, nodeIndex);
+                    return FillRightConcaveEdgeEvent(edge, nodeIndex, stackDepth);
                 } else
                 {
                     // Convex
-                    FillRightConvexEdgeEvent(edge, nodeIndex);
+                    if (!FillRightConvexEdgeEvent(edge, nodeIndex, stackDepth))
+                        return false;
                     // Retry this one
-                    FillRightBelowEdgeEvent(edge, nodeIndex);
+                    return FillRightBelowEdgeEvent(edge, nodeIndex, stackDepth);
                 }
             }
+            return true;
         }
 
 
-        void FillRightAboveEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+        // returns false on failure
+        bool FillRightAboveEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
             var node = advancingFrontNodes[nodeIndex];
             var edgeP = points[edge.P];
             while (advancingFrontNodes[node.nextNodeIndex].nodePoint.x < edgeP.x)
             {
+                stackDepth--;
+                if (stackDepth <= 0)
+                    return false;
+
                 // Check if next node is below the edge
                 var o1 = Orient2d(points[edge.Q], advancingFrontNodes[node.nextNodeIndex].nodePoint, edgeP);
                 if (o1 == Orientation.CCW)
                 {
-                    FillRightBelowEdgeEvent(edge, nodeIndex);
+                    if (!FillRightBelowEdgeEvent(edge, nodeIndex, stackDepth))
+                        return false;
                 } else
                     nodeIndex = node.nextNodeIndex;
                 node = advancingFrontNodes[nodeIndex];
                 edgeP = points[edge.P];
             }
+            return true;
         }
 
-        
-        void FillLeftConvexEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+        // returns false on failure
+        bool FillLeftConvexEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var node             = advancingFrontNodes[nodeIndex];
             var nodePrev         = advancingFrontNodes[node.prevNodeIndex];
             var nodePrevPrev     = advancingFrontNodes[nodePrev.prevNodeIndex];
@@ -1192,7 +1239,7 @@ namespace Poly2Tri
             if (Orient2d(nodePrev.nodePoint, nodePrevPrev.nodePoint, nodePrevPrevPrev.nodePoint) == Orientation.CW)
             {
                 // Concave
-                FillLeftConcaveEdgeEvent(edge, node.prevNodeIndex);
+                return FillLeftConcaveEdgeEvent(edge, node.prevNodeIndex, stackDepth);
             } else
             {
                 // Convex
@@ -1200,18 +1247,24 @@ namespace Poly2Tri
                 if (Orient2d(points[edge.Q], nodePrevPrev.nodePoint, points[edge.P]) == Orientation.CW)
                 {
                     // Below
-                    FillLeftConvexEdgeEvent(edge, node.prevNodeIndex);
+                    return FillLeftConvexEdgeEvent(edge, node.prevNodeIndex, stackDepth);
                 }
                 else
                 {
                     // Above
                 }
             }
+            return true;
         }
 
-        
-        void FillLeftConcaveEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+
+        // returns false on failure
+        bool FillLeftConcaveEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var node = advancingFrontNodes[nodeIndex];
             Fill(node.prevNodeIndex); 
             node = advancingFrontNodes[nodeIndex];
@@ -1226,7 +1279,8 @@ namespace Poly2Tri
                     if (Orient2d(node.nodePoint, nodePrev.nodePoint, nodePrevPrev.nodePoint) == Orientation.CW)
                     {
                         // Next is concave
-                        FillLeftConcaveEdgeEvent(edge, nodeIndex);
+                        if (!FillLeftConcaveEdgeEvent(edge, nodeIndex, stackDepth))
+                            return false;
                     }
                     else
                     {
@@ -1234,11 +1288,17 @@ namespace Poly2Tri
                     }
                 }
             }
+            return true;
         }
 
-        
-        void FillLeftBelowEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+
+        // returns false on failure
+        bool FillLeftBelowEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var node = advancingFrontNodes[nodeIndex];
             if (node.nodePoint.x > points[edge.P].x)
             {
@@ -1247,35 +1307,45 @@ namespace Poly2Tri
                 if (Orient2d(node.nodePoint, nodePrev.nodePoint, nodePrevPrev.nodePoint) == Orientation.CW)
                 {
                     // Concave 
-                    FillLeftConcaveEdgeEvent(edge, nodeIndex);
+                    return FillLeftConcaveEdgeEvent(edge, nodeIndex, stackDepth);
                 }
                 else
                 {
                     // Convex
-                    FillLeftConvexEdgeEvent(edge, nodeIndex);
+                    if (!FillLeftConvexEdgeEvent(edge, nodeIndex, stackDepth))
+                        return false;
                     // Retry this one
-                    FillLeftBelowEdgeEvent(edge, nodeIndex);
+                    return FillLeftBelowEdgeEvent(edge, nodeIndex, stackDepth);
                 }
 
             }
+            return true;
         }
 
-        
-        void FillLeftAboveEdgeEvent(DTSweepConstraint edge, int nodeIndex)
+
+        // returns false on failure
+        bool FillLeftAboveEdgeEvent(DTSweepConstraint edge, int nodeIndex, int stackDepth)
         {
             var node = advancingFrontNodes[nodeIndex];
             var edgeP = points[edge.P];
             while (advancingFrontNodes[node.prevNodeIndex].nodePoint.x > edgeP.x)
             {
+                stackDepth--;
+                if (stackDepth <= 0)
+                    return false;
+
                 // Check if next node is below the edge
                 var o1 = Orient2d(points[edge.Q], advancingFrontNodes[node.prevNodeIndex].nodePoint, edgeP);
                 if (o1 == Orientation.CW)
-                    FillLeftBelowEdgeEvent(edge, nodeIndex);
-                else
-                    nodeIndex = node.prevNodeIndex;
+                {
+                    if (!FillLeftBelowEdgeEvent(edge, nodeIndex, stackDepth))
+                        return false;
+                } else
+                        nodeIndex = node.prevNodeIndex;
                 node = advancingFrontNodes[nodeIndex];
                 edgeP = points[edge.P];
             }
+            return true;
         }
 
 
@@ -1316,14 +1386,18 @@ namespace Poly2Tri
             throw new Exception("PerformEdgeEvent - Point on constrained edge not supported yet");
         }
 
-        void PerformEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pointIndex)
+        bool PerformEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pointIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             //CheckValidIndex(triangleIndex);
             if (triangleIndex == int.MaxValue)
-                return;
+                return false;
 
             if (IsEdgeSideOfTriangle(triangleIndex, epIndex, eqIndex))
-                return;
+                return true;
 
             var eqPoint = points[eqIndex];
             var epPoint = points[epIndex];
@@ -1341,10 +1415,12 @@ namespace Poly2Tri
                     edgeEventConstrainedEdge.Q = p1Index;
                     triangles[triangleIndex] = triangle;
                     triangleIndex = triangle.NeighborAcrossFrom(pointIndex);
-                    PerformEdgeEvent(epIndex, p1Index, triangleIndex, p1Index);
+                    return PerformEdgeEvent(epIndex, p1Index, triangleIndex, p1Index, stackDepth);
                 } else
+                {
                     PointOnConstrainedEdgeNotSupportedException(epIndex, eqIndex, p1Index);
-                return;
+                    return true;
+                }
             }
 
             var p2Index = triangle.PointCWFrom(pointIndex);
@@ -1360,11 +1436,15 @@ namespace Poly2Tri
                     triangles[triangleIndex] = triangle;
                     triangleIndex = triangle.NeighborAcrossFrom(pointIndex);
                     if (triangleIndex != int.MaxValue)
-                        PerformEdgeEvent(epIndex, p2Index, triangleIndex, p2Index);
+                    {
+                        return PerformEdgeEvent(epIndex, p2Index, triangleIndex, p2Index, stackDepth);
+                    }
+                    return true;
                 } else
+                {
                     PointOnConstrainedEdgeNotSupportedException(epIndex, eqIndex, p2Index);
-                
-                return;
+                    return true;
+                }
             }
 
             if (o1 == o2)
@@ -1375,11 +1455,11 @@ namespace Poly2Tri
                     triangleIndex = triangle.NeighborCCWFrom(pointIndex);
                 else
                     triangleIndex = triangle.NeighborCWFrom(pointIndex);
-                PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pointIndex);
+                return PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pointIndex, stackDepth);
             } else
             {
                 // This triangle crosses constraint so lets flippin start!
-                FlipEdgeEvent(epIndex, eqIndex, triangleIndex, pointIndex);
+                return FlipEdgeEvent(epIndex, eqIndex, triangleIndex, pointIndex, stackDepth);
             }
         }
 
@@ -1391,7 +1471,8 @@ namespace Poly2Tri
         //[BurstDiscard]
         public static void FLIPFailedDueToMissingTriangleException()
         {
-            throw new Exception("[BUG:FIXME] FLIP failed due to missing triangle");
+            //throw new Exception("[BUG:FIXME] FLIP failed due to missing triangle");
+            UnityEngine.Debug.LogError("[BUG:FIXME] FLIP failed due to missing triangle");
         }
 
         //[BurstDiscard]
@@ -1402,14 +1483,19 @@ namespace Poly2Tri
             //UnityEngine.Debug.Assert(triangleIndex != otIndex, "self-pointer error");
         }
 
-        void FlipEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pIndex)
+        bool FlipEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var otIndex = triangles[triangleIndex].NeighborAcrossFrom(pIndex);            
             if (otIndex == int.MaxValue)
             {
                 // If we want to integrate the fillEdgeEvent do it here
                 // With current implementation we should never get here
                 FLIPFailedDueToMissingTriangleException();
+                return false;
             }
 
             CheckSelfPointer(triangleIndex, otIndex);
@@ -1450,17 +1536,19 @@ namespace Poly2Tri
                 {
                     var o = Orient2d(points[eqIndex], opPoint, points[epIndex]);
                     triangleIndex = NextFlipTriangle(o, triangleIndex, otIndex, pIndex, opIndex);
-                    FlipEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex);
+                    return FlipEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex, stackDepth);
                 }
             }
             else
             {
                 if (NextFlipPoint(epIndex, eqIndex, otIndex, opIndex, out int newP))
                 {
-                    FlipScanEdgeEvent(epIndex, eqIndex, triangleIndex, otIndex, newP);
-                    PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex);
+                    if (!FlipScanEdgeEvent(epIndex, eqIndex, triangleIndex, otIndex, newP, stackDepth))
+                        return false;
+                    return PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex, stackDepth);
                 }
             }
+            return true;
         }
 
         //[BurstDiscard]
@@ -1519,14 +1607,19 @@ namespace Poly2Tri
             return otherTriangleIndex;
         }
 
-        void FlipScanEdgeEvent(int epIndex, int eqIndex, int flipTriangle, int triangleIndex, int pIndex)
+        bool FlipScanEdgeEvent(int epIndex, int eqIndex, int flipTriangle, int triangleIndex, int pIndex, int stackDepth)
         {
+            stackDepth--;
+            if (stackDepth <= 0)
+                return false;
+
             var otIndex = triangles[triangleIndex].NeighborAcrossFrom(pIndex);
             if (otIndex == int.MaxValue)
             {
                 // If we want to integrate the fillEdgeEvent do it here
                 // With current implementation we should never get here
                 FLIPFailedDueToMissingTriangleException();
+                return false;
             }
 
             CheckSelfPointer(triangleIndex, otIndex);
@@ -1539,7 +1632,7 @@ namespace Poly2Tri
             if (inScanArea)
             {
                 // flip with new edge op->eq
-                FlipEdgeEvent(eqIndex, opIndex, otIndex, opIndex);
+                return FlipEdgeEvent(eqIndex, opIndex, otIndex, opIndex, stackDepth);
                 // TODO: Actually I just figured out that it should be possible to 
                 //       improve this by getting the next ot and op before the the above 
                 //       flip and continue the flipScanEdgeEvent here
@@ -1557,12 +1650,11 @@ namespace Poly2Tri
                     var index1 = triangle.indices[1];
                     var index2 = triangle.indices[2];
                     if (index0 != index1 && index0 != index2 && index1 != index2)
-                    {
-                        FlipScanEdgeEvent(epIndex, eqIndex, flipTriangle, otIndex, newP);
-                    }
+                        return FlipScanEdgeEvent(epIndex, eqIndex, flipTriangle, otIndex, newP, stackDepth);
                 }
                 //newP = NextFlipPoint(ep, eq, ot, op);
             }
+            return true;
         }
 
         void FillBasin(int nodeIndex)

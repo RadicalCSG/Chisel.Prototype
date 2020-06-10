@@ -317,17 +317,17 @@ namespace Chisel.Components
                         if (prevQuery == currQuery)
                             continue;
 
-                        prevQuery = currQuery;
-                        var renderIndex = (int)(prevQuery.LayerQueryMask & LayerUsageFlags.RenderReceiveCastShadows);
+                        var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
                         renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                         startIndex = descriptionIndex;
+                        prevQuery = currQuery;
                     }
 
                     {
-                        var renderIndex = (int)(prevQuery.LayerQueryMask & LayerUsageFlags.RenderReceiveCastShadows);
+                        var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
                         renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);

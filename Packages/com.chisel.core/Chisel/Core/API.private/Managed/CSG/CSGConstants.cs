@@ -5,14 +5,26 @@ namespace Chisel.Core
     static partial class CSGConstants
     {
         // TODO: do this properly
-        public const float  kPlaneDistanceEpsilon	= 0.0006f;
-        public const float  kDistanceEpsilon	    = 0.0001f;//0.01f;
-        public const float  kSqrDistanceEpsilon	    = kDistanceEpsilon * kDistanceEpsilon;
-        public const float  kMergeEpsilon	        = 0.0005f;
-        public const float  kSqrMergeEpsilon	    = kMergeEpsilon * kMergeEpsilon;
-        public const float  kNormalEpsilon			= 0.9999f;
-        public const double kVertexEqualEpsilon     = 0.00001;
-        public const double kVertexEqualEpsilonSqr  = kVertexEqualEpsilon * kVertexEqualEpsilon;
-        public const double kEpsilon                = 0.00001;
+        
+        const double        kPlaneDAlignEpsilonDouble       = 0.0006;
+        const double        kNormalDotAlignEpsilonDouble    = 0.9999;
+
+        const double        kBoundsDistanceEpsilonDouble    = 0.0004;
+        const double        kVertexEqualEpsilonDouble	    = 0.0002;
+        const double        kEdgeDistanceEpsilonDouble	    = 0.0004;
+        const double        kFatPlaneWidthEpsilonDouble	    = 0.0004;
+
+        public const float  kBoundsDistanceEpsilon	    = (float)kBoundsDistanceEpsilonDouble;
+
+        public const float  kFatPlaneWidthEpsilon	    = (float)kFatPlaneWidthEpsilonDouble;
+        public const float  kSqrEdgeDistanceEpsilon	    = (float)(kEdgeDistanceEpsilonDouble * kEdgeDistanceEpsilonDouble);
+        
+        public const float  kVertexEqualEpsilon	        = (float)(kVertexEqualEpsilonDouble * 2.5f);
+        public const float  kSqrVertexEqualEpsilon	    = kVertexEqualEpsilon * kVertexEqualEpsilon;
+
+        public const float  kNormalDotAlignEpsilon		= (float)kNormalDotAlignEpsilonDouble;
+        public const float  kPlaneDAlignEpsilon	        = (float)kPlaneDAlignEpsilonDouble;
+
+        public const double kDivideMinimumEpsilon       = 0.000001;
     }
 }

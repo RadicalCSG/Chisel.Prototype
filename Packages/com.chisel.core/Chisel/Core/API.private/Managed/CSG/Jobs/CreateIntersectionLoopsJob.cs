@@ -13,9 +13,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     public unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
     {
-        const float kPlaneDistanceEpsilon   = CSGConstants.kPlaneDistanceEpsilon;
-        const float kDistanceEpsilon        = CSGConstants.kDistanceEpsilon;
-        const float kNormalEpsilon          = CSGConstants.kNormalEpsilon;
+        const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>             brushTreeSpacePlanes;
         
@@ -38,7 +36,6 @@ namespace Chisel.Core
         
         public static unsafe bool IsOutsidePlanes(ref BlobArray<float4> planes, float4 localVertex)
         {
-            const float kEpsilon    = CSGConstants.kDistanceEpsilon;
             var planePtr            = (float4*)planes.GetUnsafePtr();
             int n = 0;
             for (; n + 4 < planes.Length; n+=4)
@@ -49,7 +46,7 @@ namespace Chisel.Core
                                           math.dot(planePtr[n+3], localVertex));
 
                 // will be 'false' when distance is NaN or Infinity
-                if (!math.all(distance <= kEpsilon))
+                if (!math.all(distance <= kFatPlaneWidthEpsilon))
                     return true;
             }
             for (; n < planes.Length; n ++)
@@ -57,7 +54,7 @@ namespace Chisel.Core
                 var distance = math.dot(planePtr[n], localVertex);
 
                 // will be 'false' when distance is NaN or Infinity
-                if (!(distance <= kEpsilon))
+                if (!(distance <= kFatPlaneWidthEpsilon))
                     return true;
             }
             return false;
@@ -297,8 +294,8 @@ namespace Chisel.Core
                 var edgeVertex1 = foundEdges[k].edgeVertex1;
                 var plane2      = foundIntersections[k].plane2;
 
-                if (math.abs(math.dot(plane2, edgeVertex0)) <= kDistanceEpsilon &&
-                    math.abs(math.dot(plane2, edgeVertex1)) <= kDistanceEpsilon)
+                if (math.abs(math.dot(plane2, edgeVertex0)) <= kFatPlaneWidthEpsilon &&
+                    math.abs(math.dot(plane2, edgeVertex1)) <= kFatPlaneWidthEpsilon)
                 {
                     if (k < n - 1)
                     {
