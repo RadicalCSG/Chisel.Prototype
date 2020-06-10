@@ -82,7 +82,7 @@ namespace Chisel.Editors
                     button4.y += button2.height;
 
                     isRenderable		= EditorGUI.ToggleLeft(button1, VisibleContent, isRenderable, toggleStyle);
-                    EditorGUI.BeginDisabledGroup(!deferredRenderingPath || !isRenderable);
+                    EditorGUI.BeginDisabledGroup(deferredRenderingPath || !isRenderable);
                     if	    (!isRenderable        ) EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, false, toggleStyle);
                     else if (deferredRenderingPath) EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, true,  toggleStyle);
                     else		 isReceiveShadows = EditorGUI.ToggleLeft(button2, ReceiveShadowsContent, isReceiveShadows, toggleStyle);
