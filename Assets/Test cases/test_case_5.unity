@@ -1,0 +1,4777 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!29 &1
+OcclusionCullingSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_OcclusionBakeSettings:
+    smallestOccluder: 5
+    smallestHole: 0.25
+    backfaceThreshold: 100
+  m_SceneGUID: 00000000000000000000000000000000
+  m_OcclusionCullingData: {fileID: 0}
+--- !u!104 &2
+RenderSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 9
+  m_Fog: 0
+  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_FogMode: 3
+  m_FogDensity: 0.01
+  m_LinearFogStart: 0
+  m_LinearFogEnd: 300
+  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
+  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_AmbientIntensity: 1
+  m_AmbientMode: 0
+  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
+  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_HaloStrength: 0.5
+  m_FlareStrength: 1
+  m_FlareFadeSpeed: 3
+  m_HaloTexture: {fileID: 0}
+  m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
+  m_DefaultReflectionMode: 0
+  m_DefaultReflectionResolution: 128
+  m_ReflectionBounces: 1
+  m_ReflectionIntensity: 1
+  m_CustomReflection: {fileID: 0}
+  m_Sun: {fileID: 0}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_UseRadianceAmbientProbe: 0
+--- !u!157 &3
+LightmapSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 12
+  m_GIWorkflowMode: 1
+  m_GISettings:
+    serializedVersion: 2
+    m_BounceScale: 1
+    m_IndirectOutputScale: 1
+    m_AlbedoBoost: 1
+    m_EnvironmentLightingMode: 0
+    m_EnableBakedLightmaps: 1
+    m_EnableRealtimeLightmaps: 0
+  m_LightmapEditorSettings:
+    serializedVersion: 12
+    m_Resolution: 2
+    m_BakeResolution: 40
+    m_AtlasSize: 1024
+    m_AO: 0
+    m_AOMaxDistance: 1
+    m_CompAOExponent: 1
+    m_CompAOExponentDirect: 0
+    m_ExtractAmbientOcclusion: 0
+    m_Padding: 2
+    m_LightmapParameters: {fileID: 0}
+    m_LightmapsBakeMode: 1
+    m_TextureCompression: 1
+    m_FinalGather: 0
+    m_FinalGatherFiltering: 1
+    m_FinalGatherRayCount: 256
+    m_ReflectionCompression: 2
+    m_MixedBakeMode: 2
+    m_BakeBackend: 1
+    m_PVRSampling: 1
+    m_PVRDirectSampleCount: 32
+    m_PVRSampleCount: 512
+    m_PVRBounces: 2
+    m_PVREnvironmentSampleCount: 256
+    m_PVREnvironmentReferencePointCount: 2048
+    m_PVRFilteringMode: 1
+    m_PVRDenoiserTypeDirect: 1
+    m_PVRDenoiserTypeIndirect: 1
+    m_PVRDenoiserTypeAO: 1
+    m_PVRFilterTypeDirect: 0
+    m_PVRFilterTypeIndirect: 0
+    m_PVRFilterTypeAO: 0
+    m_PVREnvironmentMIS: 1
+    m_PVRCulling: 1
+    m_PVRFilteringGaussRadiusDirect: 1
+    m_PVRFilteringGaussRadiusIndirect: 5
+    m_PVRFilteringGaussRadiusAO: 2
+    m_PVRFilteringAtrousPositionSigmaDirect: 0.5
+    m_PVRFilteringAtrousPositionSigmaIndirect: 2
+    m_PVRFilteringAtrousPositionSigmaAO: 1
+    m_ExportTrainingData: 0
+    m_TrainingDataDestination: TrainingData
+    m_LightProbeSampleCountMultiplier: 4
+  m_LightingDataAsset: {fileID: 0}
+  m_LightingSettings: {fileID: 0}
+--- !u!196 &4
+NavMeshSettings:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_BuildSettings:
+    serializedVersion: 2
+    agentTypeID: 0
+    agentRadius: 0.5
+    agentHeight: 2
+    agentSlope: 45
+    agentClimb: 0.4
+    ledgeDropHeight: 0
+    maxJumpAcrossDistance: 0
+    minRegionArea: 2
+    manualCellSize: 0
+    cellSize: 0.16666667
+    manualTileSize: 0
+    tileSize: 256
+    accuratePlacement: 0
+    maxJobWorkers: 0
+    preserveTilesOutsideBounds: 0
+    debug:
+      m_Flags: 0
+  m_NavMeshData: {fileID: 0}
+--- !u!43 &44974748
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u2039[generated-Renderable|CastShadows]\u203A*"
+  serializedVersion: 10
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!1 &103610982
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 103610983}
+  - component: {fileID: 103610984}
+  m_Layer: 0
+  m_Name: ChiselBrush (1310)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &103610983
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 103610982}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &103610984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 103610982}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4375cb78f1847d4f9133ef97219fcb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  operation: 0
+  brushContainerAsset: {fileID: 937234204}
+  localTransformation:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  pivotOffset: {x: 0, y: 0, z: 0}
+  instanceID: 17262
+  genGuidHashCode: 1329456428
+  definition:
+    brushOutline:
+      version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.54297
+      - x: -118.592285
+        y: 9.144043
+        z: -126.54297
+      - x: -119.55786
+        y: 9.144043
+        z: -126.54297
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.54297
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.568115
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.568115
+      - x: -118.592285
+        y: 9.144043
+        z: -126.568115
+      - x: -119.55786
+        y: 9.144043
+        z: -126.568115
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 18
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 14
+      - vertexIndex: 5
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 11
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 17
+      - vertexIndex: 6
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 15
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 7
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 19
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 7
+        twinIndex: 13
+      - vertexIndex: 6
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 16
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.00024998188}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.0009999871}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: -0.99975}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.00026226}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      planes:
+      - x: 0.0000032407302
+        y: 0
+        z: 1
+        w: 126.54336
+      - x: 0
+        y: -1
+        z: 0.000009819252
+        w: 7.3166723
+      - x: 1
+        y: 0.000002592393
+        z: 0
+        w: 118.592255
+      - x: 0
+        y: 1
+        z: 0.00001472877
+        w: -9.142179
+      - x: -1
+        y: 0.0000012961965
+        z: 0
+        w: -119.55786
+      - x: -0.0000006076369
+        y: 0
+        z: -1
+        w: -126.56819
+    surfaceDefinition:
+      surfaces:
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+    isInsideOut: 0
+    validState: 1
+--- !u!43 &190917454
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u2039[generated-Renderable]\u203A*"
+  serializedVersion: 10
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!1 &233503351
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 233503354}
+  - component: {fileID: 233503353}
+  - component: {fileID: 233503352}
+  m_Layer: 0
+  m_Name: Main Camera
+  m_TagString: MainCamera
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!81 &233503352
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233503351}
+  m_Enabled: 1
+--- !u!20 &233503353
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233503351}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_FocalLength: 50
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 60
+  orthographic: 0
+  orthographic size: 5
+  m_Depth: -1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!4 &233503354
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 233503351}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &254750222
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 254750224}
+  - component: {fileID: 254750223}
+  m_Layer: 0
+  m_Name: Directional Light
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!108 &254750223
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254750222}
+  m_Enabled: 1
+  serializedVersion: 10
+  m_Type: 1
+  m_Shape: 0
+  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Intensity: 1
+  m_Range: 10
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize: 10
+  m_Shadows:
+    m_Type: 2
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+--- !u!4 &254750224
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 254750222}
+  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &277265310
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 277265311}
+  - component: {fileID: 277265313}
+  - component: {fileID: 277265312}
+  m_Layer: 0
+  m_Name: "\u2039[generated-Renderable]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &277265311
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 277265310}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &277265312
+MeshRenderer:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 277265310}
+  m_Enabled: 0
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials: []
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 2
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &277265313
+MeshFilter:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 277265310}
+  m_Mesh: {fileID: 190917454}
+--- !u!1 &463669084
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 463669085}
+  - component: {fileID: 463669087}
+  - component: {fileID: 463669086}
+  m_Layer: 0
+  m_Name: "\u2039[generated-Renderable|ReceiveShadows]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &463669085
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 463669084}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &463669086
+MeshRenderer:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 463669084}
+  m_Enabled: 0
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials: []
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 2
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &463669087
+MeshFilter:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 463669084}
+  m_Mesh: {fileID: 476332251}
+--- !u!43 &476332251
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u2039[generated-Renderable|ReceiveShadows]\u203A*"
+  serializedVersion: 10
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!1 &480070906
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 480070908}
+  - component: {fileID: 480070907}
+  m_Layer: 0
+  m_Name: Model
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &480070907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 480070906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 042d680e77b8739488b044eb2f546854, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CreateRenderComponents: 1
+  CreateColliderComponents: 1
+  AutoRebuildUVs: 1
+  VertexChannelMask: 14
+  colliderSettings:
+    isTrigger: 0
+    convex: 0
+    cookingOptions: 14
+    skinWidth: 0.01
+  renderSettings:
+    lightProbeProxyVolumeOverride: {fileID: 0}
+    probeAnchor: {fileID: 0}
+    motionVectorGenerationMode: 1
+    reflectionProbeUsage: 1
+    lightProbeUsage: 0
+    allowOcclusionWhenDynamic: 1
+    renderingLayerMask: 4294967295
+    receiveGI: 2
+    lightmapParameters: {fileID: 1346673338}
+    importantGI: 0
+    optimizeUVs: 0
+    ignoreNormalsForChartDetection: 0
+    scaleInLightmap: 1
+    autoUVMaxDistance: 0.5
+    autoUVMaxAngle: 89
+    minimumChartSize: 4
+    stitchLightmapSeams: 0
+  uvGenerationSettings:
+    angleError: 0.08
+    areaError: 0.15
+    hardAngle: 88
+    packMarginPixels: 1
+  generated:
+    generatedDataContainer: {fileID: 1767286200}
+    colliderContainer: {fileID: 1252603945}
+    colliders: []
+    renderables:
+    - invalid: 1
+      query: 0
+      container: {fileID: 0}
+      sharedMesh: {fileID: 0}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 0}
+      meshRenderer: {fileID: 0}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 0
+      query: 1
+      container: {fileID: 277265310}
+      sharedMesh: {fileID: 190917454}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 277265313}
+      meshRenderer: {fileID: 277265312}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 0
+      query: 2
+      container: {fileID: 734086684}
+      sharedMesh: {fileID: 2078247031}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 734086687}
+      meshRenderer: {fileID: 734086686}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 0
+      query: 3
+      container: {fileID: 573880859}
+      sharedMesh: {fileID: 44974748}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 573880862}
+      meshRenderer: {fileID: 573880861}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 1
+      query: 0
+      container: {fileID: 0}
+      sharedMesh: {fileID: 0}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 0}
+      meshRenderer: {fileID: 0}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 0
+      query: 5
+      container: {fileID: 463669084}
+      sharedMesh: {fileID: 476332251}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 463669087}
+      meshRenderer: {fileID: 463669086}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 1
+      query: 0
+      container: {fileID: 0}
+      sharedMesh: {fileID: 0}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 0}
+      meshRenderer: {fileID: 0}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    - invalid: 0
+      query: 7
+      container: {fileID: 711592815}
+      sharedMesh: {fileID: 1209369029}
+      partialMesh: {fileID: 0}
+      meshFilter: {fileID: 711592817}
+      meshRenderer: {fileID: 711592816}
+      renderMaterials: []
+      geometryHashValue: 0
+      surfaceHashValue: 0
+    meshRenderers:
+    - {fileID: 277265312}
+    - {fileID: 734086686}
+    - {fileID: 573880861}
+    - {fileID: 463669086}
+    - {fileID: 711592816}
+    visibilityState: 1
+    needVisibilityMeshUpdate: 0
+--- !u!4 &480070908
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 480070906}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 1854584271}
+  - {fileID: 1348290416}
+  - {fileID: 1718210309}
+  - {fileID: 103610983}
+  - {fileID: 1813474771}
+  - {fileID: 1767286201}
+  m_Father: {fileID: 0}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &573880859
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 573880860}
+  - component: {fileID: 573880862}
+  - component: {fileID: 573880861}
+  m_Layer: 0
+  m_Name: "\u2039[generated-Renderable|CastShadows]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &573880860
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573880859}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &573880861
+MeshRenderer:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573880859}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials: []
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 2
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &573880862
+MeshFilter:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573880859}
+  m_Mesh: {fileID: 44974748}
+--- !u!1 &711592815
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 711592818}
+  - component: {fileID: 711592817}
+  - component: {fileID: 711592816}
+  m_Layer: 0
+  m_Name: "\u2039[generated-Renderable|CastShadows|ReceiveShadows]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!23 &711592816
+MeshRenderer:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711592815}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials: []
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 2
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &711592817
+MeshFilter:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711592815}
+  m_Mesh: {fileID: 1209369029}
+--- !u!4 &711592818
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 711592815}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &734086684
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 734086685}
+  - component: {fileID: 734086687}
+  - component: {fileID: 734086686}
+  m_Layer: 0
+  m_Name: "\u2039[generated-CastShadows]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &734086685
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734086684}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &734086686
+MeshRenderer:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734086684}
+  m_Enabled: 0
+  m_CastShadows: 3
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_MotionVectors: 1
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 4294967295
+  m_RendererPriority: 0
+  m_Materials: []
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 2
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &734086687
+MeshFilter:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 734086684}
+  m_Mesh: {fileID: 2078247031}
+--- !u!114 &853460933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3455a6626d0b47b27866cd6b0f381, type: 3}
+  m_Name: Generated Brush
+  m_EditorClassIdentifier: 
+  brushContainer:
+    brushMeshes:
+    - version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.52246
+      - x: -118.592285
+        y: 9.144043
+        z: -126.52246
+      - x: -119.55786
+        y: 9.144043
+        z: -126.52246
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.52246
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.538086
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.538086
+      - x: -118.592285
+        y: 9.144043
+        z: -126.538086
+      - x: -119.55786
+        y: 9.144043
+        z: -126.538086
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 18
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 14
+      - vertexIndex: 5
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 11
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 17
+      - vertexIndex: 6
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 15
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 7
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 19
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 7
+        twinIndex: 13
+      - vertexIndex: 6
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 16
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 15039fb859f8cd64d824af5a2743f20f,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.076894686, y: 0, z: 0, w: 0.025390625}
+              V: {x: 0, y: 0.076894686, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0.12524372}
+              V: {x: 0, y: -78.74016, z: 0, w: -0.625}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 78.74016, y: 0, z: 0, w: 0.375}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0.12524372}
+              V: {x: 0, y: -78.74016, z: 0, w: -0.625}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -78.74016, y: 0, z: 0, w: 0.375}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -1.230315, y: 0, z: 0, w: 0.0625}
+              V: {x: 0, y: 1.230315, z: 0, w: -0.484375}
+      planes:
+      - x: -0.0000024305475
+        y: 0
+        z: 1
+        w: 126.52217
+      - x: 0
+        y: -1
+        z: 0.000015802781
+        w: 7.3174295
+      - x: 1
+        y: 0
+        z: 0
+        w: 118.592285
+      - x: 0
+        y: 1
+        z: 0.000023704171
+        w: -9.141044
+      - x: -1
+        y: 0
+        z: 0
+        w: -119.55786
+      - x: 0.0000018904259
+        y: 0
+        z: -1
+        w: -126.53786
+    operations: 00
+--- !u!114 &937234204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3455a6626d0b47b27866cd6b0f381, type: 3}
+  m_Name: Generated Brush
+  m_EditorClassIdentifier: 
+  brushContainer:
+    brushMeshes:
+    - version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.54297
+      - x: -118.592285
+        y: 9.144043
+        z: -126.54297
+      - x: -119.55786
+        y: 9.144043
+        z: -126.54297
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.54297
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.568115
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.568115
+      - x: -118.592285
+        y: 9.144043
+        z: -126.568115
+      - x: -119.55786
+        y: 9.144043
+        z: -126.568115
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 17
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 13
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 0
+        twinIndex: 26
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 16
+      - vertexIndex: 6
+        twinIndex: 25
+      - vertexIndex: 1
+        twinIndex: 14
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 7
+        twinIndex: 18
+      - vertexIndex: 2
+        twinIndex: 23
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 22
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 11
+      - vertexIndex: 5
+        twinIndex: 27
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 24
+      - vertexIndex: 2
+        twinIndex: 15
+      - vertexIndex: 7
+        twinIndex: 12
+      - vertexIndex: 4
+        twinIndex: 21
+      - vertexIndex: 0
+        twinIndex: 8
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 6
+        twinIndex: 19
+      halfEdgePolygonIndices: 00000000000000000000000000000000010000000100000001000000010000000200000002000000020000000300000003000000030000000300000004000000040000000400000005000000050000000500000005000000060000000600000006000000070000000700000007000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.00024998188}
+      - firstEdge: 8
+        edgeCount: 3
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.0009999871}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 11
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: -0.99975}
+      - firstEdge: 15
+        edgeCount: 3
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.00026226}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 18
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 22
+        edgeCount: 3
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.00026226}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      - firstEdge: 25
+        edgeCount: 3
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: d7b8fd7e0374ba9488784cf3fbd87df6,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: 0.0009999871}
+              V: {x: 0, y: 19.68504, z: 0, w: 0}
+      planes:
+      - x: 0.0000032407302
+        y: 0
+        z: 1
+        w: 126.54336
+      - x: 0
+        y: -1
+        z: 0.000009819252
+        w: 7.3166723
+      - x: 1
+        y: -0.0000051854313
+        z: 0
+        w: 118.59232
+      - x: 0
+        y: 1
+        z: 0.00001472877
+        w: -9.142179
+      - x: -1
+        y: -0.0000025927156
+        z: 0
+        w: -119.55784
+      - x: -0.0000006076369
+        y: 0
+        z: -1
+        w: -126.56819
+      - x: -1
+        y: 0.0000025921913
+        z: 0
+        w: -119.557884
+      - x: 1
+        y: 0.0000051843826
+        z: 0
+        w: 118.59225
+    operations: 00
+--- !u!114 &956718584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3455a6626d0b47b27866cd6b0f381, type: 3}
+  m_Name: Generated Brush
+  m_EditorClassIdentifier: 
+  brushContainer:
+    brushMeshes:
+    - version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.59253
+        y: 6.5024414
+        z: -126.390625
+      - x: -117.93213
+        y: 6.5024414
+        z: -126.390625
+      - x: -118.59253
+        y: 9.550293
+        z: -126.390625
+      - x: -117.93213
+        y: 9.550293
+        z: -126.390625
+      - x: -118.59253
+        y: 9.550293
+        z: -126.593506
+      - x: -117.93213
+        y: 9.550293
+        z: -126.593506
+      - x: -118.59253
+        y: 6.5024414
+        z: -126.593506
+      - x: -117.93213
+        y: 6.5024414
+        z: -126.593506
+      halfEdges:
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 3
+        twinIndex: 11
+      - vertexIndex: 1
+        twinIndex: 7
+      - vertexIndex: 7
+        twinIndex: 17
+      - vertexIndex: 2
+        twinIndex: 10
+      - vertexIndex: 0
+        twinIndex: 14
+      - vertexIndex: 1
+        twinIndex: 18
+      - vertexIndex: 3
+        twinIndex: 2
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 2
+        twinIndex: 15
+      - vertexIndex: 3
+        twinIndex: 4
+      - vertexIndex: 5
+        twinIndex: 1
+      - vertexIndex: 6
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 19
+      - vertexIndex: 2
+        twinIndex: 5
+      - vertexIndex: 4
+        twinIndex: 9
+      - vertexIndex: 7
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 6
+        twinIndex: 13
+      - vertexIndex: 7
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 16
+      - vertexIndex: 4
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 96b7ad8384914fc49863e3d129736907,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.30757874, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 0.30757874, z: 0, w: 0}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0, y: -2.46063, z: 0, w: 0}
+              V: {x: -2.46063, y: 0, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.6151575, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 0.6151575, z: 0, w: 0}
+      planes:
+      - x: 1
+        y: 0.0000009639111
+        z: 0
+        w: 117.93212
+      - x: 0.000007580867
+        y: 0
+        z: 1
+        w: 126.39152
+      - x: 0
+        y: 1
+        z: 0.0000008897391
+        w: -9.5501795
+      - x: -1
+        y: -0.00000048195557
+        z: 0
+        w: -118.59253
+      - x: 0
+        y: -1
+        z: 0.00000088974105
+        w: 6.502554
+      - x: -0.0000058041014
+        y: 0
+        z: -1
+        w: -126.59419
+    operations: 00
+--- !u!43 &1209369029
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u2039[generated-Renderable|CastShadows|ReceiveShadows]\u203A*"
+  serializedVersion: 10
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!1 &1252603945
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1252603946}
+  m_Layer: 0
+  m_Name: "\u2039[generated-Collider]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1252603946
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1252603945}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1767286201}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1319289843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3455a6626d0b47b27866cd6b0f381, type: 3}
+  m_Name: Generated Brush
+  m_EditorClassIdentifier: 
+  brushContainer:
+    brushMeshes:
+    - version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 9.144043
+        z: -126.390625
+      - x: -118.592285
+        y: 9.550293
+        z: -126.390625
+      - x: -119.55786
+        y: 9.550293
+        z: -126.390625
+      - x: -119.55786
+        y: 9.550293
+        z: -126.593506
+      - x: -118.592285
+        y: 9.550293
+        z: -126.593506
+      - x: -119.55786
+        y: 9.144043
+        z: -126.593506
+      - x: -118.592285
+        y: 9.144043
+        z: -126.593506
+      halfEdges:
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 11
+      - vertexIndex: 0
+        twinIndex: 7
+      - vertexIndex: 7
+        twinIndex: 17
+      - vertexIndex: 3
+        twinIndex: 10
+      - vertexIndex: 1
+        twinIndex: 14
+      - vertexIndex: 0
+        twinIndex: 18
+      - vertexIndex: 2
+        twinIndex: 2
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 15
+      - vertexIndex: 2
+        twinIndex: 4
+      - vertexIndex: 5
+        twinIndex: 1
+      - vertexIndex: 6
+        twinIndex: 22
+      - vertexIndex: 1
+        twinIndex: 19
+      - vertexIndex: 3
+        twinIndex: 5
+      - vertexIndex: 4
+        twinIndex: 9
+      - vertexIndex: 7
+        twinIndex: 21
+      - vertexIndex: 0
+        twinIndex: 3
+      - vertexIndex: 1
+        twinIndex: 6
+      - vertexIndex: 6
+        twinIndex: 13
+      - vertexIndex: 7
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 16
+      - vertexIndex: 4
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 96b7ad8384914fc49863e3d129736907,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.30757874, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 0.30757874, z: 0, w: 0}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: -2.46063, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.6151575, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 0.6151575, z: 0, w: 0}
+      planes:
+      - x: 1
+        y: -0.0000043390723
+        z: 0
+        w: 118.59232
+      - x: 0
+        y: 0
+        z: 1
+        w: 126.390625
+      - x: 0
+        y: 1
+        z: 0.0000018255848
+        w: -9.550062
+      - x: -1
+        y: 0.000009401324
+        z: 0
+        w: -119.557945
+      - x: 0
+        y: -1
+        z: -0.0000018255888
+        w: 9.143812
+      - x: 0
+        y: 0
+        z: -1
+        w: -126.593506
+    operations: 00
+--- !u!1113 &1346673338
+LightmapParameters:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 3
+  resolution: 1
+  clusterResolution: 0.5
+  irradianceBudget: 128
+  irradianceQuality: 8192
+  backFaceTolerance: 0.9
+  isTransparent: 0
+  modellingTolerance: 0.01
+  systemTag: -1
+  edgeStitching: 1
+  blurRadius: 2
+  directLightQuality: 64
+  antiAliasingSamples: 8
+  pushoff: 0.0001
+  bakedLightmapTag: -1
+  limitLightmapCount: 0
+  maxLightmapCount: 1
+  AOQuality: 256
+  AOAntiAliasingSamples: 16
+--- !u!1 &1348290415
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1348290416}
+  - component: {fileID: 1348290417}
+  m_Layer: 0
+  m_Name: ChiselBrush (1099)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1348290416
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1348290415}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1348290417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1348290415}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4375cb78f1847d4f9133ef97219fcb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  operation: 0
+  brushContainerAsset: {fileID: 956718584}
+  localTransformation:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  pivotOffset: {x: 0, y: 0, z: 0}
+  instanceID: 17432
+  genGuidHashCode: 1534591819
+  definition:
+    brushOutline:
+      version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.59253
+        y: 6.5024414
+        z: -126.390625
+      - x: -117.93213
+        y: 6.5024414
+        z: -126.390625
+      - x: -118.59253
+        y: 9.550293
+        z: -126.390625
+      - x: -117.93213
+        y: 9.550293
+        z: -126.390625
+      - x: -118.59253
+        y: 9.550293
+        z: -126.593506
+      - x: -117.93213
+        y: 9.550293
+        z: -126.593506
+      - x: -118.59253
+        y: 6.5024414
+        z: -126.593506
+      - x: -117.93213
+        y: 6.5024414
+        z: -126.593506
+      halfEdges:
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 3
+        twinIndex: 11
+      - vertexIndex: 1
+        twinIndex: 7
+      - vertexIndex: 7
+        twinIndex: 17
+      - vertexIndex: 2
+        twinIndex: 10
+      - vertexIndex: 0
+        twinIndex: 14
+      - vertexIndex: 1
+        twinIndex: 18
+      - vertexIndex: 3
+        twinIndex: 2
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 2
+        twinIndex: 15
+      - vertexIndex: 3
+        twinIndex: 4
+      - vertexIndex: 5
+        twinIndex: 1
+      - vertexIndex: 6
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 19
+      - vertexIndex: 2
+        twinIndex: 5
+      - vertexIndex: 4
+        twinIndex: 9
+      - vertexIndex: 7
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 6
+        twinIndex: 13
+      - vertexIndex: 7
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 16
+      - vertexIndex: 4
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 96b7ad8384914fc49863e3d129736907,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.30757874, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 0.30757874, z: 0, w: 0}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0, y: -2.46063, z: 0, w: 0}
+              V: {x: -2.46063, y: 0, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.6151575, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 0.6151575, z: 0, w: 0}
+      planes:
+      - x: 1
+        y: 0.0000009639111
+        z: 0
+        w: 117.93212
+      - x: 0.000007580867
+        y: 0
+        z: 1
+        w: 126.39152
+      - x: 0
+        y: 1
+        z: 0.0000008897391
+        w: -9.5501795
+      - x: -1
+        y: -0.00000048195557
+        z: 0
+        w: -118.59253
+      - x: 0
+        y: -1
+        z: 0.00000088974105
+        w: 6.502554
+      - x: -0.0000058041014
+        y: 0
+        z: -1
+        w: -126.59419
+    surfaceDefinition:
+      surfaces:
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+    isInsideOut: 0
+    validState: 1
+--- !u!1 &1718210308
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1718210309}
+  - component: {fileID: 1718210310}
+  m_Layer: 0
+  m_Name: ChiselBrush (1309)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1718210309
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718210308}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1718210310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718210308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4375cb78f1847d4f9133ef97219fcb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  operation: 0
+  brushContainerAsset: {fileID: 853460933}
+  localTransformation:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  pivotOffset: {x: 0, y: 0, z: 0}
+  instanceID: 17488
+  genGuidHashCode: -181861760
+  definition:
+    brushOutline:
+      version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.52246
+      - x: -118.592285
+        y: 9.144043
+        z: -126.52246
+      - x: -119.55786
+        y: 9.144043
+        z: -126.52246
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.52246
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.538086
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.538086
+      - x: -118.592285
+        y: 9.144043
+        z: -126.538086
+      - x: -119.55786
+        y: 9.144043
+        z: -126.538086
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 18
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 14
+      - vertexIndex: 5
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 11
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 17
+      - vertexIndex: 6
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 15
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 7
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 19
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 7
+        twinIndex: 13
+      - vertexIndex: 6
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 16
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 15039fb859f8cd64d824af5a2743f20f,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.076894686, y: 0, z: 0, w: 0.025390625}
+              V: {x: 0, y: 0.076894686, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0.12524372}
+              V: {x: 0, y: -78.74016, z: 0, w: -0.625}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 78.74016, y: 0, z: 0, w: 0.375}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0.12524372}
+              V: {x: 0, y: -78.74016, z: 0, w: -0.625}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -78.74016, y: 0, z: 0, w: 0.375}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -1.230315, y: 0, z: 0, w: 0.0625}
+              V: {x: 0, y: 1.230315, z: 0, w: -0.484375}
+      planes:
+      - x: -0.0000024305475
+        y: 0
+        z: 1
+        w: 126.52217
+      - x: 0
+        y: -1
+        z: 0.000015802781
+        w: 7.3174295
+      - x: 1
+        y: 0
+        z: 0
+        w: 118.592285
+      - x: 0
+        y: 1
+        z: 0.000023704171
+        w: -9.141044
+      - x: -1
+        y: 0
+        z: 0
+        w: -119.55786
+      - x: 0.0000018904259
+        y: 0
+        z: -1
+        w: -126.53786
+    surfaceDefinition:
+      surfaces:
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+    isInsideOut: 0
+    validState: 1
+--- !u!1 &1767286200
+GameObject:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1767286201}
+  m_Layer: 0
+  m_Name: "\u2039[generated]\u203A"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1767286201
+Transform:
+  m_ObjectHideFlags: 8
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767286200}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children:
+  - {fileID: 1252603946}
+  - {fileID: 277265311}
+  - {fileID: 734086685}
+  - {fileID: 573880860}
+  - {fileID: 463669085}
+  - {fileID: 711592818}
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1813474770
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1813474771}
+  - component: {fileID: 1813474772}
+  m_Layer: 0
+  m_Name: ChiselBrush (1311)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1813474771
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1813474770}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1813474772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1813474770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4375cb78f1847d4f9133ef97219fcb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  operation: 0
+  brushContainerAsset: {fileID: 2130531124}
+  localTransformation:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  pivotOffset: {x: 0, y: 0, z: 0}
+  instanceID: 17494
+  genGuidHashCode: 1442932281
+  definition:
+    brushOutline:
+      version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.390625
+      - x: -118.592285
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.390625
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.41577
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.41577
+      - x: -118.592285
+        y: 9.144043
+        z: -126.41577
+      - x: -119.55786
+        y: 9.144043
+        z: -126.41577
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 18
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 14
+      - vertexIndex: 5
+        twinIndex: 22
+      - vertexIndex: 0
+        twinIndex: 11
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 17
+      - vertexIndex: 6
+        twinIndex: 21
+      - vertexIndex: 1
+        twinIndex: 15
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 7
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 19
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 7
+        twinIndex: 13
+      - vertexIndex: 6
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 16
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 15039fb859f8cd64d824af5a2743f20f,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.076894686, y: 0, z: 0, w: 0.025390625}
+              V: {x: 0, y: 0.076894686, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0.31274372}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.0625}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0.31274372}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.0625}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: -0.1873172}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      planes:
+      - x: 0.0000043209734
+        y: 0
+        z: 1
+        w: 126.39114
+      - x: 0
+        y: -1
+        z: 0.000009819252
+        w: 7.316671
+      - x: 1
+        y: 0.0000025925006
+        z: 0
+        w: 118.592255
+      - x: 0
+        y: 1
+        z: 0.00001472877
+        w: -9.14218
+      - x: -1
+        y: 0.0000012962503
+        z: 0
+        w: -119.55786
+      - x: 0.00000047260647
+        y: 0
+        z: -1
+        w: -126.41572
+    surfaceDefinition:
+      surfaces:
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+    isInsideOut: 0
+    validState: 1
+--- !u!1 &1854584270
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1854584271}
+  - component: {fileID: 1854584272}
+  m_Layer: 0
+  m_Name: ChiselBrush (1098)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1854584271
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854584270}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 480070908}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1854584272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854584270}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4375cb78f1847d4f9133ef97219fcb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  operation: 0
+  brushContainerAsset: {fileID: 1319289843}
+  localTransformation:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+  pivotOffset: {x: 0, y: 0, z: 0}
+  instanceID: 17520
+  genGuidHashCode: 1868308193
+  definition:
+    brushOutline:
+      version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 9.144043
+        z: -126.390625
+      - x: -118.592285
+        y: 9.550293
+        z: -126.390625
+      - x: -119.55786
+        y: 9.550293
+        z: -126.390625
+      - x: -119.55786
+        y: 9.550293
+        z: -126.593506
+      - x: -118.592285
+        y: 9.550293
+        z: -126.593506
+      - x: -119.55786
+        y: 9.144043
+        z: -126.593506
+      - x: -118.592285
+        y: 9.144043
+        z: -126.593506
+      halfEdges:
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 2
+        twinIndex: 11
+      - vertexIndex: 0
+        twinIndex: 7
+      - vertexIndex: 7
+        twinIndex: 17
+      - vertexIndex: 3
+        twinIndex: 10
+      - vertexIndex: 1
+        twinIndex: 14
+      - vertexIndex: 0
+        twinIndex: 18
+      - vertexIndex: 2
+        twinIndex: 2
+      - vertexIndex: 4
+        twinIndex: 23
+      - vertexIndex: 3
+        twinIndex: 15
+      - vertexIndex: 2
+        twinIndex: 4
+      - vertexIndex: 5
+        twinIndex: 1
+      - vertexIndex: 6
+        twinIndex: 22
+      - vertexIndex: 1
+        twinIndex: 19
+      - vertexIndex: 3
+        twinIndex: 5
+      - vertexIndex: 4
+        twinIndex: 9
+      - vertexIndex: 7
+        twinIndex: 21
+      - vertexIndex: 0
+        twinIndex: 3
+      - vertexIndex: 1
+        twinIndex: 6
+      - vertexIndex: 6
+        twinIndex: 13
+      - vertexIndex: 7
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 16
+      - vertexIndex: 4
+        twinIndex: 12
+      - vertexIndex: 5
+        twinIndex: 8
+      halfEdgePolygonIndices: 000000000000000000000000000000000100000001000000010000000100000002000000020000000200000002000000030000000300000003000000030000000400000004000000040000000400000005000000050000000500000005000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 96b7ad8384914fc49863e3d129736907,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.30757874, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 0.30757874, z: 0, w: 0}
+      - firstEdge: 8
+        edgeCount: 4
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 12
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 16
+        edgeCount: 4
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0}
+              V: {x: 0, y: -2.46063, z: 0, w: 0}
+      - firstEdge: 20
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 0.6151575, y: 0, z: 0, w: 0.5}
+              V: {x: 0, y: 0.6151575, z: 0, w: 0}
+      planes:
+      - x: 1
+        y: -0.0000043390723
+        z: 0
+        w: 118.59232
+      - x: 0
+        y: 0
+        z: 1
+        w: 126.390625
+      - x: 0
+        y: 1
+        z: 0.0000018255848
+        w: -9.550062
+      - x: -1
+        y: 0.000009401324
+        z: 0
+        w: -119.557945
+      - x: 0
+        y: -1
+        z: -0.0000018255888
+        w: 9.143812
+      - x: 0
+        y: 0
+        z: -1
+        w: -126.593506
+    surfaceDefinition:
+      surfaces:
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+      - brushMaterial:
+          layerUsage: 15
+          renderMaterial: {fileID: 2100000, guid: ca37785d773692b47bd7339c9dd802ce,
+            type: 2}
+          physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+            type: 2}
+        surfaceDescription:
+          smoothingGroup:
+            value: 0
+          surfaceFlags: 0
+          UV0:
+            U: {x: 1, y: 0, z: 0, w: 0.5}
+            V: {x: 0, y: 1, z: 0, w: 0.5}
+    isInsideOut: 0
+    validState: 1
+--- !u!43 &2078247031
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u2039[generated-CastShadows]\u203A*"
+  serializedVersion: 10
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  m_MeshMetrics[0]: 1
+  m_MeshMetrics[1]: 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+--- !u!114 &2130531124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7de3455a6626d0b47b27866cd6b0f381, type: 3}
+  m_Name: Generated Brush
+  m_EditorClassIdentifier: 
+  brushContainer:
+    brushMeshes:
+    - version: 0
+      localBounds:
+        m_Center: {x: 0, y: 0, z: 0}
+        m_Extent: {x: 0, y: 0, z: 0}
+      vertices:
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.390625
+      - x: -118.592285
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 9.144043
+        z: -126.390625
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.390625
+      - x: -119.55786
+        y: 7.3154297
+        z: -126.41577
+      - x: -118.592285
+        y: 7.3154297
+        z: -126.41577
+      - x: -118.592285
+        y: 9.144043
+        z: -126.41577
+      - x: -119.55786
+        y: 9.144043
+        z: -126.41577
+      halfEdges:
+      - vertexIndex: 3
+        twinIndex: 17
+      - vertexIndex: 0
+        twinIndex: 6
+      - vertexIndex: 1
+        twinIndex: 10
+      - vertexIndex: 2
+        twinIndex: 13
+      - vertexIndex: 5
+        twinIndex: 20
+      - vertexIndex: 0
+        twinIndex: 26
+      - vertexIndex: 3
+        twinIndex: 1
+      - vertexIndex: 4
+        twinIndex: 16
+      - vertexIndex: 6
+        twinIndex: 25
+      - vertexIndex: 1
+        twinIndex: 14
+      - vertexIndex: 0
+        twinIndex: 2
+      - vertexIndex: 7
+        twinIndex: 18
+      - vertexIndex: 2
+        twinIndex: 23
+      - vertexIndex: 1
+        twinIndex: 3
+      - vertexIndex: 6
+        twinIndex: 9
+      - vertexIndex: 4
+        twinIndex: 22
+      - vertexIndex: 3
+        twinIndex: 7
+      - vertexIndex: 2
+        twinIndex: 0
+      - vertexIndex: 6
+        twinIndex: 11
+      - vertexIndex: 5
+        twinIndex: 27
+      - vertexIndex: 4
+        twinIndex: 4
+      - vertexIndex: 7
+        twinIndex: 24
+      - vertexIndex: 2
+        twinIndex: 15
+      - vertexIndex: 7
+        twinIndex: 12
+      - vertexIndex: 4
+        twinIndex: 21
+      - vertexIndex: 0
+        twinIndex: 8
+      - vertexIndex: 5
+        twinIndex: 5
+      - vertexIndex: 6
+        twinIndex: 19
+      halfEdgePolygonIndices: 00000000000000000000000000000000010000000100000001000000010000000200000002000000020000000300000003000000030000000300000004000000040000000400000005000000050000000500000005000000060000000600000006000000070000000700000007000000
+      polygons:
+      - firstEdge: 0
+        edgeCount: 4
+        surfaceID: 0
+        surface:
+          brushMaterial:
+            layerUsage: 15
+            renderMaterial: {fileID: 2100000, guid: 15039fb859f8cd64d824af5a2743f20f,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -0.076894686, y: 0, z: 0, w: 0.025390625}
+              V: {x: 0, y: 0.076894686, z: 0, w: 0}
+      - firstEdge: 4
+        edgeCount: 4
+        surfaceID: 1
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: 0.31274372}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.0625}
+      - firstEdge: 8
+        edgeCount: 3
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 11
+        edgeCount: 4
+        surfaceID: 3
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 2.46063, y: 0, z: 0, w: 0.31274372}
+              V: {x: 0, y: -19.68504, z: 0, w: -0.0625}
+      - firstEdge: 15
+        edgeCount: 3
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 18
+        edgeCount: 4
+        surfaceID: 5
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -2.46063, y: 0, z: 0, w: -0.1873172}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 22
+        edgeCount: 3
+        surfaceID: 4
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: -19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      - firstEdge: 25
+        edgeCount: 3
+        surfaceID: 2
+        surface:
+          brushMaterial:
+            layerUsage: 0
+            renderMaterial: {fileID: 2100000, guid: 97c5a871ad5a4fb40af65a8047e7a07d,
+              type: 2}
+            physicsMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
+              type: 2}
+          surfaceDescription:
+            smoothingGroup:
+              value: 0
+            surfaceFlags: 0
+            UV0:
+              U: {x: 19.68504, y: 0, z: 0, w: -0.0625}
+              V: {x: 0, y: 2.46063, z: 0, w: 0}
+      planes:
+      - x: 0.0000043209734
+        y: 0
+        z: 1
+        w: 126.39114
+      - x: 0
+        y: -1
+        z: 0.000009819252
+        w: 7.316671
+      - x: 1
+        y: -0.0000051858615
+        z: 0
+        w: 118.59232
+      - x: 0
+        y: 1
+        z: 0.00001472877
+        w: -9.14218
+      - x: -1
+        y: -0.0000025929307
+        z: 0
+        w: -119.55784
+      - x: 0.00000047260647
+        y: 0
+        z: -1
+        w: -126.41572
+      - x: -1
+        y: 0.0000025919762
+        z: 0
+        w: -119.557884
+      - x: 1
+        y: 0.0000051839525
+        z: 0
+        w: 118.59225
+    operations: 00
