@@ -293,7 +293,7 @@ namespace Chisel.Core
             return compactTree;
         }
     }
-
+    /*
     struct BrushIntersectionIndex
     {
         public int nodeIndex;
@@ -304,7 +304,7 @@ namespace Chisel.Core
 
         public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd}, {nameof(intersectionStart)}: {intersectionStart}, {nameof(intersectionEnd)}: {intersectionEnd})"; }
     }
-
+    */
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BrushIntersection
     {
