@@ -15,7 +15,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     unsafe struct FindAllBrushIntersectionsJob : IJob// IJobParallelFor
     {
-        const double kPlaneDistanceEpsilon = CSGConstants.kPlaneDistanceEpsilon;
+        const double kBoundsDistanceEpsilon = CSGConstants.kBoundsDistanceEpsilon;
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allTreeBrushIndexOrders;
 
@@ -58,7 +58,7 @@ namespace Chisel.Core
             for (var i = 0; i < brushPlanes0.Length; i++)
             {
                 var plane0 = transformedPlanes0[i];
-                int side = WhichSide(ref brushVertices1, plane0, kPlaneDistanceEpsilon);
+                int side = WhichSide(ref brushVertices1, plane0, kBoundsDistanceEpsilon);
                 if (side < 0) negativeSides1++;
                 if (side > 0) return IntersectionType.NoIntersection;
             }
@@ -79,7 +79,7 @@ namespace Chisel.Core
             for (var i = 0; i < brushPlanes1.Length; i++)
             {
                 var plane1 = transformedPlanes1[i];
-                int side = WhichSide(ref brushVertices0, plane1, kPlaneDistanceEpsilon);
+                int side = WhichSide(ref brushVertices0, plane1, kBoundsDistanceEpsilon);
                 if (side < 0) negativeSides2++;
                 if (side > 0) return IntersectionType.NoIntersection;
                 if (side == 0) intersectingSides2++;
@@ -207,7 +207,7 @@ namespace Chisel.Core
             var bounds0 = brushTreeSpaceBounds[brush0NodeIndex];
             var bounds1 = brushTreeSpaceBounds[brush1NodeIndex];
 
-            if (!bounds0.Intersects(bounds1, kPlaneDistanceEpsilon))
+            if (!bounds0.Intersects(bounds1, kBoundsDistanceEpsilon))
                 return IntersectionType.NoIntersection;
             
             ref var transformation0 = ref transformations[brush0NodeIndex].Value;

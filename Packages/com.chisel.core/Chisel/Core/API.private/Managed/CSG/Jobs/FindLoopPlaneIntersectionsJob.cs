@@ -18,9 +18,9 @@ namespace Chisel.Core
     [BurstCompile(Debug = false)]
     public struct FindLoopPlaneIntersectionsJob : IJob
     {
-        public const int kMaxVertexCount    = short.MaxValue;
-        const float kVertexEqualEpsilonSqr  = (float)CSGConstants.kVertexEqualEpsilonSqr;
-        const float kPlaneDistanceEpsilon   = CSGConstants.kDistanceEpsilon;
+        public const int kMaxVertexCount        = short.MaxValue;
+        const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
+        const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public int                      otherBrushNodeIndex;
@@ -74,12 +74,12 @@ namespace Chisel.Core
 
                     if (distance0 < 0)
                     {
-                        if (distance1 <=  kPlaneDistanceEpsilon ||
-                            distance0 >= -kPlaneDistanceEpsilon) continue;
+                        if (distance1 <=  kFatPlaneWidthEpsilon ||
+                            distance0 >= -kFatPlaneWidthEpsilon) continue;
                     } else
                     {
-                        if (distance1 >= -kPlaneDistanceEpsilon ||
-                            distance0 <=  kPlaneDistanceEpsilon) continue;
+                        if (distance1 >= -kFatPlaneWidthEpsilon ||
+                            distance0 <=  kFatPlaneWidthEpsilon) continue;
                     }
 
                     float3 newVertex;
@@ -105,8 +105,8 @@ namespace Chisel.Core
                     }
 
                     // Check if the new vertex is identical to one of our existing vertices
-                    if (math.lengthsq(vertex0 - newVertex) <= kVertexEqualEpsilonSqr ||
-                        math.lengthsq(vertex1 - newVertex) <= kVertexEqualEpsilonSqr)
+                    if (math.lengthsq(vertex0 - newVertex) <= kSqrVertexEqualEpsilon ||
+                        math.lengthsq(vertex1 - newVertex) <= kSqrVertexEqualEpsilon)
                         continue;
 
                     var newVertexw = new float4(newVertex, 1);
@@ -114,14 +114,14 @@ namespace Chisel.Core
                     {
                         otherPlane = otherPlanesNative[p2];
                         var distance = math.dot(otherPlane, newVertexw);
-                        if (distance > kPlaneDistanceEpsilon)
+                        if (distance > kFatPlaneWidthEpsilon)
                             goto SkipEdge;
                     }
                     for (int p1 = 0; p1 < selfPlaneCount; p1++)
                     {
                         otherPlane = selfPlanesNative[p1];
                         var distance = math.dot(otherPlane, newVertexw);
-                        if (distance > kPlaneDistanceEpsilon)
+                        if (distance > kFatPlaneWidthEpsilon)
                             goto SkipEdge;
                     }
 
@@ -179,8 +179,8 @@ namespace Chisel.Core
     internal struct FindBasePolygonPlaneIntersectionsJob : IJob
     {
         public const int kMaxVertexCount    = short.MaxValue;
-        const float kVertexEqualEpsilonSqr  = (float)CSGConstants.kVertexEqualEpsilonSqr;
-        const float kPlaneDistanceEpsilon   = CSGConstants.kDistanceEpsilon;
+        const float kSqrVertexEqualEpsilon  = CSGConstants.kSqrVertexEqualEpsilon;
+        const float kFatPlaneWidthEpsilon   = CSGConstants.kFatPlaneWidthEpsilon;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public int                  otherBrushNodeIndex;
@@ -235,12 +235,12 @@ namespace Chisel.Core
 
                     if (distance0 < 0)
                     {
-                        if (distance1 <=  kPlaneDistanceEpsilon ||
-                            distance0 >= -kPlaneDistanceEpsilon) continue;
+                        if (distance1 <=  kFatPlaneWidthEpsilon ||
+                            distance0 >= -kFatPlaneWidthEpsilon) continue;
                     } else
                     {
-                        if (distance1 >= -kPlaneDistanceEpsilon ||
-                            distance0 <=  kPlaneDistanceEpsilon) continue;
+                        if (distance1 >= -kFatPlaneWidthEpsilon ||
+                            distance0 <=  kFatPlaneWidthEpsilon) continue;
                     }
 
                     float3 newVertex;
@@ -266,8 +266,8 @@ namespace Chisel.Core
                     }
 
                     // Check if the new vertex is identical to one of our existing vertices
-                    if (math.lengthsq(vertex0 - newVertex) <= kVertexEqualEpsilonSqr ||
-                        math.lengthsq(vertex1 - newVertex) <= kVertexEqualEpsilonSqr)
+                    if (math.lengthsq(vertex0 - newVertex) <= kSqrVertexEqualEpsilon ||
+                        math.lengthsq(vertex1 - newVertex) <= kSqrVertexEqualEpsilon)
                         continue;
 
                     var newVertexw = new float4(newVertex, 1);
@@ -275,14 +275,14 @@ namespace Chisel.Core
                     {
                         otherPlane = otherPlanesNative[p2];
                         var distance = math.dot(otherPlane, newVertexw);
-                        if (distance > kPlaneDistanceEpsilon)
+                        if (distance > kFatPlaneWidthEpsilon)
                             goto SkipEdge;
                     }
                     for (int p1 = 0; p1 < selfPlaneCount; p1++)
                     {
                         otherPlane = selfPlanesNative[p1];
                         var distance = math.dot(otherPlane, newVertexw);
-                        if (distance > kPlaneDistanceEpsilon)
+                        if (distance > kFatPlaneWidthEpsilon)
                             goto SkipEdge;
                     }
 

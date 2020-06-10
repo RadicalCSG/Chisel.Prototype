@@ -94,7 +94,7 @@ namespace Chisel.Core
                     var vertexB = hashedVertices[vertexIndexB];
 
                     var distance = GeometryMath.SqrDistanceFromPointToLineSegment(vertex1, vertexA, vertexB);
-                    if (distance <= CSGConstants.kSqrDistanceEpsilon)
+                    if (distance <= CSGConstants.kSqrEdgeDistanceEpsilon)
                         return true;
                 }
             }

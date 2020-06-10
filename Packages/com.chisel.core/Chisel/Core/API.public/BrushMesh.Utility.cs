@@ -30,12 +30,12 @@ namespace Chisel.Core
             public TraversalSide Traversal1;
         };
 
-        Plane CalculatePlane(in Polygon polygon)
+        float4 CalculatePlane(in Polygon polygon)
         {        
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
             var lastEdge	= polygon.firstEdge + polygon.edgeCount;
-            var normal		= float3.zero;
+            var normal		= double3.zero;
             var prevVertex	= vertices[halfEdges[lastEdge - 1].vertexIndex];
             for (int n = polygon.firstEdge; n < lastEdge; n++)
             {
@@ -47,12 +47,12 @@ namespace Chisel.Core
             }
             normal = math.normalize(normal);
 
-            var d = 0.0f;
+            var d = 0.0;
             for (int n = polygon.firstEdge; n < lastEdge; n++)
                 d -= math.dot(normal, vertices[halfEdges[n].vertexIndex]);
             d /= polygon.edgeCount;
 
-            return new Plane(normal, d);
+            return new float4((float3)normal, (float)d);
         }
 
 
@@ -67,10 +67,7 @@ namespace Chisel.Core
 
             for (int p = 0; p < polygons.Length; p++)
             {
-                var plane       = CalculatePlane(in polygons[p]);
-                var planeVector = (Vector4)plane.normal;
-                planeVector.w = plane.distance;
-                planes[p] = planeVector;
+                planes[p] = CalculatePlane(in polygons[p]);
             }
         }
 

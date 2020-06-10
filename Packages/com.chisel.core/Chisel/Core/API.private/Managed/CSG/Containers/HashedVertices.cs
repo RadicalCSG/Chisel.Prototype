@@ -49,7 +49,7 @@ namespace Chisel.Core
                 var index = centerIndex + offsets[i];
                 var chainIndex = ((int)hashTable[GetHash(index)]) - 1;
                 {
-                    float closestDistance = CSGConstants.kSqrMergeEpsilon;
+                    float closestDistance = CSGConstants.kSqrVertexEqualEpsilon;
                     while (chainIndex != -1)
                     {
                         var nextChainIndex  = ((int)((ushort*)chainedIndices->Ptr)[chainIndex]) - 1;
@@ -96,7 +96,7 @@ namespace Chisel.Core
                 var index = centerIndex + offsets[i];
                 var chainIndex = ((int)hashTable[GetHash(index)]) - 1;
                 {
-                    float closestDistance = CSGConstants.kSqrMergeEpsilon;
+                    float closestDistance = CSGConstants.kSqrVertexEqualEpsilon;
                     while (chainIndex != -1)
                     {
                         var nextChainIndex  = ((int)((ushort*)chainedIndices->Ptr)[chainIndex]) - 1;
@@ -153,7 +153,7 @@ namespace Chisel.Core
                 var index = centerIndex + offsets[i];
                 var chainIndex = ((int)hashTable[GetHash(index)]) - 1;
                 {
-                    float closestDistance = CSGConstants.kSqrMergeEpsilon;
+                    float closestDistance = CSGConstants.kSqrVertexEqualEpsilon;
                     while (chainIndex != -1)
                     {
                         var nextChainIndex = ((int)((ushort*)chainedIndices->Ptr)[chainIndex]) - 1;
@@ -208,7 +208,7 @@ namespace Chisel.Core
                 var index = centerIndex + offsets[i];
                 var chainIndex = ((int)hashTable[GetHash(index)]) - 1;
                 {
-                    float closestDistance = CSGConstants.kSqrMergeEpsilon;
+                    float closestDistance = CSGConstants.kSqrVertexEqualEpsilon;
                     while (chainIndex != -1)
                     {
                         var nextChainIndex  = chainedIndicesPtr[chainIndex] - 1;
@@ -249,7 +249,7 @@ namespace Chisel.Core
     {
         public const ushort     kMaxVertexCount = 65000;
         internal const uint     kHashTableSize  = 509u;
-        internal const float    kCellSize       = CSGConstants.kDistanceEpsilon * 2;
+        internal const float    kCellSize       = CSGConstants.kVertexEqualEpsilon * 2;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal AtomicSafetyHandle m_Safety;

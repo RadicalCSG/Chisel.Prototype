@@ -26,7 +26,7 @@ namespace Chisel.Core
 
     static unsafe class BooleanEdgesUtility
     {
-        const float kDistanceEpsilon = CSGConstants.kDistanceEpsilon;
+        const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
 
         public static int IndexOf(NativeArray<Edge> edges, int edgesOffset, int edgesLength, Edge edge, out bool inverted)
@@ -80,7 +80,7 @@ namespace Chisel.Core
                 var distance = math.dot(planePtr[planesOffset + n], localVertex);
 
                 // will be 'false' when distance is NaN or Infinity
-                if (!(distance <= kDistanceEpsilon))
+                if (!(distance <= kFatPlaneWidthEpsilon))
                     return EdgeCategory.Outside;
             }
             return EdgeCategory.Inside;
@@ -93,7 +93,7 @@ namespace Chisel.Core
                 var distance = math.dot(planes[n], localVertex);
 
                 // will be 'false' when distance is NaN or Infinity
-                if (!(distance <= kDistanceEpsilon))
+                if (!(distance <= kFatPlaneWidthEpsilon))
                     return true;
             }
             return false;

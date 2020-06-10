@@ -18,8 +18,8 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     public struct FindLoopVertexOverlapsJob : IJob
     {
-        public const int kMaxVertexCount = short.MaxValue;
-        const float kPlaneDistanceEpsilon = CSGConstants.kDistanceEpsilon;
+        public const int kMaxVertexCount    = short.MaxValue;
+        const float kFatPlaneWidthEpsilon   = CSGConstants.kFatPlaneWidthEpsilon;
 
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public int                              selfBrushNodeIndex;
@@ -57,7 +57,7 @@ namespace Chisel.Core
                 for (int p = 0; p < selfPlanes.Length; p++)
                 {
                     var distance = math.dot(selfPlanes[p], new float4(vertex, 1));
-                    if (distance > kPlaneDistanceEpsilon)
+                    if (distance > kFatPlaneWidthEpsilon)
                         goto NextVertex;
                 }
                 // TODO: Check if vertex intersects at least 2 selfPlanes
