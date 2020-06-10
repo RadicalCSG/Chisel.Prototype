@@ -243,6 +243,8 @@ namespace Chisel.Core
                         intersectedHoleIndices[intersectedHoleIndicesLength] = allEdges.Length;
                         intersectedHoleIndicesLength++;
                         holeIndices.AddAndAllocateWithCapacity(1);
+                        if (allInfos.Capacity < allInfos.Length + 1)
+                            allInfos.Capacity = allInfos.Length + 16;
                         allInfos.AddNoResize(holeInfo);
                         allEdges.AllocateItemAndAddValues(holeEdges);
                         //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -255,6 +257,8 @@ namespace Chisel.Core
                     currentHoleIndices.Capacity = allEdges.Length;
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1)
+                    allInfos.Capacity = allInfos.Length + 16; 
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -264,6 +268,8 @@ namespace Chisel.Core
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
+                if (allInfos.Capacity < allInfos.Length + 1)
+                    allInfos.Capacity = allInfos.Length + 16; 
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -274,6 +280,8 @@ namespace Chisel.Core
                 // This loop is a hole 
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1)
+                    allInfos.Capacity = allInfos.Length + 16;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
@@ -283,6 +291,8 @@ namespace Chisel.Core
                 // But also a polygon on its own
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
+                if (allInfos.Capacity < allInfos.Length + 1)
+                    allInfos.Capacity = allInfos.Length + 16;
                 allInfos.AddNoResize(intersectionInfo);
                 allEdges.AllocateItemAndAddValues(outEdges, outEdgesLength);
                 //Debug.Assert(allEdges.Length == allInfos.Length);
