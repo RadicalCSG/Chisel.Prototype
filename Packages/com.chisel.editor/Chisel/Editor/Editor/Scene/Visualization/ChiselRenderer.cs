@@ -359,6 +359,8 @@ namespace Chisel.Editors
         
         public void RenderAll(Camera camera)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
             var zTestGenericLineMaterial    = UnitySceneExtensions.SceneHandleMaterialManager.ZTestGenericLine;
             var noZTestGenericLineMaterial  = UnitySceneExtensions.SceneHandleMaterialManager.NoZTestGenericLine;
             var coloredPolygonMaterial		= UnitySceneExtensions.SceneHandleMaterialManager.ColoredPolygonMaterial;
