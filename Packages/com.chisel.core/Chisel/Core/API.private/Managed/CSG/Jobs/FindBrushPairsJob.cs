@@ -198,8 +198,8 @@ namespace Chisel.Core
                         var vertexIndex0 = halfEdges[e].vertexIndex;
                         var vertexIndex1 = halfEdges[twinIndex].vertexIndex;
 
-                        var vertex0 = math.mul(vertexTransform, new float4(mesh.vertices[vertexIndex0], 1));
-                        var vertex1 = math.mul(vertexTransform, new float4(mesh.vertices[vertexIndex1], 1));
+                        var vertex0 = math.mul(vertexTransform, new float4(mesh.localVertices[vertexIndex0], 1));
+                        var vertex1 = math.mul(vertexTransform, new float4(mesh.localVertices[vertexIndex1], 1));
 
                         if (vertexUsedPtr[vertexIndex0] == 0) { vertexUsedPtr[vertexIndex0] = vertexIndex0 + 1; usedVerticesLength++; }
                         if (vertexUsedPtr[vertexIndex1] == 0) { vertexUsedPtr[vertexIndex1] = vertexIndex1 + 1; usedVerticesLength++; }
@@ -277,7 +277,7 @@ namespace Chisel.Core
                 {
                     int intersectingPlanesLength = 0;
                     var intersectingPlanesPtr = stackalloc int[mesh0.localPlanes.Length];
-                    GetIntersectingPlanes(ref mesh0.localPlanes, ref mesh1.vertices, mesh1.localBounds, inversedNode0ToNode1, intersectingPlanesPtr, out intersectingPlanesLength);
+                    GetIntersectingPlanes(ref mesh0.localPlanes, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, intersectingPlanesPtr, out intersectingPlanesLength);
                     if (intersectingPlanesLength == 0) { builder.Dispose(); return; }
                     intersectingPlaneIndices0 = builder.Construct(ref brushIntersections[0].localSpacePlaneIndices0, intersectingPlanesPtr, intersectingPlanesLength);
                 }
@@ -285,7 +285,7 @@ namespace Chisel.Core
                 {
                     int intersectingPlanesLength = 0;
                     var intersectingPlanesPtr = stackalloc int[mesh1.localPlanes.Length];
-                    GetIntersectingPlanes(ref mesh1.localPlanes, ref mesh0.vertices, mesh0.localBounds, inversedNode1ToNode0, intersectingPlanesPtr, out intersectingPlanesLength);
+                    GetIntersectingPlanes(ref mesh1.localPlanes, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, intersectingPlanesPtr, out intersectingPlanesLength);
                     if (intersectingPlanesLength == 0) { builder.Dispose(); return; }
                     intersectingPlaneIndices1 = builder.Construct(ref brushIntersections[1].localSpacePlaneIndices0, intersectingPlanesPtr, intersectingPlanesLength);
                 }
@@ -352,10 +352,10 @@ namespace Chisel.Core
                 builder.Allocate(ref brushIntersections[0].usedPlanePairs, 0);
                 builder.Allocate(ref brushIntersections[1].usedPlanePairs, 0);
 
-                usedVertices0 = builder.Allocate(ref brushIntersections[0].usedVertices, mesh0.vertices.Length);
-                usedVertices1 = builder.Allocate(ref brushIntersections[1].usedVertices, mesh1.vertices.Length);
-                for (int i = 0; i < usedVertices0.Length; i++) usedVertices0[i] = mesh0.vertices[i];
-                for (int i = 0; i < usedVertices1.Length; i++) usedVertices1[i] = mesh1.vertices[i];
+                usedVertices0 = builder.Allocate(ref brushIntersections[0].usedVertices, mesh0.localVertices.Length);
+                usedVertices1 = builder.Allocate(ref brushIntersections[1].usedVertices, mesh1.localVertices.Length);
+                for (int i = 0; i < usedVertices0.Length; i++) usedVertices0[i] = mesh0.localVertices[i];
+                for (int i = 0; i < usedVertices1.Length; i++) usedVertices1[i] = mesh1.localVertices[i];
             } else
             {
                 var intersectingPlanes0 = builder.Allocate(ref brushIntersections[0].localSpacePlanes0, intersectingPlaneIndices0.Length);
@@ -367,7 +367,7 @@ namespace Chisel.Core
 
                 {
                     int usedVerticesLength;
-                    var vertexUsedPtr = stackalloc int[mesh0.vertices.Length];
+                    var vertexUsedPtr = stackalloc int[mesh0.localVertices.Length];
                     {
                         var usedPlanePairsPtr = stackalloc PlanePair[mesh0.halfEdges.Length];
                         FindPlanePairs(ref mesh0, ref intersectingPlaneIndices0, localSpacePlanes0, vertexUsedPtr, float4x4.identity, usedPlanePairsPtr, out int usedPlanePairsLength, out usedVerticesLength);
@@ -376,18 +376,18 @@ namespace Chisel.Core
                     usedVertices0 = builder.Allocate(ref brushIntersections[0].usedVertices, usedVerticesLength);
                     if (usedVerticesLength > 0)
                     {
-                        for (int i = 0, n = 0; i < mesh0.vertices.Length; i++)
+                        for (int i = 0, n = 0; i < mesh0.localVertices.Length; i++)
                         {
                             if (vertexUsedPtr[i] == 0)
                                 continue;
-                            usedVertices0[n] = mesh0.vertices[vertexUsedPtr[i] - 1];
+                            usedVertices0[n] = mesh0.localVertices[vertexUsedPtr[i] - 1];
                             n++;
                         }
                     }
                 }
                 {
                     int usedVerticesLength;
-                    var vertexUsedPtr = stackalloc int[mesh1.vertices.Length];
+                    var vertexUsedPtr = stackalloc int[mesh1.localVertices.Length];
                     {
                         var usedPlanePairsPtr = stackalloc PlanePair[mesh1.halfEdges.Length];
                         FindPlanePairs(ref mesh1, ref intersectingPlaneIndices1, localSpacePlanes1, vertexUsedPtr, node1ToNode0, usedPlanePairsPtr, out int usedPlanePairsLength, out usedVerticesLength);
@@ -396,11 +396,11 @@ namespace Chisel.Core
                     usedVertices1 = builder.Allocate(ref brushIntersections[1].usedVertices, usedVerticesLength);
                     if (usedVerticesLength > 0)
                     {
-                        for (int i = 0, n = 0; i < mesh1.vertices.Length; i++)
+                        for (int i = 0, n = 0; i < mesh1.localVertices.Length; i++)
                         {
                             if (vertexUsedPtr[i] == 0)
                                 continue;
-                            usedVertices1[n] = mesh1.vertices[vertexUsedPtr[i] - 1];
+                            usedVertices1[n] = mesh1.localVertices[vertexUsedPtr[i] - 1];
                             n++;
                         }
                     }

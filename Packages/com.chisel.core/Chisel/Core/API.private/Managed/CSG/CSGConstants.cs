@@ -9,10 +9,10 @@ namespace Chisel.Core
         const double        kPlaneDAlignEpsilonDouble       = 0.0006;
         const double        kNormalDotAlignEpsilonDouble    = 0.9999;
 
-        const double        kBoundsDistanceEpsilonDouble    = 0.0004;
-        const double        kVertexEqualEpsilonDouble	    = 0.0002;
-        const double        kEdgeDistanceEpsilonDouble	    = 0.0004;
-        const double        kFatPlaneWidthEpsilonDouble	    = 0.0004;
+        const double        kBoundsDistanceEpsilonDouble    = 0.0006;
+        const double        kVertexEqualEpsilonDouble	    = 0.0006;
+        const double        kEdgeDistanceEpsilonDouble	    = 0.0006;
+        const double        kFatPlaneWidthEpsilonDouble	    = 0.0006;
 
         public const float  kBoundsDistanceEpsilon	    = (float)kBoundsDistanceEpsilonDouble;
 
