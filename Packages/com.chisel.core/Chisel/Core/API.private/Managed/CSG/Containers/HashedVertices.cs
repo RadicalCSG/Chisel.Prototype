@@ -497,7 +497,7 @@ namespace Chisel.Core
             }
         }
         
-        public unsafe void ReplaceIfExists(ref BlobArray<float3> uniqueVertices)
+        public unsafe void ReplaceIfExists(ref BlobArray<float3> uniqueVertices, float4x4 nodeToTreeSpaceMatrix)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -505,7 +505,7 @@ namespace Chisel.Core
             // Add Unique vertex
             for (int i = 0; i < uniqueVertices.Length; i++)
             {
-                var vertex      = uniqueVertices[i];
+                var vertex = math.mul(nodeToTreeSpaceMatrix, new float4(uniqueVertices[i], 1)).xyz;
                 HashedVerticesUtility.ReplaceIfExists((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, vertex);
             }
         }

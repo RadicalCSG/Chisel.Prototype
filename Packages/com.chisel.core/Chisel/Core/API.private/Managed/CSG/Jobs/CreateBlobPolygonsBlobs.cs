@@ -233,6 +233,8 @@ namespace Chisel.Core
                 totalSurfaceCount++;
             }
 
+            // TODO: do this section as a separate pass where we first calculate worldspace vertices, 
+            //       then snap them all, then do this job
 
             var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
 
@@ -245,13 +247,14 @@ namespace Chisel.Core
                 if (intersectingNodeOrder < selfOrder)
                     continue;
 
+                var interectingNodeToTreeSpaceMatrix = transformations[intersectingNodeIndex].Value.nodeToTree;
                 // In order, goes through the previous brushes in the tree, 
                 // and snaps any vertex that is almost the same in the next brush, with that vertex
 
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
                 var intersectingMesh = brushMeshLookup[intersectingNodeIndex];
-                hashedVertices.ReplaceIfExists(ref intersectingMesh.Value.vertices);
+                hashedVertices.ReplaceIfExists(ref intersectingMesh.Value.vertices, interectingNodeToTreeSpaceMatrix);
             }
 
 
