@@ -56,8 +56,26 @@ namespace Chisel.Editors
                     MovePivotTo(selectedNodes, center);
                 }
             }
+            if (GUILayout.Button("Center Pivot On Each"))
+            {
+                var selectedNodes = SelectedNodes;
+                if (selectedNodes != null && selectedNodes.Count != 0)
+                {
+                    MovePivotToCenter(selectedNodes);
+                }
+            }
         }
-        Vector3 FindSelectionCenter(List<ChiselNode> selectedNodes)
+
+        static Vector3 FindSelectionCenter(ChiselNode selectedNode)
+        {
+            var bounds = selectedNode.CalculateBounds();
+            var min = bounds.min;
+            var max = bounds.max;
+            var center = (min + max) * 0.5f;
+            return center;
+        }
+
+        static Vector3 FindSelectionCenter(List<ChiselNode> selectedNodes)
         {
             if (selectedNodes == null || selectedNodes.Count == 0)
                 return Vector3.zero;
@@ -896,6 +914,27 @@ namespace Chisel.Editors
             Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
             foreach (var node in nodes)
                 node.SetPivot(newPosition);
+        }
+
+        public static void MovePivotToCenter(List<ChiselNode> nodes)
+        {
+            var nodesWithChildren = new HashSet<UnityEngine.Object>();
+            foreach (var node in nodes)
+            {
+                var children = node.GetComponentsInChildren<ChiselNode>();
+                foreach (var child in children)
+                {
+                    nodesWithChildren.Add(child);
+                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                }
+            }
+
+            Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
+            foreach (var node in nodes)
+            {
+                var newPosition = FindSelectionCenter(node);
+                node.SetPivot(newPosition);
+            }
         }
     }
 }
