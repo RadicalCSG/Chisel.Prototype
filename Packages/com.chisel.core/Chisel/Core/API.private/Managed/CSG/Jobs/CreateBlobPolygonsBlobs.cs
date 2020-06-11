@@ -16,13 +16,14 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateBoundsJob : IJobParallelFor
+    struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
     {
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushTreeSpaceBounds;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
 
         public void Execute(int b)
         {
@@ -31,22 +32,89 @@ namespace Chisel.Core
             var transform       = transformations[brushNodeIndex];
 
             var mesh                    = brushMeshLookup[brushNodeIndex];
-            ref var vertices            = ref mesh.Value.vertices;
+            ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.Value.nodeToTree;
 
-            var localVertex = new float4(vertices[0], 1);
-            var worldVertex = math.mul(nodeToTreeSpaceMatrix, localVertex).xyz;
-            var min = worldVertex;
-            var max = worldVertex;
-            for (int vertexIndex = 1; vertexIndex < vertices.Length; vertexIndex++)
+            var brushTreeSpaceVerticesBlob  = BrushTreeSpaceVerticesBlob.Build(ref vertices, nodeToTreeSpaceMatrix);
+            ref var brushTreeSpaceVertices  = ref brushTreeSpaceVerticesBlob.Value.treeSpaceVertices;
+
+            var treeSpaceVertex = brushTreeSpaceVertices[0];
+            var min = treeSpaceVertex;
+            var max = treeSpaceVertex;
+            for (int vertexIndex = 1; vertexIndex < brushTreeSpaceVertices.Length; vertexIndex++)
             {
-                localVertex = new float4(vertices[vertexIndex], 1);
-                worldVertex = math.mul(nodeToTreeSpaceMatrix, localVertex).xyz;
-                min = math.min(min, worldVertex); max = math.max(max, worldVertex);
+                treeSpaceVertex = brushTreeSpaceVertices[vertexIndex];
+                min = math.min(min, treeSpaceVertex); max = math.max(max, treeSpaceVertex);
             }
 
             var bounds = new MinMaxAABB() { Min = min, Max = max };
             brushTreeSpaceBounds.TryAdd(brushNodeIndex, bounds);
+            treeSpaceVerticesArray[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
+        }
+    }
+    
+    [BurstCompile(CompileSynchronously = true)]
+    struct MergeTouchingBrushVerticesJob : IJobParallelFor
+    {
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesArray;
+
+        // Write
+        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
+
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
+
+        public void Execute(int b)
+        {
+            var brushIndexOrder = treeBrushIndexOrders[b];
+            int brushNodeIndex  = brushIndexOrder.nodeIndex;
+
+            var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
+            ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
+
+            if (!hashedVertices.IsCreated)
+            {
+                hashedVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
+            } else
+            {
+                if (hashedVertices.Capacity < vertices.Length)
+                {
+                    hashedVertices.Dispose();
+                    hashedVertices = new HashedVertices(vertices.Length, Allocator.Temp);
+                } else
+                    hashedVertices.Clear();
+            }
+
+            hashedVertices.AddUniqueVertices(ref vertices);
+
+            var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
+
+            // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
+            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeIndex].Value.brushIntersections;
+            for (int i = 0; i < brushIntersections.Length; i++)
+            {
+                var intersectingNodeIndex = brushIntersections[i].nodeIndex;
+                var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
+                if (intersectingNodeOrder < selfOrder)
+                    continue;
+
+                // In order, goes through the previous brushes in the tree, 
+                // and snaps any vertex that is almost the same in the next brush, with that vertex
+                ref var intersectingVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
+                hashedVertices.ReplaceIfExists(ref intersectingVertices);
+            }
+
+
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                vertices[i] = hashedVertices.GetUniqueVertex(vertices[i]);
+            }
+
+            treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);
         }
     }
 
@@ -57,8 +125,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>   transformations;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
 
@@ -118,10 +186,9 @@ namespace Chisel.Core
             }
         }
 
-        bool CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, int polygonIndex, float4x4 nodeToTreeSpaceMatrix, HashedVertices hashedVertices, NativeArray<Edge> edges, ref int edgeCount)
+        bool CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, ref BlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedVertices, NativeArray<Edge> edges, ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
-            ref var vertices    = ref mesh.Value.vertices;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];
 
             var firstEdge   = polygon.firstEdge;
@@ -131,11 +198,10 @@ namespace Chisel.Core
             // TODO: put in job so we can burstify this, maybe join with RemoveIdenticalIndicesJob & IsDegenerate?
             for (int e = firstEdge; e < lastEdge; e++)
             {
-                var vertexIndex = halfEdges[e].vertexIndex;
-                var localVertex = new float4(vertices[vertexIndex], 1);
-                var worldVertex = math.mul(nodeToTreeSpaceMatrix, localVertex);
+                var vertexIndex     = halfEdges[e].vertexIndex;
+                var treeSpaceVertex = treeSpaceVertices[vertexIndex];
 
-                var newIndex = hashedVertices.AddNoResize(worldVertex.xyz);
+                var newIndex = hashedVertices.AddNoResize(treeSpaceVertex);
                 if (e > firstEdge)
                 {
                     var edge = edges[edgeCount - 1];
@@ -174,24 +240,22 @@ namespace Chisel.Core
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
-            var transform       = transformations[brushNodeIndex];
-
+            
             var mesh                    = brushMeshLookup[brushNodeIndex];
-            ref var vertices            = ref mesh.Value.vertices;
+            ref var treeSpaceVertices   = ref treeSpaceVerticesLookup[brushNodeIndex].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
-            var nodeToTreeSpaceMatrix   = transform.Value.nodeToTree;
 
             if (!hashedVertices.IsCreated)
             {
-                hashedVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
+                hashedVertices = new HashedVertices(math.max(treeSpaceVertices.Length, 1000), Allocator.Temp);
             } else
             {
-                if (hashedVertices.Capacity < vertices.Length)
+                if (hashedVertices.Capacity < treeSpaceVertices.Length)
                 {
                     hashedVertices.Dispose();
-                    hashedVertices = new HashedVertices(vertices.Length, Allocator.Temp);
+                    hashedVertices = new HashedVertices(treeSpaceVertices.Length, Allocator.Temp);
                 } else
                     hashedVertices.Clear();
             }
@@ -202,10 +266,10 @@ namespace Chisel.Core
 
             var edges           = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
             var validPolygons   = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
-            for (int p = 0; p < polygons.Length; p++)
+            for (int polygonIndex = 0; polygonIndex < polygons.Length; polygonIndex++)
             {
-                var polygon = polygons[p];
-                if (polygon.edgeCount < 3 || p >= localPlanes.Length)
+                var polygon = polygons[polygonIndex];
+                if (polygon.edgeCount < 3 || polygonIndex >= localPlanes.Length)
                     continue;
 
                 // Note: can end up with duplicate vertices when close enough vertices are snapped together
@@ -213,7 +277,7 @@ namespace Chisel.Core
                 int edgeCount = 0;
                 int startEdgeIndex = totalEdgeCount;
                 var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
-                CopyPolygonToIndices(mesh, p, nodeToTreeSpaceMatrix, hashedVertices, tempEdges, ref edgeCount);
+                CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon
                     continue;
 
@@ -226,13 +290,15 @@ namespace Chisel.Core
                 var endEdgeIndex = totalEdgeCount;
                 validPolygons[totalSurfaceCount] = new ValidPolygon
                 {
-                    basePlaneIndex  = (ushort)p,
+                    basePlaneIndex  = (ushort)polygonIndex,
                     startEdgeIndex  = (ushort)startEdgeIndex,
                     endEdgeIndex    = (ushort)endEdgeIndex
                 };
                 totalSurfaceCount++;
             }
 
+            // TODO: do this section as a separate pass where we first calculate worldspace vertices, 
+            //       then snap them all, then do this job
 
             var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
 
@@ -250,8 +316,8 @@ namespace Chisel.Core
 
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
-                var intersectingMesh = brushMeshLookup[intersectingNodeIndex];
-                hashedVertices.ReplaceIfExists(ref intersectingMesh.Value.vertices);
+                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesLookup[intersectingNodeIndex].Value.treeSpaceVertices;
+                hashedVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
             }
 
 

@@ -153,6 +153,9 @@ namespace Chisel.Components
             ChiselGeneratedComponentManager.CheckIfFullMeshNeedsToBeHidden(model, this);
             if (meshIsModified)
             {
+                // Setting the sharedMesh to ensure the meshFilter knows it needs to be updated
+                meshFilter.sharedMesh = meshFilter.sharedMesh;
+                UnityEditor.EditorUtility.SetDirty(meshFilter);
                 UnityEditor.EditorUtility.SetDirty(model);
                 ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
                 ChiselGeneratedComponentManager.ClearLightmapData(state, this);

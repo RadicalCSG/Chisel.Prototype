@@ -88,10 +88,7 @@ namespace Chisel.Components
             }
 
             if (meshCollider.sharedMesh != sharedMesh)
-            {
-                meshCollider.sharedMesh = sharedMesh;
                 meshIsModified = true;
-            }
 
             var expectedEnabled = sharedMesh.vertexCount > 0;
             if (meshCollider.enabled != expectedEnabled)
@@ -100,7 +97,12 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
             if (meshIsModified)
+            {
+                // MeshCollider doesn't rebuild it's internal collider mesh unless you change it's mesh
+                meshCollider.sharedMesh = sharedMesh;
+                UnityEditor.EditorUtility.SetDirty(meshCollider);
                 UnityEditor.EditorUtility.SetDirty(model);
+            }
 #endif
         }
 

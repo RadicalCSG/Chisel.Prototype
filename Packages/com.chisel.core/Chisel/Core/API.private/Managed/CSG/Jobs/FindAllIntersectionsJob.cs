@@ -48,8 +48,8 @@ namespace Chisel.Core
             ref var brushPlanes0   = ref brushMesh0.Value.localPlanes;
             ref var brushPlanes1   = ref brushMesh1.Value.localPlanes;
 
-            ref var brushVertices0 = ref brushMesh0.Value.vertices;
-            ref var brushVertices1 = ref brushMesh1.Value.vertices;
+            ref var brushVertices0 = ref brushMesh0.Value.localVertices;
+            ref var brushVertices1 = ref brushMesh1.Value.localVertices;
 
             var transformedPlanes0 = stackalloc float4[brushPlanes0.Length];
             TransformOtherIntoBrushSpace(ref treeToNode0SpaceMatrix, ref nodeToTree1SpaceMatrix, ref brushPlanes0, transformedPlanes0);

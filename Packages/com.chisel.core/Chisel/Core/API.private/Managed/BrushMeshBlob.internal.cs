@@ -6,7 +6,25 @@ using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
-{
+{    
+    public struct BrushTreeSpaceVerticesBlob
+    {
+        public BlobArray<float3> treeSpaceVertices;
+
+        public unsafe static BlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref BlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix, Allocator allocator = Allocator.Persistent)
+        {
+            var totalSize   = localVertices.Length * sizeof(float3);
+            var builder     = new BlobBuilder(Allocator.Temp, math.max(4, totalSize));
+            ref var root    = ref builder.ConstructRoot<BrushTreeSpaceVerticesBlob>();
+            var treeSpaceVertices = builder.Allocate(ref root.treeSpaceVertices, localVertices.Length);
+            for (int i = 0; i < localVertices.Length; i++)
+                treeSpaceVertices[i] = math.mul(nodeToTreeSpaceMatrix, new float4(localVertices[i], 1)).xyz;
+            var result = builder.CreateBlobAssetReference<BrushTreeSpaceVerticesBlob>(allocator);
+            builder.Dispose();
+            return result;
+        }
+    }
+
     public struct BrushMeshBlob
     {
         public struct Polygon
@@ -20,7 +38,7 @@ namespace Chisel.Core
         // TODO: turn this into AABB
         public Bounds		                    localBounds;
 
-        public BlobArray<float3>	            vertices;
+        public BlobArray<float3>	            localVertices;
         public BlobArray<BrushMesh.HalfEdge>	halfEdges;
         public BlobArray<int>                   halfEdgePolygonIndices;
         public BlobArray<Polygon>	            polygons;
@@ -28,10 +46,10 @@ namespace Chisel.Core
         
         public bool IsEmpty()
         {
-            return (localPlanes.Length == 0 || polygons.Length == 0 || vertices.Length == 0 || halfEdges.Length == 0);
+            return (localPlanes.Length == 0 || polygons.Length == 0 || localVertices.Length == 0 || halfEdges.Length == 0);
         }
 
-        public unsafe static BlobAssetReference<BrushMeshBlob> Build(BrushMesh brushMesh)
+        public unsafe static BlobAssetReference<BrushMeshBlob> Build(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
                 brushMesh.vertices.Length < 4 ||
@@ -54,7 +72,7 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
             root.localBounds = brushMesh.localBounds;
-            builder.Construct(ref root.vertices, srcVertices);
+            builder.Construct(ref root.localVertices, srcVertices);
             builder.Construct(ref root.halfEdges, brushMesh.halfEdges);
             builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
             var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
@@ -94,7 +112,7 @@ namespace Chisel.Core
             builder.Construct(ref root.vertexIntersectionSegments, vertexIntersectionSegments, srcVertices.Length);
             */
 
-            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(Allocator.Persistent);
+            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();
             return result;
         }

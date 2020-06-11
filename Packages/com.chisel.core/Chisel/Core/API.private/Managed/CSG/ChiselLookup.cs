@@ -438,15 +438,16 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
-            public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>         basePolygons;
-            public NativeHashMap<int, MinMaxAABB>                                   brushTreeSpaceBounds;
-            public NativeHashMap<int, BlobAssetReference<RoutingTable>>             routingTableLookup;
-            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>     brushTreeSpacePlanes;
-            public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
-            public NativeHashMap<int, BlobAssetReference<NodeTransformations>>      transformations;
-            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBuffers;
+            public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>             basePolygons;
+            public NativeHashMap<int, MinMaxAABB>                                       brushTreeSpaceBounds;
+            public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesLookup;
+            public NativeHashMap<int, BlobAssetReference<RoutingTable>>                 routingTableLookup;
+            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlanes;
+            public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushes;
+            public NativeHashMap<int, BlobAssetReference<NodeTransformations>>          transformations;
+            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBuffers;
 
-            public BlobAssetReference<CompactTree>                                  compactTree;
+            public BlobAssetReference<CompactTree>                                      compactTree;
 
             internal void RemoveBasePolygonsByBrushIndex(List<int> brushNodeIndices)
             {
@@ -464,19 +465,36 @@ namespace Chisel.Core
                 }
             }
 
-            internal void RemoveBrushTreeSpaceBoundsBrushIndex(List<int> brushNodeIndices)
+            internal void RemoveBrushTreeSpaceBoundsByBrushIndex(List<int> brushNodeIndices)
             {
                 if (brushTreeSpaceBounds.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (brushTreeSpaceBounds.TryGetValue(brushNodeIndex, out var basePolygonsBlob))
+                    if (brushTreeSpaceBounds.ContainsKey(brushNodeIndex))
                     {
                         brushTreeSpaceBounds.Remove(brushNodeIndex);
                     }
                 }
             }
+
+            internal void RemoveTreeSpaceVerticesByBrushIndex(List<int> brushNodeIndices)
+            {
+                if (treeSpaceVerticesLookup.Count() == 0)
+                    return;
+                for (int b = 0; b < brushNodeIndices.Count; b++)
+                {
+                    var brushNodeIndex = brushNodeIndices[b];
+                    if (treeSpaceVerticesLookup.TryGetValue(brushNodeIndex, out var treeSpaceVerticesBlob))
+                    {
+                        treeSpaceVerticesLookup.Remove(brushNodeIndex);
+                        if (treeSpaceVerticesBlob.IsCreated)
+                            treeSpaceVerticesBlob.Dispose();
+                    }
+                }
+            }
+            
 
             internal void RemoveRoutingTablesByBrushIndex(List<int> brushNodeIndices)
             {
@@ -628,6 +646,7 @@ namespace Chisel.Core
                 // brushIndex
                 basePolygons            = new NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
                 brushTreeSpaceBounds    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
+                treeSpaceVerticesLookup = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
                 routingTableLookup      = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
                 brushTreeSpacePlanes    = new NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
                 brushesTouchedByBrushes = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
@@ -642,6 +661,9 @@ namespace Chisel.Core
 
                 if (brushTreeSpaceBounds.Capacity < brushCount)
                     brushTreeSpaceBounds.Capacity = brushCount;
+
+                if (treeSpaceVerticesLookup.Capacity < brushCount)
+                    treeSpaceVerticesLookup.Capacity = brushCount;
 
                 if (routingTableLookup.Capacity < brushCount)
                     routingTableLookup.Capacity = brushCount;
@@ -678,6 +700,11 @@ namespace Chisel.Core
                 {
                     brushTreeSpaceBounds.Clear();
                     brushTreeSpaceBounds.Dispose();
+                }
+                if (treeSpaceVerticesLookup.IsCreated)
+                {
+                    treeSpaceVerticesLookup.Clear();
+                    treeSpaceVerticesLookup.Dispose();
                 }
                 if (routingTableLookup.IsCreated)
                 {
