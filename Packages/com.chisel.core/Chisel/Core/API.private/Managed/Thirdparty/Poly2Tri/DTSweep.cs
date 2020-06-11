@@ -1383,7 +1383,7 @@ namespace Poly2Tri
         public static void PointOnConstrainedEdgeNotSupportedException(int epIndex, int eqIndex, int p1Index)
         {
             //throw new Exception($"PerformEdgeEvent - Point on constrained edge not supported yet {epIndex} {eqIndex} {p1Index}");
-            throw new Exception("PerformEdgeEvent - Point on constrained edge not supported yet");
+            UnityEngine.Debug.LogError("PerformEdgeEvent - Point on constrained edge not supported yet");
         }
 
         bool PerformEdgeEvent(int epIndex, int eqIndex, int triangleIndex, int pointIndex, int stackDepth)
@@ -1419,7 +1419,7 @@ namespace Poly2Tri
                 } else
                 {
                     PointOnConstrainedEdgeNotSupportedException(epIndex, eqIndex, p1Index);
-                    return true;
+                    return false;
                 }
             }
 
@@ -1443,7 +1443,7 @@ namespace Poly2Tri
                 } else
                 {
                     PointOnConstrainedEdgeNotSupportedException(epIndex, eqIndex, p2Index);
-                    return true;
+                    return false;
                 }
             }
 
@@ -1541,12 +1541,12 @@ namespace Poly2Tri
             }
             else
             {
-                if (NextFlipPoint(epIndex, eqIndex, otIndex, opIndex, out int newP))
-                {
-                    if (!FlipScanEdgeEvent(epIndex, eqIndex, triangleIndex, otIndex, newP, stackDepth))
-                        return false;
-                    return PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex, stackDepth);
-                }
+                if (!NextFlipPoint(epIndex, eqIndex, otIndex, opIndex, out int newP))
+                    return false;
+                
+                if (!FlipScanEdgeEvent(epIndex, eqIndex, triangleIndex, otIndex, newP, stackDepth))
+                    return false;
+                return PerformEdgeEvent(epIndex, eqIndex, triangleIndex, pIndex, stackDepth);
             }
             return true;
         }
@@ -1643,15 +1643,15 @@ namespace Poly2Tri
             }
             else
             {
-                if (NextFlipPoint(epIndex, eqIndex, otIndex, opIndex, out int newP))
-                {
-                    var triangle = triangles[otIndex];
-                    var index0 = triangle.indices[0];
-                    var index1 = triangle.indices[1];
-                    var index2 = triangle.indices[2];
-                    if (index0 != index1 && index0 != index2 && index1 != index2)
-                        return FlipScanEdgeEvent(epIndex, eqIndex, flipTriangle, otIndex, newP, stackDepth);
-                }
+                if (!NextFlipPoint(epIndex, eqIndex, otIndex, opIndex, out int newP))
+                    return false;
+                
+                var triangle = triangles[otIndex];
+                var index0 = triangle.indices[0];
+                var index1 = triangle.indices[1];
+                var index2 = triangle.indices[2];
+                if (index0 != index1 && index0 != index2 && index1 != index2)
+                    return FlipScanEdgeEvent(epIndex, eqIndex, flipTriangle, otIndex, newP, stackDepth);
                 //newP = NextFlipPoint(ep, eq, ot, op);
             }
             return true;
