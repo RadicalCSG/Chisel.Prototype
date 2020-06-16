@@ -118,7 +118,14 @@ namespace Chisel.Core
             }
             return 1;
         }
-
+        struct IndexOrderComparer : IComparer<IndexOrder>
+        {
+            public int Compare(IndexOrder x, IndexOrder y)
+            {
+                return x.nodeOrder.CompareTo(y.nodeOrder);
+            }
+        }
+        
         public void Execute()
         {
             var updateBrushIndicesArray = updateBrushIndexOrders.AsArray();
@@ -176,6 +183,9 @@ namespace Chisel.Core
             var brushesThatNeedIndirectUpdateArray = brushesThatNeedIndirectUpdate.AsArray();
 
             updateBrushIndexOrders.AddRange(brushesThatNeedIndirectUpdateArray);
+
+            var comparer = new IndexOrderComparer();
+            updateBrushIndexOrders.Sort(comparer);
 
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {

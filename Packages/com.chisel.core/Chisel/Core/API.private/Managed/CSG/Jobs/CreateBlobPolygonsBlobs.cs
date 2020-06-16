@@ -79,6 +79,7 @@ namespace Chisel.Core
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
+            Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
 
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
             if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
@@ -100,15 +101,13 @@ namespace Chisel.Core
 
             hashedVertices.AddUniqueVertices(ref vertices);
 
-            var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
-
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeIndex = brushIntersections[i].nodeIndex;
                 var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
-                if (intersectingNodeOrder < selfOrder)
+                if (intersectingNodeOrder < brushNodeOrder)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -253,7 +252,9 @@ namespace Chisel.Core
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            
+
+            Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
+
             var mesh                    = brushMeshLookup[brushNodeOrder];
             ref var treeSpaceVertices   = ref treeSpaceVerticesArray[brushNodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
@@ -313,15 +314,13 @@ namespace Chisel.Core
             // TODO: do this section as a separate pass where we first calculate worldspace vertices, 
             //       then snap them all, then do this job
 
-            var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
-
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeIndex = brushIntersections[i].nodeIndex;
                 var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
-                if (intersectingNodeOrder < selfOrder)
+                if (intersectingNodeOrder < brushNodeOrder)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
