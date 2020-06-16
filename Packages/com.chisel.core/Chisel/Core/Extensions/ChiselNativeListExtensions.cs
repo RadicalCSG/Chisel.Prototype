@@ -47,6 +47,30 @@ namespace Chisel.Core
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
 
+        public static void RemoveRange<T>(NativeArray<T> array, ref int arrayLength, int index, int count) where T : unmanaged
+        {
+            if (count == 0)
+                return;
+            if (index < 0 || index + count > arrayLength)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index == 0 && count == arrayLength)
+            {
+                arrayLength = 0;
+                return;
+            }
+
+            if (index + count < arrayLength)
+            {
+                var listPtr = (T*)array.GetUnsafePtr();
+                int size = sizeof(T);
+                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (arrayLength - (index + count)) * size);
+            }
+            arrayLength -= count;
+        }
+
         public static void RemoveAt<T>(this NativeList<T> list, int index) where T : unmanaged
         {
             RemoveRange(list, index, 1);

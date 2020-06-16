@@ -53,10 +53,12 @@ namespace Chisel.Components
 
         }
 
+
+        static readonly HashSet<ChiselBrushContainerAsset> s_UsedContainers = new HashSet<ChiselBrushContainerAsset>();
         public static void Reset()
         {
             Clear();
-            var usedContainers  = new HashSet<ChiselBrushContainerAsset>();
+            s_UsedContainers.Clear();
             var chiselNodes     = Resources.FindObjectsOfTypeAll<ChiselNode>();
             foreach (var chiselNode in chiselNodes)
             {
@@ -64,12 +66,12 @@ namespace Chisel.Components
                 if (usedAssets == null)
                     continue;
                 foreach(var asset in usedAssets)
-                    usedContainers.Add(asset);
+                    s_UsedContainers.Add(asset);
             }
             var brushContainerAssets = Resources.FindObjectsOfTypeAll<ChiselBrushContainerAsset>();
             foreach (var brushContainerAsset in brushContainerAssets)
             {
-                if (!usedContainers.Contains(brushContainerAsset))
+                if (!s_UsedContainers.Contains(brushContainerAsset))
                 {
 #if UNITY_EDITOR
                     var path = UnityEditor.AssetDatabase.GetAssetPath(brushContainerAsset);
@@ -373,15 +375,23 @@ namespace Chisel.Components
                 {
                     if (!brushContainerAsset.HasInstances)
                     {
+                        Profiler.BeginSample("CreateInstances");
                         brushContainerAsset.CreateInstances();
+                        Profiler.EndSample();
                     } else
                     {
                         //UnregisterAllSurfaces(brushContainerAsset); // TODO: should we?
+                        Profiler.BeginSample("UpdateInstances");
                         brushContainerAsset.UpdateInstances();
+                        Profiler.EndSample();
                     }
 
+                    Profiler.BeginSample("RegisterAllSurfaces");
                     RegisterAllSurfaces(brushContainerAsset);
+                    Profiler.EndSample();
+                    Profiler.BeginSample("UpdateSurfaces");
                     UpdateSurfaces(brushContainerAsset);
+                    Profiler.EndSample();
                 }
                 catch (Exception ex)
                 {

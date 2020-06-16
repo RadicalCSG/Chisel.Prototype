@@ -160,9 +160,6 @@ namespace Chisel.Core
             public override string ToString() { return string.Format("{{ twinIndex = {0}, vertexIndex = {1} }}", twinIndex, vertexIndex); }
         }
 
-        /// <value>The axis aligned bounding box of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
-        public Bounds		localBounds;
-
         /// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 
         public float3[]	    vertices;
 

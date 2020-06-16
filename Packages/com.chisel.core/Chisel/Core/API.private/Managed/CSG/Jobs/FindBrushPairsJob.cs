@@ -25,11 +25,11 @@ namespace Chisel.Core
     {
         public struct Empty { }
 
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, WriteOnly] public NativeList<BrushPair>                                        uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
         public void Execute()
         {
@@ -42,7 +42,9 @@ namespace Chisel.Core
                 int brushNodeIndex0         = brushIndexOrder0.nodeIndex;
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
                 //var brushesTouchedByBrush = touchedBrushesByTreeBrushes[b0];
-                if (!brushesTouchedByBrushes.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
+
+                var brushesTouchedByBrush   = brushesTouchedByBrushes[brushNodeOrder0];
+                if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
                     
                 ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;
@@ -55,7 +57,7 @@ namespace Chisel.Core
                     var intersection        = intersections[i];
                     int brushIndex1         = intersection.nodeIndex;
                     int brushOrder1         = nodeIndexToNodeOrder[brushIndex1 - nodeIndexToNodeOrderOffset];
-                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushIndex1 };
+                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushOrder1 };
 
                     var brushPair       = new BrushPair
                     {
@@ -84,9 +86,12 @@ namespace Chisel.Core
         const float kPlaneWAlignEpsilon         = CSGConstants.kPlaneDAlignEpsilon;
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
-        [NoAlias, ReadOnly] public NativeArray<BrushPair>                                                uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>                 brushMeshBlobLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>           transformations;
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<BrushPair>                           uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+
+        // Write
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushPairIntersection>>.ParallelWriter intersectingBrushes;
 
         // TODO: turn into job
@@ -227,12 +232,12 @@ namespace Chisel.Core
             var brushIndexOrder0    = brushPair.brushIndexOrder0;
             var brushIndexOrder1    = brushPair.brushIndexOrder1;
             int brushNodeIndex0     = brushIndexOrder0.nodeIndex;
+            int brushNodeOrder0     = brushIndexOrder0.nodeOrder;
             int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
+            int brushNodeOrder1     = brushIndexOrder1.nodeOrder;
 
-            if (!brushMeshBlobLookup.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushMeshBlob> blobMesh0) ||
-                !brushMeshBlobLookup.TryGetValue(brushNodeIndex1, out BlobAssetReference<BrushMeshBlob> blobMesh1))
-                //continue;
-                return;
+            var blobMesh0 = brushMeshLookup[brushNodeOrder0];
+            var blobMesh1 = brushMeshLookup[brushNodeOrder1];
 
 
             var type = brushPair.type;
@@ -242,18 +247,18 @@ namespace Chisel.Core
                 return;
 
 
-            var transformations0 = transformations[brushNodeIndex0];
-            var transformations1 = transformations[brushNodeIndex1];
+            var transformations0 = transformations[brushNodeOrder0];
+            var transformations1 = transformations[brushNodeOrder1];
 
-            var node1ToNode0            = math.mul(transformations0.Value.treeToNode, transformations1.Value.nodeToTree);
-            var node0ToNode1            = math.mul(transformations1.Value.treeToNode, transformations0.Value.nodeToTree);
+            var node1ToNode0            = math.mul(transformations0.treeToNode, transformations1.nodeToTree);
+            var node0ToNode1            = math.mul(transformations1.treeToNode, transformations0.nodeToTree);
             var inversedNode1ToNode0    = math.transpose(node0ToNode1);
             var inversedNode0ToNode1    = math.transpose(node1ToNode0);
 
             ref var mesh0 = ref blobMesh0.Value;
             ref var mesh1 = ref blobMesh1.Value;
             
-            var builder = new BlobBuilder(Allocator.Temp, 4096);
+            var builder = new BlobBuilder(Allocator.Temp, 2048);
             ref var root = ref builder.ConstructRoot<BrushPairIntersection>();
             root.type = type;
 
@@ -261,13 +266,13 @@ namespace Chisel.Core
             brushIntersections[0] = new BrushIntersectionInfo
             {
                 brushIndexOrder     = brushIndexOrder0,
-                nodeToTreeSpace     = transformations0.Value.nodeToTree,
+                nodeToTreeSpace     = transformations0.nodeToTree,
                 toOtherBrushSpace   = node0ToNode1
             };
             brushIntersections[1] = new BrushIntersectionInfo
             {
                 brushIndexOrder     = brushIndexOrder1,
-                nodeToTreeSpace     = transformations1.Value.nodeToTree,
+                nodeToTreeSpace     = transformations1.nodeToTree,
                 toOtherBrushSpace   = node1ToNode0
             };
 
@@ -300,8 +305,8 @@ namespace Chisel.Core
 
 
 
-            var inverseNodeToTreeSpaceMatrix0 = math.transpose(transformations0.Value.treeToNode);
-            var inverseNodeToTreeSpaceMatrix1 = math.transpose(transformations1.Value.treeToNode);
+            var inverseNodeToTreeSpaceMatrix0 = math.transpose(transformations0.treeToNode);
+            var inverseNodeToTreeSpaceMatrix1 = math.transpose(transformations1.treeToNode);
 
 
             var surfaceInfos0 = builder.Allocate(ref brushIntersections[0].surfaceInfos, mesh0.localPlanes.Length);

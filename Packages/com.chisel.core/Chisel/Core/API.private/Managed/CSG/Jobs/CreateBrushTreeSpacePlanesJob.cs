@@ -17,19 +17,21 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     public struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
-        [NoAlias,ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
-        [NoAlias,ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
-        [NoAlias,ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>   transformations;
+        // Read
+        [NoAlias,ReadOnly] public NativeArray<IndexOrder>                           treeBrushIndexOrders;
+        [NoAlias,ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>    brushMeshLookup;
+        [NoAlias,ReadOnly] public NativeArray<NodeTransformations>                  transformations;
 
-        [NoAlias,WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>.ParallelWriter brushTreeSpacePlanes;
+        // Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias,WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
 
         public void Execute(int index)
         {
             var brushIndexOrder = treeBrushIndexOrders[index];
-            int brushNodeIndex  = brushIndexOrder.nodeIndex;
-            var worldPlanes     = BrushTreeSpacePlanes.Build(brushMeshLookup[brushNodeIndex], 
-                                                         transformations[brushNodeIndex].Value.nodeToTree);
-            brushTreeSpacePlanes.TryAdd(brushNodeIndex, worldPlanes);
+            int brushNodeOrder  = brushIndexOrder.nodeOrder;
+            var worldPlanes     = BrushTreeSpacePlanes.Build(brushMeshLookup[brushNodeOrder], transformations[brushNodeOrder].nodeToTree);
+            brushTreeSpacePlanes[brushNodeOrder] = worldPlanes;
         }
     }
 }

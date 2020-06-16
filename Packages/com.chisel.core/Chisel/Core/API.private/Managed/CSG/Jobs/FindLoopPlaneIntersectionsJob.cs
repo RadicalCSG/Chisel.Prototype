@@ -22,9 +22,9 @@ namespace Chisel.Core
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public int                      otherBrushNodeIndex;
-        [NoAlias, ReadOnly] public int                      selfBrushNodeIndex;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public int                      otherBrushNodeOrder;
+        [NoAlias, ReadOnly] public int                      selfBrushNodeOrder;
         
         //[NativeDisableContainerSafetyRestriction]
         [NoAlias] public HashedVertices                     hashedVertices; // <-- TODO: we're reading AND writing to the same NativeList!?!?!
@@ -43,8 +43,8 @@ namespace Chisel.Core
 
             var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
 
-            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeIndex].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeIndex].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;
@@ -182,9 +182,9 @@ namespace Chisel.Core
         const float kSqrVertexEqualEpsilon  = CSGConstants.kSqrVertexEqualEpsilon;
         const float kFatPlaneWidthEpsilon   = CSGConstants.kFatPlaneWidthEpsilon;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public int                  otherBrushNodeIndex;
-        [NoAlias, ReadOnly] public int                  selfBrushNodeIndex;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public int                  otherBrushNodeOrder;
+        [NoAlias, ReadOnly] public int                  selfBrushNodeOrder;
         
         //[NativeDisableContainerSafetyRestriction]
         [NoAlias] public HashedVertices                         hashedVertices; // <-- TODO: we're reading AND writing to the same NativeList!?!?!
@@ -204,8 +204,8 @@ namespace Chisel.Core
 
             var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
 
-            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeIndex].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeIndex].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;
