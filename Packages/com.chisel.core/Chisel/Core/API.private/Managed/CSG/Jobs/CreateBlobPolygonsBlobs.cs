@@ -59,11 +59,11 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVerticesJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                             nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
 
         // Write
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
@@ -75,6 +75,7 @@ namespace Chisel.Core
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
+            int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
             if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
@@ -99,7 +100,7 @@ namespace Chisel.Core
             var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
-            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeIndex].Value.brushIntersections;
+            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeIndex = brushIntersections[i].nodeIndex;
@@ -127,11 +128,11 @@ namespace Chisel.Core
     struct CreateBlobPolygonsBlobs : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                             nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
         
         // Write
@@ -312,7 +313,7 @@ namespace Chisel.Core
             var selfOrder = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
-            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeIndex].Value.brushIntersections;
+            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeIndex = brushIntersections[i].nodeIndex;

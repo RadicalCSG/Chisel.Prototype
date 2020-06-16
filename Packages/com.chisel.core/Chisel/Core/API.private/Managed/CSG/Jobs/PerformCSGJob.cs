@@ -13,13 +13,13 @@ namespace Chisel.Core
     unsafe struct PerformCSGJob : IJobParallelFor
     {
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          treeBrushNodeIndexOrders;        
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushNodeIndexOrders;        
 
-        [NoAlias, ReadOnly] public NativeArray<int>                                                 nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                              nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>                    routingTableLookup;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>            brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>    brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
@@ -215,9 +215,10 @@ namespace Chisel.Core
             intersectionInfo.interiorCategory = intersectionCategory;
 
 
+            var brushesTouchedByBrush = brushesTouchedByBrushes[currentBrushOrder];
             if (currentHoleIndices.Length > 0 &&
                 // TODO: fix touching not being updated properly
-                brushesTouchedByBrushes.ContainsKey(currentBrushIndex))
+                brushesTouchedByBrush != BlobAssetReference<BrushesTouchedByBrush>.Null)
             {
                 // Figure out why this is seemingly not necessary?
                 var intersectedHoleIndices = stackalloc int[currentHoleIndices.Length];
@@ -225,9 +226,9 @@ namespace Chisel.Core
 
                 // the output of cutting operations are both holes for the original polygon (categorized_loop)
                 // and new polygons on the surface of the brush that need to be categorized
-                
-                ref var brushesTouchedByBrush   = ref brushesTouchedByBrushes[currentBrushIndex].Value;
-                ref var brushIntersections      = ref brushesTouchedByBrushes[currentBrushIndex].Value.brushIntersections;
+
+                ref var brushesTouchedByBrushRef    = ref brushesTouchedByBrush.Value;
+                ref var brushIntersections          = ref brushesTouchedByBrushRef.brushIntersections;
                 for (int h = 0; h < currentHoleIndices.Length; h++)
                 {
                     // Need to make a copy so we can edit it without causing side effects
@@ -239,7 +240,7 @@ namespace Chisel.Core
                     var holeInfo            = allInfos[holeIndex];
                     int holeBrushNodeIndex  = holeInfo.brushIndex;
 
-                    bool touches = brushesTouchedByBrush.Get(holeBrushNodeIndex) != IntersectionType.NoIntersection;
+                    bool touches = brushesTouchedByBrushRef.Get(holeBrushNodeIndex) != IntersectionType.NoIntersection;
                     
                     // Only add if they touch
                     if (touches)

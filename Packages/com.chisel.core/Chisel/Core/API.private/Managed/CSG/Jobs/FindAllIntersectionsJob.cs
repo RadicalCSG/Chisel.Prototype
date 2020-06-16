@@ -256,6 +256,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     unsafe struct StoreBrushIntersectionsJob : IJobParallelFor
     {
+        // Read
         [NoAlias,ReadOnly] public int                                   treeNodeIndex;
         [NoAlias,ReadOnly] public NativeArray<IndexOrder>               treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>                     nodeIndexToNodeOrder;
@@ -263,7 +264,9 @@ namespace Chisel.Core
         [NoAlias,ReadOnly] public BlobAssetReference<CompactTree>       compactTree;
         [NoAlias,ReadOnly] public NativeMultiHashMap<int, BrushPair>    brushBrushIntersections;
 
-        [NoAlias,WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>.ParallelWriter brushesTouchedByBrushes;
+        // Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias,WriteOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
 
         static void SetUsedNodesBits(BlobAssetReference<CompactTree> compactTree, NativeList<BrushIntersection> brushIntersections, int brushNodeIndex, int rootNodeIndex, BrushIntersectionLookup bitset)
@@ -377,6 +380,7 @@ namespace Chisel.Core
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
             int brushNodeIndex      = brushIndexOrder.nodeIndex;
+            int brushNodeOrder      = brushIndexOrder.nodeOrder;
             var brushIntersections  = brushBrushIntersections.GetValuesForKey(brushNodeIndex);
             {
                 var comparer = new ListComparer
@@ -387,7 +391,7 @@ namespace Chisel.Core
 
                 var result = GenerateBrushesTouchedByBrush(compactTree, brushNodeIndex, treeNodeIndex, brushIntersections, comparer);
                 if (result.IsCreated)
-                    brushesTouchedByBrushes.TryAdd(brushNodeIndex, result);
+                    brushesTouchedByBrushes[brushNodeOrder] = result;
             }
             brushIntersections.Dispose();
         }

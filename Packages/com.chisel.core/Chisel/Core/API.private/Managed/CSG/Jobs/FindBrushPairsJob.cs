@@ -25,11 +25,11 @@ namespace Chisel.Core
     {
         public struct Empty { }
 
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, WriteOnly] public NativeList<BrushPair>                                        uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
         public void Execute()
         {
@@ -42,7 +42,9 @@ namespace Chisel.Core
                 int brushNodeIndex0         = brushIndexOrder0.nodeIndex;
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
                 //var brushesTouchedByBrush = touchedBrushesByTreeBrushes[b0];
-                if (!brushesTouchedByBrushes.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
+
+                var brushesTouchedByBrush   = brushesTouchedByBrushes[brushNodeOrder0];
+                if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                     continue;
                     
                 ref var intersections = ref brushesTouchedByBrush.Value.brushIntersections;

@@ -17,7 +17,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
         // Write
         [NativeDisableParallelForRestriction]
@@ -35,7 +35,8 @@ namespace Chisel.Core
             int processedNodeOrder  = processedIndexOrder.nodeOrder;
 
             int categoryStackNodeCount, polygonGroupCount;
-            if (!brushesTouchedByBrushes.TryGetValue(processedNodeIndex, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
+            var brushesTouchedByBrush = brushesTouchedByBrushes[processedNodeOrder];
+            if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
             
             var maxNodes        = compactTree.Value.topDownNodes.Length;
