@@ -53,16 +53,6 @@ namespace Chisel.Core
             return brushMesh;
         }
 
-        internal static BlobAssetReference<BrushMeshBlob> GetBrushMeshBlob(Int32 brushMeshInstanceID)
-        {
-            if (!IsBrushMeshIDValid(brushMeshInstanceID))
-                return BlobAssetReference<BrushMeshBlob>.Null;
-
-            if (!ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshInstanceID - 1, out BlobAssetReference<BrushMeshBlob> item))
-                return BlobAssetReference<BrushMeshBlob>.Null;
-            return item;
-        }
-
         public static Int32 CreateBrushMesh(Int32				 userID,
                                             float3[]			 vertices,
                                             BrushMesh.HalfEdge[] halfEdges,
@@ -93,9 +83,11 @@ namespace Chisel.Core
                     item.Dispose();
             }
 
+            ChiselMeshLookup.Value.brushMeshUpdateList.Add(brushMeshIndex);
+            /*
             Profiler.BeginSample("BrushMeshBlob.Build");
             ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
-            Profiler.EndSample();
+            Profiler.EndSample();*/
             return brushMeshID;
         }
 
@@ -130,12 +122,12 @@ namespace Chisel.Core
                 if (item.IsCreated)
                     item.Dispose();
             }
+            ChiselMeshLookup.Value.brushMeshUpdateList.Add(brushMeshIndex);
+            /*
             Profiler.BeginSample("BrushMeshBlob.Build");
             ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
-            Profiler.EndSample();
-            Profiler.BeginSample("NotifyBrushMeshModified");
+            Profiler.EndSample();*/
             CSGManager.NotifyBrushMeshModified(brushMeshInstanceID);
-            Profiler.EndSample();
             return true;
         }
 

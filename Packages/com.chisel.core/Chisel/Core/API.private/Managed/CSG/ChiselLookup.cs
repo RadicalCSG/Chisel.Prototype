@@ -1,16 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.ComponentModel;
 using UnityEngine;
 using Unity.Mathematics;
-using Unity.Jobs;
 using Unity.Entities;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using Profiler = UnityEngine.Profiling.Profiler;
-using System.Runtime.CompilerServices;
-using Unity.Burst;
 
 namespace Chisel.Core
 {
@@ -809,16 +802,23 @@ namespace Chisel.Core
             _singleton = null;
         }
     }
-
+    
     internal sealed unsafe class ChiselMeshLookup : ScriptableObject
     {
         public unsafe class Data
         {
-            public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>            brushMeshBlobs;
+            public readonly HashSet<int> brushMeshUpdateList = new HashSet<int>();
+            public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>> brushMeshBlobs;
             
             internal void Initialize()
             {
                 brushMeshBlobs = new NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>(1000, Allocator.Persistent);
+            }
+
+            public void EnsureCapacity(int capacity)
+            {
+                if (brushMeshBlobs.Capacity < capacity)
+                    brushMeshBlobs.Capacity = capacity;
             }
 
             internal void Dispose()
@@ -838,6 +838,22 @@ namespace Chisel.Core
                 }
             }
         }
+
+        public static void Update()
+        {
+            var brushMeshBlobs = ChiselMeshLookup.Value.brushMeshBlobs;
+            foreach (var brushMeshIndex in Value.brushMeshUpdateList)
+            {
+                var brushMeshID = brushMeshIndex + 1;
+                var brushMesh   = BrushMeshManager.GetBrushMesh(brushMeshID);
+                if (brushMesh == null)
+                    brushMeshBlobs[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
+                else
+                    brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
+            }
+            Value.brushMeshUpdateList.Clear();
+        }
+
 
         static ChiselMeshLookup _singleton;
 

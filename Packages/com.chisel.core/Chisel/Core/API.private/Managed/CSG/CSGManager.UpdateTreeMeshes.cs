@@ -135,6 +135,11 @@ namespace Chisel.Core
                     continue;
 
 
+                // TODO: do this in job, build brushMeshList in same job
+                Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
+                ChiselMeshLookup.Update();
+                Profiler.EndSample();
+
                 var chiselMeshValues = ChiselMeshLookup.Value;
                 ref var brushMeshBlobs = ref chiselMeshValues.brushMeshBlobs;
 
