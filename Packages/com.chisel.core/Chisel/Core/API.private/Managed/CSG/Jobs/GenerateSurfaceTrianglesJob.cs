@@ -30,8 +30,11 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
         [NoAlias, ReadOnly] public NativeStream.Reader input;
 
-        [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
+        // Write
+        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter brushRenderBufferCache;
+
+        //[NativeDisableParallelForRestriction]
+        //[NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
 
         
         [BurstDiscard]
@@ -310,7 +313,8 @@ namespace Chisel.Core
 
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
 
-            brushRenderBuffers[brushNodeOrder] = brushRenderBuffer;
+            //brushRenderBuffers[brushNodeOrder] = brushRenderBuffer;
+            brushRenderBufferCache.TryAdd(brushNodeIndex, brushRenderBuffer);
 
             // Allocated using Temp, so do not need to dispose
             /*
