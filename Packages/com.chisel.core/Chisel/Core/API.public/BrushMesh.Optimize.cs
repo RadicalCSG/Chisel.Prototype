@@ -23,6 +23,55 @@ namespace Chisel.Core
             return false;
         }
 
+        static float3 ProjectPointPlane(float3 point, float4 plane)
+        {
+            float px = point.x;
+            float py = point.y;
+            float pz = point.z;
+
+            float nx = plane.x;
+            float ny = plane.y;
+            float nz = plane.z;
+
+            float ax = (px + (nx * plane.w)) * nx;
+            float ay = (py + (ny * plane.w)) * ny;
+            float az = (pz + (nz * plane.w)) * nz;
+            float dot = ax + ay + az;
+
+            float rx = px - (dot * nx);
+            float ry = py - (dot * ny);
+            float rz = pz - (dot * nz);
+
+            return new float3(rx, ry, rz);
+        }
+
+        public Vector3 CenterAndSnapPlanes()
+        {
+            for (int p = 0; p < polygons.Length; p++)
+            {
+                var plane       = planes[p];
+                var edgeFirst   = polygons[p].firstEdge;
+                var edgeLast    = edgeFirst + polygons[p].edgeCount;
+                for (int e = edgeFirst; e < edgeLast; e++)
+                {
+                    var vertexIndex = halfEdges[e].vertexIndex;
+                    vertices[vertexIndex] = ProjectPointPlane(vertices[vertexIndex], plane);
+                }
+            }
+
+            double3 dmin = (double3)vertices[0];
+            double3 dmax = (double3)vertices[0];
+            for (int i = 1; i < vertices.Length; i++)
+            {
+                dmin = math.min(dmin, vertices[i]);
+                dmax = math.max(dmax, vertices[i]);
+            }
+            var center = (float3)((dmin + dmax) * 0.5);
+            for (int i = 0; i < vertices.Length; i++)
+                vertices[i] -= center;
+            return center;
+        }
+
         public bool IsConcave()
         {
             bool hasConcaveEdges    = false;
