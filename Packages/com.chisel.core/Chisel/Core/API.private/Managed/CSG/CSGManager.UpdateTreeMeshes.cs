@@ -713,7 +713,7 @@ namespace Chisel.Core
                         intersectingBrushes     = treeUpdate.intersectingBrushes.AsParallelWriter()
                     };
                     treeUpdate.prepareBrushPairIntersectionsJobHandle = prepareBrushPairIntersectionsJob.
-                        Schedule(treeUpdate.uniqueBrushPairs, 4, dependencies);
+                        Schedule(treeUpdate.uniqueBrushPairs, 8, dependencies);
                 }
             } finally { Profiler.EndSample(); }
 
@@ -740,7 +740,7 @@ namespace Chisel.Core
                         outputSurfaces              = treeUpdate.intersectionLoopBlobs.AsParallelWriter()
                     };
                     treeUpdate.findAllIntersectionLoopsJobHandle = findAllIntersectionLoopsJob.
-                        Schedule(treeUpdate.intersectingBrushes, 4, dependencies);
+                        Schedule(treeUpdate.intersectingBrushes, 8, dependencies);
                 }
             } finally { Profiler.EndSample(); }
 
@@ -765,7 +765,7 @@ namespace Chisel.Core
                         output                      = treeUpdate.dataStream1.AsWriter()
                     };
                     treeUpdate.allFindLoopOverlapIntersectionsJobHandle = findLoopOverlapIntersectionsJob.
-                        Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 64, dependencies);
+                        Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
                 }
             } finally { Profiler.EndSample(); }
 
@@ -795,7 +795,7 @@ namespace Chisel.Core
                         output                      = treeUpdate.dataStream2.AsWriter(),
                     };
                     treeUpdate.allPerformAllCSGJobHandle = performCSGJob.
-                        Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 32, dependencies);
+                        Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 8, dependencies);
                 }
             } finally { Profiler.EndSample(); }
 

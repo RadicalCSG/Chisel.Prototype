@@ -258,7 +258,7 @@ namespace Chisel.Core
             ref var mesh0 = ref blobMesh0.Value;
             ref var mesh1 = ref blobMesh1.Value;
             
-            var builder = new BlobBuilder(Allocator.Temp, 4096);
+            var builder = new BlobBuilder(Allocator.Temp, 2048);
             ref var root = ref builder.ConstructRoot<BrushPairIntersection>();
             root.type = type;
 
