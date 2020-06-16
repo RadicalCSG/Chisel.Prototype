@@ -600,6 +600,7 @@ namespace Chisel.Core
             if (count == 0)
                 return;
             var brushNodeIndex = input.Read<int>();
+            var brushNodeOrder = input.Read<int>();
             var surfaceCount = input.Read<int>();
             var vertexCount = input.Read<int>();
             brushVertices = new HashedVertices(vertexCount, Allocator.Temp);
@@ -805,6 +806,7 @@ namespace Chisel.Core
 
             output.BeginForEachIndex(index);
             output.Write(brushNodeIndex);
+            output.Write(brushNodeOrder);
             output.Write(brushVertices.Length);
             for (int l = 0; l < brushVertices.Length; l++)
                 output.Write(brushVertices[l]);

@@ -17,15 +17,15 @@ namespace Chisel.Core
     {
         const double kBoundsDistanceEpsilon = CSGConstants.kBoundsDistanceEpsilon;
 
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allTreeBrushIndexOrders;
 
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
-        [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>       brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
+        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                              brushTreeSpaceBounds;
 
-        [NoAlias] public NativeList<IndexOrder>                                                 updateBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                                         updateBrushIndexOrders;
 
-        [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter           brushBrushIntersections;
+        [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter   brushBrushIntersections;
 
         static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, float4* dstPlanes)
         {
@@ -204,14 +204,14 @@ namespace Chisel.Core
             if (!brushMesh0.IsCreated || !brushMesh1.IsCreated)
                 return IntersectionType.NoIntersection;
 
-            var bounds0 = brushTreeSpaceBounds[brush0NodeIndex];
-            var bounds1 = brushTreeSpaceBounds[brush1NodeIndex];
+            var bounds0 = brushTreeSpaceBounds[brush0NodeOrder];
+            var bounds1 = brushTreeSpaceBounds[brush1NodeOrder];
 
             if (!bounds0.Intersects(bounds1, kBoundsDistanceEpsilon))
                 return IntersectionType.NoIntersection;
             
-            ref var transformation0 = ref transformations[brush0NodeIndex].Value;
-            ref var transformation1 = ref transformations[brush1NodeIndex].Value;
+            var transformation0 = transformations[brush0NodeOrder];
+            var transformation1 = transformations[brush1NodeOrder];
 
             var treeToNode0SpaceMatrix = transformation0.treeToNode;
             var nodeToTree0SpaceMatrix = transformation0.nodeToTree;

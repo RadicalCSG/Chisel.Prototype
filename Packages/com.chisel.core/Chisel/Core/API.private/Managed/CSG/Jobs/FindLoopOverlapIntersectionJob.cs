@@ -16,7 +16,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<int>                                             nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoops>>      intersectionLoopBlobs;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>            basePolygons;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
         
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
@@ -69,10 +69,10 @@ namespace Chisel.Core
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
             // Can happen when BrushMeshes are not initialized correctly
-            if (!basePolygons.ContainsKey(brushNodeIndex))
+            if (basePolygons[brushNodeOrder] == BlobAssetReference<BasePolygonsBlob>.Null)
                 return;
 
-            ref var basePolygonBlob = ref basePolygons[brushNodeIndex].Value;
+            ref var basePolygonBlob = ref basePolygons[brushNodeOrder].Value;
 
             var surfaceCount        = basePolygonBlob.polygons.Length;
             if (surfaceCount == 0)
@@ -309,6 +309,7 @@ namespace Chisel.Core
 
             output.BeginForEachIndex(index);
             output.Write(brushNodeIndex);
+            output.Write(brushNodeOrder);
             output.Write(surfaceCount);
             output.Write(hashedVertices.Length);
             for (int l = 0; l < hashedVertices.Length; l++)

@@ -24,10 +24,10 @@ namespace Chisel.Core
     unsafe struct GenerateSurfaceTrianglesJob : IJobParallelFor
     {
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushNodeIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              treeBrushNodeIndexOrders;
         
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>     basePolygons;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygons;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
         [NoAlias, ReadOnly] public NativeStream.Reader input;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter brushRenderBuffers;
@@ -55,6 +55,7 @@ namespace Chisel.Core
 
 
             var brushNodeIndex = input.Read<int>();
+            var brushNodeOrder = input.Read<int>();
             var vertexCount = input.Read<int>();
             brushVertices = new HashedVertices(vertexCount, allocator);
             for (int v = 0; v < vertexCount; v++)
@@ -119,8 +120,8 @@ namespace Chisel.Core
             }
 
 
-            ref var baseSurfaces                = ref basePolygons[brushNodeIndex].Value.surfaces;
-            ref var brushTransformations        = ref transformations[brushNodeIndex].Value;
+            ref var baseSurfaces                = ref basePolygons[brushNodeOrder].Value.surfaces;
+            var brushTransformations            = transformations[brushNodeOrder];
             var treeToNode                      = brushTransformations.treeToNode;
             var nodeToTreeInverseTransposed     = math.transpose(treeToNode);
                 

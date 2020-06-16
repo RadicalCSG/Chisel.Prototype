@@ -19,10 +19,10 @@ namespace Chisel.Core
     struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
     {
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                             transformations;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
 
-        [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushTreeSpaceBounds;
+        [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
 
         public void Execute(int b)
@@ -30,11 +30,11 @@ namespace Chisel.Core
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            var transform       = transformations[brushNodeIndex];
+            var transform       = transformations[brushNodeOrder];
 
             var mesh                    = brushMeshLookup[brushNodeOrder];
             ref var vertices            = ref mesh.Value.localVertices;
-            var nodeToTreeSpaceMatrix   = transform.Value.nodeToTree;
+            var nodeToTreeSpaceMatrix   = transform.nodeToTree;
 
             var brushTreeSpaceVerticesBlob  = BrushTreeSpaceVerticesBlob.Build(ref vertices, nodeToTreeSpaceMatrix);
             ref var brushTreeSpaceVertices  = ref brushTreeSpaceVerticesBlob.Value.treeSpaceVertices;
@@ -49,7 +49,7 @@ namespace Chisel.Core
             }
 
             var bounds = new MinMaxAABB() { Min = min, Max = max };
-            brushTreeSpaceBounds.TryAdd(brushNodeIndex, bounds);
+            brushTreeSpaceBounds[brushNodeOrder] = bounds;
             treeSpaceVerticesArray[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
         }
     }
@@ -129,7 +129,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
 
-        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>            basePolygons;
 
 
         // Per thread scratch memory
@@ -360,7 +360,7 @@ namespace Chisel.Core
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
-            basePolygons.TryAdd(brushNodeIndex, basePolygonsBlob);
+            basePolygons[brushNodeOrder] = basePolygonsBlob;
             //builder.Dispose();
 
             //hashedVertices.Dispose();

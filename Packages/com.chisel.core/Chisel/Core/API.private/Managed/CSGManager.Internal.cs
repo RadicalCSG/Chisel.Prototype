@@ -439,7 +439,7 @@ namespace Chisel.Core
             var treeNodeID      = nodeHierarchies[brushNodeIndex].treeNodeID;
             var treeNodeIndex   = treeNodeID - 1;
             var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
-            if (!chiselLookupValues.brushTreeSpaceBounds.TryGetValue(brushNodeIndex, out MinMaxAABB result))
+            if (!chiselLookupValues.brushTreeSpaceBoundCache.TryGetValue(brushNodeIndex, out MinMaxAABB result))
                 return false;
 
             bounds = new Bounds();
@@ -592,7 +592,7 @@ namespace Chisel.Core
 
             DirtySelfAndChildren(nodeID, NodeStatusFlags.TransformationModified);
             SetDirtyWithFlag(nodeID, NodeStatusFlags.TransformationModified);
-            UpdateNodeTransformation(ref chiselLookupValues.transformations, nodeIndex);
+            UpdateNodeTransformation(ref chiselLookupValues.transformationCache, nodeIndex);
             return true;
         }
 

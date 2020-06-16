@@ -84,9 +84,9 @@ namespace Chisel.Core
         const float kPlaneWAlignEpsilon         = CSGConstants.kPlaneDAlignEpsilon;
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
-        [NoAlias, ReadOnly] public NativeArray<BrushPair>                                                uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                        brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>           transformations;
+        [NoAlias, ReadOnly] public NativeArray<BrushPair>                           uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushPairIntersection>>.ParallelWriter intersectingBrushes;
 
         // TODO: turn into job
@@ -242,11 +242,11 @@ namespace Chisel.Core
                 return;
 
 
-            var transformations0 = transformations[brushNodeIndex0];
-            var transformations1 = transformations[brushNodeIndex1];
+            var transformations0 = transformations[brushNodeOrder0];
+            var transformations1 = transformations[brushNodeOrder1];
 
-            var node1ToNode0            = math.mul(transformations0.Value.treeToNode, transformations1.Value.nodeToTree);
-            var node0ToNode1            = math.mul(transformations1.Value.treeToNode, transformations0.Value.nodeToTree);
+            var node1ToNode0            = math.mul(transformations0.treeToNode, transformations1.nodeToTree);
+            var node0ToNode1            = math.mul(transformations1.treeToNode, transformations0.nodeToTree);
             var inversedNode1ToNode0    = math.transpose(node0ToNode1);
             var inversedNode0ToNode1    = math.transpose(node1ToNode0);
 
@@ -261,13 +261,13 @@ namespace Chisel.Core
             brushIntersections[0] = new BrushIntersectionInfo
             {
                 brushIndexOrder     = brushIndexOrder0,
-                nodeToTreeSpace     = transformations0.Value.nodeToTree,
+                nodeToTreeSpace     = transformations0.nodeToTree,
                 toOtherBrushSpace   = node0ToNode1
             };
             brushIntersections[1] = new BrushIntersectionInfo
             {
                 brushIndexOrder     = brushIndexOrder1,
-                nodeToTreeSpace     = transformations1.Value.nodeToTree,
+                nodeToTreeSpace     = transformations1.nodeToTree,
                 toOtherBrushSpace   = node1ToNode0
             };
 
@@ -300,8 +300,8 @@ namespace Chisel.Core
 
 
 
-            var inverseNodeToTreeSpaceMatrix0 = math.transpose(transformations0.Value.treeToNode);
-            var inverseNodeToTreeSpaceMatrix1 = math.transpose(transformations1.Value.treeToNode);
+            var inverseNodeToTreeSpaceMatrix0 = math.transpose(transformations0.treeToNode);
+            var inverseNodeToTreeSpaceMatrix1 = math.transpose(transformations1.treeToNode);
 
 
             var surfaceInfos0 = builder.Allocate(ref brushIntersections[0].surfaceInfos, mesh0.localPlanes.Length);
