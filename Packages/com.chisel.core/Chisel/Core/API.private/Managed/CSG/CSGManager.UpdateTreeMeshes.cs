@@ -665,7 +665,7 @@ namespace Chisel.Core
             } finally { Profiler.EndSample(); }
                                 
             // Create unique loops between brush intersections
-            Profiler.BeginSample("Job_FindAllIntersectionLoops");
+            Profiler.BeginSample("Job_FindBrushPairs");
             try
             {
                 // TODO: merge this with another job, there's not enough work 
@@ -687,7 +687,12 @@ namespace Chisel.Core
                     treeUpdate.findBrushPairsJobHandle = findBrushPairsJob.
                         Schedule(dependencies);
                 }
+            }
+            finally { Profiler.EndSample(); }
 
+            Profiler.BeginSample("Job_PrepareBrushPairIntersections");
+            try
+            {
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];
@@ -696,8 +701,8 @@ namespace Chisel.Core
                     {
                         // Read
                         uniqueBrushPairs        = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
-                        brushMeshLookup         = treeUpdate.brushMeshLookup,
                         transformations         = treeUpdate.transformations,
+                        brushMeshLookup         = treeUpdate.brushMeshLookup,
 
                         // Write
                         intersectingBrushes     = treeUpdate.intersectingBrushes.AsParallelWriter()
@@ -705,7 +710,11 @@ namespace Chisel.Core
                     treeUpdate.prepareBrushPairIntersectionsJobHandle = prepareBrushPairIntersectionsJob.
                         Schedule(treeUpdate.uniqueBrushPairs, 4, dependencies);
                 }
+            } finally { Profiler.EndSample(); }
 
+            Profiler.BeginSample("Job_CreateIntersectionLoops");
+            try
+            {
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref treeUpdates[t];

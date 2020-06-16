@@ -86,9 +86,12 @@ namespace Chisel.Core
         const float kPlaneWAlignEpsilon         = CSGConstants.kPlaneDAlignEpsilon;
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
+        // Read
         [NoAlias, ReadOnly] public NativeArray<BrushPair>                           uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+
+        // Write
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushPairIntersection>>.ParallelWriter intersectingBrushes;
 
         // TODO: turn into job
