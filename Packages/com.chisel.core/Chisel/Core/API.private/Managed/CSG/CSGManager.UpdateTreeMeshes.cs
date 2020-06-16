@@ -63,6 +63,7 @@ namespace Chisel.Core
             public JobHandle generateTreeSpaceVerticesAndBoundsJobHandle;
             public JobHandle generateBasePolygonLoopsJobHandle;
             public JobHandle mergeTouchingBrushVerticesJobHandle;
+            public JobHandle mergeTouchingBrushVertices2JobHandle;
 
             public JobHandle findAllIntersectionsJobHandle;
             public JobHandle findIntersectingBrushesJobHandle;
@@ -121,7 +122,7 @@ namespace Chisel.Core
         internal static JobHandle UpdateTreeMeshes(int[] treeNodeIDs)
         {
             var finalJobHandle = default(JobHandle);
-
+            
 #if UNITY_EDITOR
             //JobsUtility.JobWorkerCount = math.max(1, ((JobsUtility.JobWorkerMaximumCount + 1) / 2) - 1);
 #endif
@@ -582,7 +583,6 @@ namespace Chisel.Core
                     }
                 } finally { Profiler.EndSample(); }
 
-                // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
                 Profiler.BeginSample("Job_MergeTouchingBrushVerticesJob");
                 try
                 {
@@ -782,13 +782,39 @@ namespace Chisel.Core
                     }
                 } finally { Profiler.EndSample(); }
 
+                // TODO: should only try to merge the vertices beyond the original mesh vertices (the intersection vertices)
+                //       should also try to limit vertices to those that are on the same surfaces (somehow)
+                Profiler.BeginSample("Job_MergeTouchingBrushVerticesJob2");
+                try
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate  = ref s_TreeUpdates[t];
+                        var dependencies    = treeUpdate.allFindLoopOverlapIntersectionsJobHandle;
+                        var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesJob
+                        {
+                            // Read
+                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
+                            nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
+                            brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
+
+                            // Read / Write
+                            treeSpaceVerticesArray      = treeUpdate.treeSpaceVerticesArray,
+                        };
+                        treeUpdate.mergeTouchingBrushVertices2JobHandle = mergeTouchingBrushVerticesJob.
+                            Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+                    }
+                }
+                finally { Profiler.EndSample(); }
+
                 Profiler.BeginSample("Job_PerformCSGJob");
                 try
                 {
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
-                        var dependencies    = JobHandle.CombineDependencies(treeUpdate.allFindLoopOverlapIntersectionsJobHandle, 
+                        var dependencies    = JobHandle.CombineDependencies(treeUpdate.mergeTouchingBrushVertices2JobHandle, 
                                                                             treeUpdate.updateBrushCategorizationTablesJobHandle);
 
                         // Perform CSG
@@ -825,7 +851,7 @@ namespace Chisel.Core
                         var chiselLookupValues  = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
                         ref var brushRenderBufferCache = ref chiselLookupValues.brushRenderBufferCache;
 
-                        // TODO: Make this work with burst so we can, potentially, merge it with PerformCSGJob?
+                        // TODO: Potentially merge this with PerformCSGJob?
                         var generateSurfaceRenderBuffers = new GenerateSurfaceTrianglesJob
                         {
                             // Read
