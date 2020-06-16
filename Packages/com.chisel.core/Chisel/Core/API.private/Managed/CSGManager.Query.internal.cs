@@ -279,7 +279,7 @@ namespace Chisel.Core
             var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
 
             var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
-            var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBuffers;
+            var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferCache;
 
             // TODO: optimize
             for (int i = 0; i < treeInfo.treeBrushes.Count; i++)
@@ -384,7 +384,7 @@ namespace Chisel.Core
 
                 if (intersectsFrustum)
                 {
-                    if (!chiselLookupValues.brushRenderBuffers.TryGetValue(brushNodeIndex, out var brushRenderBuffers) ||
+                    if (!chiselLookupValues.brushRenderBufferCache.TryGetValue(brushNodeIndex, out var brushRenderBuffers) ||
                         !brushRenderBuffers.IsCreated)
                         continue;
 

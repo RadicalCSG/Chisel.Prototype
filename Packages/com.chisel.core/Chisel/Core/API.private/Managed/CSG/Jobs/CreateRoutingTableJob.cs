@@ -14,11 +14,14 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     internal unsafe struct CreateRoutingTableJob : IJobParallelFor
     {
+        // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
-        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<RoutingTable>>.ParallelWriter routingTableLookup;
+        // Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
         const int MaxRoutesPerNode = 32; // TODO: figure out the actual possible maximum
 
@@ -29,6 +32,7 @@ namespace Chisel.Core
 
             var processedIndexOrder = treeBrushIndexOrders[index];
             int processedNodeIndex  = processedIndexOrder.nodeIndex;
+            int processedNodeOrder  = processedIndexOrder.nodeOrder;
 
             int categoryStackNodeCount, polygonGroupCount;
             if (!brushesTouchedByBrushes.TryGetValue(processedNodeIndex, out BlobAssetReference<BrushesTouchedByBrush> brushesTouchedByBrush))
@@ -97,7 +101,7 @@ namespace Chisel.Core
                     //builder.Dispose();
 
                     // TODO: figure out why this sometimes returns false, without any duplicates, yet values seem to exist??
-                    routingTableLookup.TryAdd(processedNodeIndex, routingTableBlob);
+                    routingTableLookup[processedNodeOrder] = routingTableBlob;
                     //FailureMessage();
                 }
             }

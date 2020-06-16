@@ -22,7 +22,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                             transformations;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
 
+        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
+        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
 
         public void Execute(int b)
@@ -75,6 +77,8 @@ namespace Chisel.Core
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
 
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
+            if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                return;
             ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
 
             if (!hashedVertices.IsCreated)
@@ -122,13 +126,16 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct CreateBlobPolygonsBlobs : IJobParallelFor
     {
+        // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                       treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
-
+        
+        // Write
+        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>            basePolygons;
 
 

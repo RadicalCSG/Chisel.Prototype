@@ -376,7 +376,7 @@ namespace Chisel.Core
                 var treeNodeID          = nodeHierarchies[brushNodeIndex].treeNodeID;
                 var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeID - 1];
 
-                if (!chiselLookupValues.brushRenderBuffers.TryGetValue(brushNodeIndex, out var brushRenderBuffer) ||
+                if (!chiselLookupValues.brushRenderBufferCache.TryGetValue(brushNodeIndex, out var brushRenderBuffer) ||
                     !brushRenderBuffer.IsCreated)
                     continue;
 

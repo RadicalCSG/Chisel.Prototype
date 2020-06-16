@@ -429,12 +429,12 @@ namespace Chisel.Core
         {
             public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeHashMap<int, MinMaxAABB>                                       brushTreeSpaceBoundCache;
-            public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesLookup;
-            public NativeHashMap<int, BlobAssetReference<RoutingTable>>                 routingTableLookup;
-            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlanes;
-            public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushes;
+            public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+            public NativeHashMap<int, BlobAssetReference<RoutingTable>>                 routingTableCache;
+            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+            public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
             public NativeHashMap<int, NodeTransformations>                              transformationCache;
-            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBuffers;
+            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
             public BlobAssetReference<CompactTree>                                      compactTree;
 
@@ -470,14 +470,14 @@ namespace Chisel.Core
 
             internal void RemoveTreeSpaceVerticesByBrushIndex(List<int> brushNodeIndices)
             {
-                if (treeSpaceVerticesLookup.Count() == 0)
+                if (treeSpaceVerticesCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (treeSpaceVerticesLookup.TryGetValue(brushNodeIndex, out var treeSpaceVerticesBlob))
+                    if (treeSpaceVerticesCache.TryGetValue(brushNodeIndex, out var treeSpaceVerticesBlob))
                     {
-                        treeSpaceVerticesLookup.Remove(brushNodeIndex);
+                        treeSpaceVerticesCache.Remove(brushNodeIndex);
                         if (treeSpaceVerticesBlob.IsCreated)
                             treeSpaceVerticesBlob.Dispose();
                     }
@@ -487,14 +487,14 @@ namespace Chisel.Core
 
             internal void RemoveRoutingTablesByBrushIndex(List<int> brushNodeIndices)
             {
-                if (routingTableLookup.Count() == 0)
+                if (routingTableCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (routingTableLookup.TryGetValue(brushNodeIndex, out var routingTable))
+                    if (routingTableCache.TryGetValue(brushNodeIndex, out var routingTable))
                     {
-                        routingTableLookup.Remove(brushNodeIndex);
+                        routingTableCache.Remove(brushNodeIndex);
                         if (routingTable.IsCreated)
                             routingTable.Dispose();
                     }
@@ -503,14 +503,14 @@ namespace Chisel.Core
 
             internal void RemoveBrushTreeSpacePlanesByBrushIndex(List<int> brushNodeIndices)
             {
-                if (brushTreeSpacePlanes.Count() == 0)
+                if (brushTreeSpacePlaneCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (brushTreeSpacePlanes.TryGetValue(brushNodeIndex, out var treeSpacePlanes))
+                    if (brushTreeSpacePlaneCache.TryGetValue(brushNodeIndex, out var treeSpacePlanes))
                     {
-                        brushTreeSpacePlanes.Remove(brushNodeIndex);
+                        brushTreeSpacePlaneCache.Remove(brushNodeIndex);
                         if (treeSpacePlanes.IsCreated)
                             treeSpacePlanes.Dispose();
                     }
@@ -519,14 +519,14 @@ namespace Chisel.Core
 
             internal void RemoveBrushTouchesByBrushIndex(List<int> brushNodeIndices)
             {
-                if (brushesTouchedByBrushes.Count() == 0)
+                if (brushesTouchedByBrushCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (brushesTouchedByBrushes.TryGetValue(brushNodeIndex, out var brushesTouchedByBrush))
+                    if (brushesTouchedByBrushCache.TryGetValue(brushNodeIndex, out var brushesTouchedByBrush))
                     {
-                        brushesTouchedByBrushes.Remove(brushNodeIndex);
+                        brushesTouchedByBrushCache.Remove(brushNodeIndex);
                         if (brushesTouchedByBrush.IsCreated)
                             brushesTouchedByBrush.Dispose();
                     }
@@ -549,14 +549,14 @@ namespace Chisel.Core
 
             internal void RemoveSurfaceRenderBuffersByBrushIndex(List<int> brushNodeIndices)
             {
-                if (brushRenderBuffers.Count() == 0)
+                if (brushRenderBufferCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndices.Count; b++)
                 {
                     var brushNodeIndex = brushNodeIndices[b];
-                    if (brushRenderBuffers.TryGetValue(brushNodeIndex, out var surfaceRenderBuffer))
+                    if (brushRenderBufferCache.TryGetValue(brushNodeIndex, out var surfaceRenderBuffer))
                     {
-                        brushRenderBuffers.Remove(brushNodeIndex);
+                        brushRenderBufferCache.Remove(brushNodeIndex);
                         if (surfaceRenderBuffer.IsCreated)
                             surfaceRenderBuffer.Dispose();
                     }
@@ -565,14 +565,14 @@ namespace Chisel.Core
 
             internal void RemoveRoutingTablesByBrushIndexOrder(List<IndexOrder> brushNodeIndexOrders)
             {
-                if (routingTableLookup.Count() == 0)
+                if (routingTableCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
                     int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
-                    if (routingTableLookup.TryGetValue(brushNodeIndex, out var routingTable))
+                    if (routingTableCache.TryGetValue(brushNodeIndex, out var routingTable))
                     {
-                        routingTableLookup.Remove(brushNodeIndex);
+                        routingTableCache.Remove(brushNodeIndex);
                         if (routingTable.IsCreated)
                             routingTable.Dispose();
                     }
@@ -581,14 +581,14 @@ namespace Chisel.Core
 
             internal void RemoveBrushTreeSpacePlanesByBrushIndexOrder(List<IndexOrder> brushNodeIndexOrders)
             {
-                if (brushTreeSpacePlanes.Count() == 0)
+                if (brushTreeSpacePlaneCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
                     int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
-                    if (brushTreeSpacePlanes.TryGetValue(brushNodeIndex, out var treeSpacePlanes))
+                    if (brushTreeSpacePlaneCache.TryGetValue(brushNodeIndex, out var treeSpacePlanes))
                     {
-                        brushTreeSpacePlanes.Remove(brushNodeIndex);
+                        brushTreeSpacePlaneCache.Remove(brushNodeIndex);
                         if (treeSpacePlanes.IsCreated)
                             treeSpacePlanes.Dispose();
                     }
@@ -597,14 +597,14 @@ namespace Chisel.Core
 
             internal void RemoveBrushTouchesByBrushIndexOrder(List<IndexOrder> brushNodeIndexOrders)
             {
-                if (brushesTouchedByBrushes.Count() == 0)
+                if (brushesTouchedByBrushCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
                     int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
-                    if (brushesTouchedByBrushes.TryGetValue(brushNodeIndex, out var brushesTouchedByBrush))
+                    if (brushesTouchedByBrushCache.TryGetValue(brushNodeIndex, out var brushesTouchedByBrush))
                     {
-                        brushesTouchedByBrushes.Remove(brushNodeIndex);
+                        brushesTouchedByBrushCache.Remove(brushNodeIndex);
                         if (brushesTouchedByBrush.IsCreated)
                             brushesTouchedByBrush.Dispose();
                     }
@@ -613,14 +613,14 @@ namespace Chisel.Core
 
             internal void RemoveSurfaceRenderBuffersByBrushIndexOrder(List<IndexOrder> brushNodeIndexOrders)
             {
-                if (brushRenderBuffers.Count() == 0)
+                if (brushRenderBufferCache.Count() == 0)
                     return;
                 for (int b = 0; b < brushNodeIndexOrders.Count; b++)
                 {
                     int brushNodeIndex = brushNodeIndexOrders[b].nodeIndex;
-                    if (brushRenderBuffers.TryGetValue(brushNodeIndex, out var surfaceRenderBuffer))
+                    if (brushRenderBufferCache.TryGetValue(brushNodeIndex, out var surfaceRenderBuffer))
                     {
-                        brushRenderBuffers.Remove(brushNodeIndex);
+                        brushRenderBufferCache.Remove(brushNodeIndex);
                         if (surfaceRenderBuffer.IsCreated)
                             surfaceRenderBuffer.Dispose();
                     }
@@ -633,12 +633,12 @@ namespace Chisel.Core
                 // brushIndex
                 basePolygonCache            = new NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
                 brushTreeSpaceBoundCache    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
-                treeSpaceVerticesLookup = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
-                routingTableLookup      = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
-                brushTreeSpacePlanes    = new NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
-                brushesTouchedByBrushes = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
+                treeSpaceVerticesCache = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
+                routingTableCache      = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
+                brushTreeSpacePlaneCache    = new NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
+                brushesTouchedByBrushCache = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
                 transformationCache         = new NativeHashMap<int, NodeTransformations>(1000, Allocator.Persistent);
-                brushRenderBuffers      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushRenderBufferCache      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
             }
 
             internal void EnsureCapacity(int brushCount)
@@ -649,23 +649,23 @@ namespace Chisel.Core
                 if (brushTreeSpaceBoundCache.Capacity < brushCount)
                     brushTreeSpaceBoundCache.Capacity = brushCount;
 
-                if (treeSpaceVerticesLookup.Capacity < brushCount)
-                    treeSpaceVerticesLookup.Capacity = brushCount;
+                if (treeSpaceVerticesCache.Capacity < brushCount)
+                    treeSpaceVerticesCache.Capacity = brushCount;
 
-                if (routingTableLookup.Capacity < brushCount)
-                    routingTableLookup.Capacity = brushCount;
+                if (routingTableCache.Capacity < brushCount)
+                    routingTableCache.Capacity = brushCount;
 
-                if (brushTreeSpacePlanes.Capacity < brushCount)
-                    brushTreeSpacePlanes.Capacity = brushCount;
+                if (brushTreeSpacePlaneCache.Capacity < brushCount)
+                    brushTreeSpacePlaneCache.Capacity = brushCount;
 
-                if (brushesTouchedByBrushes.Capacity < brushCount)
-                    brushesTouchedByBrushes.Capacity = brushCount;
+                if (brushesTouchedByBrushCache.Capacity < brushCount)
+                    brushesTouchedByBrushCache.Capacity = brushCount;
 
                 if (transformationCache.Capacity < brushCount)
                     transformationCache.Capacity = brushCount;
 
-                if (brushRenderBuffers.Capacity < brushCount)
-                    brushRenderBuffers.Capacity = brushCount;
+                if (brushRenderBufferCache.Capacity < brushCount)
+                    brushRenderBufferCache.Capacity = brushCount;
             }
 
             internal void Dispose()
@@ -688,48 +688,48 @@ namespace Chisel.Core
                     brushTreeSpaceBoundCache.Clear();
                     brushTreeSpaceBoundCache.Dispose();
                 }
-                if (treeSpaceVerticesLookup.IsCreated)
+                if (treeSpaceVerticesCache.IsCreated)
                 {
-                    treeSpaceVerticesLookup.Clear();
-                    treeSpaceVerticesLookup.Dispose();
+                    treeSpaceVerticesCache.Clear();
+                    treeSpaceVerticesCache.Dispose();
                 }
-                if (routingTableLookup.IsCreated)
+                if (routingTableCache.IsCreated)
                 {
-                    using (var items = routingTableLookup.GetValueArray(Allocator.Temp))
+                    using (var items = routingTableCache.GetValueArray(Allocator.Temp))
                     {
                         foreach (var item in items)
                         {
                             if (item.IsCreated)
                                 item.Dispose();
                         }
-                        routingTableLookup.Clear();
-                        routingTableLookup.Dispose();
+                        routingTableCache.Clear();
+                        routingTableCache.Dispose();
                     }
                 }
-                if (brushTreeSpacePlanes.IsCreated)
+                if (brushTreeSpacePlaneCache.IsCreated)
                 {
-                    using (var items = brushTreeSpacePlanes.GetValueArray(Allocator.Temp))
+                    using (var items = brushTreeSpacePlaneCache.GetValueArray(Allocator.Temp))
                     {
                         foreach (var item in items)
                         {
                             if (item.IsCreated)
                                 item.Dispose();
                         }
-                        brushTreeSpacePlanes.Clear();
-                        brushTreeSpacePlanes.Dispose();
+                        brushTreeSpacePlaneCache.Clear();
+                        brushTreeSpacePlaneCache.Dispose();
                     }
                 }
-                if (brushesTouchedByBrushes.IsCreated)
+                if (brushesTouchedByBrushCache.IsCreated)
                 {
-                    using (var items = brushesTouchedByBrushes.GetValueArray(Allocator.Temp))
+                    using (var items = brushesTouchedByBrushCache.GetValueArray(Allocator.Temp))
                     {
                         foreach (var item in items)
                         {
                             if (item.IsCreated)
                                 item.Dispose();
                         }
-                        brushesTouchedByBrushes.Clear();
-                        brushesTouchedByBrushes.Dispose();
+                        brushesTouchedByBrushCache.Clear();
+                        brushesTouchedByBrushCache.Dispose();
                     }
                 }
                 if (transformationCache.IsCreated)
@@ -740,17 +740,17 @@ namespace Chisel.Core
                         transformationCache.Dispose();
                     }
                 }
-                if (brushRenderBuffers.IsCreated)
+                if (brushRenderBufferCache.IsCreated)
                 {
-                    using (var items = brushRenderBuffers.GetValueArray(Allocator.Temp))
+                    using (var items = brushRenderBufferCache.GetValueArray(Allocator.Temp))
                     {
                         foreach (var item in items)
                         {
                             if (item.IsCreated)
                                 item.Dispose();
                         }
-                        brushRenderBuffers.Clear();
-                        brushRenderBuffers.Dispose();
+                        brushRenderBufferCache.Clear();
+                        brushRenderBufferCache.Dispose();
                     }
                 }
                 if (compactTree.IsCreated)

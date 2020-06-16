@@ -17,7 +17,7 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>             brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                    brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>       treeSpaceVerticesLookup;
         [NoAlias, ReadOnly] public NativeArray<int>                                                         nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                                      nodeIndexToNodeOrderOffset;
@@ -564,10 +564,10 @@ namespace Chisel.Core
 
             // TODO: fill them with original brush vertices so that they're always snapped to these
             
-            var nodeOrder0 = nodeIndexToNodeOrder[brushNodeIndex0 - nodeIndexToNodeOrderOffset];
-            var nodeOrder1 = nodeIndexToNodeOrder[brushNodeIndex1 - nodeIndexToNodeOrderOffset];
+            var brushNodeOrder0 = nodeIndexToNodeOrder[brushNodeIndex0 - nodeIndexToNodeOrderOffset];
+            var brushNodeOrder1 = nodeIndexToNodeOrder[brushNodeIndex1 - nodeIndexToNodeOrderOffset];
 
-            if (nodeOrder0 < nodeOrder1)
+            if (brushNodeOrder0 < brushNodeOrder1)
             {
                 snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesLookup[brushNodeIndex0].Value.treeSpaceVertices);
                 snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesLookup[brushNodeIndex1].Value.treeSpaceVertices);
@@ -648,7 +648,7 @@ namespace Chisel.Core
 
             if (foundIndices0Length >= 3)
             {
-                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushNodeIndex0].Value;
+                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushNodeOrder0].Value;
                 GenerateLoop(brushIndexOrder0,
                              brushIndexOrder1,
                              ref intersection.brushes[0].surfaceInfos,
@@ -660,7 +660,7 @@ namespace Chisel.Core
 
             if (foundIndices1Length >= 3)
             {
-                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushNodeIndex1].Value;
+                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushNodeOrder1].Value;
                 GenerateLoop(brushIndexOrder1,
                              brushIndexOrder0,
                              ref intersection.brushes[1].surfaceInfos,
