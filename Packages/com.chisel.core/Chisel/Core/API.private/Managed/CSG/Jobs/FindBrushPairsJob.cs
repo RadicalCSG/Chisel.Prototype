@@ -55,7 +55,7 @@ namespace Chisel.Core
                     var intersection        = intersections[i];
                     int brushIndex1         = intersection.nodeIndex;
                     int brushOrder1         = nodeIndexToNodeOrder[brushIndex1 - nodeIndexToNodeOrderOffset];
-                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushIndex1 };
+                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushOrder1 };
 
                     var brushPair       = new BrushPair
                     {
