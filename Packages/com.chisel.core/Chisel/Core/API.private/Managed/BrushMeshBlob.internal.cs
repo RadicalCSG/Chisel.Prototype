@@ -49,6 +49,7 @@ namespace Chisel.Core
             return (localPlanes.Length == 0 || polygons.Length == 0 || localVertices.Length == 0 || halfEdges.Length == 0);
         }
 
+        // TODO: batch & jobify this somehow
         public unsafe static BlobAssetReference<BrushMeshBlob> Build(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
@@ -96,31 +97,6 @@ namespace Chisel.Core
             }
 
             builder.Construct(ref root.localPlanes, brushMesh.planes);
-
-            /*
-            var vertexIntersectionSegments = stackalloc int2[srcVertices.Length];
-            var vertexIntersectionPlanes = stackalloc ushort[srcVertices.Length * (srcPlanes.Length - 1)];
-            var vertexIntersectionPlaneCount = 0;
-            const float kPlaneDistanceEpsilon = CSGManagerPerformCSG.kPlaneDistanceEpsilon;
-
-            for (int i = 0; i < srcVertices.Length; i++)
-            {
-                vertexIntersectionSegments[i].x = vertexIntersectionPlaneCount;
-                for (int j = 0; j < srcPlanes.Length; j++)
-                {
-                    var distance = math.dot(srcPlanes[j], new float4(srcVertices[i], 1));
-                    if (distance >= -kPlaneDistanceEpsilon && distance <= kPlaneDistanceEpsilon) // Note: this is false on NaN/Infinity, so don't invert
-                    {
-                        vertexIntersectionPlanes[vertexIntersectionPlaneCount] = (ushort)j;
-                        vertexIntersectionPlaneCount++;
-                    }
-                }
-                vertexIntersectionSegments[i].y = vertexIntersectionPlaneCount - vertexIntersectionSegments[i].x;
-            }
-            builder.Construct(ref root.vertexIntersectionPlanes, vertexIntersectionPlanes, vertexIntersectionPlaneCount);
-            builder.Construct(ref root.vertexIntersectionSegments, vertexIntersectionSegments, srcVertices.Length);
-            */
-
             var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();
             return result;

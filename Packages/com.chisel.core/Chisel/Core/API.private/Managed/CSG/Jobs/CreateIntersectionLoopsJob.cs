@@ -18,7 +18,7 @@ namespace Chisel.Core
 
         // Read
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                    brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>       treeSpaceVerticesLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>              treeSpaceVerticesArray;
         [NoAlias, ReadOnly] public NativeArray<int>                                                         nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                                      nodeIndexToNodeOrderOffset;
         
@@ -569,12 +569,12 @@ namespace Chisel.Core
 
             if (brushNodeOrder0 < brushNodeOrder1)
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesLookup[brushNodeIndex0].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesLookup[brushNodeIndex1].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushNodeOrder0].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushNodeOrder1].Value.treeSpaceVertices);
             } else
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesLookup[brushNodeIndex1].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesLookup[brushNodeIndex0].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushNodeOrder1].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushNodeOrder0].Value.treeSpaceVertices);
             }
 
 

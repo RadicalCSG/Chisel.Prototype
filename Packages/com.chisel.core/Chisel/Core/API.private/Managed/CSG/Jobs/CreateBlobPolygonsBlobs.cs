@@ -59,14 +59,17 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVerticesJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                             nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
+        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+
+        // Read/Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
+        //[NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
@@ -120,7 +123,7 @@ namespace Chisel.Core
                 vertices[i] = hashedVertices.GetUniqueVertex(vertices[i]);
             }
 
-            treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);
+            //treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);
         }
     }
 
@@ -133,7 +136,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
         
         // Write
         [NativeDisableParallelForRestriction]
@@ -252,7 +255,7 @@ namespace Chisel.Core
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
             
             var mesh                    = brushMeshLookup[brushNodeOrder];
-            ref var treeSpaceVertices   = ref treeSpaceVerticesLookup[brushNodeIndex].Value.treeSpaceVertices;
+            ref var treeSpaceVertices   = ref treeSpaceVerticesArray[brushNodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
@@ -326,7 +329,7 @@ namespace Chisel.Core
 
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
-                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesLookup[intersectingNodeIndex].Value.treeSpaceVertices;
+                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
                 hashedVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
             }
 

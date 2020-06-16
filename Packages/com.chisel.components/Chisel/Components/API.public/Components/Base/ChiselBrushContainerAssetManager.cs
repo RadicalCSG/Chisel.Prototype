@@ -373,15 +373,23 @@ namespace Chisel.Components
                 {
                     if (!brushContainerAsset.HasInstances)
                     {
+                        Profiler.BeginSample("CreateInstances");
                         brushContainerAsset.CreateInstances();
+                        Profiler.EndSample();
                     } else
                     {
                         //UnregisterAllSurfaces(brushContainerAsset); // TODO: should we?
+                        Profiler.BeginSample("UpdateInstances");
                         brushContainerAsset.UpdateInstances();
+                        Profiler.EndSample();
                     }
 
+                    Profiler.BeginSample("RegisterAllSurfaces");
                     RegisterAllSurfaces(brushContainerAsset);
+                    Profiler.EndSample();
+                    Profiler.BeginSample("UpdateSurfaces");
                     UpdateSurfaces(brushContainerAsset);
+                    Profiler.EndSample();
                 }
                 catch (Exception ex)
                 {

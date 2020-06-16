@@ -130,8 +130,10 @@ namespace Chisel.Core
                 if (item.IsCreated)
                     item.Dispose();
             }
-            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
             Profiler.BeginSample("BrushMeshBlob.Build");
+            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
+            Profiler.EndSample();
+            Profiler.BeginSample("NotifyBrushMeshModified");
             CSGManager.NotifyBrushMeshModified(brushMeshInstanceID);
             Profiler.EndSample();
             return true;
