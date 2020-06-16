@@ -85,7 +85,7 @@ namespace Chisel.Core
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         [NoAlias, ReadOnly] public NativeArray<BrushPair>                                                uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>                 brushMeshBlobLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                        brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>           transformations;
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushPairIntersection>>.ParallelWriter intersectingBrushes;
 
@@ -227,12 +227,12 @@ namespace Chisel.Core
             var brushIndexOrder0    = brushPair.brushIndexOrder0;
             var brushIndexOrder1    = brushPair.brushIndexOrder1;
             int brushNodeIndex0     = brushIndexOrder0.nodeIndex;
+            int brushNodeOrder0     = brushIndexOrder0.nodeOrder;
             int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
+            int brushNodeOrder1     = brushIndexOrder1.nodeOrder;
 
-            if (!brushMeshBlobLookup.TryGetValue(brushNodeIndex0, out BlobAssetReference<BrushMeshBlob> blobMesh0) ||
-                !brushMeshBlobLookup.TryGetValue(brushNodeIndex1, out BlobAssetReference<BrushMeshBlob> blobMesh1))
-                //continue;
-                return;
+            var blobMesh0 = brushMeshLookup[brushNodeOrder0];
+            var blobMesh1 = brushMeshLookup[brushNodeOrder1];
 
 
             var type = brushPair.type;

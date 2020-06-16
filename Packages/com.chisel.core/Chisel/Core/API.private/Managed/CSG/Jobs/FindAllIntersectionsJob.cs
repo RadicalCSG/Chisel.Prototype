@@ -19,7 +19,7 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allTreeBrushIndexOrders;
 
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
         [NoAlias, ReadOnly] public NativeHashMap<int, MinMaxAABB>                               brushTreeSpaceBounds;
 
@@ -136,7 +136,7 @@ namespace Chisel.Core
                         int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                         if (brush0NodeOrder <= brush1NodeOrder)
                             continue;
-                        var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
+                        var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
                         StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                     }
                 }
@@ -156,7 +156,7 @@ namespace Chisel.Core
                     var brush1IndexOrder = updateBrushIndicesArray[index1];
                     int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                     int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
-                    var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
+                    var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
                     if (result == IntersectionType.NoIntersection)
                         continue;
                     found = true;
@@ -189,7 +189,7 @@ namespace Chisel.Core
                     int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                     if (brush0NodeOrder <= brush1NodeOrder)
                         continue;
-                    var result = FindIntersection(brush0NodeIndex, brush1NodeIndex);
+                    var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
                     StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                 }
             }
@@ -197,10 +197,10 @@ namespace Chisel.Core
 
         }
 
-        IntersectionType FindIntersection(int brush0NodeIndex, int brush1NodeIndex)
+        IntersectionType FindIntersection(int brush0NodeIndex, int brush0NodeOrder, int brush1NodeIndex, int brush1NodeOrder)
         {
-            var brushMesh0 = brushMeshLookup[brush0NodeIndex];
-            var brushMesh1 = brushMeshLookup[brush1NodeIndex];
+            var brushMesh0 = brushMeshLookup[brush0NodeOrder];
+            var brushMesh1 = brushMeshLookup[brush1NodeOrder];
             if (!brushMesh0.IsCreated || !brushMesh1.IsCreated)
                 return IntersectionType.NoIntersection;
 

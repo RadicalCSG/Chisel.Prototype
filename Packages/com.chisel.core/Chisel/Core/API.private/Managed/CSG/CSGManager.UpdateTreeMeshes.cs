@@ -38,7 +38,7 @@ namespace Chisel.Core
 
             // TODO: We store this per tree, and ensure brushes have ids from 0 to x per tree, then we can use an array here.
             //       Remap "local index" to "nodeindex" and back? How to make this efficiently work with caching stuff?
-            public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>                brushMeshLookup;
+            public NativeArray<BlobAssetReference<BrushMeshBlob>>                       brushMeshLookup;
             public NativeHashMap<int, BlobAssetReference<NodeTransformations>>          transformations;
             public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>             basePolygons;
             public NativeHashMap<int, MinMaxAABB>                                       brushTreeSpaceBounds;
@@ -130,29 +130,22 @@ namespace Chisel.Core
                 var treeBrushes = treeInfo.treeBrushes;
                 if (treeBrushes.Count == 0)
                     continue;
-                
-                var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeIndex];
-                var chiselMeshValues    = ChiselMeshLookup.Value;
 
-                chiselLookupValues.EnsureCapacity(treeBrushes.Count);
 
-                ref var brushMeshBlobs          = ref chiselMeshValues.brushMeshBlobs;
-                ref var transformations         = ref chiselLookupValues.transformations;
-                ref var basePolygons            = ref chiselLookupValues.basePolygons;
-                ref var brushTreeSpaceBounds    = ref chiselLookupValues.brushTreeSpaceBounds;
-                ref var treeSpaceVerticesLookup = ref chiselLookupValues.treeSpaceVerticesLookup;
-                ref var brushesTouchedByBrushes = ref chiselLookupValues.brushesTouchedByBrushes;
+                var chiselMeshValues = ChiselMeshLookup.Value;
+                ref var brushMeshBlobs = ref chiselMeshValues.brushMeshBlobs;
 
                 // Removes all brushes that have MeshID == 0 from treeBrushesArray
                 var allTreeBrushIndexOrdersList     = new List<IndexOrder>();
+                var brushMeshList                   = new List<BlobAssetReference<BrushMeshBlob>>();
                 var rebuildTreeBrushIndexOrdersList = new List<IndexOrder>();
                 var transformTreeBrushIndicesList   = new List<int>();
                 var nodeIndexMin = int.MaxValue;
                 var nodeIndexMax = 0;
-                for (int brushNodeOrder = 0; brushNodeOrder < treeBrushes.Count; brushNodeOrder++)
+                for (int brushNodeOrder = 0, i = 0; i < treeBrushes.Count; i++)
                 {
-                    int brushNodeID = treeBrushes[brushNodeOrder];
-                    // TODO: Ensure this list is correct on removal of brush from hierarchy
+                    // TODO: Make sure that when we remove brushes from the hierarchy, it's guaranteed to be removed from treeBrushes as well
+                    int brushNodeID = treeBrushes[i];
                     if (!IsValidNodeID(brushNodeID))
                         continue;
 
@@ -164,6 +157,10 @@ namespace Chisel.Core
                     // We need the index into the tree to ensure deterministic ordering
                     var brushIndexOrder = new IndexOrder { nodeIndex = brushNodeIndex, nodeOrder = brushNodeOrder };
                     allTreeBrushIndexOrdersList.Add(brushIndexOrder);
+                    brushNodeOrder++;
+
+                    var brushMeshIndex = brushMeshID - 1;
+                    brushMeshList.Add(brushMeshBlobs[brushMeshIndex]);
 
                     nodeIndexMin = math.min(nodeIndexMin, brushNodeIndex);
                     nodeIndexMax = math.max(nodeIndexMax, brushNodeIndex);
@@ -174,6 +171,18 @@ namespace Chisel.Core
 
                     rebuildTreeBrushIndexOrdersList.Add(brushIndexOrder);
                 }
+
+
+                
+                var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeIndex];
+
+                chiselLookupValues.EnsureCapacity(allTreeBrushIndexOrdersList.Count);
+
+                ref var transformations         = ref chiselLookupValues.transformations;
+                ref var basePolygons            = ref chiselLookupValues.basePolygons;
+                ref var brushTreeSpaceBounds    = ref chiselLookupValues.brushTreeSpaceBounds;
+                ref var treeSpaceVerticesLookup = ref chiselLookupValues.treeSpaceVerticesLookup;
+                ref var brushesTouchedByBrushes = ref chiselLookupValues.brushesTouchedByBrushes;
 
                 // TODO: store nodes separately & sequentially per tree
                 var nodeIndexToNodeOrderOffset  = nodeIndexMin;
@@ -288,10 +297,10 @@ namespace Chisel.Core
                 var allTreeBrushIndexOrders     = allTreeBrushIndexOrdersList.ToNativeArray(Allocator.TempJob);
                 var nodeIndexToNodeOrder        = nodeIndexToNodeOrderArray.ToNativeArray(Allocator.TempJob);
                 var rebuildTreeBrushIndexOrders = rebuildTreeBrushIndexOrdersList.ToNativeList(Allocator.TempJob);
-                var brushMeshLookup             = new NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>(allTreeBrushIndexOrders.Length, Allocator.TempJob);
+                var brushMeshLookup             = brushMeshList.ToNativeArray(Allocator.TempJob); //new NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>(allTreeBrushIndexOrders.Length, Allocator.TempJob);
                 Profiler.EndSample();
 
-
+                /*
                 // NOTE: needs to contain ALL brushes in tree, EVEN IF THEY ARE NOT UPDATED!
                 Profiler.BeginSample("Tag_BuildBrushMeshLookup");
                 {
@@ -299,23 +308,10 @@ namespace Chisel.Core
                     {
                         var brushIndexOrder = allTreeBrushIndexOrders[i];
                         int brushNodeIndex  = brushIndexOrder.nodeIndex;
-                        var brushMeshIndex  = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo.brushMeshInstanceID - 1;
-                        brushMeshLookup[brushNodeIndex] = brushMeshBlobs[brushMeshIndex];
-                    }
-
-                    // TODO: make this more efficient, adding some meshes twice
-                    if (rebuildTreeBrushIndexOrders.Length != allTreeBrushIndexOrders.Length)
-                    {
-                        for (int i = 0; i < rebuildTreeBrushIndexOrders.Length; i++)
-                        {
-                            var brushIndexOrder = rebuildTreeBrushIndexOrders[i];
-                            int brushNodeIndex  = brushIndexOrder.nodeIndex;
-                            var brushMeshIndex  = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo.brushMeshInstanceID - 1;
-                            brushMeshLookup[brushNodeIndex] = brushMeshBlobs[brushMeshIndex];
-                        }
+                        brushMeshLookup[brushNodeIndex] = brushMeshList[i];
                     }
                 }
-                Profiler.EndSample();
+                Profiler.EndSample();*/
 
                 Profiler.BeginSample("Tag_DirtyAllOutlines");
                 {
@@ -437,10 +433,10 @@ namespace Chisel.Core
             var treeSorter = new TreeSorter();
             Array.Sort(treeUpdates, treeSorter);
 
-            Profiler.BeginSample("Tag_Jobified");
+            Profiler.BeginSample("CSG_Jobs");
 
             // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-            Profiler.BeginSample("Tag_GenerateBoundsLoops");
+            Profiler.BeginSample("Job_GenerateBoundsLoops");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -465,7 +461,7 @@ namespace Chisel.Core
             finally { Profiler.EndSample(); }
 
             // TODO: only change when brush or any touching brush has been added/removed or changes operation/order
-            Profiler.BeginSample("Tag_FindIntersectingBrushes");
+            Profiler.BeginSample("Job_FindIntersectingBrushes");
             try
             {
                 // TODO: optimize, use hashed grid
@@ -515,7 +511,7 @@ namespace Chisel.Core
             } finally { Profiler.EndSample(); }
 
             // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-            Profiler.BeginSample("Tag_MergeTouchingBrushVerticesJob");
+            Profiler.BeginSample("Job_MergeTouchingBrushVerticesJob");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -541,7 +537,7 @@ namespace Chisel.Core
             finally { Profiler.EndSample(); }
 
             // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-            Profiler.BeginSample("Tag_GenerateBasePolygonLoops");
+            Profiler.BeginSample("Job_GenerateBasePolygonLoops");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -568,7 +564,7 @@ namespace Chisel.Core
             finally { Profiler.EndSample(); }
 
             // TODO: should only do this at creation time + when moved / store with brush component itself
-            Profiler.BeginSample("Tag_UpdateBrushTreeSpacePlanes");
+            Profiler.BeginSample("Job_UpdateBrushTreeSpacePlanes");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -592,7 +588,7 @@ namespace Chisel.Core
             finally { Profiler.EndSample(); }
 
             // TODO: only update when brush or any touching brush has been added/removed or changes operation/order
-            Profiler.BeginSample("Tag_UpdateBrushCategorizationTables");
+            Profiler.BeginSample("Job_UpdateBrushCategorizationTables");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -616,7 +612,7 @@ namespace Chisel.Core
             } finally { Profiler.EndSample(); }
                                 
             // Create unique loops between brush intersections
-            Profiler.BeginSample("Tag_FindAllIntersectionLoops");
+            Profiler.BeginSample("Job_FindAllIntersectionLoops");
             try
             {
                 // TODO: merge this with another job, there's not enough work 
@@ -647,7 +643,7 @@ namespace Chisel.Core
                     {
                         // Read
                         uniqueBrushPairs        = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
-                        brushMeshBlobLookup     = treeUpdate.brushMeshLookup,
+                        brushMeshLookup         = treeUpdate.brushMeshLookup,
                         transformations         = treeUpdate.transformations,
 
                         // Write
@@ -681,7 +677,7 @@ namespace Chisel.Core
                 }
             } finally { Profiler.EndSample(); }
 
-            Profiler.BeginSample("Tag_FindLoopOverlapIntersections");
+            Profiler.BeginSample("Job_FindLoopOverlapIntersections");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -706,7 +702,7 @@ namespace Chisel.Core
                 }
             } finally { Profiler.EndSample(); }
 
-            Profiler.BeginSample("Tag_PerformCSGJob");
+            Profiler.BeginSample("Job_PerformCSGJob");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -734,7 +730,7 @@ namespace Chisel.Core
                 }
             } finally { Profiler.EndSample(); }
 
-            Profiler.BeginSample("Tag_GenerateSurfaceTrianglesJob");
+            Profiler.BeginSample("Job_GenerateSurfaceTrianglesJob");
             try
             {
                 for (int t = 0; t < treeUpdateLength; t++)
@@ -758,6 +754,7 @@ namespace Chisel.Core
                         Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 64, dependencies);
                 }
             } finally { Profiler.EndSample(); }
+
 
             // Reset the flags before the dispose of these containers are scheduled
             for (int t = 0; t < treeUpdateLength; t++)

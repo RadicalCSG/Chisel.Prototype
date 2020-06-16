@@ -16,7 +16,7 @@ namespace Chisel.Core
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * sizeof(T));
         }
 
-        public unsafe static NativeArray<T> ToNativeArray<T>(this List<T> list, Allocator allocator) where T : unmanaged
+        public unsafe static NativeArray<T> ToNativeArray<T>(this List<T> list, Allocator allocator) where T : struct
         {
             var nativeList = new NativeArray<T>(list.Count, allocator);
             for (int i = 0; i < list.Count; i++)

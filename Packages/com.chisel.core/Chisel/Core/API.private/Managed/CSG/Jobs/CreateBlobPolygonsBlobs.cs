@@ -20,7 +20,7 @@ namespace Chisel.Core
     {
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<NodeTransformations>>  transformations;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>        brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, MinMaxAABB>.ParallelWriter               brushTreeSpaceBounds;
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
@@ -29,9 +29,10 @@ namespace Chisel.Core
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
+            int brushNodeOrder  = brushIndexOrder.nodeOrder;
             var transform       = transformations[brushNodeIndex];
 
-            var mesh                    = brushMeshLookup[brushNodeIndex];
+            var mesh                    = brushMeshLookup[brushNodeOrder];
             ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.Value.nodeToTree;
 
@@ -125,7 +126,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<int>                                              nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                                           nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>         brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                brushMeshLookup;
         [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesLookup;
 
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>.ParallelWriter basePolygons;
@@ -240,8 +241,9 @@ namespace Chisel.Core
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeIndex  = brushIndexOrder.nodeIndex;
+            int brushNodeOrder  = brushIndexOrder.nodeOrder;
             
-            var mesh                    = brushMeshLookup[brushNodeIndex];
+            var mesh                    = brushMeshLookup[brushNodeOrder];
             ref var treeSpaceVertices   = ref treeSpaceVerticesLookup[brushNodeIndex].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
