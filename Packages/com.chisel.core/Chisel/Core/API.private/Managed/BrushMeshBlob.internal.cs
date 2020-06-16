@@ -57,8 +57,7 @@ namespace Chisel.Core
                 brushMesh.halfEdges.Length < 12)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-
-            var srcVertices = brushMesh.vertices;
+            ref var srcVertices = ref brushMesh.vertices;
             //var srcPlanes = brushMesh.planes;
             
             var totalPolygonSize        = 16 + (brushMesh.polygons.Length * UnsafeUtility.SizeOf<Polygon>());
@@ -68,10 +67,20 @@ namespace Chisel.Core
             var totalVertexSize         = 16 + (srcVertices.Length * UnsafeUtility.SizeOf<float3>());
             var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
 
+            float3 min = srcVertices[0];
+            float3 max = srcVertices[0];
+            for (int i = 1; i < srcVertices.Length; i++)
+            {
+                min = math.min(min, srcVertices[i]);
+                max = math.max(max, srcVertices[i]);
+            }
+            var center = ((max + min) * 0.5f);
+            var size   = (max - min);
+            var localBounds = new Bounds(center, size);
 
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-            root.localBounds = brushMesh.localBounds;
+            root.localBounds = localBounds;
             builder.Construct(ref root.localVertices, srcVertices);
             builder.Construct(ref root.halfEdges, brushMesh.halfEdges);
             builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
