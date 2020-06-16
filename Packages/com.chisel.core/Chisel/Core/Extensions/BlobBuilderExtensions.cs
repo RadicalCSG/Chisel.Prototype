@@ -33,6 +33,22 @@ namespace Chisel.Core
             return blobBuilderArray;
         }
 
+        public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, List<T> data, int length) where T : unmanaged
+        {
+            var blobBuilderArray = builder.Allocate(ref blobArray, length);
+            for (int i = 0; i < length; i++)
+                blobBuilderArray[i] = data[i];
+            return blobBuilderArray;
+        }
+
+        public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, T[] data, int length) where T : unmanaged
+        {
+            var blobBuilderArray = builder.Allocate(ref blobArray, length);
+            for (int i = 0; i < length; i++)
+                blobBuilderArray[i] = data[i];
+            return blobBuilderArray;
+        }
+
         public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, NativeArray<T> data, int length) where T : unmanaged
         {
             length = math.max(length, 0);

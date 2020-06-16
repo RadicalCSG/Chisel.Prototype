@@ -146,6 +146,13 @@ namespace Chisel.Core
             public int index;
         }
 
+
+        static readonly List<BottomUpNodeIndex>             s_BottomUpNodeIndices   = new List<BottomUpNodeIndex>();
+        static readonly List<int>                           s_BottomUpNodes         = new List<int>();
+        static readonly Queue<CompactTopDownBuilderNode>    s_NodeQueue             = new Queue<CompactTopDownBuilderNode>();
+        static readonly List<CompactTopDownNode>            s_TopDownNodes          = new List<CompactTopDownNode>();
+        static int[]    s_BrushIndexToBottomUpIndex;
+
         internal static BlobAssetReference<CompactTree> Create(List<CSGManager.NodeHierarchy> nodeHierarchies, int treeNodeIndex)
         {
             var treeInfo            = nodeHierarchies[treeNodeIndex].treeInfo;
@@ -154,8 +161,8 @@ namespace Chisel.Core
             if (treeBrushes.Count == 0)
                 return BlobAssetReference<CompactTree>.Null;
 
-            var bottomUpNodeIndices = new List<BottomUpNodeIndex>();
-            var bottomUpNodes       = new List<int>();
+            s_BottomUpNodeIndices.Clear();
+            s_BottomUpNodes.Clear();
             
             var minBrushIndex       = nodeHierarchies.Count;
             var maxBrushIndex       = 0;
@@ -172,7 +179,11 @@ namespace Chisel.Core
                 minBrushIndex = math.min(brush.NodeID - 1, minBrushIndex);
                 maxBrushIndex = math.max(brush.NodeID - 1, maxBrushIndex);
             }
-            var brushIndexToBottomUpIndex = new int[(maxBrushIndex + 1) - minBrushIndex];
+
+            var desiredBrushIndexToBottomUpLength = (maxBrushIndex + 1) - minBrushIndex;
+            if (s_BrushIndexToBottomUpIndex == null ||
+                s_BrushIndexToBottomUpIndex.Length < desiredBrushIndexToBottomUpLength)
+                s_BrushIndexToBottomUpIndex = new int[desiredBrushIndexToBottomUpLength];
 
             // Bottom-up -> per brush list of all ancestors to root
             for (int b = 0; b < treeBrushes.Count; b++)
@@ -185,52 +196,52 @@ namespace Chisel.Core
                 if (!brush.Valid)
                     continue;
 
-                var parentStart = bottomUpNodes.Count;
+                var parentStart = s_BottomUpNodes.Count;
 
                 var parent      = brush.Parent;
                 var treeNodeID  = treeNodeIndex + 1;
                 while (parent.Valid && parent.NodeID != treeNodeID)
                 {
                     var parentIndex = parent.NodeID - 1;
-                    bottomUpNodes.Add(parentIndex);
+                    s_BottomUpNodes.Add(parentIndex);
                     parent = parent.Parent;
                 }
 
                 var brushNodeIndex  = brushNodeID - 1;
-                brushIndexToBottomUpIndex[brushNodeIndex - minBrushIndex] = bottomUpNodeIndices.Count;
-                bottomUpNodeIndices.Add(new BottomUpNodeIndex()
+                s_BrushIndexToBottomUpIndex[brushNodeIndex - minBrushIndex] = s_BottomUpNodeIndices.Count;
+                s_BottomUpNodeIndices.Add(new BottomUpNodeIndex()
                 {
                     nodeIndex  = brushNodeIndex,
-                    bottomUpEnd     = bottomUpNodes.Count,
+                    bottomUpEnd     = s_BottomUpNodes.Count,
                     bottomUpStart   = parentStart
                 });
             }
 
-            if (bottomUpNodeIndices.Count == 0)
+            if (s_BottomUpNodeIndices.Count == 0)
                 return BlobAssetReference<CompactTree>.Null;
 
             // Top-down
-            var nodeQueue       = new Queue<CompactTopDownBuilderNode>();
-            var topDownNodes    = new List<CompactTopDownNode>(); // TODO: set capacity to number of nodes in tree
+            s_NodeQueue.Clear();
+            s_TopDownNodes.Clear(); // TODO: set capacity to number of nodes in tree
 
-            nodeQueue.Enqueue(new CompactTopDownBuilderNode() { node = new CSGTreeNode() { nodeID =  treeNodeIndex + 1 }, index = 0 });
-            topDownNodes.Add(new CompactTopDownNode()
+            s_NodeQueue.Enqueue(new CompactTopDownBuilderNode() { node = new CSGTreeNode() { nodeID =  treeNodeIndex + 1 }, index = 0 });
+            s_TopDownNodes.Add(new CompactTopDownNode()
             {
                 Type        = CSGNodeType.Tree,
                 Operation   = CSGOperationType.Additive,
                 nodeIndex   = treeNodeIndex,
             });
 
-            while (nodeQueue.Count > 0)
+            while (s_NodeQueue.Count > 0)
             {
-                var parent      = nodeQueue.Dequeue();
+                var parent      = s_NodeQueue.Dequeue();
                 var nodeCount   = parent.node.Count;
                 if (nodeCount == 0)
                 {
-                    var item = topDownNodes[parent.index];
+                    var item = s_TopDownNodes[parent.index];
                     item.childOffset = -1;
                     item.childCount = 0;
-                    topDownNodes[parent.index] = item;
+                    s_TopDownNodes[parent.index] = item;
                     continue;
                 }
 
@@ -242,7 +253,7 @@ namespace Chisel.Core
                     // NOP
                     ;
 
-                var firstChildIndex = topDownNodes.Count;
+                var firstChildIndex = s_TopDownNodes.Count;
                 for (int i = firstIndex; i < nodeCount; i++)
                 {
                     var child = parent.node[i];
@@ -252,12 +263,12 @@ namespace Chisel.Core
 
                     var childType = child.Type;
                     if (childType != CSGNodeType.Brush)
-                        nodeQueue.Enqueue(new CompactTopDownBuilderNode()
+                        s_NodeQueue.Enqueue(new CompactTopDownBuilderNode()
                         {
                             node = child,
-                            index = topDownNodes.Count
+                            index = s_TopDownNodes.Count
                         });
-                    topDownNodes.Add(new CompactTopDownNode()
+                    s_TopDownNodes.Add(new CompactTopDownNode()
                     {
                         Type        = childType,
                         Operation   = child.Operation,
@@ -266,20 +277,20 @@ namespace Chisel.Core
                 }
 
                 {
-                    var item = topDownNodes[parent.index];
+                    var item = s_TopDownNodes[parent.index];
                     item.childOffset = firstChildIndex;
-                    item.childCount = topDownNodes.Count - firstChildIndex;
-                    topDownNodes[parent.index] = item;
+                    item.childCount = s_TopDownNodes.Count - firstChildIndex;
+                    s_TopDownNodes[parent.index] = item;
                 }
             }
 
             var builder = new BlobBuilder(Allocator.Temp);
             ref var root = ref builder.ConstructRoot<CompactTree>();
-            builder.Construct(ref root.topDownNodes, topDownNodes);
-            builder.Construct(ref root.bottomUpNodeIndices, bottomUpNodeIndices);
-            builder.Construct(ref root.bottomUpNodes, bottomUpNodes);
+            builder.Construct(ref root.topDownNodes, s_TopDownNodes);
+            builder.Construct(ref root.bottomUpNodeIndices, s_BottomUpNodeIndices);
+            builder.Construct(ref root.bottomUpNodes, s_BottomUpNodes);
             root.indexOffset = minBrushIndex;
-            builder.Construct(ref root.brushIndexToBottomUpIndex, brushIndexToBottomUpIndex);
+            builder.Construct(ref root.brushIndexToBottomUpIndex, s_BrushIndexToBottomUpIndex, desiredBrushIndexToBottomUpLength);
             var compactTree = builder.CreateBlobAssetReference<CompactTree>(Allocator.Persistent);
             builder.Dispose();
 
@@ -626,10 +637,10 @@ namespace Chisel.Core
                 // brushIndex
                 basePolygonCache            = new NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
                 brushTreeSpaceBoundCache    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
-                treeSpaceVerticesCache = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
-                routingTableCache      = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
+                treeSpaceVerticesCache      = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
+                routingTableCache           = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
                 brushTreeSpacePlaneCache    = new NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
-                brushesTouchedByBrushCache = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
+                brushesTouchedByBrushCache  = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
                 transformationCache         = new NativeHashMap<int, NodeTransformations>(1000, Allocator.Persistent);
                 brushRenderBufferCache      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
             }

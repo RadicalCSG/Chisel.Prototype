@@ -53,10 +53,12 @@ namespace Chisel.Components
 
         }
 
+
+        static readonly HashSet<ChiselBrushContainerAsset> s_UsedContainers = new HashSet<ChiselBrushContainerAsset>();
         public static void Reset()
         {
             Clear();
-            var usedContainers  = new HashSet<ChiselBrushContainerAsset>();
+            s_UsedContainers.Clear();
             var chiselNodes     = Resources.FindObjectsOfTypeAll<ChiselNode>();
             foreach (var chiselNode in chiselNodes)
             {
@@ -64,12 +66,12 @@ namespace Chisel.Components
                 if (usedAssets == null)
                     continue;
                 foreach(var asset in usedAssets)
-                    usedContainers.Add(asset);
+                    s_UsedContainers.Add(asset);
             }
             var brushContainerAssets = Resources.FindObjectsOfTypeAll<ChiselBrushContainerAsset>();
             foreach (var brushContainerAsset in brushContainerAssets)
             {
-                if (!usedContainers.Contains(brushContainerAsset))
+                if (!s_UsedContainers.Contains(brushContainerAsset))
                 {
 #if UNITY_EDITOR
                     var path = UnityEditor.AssetDatabase.GetAssetPath(brushContainerAsset);

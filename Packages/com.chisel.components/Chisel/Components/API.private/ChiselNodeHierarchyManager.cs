@@ -29,7 +29,7 @@ namespace Chisel.Components
 { 
     public static class ChiselNodeHierarchyManager
     {
-        public static readonly Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies            = new Dictionary<Scene, ChiselSceneHierarchy>();
+        public static readonly Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies         = new Dictionary<Scene, ChiselSceneHierarchy>();
 
         static readonly HashSet<ChiselNode>                         registeredNodes             = new HashSet<ChiselNode>();
         static readonly Dictionary<int, ChiselNode>                 instanceIDToNodeLookup      = new Dictionary<int, ChiselNode>();
@@ -56,8 +56,8 @@ namespace Chisel.Components
         static readonly HashSet<CSGTreeNode>                        destroyNodesList            = new HashSet<CSGTreeNode>();
 
         static readonly Dictionary<ChiselNode, ChiselHierarchyItem> addToHierarchyLookup        = new Dictionary<ChiselNode, ChiselHierarchyItem>();
-        static readonly List<ChiselHierarchyItem>                   addToHierarchyQueue         = new List<ChiselHierarchyItem>();
-        static readonly List<ChiselHierarchyItem>                   deferAddToHierarchyQueue    = new List<ChiselHierarchyItem>();
+        static readonly List<ChiselHierarchyItem>                   addToHierarchyQueue         = new List<ChiselHierarchyItem>(5000);
+        static readonly List<ChiselHierarchyItem>                   deferAddToHierarchyQueue    = new List<ChiselHierarchyItem>(5000);
 
         static readonly HashSet<ChiselNode>                         rebuildTreeNodes            = new HashSet<ChiselNode>();
 
@@ -102,9 +102,15 @@ namespace Chisel.Components
             double endTime, startTime;
 
             startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("Reset");
+            Profiler.BeginSample("CSGManager.Clear");
             CSGManager.Clear();
+            Profiler.EndSample();
+            
+            Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
             ChiselBrushContainerAssetManager.Reset();
+            Profiler.EndSample();
+
+            Profiler.BeginSample("ChiselBrushMaterialManager.Reset");
             ChiselBrushMaterialManager.Reset();
             Profiler.EndSample();
             endTime = Time.realtimeSinceStartup;
@@ -785,7 +791,7 @@ namespace Chisel.Components
 
         static readonly HashSet<ChiselNode>	__registerNodes			= new HashSet<ChiselNode>();	// static to avoid allocations
         static readonly HashSet<ChiselNode>	__unregisterNodes		= new HashSet<ChiselNode>();	// static to avoid allocations
-        static readonly List<CSGTreeNode>	__childNodes			= new List<CSGTreeNode>();  // static to avoid allocations
+        static readonly List<CSGTreeNode>	__childNodes			= new List<CSGTreeNode>(5000);  // static to avoid allocations
 
         internal static bool prevPlaying = false;
         internal static bool UpdateTrampoline()
