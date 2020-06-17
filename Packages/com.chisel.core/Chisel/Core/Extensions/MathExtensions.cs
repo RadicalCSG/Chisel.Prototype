@@ -377,5 +377,27 @@ namespace Chisel.Core
                 output.Normalize();
             }
         }
+
+        public static double3 ProjectPointPlane(double3 point, double4 plane)
+        {
+            var px = point.x;
+            var py = point.y;
+            var pz = point.z;
+
+            var nx = plane.x;
+            var ny = plane.y;
+            var nz = plane.z;
+
+            var ax = (px + (nx * plane.w)) * nx;
+            var ay = (py + (ny * plane.w)) * ny;
+            var az = (pz + (nz * plane.w)) * nz;
+            var dot = ax + ay + az;
+
+            var rx = px - (dot * nx);
+            var ry = py - (dot * ny);
+            var rz = pz - (dot * nz);
+
+            return new double3(rx, ry, rz);
+        }
     }
 }

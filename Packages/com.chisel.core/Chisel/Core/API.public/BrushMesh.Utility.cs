@@ -36,10 +36,10 @@ namespace Chisel.Core
             // NOTE: doesn't work well for self-intersecting polygons
             var lastEdge	= polygon.firstEdge + polygon.edgeCount;
             var normal		= double3.zero;
-            var prevVertex	= vertices[halfEdges[lastEdge - 1].vertexIndex];
+            var prevVertex	= (double3)vertices[halfEdges[lastEdge - 1].vertexIndex];
             for (int n = polygon.firstEdge; n < lastEdge; n++)
             {
-                var currVertex = vertices[halfEdges[n].vertexIndex];
+                var currVertex = (double3)vertices[halfEdges[n].vertexIndex];
                 normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
                 normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
                 normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
@@ -178,7 +178,9 @@ namespace Chisel.Core
                     if (p < newLength)
                     {
                         for (int p2 = p + 1; p2 < polygons.Length; p2++)
+                        {
                             polygons[p2 - 1] = polygons[p2];
+                        }
                     }
                     Array.Resize(ref polygons, newLength);
                     continue;
@@ -1096,6 +1098,7 @@ namespace Chisel.Core
                 var polygonIndex2 = polygonIndex1 + 1;
                 var newPolygons = new Polygon[polygons.Length + 2];
                 Array.Copy(polygons, newPolygons, polygons.Length);
+
                 newPolygons[polygonIndex1].firstEdge        = polygonStart1;
                 newPolygons[polygonIndex1].edgeCount        = newEdgeCount;
                 newPolygons[polygonIndex1].surface          = chiselSurface;
@@ -1110,7 +1113,6 @@ namespace Chisel.Core
                 halfEdges = newHalfEdges;
 
                 UpdateHalfEdgePolygonIndices();
-                CalculatePlanes();
 
                 testPolygons.Add(polygonIndex1);
             }
