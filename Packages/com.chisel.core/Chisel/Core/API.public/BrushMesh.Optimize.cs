@@ -23,28 +23,6 @@ namespace Chisel.Core
             return false;
         }
 
-        static float3 ProjectPointPlane(float3 point, float4 plane)
-        {
-            float px = point.x;
-            float py = point.y;
-            float pz = point.z;
-
-            float nx = plane.x;
-            float ny = plane.y;
-            float nz = plane.z;
-
-            float ax = (px + (nx * plane.w)) * nx;
-            float ay = (py + (ny * plane.w)) * ny;
-            float az = (pz + (nz * plane.w)) * nz;
-            float dot = ax + ay + az;
-
-            float rx = px - (dot * nx);
-            float ry = py - (dot * ny);
-            float rz = pz - (dot * nz);
-
-            return new float3(rx, ry, rz);
-        }
-
         public Vector3 CenterAndSnapPlanes()
         {
             for (int p = 0; p < polygons.Length; p++)
@@ -55,20 +33,41 @@ namespace Chisel.Core
                 for (int e = edgeFirst; e < edgeLast; e++)
                 {
                     var vertexIndex = halfEdges[e].vertexIndex;
-                    vertices[vertexIndex] = ProjectPointPlane(vertices[vertexIndex], plane);
+                    vertices[vertexIndex] = (float3)MathExtensions.ProjectPointPlane(vertices[vertexIndex], plane);
                 }
             }
 
-            double3 dmin = (double3)vertices[0];
-            double3 dmax = (double3)vertices[0];
+            var dmin = (double3)vertices[0];
+            var dmax = dmin;
             for (int i = 1; i < vertices.Length; i++)
             {
                 dmin = math.min(dmin, vertices[i]);
                 dmax = math.max(dmax, vertices[i]);
             }
+
             var center = (float3)((dmin + dmax) * 0.5);
             for (int i = 0; i < vertices.Length; i++)
                 vertices[i] -= center;
+
+            var translate = float4x4.Translate(center);
+            for (int i = 0; i < polygons.Length; i++)
+            {
+                var surface = polygons[i].surface;
+
+                var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(planes[i]);
+                var originalUVMatrix        = surface.surfaceDescription.UV0.ToFloat4x4();
+
+                planes[i].w += math.dot(planes[i].xyz, center);
+                
+                var translatedPlaneSpaceToLocalSpace    = math.inverse(MathExtensions.GenerateLocalToPlaneSpaceMatrix(planes[i]));
+                var newUVMatrix = math.mul(math.mul(math.mul(
+                                            originalUVMatrix, 
+                                            localSpaceToPlaneSpace), 
+                                            translate),
+                                            translatedPlaneSpaceToLocalSpace);
+                
+                surface.surfaceDescription.UV0 = new UVMatrix(newUVMatrix);
+            }
             return center;
         }
 
@@ -862,7 +861,7 @@ namespace Chisel.Core
                     this.vertices               = orgVertices;
                     this.halfEdges              = orgHalfEdges;
                     this.halfEdgePolygonIndices = orgHalfEdgePolygonIndices;
-                    this.planes               = orgPlanes;
+                    this.planes                 = orgPlanes;
 
                     this.CalculatePlanes();
                     continue;
