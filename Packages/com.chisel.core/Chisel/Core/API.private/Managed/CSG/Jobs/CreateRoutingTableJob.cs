@@ -23,6 +23,15 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeArray<byte>             combineUsedIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>              combineIndexRemap;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>               routingSteps;
+        [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>    routingLookups;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>              nodes;
+        [NativeDisableContainerSafetyRestriction] NativeList<CategoryStackNode> routingTable;
+        
+
         const int MaxRoutesPerNode = 32; // TODO: figure out the actual possible maximum
 
         public void Execute(int index)
@@ -41,7 +50,13 @@ namespace Chisel.Core
             
             var maxNodes        = compactTree.Value.topDownNodes.Length;
             var maxRoutes       = maxNodes * MaxRoutesPerNode;
-            var routingTable    = new NativeList<CategoryStackNode>(maxRoutes, Allocator.Temp);
+
+            if (!routingTable.IsCreated || routingTable.Length < maxRoutes)
+            {
+                if (routingTable.IsCreated) routingTable.Dispose();
+                routingTable = new NativeList<CategoryStackNode>(maxRoutes, Allocator.Temp);
+            }
+
             {
 #if SHOW_DEBUG_MESSAGES
                 Debug.Log($"nodeIndex: {processedNodeIndex}");
@@ -71,8 +86,18 @@ namespace Chisel.Core
                 var inputs      = builder.Allocate(ref root.inputs,           routingTable.Length);
                 var routingRows = builder.Allocate(ref root.routingRows,      routingTable.Length);
 
-                var routingLookups  = stackalloc RoutingLookup[maxNodes];
-                var nodes           = stackalloc int[maxNodes];
+                if (!routingLookups.IsCreated || routingLookups.Length < maxNodes)
+                {
+                    if (routingLookups.IsCreated) routingLookups.Dispose();
+                    routingLookups = new NativeArray<RoutingLookup>(maxNodes, Allocator.Temp);
+                }
+
+                if (!nodes.IsCreated || nodes.Length < maxNodes)
+                {
+                    if (nodes.IsCreated) nodes.Dispose();
+                    nodes = new NativeArray<int>(maxNodes, Allocator.Temp);
+                }
+
                 {
                     // TODO: clean up
                     int nodeCounter = 0;
@@ -103,7 +128,6 @@ namespace Chisel.Core
                 }
                 builder.Dispose();
             }
-            routingTable.Dispose();
         }
 
         [BurstDiscard]
@@ -150,8 +174,6 @@ namespace Chisel.Core
             if (intersectionType == IntersectionType.NoIntersection)
                 return;
 
-
-            // TODO: use other intersection types
             if (intersectionType == IntersectionType.AInsideB) { output.AddNoResize(new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.inside }); return; }
             if (intersectionType == IntersectionType.BInsideA) { output.AddNoResize(new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.outside }); return; }
 
@@ -285,11 +307,6 @@ namespace Chisel.Core
             }
         }
 
-        // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<byte> combineUsedIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int> combineIndexRemap;
-        [NativeDisableContainerSafetyRestriction] NativeList<int> routingSteps;
-
         // We combine the right branch after the left branch using an operation
         void Combine(ref BlobArray<CompactTopDownNode> topDownNodes, ref BrushesTouchedByBrush brushesTouchedByBrush, int processedNodeIndex, 
                      NativeList<CategoryStackNode> leftStack,  int leftHaveGonePastSelf, 
@@ -302,48 +319,28 @@ namespace Chisel.Core
 
             var firstNode   = rightStack[0].nodeIndex;
 
-
+            #region Allocation
             int combinedLength = leftStack.Length + (CategoryRoutingRow.Length * rightStack.Length);
-            if (!combineUsedIndices.IsCreated)
+            if (!combineUsedIndices.IsCreated || combineUsedIndices.Length < combinedLength)
             {
+                if (combineUsedIndices.IsCreated) combineUsedIndices.Dispose();
                 combineUsedIndices = new NativeArray<byte>(combinedLength, Allocator.Temp);
-            } else
-            {
-                if (combineUsedIndices.Length < combinedLength)
-                {
-                    combineUsedIndices.Dispose();
-                    combineUsedIndices = new NativeArray<byte>(combinedLength, Allocator.Temp);
-                }
             }
 
-            if (!combineIndexRemap.IsCreated)
+            if (!combineIndexRemap.IsCreated || combineIndexRemap.Length < combinedLength)
             {
+                if (combineIndexRemap.IsCreated) combineIndexRemap.Dispose();
                 combineIndexRemap = new NativeArray<int>(combinedLength, Allocator.Temp);
-            } else
-            {
-                if (combineIndexRemap.Length < combinedLength)
-                {
-                    combineIndexRemap.Dispose();
-                    combineIndexRemap = new NativeArray<int>(combinedLength, Allocator.Temp);
-                }
             }
 
-            if (!routingSteps.IsCreated)
+            if (!routingSteps.IsCreated || routingSteps.Capacity < rightStack.Length)
             {
+                if (routingSteps.IsCreated) routingSteps.Dispose();
                 routingSteps = new NativeList<int>(rightStack.Length, Allocator.Temp);
             } else
-            {
-                if (routingSteps.Capacity < rightStack.Length)
-                {
-                    routingSteps.Dispose();
-                    routingSteps = new NativeList<int>(rightStack.Length, Allocator.Temp);
-                } else
-                    routingSteps.Clear();
-            }
+                routingSteps.Clear();
+            #endregion
 
-            //var combineUsedIndices  = new NativeArray<byte>(leftStack.Length + (CategoryRoutingRow.Length * rightStack.Length), Allocator.Temp);
-            //var combineIndexRemap   = new NativeArray<int>(leftStack.Length + (CategoryRoutingRow.Length * rightStack.Length), Allocator.Temp);
-            //var routingSteps        = new NativeList<int>(rightStack.Length, Allocator.Temp);
             {
 
                 // Count the number of rows for unique node
@@ -621,8 +618,6 @@ namespace Chisel.Core
                     Dump(outputStack, depth);
 #endif
             }
-            //combineUsedIndices.Dispose();
-            //combineIndexRemap.Dispose();
         }
 
 #if SHOW_DEBUG_MESSAGES
