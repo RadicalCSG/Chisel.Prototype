@@ -9,7 +9,10 @@ using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnitySceneExtensions;
 using UnityObject = UnityEngine.Object;
- 
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
+
 namespace Chisel.Editors
 {
     [EditorTool("Chisel " + kToolName + " Tool")]
@@ -22,12 +25,12 @@ namespace Chisel.Editors
 
         public override GUIContent Content { get { return ChiselGeneratorManager.GeneratorMode.Content; } }
 
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselCreateTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselCreateTool); }
         
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToCreateEditMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselCreateTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselCreateTool>(); }
 
         public static void DeactivateTool(bool selectNode = false)
         {
@@ -35,7 +38,7 @@ namespace Chisel.Editors
                 return;
             // Unity has unreliable events
             ChiselGeneratorManager.GeneratorMode.OnDeactivate();
-            EditorTools.RestorePreviousPersistentTool();
+            ToolManager.RestorePreviousPersistentTool();
             if (!IsActive())
                 return;
 
@@ -46,7 +49,7 @@ namespace Chisel.Editors
                     return;
             }
 
-            EditorTools.RestorePreviousTool();
+            ToolManager.RestorePreviousTool();
             if (!IsActive())
                 return;
 

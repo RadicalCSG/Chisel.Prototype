@@ -9,6 +9,9 @@ using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnitySceneExtensions;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -18,7 +21,7 @@ namespace Chisel.Editors
         const string kToolName = "Edit Generator";
         public override string ToolName => kToolName;
 
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselEditGeneratorTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselEditGeneratorTool); }
 
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllGeometry; } }
 
@@ -26,7 +29,7 @@ namespace Chisel.Editors
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToShapeEditMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselEditGeneratorTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselEditGeneratorTool>(); }
         #endregion
 
         #region In-scene Options GUI

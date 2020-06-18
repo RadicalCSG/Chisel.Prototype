@@ -5,6 +5,9 @@ using UnityEditor;
 using UnityEditor.EditorTools;
 using UnityEngine;
 using UnitySceneExtensions;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 using UnityObject = UnityEngine.Object;
  
 namespace Chisel.Editors
@@ -150,10 +153,10 @@ namespace Chisel.Editors
                 if (Tools.current != Tool.Custom &&
                     lastRememberedToolType != null)
                 {
-                    EditorTools.SetActiveTool(lastRememberedToolType);
+                    ToolManager.SetActiveTool(lastRememberedToolType);
                     lastRememberedToolType = null;
                 } else
-                if (EditorTools.activeToolType == this.GetType())
+                if (ToolManager.activeToolType == this.GetType())
                 {
                     OnActivate();
                 }

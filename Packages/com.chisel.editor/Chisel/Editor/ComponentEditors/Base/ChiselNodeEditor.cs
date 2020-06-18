@@ -9,8 +9,11 @@ using Chisel.Components;
 using SceneHandles = UnitySceneExtensions.SceneHandles;
 using ControlState = UnitySceneExtensions.ControlState;
 using HandleRendering = UnitySceneExtensions.HandleRendering;
-using Grid = UnitySceneExtensions.Grid;
 using UnityEditor.EditorTools;
+using Grid = UnitySceneExtensions.Grid;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -769,7 +772,7 @@ namespace Chisel.Editors
             ChiselEditGeneratorTool.CurrentEditorName = null;
             Tools.hidden = false;
 
-            EditorTools.activeToolChanged -= OnToolModeChanged;
+            ToolManager.activeToolChanged -= OnToolModeChanged;
             ShutdownInspector();
         }
 
@@ -781,8 +784,8 @@ namespace Chisel.Editors
                 return;
             }
 
-            EditorTools.activeToolChanged -= OnToolModeChanged;
-            EditorTools.activeToolChanged += OnToolModeChanged;
+            ToolManager.activeToolChanged -= OnToolModeChanged;
+            ToolManager.activeToolChanged += OnToolModeChanged;
 
             ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
@@ -801,7 +804,7 @@ namespace Chisel.Editors
                 ChiselEditToolBase.ClearLastRememberedType();
                 return;
             }
-            if (!typeof(ChiselEditToolBase).IsAssignableFrom(EditorTools.activeToolType))
+            if (!typeof(ChiselEditToolBase).IsAssignableFrom(ToolManager.activeToolType))
             {
                 ChiselEditToolBase.ClearLastRememberedType();
             }

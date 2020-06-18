@@ -4,9 +4,12 @@ using UnitySceneExtensions;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.EditorTools;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEditor.EditorTools;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 { 
@@ -82,8 +85,8 @@ namespace Chisel.Editors
             ChiselGeneratedModelMeshManager.PostReset -= OnPostResetModels;
             ChiselGeneratedModelMeshManager.PostReset += OnPostResetModels;
 
-            EditorTools.activeToolChanged -= OnEditModeChanged;
-            EditorTools.activeToolChanged += OnEditModeChanged;
+            ToolManager.activeToolChanged -= OnEditModeChanged;
+            ToolManager.activeToolChanged += OnEditModeChanged;
 
             ChiselClickSelectionManager.Instance.OnReset();
             ChiselOutlineRenderer.Instance.OnReset();

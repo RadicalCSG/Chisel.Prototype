@@ -1,15 +1,18 @@
 using Chisel.Core;
 using Chisel.Components;
+using Chisel.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
-using Chisel.Utilities;
 using UnityEditor.ShortcutManagement;
 using Snapping = UnitySceneExtensions.Snapping;
 using UnityEditor.EditorTools;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -22,12 +25,12 @@ namespace Chisel.Editors
         const string kToolName = "UV Scale";
         public override string ToolName => kToolName;
 
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVScaleTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselUVScaleTool); }
 
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToUVScaleMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselUVScaleTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselUVScaleTool>(); }
         #endregion
 
         #region Activate/Deactivate
