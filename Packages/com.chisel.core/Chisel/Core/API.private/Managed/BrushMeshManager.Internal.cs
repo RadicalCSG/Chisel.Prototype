@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -123,11 +123,6 @@ namespace Chisel.Core
                     item.Dispose();
             }
             ChiselMeshLookup.Value.brushMeshUpdateList.Add(brushMeshIndex);
-            /*
-            Profiler.BeginSample("BrushMeshBlob.Build");
-            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
-            Profiler.EndSample();*/
-            CSGManager.NotifyBrushMeshModified(brushMeshInstanceID);
             return true;
         }
 

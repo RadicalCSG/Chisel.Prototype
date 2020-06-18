@@ -34,8 +34,8 @@ namespace Chisel.Core
         /// <summary>Update this <see cref="Chisel.Core.BrushMeshInstance"/> with the given <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to update the <see cref="Chisel.Core.BrushMeshInstance"/> with</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure. In case of failure the brush will keep using the previously set <see cref="Chisel.Core.BrushMesh"/>.</returns>
-        public bool Set			(BrushMesh brushMesh)	{ return UpdateBrushMesh(brushMeshID, brushMesh); }
-
+        public bool Set			(BrushMesh brushMesh, bool notifyBrushMeshNotified = false)	{ return UpdateBrushMesh(brushMeshID, brushMesh, notifyBrushMeshNotified); }
+        
         /// <value>An invalid instance</value>
         public static readonly BrushMeshInstance InvalidInstance = new BrushMeshInstance { brushMeshID = BrushMeshInstance.InvalidInstanceID };
         internal const Int32 InvalidInstanceID = 0;

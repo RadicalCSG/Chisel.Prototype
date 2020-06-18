@@ -370,7 +370,7 @@ namespace Chisel.Core
 
 
                 Profiler.BeginSample("CSG_Allocations");
-                Profiler.BeginSample("CSG_BrushOutputLoops");
+                Profiler.BeginSample("CSG_BrushOutputLoops");// TODO: make this a job
                 var brushLoopCount = rebuildTreeBrushIndexOrders.Length;                
                 for (int index = 0; index < brushLoopCount; index++)
                 {
@@ -542,7 +542,7 @@ namespace Chisel.Core
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
-
+                        var dependencies = treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle;
                         var findAllIntersectionsJob = new FindAllBrushIntersectionsJob
                         {
                             // Read
@@ -558,7 +558,7 @@ namespace Chisel.Core
                             brushBrushIntersections = treeUpdate.brushBrushIntersections.AsParallelWriter()
                         };
                         treeUpdate.findAllIntersectionsJobHandle = findAllIntersectionsJob.
-                            Schedule(treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle);
+                            Schedule(dependencies);
                     }
                 
                     for (int t = 0; t < treeUpdateLength; t++)
@@ -977,6 +977,20 @@ namespace Chisel.Core
             }
 
             //JobsUtility.JobWorkerCount = JobsUtility.JobWorkerMaximumCount;
+
+            // Remove garbage
+            s_AllTreeBrushIndexOrdersList.Clear();
+            s_BrushMeshList.Clear();
+            s_RebuildTreeBrushIndexOrdersList.Clear();
+            s_TransformTreeBrushIndicesList.Clear();
+            if (s_TreeUpdates != null)
+            {
+                for (int i = 0; i < s_TreeUpdates.Length; i++)
+                    s_TreeUpdates[i] = default;
+            }
+#if UNITY_EDITOR
+            GC.Collect(0, GCCollectionMode.Optimized, false, true);
+#endif
 
             return finalJobHandle;
         }

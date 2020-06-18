@@ -1311,7 +1311,7 @@ namespace Chisel.Core
             }
         }
 
-        internal static void NotifyBrushMeshModified(int brushMeshID)
+        public static void NotifyBrushMeshModified(int brushMeshID)
         {
             // TODO: have some way to lookup this directly instead of going through list
             for (int i = 0; i < nodeHierarchies.Count; i++)
@@ -1322,6 +1322,23 @@ namespace Chisel.Core
                     continue;
 
                 if (nodeHierarchy.brushInfo.brushMeshInstanceID != brushMeshID)
+                    continue;
+
+                if (CSGTreeNode.IsNodeIDValid(nodeHierarchy.treeNodeID))
+                    CSGTreeNode.SetDirty(nodeHierarchy.treeNodeID);
+            }
+        }
+        public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)
+        {
+            // TODO: have some way to lookup this directly instead of going through list
+            for (int i = 0; i < nodeHierarchies.Count; i++)
+            {
+                var nodeHierarchy = nodeHierarchies[i];
+                if (nodeHierarchy.brushInfo == null ||
+                    nodeHierarchy.treeNodeID == CSGTreeNode.InvalidNodeID)
+                    continue;
+
+                if (!modifiedBrushMeshes.Contains(nodeHierarchy.brushInfo.brushMeshInstanceID))
                     continue;
 
                 if (CSGTreeNode.IsNodeIDValid(nodeHierarchy.treeNodeID))
