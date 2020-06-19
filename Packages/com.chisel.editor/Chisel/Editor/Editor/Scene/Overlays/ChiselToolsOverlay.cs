@@ -44,11 +44,6 @@ namespace Chisel.Editors
         static SortedList<string, ChiselEditToolBase> editModes = new SortedList<string, ChiselEditToolBase>();
 
         static GUIContent kRebuildButton;
-        [InitializeOnLoadMethod]
-        internal static void Initialize()
-        {
-            kRebuildButton = ChiselEditorResources.GetIconContent(kRebuildIconName, kRebuildTooltip)[0];
-        }
 
         // TODO: move to dedicated manager
         internal static void Register(ChiselEditToolBase editMode)
@@ -190,6 +185,8 @@ namespace Chisel.Editors
                         position.x = startX + (xPos * buttonStep);
                         var buttonStyle = (index == 7) ? styles.toggleStyleRight :
                                           styles.toggleStyle;
+                        if (kRebuildButton == null)
+                            kRebuildButton = ChiselEditorResources.GetIconContent(kRebuildIconName, kRebuildTooltip)[0];
                         if (GUI.Toggle(position, false, kRebuildButton, buttonStyle))
                         {
                             Rebuild();
