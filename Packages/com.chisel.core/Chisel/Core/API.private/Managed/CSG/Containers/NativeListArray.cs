@@ -39,11 +39,11 @@ namespace Chisel.Core
             return arrayData;
         }
 
-        void ResizeCapacity(int capacity)
+        void ResizeCapacity(int newCapacity)
         {
             CheckAllocator(Allocator);
             var oldBytesToMalloc = sizeof(UnsafeList*) * Capacity;
-            var newBytesToMalloc = sizeof(UnsafeList*) * capacity;
+            var newBytesToMalloc = sizeof(UnsafeList*) * newCapacity;
             var newPtr = (UnsafeList**)UnsafeUtility.Malloc(newBytesToMalloc, UnsafeUtility.AlignOf<long>(), Allocator);
             UnsafeUtility.MemClear(newPtr, newBytesToMalloc);
             if (Ptr != null)
@@ -52,62 +52,55 @@ namespace Chisel.Core
                 UnsafeUtility.Free(Ptr, Allocator);
             }
             Ptr = newPtr;
-            Capacity = capacity;
+            Capacity = newCapacity;
         }
 
-        public void ResizeExact(int length)
+        public void ResizeExact(int newLength)
         {
-            if (length == Length)
+            if (newLength == Length)
                 return;
-            if (length < Capacity)
-            {
-                Length = length;
-                return;
-            }
 
-            if (Length > 0 && length < Length)
+            if (Length > 0 && newLength < Length)
             {
-                for (int i = length; i < Length; i++)
+                for (int i = newLength; i < Length; i++)
                 {
                     if (Ptr[i] != null &&
                         Ptr[i]->IsCreated)
                     {
                         Ptr[i]->Clear();
-                        Ptr[i]->Dispose();
-                    }
+                    } else
+                        Ptr[i] = null;
                 }
             }
-
-            ResizeCapacity(length);
-            Length = length;
+            if (Capacity < newLength)
+                ResizeCapacity(newLength);
+            Length = newLength;
         }
 
-        void Resize(int length)
+        void Resize(int newLength)
         {
-            if (length == Length)
+            if (newLength == Length)
                 return;
-            if (length < Capacity)
-            {
-                Length = length;
-                return;
-            }
 
-            if (Length > 0 && length < Length)
+            if (Length > 0 && newLength < Length)
             {
-                for (int i = length; i < Length; i++)
+                for (int i = newLength; i < Length; i++)
                 {
                     if (Ptr[i] != null &&
                         Ptr[i]->IsCreated)
                     {
                         Ptr[i]->Clear();
-                        Ptr[i]->Dispose();
-                    }
+                    } else
+                        Ptr[i] = null;
                 }
             }
 
-            var capacity = (int)((length * 1.5f) + 0.5f);
-            ResizeCapacity(capacity);
-            Length = length;
+            if (Capacity < newLength)
+            {
+                var capacity = (int)((newLength * 1.5f) + 0.5f);
+                ResizeCapacity(capacity);
+            }
+            Length = newLength;
         }
 
         public UnsafeList* InitializeIndex(int index, int sizeOf, int alignOf, int capacity, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
@@ -180,6 +173,7 @@ namespace Chisel.Core
                         Ptr[i]->Clear();
                         Ptr[i]->Dispose();
                     }
+                    Ptr[i] = null;
                 }
                 UnsafeUtility.Free(Ptr, Allocator);
                 Allocator = Allocator.Invalid;
@@ -203,6 +197,24 @@ namespace Chisel.Core
                     Ptr[i]->Clear();
                     Ptr[i]->Dispose();
                 }
+                Ptr[i] = null;
+            }
+            Length = 0;
+        }
+
+        public void ClearChildren()
+        {
+            if (Length == 0)
+                return;
+
+            for (int i = 0; i < Length; i++)
+            {
+                if (Ptr[i] != null &&
+                    Ptr[i]->IsCreated)
+                {
+                    Ptr[i]->Clear();
+                } else
+                    Ptr[i] = null;
             }
             Length = 0;
         }
@@ -315,6 +327,14 @@ namespace Chisel.Core
             m_Array->Clear();
         }
 
+        internal void ClearChildren()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+#endif
+            m_Array->ClearChildren();
+        }
+
         public bool IsIndexCreated(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -370,11 +390,19 @@ namespace Chisel.Core
             var positiveIndex = AssumePositive(index);
             CheckArgInRange(positiveIndex, m_Array->Length);
 
-            var ptr = m_Array->Ptr[index];
-            CheckNotAllocated(ptr);
-
             capacity = Math.Max(1, capacity);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+
+            var ptr = m_Array->Ptr[index];
+            if (ptr == null || !ptr->IsCreated)
+            {
+                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            } else
+            {
+                ptr->Clear();
+                if (ptr->Capacity < capacity)
+                    ptr->SetCapacity<T>(capacity);
+            }
+
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             return new NativeList(m_Array->Ptr[index], ref m_Safety);
