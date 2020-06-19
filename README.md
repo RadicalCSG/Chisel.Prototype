@@ -10,7 +10,7 @@ Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non d
 [Click here for information on how to get started](GettingStarted.md)
 
 Notes:
-- Chisel requires Unity 2020.2 or newer
+- Chisel requires Unity 2020.2a15 or newer
 - UX is still under development
 - CSG algorithm is still under development
 - It is *not yet* ready for production, but please feel free to try it out!
