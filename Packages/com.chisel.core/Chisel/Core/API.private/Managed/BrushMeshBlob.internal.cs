@@ -53,6 +53,9 @@ namespace Chisel.Core
         public unsafe static BlobAssetReference<BrushMeshBlob> Build(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
+                brushMesh.vertices == null ||
+                brushMesh.polygons == null ||
+                brushMesh.halfEdges == null ||
                 brushMesh.vertices.Length < 4 ||
                 brushMesh.polygons.Length < 4 ||
                 brushMesh.halfEdges.Length < 12)

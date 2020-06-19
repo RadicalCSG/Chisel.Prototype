@@ -284,7 +284,8 @@ namespace Chisel.Core
                         if ((nodeFlags.status & NodeStatusFlags.NeedAllTouchingUpdated) == NodeStatusFlags.None)
                             continue;
 
-                        if (!brushesTouchedByBrushCache.TryGetValue(brushNodeIndex, out var brushTouchedByBrush))
+                        if (!brushesTouchedByBrushCache.TryGetValue(brushNodeIndex, out var brushTouchedByBrush) ||
+                            brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                             continue;
 
                         ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;
