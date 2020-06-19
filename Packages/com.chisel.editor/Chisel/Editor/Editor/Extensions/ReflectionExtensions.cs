@@ -424,8 +424,29 @@ namespace Chisel.Editors
                 return null;
             }
 
-            var bindingFlags    = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.IgnoreReturn;
-            return type.GetMethod(name, bindingFlags, null, parameterTypes, null);
+            const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Static | BindingFlags.IgnoreReturn;
+            var result = type.GetMethod(name, bindingFlags, null, parameterTypes, null);
+            if (result == null)
+            {
+                var foundMethods = type.GetMethods(name, bindingFlags);
+                if (foundMethods.Length == 0)
+                    return null;
+                if (foundMethods.Length == 1)
+                {/*
+                    var foundParams = foundMethods[0].GetParameters();
+                    for (int i = 0; i < foundParams.Length; i++)
+                    {
+                        Debug.Log($"{i}: {foundParams[i]}");
+                    }
+                    for (int i = 0; i < parameterTypes.Length; i++)
+                    {
+                        Debug.Log($"{i}: {parameterTypes[i]}");
+                    }*/
+                    return foundMethods[0];
+                }
+                return null;
+            }
+            return result;
         }
 
         public static MethodInfo GetMethod(this Type type, string name, params Type[] parameterTypes)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Chisel.Core;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -92,7 +93,32 @@ namespace Chisel.Components
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
                 if (!brushMesh.Validate(logErrors: true))
                     brushMesh.Clear();
-                instances[i].Set(brushMesh);
+                Profiler.BeginSample("instance.Set");
+                instances[i].Set(brushMesh, notifyBrushMeshNotified: false);
+                Profiler.EndSample();
+                Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
+                CSGManager.NotifyBrushMeshModified(instances[i].BrushMeshID);
+                Profiler.EndSample();
+            }
+        }
+
+        internal void UpdateInstances(HashSet<int> modifiedBrushMeshes)
+        {
+            if (instances == null) return;
+            if (Empty) { DestroyInstances(); return; }
+            if (instances.Length != brushContainer.brushMeshes.Length) { CreateInstances(); return; }
+
+            for (int i = 0; i < instances.Length; i++)
+            {
+                ref var brushMesh = ref brushContainer.brushMeshes[i];
+                if (modifiedBrushMeshes.Add(instances[i].BrushMeshID))
+                {
+                    if (!brushMesh.Validate(logErrors: true))
+                        brushMesh.Clear();
+                    Profiler.BeginSample("instance.Set");
+                    instances[i].Set(brushMesh, notifyBrushMeshNotified: false);
+                    Profiler.EndSample();
+                }
             }
         }
 

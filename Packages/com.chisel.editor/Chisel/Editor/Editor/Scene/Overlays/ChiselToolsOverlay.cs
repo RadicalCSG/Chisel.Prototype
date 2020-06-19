@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEditor;
-using UnityEngine;
 using Chisel.Core;
 using Chisel.Components;
-using UnitySceneExtensions;
+using UnityEditor;
+using UnityEngine;
 using UnityEditor.EditorTools;
+using UnitySceneExtensions;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -67,7 +70,7 @@ namespace Chisel.Editors
 
         static bool Toggle(Rect position, ChiselEditToolBase editMode, Type editModeType, GUIStyle style)
         {
-            var selected = EditorTools.activeToolType == editModeType;
+            var selected = ToolManager.activeToolType == editModeType;
             var content = selected ? editMode.ActiveIconContent : editMode.IconContent;
             return GUI.Toggle(position, selected, content, style);
         }
@@ -81,7 +84,7 @@ namespace Chisel.Editors
                 var value = Toggle(position, editMode, editModeType, style);
                 if (EditorGUI.EndChangeCheck() && value)
                 {
-                    EditorTools.SetActiveTool(editModeType);
+                    ToolManager.SetActiveTool(editModeType);
                     ChiselEditorSettings.Save();
                 }
             }

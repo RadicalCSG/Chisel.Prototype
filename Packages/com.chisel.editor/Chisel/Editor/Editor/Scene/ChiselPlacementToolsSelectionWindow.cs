@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEditor;
-using UnityEditor.EditorTools;
 using UnityEngine;
+using UnityEditor.EditorTools;
 using UnitySceneExtensions;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -37,14 +40,14 @@ namespace Chisel.Editors
         {
             ChiselGeneratorManager.GeneratorSelectionChanged -= GeneratorSelectionChanged;
             ChiselGeneratorManager.GeneratorSelectionChanged += GeneratorSelectionChanged;
-            EditorTools.activeToolChanged -= EditModeSelectionChanged;
-            EditorTools.activeToolChanged += EditModeSelectionChanged;
+            ToolManager.activeToolChanged -= EditModeSelectionChanged;
+            ToolManager.activeToolChanged += EditModeSelectionChanged;
         }
 
         private void OnDisable()
         {
             ChiselGeneratorManager.GeneratorSelectionChanged -= GeneratorSelectionChanged;
-            EditorTools.activeToolChanged -= EditModeSelectionChanged;
+            ToolManager.activeToolChanged -= EditModeSelectionChanged;
         }
 
         public void EditModeSelectionChanged()

@@ -5,9 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEditor;
-using UnityEditor.EditorTools;
 using UnityEngine;
+using UnityEditor.EditorTools;
 using UnitySceneExtensions;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -72,7 +75,7 @@ namespace Chisel.Editors
         {
             UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
 
-            EditorTools.SetActiveTool(typeof(ChiselEditGeneratorTool));
+            ToolManager.SetActiveTool(typeof(ChiselEditGeneratorTool));
         }
 
         public void Cancel()

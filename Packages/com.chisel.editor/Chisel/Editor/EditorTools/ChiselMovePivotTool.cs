@@ -8,12 +8,13 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.EditorTools;
+using Unity.Mathematics;
 using UnitySceneExtensions;
 using Snapping = UnitySceneExtensions.Snapping;
-using System.Security.Policy;
-using Unity.Mathematics;
-using UnityEngine.Analytics;
 using Grid = UnitySceneExtensions.Grid;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -24,12 +25,12 @@ namespace Chisel.Editors
         public override string ToolName => kToolName;
 
         #region Activation
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselMovePivotTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselMovePivotTool); }
 
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToPivotEditMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselMovePivotTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselMovePivotTool>(); }
         #endregion
 
         public override void OnActivate()

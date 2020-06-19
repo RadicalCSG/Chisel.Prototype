@@ -1,6 +1,7 @@
 ﻿using Chisel.Core.LowLevel.Unsafe;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -21,6 +22,52 @@ namespace Chisel.Core
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
         {
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
+        }
+
+        public static void AddRangeNoResize<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
+        {
+            if (count > elements.Length)
+                throw new ArgumentOutOfRangeException("count");
+            if (start < 0 || start + count > elements.Length)
+                throw new ArgumentOutOfRangeException("start");
+            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
+        }
+
+        public static void CopyFrom<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
+        {
+            if (count > elements.Length)
+                throw new ArgumentOutOfRangeException("count");
+            if (start < 0 || start + count > elements.Length)
+                throw new ArgumentOutOfRangeException("start");
+
+            list.Clear();
+            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
+        }
+
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
+        {
+            if (count > srcList.Length || count > dstArray.Length)
+                throw new ArgumentOutOfRangeException("count");
+            if (start < 0 || start + count > srcList.Length)
+                throw new ArgumentOutOfRangeException("start");
+
+            var srcPtr  = (T*)srcList.GetUnsafeReadOnlyPtr() + start;
+            var dstPtr  = (T*)dstArray.GetUnsafePtr();
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, count * UnsafeUtility.SizeOf<T>());
+        }
+
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int start, int count) where T : unmanaged
+        {
+            if (count > srcArray.Length || count > dstArray.Length)
+                throw new ArgumentOutOfRangeException("count");
+            if (start < 0 || start + count > srcArray.Length)
+                throw new ArgumentOutOfRangeException("start");
+
+            var srcPtr  = (T*)srcArray.GetUnsafeReadOnlyPtr() + start;
+            var dstPtr  = (T*)dstArray.GetUnsafePtr();
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, count * UnsafeUtility.SizeOf<T>());
         }
 
         public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
@@ -45,6 +92,35 @@ namespace Chisel.Core
                 UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (list.Length - (index + count)) * size);
             }
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
+        }
+
+        public static void RemoveRange<T>(NativeArray<T> array, int index, int count, ref int arrayLength) where T : unmanaged
+        {
+            if (count == 0)
+                return;
+            if (arrayLength > array.Length)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index < 0 || index + count > arrayLength)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index == 0 && count >= arrayLength)
+            {
+                arrayLength = 0;
+                return;
+            }
+
+            if (index + count < arrayLength)
+            {
+                var listPtr = (T*)array.GetUnsafePtr();
+                int size = sizeof(T);
+                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (arrayLength - (index + count)) * size);
+            }
+            arrayLength -= count;
         }
 
         public static void RemoveRange<T>(NativeArray<T> array, ref int arrayLength, int index, int count) where T : unmanaged

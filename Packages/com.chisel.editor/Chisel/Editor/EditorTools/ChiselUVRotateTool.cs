@@ -7,9 +7,12 @@ using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
 using Chisel.Utilities;
+using UnityEditor.EditorTools;
 using UnityEditor.ShortcutManagement;
 using Snapping = UnitySceneExtensions.Snapping;
-using UnityEditor.EditorTools;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -22,12 +25,12 @@ namespace Chisel.Editors
         const string kToolName = "UV Rotate";
         public override string ToolName => kToolName;
 
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVRotateTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselUVRotateTool); }
 
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToUVRotateMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselUVRotateTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselUVRotateTool>(); }
         #endregion
 
         #region Activate/Deactivate

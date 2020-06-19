@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Chisel.Core;
 using UnityEngine.Profiling;
+using System.Linq;
 
 namespace Chisel.Components
 {
@@ -204,8 +205,9 @@ namespace Chisel.Components
         {
             if (!brushContainerAsset || !registeredLookup.Contains(brushContainerAsset))
                 return;
-            
-            updateQueue.Add(brushContainerAsset);
+
+            if (updateQueueLookup.Add(brushContainerAsset)) 
+                updateQueue.Add(brushContainerAsset);
         }
 
         static void OnChiselBrushMaterialsReset()
@@ -225,7 +227,10 @@ namespace Chisel.Components
             foreach (var brushContainerAsset in brushContainerAssets)
             {
                 if (brushContainerAsset)
-                    updateQueue.Add(brushContainerAsset);
+                {
+                    if (updateQueueLookup.Add(brushContainerAsset))
+                        updateQueue.Add(brushContainerAsset);
+                }
             }
         }
 
@@ -240,7 +245,10 @@ namespace Chisel.Components
                     {
                         uniqueSurfaces.Remove(brushMaterial);
                         if (brushContainerAsset)
-                            updateQueue.Add(brushContainerAsset);
+                        {
+                            if (updateQueueLookup.Add(brushContainerAsset))
+                                updateQueue.Add(brushContainerAsset);
+                        }
                     }
                 } 
             }
@@ -332,6 +340,8 @@ namespace Chisel.Components
             brushMeshSurfaces.Remove(brushContainerAsset);
         }
 
+
+        static HashSet<int> modifiedBrushMeshes = new HashSet<int>();
         public static void Update()
         {
             if (unregisterQueue.Count == 0 &&
@@ -382,7 +392,7 @@ namespace Chisel.Components
                     {
                         //UnregisterAllSurfaces(brushContainerAsset); // TODO: should we?
                         Profiler.BeginSample("UpdateInstances");
-                        brushContainerAsset.UpdateInstances();
+                        brushContainerAsset.UpdateInstances(modifiedBrushMeshes);
                         Profiler.EndSample();
                     }
 
@@ -397,6 +407,11 @@ namespace Chisel.Components
                 {
                     Debug.LogException(ex);
                 }
+            }
+
+            if (modifiedBrushMeshes.Count > 0)
+            {
+                CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             }
 
             Profiler.BeginSample("OnBrushMeshInstanceChanged");

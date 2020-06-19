@@ -1,15 +1,18 @@
 using Chisel.Core;
 using Chisel.Components;
+using Chisel.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
-using Chisel.Utilities;
 using UnityEditor.ShortcutManagement;
-using Snapping = UnitySceneExtensions.Snapping;
 using UnityEditor.EditorTools;
+using Snapping = UnitySceneExtensions.Snapping;
+#if !UNITY_2020_2_OR_NEWER
+using ToolManager = UnityEditor.EditorTools;
+#endif
 
 namespace Chisel.Editors
 {
@@ -22,12 +25,12 @@ namespace Chisel.Editors
         const string kToolName = "UV Move";
         public override string ToolName => kToolName;
 
-        public static bool IsActive() { return EditorTools.activeToolType == typeof(ChiselUVMoveTool); }
+        public static bool IsActive() { return ToolManager.activeToolType == typeof(ChiselUVMoveTool); }
 
         #region Keyboard Shortcut
         const string kEditModeShotcutName = kToolName + " Mode";
         [Shortcut(ChiselKeyboardDefaults.ShortCutEditModeBase + kEditModeShotcutName, ChiselKeyboardDefaults.SwitchToUVMoveMode, displayName = kEditModeShotcutName)]
-        public static void ActivateTool() { EditorTools.SetActiveTool<ChiselUVMoveTool>(); }
+        public static void ActivateTool() { ToolManager.SetActiveTool<ChiselUVMoveTool>(); }
         #endregion
         public override SnapSettings ToolUsedSnappingModes { get { return UnitySceneExtensions.SnapSettings.AllUV; } }
 
