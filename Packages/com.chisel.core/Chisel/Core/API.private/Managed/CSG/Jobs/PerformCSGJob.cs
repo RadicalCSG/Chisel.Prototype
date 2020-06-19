@@ -258,8 +258,8 @@ namespace Chisel.Core
                     }
                 }
                 // This loop is a hole 
-                if (currentHoleIndices.Capacity < allEdges.Length) // TODO: figure out why capacity is sometimes not enough
-                    currentHoleIndices.Capacity = allEdges.Length;
+                if (currentHoleIndices.Capacity < currentHoleIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    currentHoleIndices.Capacity = currentHoleIndices.Length + 16;
                 currentHoleIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
                 if (allInfos.Capacity < allInfos.Length + 1)
@@ -271,6 +271,8 @@ namespace Chisel.Core
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
+                if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    loopIndices.Capacity = loopIndices.Length + 16;
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AllocateItemAndAddValues(intersectedHoleIndices, intersectedHoleIndicesLength);
                 if (allInfos.Capacity < allInfos.Length + 1)
@@ -294,6 +296,8 @@ namespace Chisel.Core
                 //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
 
                 // But also a polygon on its own
+                if (loopIndices.Capacity < loopIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
+                    loopIndices.Capacity = loopIndices.Length + 16;
                 loopIndices.AddNoResize(allEdges.Length);
                 holeIndices.AddAndAllocateWithCapacity(1);
                 if (allInfos.Capacity < allInfos.Length + 1)

@@ -9,7 +9,6 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.CompilerServices;
-using System.Collections;
 
 namespace Chisel.Core
 {
@@ -26,17 +25,17 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<byte>             combineUsedIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>              combineIndexRemap;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>               routingSteps;
-        [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>    routingLookups;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>              nodes;
+        [NativeDisableContainerSafetyRestriction] NativeArray<byte>                 combineUsedIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  combineIndexRemap;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>                   routingSteps;
+        [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>        routingLookups;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  nodes;
         [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    routingTable;
         [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    tempStackArray;
         [NativeDisableContainerSafetyRestriction] NativeList<QueuedEvent>           queuedEvents;
         
 
-        const int MaxRoutesPerNode = 32; // TODO: figure out the actual possible maximum
+        const int MaxRoutesPerNode = 16; // TODO: figure out the actual possible theoretical maximum
 
         public void Execute(int index)
         {
@@ -47,7 +46,6 @@ namespace Chisel.Core
             int processedNodeIndex  = processedIndexOrder.nodeIndex;
             int processedNodeOrder  = processedIndexOrder.nodeOrder;
 
-            int categoryStackNodeCount, polygonGroupCount;
             var brushesTouchedByBrush = brushesTouchedByBrushes[processedNodeOrder];
             if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
@@ -60,173 +58,139 @@ namespace Chisel.Core
             if (!routingTable.IsCreated || routingTable.Length < maxRoutes)
             {
                 if (routingTable.IsCreated) routingTable.Dispose();
-                routingTable = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
+                routingTable = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
             }
             if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes)
             {
                 if (tempStackArray.IsCreated) tempStackArray.Dispose();
-                tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
+                tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
             }
             if (!queuedEvents.IsCreated)
                 queuedEvents = new NativeList<QueuedEvent>(1000, Allocator.Temp);
 
-            {
-#if SHOW_DEBUG_MESSAGES
-                Debug.Log($"nodeIndex: {processedNodeIndex}");
-#endif
-                commonData = new CommonData
-                {
-                    brushesTouchedByBrushAsset  = brushesTouchedByBrush,
-                    maxRoutes                   = maxRoutes,
-                    processedNodeIndex          = processedNodeIndex
-                };
-                categoryStackNodeCount = GetStackNodes(routingTable);
+            var categoryStackNodeCount = GetStackNodes(processedNodeIndex, ref brushesTouchedByBrush.Value, routingTable);
 
-#if SHOW_DEBUG_MESSAGES
-                if (processedNodeIndex == kDebugNode || kDebugNode == -1)
-                    Dump(processedNodeIndex, routingTable); 
-#endif
-
-                int maxCounter = (int)CategoryRoutingRow.Length;
-                for (int i = 0; i < categoryStackNodeCount; i++)
-                    maxCounter = Math.Max(maxCounter, (int)routingTable[i].input);
-                polygonGroupCount = maxCounter + 1;
-                    
+            int maxCounter = (int)CategoryRoutingRow.Length;
+            for (int i = 0; i < categoryStackNodeCount; i++)
+                maxCounter = Math.Max(maxCounter, (int)routingTable[i].input);
                 
-                var totalInputsSize         = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<CategoryGroupIndex>());
-                var totalRoutingRowsSize    = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<CategoryRoutingRow>());
-                var totalLookupsSize        = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<RoutingLookup>());
-                var totalNodesSize          = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<int>());
-                var totalSize               = totalInputsSize + totalRoutingRowsSize + totalLookupsSize + totalNodesSize;
+            var totalInputsSize         = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<CategoryGroupIndex>());
+            var totalRoutingRowsSize    = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<CategoryRoutingRow>());
+            var totalLookupsSize        = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<RoutingLookup>());
+            var totalNodesSize          = 16 + (categoryStackNodeCount * UnsafeUtility.SizeOf<int>());
+            var totalSize               = totalInputsSize + totalRoutingRowsSize + totalLookupsSize + totalNodesSize;
 
-                var builder = new BlobBuilder(Allocator.Temp, totalSize);
-                ref var root    = ref builder.ConstructRoot<RoutingTable>();
-                var inputs      = builder.Allocate(ref root.inputs,         categoryStackNodeCount);
-                var routingRows = builder.Allocate(ref root.routingRows,    categoryStackNodeCount);
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            ref var root    = ref builder.ConstructRoot<RoutingTable>();
+            var inputs      = builder.Allocate(ref root.inputs,         categoryStackNodeCount);
+            var routingRows = builder.Allocate(ref root.routingRows,    categoryStackNodeCount);
 
-                if (!routingLookups.IsCreated || routingLookups.Length < maxNodes)
-                {
-                    if (routingLookups.IsCreated) routingLookups.Dispose();
-                    routingLookups = new NativeArray<RoutingLookup>(maxNodes, Allocator.Temp);
-                }
-
-                if (!nodes.IsCreated || nodes.Length < maxNodes)
-                {
-                    if (nodes.IsCreated) nodes.Dispose();
-                    nodes = new NativeArray<int>(maxNodes, Allocator.Temp);
-                }
-
-                {
-                    // TODO: clean up
-                    int nodeCounter = 0;
-                    for (int i = 0; i < categoryStackNodeCount;)
-                    {
-                        var cutting_node_index = routingTable[i].nodeIndex;
-
-                        int start_index = i;
-                        do
-                        {
-                            inputs[i]       = routingTable[i].input;
-                            routingRows[i]  = routingTable[i].routingRow;
-                            i++;
-                        } while (i < categoryStackNodeCount && routingTable[i].nodeIndex == cutting_node_index);
-                        int end_index = i;
-
-
-                        nodes[nodeCounter] = cutting_node_index;
-                        routingLookups[nodeCounter] = new RoutingLookup(start_index, end_index);
-                        nodeCounter++;
-                    }
-
-                    builder.Construct(ref root.routingLookups,  routingLookups, nodeCounter);
-                    builder.Construct(ref root.nodes,           nodes,          nodeCounter);
-                        
-                    var routingTableBlob = builder.CreateBlobAssetReference<RoutingTable>(Allocator.Persistent);
-                    routingTableLookup[processedNodeOrder] = routingTableBlob;
-                }
-                builder.Dispose();
-            }
-        }
-
-        [BurstDiscard]
-        static void FailureMessage()
-        {
-            Debug.LogError("Unity Burst Compiler is broken");
-        }
-
-        // Remap indices to new destinations, used when destination rows have been merged
-        static void RemapIndices(NativeArray<CategoryStackNode> stack, NativeArray<int> remap, int start, int last)
-        {
-#if USE_OPTIMIZATIONS
-            for (int i = start; i < last; i++)
+            if (!routingLookups.IsCreated || routingLookups.Length < maxNodes)
             {
-                var categoryRow = stack[i];
-                var routingRow = categoryRow.routingRow;
+                if (routingLookups.IsCreated) routingLookups.Dispose();
+                routingLookups = new NativeArray<RoutingLookup>(maxNodes, Allocator.Temp);
+            }
 
-                for (int r = 0; r < CategoryRoutingRow.Length; r++)
+            if (!nodes.IsCreated || nodes.Length < maxNodes)
+            {
+                if (nodes.IsCreated) nodes.Dispose();
+                nodes = new NativeArray<int>(maxNodes, Allocator.Temp);
+            }
+
+            {
+                // TODO: clean up
+                int nodeCounter = 0;
+                for (int i = 0; i < categoryStackNodeCount;)
                 {
-                    var key = (int)routingRow[r];
-                    if (key >= remap.Length || remap[key] == 0) { FailureMessage(); return; }
+                    var cutting_node_index = routingTable[i].nodeIndex;
+
+                    int start_index = i;
+                    do
+                    {
+                        inputs[i]       = routingTable[i].input;
+                        routingRows[i]  = routingTable[i].routingRow;
+                        i++;
+                    } while (i < categoryStackNodeCount && routingTable[i].nodeIndex == cutting_node_index);
+                    int end_index = i;
+
+
+                    nodes[nodeCounter] = cutting_node_index;
+                    routingLookups[nodeCounter] = new RoutingLookup(start_index, end_index);
+                    nodeCounter++;
                 }
 
-                for (int r = 0; r < CategoryRoutingRow.Length; r++)
-                    routingRow[r] = (CategoryGroupIndex)(remap[(int)routingRow[r]] - 1);
-
-                categoryRow.routingRow = routingRow;
-                stack[i] = categoryRow;
+                builder.Construct(ref root.routingLookups,  routingLookups, nodeCounter);
+                builder.Construct(ref root.nodes,           nodes,          nodeCounter);
+                        
+                var routingTableBlob = builder.CreateBlobAssetReference<RoutingTable>(Allocator.Persistent);
+                routingTableLookup[processedNodeOrder] = routingTableBlob;
             }
-#endif
+            //builder.Dispose(); // Temp allocated so we don't need to dispose
         }
 
-        struct CommonData
-        {
-            public int                                          maxRoutes;
-            public int                                          processedNodeIndex;
-            public BlobAssetReference<BrushesTouchedByBrush>    brushesTouchedByBrushAsset;
-        }
-        [NativeDisableContainerSafetyRestriction] CommonData commonData;
 
-        enum EventType { GetStackNode, Combine, List, ListItem }
+        enum EventType : int { GetStackNode, Combine, Cleanup, ListItem }
         struct QueuedEvent
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent GetStackNode(int currIndex, int outputStartIndex)
+            {
+                return new QueuedEvent
+                {
+                    type                    = EventType.GetStackNode,
+                    currIndex               = currIndex,
+                    outputStartIndex        = outputStartIndex
+                };
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent Combine(int currIndex, int leftHaveGoneBeyondSelf, int leftStackStartIndex, int rightStackStartIndex)
+            {
+                return new QueuedEvent
+                {
+                    type                    = EventType.Combine,
+                    currIndex               = currIndex,
+                    leftHaveGoneBeyondSelf  = leftHaveGoneBeyondSelf,
+                    leftStackStartIndex     = leftStackStartIndex,
+                    rightStackStartIndex    = rightStackStartIndex,
+                };
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent ListItem(int currIndex, int leftStackStartIndex)
+            {
+                return new QueuedEvent 
+                {
+                    type                    = EventType.ListItem,
+                    currIndex               = currIndex,
+                    leftStackStartIndex     = leftStackStartIndex
+                };
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent CleanUp(int firstIndex, int outputStartIndex)
+            {
+                return new QueuedEvent
+                {
+                    type                = EventType.Cleanup,
+                    currIndex           = firstIndex,
+                    outputStartIndex    = outputStartIndex
+                };
+            }
+
             public EventType type;
-
             public int currIndex;
-
-            // GetStackNode
             public int outputStartIndex;
-
-            // List
-            public int firstIndex;
-            public int lastIndex;
+            public int leftHaveGoneBeyondSelf;
             public int leftStackStartIndex;
-
-            // Combine
-            //public int currIndex;
-            public int leftHaveGonePastSelf;
-            //public int leftStackStartIndex;
             public int rightStackStartIndex;
-
-
-            // ListItem
-            //public int currIndex;
-            //public int leftStackStartIndex;
-
         }
 
-        //queuedEvents
-
-        // TODO: rewrite in such a way that we don't rely on stack
-        public int GetStackNodes(NativeArray<CategoryStackNode> output)
+        public int GetStackNodes(int processedNodeIndex, ref BrushesTouchedByBrush brushesTouchedByBrush, NativeArray<CategoryStackNode> output)
         {
-            int haveGonePastSelf = 0;
+            int haveGoneBeyondSelf = 0;
             int outputLength = 0;
-            queuedEvents.Add(new QueuedEvent
-            {
-                type                = EventType.GetStackNode,
-                currIndex           = 0,
-                outputStartIndex    = 6
-            });
+            queuedEvents.Add(QueuedEvent.GetStackNode(0, 6));
             ref var topDownNodes = ref compactTree.Value.topDownNodes;
             while (queuedEvents.Length > 0)
             {
@@ -237,29 +201,95 @@ namespace Chisel.Core
                 {
                     case EventType.GetStackNode:
                     {
-                        GetStack(currEvent.currIndex, ref haveGonePastSelf, output, ref outputLength, currEvent.outputStartIndex);
+                        ref var currentNode  = ref topDownNodes[currEvent.currIndex];
+                        var intersectionType = brushesTouchedByBrush.Get(currentNode.nodeIndex);
+                        if (intersectionType == IntersectionType.NoIntersection)
+                            break;
+
+                        if (currentNode.Type == CSGNodeType.Brush)
+                        {
+                            if (intersectionType == IntersectionType.AInsideB) 
+                            { 
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.inside }; 
+                                outputLength++;
+                                break; 
+                            }
+                            if (intersectionType == IntersectionType.BInsideA) 
+                            { 
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.outside };
+                                outputLength++;
+                                break; 
+                            }
+
+                            // All surfaces of processedNode are aligned with it's own surfaces, so all categories are Aligned
+                            if (processedNodeIndex == currentNode.nodeIndex)
+                            {
+                                haveGoneBeyondSelf = 1; // We're currently "ON" our brush
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.selfAligned };
+                                outputLength++;
+                                break;
+                            }
+
+                            if (haveGoneBeyondSelf > 0)
+                                haveGoneBeyondSelf = 2; // We're now definitely beyond our brush
+
+                            // Otherwise return identity categories (input == output)
+                            output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.identity };
+                            outputLength++;
+                            break;
+                        }
+
+                        var nodeCount = currentNode.childCount;
+                        if (nodeCount == 0)
+                            break;
+
+                        // Skip all nodes that are not additive at the start of the branch since they will never produce any geometry
+                        var firstIndex = currentNode.childOffset;
+                        var lastIndex  = firstIndex + nodeCount;
+                        while (firstIndex < lastIndex && (topDownNodes[firstIndex].Operation != CSGOperationType.Additive &&
+                                                          topDownNodes[firstIndex].Operation != CSGOperationType.Copy))
+                            firstIndex++;
+                        if ((lastIndex - firstIndex) <= 0) // no nodes left to process, nothing is visible
+                            break;
+
+
+                        // Note: Events are executed in reverse order, so the last one added is run first
+                        var leftStackStartIndex = currEvent.outputStartIndex;
+                        outputLength = leftStackStartIndex;
+
+                        // 3. Final cleanup
+                        queuedEvents.Add(QueuedEvent.CleanUp(firstIndex, currEvent.outputStartIndex));
+                        for (int i = lastIndex - 1; i >= firstIndex + 1; i--)
+                        {
+                            // This needs to be it's own event since we need to use intermediate data to create the next event
+
+                            // 2. Combine the left stack (previous output stack) with the right stack
+                            queuedEvents.Add(QueuedEvent.ListItem(i, leftStackStartIndex));
+                        }
+
+                        // 1. Get the first stack, which gets stored in output
+                        queuedEvents.Add(QueuedEvent.GetStackNode(firstIndex, leftStackStartIndex));
                         break;
                     }
+
                     case EventType.ListItem:
                     {
-                        var leftHaveGonePastSelf = haveGonePastSelf;
+                        var leftHaveGoneBeyondSelf = haveGoneBeyondSelf;
                         var rightStackStartIndex = outputLength;
-                        queuedEvents.Add(new QueuedEvent
-                        {
-                            type                    = EventType.Combine,
-                            currIndex               = currEvent.currIndex,
-                            leftHaveGonePastSelf    = leftHaveGonePastSelf,
-                            leftStackStartIndex     = currEvent.leftStackStartIndex,
-                            rightStackStartIndex    = rightStackStartIndex
-                        });
-                        queuedEvents.Add(new QueuedEvent
-                        {
-                            type                    = EventType.GetStackNode,
-                            currIndex               = currEvent.currIndex,
-                            outputStartIndex        = rightStackStartIndex
-                        });
+                        // Note: Events are executed in reverse order, so the last one added is run first
+
+                        // 2. Combine the left stack (previous output stack) with the right stack
+                        queuedEvents.Add(QueuedEvent.Combine(currEvent.currIndex, leftHaveGoneBeyondSelf, currEvent.leftStackStartIndex, rightStackStartIndex));
+
+                        // 1. Add the right stack to the output stack
+                        queuedEvents.Add(QueuedEvent.GetStackNode(currEvent.currIndex, rightStackStartIndex));
                         break;
                     }
+
+
+                    // Combine two stacks together, currently stored behind each other in output
+                    //        [left stack              ][right stack               ]  
+                    // [..... leftStackStartIndex ..... rightStackStartIndex ..... ] output
                     case EventType.Combine:
                     {
                         var operation = topDownNodes[currEvent.currIndex].Operation;
@@ -312,236 +342,53 @@ namespace Chisel.Core
                                     continue;
                                 }
                             }
-                        } else
-                        {
-                            // Move the rightStack to it's own List and remove it from the leftStack
-                            var rightStack = tempStackArray;
-                            var rightStackLength = outputLength - currEvent.rightStackStartIndex;
-                            rightStack.CopyFrom(output, currEvent.rightStackStartIndex, rightStackLength);
-                            outputLength = currEvent.rightStackStartIndex;
-
-                            Combine(output,     currEvent.leftHaveGonePastSelf, currEvent.leftStackStartIndex, ref outputLength, 
-                                    rightStack, haveGonePastSelf, rightStackLength,
-                                    operation);
                         }
+
+                        // We have both a left and a right stack at this point, but we need to write in the left stack.
+                        // So we move the rightStack to it's own NativeArray 
+                        var rightStack = tempStackArray;
+                        var rightStackLength = outputLength - currEvent.rightStackStartIndex;
+                        rightStack.CopyFrom(output, currEvent.rightStackStartIndex, rightStackLength);
+                        // ... and remove it from the leftStack
+                        outputLength = currEvent.rightStackStartIndex;
+
+                        Combine(output,     currEvent.leftHaveGoneBeyondSelf, currEvent.leftStackStartIndex, ref outputLength, 
+                                rightStack, haveGoneBeyondSelf, rightStackLength,
+                                operation);
                         break;
                     }
-                    case EventType.List:
+
+                    case EventType.Cleanup:
                     {
-                        for (int i = currEvent.firstIndex + 1; i < currEvent.lastIndex; i++)
+                        // Node operation is always Additive at this point, and operation would be performed against .. nothing ..
+                        // Anything added with nothing is itself, so we don't need to apply an operation here.
+                        if (outputLength - currEvent.outputStartIndex > 0)
                         {
-                            queuedEvents.Add(new QueuedEvent
-                            {
-                                type                    = EventType.ListItem,
-                                currIndex               = i,
-                                leftStackStartIndex     = currEvent.leftStackStartIndex
-                            });
+                            var item = output[outputLength - 1];
+                            item.operation = topDownNodes[currEvent.currIndex].Operation;
+                            output[outputLength - 1] = item;
                         }
                         break;
                     }
                 }
-
             }
+
             if (outputLength == 0)
             {
-                output[outputLength] = new CategoryStackNode { nodeIndex = commonData.processedNodeIndex, operation = CSGOperationType.Additive, routingRow = CategoryRoutingRow.outside };
+                output[outputLength] = new CategoryStackNode { nodeIndex = processedNodeIndex, operation = CSGOperationType.Additive, routingRow = CategoryRoutingRow.outside };
                 outputLength++;
             }
             return outputLength;
         }
 
-        void GetStack(int currIndex, ref int haveGonePastSelf, NativeArray<CategoryStackNode> output, ref int outputLength, int outputStartIndex = 0)
-        {
-            ref var brushesTouchedByBrush = ref commonData.brushesTouchedByBrushAsset.Value;
-            ref var topDownNodes    = ref compactTree.Value.topDownNodes;
-            ref var currentNode     = ref topDownNodes[currIndex];
-            var intersectionType = brushesTouchedByBrush.Get(currentNode.nodeIndex);
-            if (intersectionType == IntersectionType.NoIntersection)
-                return;
 
-            if (intersectionType == IntersectionType.AInsideB) 
-            { 
-                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.inside }; 
-                outputLength++; 
-                return; 
-            }
-            if (intersectionType == IntersectionType.BInsideA) 
-            { 
-                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.outside };
-                outputLength++;
-                return; 
-            }
 
-            switch (currentNode.Type)
-            {
-                case CSGNodeType.Brush:
-                {
-                    // All surfaces of processedNode are aligned with it's own surfaces, so all categories are Aligned
-                    if (commonData.processedNodeIndex == currentNode.nodeIndex)
-                    {
-                        haveGonePastSelf = 1;
-                        output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.selfAligned };
-                        outputLength++;
-                        return;
-                    }
-
-                    if (haveGonePastSelf > 0)
-                        haveGonePastSelf = 2;
-
-                    // Otherwise return identity categories (input == output)
-                    output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.identity };
-                    outputLength++;
-                    return;
-                }
-                default:
-                {
-                    var nodeCount = currentNode.childCount;
-                    if (nodeCount == 0)
-                        return;
-
-                    // Skip all nodes that are not additive at the start of the branch since they will never produce any geometry
-                    var firstIndex = currentNode.childOffset;
-                    var lastIndex = firstIndex + nodeCount;
-                    for (; firstIndex < lastIndex && (topDownNodes[firstIndex].Operation != CSGOperationType.Additive &&
-                                                      topDownNodes[firstIndex].Operation != CSGOperationType.Copy); firstIndex++)
-                        firstIndex++;
-
-                    if ((lastIndex - firstIndex) <= 0)
-                        return;
-
-                    if ((lastIndex - firstIndex) == 1)
-                    {
-                        GetStack(firstIndex, ref haveGonePastSelf, output, ref outputLength, outputStartIndex);
-
-                        // Node operation is always Additive at this point, and operation would be performed against .. nothing ..
-                        // Anything added with nothing is itself, so we don't need to apply an operation here.
-                        if (outputLength - outputStartIndex > 0)
-                        {
-                            var item = output[outputLength - 1];
-                            item.operation = topDownNodes[firstIndex].Operation;
-                            output[outputLength - 1] = item;
-                        }
-
-#if SHOW_DEBUG_MESSAGES
-                        if (processedNodeIndex == kDebugNode || kDebugNode == -1)
-                            Dump(output, depth, "stack return ");
-#endif
-                        return;
-                    } else
-                    {
-                        var leftStackStartIndex = outputStartIndex;
-                        outputLength = leftStackStartIndex;
-                        GetStack(firstIndex, ref haveGonePastSelf, output, ref outputLength, leftStackStartIndex);
-                        for (int i = firstIndex + 1; i < lastIndex; i++)
-                        {
-                            var leftHaveGonePastSelf = haveGonePastSelf;
-                            var rightStackStartIndex = outputLength;
-                            GetStack(i, ref haveGonePastSelf, output, ref outputLength, rightStackStartIndex);
-                                
-
-                            var operation = topDownNodes[i].Operation;
-                            if (operation == CSGOperationType.Invalid)
-                                operation = CSGOperationType.Additive;
-
-                            var leftCount   = rightStackStartIndex - leftStackStartIndex;
-                            var rightCount  = outputLength - rightStackStartIndex;
-                                
-                            if (leftCount == 0) // left node has a branch without children or children are not intersecting with processedNode
-                            {
-                                if (rightCount == 0) // right node has a branch without children or children are not intersecting with processedNode
-                                {
-                                    // Nothing to do, both stacks are empty
-                                    outputLength = leftStackStartIndex;
-                                    continue;
-                                }
-                                switch (operation)
-                                {
-                                    case CSGOperationType.Additive:
-                                    case CSGOperationType.Copy:
-                                    {
-                                        // Output stack already contains only the right stack, which is what we want
-                                        continue;
-                                    }
-                                    default:
-                                    {
-                                        // Remove both the left and rightStack, which is stored after the leftStack
-                                        outputLength = rightStackStartIndex;
-                                        continue;
-                                    }
-                                }
-                            } else
-                            if (rightCount == 0) // right node has a branch without children or children are not intersecting with processedNode
-                            {
-                                switch (operation)
-                                {
-                                    case CSGOperationType.Additive:
-                                    case CSGOperationType.Copy:
-                                    case CSGOperationType.Subtractive:
-                                    {
-                                        // Remove the rightStack, which is stored after the leftStack
-                                        outputLength = rightStackStartIndex;
-                                        continue;
-                                    }
-                                    default:
-                                    {
-                                        // Remove both the left and rightStack, which is stored after the leftStack
-                                        outputLength = leftStackStartIndex;
-                                        continue;
-                                    }
-                                }
-                            } else
-                            {
-                                // Move the rightStack to it's own List and remove it from the leftStack
-                                var rightStack = tempStackArray;
-                                var rightStackLength = outputLength - rightStackStartIndex;
-                                rightStack.CopyFrom(output, rightStackStartIndex, rightStackLength);
-                                outputLength = rightStackStartIndex;
-
-                                Combine(output,     leftHaveGonePastSelf, leftStackStartIndex, ref outputLength, 
-                                        rightStack, haveGonePastSelf, rightStackLength,
-                                        operation);
-                            }
-                            leftHaveGonePastSelf = haveGonePastSelf;
-                        }
-                        return;
-                    }
-                }
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]        
-        int AddRowToOutput(NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
-                           ref int input, in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
-        {
-#if USE_OPTIMIZATIONS
-            for (int n = startSearchRowIndex; n < outputLength; n++)
-            {
-                //Debug.Assert(nodeIndex == outputStack[n].nodeIndex);
-                
-                // We don't want to add identical rows, so if we find one, return it's input index
-                if (outputStack[n].routingRow.Equals(routingRow))
-                    return (int)outputStack[n].input + 1; 
-            }
-#endif
-            outputStack[outputLength] = new CategoryStackNode
-            {
-                input       = (CategoryGroupIndex)input,
-                routingRow  = routingRow,
-                nodeIndex   = nodeIndex,
-                operation   = operation
-            };
-            outputLength++;
-            input++;
-            // NOTE: we return the input row index + 1 so 0 (uninitialized value) is invalid
-            return input;
-        }
-
-        // We combine the right branch after the left branch using an operation
-        void Combine(NativeArray<CategoryStackNode> leftStack,  int leftHaveGonePastSelf, int leftStackStart, ref int leftStackEnd, 
-                     NativeArray<CategoryStackNode> rightStack, int rightHaveGonePastSelf, int rightStackLength,
+        // We combine and store the right branch with the left branch, using an operation to tie them together
+        void Combine(NativeArray<CategoryStackNode> leftStack,  int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd, 
+                     NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
                      CSGOperationType operation)
         {
-            Debug.Assert(rightStackLength > 0);
+            //Debug.Assert(rightStackLength > 0);
 
             ref var topDownNodes = ref compactTree.Value.topDownNodes;
             
@@ -550,7 +397,7 @@ namespace Chisel.Core
 
             #region Allocation of temporaries
             int combinedLength = leftStackCount + (CategoryRoutingRow.Length * rightStackLength);
-            Debug.Assert(combinedLength > 0);
+            //Debug.Assert(combinedLength > 0);
             if (!combineUsedIndices.IsCreated || combineUsedIndices.Length < combinedLength)
             {
                 if (combineUsedIndices.IsCreated) combineUsedIndices.Dispose();
@@ -563,12 +410,15 @@ namespace Chisel.Core
                 combineIndexRemap = new NativeArray<int>(combinedLength, Allocator.Temp);
             }
 
-            if (!routingSteps.IsCreated || routingSteps.Capacity < rightStackLength)
+            if (!routingSteps.IsCreated)
             {
-                if (routingSteps.IsCreated) routingSteps.Dispose();
                 routingSteps = new NativeList<int>(rightStackLength, Allocator.Temp);
             } else
-                routingSteps.Clear();
+            {
+                routingSteps.Clear(); 
+                if (routingSteps.Capacity < rightStackLength * 2)
+                    routingSteps.Capacity = rightStackLength * 2;
+            }
             #endregion
 
             {
@@ -621,7 +471,7 @@ namespace Chisel.Core
 #if HAVE_SELF_CATEGORIES
                 var operationTableOffset = (int)operation;
 #else
-                var operationTableOffset = (leftHaveGonePastSelf >= 1 && rightStackLength == 1 ?
+                var operationTableOffset = (leftHaveGoneBeyondSelf >= 1 && rightStackLength == 1 ?
                                             CategoryRoutingRow.RemoveOverlappingOffset : 0) +
                                             (int)operation;
 #endif
@@ -674,7 +524,7 @@ namespace Chisel.Core
                             // Fix up output of last node to include operation between last left and last right.
                             // We don't add a routingOffset here since this is last node & we don't have a destination beyond this point
                             var routingRow = new CategoryRoutingRow(operationTableOffset, leftCategoryIndex, rightStack[rightStackRowIndex].routingRow); // applies operation
-                            bool skip = combineUsedIndices[vIndex] != kFirstRow;
+                            var skip = combineUsedIndices[vIndex] != kFirstRow;
                             combineIndexRemap[vIndex] = skip ? 0 : AddRowToOutput(outputStack, ref leftStackEnd, startSearchRowIndex, 
                                                                                   ref inputRowIndex, in routingRow, rightStack[rightStackRowIndex].nodeIndex, rightStack[rightStackRowIndex].operation);
                         }
@@ -718,12 +568,66 @@ namespace Chisel.Core
                     ChiselNativeListExtensions.RemoveRange(outputStack, outputStackStart, removeCount, ref leftStackEnd);
                 }
 #endif
-
-#if SHOW_DEBUG_MESSAGES
-                if (processedNodeIndex == kDebugNode || kDebugNode == -1)
-                    Dump(outputStack, depth);
-#endif
             }
+        }
+
+
+        [BurstDiscard]
+        static void FailureMessage()
+        {
+            Debug.LogError("Unity Burst Compiler is broken");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]        
+        int AddRowToOutput(NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
+                           ref int input, in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
+        {
+#if USE_OPTIMIZATIONS
+            for (int n = startSearchRowIndex; n < outputLength; n++)
+            {
+                //Debug.Assert(nodeIndex == outputStack[n].nodeIndex);
+                
+                // We don't want to add identical rows, so if we find one, return it's input index
+                if (outputStack[n].routingRow.Equals(routingRow))
+                    return (int)outputStack[n].input + 1; 
+            }
+#endif
+            outputStack[outputLength] = new CategoryStackNode
+            {
+                input       = (CategoryGroupIndex)input,
+                routingRow  = routingRow,
+                nodeIndex   = nodeIndex,
+                operation   = operation
+            };
+            outputLength++;
+            input++;
+            // NOTE: we return the input row index + 1 so 0 (uninitialized value) is invalid
+            return input;
+        }
+
+        // Remap indices to new destinations, used when destination rows have been merged
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void RemapIndices(NativeArray<CategoryStackNode> stack, NativeArray<int> remap, int start, int last)
+        {
+#if USE_OPTIMIZATIONS
+            for (int i = start; i < last; i++)
+            {
+                var categoryRow = stack[i];
+                var routingRow = categoryRow.routingRow;
+
+                for (int r = 0; r < CategoryRoutingRow.Length; r++)
+                {
+                    var key = (int)routingRow[r];
+                    if (key >= remap.Length || remap[key] == 0) { FailureMessage(); return; }
+                }
+
+                for (int r = 0; r < CategoryRoutingRow.Length; r++)
+                    routingRow[r] = (CategoryGroupIndex)(remap[(int)routingRow[r]] - 1);
+
+                categoryRow.routingRow = routingRow;
+                stack[i] = categoryRow;
+            }
+#endif
         }
 
 #if SHOW_DEBUG_MESSAGES
