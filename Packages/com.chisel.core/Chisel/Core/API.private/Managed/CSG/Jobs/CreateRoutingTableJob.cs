@@ -190,7 +190,7 @@ namespace Chisel.Core
         {
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
-            queuedEvents.Add(QueuedEvent.GetStackNode(0, 6));
+            queuedEvents.Add(QueuedEvent.GetStackNode(0, 0));
             ref var topDownNodes = ref compactTree.Value.topDownNodes;
             while (queuedEvents.Length > 0)
             {
@@ -378,6 +378,9 @@ namespace Chisel.Core
                 output[outputLength] = new CategoryStackNode { nodeIndex = processedNodeIndex, operation = CSGOperationType.Additive, routingRow = CategoryRoutingRow.outside };
                 outputLength++;
             }
+#if SHOW_DEBUG_MESSAGES
+            Dump(processedNodeIndex, output, outputLength);
+#endif
             return outputLength;
         }
 
@@ -631,43 +634,22 @@ namespace Chisel.Core
         }
 
 #if SHOW_DEBUG_MESSAGES
-        static int kDebugNode = -1; 
-
-        static void Dump(int processedNodeIndex, NativeList<CategoryStackNode> stack, int depth = 0)
+        static void Dump(int processedNodeIndex, NativeArray<CategoryStackNode> stack, int stackLength, int depth = 0)
         {
             var space = new String(' ', depth*4);
-            if (stack.Length == 0)
+            if (stackLength == 0)
             {
                 Debug.Log($"{space}processedNode: {processedNodeIndex} stack.Count == 0");
                 return;
             }
             var stringBuilder = new System.Text.StringBuilder();
-            for (int i = 0; i < stack.Length; i++)
+            for (int i = 0; i < stackLength; i++)
             {
                 if (i == 0 || stack[i - 1].nodeIndex != stack[i].nodeIndex)
                     stringBuilder.AppendLine($"  --- nodeIndex: {stack[i].nodeIndex}");
                 stringBuilder.AppendLine($"\t{i,-3} -\t[{(int)stack[i].input,-3}]: {stack[i].routingRow.ToString(false)}");
             }
             Debug.LogWarning($"{space}processedNode: {processedNodeIndex}\n{stringBuilder.ToString()}");
-        }
-
-        static void Dump(NativeList<CategoryStackNode> stack, int depth = 0, string extra = "")
-        {
-            var space = new String(' ', depth*4);            
-            if (stack.Length == 0)
-            {
-                Debug.Log($"{space}---- {extra}stack.Length == 0");
-                return;
-            }
-            var stringBuilder = new System.Text.StringBuilder();
-            var lastNodeIndex = stack[stack.Length - 1].nodeIndex;
-            for (int i = 0; i < stack.Length; i++)
-            {
-                if (i == 0 || stack[i - 1].nodeIndex != stack[i].nodeIndex)
-                    stringBuilder.AppendLine($"  --- nodeIndex: {stack[i].nodeIndex}");
-                stringBuilder.AppendLine($"\t{i,-3} -\t[{(int)stack[i].input,-3}]: {stack[i].routingRow.ToString(stack[i].nodeIndex == lastNodeIndex)}");
-            }
-            Debug.Log($"{space}---- {extra}\n{stringBuilder.ToString()}");
         }
 #endif
     }
