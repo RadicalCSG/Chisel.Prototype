@@ -33,7 +33,6 @@ namespace Chisel.Core
         // Write
         [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter brushRenderBufferCache;
 
-        //[NativeDisableParallelForRestriction]
         //[NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
 
         // Per thread scratch memory

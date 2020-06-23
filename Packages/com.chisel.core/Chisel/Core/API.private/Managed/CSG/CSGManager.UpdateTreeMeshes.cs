@@ -1,3 +1,4 @@
+//#define RUN_IN_SERIAL
 using System;
 using System.Collections.Generic;
 using Unity.Jobs;
@@ -5,10 +6,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Profiler = UnityEngine.Profiling.Profiler;
 using Debug = UnityEngine.Debug;
-using System.Diagnostics;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
-using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -488,7 +486,7 @@ namespace Chisel.Core
                     brushTreeSpacePlanes        = brushTreeSpacePlanes,
                     routingTableLookup          = routingTableLookup,
                     brushesTouchedByBrushes     = brushesTouchedByBrushes,
-                    //brushRenderBuffers          = brushRenderBuffers,
+                    //brushRenderBuffers        = brushRenderBuffers,
                     brushBrushIntersections     = brushBrushIntersections,
                     uniqueBrushPairs            = uniqueBrushPairs,
                     intersectionLoopBlobs       = intersectionLoopBlobs,
@@ -504,6 +502,10 @@ namespace Chisel.Core
 
             // Sort trees from largest to smallest
             Array.Sort(s_TreeUpdates, s_TreeSorter);
+
+
+            // TODO: rewrite code to not need [NativeDisableParallelForRestriction]
+            // TODO: ensure we only update exactly what we need, and nothing more
 
             try
             { 
@@ -529,8 +531,13 @@ namespace Chisel.Core
                             brushTreeSpaceBounds    = treeUpdate.brushTreeSpaceBounds,
                             treeSpaceVerticesArray  = treeUpdate.treeSpaceVerticesArray,
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle = createTreeSpaceVerticesAndBoundsJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16);
+#else
                         treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle = createTreeSpaceVerticesAndBoundsJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -558,19 +565,29 @@ namespace Chisel.Core
                             // Write
                             brushBrushIntersections = treeUpdate.brushBrushIntersections.AsParallelWriter()
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.findAllIntersectionsJobHandle = findAllIntersectionsJob.
+                            Run(dependencies);
+#else
                         treeUpdate.findAllIntersectionsJobHandle = findAllIntersectionsJob.
                             Schedule(dependencies);
+#endif
                     }
-                
+
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
                         var dependencies = treeUpdate.findAllIntersectionsJobHandle;
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
                         {
                             // Read
                             treeNodeIndex               = treeUpdate.treeNodeIndex,
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             compactTree                 = treeUpdate.compactTree,
@@ -579,8 +596,13 @@ namespace Chisel.Core
                             // Write
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.findIntersectingBrushesJobHandle = storeBrushIntersectionsJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.findIntersectingBrushesJobHandle = storeBrushIntersectionsJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -591,10 +613,15 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.findIntersectingBrushesJobHandle;
-                        var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesJob
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
+                        var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVertices2Job
                         {
                             // Read
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
@@ -602,8 +629,13 @@ namespace Chisel.Core
                             // Read / Write
                             treeSpaceVerticesArray      = treeUpdate.treeSpaceVerticesArray,
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.mergeTouchingBrushVerticesJobHandle = mergeTouchingBrushVerticesJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.mergeTouchingBrushVerticesJobHandle = mergeTouchingBrushVerticesJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -616,10 +648,15 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = JobHandle.CombineDependencies(treeUpdate.mergeTouchingBrushVerticesJobHandle, treeUpdate.findIntersectingBrushesJobHandle);
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobs
                         {
                             // Read
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
@@ -629,8 +666,13 @@ namespace Chisel.Core
                             // Write
                             basePolygons                = treeUpdate.basePolygons
                         };
+#if RUN_IN_SERIAL
                         treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
-                            Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);                    
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
+                        treeUpdate.generateBasePolygonLoopsJobHandle = createBlobPolygonsBlobs.
+                            Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -643,18 +685,28 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.findIntersectingBrushesJobHandle;
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                         {
                             // Read
-                            treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders    = rebuildTreeBrushIndexOrdersArray,
                             brushMeshLookup         = treeUpdate.brushMeshLookup,
                             transformations         = treeUpdate.transformations,
 
                             // Write
                             brushTreeSpacePlanes    = treeUpdate.brushTreeSpacePlanes
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.updateBrushTreeSpacePlanesJobHandle = createBrushTreeSpacePlanesJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.updateBrushTreeSpacePlanesJobHandle = createBrushTreeSpacePlanesJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -667,19 +719,29 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.findIntersectingBrushesJobHandle;
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         // Build categorization trees for brushes
                         var createRoutingTableJob = new CreateRoutingTableJob
                         {
                             // Read
-                            treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders    = rebuildTreeBrushIndexOrdersArray,
                             brushesTouchedByBrushes = treeUpdate.brushesTouchedByBrushes,
                             compactTree             = treeUpdate.compactTree,
 
                             // Write
                             routingTableLookup      = treeUpdate.routingTableLookup
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.updateBrushCategorizationTablesJobHandle = createRoutingTableJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.updateBrushCategorizationTablesJobHandle = createRoutingTableJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
                                 
@@ -692,10 +754,15 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.findIntersectingBrushesJobHandle;
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var findBrushPairsJob = new FindBrushPairsJob
                         {
                             // Read
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
@@ -703,8 +770,13 @@ namespace Chisel.Core
                             // Write
                             uniqueBrushPairs            = treeUpdate.uniqueBrushPairs,
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.findBrushPairsJobHandle = findBrushPairsJob.
+                            Run(dependencies);
+#else
                         treeUpdate.findBrushPairsJobHandle = findBrushPairsJob.
                             Schedule(dependencies);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -716,18 +788,28 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.findBrushPairsJobHandle;
+#if RUN_IN_SERIAL
+                        var uniqueBrushPairsArray = treeUpdate.uniqueBrushPairs.AsArray();
+#else
+                        var uniqueBrushPairsArray = treeUpdate.uniqueBrushPairs.AsDeferredJobArray();
+#endif
                         var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
                         {
                             // Read
-                            uniqueBrushPairs        = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
+                            uniqueBrushPairs        = uniqueBrushPairsArray,
                             transformations         = treeUpdate.transformations,
                             brushMeshLookup         = treeUpdate.brushMeshLookup,
 
                             // Write
                             intersectingBrushes     = treeUpdate.intersectingBrushes.AsParallelWriter()
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.prepareBrushPairIntersectionsJobHandle = prepareBrushPairIntersectionsJob.
+                            Run(treeUpdate.uniqueBrushPairs, 8, dependencies);
+#else
                         treeUpdate.prepareBrushPairIntersectionsJobHandle = prepareBrushPairIntersectionsJob.
                             Schedule(treeUpdate.uniqueBrushPairs, 8, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -741,11 +823,16 @@ namespace Chisel.Core
                                                             treeUpdate.mergeTouchingBrushVerticesJobHandle,
                                                             treeUpdate.updateBrushTreeSpacePlanesJobHandle, 
                                                             treeUpdate.prepareBrushPairIntersectionsJobHandle);
+#if RUN_IN_SERIAL
+                        var intersectingBrushesArray = treeUpdate.intersectingBrushes.AsArray();
+#else
+                        var intersectingBrushesArray = treeUpdate.intersectingBrushes.AsDeferredJobArray();
+#endif
                         var findAllIntersectionLoopsJob = new CreateIntersectionLoopsJob
                         {
                             // Read
                             brushTreeSpacePlanes        = treeUpdate.brushTreeSpacePlanes,
-                            intersectingBrushes         = treeUpdate.intersectingBrushes.AsDeferredJobArray(),
+                            intersectingBrushes         = intersectingBrushesArray,
                             treeSpaceVerticesArray      = treeUpdate.treeSpaceVerticesArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
@@ -753,8 +840,13 @@ namespace Chisel.Core
                             // Write
                             outputSurfaces              = treeUpdate.intersectionLoopBlobs.AsParallelWriter()
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.findAllIntersectionLoopsJobHandle = findAllIntersectionLoopsJob.
+                            Run(treeUpdate.intersectingBrushes, 8, dependencies);
+#else
                         treeUpdate.findAllIntersectionLoopsJobHandle = findAllIntersectionLoopsJob.
                             Schedule(treeUpdate.intersectingBrushes, 8, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -765,21 +857,33 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];                    
                         var dependencies    = JobHandle.CombineDependencies(treeUpdate.findAllIntersectionLoopsJobHandle, treeUpdate.prepareBrushPairIntersectionsJobHandle, treeUpdate.generateBasePolygonLoopsJobHandle);
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray    = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+                        var intersectionLoopBlobsArray          = treeUpdate.intersectionLoopBlobs.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+                        var intersectionLoopBlobsArray          = treeUpdate.intersectionLoopBlobs.AsDeferredJobArray();
+#endif
                         var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
                         {
                             // Read
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
-                            intersectionLoopBlobs       = treeUpdate.intersectionLoopBlobs.AsDeferredJobArray(),
+                            intersectionLoopBlobs       = intersectionLoopBlobsArray,
                             brushTreeSpacePlanes        = treeUpdate.brushTreeSpacePlanes,
                             basePolygons                = treeUpdate.basePolygons,// by nodeOrder (non-bounds, non-surfaceinfo)
 
                             // Write
                             output                      = treeUpdate.dataStream1.AsWriter()
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.allFindLoopOverlapIntersectionsJobHandle = findLoopOverlapIntersectionsJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.allFindLoopOverlapIntersectionsJobHandle = findLoopOverlapIntersectionsJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -792,10 +896,15 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         var dependencies    = treeUpdate.allFindLoopOverlapIntersectionsJobHandle;
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesJob
                         {
                             // Read
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
@@ -803,8 +912,13 @@ namespace Chisel.Core
                             // Read / Write
                             treeSpaceVerticesArray      = treeUpdate.treeSpaceVerticesArray,
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.mergeTouchingBrushVertices2JobHandle = mergeTouchingBrushVerticesJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#else
                         treeUpdate.mergeTouchingBrushVertices2JobHandle = mergeTouchingBrushVerticesJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
+#endif
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -821,10 +935,15 @@ namespace Chisel.Core
                         // Perform CSG
                         // TODO: determine when a brush is completely inside another brush
                         //		 (might not have any intersection loops)
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var performCSGJob = new PerformCSGJob
                         {
                             // Read
-                            treeBrushNodeIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),    
+                            treeBrushNodeIndexOrders    = rebuildTreeBrushIndexOrdersArray,    
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
                             routingTableLookup          = treeUpdate.routingTableLookup,
@@ -835,8 +954,13 @@ namespace Chisel.Core
                             // Write
                             output                      = treeUpdate.dataStream2.AsWriter(),
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.allPerformAllCSGJobHandle = performCSGJob.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 8, dependencies);
+#else
                         treeUpdate.allPerformAllCSGJobHandle = performCSGJob.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 8, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -853,10 +977,15 @@ namespace Chisel.Core
                         ref var brushRenderBufferCache = ref chiselLookupValues.brushRenderBufferCache;
 
                         // TODO: Potentially merge this with PerformCSGJob?
+#if RUN_IN_SERIAL
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsArray();
+#else
+                        var rebuildTreeBrushIndexOrdersArray = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray();
+#endif
                         var generateSurfaceRenderBuffers = new GenerateSurfaceTrianglesJob
                         {
                             // Read
-                            treeBrushNodeIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),  
+                            treeBrushNodeIndexOrders    = rebuildTreeBrushIndexOrdersArray,  
                             basePolygons                = treeUpdate.basePolygons,
                             transformations             = treeUpdate.transformations,
                             input                       = treeUpdate.dataStream2.AsReader(),
@@ -865,8 +994,13 @@ namespace Chisel.Core
                             brushRenderBufferCache      = brushRenderBufferCache.AsParallelWriter(),
                             //brushRenderBuffers          = treeUpdate.brushRenderBuffers,          // TODO: figure out why this doesn't work w/ incremental updates
                         };
+#if RUN_IN_SERIAL
+                        treeUpdate.allGenerateSurfaceTrianglesJobHandle = generateSurfaceRenderBuffers.
+                            Run(treeUpdate.rebuildTreeBrushIndexOrders, 64, dependencies);
+#else
                         treeUpdate.allGenerateSurfaceTrianglesJobHandle = generateSurfaceRenderBuffers.
                             Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 64, dependencies);
+#endif
                     }
                 } finally { Profiler.EndSample(); }
 
@@ -998,7 +1132,7 @@ namespace Chisel.Core
 
 
 
-        #region Rebuild / Update
+#region Rebuild / Update
         static void UpdateNodeTransformation(ref NativeHashMap<int, NodeTransformations> transformations, int nodeIndex)
         {
             // TODO: clean this up and make this sensible
@@ -1017,9 +1151,9 @@ namespace Chisel.Core
 
             transformations[nodeIndex] = new NodeTransformations { nodeToTree = nodeTransform.nodeToTree, treeToNode = nodeTransform.treeToNode };
         }
-        #endregion
+#endregion
 
-        #region Reset/Rebuild
+#region Reset/Rebuild
         static void Reset()
         {
             for (int t = 0; t < trees.Count; t++)
@@ -1067,6 +1201,6 @@ namespace Chisel.Core
             handle.Complete();
             return true;
         }
-            #endregion
+#endregion
     }
 }

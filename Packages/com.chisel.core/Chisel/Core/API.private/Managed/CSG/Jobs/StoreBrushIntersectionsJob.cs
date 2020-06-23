@@ -15,16 +15,16 @@ namespace Chisel.Core
     struct StoreBrushIntersectionsJob : IJobParallelFor
     {
         // Read
-        [NoAlias,ReadOnly] public int                                   treeNodeIndex;
-        [NoAlias,ReadOnly] public NativeArray<IndexOrder>               treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public int                                  treeNodeIndex;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>              treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>                     nodeIndexToNodeOrder;
         [NoAlias, ReadOnly] public int                                  nodeIndexToNodeOrderOffset;
-        [NoAlias,ReadOnly] public BlobAssetReference<CompactTree>       compactTree;
-        [NoAlias,ReadOnly] public NativeMultiHashMap<int, BrushPair>    brushBrushIntersections;
+        [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>      compactTree;
+        [NoAlias, ReadOnly] public NativeMultiHashMap<int, BrushPair>   brushBrushIntersections;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias,WriteOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
 
         static void SetUsedNodesBits(BlobAssetReference<CompactTree> compactTree, NativeList<BrushIntersection> brushIntersections, int brushNodeIndex, int rootNodeIndex, BrushIntersectionLookup bitset)

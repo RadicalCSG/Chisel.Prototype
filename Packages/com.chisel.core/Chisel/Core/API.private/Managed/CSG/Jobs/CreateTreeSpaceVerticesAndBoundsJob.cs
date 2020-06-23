@@ -30,7 +30,6 @@ namespace Chisel.Core
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
             var transform       = transformations[brushNodeOrder];
 

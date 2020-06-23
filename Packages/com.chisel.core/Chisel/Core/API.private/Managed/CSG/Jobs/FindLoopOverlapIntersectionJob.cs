@@ -83,9 +83,9 @@ namespace Chisel.Core
                 var dstEdges = dst.AllocateWithCapacityForIndex(index, vertices.Length + extraCapacity);
                 for (int j = 1; j < vertices.Length; j++)
                 {
-                    dstEdges.AddNoResize(new Edge() { index1 = srcIndices[j - 1], index2 = srcIndices[j] });
+                    dstEdges.AddNoResize(new Edge { index1 = srcIndices[j - 1], index2 = srcIndices[j] });
                 }
-                dstEdges.AddNoResize(new Edge() { index1 = srcIndices[vertices.Length - 1], index2 = srcIndices[0] });
+                dstEdges.AddNoResize(new Edge { index1 = srcIndices[vertices.Length - 1], index2 = srcIndices[0] });
             }
         }
 
@@ -444,9 +444,7 @@ namespace Chisel.Core
                 inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
             }
 
-            //var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
             inputEdges.CopyFrom(edges, 0, edges.Length);
-            //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
             edges.Clear();
 
             int4 tempVertices = int4.zero;
@@ -551,12 +549,11 @@ namespace Chisel.Core
 
                 if (foundVertices > 0)
                 {
-                    var tempVertexIndex0 = tempVertices[1];
-                    var tempVertex0 = hashedVertices[tempVertexIndex0];
-                    var tempVertexIndex1 = tempVertexIndex0;
                     if (foundVertices == 2)
                     {
-                        tempVertexIndex1 = tempVertices[2];
+                        var tempVertexIndex0 = tempVertices[1];
+                        var tempVertexIndex1 = tempVertices[2];
+                        var tempVertex0 = hashedVertices[tempVertexIndex0];
                         var tempVertex1 = hashedVertices[tempVertexIndex1];
                         var dot0 = math.lengthsq(tempVertex0 - vertex1);
                         var dot1 = math.lengthsq(tempVertex1 - vertex1);
@@ -578,8 +575,6 @@ namespace Chisel.Core
                     edges.AddNoResize(inputEdges[e]);
                 }
             }
-
-            //UnsafeUtility.Free(inputEdges, Allocator.TempJob);
         }
         
         public void FindBasePolygonPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes, 
@@ -596,16 +591,13 @@ namespace Chisel.Core
                 inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
             }
 
-            //var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
-            //var inputEdges          = (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
             inputEdges.CopyFrom(edges, 0, edges.Length);
-            //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
             edges.Clear();
 
             int4 tempVertices = int4.zero;
 
-            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;
@@ -704,12 +696,11 @@ namespace Chisel.Core
 
                 if (foundVertices > 0)
                 {
-                    var tempVertexIndex0 = tempVertices[1];
-                    var tempVertex0 = hashedVertices[tempVertexIndex0];
-                    var tempVertexIndex1 = tempVertexIndex0;
                     if (foundVertices == 2)
                     {
-                        tempVertexIndex1 = tempVertices[2];
+                        var tempVertexIndex0 = tempVertices[1];
+                        var tempVertexIndex1 = tempVertices[2];
+                        var tempVertex0 = hashedVertices[tempVertexIndex0];
                         var tempVertex1 = hashedVertices[tempVertexIndex1];
                         var dot0 = math.lengthsq(tempVertex0 - vertex1);
                         var dot1 = math.lengthsq(tempVertex1 - vertex1);
@@ -731,14 +722,12 @@ namespace Chisel.Core
                     edges.AddNoResize(inputEdges[e]);
                 }
             }
-
-            //UnsafeUtility.Free(inputEdges, Allocator.TempJob);
         }
 
 
         public void FindLoopVertexOverlaps(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
-                                                  int selfBrushNodeOrder, HashedVertices hashedVertices,
-                                                  NativeListArray<Edge>.NativeList otherEdges, NativeListArray<Edge>.NativeList edges)
+                                           int selfBrushNodeOrder, HashedVertices vertices,
+                                           NativeListArray<Edge>.NativeList otherEdges, NativeListArray<Edge>.NativeList edges)
         {
             if (edges.Length < 3 ||
                 otherEdges.Length < 3)
@@ -752,11 +741,8 @@ namespace Chisel.Core
                 if (otherVertices.IsCreated) otherVertices.Dispose();
                 otherVertices = new NativeArray<ushort>(otherEdges.Length, Allocator.Temp);
             }
-            //var otherVertices       = stackalloc ushort[otherEdges.Length];
-            //var otherVertices       = (ushort*)UnsafeUtility.Malloc(otherEdges.Length * sizeof(ushort), 4, Allocator.TempJob);
-
+            
             // TODO: use edges instead + 2 planes intersecting each edge
-            var vertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
             for (int v = 0; v < otherEdges.Length; v++)
             {
                 var vertexIndex = otherEdges[v].index1; // <- assumes no gaps
@@ -801,9 +787,7 @@ namespace Chisel.Core
                     inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
                 }
 
-                //var inputEdges          = stackalloc Edge[edges.Length];
                 inputEdges.CopyFrom(edges, 0, edges.Length);
-                //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
                 edges.Clear();
 
                 // TODO: Optimize the hell out of this
@@ -814,9 +798,6 @@ namespace Chisel.Core
 
                     var vertex0 = vertices[vertexIndex0];
                     var vertex1 = vertices[vertexIndex1];
-
-                    var vertex0w = new float4(vertex0, 1);
-                    var vertex1w = new float4(vertex1, 1);
 
                     tempList.Clear();
                     tempList.AddNoResize(vertexIndex0);
@@ -871,7 +852,7 @@ namespace Chisel.Core
                         for (int i = 1; i < tempList.Length; i++)
                         {
                             if (tempList[i - 1] != tempList[i])
-                                edges.AddNoResize(new Edge() { index1 = tempList[i - 1], index2 = tempList[i] });
+                                edges.AddNoResize(new Edge { index1 = tempList[i - 1], index2 = tempList[i] });
                         }
                     } else
                     {

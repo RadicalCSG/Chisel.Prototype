@@ -144,6 +144,9 @@ namespace Chisel.Core
 
             Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
 
+            if (treeSpaceVerticesArray[brushNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                return;
+
             var mesh                    = brushMeshLookup[brushNodeOrder];
             ref var treeSpaceVertices   = ref treeSpaceVerticesArray[brushNodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
@@ -210,6 +213,9 @@ namespace Chisel.Core
                 var intersectingNodeIndex = brushIntersections[i].nodeIndex;
                 var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
                 if (intersectingNodeOrder < brushNodeOrder)
+                    continue;
+
+                if (treeSpaceVerticesArray[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
