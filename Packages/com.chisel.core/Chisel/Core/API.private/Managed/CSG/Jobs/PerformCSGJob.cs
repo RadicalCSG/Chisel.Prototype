@@ -30,7 +30,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<EdgeCategory> categories2;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         outEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          intersectedHoleIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>          destroyedEdges;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray            destroyedEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  intersectionSurfaceInfo;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          nodeIndextoTableIndex;
 
@@ -514,9 +514,9 @@ namespace Chisel.Core
                     if (!destroyedEdges.IsCreated || destroyedEdges.Length < edgeOffset)
                     {
                         if (destroyedEdges.IsCreated) destroyedEdges.Dispose();
-                        destroyedEdges = new NativeArray<int>(edgeOffset, Allocator.Temp, NativeArrayOptions.ClearMemory);
+                        destroyedEdges = new NativeBitArray(edgeOffset, Allocator.Temp, NativeArrayOptions.ClearMemory);
                     } else
-                        destroyedEdges.ClearValues();
+                        destroyedEdges.Clear();
                     /*/
                     var destroyedEdges = stackalloc byte[edgeOffset];
                     UnsafeUtility.MemSet(destroyedEdges, 0, edgeOffset);
@@ -537,7 +537,7 @@ namespace Chisel.Core
                                     var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment2, brushVertices);
                                     if (category == EdgeCategory.Outside || category == EdgeCategory.Aligned)
                                         continue;
-                                    destroyedEdges[segment1.edgeOffset + e] = 1;
+                                    destroyedEdges.Set(segment1.edgeOffset + e, true);
                                 }
 
                                 for (int e = 0; e < segment2.edgeLength; e++)
@@ -545,7 +545,7 @@ namespace Chisel.Core
                                     var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
                                     if (category == EdgeCategory.Inside)
                                         continue;
-                                    destroyedEdges[segment2.edgeOffset + e] = 1;
+                                    destroyedEdges.Set(segment2.edgeOffset + e, true);
                                 }
                             }
                         }
@@ -568,7 +568,7 @@ namespace Chisel.Core
                                         if (category == EdgeCategory.Outside ||
                                             category == EdgeCategory.Aligned)
                                             continue;
-                                        destroyedEdges[segment1.edgeOffset + e] = 1;
+                                        destroyedEdges.Set(segment1.edgeOffset + e, true);
                                     }
 
                                     for (int e = 0; e < segment2.edgeLength; e++)
@@ -576,7 +576,7 @@ namespace Chisel.Core
                                         var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
                                         if (category == EdgeCategory.Outside)
                                             continue;
-                                        destroyedEdges[segment2.edgeOffset + e] = 1;
+                                        destroyedEdges.Set(segment2.edgeOffset + e, true);
                                     }
                                 }
                             }
@@ -586,7 +586,7 @@ namespace Chisel.Core
                             var segment = allSegments[holeIndicesList.Length];
                             for (int e = baseLoopEdges.Length - 1; e >= 0; e--)
                             {
-                                if (destroyedEdges[segment.edgeOffset + e] == 0)
+                                if (!destroyedEdges.IsSet(segment.edgeOffset + e))
                                     continue;
                                 baseLoopEdges.RemoveAtSwapBack(e);
                             }
@@ -599,7 +599,7 @@ namespace Chisel.Core
                             var segment     = allSegments[h1];
                             for (int e = holeEdges1.Length - 1; e >= 0; e--)
                             {
-                                if (destroyedEdges[segment.edgeOffset + e] == 0)
+                                if (!destroyedEdges.IsSet(segment.edgeOffset + e))
                                     continue;
                                 holeEdges1.RemoveAtSwapBack(e);
                             }

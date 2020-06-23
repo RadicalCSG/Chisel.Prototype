@@ -25,7 +25,7 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<byte>                 combineUsedIndices;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray                    combineUsedIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>                  combineIndexRemap;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   routingSteps;
         [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>        routingLookups;
@@ -404,8 +404,9 @@ namespace Chisel.Core
             if (!combineUsedIndices.IsCreated || combineUsedIndices.Length < combinedLength)
             {
                 if (combineUsedIndices.IsCreated) combineUsedIndices.Dispose();
-                combineUsedIndices = new NativeArray<byte>(combinedLength, Allocator.Temp);
-            }
+                combineUsedIndices = new NativeBitArray(combinedLength, Allocator.Temp);
+            } else
+                combineUsedIndices.Clear();
 
             if (!combineIndexRemap.IsCreated || combineIndexRemap.Length < combinedLength)
             {
@@ -447,10 +448,10 @@ namespace Chisel.Core
                 int prevNodeIndex       = startSearchRowIndex - 1;
                 if (leftStackCount == 0)
                 {
-                    combineUsedIndices[0] = kFirstRow;
-                    combineUsedIndices[1] = kFirstRow;
-                    combineUsedIndices[2] = kFirstRow;
-                    combineUsedIndices[3] = kFirstRow;
+                    combineUsedIndices.Set(0, true);
+                    combineUsedIndices.Set(1, true);
+                    combineUsedIndices.Set(2, true);
+                    combineUsedIndices.Set(3, true);
                 } else
                 {
                     while (prevNodeIndex > leftStackStart)
@@ -463,7 +464,7 @@ namespace Chisel.Core
                     for (int p = prevNodeIndex; p < startSearchRowIndex; p++)
                     {
                         for (int t = 0; t < CategoryRoutingRow.Length; t++)
-                            combineUsedIndices[(int)leftStack[p].routingRow[t]] = kFirstRow;
+                            combineUsedIndices.Set((int)leftStack[p].routingRow[t], true);
                     }
                 }
 
@@ -492,7 +493,7 @@ namespace Chisel.Core
                         for (var rightStackRowIndex = startRightStackRowIndex; rightStackRowIndex < endRightStackRowIndex; rightStackRowIndex++, vIndex++)
                         {
                             var routingRow = rightStack[rightStackRowIndex].routingRow + routingOffset; // Fix up routing to include offset b/c duplication
-                            bool skip = combineUsedIndices[vIndex] != kFirstRow;
+                            bool skip = !combineUsedIndices.IsSet(vIndex);
                             combineIndexRemap[vIndex] = skip ? 0 : AddRowToOutput(outputStack, ref leftStackEnd, startSearchRowIndex,
                                                                                   ref inputRowIndex, in routingRow, rightStack[rightStackRowIndex].nodeIndex, rightStack[rightStackRowIndex].operation);
                         }
@@ -504,10 +505,10 @@ namespace Chisel.Core
                     }
 
                     combineIndexRemap.ClearValues();
-                    combineUsedIndices.ClearValues();
+                    combineUsedIndices.Clear();
                     for (int p = startSearchRowIndex; p < leftStackEnd; p++)
                         for (int t = 0; t < CategoryRoutingRow.Length; t++)
-                            combineUsedIndices[(int)outputStack[p].routingRow[t]] = kFirstRow;
+                            combineUsedIndices.Set((int)outputStack[p].routingRow[t], true);
 
                     prevNodeIndex   = startSearchRowIndex;
                     startSearchRowIndex = leftStackEnd;
@@ -527,7 +528,7 @@ namespace Chisel.Core
                             // Fix up output of last node to include operation between last left and last right.
                             // We don't add a routingOffset here since this is last node & we don't have a destination beyond this point
                             var routingRow = new CategoryRoutingRow(operationTableOffset, leftCategoryIndex, rightStack[rightStackRowIndex].routingRow); // applies operation
-                            var skip = combineUsedIndices[vIndex] != kFirstRow;
+                            var skip = !combineUsedIndices.IsSet(vIndex);
                             combineIndexRemap[vIndex] = skip ? 0 : AddRowToOutput(outputStack, ref leftStackEnd, startSearchRowIndex, 
                                                                                   ref inputRowIndex, in routingRow, rightStack[rightStackRowIndex].nodeIndex, rightStack[rightStackRowIndex].operation);
                         }

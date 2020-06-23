@@ -43,7 +43,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<PlanePair> usedPlanePairs;
         [NativeDisableContainerSafetyRestriction] NativeArray<ushort>    vertexIntersectionPlanes;
         [NativeDisableContainerSafetyRestriction] NativeArray<int2>      vertexIntersectionSegments;
-        [NativeDisableContainerSafetyRestriction] NativeArray<byte>      planeAvailable;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray         planeAvailable;
 
 
         // TODO: turn into job
@@ -109,7 +109,7 @@ namespace Chisel.Core
         void FindPlanePairs(ref BrushMeshBlob         mesh,
                             ref BlobBuilderArray<int> intersectingPlanes,
                             NativeArray<float4>       localSpacePlanesPtr,
-                            NativeArray<int>          vertexUsedPtr,
+                            NativeArray<int>          vertexUsed,
                             float4x4                  vertexTransform,
                             NativeArray<PlanePair>    usedPlanePairsPtr,
                             out int                   usedPlanePairsLength,
@@ -127,9 +127,9 @@ namespace Chisel.Core
                 if (!planeAvailable.IsCreated || planeAvailable.Length < mesh.localPlanes.Length)
                 {
                     if (planeAvailable.IsCreated) planeAvailable.Dispose();
-                    planeAvailable = new NativeArray<byte>(mesh.localPlanes.Length, Allocator.Temp);
+                    planeAvailable = new NativeBitArray(mesh.localPlanes.Length, Allocator.Temp);
                 } else
-                    planeAvailable.ClearValues();
+                    planeAvailable.Clear();
 
                 usedVerticesLength = 0;
                 usedPlanePairsLength = 0;
@@ -138,7 +138,7 @@ namespace Chisel.Core
                     {
                         for (int p = 0; p < intersectingPlanes.Length; p++)
                         {
-                            planeAvailable[intersectingPlanes[p]] = 1;
+                            planeAvailable.Set(intersectingPlanes[p], true);
                         }
                     }
 
@@ -153,8 +153,8 @@ namespace Chisel.Core
 
                         //Debug.Assert(planeIndex0 != planeIndex1);
 
-                        if (planeAvailable[planeIndex0] == 0 ||
-                            planeAvailable[planeIndex1] == 0)
+                        if (!planeAvailable.IsSet(planeIndex0) ||
+                            !planeAvailable.IsSet(planeIndex1))
                             continue;
 
                         var plane0 = localSpacePlanesPtr[planeIndex0];
@@ -166,8 +166,8 @@ namespace Chisel.Core
                         var vertex0 = math.mul(vertexTransform, new float4(mesh.localVertices[vertexIndex0], 1));
                         var vertex1 = math.mul(vertexTransform, new float4(mesh.localVertices[vertexIndex1], 1));
 
-                        if (vertexUsedPtr[vertexIndex0] == 0) { vertexUsedPtr[vertexIndex0] = vertexIndex0 + 1; usedVerticesLength++; }
-                        if (vertexUsedPtr[vertexIndex1] == 0) { vertexUsedPtr[vertexIndex1] = vertexIndex1 + 1; usedVerticesLength++; }
+                        if (vertexUsed[vertexIndex0] == 0) { vertexUsed[vertexIndex0] = vertexIndex0 + 1; usedVerticesLength++; }
+                        if (vertexUsed[vertexIndex1] == 0) { vertexUsed[vertexIndex1] = vertexIndex1 + 1; usedVerticesLength++; }
                         usedPlanePairsPtr[usedPlanePairsLength] = new PlanePair
                         {
                             plane0 = plane0,

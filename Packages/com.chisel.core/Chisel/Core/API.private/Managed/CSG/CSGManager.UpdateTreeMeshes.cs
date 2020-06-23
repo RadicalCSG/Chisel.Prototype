@@ -31,6 +31,7 @@ namespace Chisel.Core
             public NativeArray<IndexOrder>  allTreeBrushIndexOrders;
             public NativeArray<int>         nodeIndexToNodeOrder;
             public int                      nodeIndexToNodeOrderOffset;
+            public int                      maxNodeOrder;
             public NativeList<IndexOrder>   rebuildTreeBrushIndexOrders;
             
             public BlobAssetReference<CompactTree>  compactTree;
@@ -478,6 +479,7 @@ namespace Chisel.Core
                     nodeIndexToNodeOrder        = nodeIndexToNodeOrder,
                     nodeIndexToNodeOrderOffset  = nodeIndexToNodeOrderOffset,
                     rebuildTreeBrushIndexOrders = rebuildTreeBrushIndexOrders,
+                    maxNodeOrder                = treeBrushes.Count,
                     brushMeshLookup             = brushMeshLookup,
                     transformations             = transformations,
                     basePolygons                = basePolygons,
@@ -503,13 +505,11 @@ namespace Chisel.Core
             // Sort trees from largest to smallest
             Array.Sort(s_TreeUpdates, s_TreeSorter);
 
-
             // TODO: rewrite code to not need [NativeDisableParallelForRestriction]
             // TODO: ensure we only update exactly what we need, and nothing more
 
             try
-            { 
-
+            {
                 Profiler.BeginSample("CSG_Jobs");
 
                 // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
@@ -870,6 +870,7 @@ namespace Chisel.Core
                             treeBrushIndexOrders        = rebuildTreeBrushIndexOrdersArray,
                             nodeIndexToNodeOrder        = treeUpdate.nodeIndexToNodeOrder,
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
+                            maxNodeOrder                = treeUpdate.maxNodeOrder,
                             intersectionLoopBlobs       = intersectionLoopBlobsArray,
                             brushTreeSpacePlanes        = treeUpdate.brushTreeSpacePlanes,
                             basePolygons                = treeUpdate.basePolygons,// by nodeOrder (non-bounds, non-surfaceinfo)
