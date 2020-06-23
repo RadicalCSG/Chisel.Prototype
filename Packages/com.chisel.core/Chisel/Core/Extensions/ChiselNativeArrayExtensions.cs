@@ -24,6 +24,15 @@ namespace Chisel.Core
             return nativeList;
         }
 
+        public unsafe static uint Hash<T>(this NativeArray<T> list, int length) where T : unmanaged
+        {
+            if (length < 0 || length > list.Length)
+                throw new ArgumentOutOfRangeException("length");
+            if (length == 0)
+                return 0;
+            return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
+        }
+
         public unsafe static NativeArray<T> ToNativeArray<T>(this T[] array, Allocator allocator) where T : unmanaged
         {
             return new NativeArray<T>(array, allocator);

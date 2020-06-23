@@ -418,15 +418,41 @@ namespace Chisel.Core
 #endif
             int index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            CheckNotAllocated(ptr);
             capacity = Math.Max(1, capacity);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            if (ptr == null || !ptr->IsCreated)
+            {
+                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            } else
+            {
+                ptr->Clear();
+                if (ptr->Capacity < capacity)
+                    ptr->SetCapacity<T>(capacity);
+            }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             return new NativeList(m_Array->Ptr[index], ref m_Safety);
 #else
             return new NativeList(m_Array->Ptr[index]);
 #endif
+        }
+
+        public int AllocateItemAndAddValues(NativeArray<T> other)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+#endif
+            var index = m_Array->AllocateItem();
+            var ptr = m_Array->Ptr[index];
+            CheckNotAllocated(ptr);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+            var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+            var dstList = new NativeList(m_Array->Ptr[index]);
+#endif
+            dstList.AddRangeNoResize(other);
+            return index;
         }
 
         public int AllocateItemAndAddValues(NativeListArray<T>.NativeList other)
@@ -436,8 +462,16 @@ namespace Chisel.Core
 #endif
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            CheckNotAllocated(ptr);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+
+            if (ptr == null || !ptr->IsCreated)
+            {
+                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+            } else
+            {
+                ptr->Clear();
+                if (ptr->Capacity < other.Length)
+                    ptr->SetCapacity<T>(other.Length);
+            }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
@@ -468,6 +502,33 @@ namespace Chisel.Core
                 var dstList = new NativeList(m_Array->Ptr[index]);
 #endif
                 dstList.AddRangeNoResize(otherPtr, otherLength);
+            }
+            Debug.Assert(IsAllocated(index));
+            return index;
+        }
+
+        public unsafe int AllocateItemAndAddValues(NativeArray<T> other, int otherLength)
+        {
+            if (otherLength > other.Length)
+                throw new ArgumentOutOfRangeException("otherLength");
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+#endif
+            var index = m_Array->AllocateItem();
+            var ptr = m_Array->Ptr[index];
+            var capacity = Math.Max(1, otherLength);
+            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            CheckAllocated(m_Array->Ptr[index]);
+#endif
+            if (otherLength > 0)
+            {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
+#else
+                var dstList = new NativeList(m_Array->Ptr[index]);
+#endif
+                dstList.AddRangeNoResize(other, otherLength);
             }
             Debug.Assert(IsAllocated(index));
             return index;
@@ -776,9 +837,24 @@ namespace Chisel.Core
                 m_ListData->AddRangeNoResize<T>(ptr, length);
             }
 
+            public void AddRangeNoResize(NativeArray<T> other, int length)
+            {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+                CheckNull(m_ListData);
+#endif
+                CheckArgPositive(length);
+                m_ListData->AddRangeNoResize<T>(other.GetUnsafeReadOnlyPtr(), length);
+            }
+
+            public void AddRangeNoResize(NativeArray<T> list)
+            {
+                AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
+            }
+
             public void AddRangeNoResize(NativeList<T> list)
             {
-                AddRangeNoResize(list.GetUnsafePtr(), list.Length);
+                AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
             }
 
             public void AddRangeNoResize(NativeListArray<T>.NativeList list)

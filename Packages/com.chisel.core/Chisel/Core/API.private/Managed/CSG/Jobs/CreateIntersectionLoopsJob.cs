@@ -12,7 +12,7 @@ using UnityEngine.Assertions.Must;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    public unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
+    struct CreateIntersectionLoopsJob : IJobParallelFor
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
@@ -28,6 +28,20 @@ namespace Chisel.Core
         // Write
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoops>>.ParallelWriter   outputSurfaces;
 
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>                   usedVertexIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<PlaneIndexOffsetLength>   planeIndexOffsets;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>                   uniqueIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int2>                     sortedStack;        
+        [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices1;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   foundVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionEdge>         foundEdges;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionPlanes>       foundIntersections;
+        [NativeDisableContainerSafetyRestriction] HashedVertices                        hashedVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices                        snapHashedVertices;
+                
         struct PlaneVertexIndexPair
         {
             public ushort planeIndex;
@@ -41,16 +55,15 @@ namespace Chisel.Core
             public ushort planeIndex;
         }
         
-        public static unsafe bool IsOutsidePlanes(ref BlobArray<float4> planes, float4 localVertex)
+        bool IsOutsidePlanes(ref BlobArray<float4> planes, float4 localVertex)
         {
-            var planePtr            = (float4*)planes.GetUnsafePtr();
             int n = 0;
             for (; n + 4 < planes.Length; n+=4)
             {
-                var distance = new float4(math.dot(planePtr[n+0], localVertex),
-                                          math.dot(planePtr[n+1], localVertex),
-                                          math.dot(planePtr[n+2], localVertex),
-                                          math.dot(planePtr[n+3], localVertex));
+                var distance = new float4(math.dot(planes[n+0], localVertex),
+                                          math.dot(planes[n+1], localVertex),
+                                          math.dot(planes[n+2], localVertex),
+                                          math.dot(planes[n+3], localVertex));
 
                 // will be 'false' when distance is NaN or Infinity
                 if (!math.all(distance <= kFatPlaneWidthEpsilon))
@@ -58,7 +71,7 @@ namespace Chisel.Core
             }
             for (; n < planes.Length; n ++)
             {
-                var distance = math.dot(planePtr[n], localVertex);
+                var distance = math.dot(planes[n], localVertex);
 
                 // will be 'false' when distance is NaN or Infinity
                 if (!(distance <= kFatPlaneWidthEpsilon))
@@ -69,7 +82,7 @@ namespace Chisel.Core
 
 
         #region Sort
-        static float3 FindPolygonCentroid(float3* vertices, ushort* indices, int offset, int indicesCount)
+        static float3 FindPolygonCentroid(HashedVertices vertices, NativeArray<ushort> indices, int offset, int indicesCount)
         {
             var centroid = float3.zero;
             for (int i = 0; i < indicesCount; i++, offset++)
@@ -78,7 +91,7 @@ namespace Chisel.Core
         }
 
         // TODO: sort by using plane information instead of unreliable floating point math ..
-        unsafe static void SortIndices(float3* vertices, int2* sortedStack, ushort* indices, int offset, int indicesCount, float3 normal)
+        static void SortIndices(HashedVertices vertices, NativeArray<int2> sortedStack, NativeArray<ushort> indices, int offset, int indicesCount, float3 normal)
         {
             // There's no point in trying to sort a point or a line 
             if (indicesCount < 3)
@@ -179,7 +192,7 @@ namespace Chisel.Core
             }
         }
         #endregion
-
+        
         //[MethodImpl(MethodImplOptions.NoInlining)]
         void FindInsideVertices(ref BlobArray<float3>               usedVertices0,
                                 ref BlobArray<ushort>               vertexIntersectionPlanes,
@@ -192,8 +205,20 @@ namespace Chisel.Core
                                 NativeArray<PlaneVertexIndexPair>   foundIndices0,
                                 ref int                             foundIndices0Length)
         {
-            var localVertices   = stackalloc float4[usedVertices0.Length];
-            var usedVertexIndices = stackalloc ushort[usedVertices0.Length];
+            if (!localVertices.IsCreated || localVertices.Length < usedVertices0.Length)
+            {
+                if (localVertices.IsCreated) localVertices.Dispose();
+                localVertices = new NativeArray<float4>(usedVertices0.Length, Allocator.Temp);
+            }
+
+            if (!usedVertexIndices.IsCreated || usedVertexIndices.Length < usedVertices0.Length)
+            {
+                if (usedVertexIndices.IsCreated) usedVertexIndices.Dispose();
+                usedVertexIndices = new NativeArray<ushort>(usedVertices0.Length, Allocator.Temp);
+            }
+
+            //var localVertices       = stackalloc float4[usedVertices0.Length];
+            //var usedVertexIndices   = stackalloc ushort[usedVertices0.Length];
             var foundVertexCount = 0;
 
             for (int j = 0; j < usedVertices0.Length; j++)
@@ -265,9 +290,23 @@ namespace Chisel.Core
                                       NativeArray<PlaneVertexIndexPair> foundIndices1,
                                       ref int                           foundIndices1Length)
         {
-            var foundVertices       = new NativeArray<float4>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
-            var foundEdges          = new NativeArray<IntersectionEdge>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
-            var foundIntersections  = new NativeArray<IntersectionPlanes>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
+            int foundVerticesCount = usedPlanePairs1.Length * intersectingPlanes0.Length;
+            if (!foundVertices.IsCreated || foundVertices.Length < foundVerticesCount)
+            {
+                if (foundVertices.IsCreated) foundVertices.Dispose();
+                foundVertices = new NativeArray<float4>(foundVerticesCount, Allocator.Temp);
+            }
+            if (!foundEdges.IsCreated || foundEdges.Length < foundVerticesCount)
+            {
+                if (foundEdges.IsCreated) foundEdges.Dispose();
+                foundEdges = new NativeArray<IntersectionEdge>(foundVerticesCount, Allocator.Temp);
+            }
+            if (!foundIntersections.IsCreated || foundIntersections.Length < foundVerticesCount)
+            {
+                if (foundIntersections.IsCreated) foundIntersections.Dispose();
+                foundIntersections = new NativeArray<IntersectionPlanes>(foundVerticesCount, Allocator.Temp);
+            }
+
             var n = 0;
             for (int i = 0; i < usedPlanePairs1.Length; i++)
             {
@@ -393,12 +432,23 @@ namespace Chisel.Core
                     foundIndices0[j] = t;
                 }
             }
-            
+
+
+            if (!planeIndexOffsets.IsCreated || planeIndexOffsets.Length < foundIndices0Length)
+            {
+                if (planeIndexOffsets.IsCreated) planeIndexOffsets.Dispose();
+                planeIndexOffsets = new NativeArray<PlaneIndexOffsetLength>(foundIndices0Length, Allocator.Temp);
+            }
+            if (!uniqueIndices.IsCreated || uniqueIndices.Length < foundIndices0Length)
+            {
+                if (uniqueIndices.IsCreated) uniqueIndices.Dispose();
+                uniqueIndices = new NativeArray<ushort>(foundIndices0Length, Allocator.Temp);
+            }
 
             var planeIndexOffsetsLength = 0;
-            var planeIndexOffsets       = stackalloc PlaneIndexOffsetLength[foundIndices0Length];
+            //var planeIndexOffsets       = stackalloc PlaneIndexOffsetLength[foundIndices0Length];
             var uniqueIndicesLength     = 0;
-            var uniqueIndices           = stackalloc ushort[foundIndices0Length];
+            //var uniqueIndices           = stackalloc ushort[foundIndices0Length];
 
             // Now that our indices are sorted by planeIndex, we can segment them by start/end offset
             var previousPlaneIndex  = foundIndices0[0].planeIndex;
@@ -457,10 +507,16 @@ namespace Chisel.Core
             for (int i = 0; i < planeIndexOffsetsLength; i++)
                 maxLength = math.max(maxLength, planeIndexOffsets[i].length);
 
+            if (!sortedStack.IsCreated || sortedStack.Length < maxLength * 2)
+            {
+                if (sortedStack.IsCreated) sortedStack.Dispose();
+                sortedStack = new NativeArray<int2>(maxLength * 2, Allocator.Temp);
+            }
+
             // For each segment, we now sort our vertices within each segment, 
             // making the assumption that they are convex
-            var sortedStack = stackalloc int2[maxLength * 2];
-            var vertices    = hashedVertices.GetUnsafeReadOnlyPtr();
+            //var sortedStack = stackalloc int2[maxLength * 2];
+            var vertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
             for (int n = planeIndexOffsetsLength - 1; n >= 0; n--)
             {
                 var planeIndexOffset    = planeIndexOffsets[n];
@@ -485,7 +541,7 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushIntersectionLoops>();
             var dstSurfaces = builder.Allocate(ref root.loops, planeIndexOffsetsLength);
-            var srcVertices = hashedVertices.GetUnsafeReadOnlyPtr();
+            var srcVertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
             for (int j = 0; j < planeIndexOffsetsLength; j++)
             { 
                 var planeIndexLength    = planeIndexOffsets[j];
@@ -509,9 +565,6 @@ namespace Chisel.Core
             //builder.Dispose(); // Allocated with Temp, so don't need dispose
         }
 
-        [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
-        [NativeDisableContainerSafetyRestriction] HashedVertices snapHashedVertices;
-
         public void Execute(int index)
         {
             if (index >= intersectingBrushes.Length)
@@ -534,12 +587,19 @@ namespace Chisel.Core
             int foundIndices0Capacity           = intersectionStream0Capacity + (2 * intersectionStream1Capacity) + (brushPairIntersection0.localSpacePlanes0.Length * insideVerticesStream0Capacity);
             int foundIndices1Capacity           = intersectionStream1Capacity + (2 * intersectionStream0Capacity) + (brushPairIntersection1.localSpacePlanes0.Length * insideVerticesStream1Capacity);
 
-            var foundIndices0           = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
-            var foundIndices1           = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
+            if (!foundIndices0.IsCreated || foundIndices0.Length < foundIndices0Capacity)
+            {
+                if (foundIndices0.IsCreated) foundIndices0.Dispose();
+                foundIndices0 = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
+            }
+            if (!foundIndices1.IsCreated || foundIndices1.Length < foundIndices1Capacity)
+            {
+                if (foundIndices1.IsCreated) foundIndices1.Dispose();
+                foundIndices1 = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
+            }
+
             var foundIndices0Length     = 0;
             var foundIndices1Length     = 0;
-            //var foundIndices0 = new NativeList<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
-            //var foundIndices1 = new NativeList<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
 
             var desiredVertexCapacity = math.max(foundIndices0Capacity, foundIndices1Capacity);
             if (!hashedVertices.IsCreated)

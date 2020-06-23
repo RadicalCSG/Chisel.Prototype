@@ -270,7 +270,7 @@ namespace Chisel.Components
                     }
                 } else
                 {
-                    meshIsModified = sharedMesh.CopyFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
+                    meshIsModified = sharedMesh.CopyMeshFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
                 }
                 if (renderMaterials != null && 
                     renderMaterials.Length == __foundMaterials.Count)

@@ -253,7 +253,14 @@ namespace Chisel.Core
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal AtomicSafetyHandle m_Safety;
-
+#if UNITY_2020_1_OR_NEWER
+        private static readonly SharedStatic<int> s_staticSafetyId = SharedStatic<int>.GetOrCreate<HashedVertices>();
+        [BurstDiscard]
+        private static void CreateStaticSafetyId()
+        {
+            s_staticSafetyId.Data = AtomicSafetyHandle.NewStaticSafetyId<HashedVertices>();
+        }
+#endif
         [NativeSetClassTypeToNullOnSchedule]
         DisposeSentinel m_DisposeSentinel;
 #endif
@@ -266,15 +273,47 @@ namespace Chisel.Core
 
         public bool IsCreated => m_Vertices != null && m_ChainedIndices != null && m_ChainedIndices != null;
 
+        public NativeArray<float3> AsArray()
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckGetSecondaryDataPointerAndThrow(m_Safety);
+            CheckAllocated(m_Vertices);
+            var arraySafety = m_Safety;
+            AtomicSafetyHandle.UseSecondaryVersion(ref arraySafety);
+#endif
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float3>(m_Vertices->Ptr, m_Vertices->Length, Allocator.None);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, arraySafety);
+#endif
+            return array;
+        }
+
         #region Constructors
 
         public HashedVertices(int minCapacity, Allocator allocator = Allocator.Persistent)
-            : this(minCapacity, minCapacity, allocator)
+            : this(minCapacity, minCapacity, allocator, 2)
         {
         }
 
-        HashedVertices(int vertexCapacity, int chainedIndicesCapacity, Allocator allocator = Allocator.Persistent)
+        HashedVertices(int vertexCapacity, int chainedIndicesCapacity, Allocator allocator, int disposeSentinelStackDepth)
         {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            // Native allocation is only valid for Temp, Job and Persistent.
+            if (allocator <= Allocator.None)
+                throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
+            if (chainedIndicesCapacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(chainedIndicesCapacity), "Capacity must be >= 0");
+
+            DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, disposeSentinelStackDepth, allocator);
+#if UNITY_2020_1_OR_NEWER
+            if (s_staticSafetyId.Data == 0)
+            {
+                CreateStaticSafetyId();
+            }
+            AtomicSafetyHandle.SetStaticSafetyId(ref m_Safety, s_staticSafetyId.Data);
+#endif
+#endif
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
 #endif
@@ -285,10 +324,14 @@ namespace Chisel.Core
             
             m_Vertices          = UnsafeList.Create(UnsafeUtility.SizeOf<float3>(), UnsafeUtility.AlignOf<float3>(), vertexCapacity, allocator);
             m_ChainedIndices    = UnsafeList.Create(UnsafeUtility.SizeOf<ushort>(), UnsafeUtility.AlignOf<ushort>(), chainedIndicesCapacity, allocator);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.SetBumpSecondaryVersionOnScheduleWrite(m_Safety, true);
+#endif
         }
 
         public HashedVertices(HashedVertices otherHashedVertices, Allocator allocator = Allocator.Persistent)
-            : this((otherHashedVertices.m_Vertices != null) ? otherHashedVertices.m_Vertices->Length : 1, (otherHashedVertices.m_ChainedIndices != null) ? otherHashedVertices.m_ChainedIndices->Length : 1, allocator)
+            : this((otherHashedVertices.m_Vertices != null) ? otherHashedVertices.m_Vertices->Length : 1, (otherHashedVertices.m_ChainedIndices != null) ? otherHashedVertices.m_ChainedIndices->Length : 1, allocator, 2)
         {
             CheckAllocated(otherHashedVertices);
             m_ChainedIndices->AddRangeNoResize<ushort>(*otherHashedVertices.m_ChainedIndices);
@@ -381,6 +424,13 @@ namespace Chisel.Core
 
             if ((uint)value >= (uint)length)
                 throw new IndexOutOfRangeException($"Value {value} is out of range of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private static void CheckAllocated(UnsafeList* listData)
+        {
+            if (listData == null || !listData->IsCreated)
+                throw new Exception($"Expected {nameof(listData)} to be allocated.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

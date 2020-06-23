@@ -15,7 +15,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    public struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
+    struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
         // Read
         [NoAlias,ReadOnly] public NativeArray<IndexOrder>                           treeBrushIndexOrders;
@@ -26,11 +26,34 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias,WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
 
+
+        BlobAssetReference<BrushTreeSpacePlanes> Build(BlobAssetReference<BrushMeshBlob> brushMeshBlob, float4x4 nodeToTreeTransformation)
+        {
+            if (!brushMeshBlob.IsCreated)
+                return BlobAssetReference<BrushTreeSpacePlanes>.Null;
+
+            var nodeToTreeInverseTransposed = math.transpose(math.inverse(nodeToTreeTransformation));
+
+            var totalSize = 16 + (brushMeshBlob.Value.localPlanes.Length * UnsafeUtility.SizeOf<float4>());
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            ref var root = ref builder.ConstructRoot<BrushTreeSpacePlanes>();
+            var treeSpacePlaneArray = builder.Allocate(ref root.treeSpacePlanes, brushMeshBlob.Value.localPlanes.Length);
+            for (int i = 0; i < brushMeshBlob.Value.localPlanes.Length; i++)
+            {
+                var localPlane = brushMeshBlob.Value.localPlanes[i];
+                treeSpacePlaneArray[i] = math.mul(nodeToTreeInverseTransposed, localPlane);
+            }
+            var result = builder.CreateBlobAssetReference<BrushTreeSpacePlanes>(Allocator.Persistent);
+            builder.Dispose();
+            return result;
+        }
+
         public void Execute(int index)
         {
             var brushIndexOrder = treeBrushIndexOrders[index];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            var worldPlanes     = BrushTreeSpacePlanes.Build(brushMeshLookup[brushNodeOrder], transformations[brushNodeOrder].nodeToTree);
+            var worldPlanes     = Build(brushMeshLookup[brushNodeOrder], transformations[brushNodeOrder].nodeToTree);
             brushTreeSpacePlanes[brushNodeOrder] = worldPlanes;
         }
     }
