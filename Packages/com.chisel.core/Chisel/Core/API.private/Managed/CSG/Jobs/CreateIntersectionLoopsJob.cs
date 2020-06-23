@@ -12,7 +12,7 @@ using UnityEngine.Assertions.Must;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    public unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
+    unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 

@@ -19,6 +19,15 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
+        {
+            if (length < 0 || length > elements.Length)
+                throw new ArgumentOutOfRangeException("length");
+            if (length == 0)
+                return;
+            list.AddRangeNoResize(elements.GetUnsafePtr(), length);
+        }
+
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
         {
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);

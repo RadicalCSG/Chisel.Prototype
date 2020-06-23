@@ -11,7 +11,7 @@ namespace Chisel.Core
 {
 
     [BurstCompile(CompileSynchronously = true)]
-    internal unsafe struct FindLoopOverlapIntersectionsJob : IJobParallelFor
+    unsafe struct FindLoopOverlapIntersectionsJob : IJobParallelFor
     { 
         public const int kMaxVertexCount        = short.MaxValue;
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;

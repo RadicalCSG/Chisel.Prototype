@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    internal unsafe struct CreateRoutingTableJob : IJobParallelFor
+    struct CreateRoutingTableJob : IJobParallelFor
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
