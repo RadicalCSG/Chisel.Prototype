@@ -26,6 +26,19 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
+        
+        unsafe static BlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref BlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
+        {
+            var totalSize   = localVertices.Length * sizeof(float3);
+            var builder     = new BlobBuilder(Allocator.Temp, math.max(4, totalSize));
+            ref var root    = ref builder.ConstructRoot<BrushTreeSpaceVerticesBlob>();
+            var treeSpaceVertices = builder.Allocate(ref root.treeSpaceVertices, localVertices.Length);
+            for (int i = 0; i < localVertices.Length; i++)
+                treeSpaceVertices[i] = math.mul(nodeToTreeSpaceMatrix, new float4(localVertices[i], 1)).xyz;
+            var result = builder.CreateBlobAssetReference<BrushTreeSpaceVerticesBlob>(Allocator.Persistent);
+            builder.Dispose();
+            return result;
+        }
 
         public void Execute(int b)
         {
@@ -37,7 +50,7 @@ namespace Chisel.Core
             ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.nodeToTree;
 
-            var brushTreeSpaceVerticesBlob  = BrushTreeSpaceVerticesBlob.Build(ref vertices, nodeToTreeSpaceMatrix);
+            var brushTreeSpaceVerticesBlob  = Build(ref vertices, nodeToTreeSpaceMatrix);
             ref var brushTreeSpaceVertices  = ref brushTreeSpaceVerticesBlob.Value.treeSpaceVertices;
 
             var treeSpaceVertex = brushTreeSpaceVertices[0];

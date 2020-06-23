@@ -26,6 +26,8 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeList<BrushIntersection> brushIntersections;
 
         static void SetUsedNodesBits(BlobAssetReference<CompactTree> compactTree, NativeList<BrushIntersection> brushIntersections, int brushNodeIndex, int rootNodeIndex, BrushIntersectionLookup bitset)
         {
@@ -66,7 +68,7 @@ namespace Chisel.Core
             }
         }
 
-        static BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush(BlobAssetReference<CompactTree> compactTree, int brushNodeIndex, int rootNodeIndex, NativeMultiHashMap<int, BrushPair>.Enumerator touchingBrushes, ListComparer comparer)
+        BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush(BlobAssetReference<CompactTree> compactTree, int brushNodeIndex, int rootNodeIndex, NativeMultiHashMap<int, BrushPair>.Enumerator touchingBrushes, ListComparer comparer)
         {
             if (!compactTree.IsCreated)
                 return BlobAssetReference<BrushesTouchedByBrush>.Null;
@@ -76,12 +78,21 @@ namespace Chisel.Core
             ref var brushIndexToBottomUpIndex   = ref compactTree.Value.brushIndexToBottomUpIndex;
 
             // Intersections
-            var bitset                      = new BrushIntersectionLookup(indexOffset, bottomUpNodeIndices.Length, Allocator.Temp);
-            //var brushIntersectionIndices    = new NativeList<BrushIntersectionIndex>(Allocator.Temp);
-            var brushIntersections          = new NativeList<BrushIntersection>(Allocator.Temp);
-            { 
-                //var intersectionStart           = brushIntersections.Length;
 
+            // TODO: replace with NativeBitArray
+            var bitset                      = new BrushIntersectionLookup(indexOffset, bottomUpNodeIndices.Length, Allocator.Temp);
+            
+            if (!brushIntersections.IsCreated)
+            {
+                brushIntersections = new NativeList<BrushIntersection>(treeBrushIndexOrders.Length, Allocator.Temp);
+            } else
+            {
+                brushIntersections.Clear();
+                if (brushIntersections.Capacity < treeBrushIndexOrders.Length)
+                    brushIntersections.Capacity = treeBrushIndexOrders.Length;
+            }
+
+            { 
                 while (touchingBrushes.MoveNext())
                 {
                     var touchingBrush   = touchingBrushes.Current;
@@ -91,7 +102,7 @@ namespace Chisel.Core
                         continue;
 
                     var otherBottomUpIndex = brushIndexToBottomUpIndex[otherBrushIndex - indexOffset];
-                    brushIntersections.Add(new BrushIntersection()
+                    brushIntersections.Add(new BrushIntersection
                     { 
                         nodeIndex       = otherIndexOrder.nodeIndex,
                         type            = touchingBrush.type,
@@ -99,16 +110,6 @@ namespace Chisel.Core
                         bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].bottomUpEnd
                     });
                 }
-                /*var bottomUpIndex = brushIndexToBottomUpIndex[brushNodeIndex - indexOffset];
-                
-                brushIntersectionIndices.Add(new BrushIntersectionIndex()
-                {
-                    nodeIndex           = brushNodeIndex,
-                    bottomUpStart       = bottomUpNodeIndices[bottomUpIndex].bottomUpStart,
-                    bottomUpEnd         = bottomUpNodeIndices[bottomUpIndex].bottomUpEnd,    
-                    intersectionStart   = intersectionStart,
-                    intersectionEnd     = brushIntersections.Length
-                });*/
 
                 SetUsedNodesBits(compactTree, brushIntersections, brushNodeIndex, rootNodeIndex, bitset);
             }

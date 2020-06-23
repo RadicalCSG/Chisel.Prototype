@@ -34,6 +34,11 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<PlaneIndexOffsetLength>   planeIndexOffsets;
         [NativeDisableContainerSafetyRestriction] NativeArray<ushort>                   uniqueIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<int2>                     sortedStack;        
+        [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<PlaneVertexIndexPair>     foundIndices1;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   foundVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionEdge>         foundEdges;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionPlanes>       foundIntersections;
         [NativeDisableContainerSafetyRestriction] HashedVertices                        hashedVertices;
         [NativeDisableContainerSafetyRestriction] HashedVertices                        snapHashedVertices;
                 
@@ -285,9 +290,23 @@ namespace Chisel.Core
                                       NativeArray<PlaneVertexIndexPair> foundIndices1,
                                       ref int                           foundIndices1Length)
         {
-            var foundVertices       = new NativeArray<float4>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
-            var foundEdges          = new NativeArray<IntersectionEdge>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
-            var foundIntersections  = new NativeArray<IntersectionPlanes>(usedPlanePairs1.Length * intersectingPlanes0.Length, Allocator.Temp);
+            int foundVerticesCount = usedPlanePairs1.Length * intersectingPlanes0.Length;
+            if (!foundVertices.IsCreated || foundVertices.Length < foundVerticesCount)
+            {
+                if (foundVertices.IsCreated) foundVertices.Dispose();
+                foundVertices = new NativeArray<float4>(foundVerticesCount, Allocator.Temp);
+            }
+            if (!foundEdges.IsCreated || foundEdges.Length < foundVerticesCount)
+            {
+                if (foundEdges.IsCreated) foundEdges.Dispose();
+                foundEdges = new NativeArray<IntersectionEdge>(foundVerticesCount, Allocator.Temp);
+            }
+            if (!foundIntersections.IsCreated || foundIntersections.Length < foundVerticesCount)
+            {
+                if (foundIntersections.IsCreated) foundIntersections.Dispose();
+                foundIntersections = new NativeArray<IntersectionPlanes>(foundVerticesCount, Allocator.Temp);
+            }
+
             var n = 0;
             for (int i = 0; i < usedPlanePairs1.Length; i++)
             {
@@ -568,12 +587,19 @@ namespace Chisel.Core
             int foundIndices0Capacity           = intersectionStream0Capacity + (2 * intersectionStream1Capacity) + (brushPairIntersection0.localSpacePlanes0.Length * insideVerticesStream0Capacity);
             int foundIndices1Capacity           = intersectionStream1Capacity + (2 * intersectionStream0Capacity) + (brushPairIntersection1.localSpacePlanes0.Length * insideVerticesStream1Capacity);
 
-            var foundIndices0           = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
-            var foundIndices1           = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
+            if (!foundIndices0.IsCreated || foundIndices0.Length < foundIndices0Capacity)
+            {
+                if (foundIndices0.IsCreated) foundIndices0.Dispose();
+                foundIndices0 = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
+            }
+            if (!foundIndices1.IsCreated || foundIndices1.Length < foundIndices1Capacity)
+            {
+                if (foundIndices1.IsCreated) foundIndices1.Dispose();
+                foundIndices1 = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
+            }
+
             var foundIndices0Length     = 0;
             var foundIndices1Length     = 0;
-            //var foundIndices0 = new NativeList<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
-            //var foundIndices1 = new NativeList<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
 
             var desiredVertexCapacity = math.max(foundIndices0Capacity, foundIndices1Capacity);
             if (!hashedVertices.IsCreated)

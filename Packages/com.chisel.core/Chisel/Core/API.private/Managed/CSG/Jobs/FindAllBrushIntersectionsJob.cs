@@ -30,6 +30,7 @@ namespace Chisel.Core
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4> transformedPlanes0;
         [NativeDisableContainerSafetyRestriction] NativeArray<float4> transformedPlanes1;
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexOrder> brushesThatNeedIndirectUpdate;
 
         static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
         {
@@ -168,7 +169,15 @@ namespace Chisel.Core
             }
             //*
 
-            var brushesThatNeedIndirectUpdate = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            if (!brushesThatNeedIndirectUpdate.IsCreated)
+            {
+                brushesThatNeedIndirectUpdate = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            } else
+            {
+                brushesThatNeedIndirectUpdate.Clear();
+                if (brushesThatNeedIndirectUpdate.Capacity < allTreeBrushIndexOrders.Length)
+                    brushesThatNeedIndirectUpdate.Capacity = allTreeBrushIndexOrders.Length;
+            }
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];

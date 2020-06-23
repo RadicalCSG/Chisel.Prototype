@@ -400,7 +400,6 @@ namespace Chisel.Core
 
             #region Allocation of temporaries
             int combinedLength = leftStackCount + (CategoryRoutingRow.Length * rightStackLength);
-            //Debug.Assert(combinedLength > 0);
             if (!combineUsedIndices.IsCreated || combineUsedIndices.Length < combinedLength)
             {
                 if (combineUsedIndices.IsCreated) combineUsedIndices.Dispose();
@@ -443,7 +442,6 @@ namespace Chisel.Core
                 routingSteps.AddNoResize(counter);
 
 
-                const int kFirstRow = 1;
                 int startSearchRowIndex = leftStackStart + leftStackCount;
                 int prevNodeIndex       = startSearchRowIndex - 1;
                 if (leftStackCount == 0)

@@ -291,8 +291,9 @@ namespace Poly2Tri
 
         [NoAlias, ReadOnly] public quaternion                           rotation;
         [NoAlias, ReadOnly] public float3                               normal;
-        [NoAlias, ReadOnly] public HashedVertices                           vertices;
+        [NoAlias, ReadOnly] public HashedVertices                       vertices;
         [NoAlias, ReadOnly] public NativeArray<float2>                  points;
+        [NoAlias, ReadOnly] public int                                  edgeLength;
         [NoAlias, ReadOnly] public NativeArray<int>                     edges;
         [NoAlias, ReadOnly] public NativeList<DirectedEdge>             allEdges;
         [NoAlias, ReadOnly] public NativeList<DelaunayTriangle>         triangles;
@@ -309,7 +310,7 @@ namespace Poly2Tri
 
         void Clear()
         {
-            for (int i = 0; i < edges.Length; i++)
+            for (int i = 0; i < edgeLength; i++)
                 edges[i] = int.MaxValue;
 
             allEdges.Clear();

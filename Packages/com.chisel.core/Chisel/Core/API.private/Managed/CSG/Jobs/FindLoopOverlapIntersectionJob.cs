@@ -116,7 +116,7 @@ namespace Chisel.Core
             } else
                 hashedVertices.Clear();
 
-            if (!basePolygonEdges.IsCreated || basePolygonEdges.Length < surfaceCount)
+            if (!basePolygonEdges.IsCreated || basePolygonEdges.Capacity < surfaceCount)
             {
                 if (basePolygonEdges.IsCreated) basePolygonEdges.Dispose();
                 basePolygonEdges = new NativeListArray<Edge>(surfaceCount, Allocator.Temp);
@@ -220,7 +220,7 @@ namespace Chisel.Core
             } else
             { 
 
-                if (!intersectionEdges.IsCreated || intersectionEdges.Length < brushIntersectionLoops.Length)
+                if (!intersectionEdges.IsCreated || intersectionEdges.Capacity < brushIntersectionLoops.Length)
                 {
                     if (intersectionEdges.IsCreated) intersectionEdges.Dispose();
                     intersectionEdges = new NativeListArray<Edge>(brushIntersectionLoops.Length, Allocator.Temp);

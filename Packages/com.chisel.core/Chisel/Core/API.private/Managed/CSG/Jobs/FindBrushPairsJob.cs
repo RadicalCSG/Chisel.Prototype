@@ -13,7 +13,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct FindBrushPairsJob : IJob
     {
-        public struct Empty { }
+        struct Empty { }
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
@@ -21,15 +21,27 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
         [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeHashMap<BrushPair, Empty> brushPairMap;
+
         public void Execute()
         {
             var maxPairs = GeometryMath.GetTriangleArraySize(treeBrushIndexOrders.Length);
-            var brushPairMap = new NativeHashMap<BrushPair, FindBrushPairsJob.Empty>(maxPairs, Allocator.Temp);
+
+            if (!brushPairMap.IsCreated)
+            {
+                brushPairMap = new NativeHashMap<BrushPair, FindBrushPairsJob.Empty>(maxPairs, Allocator.Temp);
+            } else
+            {
+                brushPairMap.Clear();
+                if (brushPairMap.Capacity < maxPairs)
+                    brushPairMap.Capacity = maxPairs;
+            }
+
             var empty = new Empty();
             for (int b0 = 0; b0 < treeBrushIndexOrders.Length; b0++)
             {
                 var brushIndexOrder0        = treeBrushIndexOrders[b0];
-                int brushNodeIndex0         = brushIndexOrder0.nodeIndex;
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
                 //var brushesTouchedByBrush = touchedBrushesByTreeBrushes[b0];
 

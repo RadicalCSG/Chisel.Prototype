@@ -418,9 +418,16 @@ namespace Chisel.Core
 #endif
             int index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            CheckNotAllocated(ptr);
             capacity = Math.Max(1, capacity);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            if (ptr == null || !ptr->IsCreated)
+            {
+                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), capacity);
+            } else
+            {
+                ptr->Clear();
+                if (ptr->Capacity < capacity)
+                    ptr->SetCapacity<T>(capacity);
+            }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             return new NativeList(m_Array->Ptr[index], ref m_Safety);
@@ -455,8 +462,16 @@ namespace Chisel.Core
 #endif
             var index = m_Array->AllocateItem();
             var ptr = m_Array->Ptr[index];
-            CheckNotAllocated(ptr);
-            m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+
+            if (ptr == null || !ptr->IsCreated)
+            {
+                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
+            } else
+            {
+                ptr->Clear();
+                if (ptr->Capacity < other.Length)
+                    ptr->SetCapacity<T>(other.Length);
+            }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             CheckAllocated(m_Array->Ptr[index]);
             var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);

@@ -32,8 +32,11 @@ namespace Chisel.Core
 
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
-        
+        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         edges;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ValidPolygon> validPolygons;
+        [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         tempEdges;
+
 
         static bool IsDegenerate(HashedVertices hashedVertices, NativeArray<Edge> edges, int edgeCount)
         {
@@ -108,8 +111,8 @@ namespace Chisel.Core
                     edge.index2 = newIndex;
                     edges[edgeCount - 1] = edge;
                 }
-                edges[edgeCount] = new Edge() { index1 = newIndex };
-                //edges.AddNoResize(new Edge() { index1 = newIndex });
+                edges[edgeCount] = new Edge { index1 = newIndex };
+                //edges.AddNoResize(new Edge { index1 = newIndex });
                 edgeCount++;
             }
             {
@@ -170,8 +173,19 @@ namespace Chisel.Core
             var totalEdgeCount      = 0;
             var totalSurfaceCount   = 0;
 
-            var edges           = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
-            var validPolygons   = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
+            if (!edges.IsCreated || edges.Length < halfEdges.Length)
+            {
+                if (edges.IsCreated) edges.Dispose();
+                edges = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
+            }
+            if (!validPolygons.IsCreated || validPolygons.Length < polygons.Length)
+            {
+                if (validPolygons.IsCreated) validPolygons.Dispose();
+                validPolygons = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
+            }
+
+            //var edges           = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
+            //var validPolygons   = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
             for (int polygonIndex = 0; polygonIndex < polygons.Length; polygonIndex++)
             {
                 var polygon = polygons[polygonIndex];
@@ -182,7 +196,14 @@ namespace Chisel.Core
 
                 int edgeCount = 0;
                 int startEdgeIndex = totalEdgeCount;
-                var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
+
+                if (!tempEdges.IsCreated || tempEdges.Length < polygons.Length)
+                {
+                    if (tempEdges.IsCreated) tempEdges.Dispose();
+                    tempEdges = new NativeArray<Edge>(polygons.Length, Allocator.Temp);
+                }
+
+                //var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
                 CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon
                     continue;
