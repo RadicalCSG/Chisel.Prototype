@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -18,7 +17,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct GenerateVertexBuffersJob : IJob
+    struct GenerateVertexBuffersJob : IJob
     {   
         [NoAlias, ReadOnly] public MeshQuery    meshQuery;
         [NoAlias, ReadOnly] public int		    surfaceIdentifier;
@@ -31,11 +30,11 @@ namespace Chisel.Core
         [NoAlias] public NativeArray<int>		generatedMeshIndices; 
         [NoAlias] public NativeArray<int>		generatedMeshBrushIndices; 
         [NoAlias] public NativeArray<float3>    generatedMeshPositions;
-        [NativeDisableContainerSafetyRestriction]
+        [NativeDisableContainerSafetyRestriction]//optional
         [NoAlias] public NativeArray<float4>    generatedMeshTangents;
-        [NativeDisableContainerSafetyRestriction]
+        [NativeDisableContainerSafetyRestriction]//optional
         [NoAlias] public NativeArray<float3>    generatedMeshNormals;
-        [NativeDisableContainerSafetyRestriction]
+        [NativeDisableContainerSafetyRestriction]//optional
         [NoAlias] public NativeArray<float2>    generatedMeshUV0; 
             
         static void ComputeTangents(NativeArray<int>        meshIndices,
@@ -126,7 +125,6 @@ namespace Chisel.Core
 
             // double snap_size = 1.0 / ants.SnapDistance();
 
-            var dstVertices = (float3*)generatedMeshPositions.GetUnsafePtr();
             { 
                 // copy all the vertices & indices to the sub-meshes for each material
                 for (int surfaceIndex = 0, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, surfaceCount = (int)submeshSurfaces.Length;
@@ -152,30 +150,11 @@ namespace Chisel.Core
                     }
 
                     var sourceVertexCount = sourceBuffer.vertices.Length;
+                     
+                    generatedMeshPositions.CopyFrom(vertexOffset, ref sourceBuffer.vertices, 0, sourceVertexCount);
 
-                    var srcVertices = (float3*)sourceBuffer.vertices.GetUnsafePtr();
-                    //fixed (float3* srcVertices = &sourceBuffer.vertices[0])
-                    {
-                        UnsafeUtility.MemCpy(dstVertices + vertexOffset, srcVertices, sourceVertexCount * UnsafeUtility.SizeOf<float3>());
-                        //Array.Copy(sourceBuffer.vertices, 0, generatedMeshPositions, vertexOffset, sourceVertexCount);
-                    }
-
-                    if (useUV0s || needTempUV0)
-                    {
-                        var dstUV0 = (float2*)uv0s.GetUnsafePtr();
-                        var srcUV0 = (float2*)sourceBuffer.uv0.GetUnsafePtr();
-                        {
-                            UnsafeUtility.MemCpy(dstUV0 + vertexOffset, srcUV0, sourceVertexCount * UnsafeUtility.SizeOf<float2>());
-                        }
-                    }
-                    if (useNormals || needTempNormals)
-                    {
-                        var dstNormals = (float3*)normals.GetUnsafePtr();
-                        var srcNormals = (float3*)sourceBuffer.normals.GetUnsafePtr();
-                        {
-                            UnsafeUtility.MemCpy(dstNormals + vertexOffset, srcNormals, sourceVertexCount * UnsafeUtility.SizeOf<float3>());
-                        }
-                    }
+                    if (useUV0s || needTempUV0) uv0s.CopyFrom(vertexOffset, ref sourceBuffer.uv0, 0, sourceVertexCount);
+                    if (useNormals || needTempNormals) normals.CopyFrom(vertexOffset, ref sourceBuffer.normals, 0, sourceVertexCount);
                     vertexOffset += sourceVertexCount;
                 }
             }

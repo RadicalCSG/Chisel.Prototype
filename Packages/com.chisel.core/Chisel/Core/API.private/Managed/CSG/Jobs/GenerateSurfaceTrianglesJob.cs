@@ -20,8 +20,8 @@ namespace Chisel.Core
         public override string ToString() => $"({index1}, {index2})";
     }
 
-    [BurstCompile(CompileSynchronously = true)] // Fails for some reason
-    unsafe struct GenerateSurfaceTrianglesJob : IJobParallelFor
+    [BurstCompile(CompileSynchronously = true)] // Fails for some reason    
+    struct GenerateSurfaceTrianglesJob : IJobParallelFor
     {
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              treeBrushNodeIndexOrders;
@@ -36,7 +36,12 @@ namespace Chisel.Core
         //[NativeDisableParallelForRestriction]
         //[NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
 
-        
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>   surfaceVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>   surfaceNormals;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float2>   surfaceUV0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>      indexRemap;
+
         [BurstDiscard]
         public static void InvalidFinalCategory(CategoryIndex _interiorCategory)
         {
@@ -259,15 +264,26 @@ namespace Chisel.Core
                     continue;
 
                 var surfaceIndicesCount = surfaceIndexList.Length;
-                var surfaceIndices = (int*)surfaceIndexList.GetUnsafePtr();
+                if (!surfaceVertices.IsCreated || surfaceVertices.Length < brushVertices.Length)
+                {
+                    if (surfaceVertices.IsCreated) surfaceVertices.Dispose();
+                    surfaceVertices = new NativeArray<float3>(brushVertices.Length, Allocator.Temp);
+                }
+                if (!indexRemap.IsCreated || indexRemap.Length < brushVertices.Length)
+                {
+                    if (indexRemap.IsCreated) indexRemap.Dispose();
+                    indexRemap = new NativeArray<int>(brushVertices.Length, Allocator.Temp);
+                } else
+                    indexRemap.ClearValues();
+
 
                 // Only use the vertices that we've found in the indices
                 var surfaceVerticesCount = 0;
-                var surfaceVertices = stackalloc float3[brushVertices.Length];
-                var indexRemap = stackalloc int[brushVertices.Length];
+                //var surfaceVertices = stackalloc float3[brushVertices.Length];
+                //var indexRemap = stackalloc int[brushVertices.Length];
                 for (int i = 0; i < surfaceIndicesCount; i++)
                 {
-                    var vertexIndexSrc = surfaceIndices[i];
+                    var vertexIndexSrc = surfaceIndexList[i];
                     var vertexIndexDst = indexRemap[vertexIndexSrc];
                     if (vertexIndexDst == 0)
                     {
@@ -278,29 +294,40 @@ namespace Chisel.Core
                     }
                     else
                         vertexIndexDst--;
-                    surfaceIndices[i] = vertexIndexDst;
+                    surfaceIndexList[i] = vertexIndexDst;
                 }
 
-                var vertexHash = math.hash(surfaceVertices, surfaceVerticesCount * sizeof(float3));
-                var indicesHash = math.hash(surfaceIndices, surfaceIndicesCount * sizeof(int));
+                var vertexHash = surfaceVertices.Hash(surfaceVerticesCount);
+                var indicesHash = surfaceIndexList.Hash(surfaceIndicesCount);
                 var geometryHash = math.hash(new uint2(vertexHash, indicesHash));
 
-                var surfaceNormals = stackalloc float3[surfaceVerticesCount];
+                if (!surfaceNormals.IsCreated || surfaceNormals.Length < surfaceVerticesCount)
+                {
+                    if (surfaceNormals.IsCreated) surfaceNormals.Dispose();
+                    surfaceNormals = new NativeArray<float3>(surfaceVerticesCount, Allocator.Temp);
+                }
+                //var surfaceNormals = stackalloc float3[surfaceVerticesCount];
                 {
                     if (interiorCategory == CategoryIndex.ValidReverseAligned || interiorCategory == CategoryIndex.ReverseAligned)
                         normal = -normal;
                     for (int i = 0; i < surfaceVerticesCount; i++)
                         surfaceNormals[i] = normal;
                 }
-                var normalHash = math.hash(surfaceNormals, surfaceVerticesCount * sizeof(float3));
-                var surfaceUV0 = stackalloc float2[surfaceVerticesCount];
+                var normalHash = surfaceNormals.Hash(surfaceVerticesCount);
+
+                if (!surfaceUV0.IsCreated || surfaceUV0.Length < surfaceVerticesCount)
+                {
+                    if (surfaceUV0.IsCreated) surfaceUV0.Dispose();
+                    surfaceUV0 = new NativeArray<float2>(surfaceVerticesCount, Allocator.Temp);
+                }
+                //var surfaceUV0 = stackalloc float2[surfaceVerticesCount];
                 {
                     for (int v = 0; v < surfaceVerticesCount; v++)
                         surfaceUV0[v] = math.mul(uv0Matrix, new float4(surfaceVertices[v], 1)).xy;
                 }
-                var uv0Hash = math.hash(surfaceUV0, surfaceVerticesCount * sizeof(float2));
+                var uv0Hash = surfaceUV0.Hash(surfaceVerticesCount);
 
-                builder.Construct(ref surfaceRenderBuffer.indices, surfaceIndices, surfaceIndicesCount);
+                builder.Construct(ref surfaceRenderBuffer.indices, surfaceIndexList, surfaceIndicesCount);
                 builder.Construct(ref surfaceRenderBuffer.vertices, surfaceVertices, surfaceVerticesCount);
                 builder.Construct(ref surfaceRenderBuffer.normals, surfaceNormals, surfaceVerticesCount);
                 builder.Construct(ref surfaceRenderBuffer.uv0, surfaceUV0, surfaceVerticesCount);

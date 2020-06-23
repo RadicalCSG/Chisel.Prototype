@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -839,7 +839,7 @@ namespace Chisel.Core
 
             public void AddRangeNoResize(NativeList<T> list)
             {
-                AddRangeNoResize(list.GetUnsafePtr(), list.Length);
+                AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
             }
 
             public void AddRangeNoResize(NativeListArray<T>.NativeList list)

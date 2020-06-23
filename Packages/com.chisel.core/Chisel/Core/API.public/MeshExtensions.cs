@@ -40,7 +40,7 @@ namespace Chisel.Core
         static readonly List<Vector2>   sUV0List        = new List<Vector2>();
         static readonly List<int>       sBaseVertices   = new List<int>();
         
-        public static bool CopyFrom(this UnityEngine.Mesh mesh, ref ulong geometryHashValue, ref ulong surfaceHashValue, List<GeneratedMeshContents> contents, List<int> triangleBrushes)
+        public static bool CopyMeshFrom(this UnityEngine.Mesh mesh, ref ulong geometryHashValue, ref ulong surfaceHashValue, List<GeneratedMeshContents> contents, List<int> triangleBrushes)
         { 
             if (object.ReferenceEquals(contents, null))
                 throw new ArgumentNullException("contents");

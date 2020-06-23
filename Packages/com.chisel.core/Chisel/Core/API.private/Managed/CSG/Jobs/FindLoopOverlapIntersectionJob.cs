@@ -11,7 +11,7 @@ namespace Chisel.Core
 {
 
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct FindLoopOverlapIntersectionsJob : IJobParallelFor
+    struct FindLoopOverlapIntersectionsJob : IJobParallelFor
     { 
         public const int kMaxVertexCount        = short.MaxValue;
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
@@ -25,6 +25,21 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
+
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         inputEdges;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>       srcIndices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  basePolygonSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<ushort>        tempList;
+        [NativeDisableContainerSafetyRestriction] NativeList<int2>          brushIntersectionLoops;
+        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>   intersectionSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     basePolygonEdges;
+        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionEdges;
+        [NativeDisableContainerSafetyRestriction] NativeHashMap<int, Empty> uniqueBrushOrdersHashMap;
+        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int2>         intersectionSurfaceSegments;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>       otherVertices;
+
 
         public struct Empty { };
 
@@ -49,10 +64,17 @@ namespace Chisel.Core
             return 0;
         }
 
-        static unsafe void CopyFrom(NativeListArray<Edge> dst, int index, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedVertices, int extraCapacity)
+        void CopyFrom(NativeListArray<Edge> dst, int index, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedVertices, int extraCapacity)
         {
             ref var vertices = ref brushIntersectionLoop.loopVertices;
-            var srcIndices = stackalloc ushort[vertices.Length];
+
+            if (!srcIndices.IsCreated || srcIndices.Length < vertices.Length)
+            {
+                if (srcIndices.IsCreated) srcIndices.Dispose();
+                srcIndices = new NativeArray<ushort>(vertices.Length, Allocator.Temp);
+            }
+
+            //var srcIndices = stackalloc ushort[vertices.Length];
             hashedVertices.Reserve(vertices.Length);
             for (int j = 0; j < vertices.Length; j++)
                 srcIndices[j] = hashedVertices.AddNoResize(vertices[j]);
@@ -68,18 +90,7 @@ namespace Chisel.Core
         }
 
 
-        // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>      basePolygonSurfaceInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>       intersectionSurfaceInfos;
-        [NativeDisableContainerSafetyRestriction] HashedVertices                hashedVertices;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>         basePolygonEdges;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>         intersectionEdges;
-
-        [NativeDisableContainerSafetyRestriction] NativeList<int2>              brushIntersectionLoops;
-        [NativeDisableContainerSafetyRestriction] NativeHashMap<int, Empty>     uniqueBrushOrdersHashMap;
-
-
-        public unsafe void Execute(int index)
+        public void Execute(int index)
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
             int brushNodeIndex      = brushIndexOrder.nodeIndex;
@@ -236,7 +247,12 @@ namespace Chisel.Core
                     }
                 }
 
-                var intersectionSurfaceSegments = stackalloc int2[surfaceCount];
+                if (!intersectionSurfaceSegments.IsCreated || intersectionSurfaceSegments.Length < surfaceCount)
+                {
+                    if (intersectionSurfaceSegments.IsCreated) intersectionSurfaceSegments.Dispose();
+                    intersectionSurfaceSegments = new NativeArray<int2>(surfaceCount, Allocator.Temp);
+                }
+                //var intersectionSurfaceSegments = stackalloc int2[surfaceCount];
                 {
                     {
                         for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
@@ -413,20 +429,27 @@ namespace Chisel.Core
             //brushIntersectionLoops.Dispose();
             uniqueBrushOrders.Dispose();
         }
-        
+
         public void FindLoopPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
                                                int intersectionBrushOrder1, int intersectionBrushOrder0,
                                                HashedVertices hashedVertices, NativeListArray<Edge>.NativeList edges)
         {
             if (edges.Length < 3)
                 return;
-            
-            var inputEdgesLength    = edges.Length;
-            var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
-            UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
+
+            var inputEdgesLength = edges.Length;
+            if (!inputEdges.IsCreated || inputEdges.Length < inputEdgesLength)
+            {
+                if (inputEdges.IsCreated) inputEdges.Dispose();
+                inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
+            }
+
+            //var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
+            inputEdges.CopyFrom(edges, 0, edges.Length);
+            //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
             edges.Clear();
 
-            var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
+            int4 tempVertices = int4.zero;
 
             ref var otherPlanesNative    = ref brushTreeSpacePlanes[intersectionBrushOrder1].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
             ref var selfPlanesNative     = ref brushTreeSpacePlanes[intersectionBrushOrder0].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
@@ -548,7 +571,7 @@ namespace Chisel.Core
                     for (int i = 1; i < 2 + foundVertices; i++)
                     {
                         if (tempVertices[i - 1] != tempVertices[i])
-                            edges.AddNoResize(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
+                            edges.AddNoResize(new Edge() { index1 = (ushort)tempVertices[i - 1], index2 = (ushort)tempVertices[i] });
                     }
                 } else
                 {
@@ -559,7 +582,7 @@ namespace Chisel.Core
             //UnsafeUtility.Free(inputEdges, Allocator.TempJob);
         }
         
-        public unsafe void FindBasePolygonPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes, 
+        public void FindBasePolygonPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes, 
                                                             int otherBrushNodeOrder, int selfBrushNodeOrder,
                                                             HashedVertices hashedVertices, NativeListArray<Edge>.NativeList edges)
         {
@@ -567,12 +590,19 @@ namespace Chisel.Core
                 return;
             
             var inputEdgesLength    = edges.Length;
-            var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
+            if (!inputEdges.IsCreated || inputEdges.Length < inputEdgesLength)
+            {
+                if (inputEdges.IsCreated) inputEdges.Dispose();
+                inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
+            }
+
+            //var inputEdges          = stackalloc Edge[inputEdgesLength];// (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
             //var inputEdges          = (Edge*)UnsafeUtility.Malloc(edges.Length * sizeof(Edge), 4, Allocator.TempJob);
-            UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
+            inputEdges.CopyFrom(edges, 0, edges.Length);
+            //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
             edges.Clear();
 
-            var tempVertices = stackalloc ushort[] { 0, 0, 0, 0 };
+            int4 tempVertices = int4.zero;
 
             ref var otherPlanesNative    = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
             ref var selfPlanesNative     = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
@@ -694,7 +724,7 @@ namespace Chisel.Core
                     for (int i = 1; i < 2 + foundVertices; i++)
                     {
                         if (tempVertices[i - 1] != tempVertices[i])
-                            edges.AddNoResize(new Edge() { index1 = tempVertices[i - 1], index2 = tempVertices[i] });
+                            edges.AddNoResize(new Edge() { index1 = (ushort)tempVertices[i - 1], index2 = (ushort)tempVertices[i] });
                     }
                 } else
                 {
@@ -706,10 +736,7 @@ namespace Chisel.Core
         }
 
 
-        [NativeDisableContainerSafetyRestriction] NativeList<ushort> tempList;
-
-
-        public unsafe void FindLoopVertexOverlaps(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
+        public void FindLoopVertexOverlaps(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
                                                   int selfBrushNodeOrder, HashedVertices hashedVertices,
                                                   NativeListArray<Edge>.NativeList otherEdges, NativeListArray<Edge>.NativeList edges)
         {
@@ -720,11 +747,16 @@ namespace Chisel.Core
             ref var selfPlanes = ref brushTreeSpacePlanes[selfBrushNodeOrder].Value.treeSpacePlanes;
 
             var otherVerticesLength = 0;
-            var otherVertices       = stackalloc ushort[otherEdges.Length];
+            if (!otherVertices.IsCreated || otherVertices.Length < otherEdges.Length)
+            {
+                if (otherVertices.IsCreated) otherVertices.Dispose();
+                otherVertices = new NativeArray<ushort>(otherEdges.Length, Allocator.Temp);
+            }
+            //var otherVertices       = stackalloc ushort[otherEdges.Length];
             //var otherVertices       = (ushort*)UnsafeUtility.Malloc(otherEdges.Length * sizeof(ushort), 4, Allocator.TempJob);
 
             // TODO: use edges instead + 2 planes intersecting each edge
-            var vertices = hashedVertices.GetUnsafeReadOnlyPtr();
+            var vertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
             for (int v = 0; v < otherEdges.Length; v++)
             {
                 var vertexIndex = otherEdges[v].index1; // <- assumes no gaps
@@ -763,8 +795,15 @@ namespace Chisel.Core
 
             {
                 var inputEdgesLength    = edges.Length;
-                var inputEdges          = stackalloc Edge[edges.Length];
-                UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
+                if (!inputEdges.IsCreated || inputEdges.Length < inputEdgesLength)
+                {
+                    if (inputEdges.IsCreated) inputEdges.Dispose();
+                    inputEdges = new NativeArray<Edge>(inputEdgesLength, Allocator.Temp);
+                }
+
+                //var inputEdges          = stackalloc Edge[edges.Length];
+                inputEdges.CopyFrom(edges, 0, edges.Length);
+                //UnsafeUtility.MemCpyReplicate(inputEdges, edges.GetUnsafePtr(), sizeof(Edge) * edges.Length, 1);
                 edges.Clear();
 
                 // TODO: Optimize the hell out of this
@@ -781,7 +820,6 @@ namespace Chisel.Core
 
                     tempList.Clear();
                     tempList.AddNoResize(vertexIndex0);
-                    var tempListPtr = (ushort*)tempList.GetUnsafePtr();
 
                     var delta = (vertex1 - vertex0);
                     var max = math.dot(vertex1 - vertex0, delta);
@@ -825,8 +863,8 @@ namespace Chisel.Core
                                 dot2 = math.dot(delta, otherVertex2);
                                 if (dot1 >= dot2)
                                 {
-                                    tempListPtr[v1] = otherVertexIndex2;
-                                    tempListPtr[v2] = otherVertexIndex1;
+                                    tempList[v1] = otherVertexIndex2;
+                                    tempList[v2] = otherVertexIndex1;
                                 }
                             }
                         }

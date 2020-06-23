@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct FindAllBrushIntersectionsJob : IJob// IJobParallelFor
+    struct FindAllBrushIntersectionsJob : IJob// IJobParallelFor
     {
         const double kBoundsDistanceEpsilon = CSGConstants.kBoundsDistanceEpsilon;
 
@@ -27,7 +27,11 @@ namespace Chisel.Core
 
         [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter   brushBrushIntersections;
 
-        static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, float4* dstPlanes)
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4> transformedPlanes0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4> transformedPlanes1;
+
+        static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
         {
             var brush1ToBrush0LocalLocalSpace = math.transpose(math.mul(treeToBrushSpaceMatrix, brushToTreeSpaceMatrix));
             for (int plane_index = 0; plane_index < srcPlanes.Length; plane_index++)
@@ -38,20 +42,26 @@ namespace Chisel.Core
         }
 
          
-        static IntersectionType ConvexPolytopeTouching(BlobAssetReference<BrushMeshBlob> brushMesh0,
-                                                       ref float4x4 treeToNode0SpaceMatrix,
-                                                       ref float4x4 nodeToTree0SpaceMatrix,
-                                                       BlobAssetReference<BrushMeshBlob> brushMesh1,
-                                                       ref float4x4 treeToNode1SpaceMatrix,
-                                                       ref float4x4 nodeToTree1SpaceMatrix)
+        IntersectionType ConvexPolytopeTouching(BlobAssetReference<BrushMeshBlob> brushMesh0,
+                                                ref float4x4 treeToNode0SpaceMatrix,
+                                                ref float4x4 nodeToTree0SpaceMatrix,
+                                                BlobAssetReference<BrushMeshBlob> brushMesh1,
+                                                ref float4x4 treeToNode1SpaceMatrix,
+                                                ref float4x4 nodeToTree1SpaceMatrix)
         {
             ref var brushPlanes0   = ref brushMesh0.Value.localPlanes;
             ref var brushPlanes1   = ref brushMesh1.Value.localPlanes;
 
             ref var brushVertices0 = ref brushMesh0.Value.localVertices;
             ref var brushVertices1 = ref brushMesh1.Value.localVertices;
+            
+            if (!transformedPlanes0.IsCreated || transformedPlanes0.Length < brushPlanes0.Length)
+            {
+                if (transformedPlanes0.IsCreated) transformedPlanes0.Dispose();
+                transformedPlanes0 = new NativeArray<float4>(brushPlanes0.Length, Allocator.Temp);
+            }
 
-            var transformedPlanes0 = stackalloc float4[brushPlanes0.Length];
+            //var transformedPlanes0 = stackalloc float4[brushPlanes0.Length];
             TransformOtherIntoBrushSpace(ref treeToNode0SpaceMatrix, ref nodeToTree1SpaceMatrix, ref brushPlanes0, transformedPlanes0);
             
             int negativeSides1 = 0;
@@ -71,7 +81,14 @@ namespace Chisel.Core
                 return IntersectionType.BInsideA;
 
             //*
-            var transformedPlanes1 = stackalloc float4[brushPlanes1.Length];
+            
+            if (!transformedPlanes1.IsCreated || transformedPlanes1.Length < brushPlanes1.Length)
+            {
+                if (transformedPlanes1.IsCreated) transformedPlanes1.Dispose();
+                transformedPlanes1 = new NativeArray<float4>(brushPlanes1.Length, Allocator.Temp);
+            }
+
+            //var transformedPlanes1 = stackalloc float4[brushPlanes1.Length];
             TransformOtherIntoBrushSpace(ref treeToNode1SpaceMatrix, ref nodeToTree0SpaceMatrix, ref brushPlanes1, transformedPlanes1);
 
             int negativeSides2 = 0;

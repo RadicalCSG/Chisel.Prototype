@@ -49,12 +49,29 @@ namespace Chisel.Core
             return blobBuilderArray;
         }
 
+        public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, NativeList<T> data, int length) where T : unmanaged
+        {
+            length = math.max(length, 0);
+            var blobBuilderArray = builder.Allocate(ref blobArray, length);
+            if (length > 0)
+            {
+                var srcPtr = data.GetUnsafeReadOnlyPtr();
+                var dstPtr = blobBuilderArray.GetUnsafePtr();
+                UnsafeUtility.MemCpy(dstPtr, srcPtr, blobBuilderArray.Length * sizeof(T));
+            }
+            return blobBuilderArray;
+        }
+
         public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, NativeArray<T> data, int length) where T : unmanaged
         {
             length = math.max(length, 0);
             var blobBuilderArray = builder.Allocate(ref blobArray, length);
             if (length > 0)
-                UnsafeUtility.MemCpy(blobBuilderArray.GetUnsafePtr(), data.GetUnsafeReadOnlyPtr(), blobBuilderArray.Length * sizeof(T));
+            {
+                var srcPtr = data.GetUnsafeReadOnlyPtr();
+                var dstPtr = blobBuilderArray.GetUnsafePtr();
+                UnsafeUtility.MemCpy(dstPtr, srcPtr, blobBuilderArray.Length * sizeof(T));
+            } 
             return blobBuilderArray;
         }
 

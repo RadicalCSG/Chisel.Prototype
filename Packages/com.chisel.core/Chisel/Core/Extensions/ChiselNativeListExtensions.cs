@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Chisel.Core
@@ -26,6 +27,15 @@ namespace Chisel.Core
             if (length == 0)
                 return;
             list.AddRangeNoResize(elements.GetUnsafePtr(), length);
+        }
+
+        public static uint Hash<T>(this NativeList<T> list, int length) where T : unmanaged
+        {
+            if (length < 0 || length > list.Length)
+                throw new ArgumentOutOfRangeException("length");
+            if (length == 0)
+                return 0;
+            return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
         }
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
@@ -66,17 +76,32 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, count * UnsafeUtility.SizeOf<T>());
         }
 
-        public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int start, int count) where T : unmanaged
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
-            if (count > srcArray.Length || count > dstArray.Length)
-                throw new ArgumentOutOfRangeException("count");
-            if (start < 0 || start + count > srcArray.Length)
-                throw new ArgumentOutOfRangeException("start");
+            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
+                throw new ArgumentOutOfRangeException("srcCount");
+            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
+                throw new ArgumentOutOfRangeException("srcIndex");
 
-            var srcPtr  = (T*)srcArray.GetUnsafeReadOnlyPtr() + start;
+            var srcPtr  = (T*)srcArray.GetUnsafeReadOnlyPtr() + srcIndex;
             var dstPtr  = (T*)dstArray.GetUnsafePtr();
 
-            UnsafeUtility.MemCpy(dstPtr, srcPtr, count * UnsafeUtility.SizeOf<T>());
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
+        }
+
+        public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        {
+            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
+                throw new ArgumentOutOfRangeException("srcCount");
+            if (dstIndex < 0 || dstIndex + srcCount > dstArray.Length)
+                throw new ArgumentOutOfRangeException("dstIndex");
+            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
+                throw new ArgumentOutOfRangeException("srcIndex");
+
+            var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
+            var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
         public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
