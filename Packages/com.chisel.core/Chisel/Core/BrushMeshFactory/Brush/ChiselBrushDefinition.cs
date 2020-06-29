@@ -8,6 +8,9 @@ namespace Chisel.Core
     [Serializable]
     public class ChiselBrushDefinition : IChiselGenerator
     {
+        const int kLatestVersion = 1;
+        int version = 0;
+
         public BrushMesh                brushOutline;
 
         [NamedItems(overflow = "Surface {0}")]
@@ -50,15 +53,42 @@ namespace Chisel.Core
             if (brushOutline.polygons == null)
                 return;
 
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            if (version != kLatestVersion)
+            {
+                version = kLatestVersion;
+                surfaceDefinition = null;
+            }
 
-            surfaceDefinition.EnsureSize(brushOutline.polygons.Length);
+            if (surfaceDefinition == null)
+            {
+                surfaceDefinition = new ChiselSurfaceDefinition();
+                surfaceDefinition.EnsureSize(brushOutline.polygons.Length);
+                if (brushOutline.polygons.Length > 0)
+                {
+                    for (int p = 0; p < brushOutline.polygons.Length; p++)
+                    {
+                        surfaceDefinition.surfaces[p].surfaceDescription = brushOutline.polygons[p].surface.surfaceDescription;
+                        surfaceDefinition.surfaces[p].brushMaterial = brushOutline.polygons[p].surface.brushMaterial;
+                    }
+                }
+            } else
+                surfaceDefinition.EnsureSize(brushOutline.polygons.Length);
 
             // Temporary fix for misformed brushes
             for (int i = 0; i < brushOutline.polygons.Length; i++)
                 brushOutline.polygons[i].surfaceID = i;
             brushOutline.CalculatePlanes();
+
+            // TODO: shouldn't do this all the time:
+            {
+                // Detect if outline is inside-out and if so, just invert all polygons.
+                isInsideOut = brushOutline.IsInsideOut();
+                if (isInsideOut)
+                    brushOutline.Invert();
+
+                // Split non planar polygons into convex pieces
+                brushOutline.SplitNonPlanarPolygons();
+            }
         }
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
@@ -67,20 +97,16 @@ namespace Chisel.Core
                 return false;
 
             brushContainer.EnsureSize(1);
+            var brushMesh = new BrushMesh(brushOutline); 
+            brushContainer.brushMeshes[0] = brushMesh;
 
-            brushContainer.brushMeshes[0] = new BrushMesh(brushOutline);
+            Validate();
 
-            brushContainer.brushMeshes[0].CalculatePlanes();
-
-            // Detect if outline is inside-out and if so, just invert all polygons.
-            isInsideOut = brushContainer.brushMeshes[0].IsInsideOut();
-            if (isInsideOut)
-                brushContainer.brushMeshes[0].Invert();
-
-            // Split non planar polygons into convex pieces
-            brushContainer.brushMeshes[0].SplitNonPlanarPolygons();
-
-            return brushContainer.brushMeshes[0].Validate();
+            for (int p = 0; p < brushMesh.polygons.Length; p++)
+            {
+                brushMesh.polygons[p].surface = surfaceDefinition.surfaces[p];
+            }
+            return brushMesh.Validate();
         }
     }
 } 
