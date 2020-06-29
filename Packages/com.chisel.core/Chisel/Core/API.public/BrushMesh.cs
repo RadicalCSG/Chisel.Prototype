@@ -87,9 +87,9 @@ namespace Chisel.Core
     [Serializable]
     public sealed partial class BrushMesh
     {
-        public const int CurrentVersion = 1;
-
-        public int version = 0;
+        const int kLatestVersion = 1;
+        [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
+                                                        // new instances will have the latest version
 
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)

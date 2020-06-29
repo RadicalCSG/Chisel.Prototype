@@ -9,7 +9,8 @@ namespace Chisel.Core
     public class ChiselBrushDefinition : IChiselGenerator
     {
         const int kLatestVersion = 1;
-        int version = 0;
+        [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
+                                                        // new instances will have the latest version
 
         public BrushMesh                brushOutline;
 
