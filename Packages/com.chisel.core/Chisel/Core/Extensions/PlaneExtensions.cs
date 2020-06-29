@@ -8,7 +8,7 @@ namespace Chisel.Core
         public static readonly Vector3 NanVector = new Vector3(float.NaN, float.NaN, float.NaN);
         public static readonly float3 NanFloat3 = new float3(float.NaN, float.NaN, float.NaN);
 
-        public static float3 Intersection(float4 inPlane1, float4 inPlane2, float4 inPlane3)
+        public static double3 Intersection(float4 inPlane1, float4 inPlane2, float4 inPlane3)
         {
 #if false
             var N0 = inPlane2.wzyx * inPlane3.yxwz - inPlane2.yxwz * inPlane3.wzyx;
@@ -31,7 +31,7 @@ namespace Chisel.Core
             var E = tx + ty + tz;
             if (math.isnan(E.y) || E.y > -CSGConstants.kDivideMinimumEpsilon && E.y < CSGConstants.kDivideMinimumEpsilon)
                 return NanFloat3;
-            return (float3)(E.zwx / E.y);
+            return (E.zwx / E.y);
 #endif
         }
 

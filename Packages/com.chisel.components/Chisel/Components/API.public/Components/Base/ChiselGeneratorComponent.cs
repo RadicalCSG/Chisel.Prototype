@@ -4,6 +4,7 @@ using Chisel.Core;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -412,14 +413,25 @@ namespace Chisel.Components
                 Debug.LogWarning(this.GetType().Name + " already has a treeNode, but trying to create a new one?", this);
             
             
+            Profiler.BeginSample("UpdateGenerator");
             UpdateGenerator();
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateBrushMeshInstances");
             UpdateBrushMeshInstances();
+            Profiler.EndSample();
 
+            Profiler.BeginSample("GenerateAllTreeNodes");
             GenerateAllTreeNodes();
+            Profiler.EndSample();
 
+            Profiler.BeginSample("InitializeBrushMeshInstances");
             InitializeBrushMeshInstances();
+            Profiler.EndSample();
             
+            Profiler.BeginSample("UpdateInternalTransformation");
             UpdateInternalTransformation();
+            Profiler.EndSample();
 
 
             if (Nodes[0].Operation != operation)
@@ -832,13 +844,19 @@ namespace Chisel.Components
         public virtual void UpdateGenerator()
         {
             // BrushMeshes of generators must always be unique
+            Profiler.BeginSample("ChiselBrushContainerAsset.Create");
             if (!brushContainerAsset ||
                 !ChiselBrushContainerAssetManager.IsBrushMeshUnique(brushContainerAsset))
                 brushContainerAsset = ChiselBrushContainerAsset.Create("Generated " + NodeTypeName);
+            Profiler.EndSample();
 
+            Profiler.BeginSample("UpdateGeneratorInternal");
             UpdateGeneratorInternal();
+            Profiler.EndSample();
 
+            Profiler.BeginSample("UpdateBrushMeshInstances");
             UpdateBrushMeshInstances();
+            Profiler.EndSample();
         }
 
         protected abstract void UpdateGeneratorInternal();

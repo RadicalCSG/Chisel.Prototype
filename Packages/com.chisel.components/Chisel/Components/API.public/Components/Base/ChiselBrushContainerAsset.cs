@@ -32,11 +32,21 @@ namespace Chisel.Components
         
         public void Generate(IChiselGenerator generator)
         {
+            Profiler.BeginSample("Generate");
             if (!generator.Generate(ref brushContainer))
+            {
+                Profiler.BeginSample("Reset");
                 brushContainer.Reset();
+                Profiler.EndSample();
+            }
+            Profiler.EndSample();
+            Profiler.BeginSample("CalculatePlanes");
             CalculatePlanes();
+            Profiler.EndSample();
             SetDirty();
+            Profiler.BeginSample("NotifyContentsModified");
             ChiselBrushContainerAssetManager.NotifyContentsModified(this);
+            Profiler.EndSample();
         }
 
         public bool SetSubMeshes(BrushMesh[] brushMeshes)
@@ -221,7 +231,7 @@ namespace Chisel.Components
 
         public static ChiselBrushContainerAsset Create(string name)
         {
-            var brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
+            var brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance(typeof(ChiselBrushContainerAsset)) as ChiselBrushContainerAsset;
             brushContainerAsset.name = name;
             return brushContainerAsset;
         }

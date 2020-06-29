@@ -235,7 +235,6 @@ namespace Chisel.Core
                     if (intersectionSurfaceSegments.IsCreated) intersectionSurfaceSegments.Dispose();
                     intersectionSurfaceSegments = new NativeArray<int2>(surfaceCount, Allocator.Temp);
                 }
-                //var intersectionSurfaceSegments = stackalloc int2[surfaceCount];
                 {
                     {
                         for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
@@ -421,8 +420,8 @@ namespace Chisel.Core
 
             int4 tempVertices = int4.zero;
 
-            ref var otherPlanesNative    = ref brushTreeSpacePlanes[intersectionBrushOrder1].Value.treeSpacePlanes;// allTreeSpacePlanePtr + otherPlanesSegment.x;
-            ref var selfPlanesNative     = ref brushTreeSpacePlanes[intersectionBrushOrder0].Value.treeSpacePlanes;//allTreeSpacePlanePtr + selfPlanesSegment.x;
+            ref var otherPlanesNative    = ref brushTreeSpacePlanes[intersectionBrushOrder1].Value.treeSpacePlanes;
+            ref var selfPlanesNative     = ref brushTreeSpacePlanes[intersectionBrushOrder0].Value.treeSpacePlanes;
 
             var otherPlaneCount = otherPlanesNative.Length;
             var selfPlaneCount  = selfPlanesNative.Length;
