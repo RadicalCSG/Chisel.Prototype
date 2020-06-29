@@ -161,39 +161,57 @@ namespace Chisel.Components
             hierarchyItemLookup	.Clear();
             treeNodeLookup		.Clear();
     
-            registerQueueLookup	.Clear();
-            registerQueue		.Clear();		
-            unregisterQueueLookup.Clear();
-            unregisterQueue		.Clear();
-
             reregisterModelQueue.Clear();
-
-            findChildrenQueue	.Clear();
         
             CSGManager.Destroy(destroyNodesList.ToArray());
-            destroyNodesList	.Clear();
-
-            addToHierarchyLookup.Clear();
-            addToHierarchyQueue	.Clear();
-            deferAddToHierarchyQueue.Clear();
-
-            rebuildTreeNodes	.Clear();
-            updateTransformationNodes.Clear();
-
-            updateChildrenQueue	.Clear();
-            sortChildrenQueue	.Clear();
-    
-            hierarchyUpdateQueue.Clear();
-
+            
             generatedBrushNodes	.Clear();
             nodegeneratedBrush	.Clear();
 
-            createDefaultModels .Clear();
-            
+            reregisterModelQueue.Clear();
+            ClearQueues();
+            ClearTemporaries();
+
             ChiselGeneratedModelMeshManager.Reset();
             
             if (NodeHierarchyReset != null)
                 NodeHierarchyReset();
+        }
+
+        static void ClearQueues()
+        {
+            registerQueueLookup.Clear();
+            registerQueue.Clear();
+            unregisterQueueLookup.Clear();
+            unregisterQueue.Clear();
+
+            createDefaultModels.Clear();
+
+            findChildrenQueue.Clear();
+
+            destroyNodesList.Clear();
+
+            addToHierarchyLookup.Clear();
+            addToHierarchyQueue.Clear();
+            deferAddToHierarchyQueue.Clear();
+
+            rebuildTreeNodes.Clear();
+
+            updateTransformationNodes.Clear();
+
+            updateChildrenQueue.Clear();
+            sortChildrenQueue.Clear();
+            hierarchyUpdateQueue.Clear();
+        }
+
+        static void ClearTemporaries()
+        {
+            __rootGameObjects.Clear();
+            __transforms.Clear();
+            __hierarchyQueueLists.Clear();
+            __registerNodes.Clear();
+            __unregisterNodes.Clear();
+            __childNodes.Clear();
         }
         
         // *Workaround*
@@ -701,6 +719,10 @@ namespace Chisel.Components
             UpdateAgain:
             reregisterModelQueue.Clear();
 
+            // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
+            // so we remember them, and re-register at the end.
+            bool tryAgain = false;
+
             try
             {
                 bool haveCreatedTreeNodes = false;
@@ -735,22 +757,9 @@ namespace Chisel.Components
             // If we get an exception we don't want to end up infinitely spawning this exception ..
             finally
             {
-                registerQueue.Clear();
-                rebuildTreeNodes.Clear();
-                registerQueueLookup.Clear();
-                unregisterQueue.Clear();
-                sortChildrenQueue.Clear();
-                findChildrenQueue.Clear();
-                hierarchyUpdateQueue.Clear();
-                updateChildrenQueue.Clear();
-                addToHierarchyQueue.Clear();
-                deferAddToHierarchyQueue.Clear();
-                updateTransformationNodes.Clear();
+                ClearTemporaries();
+                ClearQueues();
             }
-
-            // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
-            // so we remember them, and re-register at the end.
-            bool tryAgain = false;
 
             if (reregisterModelQueue.Count > 0)
             {
