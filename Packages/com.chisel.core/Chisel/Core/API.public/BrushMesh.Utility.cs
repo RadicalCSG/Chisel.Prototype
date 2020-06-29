@@ -250,6 +250,24 @@ namespace Chisel.Core
             UpdateHalfEdgePolygonIndices();
         }
 
+        bool IsPolygonCompletelyPlaneAligned(int polygonIndex, List<VertexSide> vertexDistances)
+        {
+            ref var polygon = ref polygons[polygonIndex];
+            var firstEdge   = polygon.firstEdge;
+            var edgeCount   = polygon.edgeCount;
+            var lastEdge    = firstEdge + edgeCount;
+
+            for (var edgeIndex1 = firstEdge; edgeIndex1 < lastEdge; edgeIndex1++)
+            {
+                var vertexIndex1 = halfEdges[edgeIndex1].vertexIndex;
+
+                var side = vertexDistances[vertexIndex1].Halfspace;
+                if (side != 0)
+                    return false;
+            }
+            return true;
+        }
+
 
         static List<PlaneTraversals> s_Intersections = new List<PlaneTraversals>(); // avoids allocations at runtime
 
@@ -970,6 +988,12 @@ namespace Chisel.Core
                 var distance	= cuttingPlane.GetDistanceToPoint(vertices[p]);
                 var	halfspace	= (short)((distance < -kDistanceEpsilon) ? -1 : (distance > kDistanceEpsilon) ? 1 : 0);
                 s_VertexDistances.Add(new VertexSide() { Distance  = distance, Halfspace = halfspace });
+            }
+
+            for (var p = polygons.Length - 1; p >= 0; p--)
+            {
+                if (IsPolygonCompletelyPlaneAligned(p, s_VertexDistances))
+                    return false;
             }
 
             // We split all the polygons by the cutting plane (which creates new polygons at the end, so we start at the end going backwards)
