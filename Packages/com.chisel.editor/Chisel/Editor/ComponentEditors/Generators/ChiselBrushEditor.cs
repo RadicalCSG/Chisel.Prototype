@@ -93,9 +93,9 @@ namespace Chisel.Editors
             internalBrushMesh.CalculatePlanes();
 
             // If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
-            generator.definition.ValidState = !internalBrushMesh.IsConcave() && // TODO: eventually allow concave shapes
-                                              !internalBrushMesh.IsSelfIntersecting() &&
-                                               internalBrushMesh.HasVolume();
+            generator.definition.ValidState = internalBrushMesh.HasVolume() &&          // TODO: implement this, so we know if a brush is a 0D/1D/2D shape
+                                              !internalBrushMesh.IsConcave() &&         // TODO: eventually allow concave shapes
+                                              !internalBrushMesh.IsSelfIntersecting();  // TODO: in which case this needs to be implemented
 
             generator.definition.brushOutline = internalBrushMesh;
             

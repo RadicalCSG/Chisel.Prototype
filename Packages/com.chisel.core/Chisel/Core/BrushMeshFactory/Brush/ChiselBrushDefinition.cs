@@ -23,8 +23,8 @@ namespace Chisel.Core
         [HideInInspector]
         [SerializeField] bool           validState = true;
 
-        public bool ValidState { get { return validState; } set { validState = value; } }
-        public bool IsInsideOut { get { return isInsideOut; } }
+        public bool ValidState      { get { return validState; } set { validState = value; } }
+        public bool IsInsideOut     { get { return isInsideOut; } }
 
         public bool IsValid
         {
@@ -80,13 +80,21 @@ namespace Chisel.Core
             for (int i = 0; i < brushOutline.polygons.Length; i++)
                 brushOutline.polygons[i].surfaceID = i;
             brushOutline.CalculatePlanes();
+            
+            // If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
+            validState = brushOutline.HasVolume() &&            // TODO: implement this, so we know if a brush is a 0D/1D/2D shape
+                         !brushOutline.IsConcave() &&           // TODO: eventually allow concave shapes
+                         !brushOutline.IsSelfIntersecting();    // TODO: in which case this needs to be implemented
 
             // TODO: shouldn't do this all the time:
             {
                 // Detect if outline is inside-out and if so, just invert all polygons.
                 isInsideOut = brushOutline.IsInsideOut();
                 if (isInsideOut)
+                {
                     brushOutline.Invert();
+                    isInsideOut = false;
+                }
 
                 // Split non planar polygons into convex pieces
                 brushOutline.SplitNonPlanarPolygons();

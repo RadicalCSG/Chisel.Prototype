@@ -332,7 +332,7 @@ namespace Chisel.Core
                     var plane1      = usedPlanePairs1[i].plane1;
                     var plane2      = intersectingPlanes0[j];
 
-                    foundVertices[n] = new float4(PlaneExtensions.Intersection(plane2, plane0, plane1), 1);
+                    foundVertices[n] = new float4((float3)PlaneExtensions.Intersection(plane2, plane0, plane1), 1);
                     n++;
                 }
             }

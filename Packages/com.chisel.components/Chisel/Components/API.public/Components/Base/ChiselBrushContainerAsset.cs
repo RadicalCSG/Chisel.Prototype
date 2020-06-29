@@ -231,7 +231,7 @@ namespace Chisel.Components
 
         public static ChiselBrushContainerAsset Create(string name)
         {
-            var brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
+            var brushContainerAsset = UnityEngine.ScriptableObject.CreateInstance(typeof(ChiselBrushContainerAsset)) as ChiselBrushContainerAsset;
             brushContainerAsset.name = name;
             return brushContainerAsset;
         }
