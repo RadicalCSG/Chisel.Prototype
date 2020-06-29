@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -97,17 +98,28 @@ namespace Chisel.Core
             if (!IsValid)
                 return false;
 
+            Profiler.BeginSample("EnsureSize");
             brushContainer.EnsureSize(1);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("new BrushMesh");
             var brushMesh = new BrushMesh(brushOutline); 
             brushContainer.brushMeshes[0] = brushMesh;
+            Profiler.EndSample();
 
+            Profiler.BeginSample("Definition.Validate");
             Validate();
+            Profiler.EndSample();
 
+            Profiler.BeginSample("Assign Materials");
             for (int p = 0; p < brushMesh.polygons.Length; p++)
-            {
                 brushMesh.polygons[p].surface = surfaceDefinition.surfaces[p];
-            }
-            return brushMesh.Validate();
+            Profiler.EndSample();
+
+            Profiler.BeginSample("BrushMesh.Validate");
+            var valid = brushMesh.Validate();
+            Profiler.EndSample();
+            return valid;
         }
     }
 } 

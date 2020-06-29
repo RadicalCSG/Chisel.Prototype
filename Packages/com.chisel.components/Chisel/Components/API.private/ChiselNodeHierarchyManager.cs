@@ -780,8 +780,12 @@ namespace Chisel.Components
         static void CreateTreeNodes(ChiselNode node)
         {
             // Create the treeNodes for this node
+            Profiler.BeginSample("ClearTreeNodes");
             node.ClearTreeNodes(clearCaches: false);
+            Profiler.EndSample();
+            Profiler.BeginSample("CreateTreeNodes");
             var createdTreeNodes = node.CreateTreeNodes();
+            Profiler.EndSample();
             if (createdTreeNodes != null && createdTreeNodes.Length > 0)
                 treeNodeLookup[node] = createdTreeNodes;
             else
@@ -796,6 +800,7 @@ namespace Chisel.Components
         internal static bool prevPlaying = false;
         internal static bool UpdateTrampoline()
         {
+            Profiler.BeginSample("UpdateTrampoline.Setup");
             bool haveCreatedTreeNodes = false;
             if (createDefaultModels.Count > 0)
             {
@@ -943,6 +948,7 @@ namespace Chisel.Components
                         registerQueue.RemoveAt(i);
                 }
             }
+            Profiler.EndSample();
 
             
             if (registerQueue.Count == 0 &&
@@ -967,6 +973,7 @@ namespace Chisel.Components
                 registerQueue.AddRange(rebuildTreeNodes);
             }
 
+            Profiler.BeginSample("UpdateTrampoline.unregisterQueue");
             if (unregisterQueue.Count > 0)
             {
                 for (int i = 0; i < unregisterQueue.Count; i++)
@@ -1049,9 +1056,12 @@ namespace Chisel.Components
                 unregisterQueue.Clear();
                 unregisterQueueLookup.Clear();
             }
+            Profiler.EndSample();
             
+            Profiler.BeginSample("UpdateTrampoline.registerQueue");
             if (registerQueue.Count > 0)
             {
+                Profiler.BeginSample("UpdateTrampoline.registerQueue.A");
                 for (int i = 0; i < registerQueue.Count; i++)
                 {
                     var node = registerQueue[i];
@@ -1071,8 +1081,10 @@ namespace Chisel.Components
                         treeNodeLookup.Remove(node);
                     }
                 }
+                Profiler.EndSample();
             
                 // Initialize the components
+                Profiler.BeginSample("UpdateTrampoline.registerQueue.B");
                 for (int i = registerQueue.Count - 1; i >= 0; i--) // reversed direction because we're also potentially removing items
                 {
                     var node = registerQueue[i];
@@ -1108,19 +1120,25 @@ namespace Chisel.Components
 
                     if (node.CreatesTreeNode)
                     {
+                        Profiler.BeginSample("UpdateTrampoline.registerQueue.B.CreateTreeNodes");
                         CreateTreeNodes(node);
+                        Profiler.EndSample();
                         haveCreatedTreeNodes = true;
                     }
                 }
+                Profiler.EndSample();
                  
                 // Separate loop to ensure all parent components are already initialized
                 // this is because the order of the registerQueue is essentially random
+                Profiler.BeginSample("UpdateTrampoline.registerQueue.C");
                 for (int i = 0; i < registerQueue.Count; i++)
                 {
                     var node = registerQueue[i];
                     RegisterInternal(node);
                 }
+                Profiler.EndSample();
 
+                Profiler.BeginSample("UpdateTrampoline.registerQueue.D");
                 for (int i = 0; i < registerQueue.Count; i++)
                 {
                     var node = registerQueue[i];
@@ -1130,11 +1148,14 @@ namespace Chisel.Components
                         addToHierarchyQueue.Add(node.hierarchyItem);
                     }
                 }
+                Profiler.EndSample();
 
                 registerQueue.Clear();
                 registerQueueLookup.Clear();
             }
+            Profiler.EndSample();
 
+            Profiler.BeginSample("UpdateTrampoline.findChildrenQueue");
             if (findChildrenQueue.Count > 0)
             {
                 for (int i = 0; i < findChildrenQueue.Count; i++)
@@ -1144,7 +1165,9 @@ namespace Chisel.Components
                 }
                 findChildrenQueue.Clear();
             }
+            Profiler.EndSample();
         
+            Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue");
             if (hierarchyUpdateQueue.Count > 0)
             {
                 var prevQueue = hierarchyUpdateQueue.ToArray();
@@ -1223,7 +1246,9 @@ namespace Chisel.Components
                 }
                 hierarchyUpdateQueue.Clear();
             }
+            Profiler.EndSample();
             
+            Profiler.BeginSample("UpdateTrampoline.addToHierarchyQueue");
             if (addToHierarchyQueue.Count > 0)
             {
                 for (int i = 0; i < addToHierarchyQueue.Count; i++)
@@ -1306,7 +1331,9 @@ namespace Chisel.Components
                 addToHierarchyQueue.Clear();
                 addToHierarchyLookup.Clear();
             }
+            Profiler.EndSample();
              
+            Profiler.BeginSample("UpdateTrampoline.sortChildrenQueue");
             if (sortChildrenQueue.Count > 0)
             {
                 foreach (var items in sortChildrenQueue)
@@ -1330,7 +1357,9 @@ namespace Chisel.Components
                 }
                 sortChildrenQueue.Clear();
             }
+            Profiler.EndSample();
             
+            Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue");
             if (updateChildrenQueue.Count > 0)
             {
                 foreach (var item in updateChildrenQueue)
@@ -1364,7 +1393,9 @@ namespace Chisel.Components
                     }
                 }
             }
+            Profiler.EndSample();
         
+            Profiler.BeginSample("UpdateTrampoline.destroyNodesList");
             if (destroyNodesList.Count > 0)
             {                
                 // Destroy all old nodes after we created new nodes, to make sure we don't get conflicting IDs
@@ -1372,7 +1403,9 @@ namespace Chisel.Components
                 CSGManager.Destroy(destroyNodesList.ToArray());
                 destroyNodesList.Clear();
             }
+            Profiler.EndSample();
         
+            Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue2");
             if (updateChildrenQueue.Count > 0)
             {
                 foreach (var item in updateChildrenQueue)
@@ -1390,7 +1423,9 @@ namespace Chisel.Components
                 }
                 updateChildrenQueue.Clear();
             }
+            Profiler.EndSample();
             
+            Profiler.BeginSample("UpdateTrampoline.updateTransformationNodes");
             if (updateTransformationNodes.Count > 0)
             {
                 // Make sure we also update the child node matrices
@@ -1406,22 +1441,27 @@ namespace Chisel.Components
                     TransformationChanged();
                 updateTransformationNodes.Clear();
             }
+            Profiler.EndSample();
 
-
+            Profiler.BeginSample("UpdateTrampoline.__unregisterNodes");
             if (__unregisterNodes.Count > 0)
             {
                 foreach (var node in __unregisterNodes)
                     ChiselGeneratedModelMeshManager.Unregister(node);
                 __unregisterNodes.Clear();
             }
+            Profiler.EndSample();
 
+            Profiler.BeginSample("UpdateTrampoline.__registerNodes");
             if (__registerNodes.Count > 0)
             {
                 foreach (var node in __registerNodes)
                     ChiselGeneratedModelMeshManager.Register(node);
                 __registerNodes.Clear();
             }
+            Profiler.EndSample();
 
+            Profiler.BeginSample("UpdateTrampoline.End");
             __registerNodes		.Clear();
             __unregisterNodes	.Clear();
             __childNodes		.Clear();
@@ -1442,6 +1482,7 @@ namespace Chisel.Components
 
             // Used to redraw windows etc.
             NodeHierarchyModified?.Invoke();
+            Profiler.EndSample();
             return haveCreatedTreeNodes;
         }
 
