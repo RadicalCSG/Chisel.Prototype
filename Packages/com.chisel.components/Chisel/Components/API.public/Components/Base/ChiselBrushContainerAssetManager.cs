@@ -374,7 +374,7 @@ namespace Chisel.Components
 
             unregisterQueue.Clear();
             unregisterQueueLookup.Clear();
-            
+            modifiedBrushMeshes.Clear();
             for (int i = 0; i < updateQueue.Count; i++)
             {
                 var brushContainerAsset = updateQueue[i];

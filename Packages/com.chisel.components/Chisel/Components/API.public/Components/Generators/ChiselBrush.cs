@@ -23,5 +23,13 @@ namespace Chisel.Components
             set { if (value == definition.surfaceDefinition) return; definition.surfaceDefinition = value; OnValidateInternal(); }
         }
         #endregion
+
+        #region HasValidState
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {            
+            return definition.ValidState;
+        }
+        #endregion
     }
 }
