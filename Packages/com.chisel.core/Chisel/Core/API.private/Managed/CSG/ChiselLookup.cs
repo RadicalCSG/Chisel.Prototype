@@ -407,6 +407,8 @@ namespace Chisel.Core
         public int basePlaneIndex;  // BrushIntersectionLoop.surfaceInfo has identical basePlaneIndex
     }
 
+    // TODO: Could be optimized further by storing ALL vertices in a single array (somehow),
+    // which would allow us to store everything else in a simple struct (no need for BlobAssetReference)
     public struct BrushIntersectionLoop
     {
         public BrushSurfacePair     pair;

@@ -43,28 +43,23 @@ namespace Chisel.Core
         }
 
          
-        IntersectionType ConvexPolytopeTouching(BlobAssetReference<BrushMeshBlob> brushMesh0,
+        IntersectionType ConvexPolytopeTouching(ref BrushMeshBlob brushMesh0,
                                                 ref float4x4 treeToNode0SpaceMatrix,
                                                 ref float4x4 nodeToTree0SpaceMatrix,
-                                                BlobAssetReference<BrushMeshBlob> brushMesh1,
+                                                ref BrushMeshBlob brushMesh1,
                                                 ref float4x4 treeToNode1SpaceMatrix,
                                                 ref float4x4 nodeToTree1SpaceMatrix)
         {
-            ref var brushPlanes0   = ref brushMesh0.Value.localPlanes;
-            ref var brushPlanes1   = ref brushMesh1.Value.localPlanes;
-
-            ref var brushVertices0 = ref brushMesh0.Value.localVertices;
-            ref var brushVertices1 = ref brushMesh1.Value.localVertices;
+            ref var brushPlanes0   = ref brushMesh0.localPlanes;
             
             if (!transformedPlanes0.IsCreated || transformedPlanes0.Length < brushPlanes0.Length)
             {
                 if (transformedPlanes0.IsCreated) transformedPlanes0.Dispose();
                 transformedPlanes0 = new NativeArray<float4>(brushPlanes0.Length, Allocator.Temp);
             }
-
-            //var transformedPlanes0 = stackalloc float4[brushPlanes0.Length];
             TransformOtherIntoBrushSpace(ref treeToNode0SpaceMatrix, ref nodeToTree1SpaceMatrix, ref brushPlanes0, transformedPlanes0);
-            
+
+            ref var brushVertices1 = ref brushMesh1.localVertices;
             int negativeSides1 = 0;
             for (var i = 0; i < brushPlanes0.Length; i++)
             {
@@ -81,6 +76,7 @@ namespace Chisel.Core
             if (negativeSides1 == brushPlanes0.Length)
                 return IntersectionType.BInsideA;
 
+            ref var brushPlanes1    = ref brushMesh1.localPlanes;
             //*
             
             if (!transformedPlanes1.IsCreated || transformedPlanes1.Length < brushPlanes1.Length)
@@ -88,10 +84,10 @@ namespace Chisel.Core
                 if (transformedPlanes1.IsCreated) transformedPlanes1.Dispose();
                 transformedPlanes1 = new NativeArray<float4>(brushPlanes1.Length, Allocator.Temp);
             }
-
-            //var transformedPlanes1 = stackalloc float4[brushPlanes1.Length];
             TransformOtherIntoBrushSpace(ref treeToNode1SpaceMatrix, ref nodeToTree0SpaceMatrix, ref brushPlanes1, transformedPlanes1);
 
+
+            ref var brushVertices0 = ref brushMesh0.localVertices;
             int negativeSides2 = 0;
             int intersectingSides2 = 0;
             for (var i = 0; i < brushPlanes1.Length; i++)
@@ -152,16 +148,16 @@ namespace Chisel.Core
                 for (int index0 = 0; index0 < updateBrushIndicesArray.Length; index0++)
                 {
                     var brush0IndexOrder    = updateBrushIndicesArray[index0];
-                    int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                     int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                     for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                     {
                         var brush1IndexOrder = updateBrushIndicesArray[index1];
-                        int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                         int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                         if (brush0NodeOrder <= brush1NodeOrder)
                             continue;
-                        var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
+                        var result = FindIntersection(brush0NodeOrder, brush1NodeOrder);
+                        if (result == IntersectionType.NoIntersection)
+                            continue;
                         StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                     }
                 }
@@ -181,15 +177,15 @@ namespace Chisel.Core
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
-                int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                 int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                 var found = false;
                 for (int index1 = 0; index1 < updateBrushIndicesArray.Length; index1++)
                 {
                     var brush1IndexOrder = updateBrushIndicesArray[index1];
-                    int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                     int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
-                    var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
+                    if (brush0NodeOrder == brush1NodeOrder)
+                        continue;
+                    var result = FindIntersection(brush0NodeOrder, brush1NodeOrder);
                     if (result == IntersectionType.NoIntersection)
                         continue;
                     found = true;
@@ -216,16 +212,16 @@ namespace Chisel.Core
             for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
             {
                 var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
-                int brush0NodeIndex     = brush0IndexOrder.nodeIndex;
                 int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                 for (int index1 = 0; index1 < brushesThatNeedIndirectUpdateArray.Length; index1++)
                 {
                     var brush1IndexOrder = brushesThatNeedIndirectUpdateArray[index1];
-                    int brush1NodeIndex  = brush1IndexOrder.nodeIndex;
                     int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                     if (brush0NodeOrder <= brush1NodeOrder)
                         continue;
-                    var result = FindIntersection(brush0NodeIndex, brush0NodeOrder, brush1NodeIndex, brush1NodeOrder);
+                    var result = FindIntersection(brush0NodeOrder, brush1NodeOrder);
+                    if (result == IntersectionType.NoIntersection)
+                        continue;
                     StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                 }
             }
@@ -233,7 +229,7 @@ namespace Chisel.Core
 
         }
 
-        IntersectionType FindIntersection(int brush0NodeIndex, int brush0NodeOrder, int brush1NodeIndex, int brush1NodeOrder)
+        IntersectionType FindIntersection(int brush0NodeOrder, int brush1NodeOrder)
         {
             var brushMesh0 = brushMeshLookup[brush0NodeOrder];
             var brushMesh1 = brushMeshLookup[brush1NodeOrder];
@@ -254,10 +250,10 @@ namespace Chisel.Core
             var treeToNode1SpaceMatrix = transformation1.treeToNode;
             var nodeToTree1SpaceMatrix = transformation1.nodeToTree;
 
-            var result = ConvexPolytopeTouching(brushMesh0,
+            var result = ConvexPolytopeTouching(ref brushMesh0.Value,
                                                 ref treeToNode0SpaceMatrix,
                                                 ref nodeToTree0SpaceMatrix,
-                                                brushMesh1,
+                                                ref brushMesh1.Value,
                                                 ref treeToNode1SpaceMatrix,
                                                 ref nodeToTree1SpaceMatrix);
           

@@ -46,6 +46,7 @@ namespace Chisel.Core
             public NativeMultiHashMap<int, BlobAssetReference<BrushIntersectionLoop>>   intersectionLoopBlobs;
             public NativeList<BlobAssetReference<BrushPairIntersection>>                intersectingBrushes;
             
+            //public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>           brushRenderBuffers;
             public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>               brushesTouchedByBrushes;
             public NativeArray<BlobAssetReference<RoutingTable>>                        routingTableLookup;
             public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                brushTreeSpacePlanes;
@@ -487,6 +488,7 @@ namespace Chisel.Core
                     brushTreeSpacePlanes        = brushTreeSpacePlanes,
                     routingTableLookup          = routingTableLookup,
                     brushesTouchedByBrushes     = brushesTouchedByBrushes,
+                    //brushRenderBuffers        = brushRenderBuffers,
                     brushBrushIntersections     = brushBrushIntersections,
                     uniqueBrushPairs            = uniqueBrushPairs,
                     intersectionLoopBlobs       = intersectionLoopBlobs,
@@ -1084,6 +1086,7 @@ namespace Chisel.Core
                         treeUpdate.brushTreeSpacePlanes         .Dispose();
                         treeUpdate.routingTableLookup           .Dispose();
                         treeUpdate.brushesTouchedByBrushes      .Dispose();
+                        //treeUpdate.brushRenderBuffers         .Dispose();
                         treeUpdate.dataStream1                  .Dispose();//disposeJobHandle);
                         treeUpdate.dataStream2                  .Dispose();//disposeJobHandle);
                         treeUpdate.brushMeshLookup              .Dispose();//disposeJobHandle);
