@@ -34,25 +34,35 @@ namespace Chisel.Core
             for (int e = firstEdge; e < lastEdge; e++)
             {
                 var vertexIndex = halfEdges[e].vertexIndex;
-                vertices[vertexIndex] = GetVertexSnappedToItsPlanes(vertexIndex);
+                vertices[vertexIndex] = GetVertexFromIntersectingPlanes(vertexIndex);
             }
         }
 
+        static List<int> sSnapPlaneIndices = new List<int>();
         static List<float4> sSnapPlanes = new List<float4>();
-        public float3 GetVertexSnappedToItsPlanes(int vertexIndex)
+        public float3 GetVertexFromIntersectingPlanes(int vertexIndex)
         {
-            sSnapPlanes.Clear();
+            sSnapPlaneIndices.Clear();
             // TODO: precalculate this somehow
             for (int e = 0; e < halfEdges.Length; e++)
             {
                 if (halfEdges[e].vertexIndex != vertexIndex)
                     continue;
 
-                sSnapPlanes.Add(planes[halfEdgePolygonIndices[e]]);
+                sSnapPlaneIndices.Add(halfEdgePolygonIndices[e]);
             }
 
-            if (sSnapPlanes.Count < 3)
+            if (sSnapPlaneIndices.Count < 3)
+            {
                 return vertices[vertexIndex];
+            }
+
+            sSnapPlanes.Clear();
+            sSnapPlaneIndices.Sort();
+            for (int i = 0; i < sSnapPlaneIndices.Count; i++)
+            {
+                sSnapPlanes.Add(planes[sSnapPlaneIndices[i]]);
+            }
 
             // most common case
             if (sSnapPlanes.Count == 3)
@@ -117,11 +127,6 @@ namespace Chisel.Core
             }
             */
 
-            Profiler.BeginSample("GetVertexSnappedToItsPlanes");
-            for (int v = 0; v < vertices.Length; v++)
-                vertices[v] = GetVertexSnappedToItsPlanes(v);
-            Profiler.EndSample();
-
             var dmin = (double3)vertices[0];
             var dmax = dmin;
             for (int i = 1; i < vertices.Length; i++)
@@ -131,8 +136,6 @@ namespace Chisel.Core
             }
 
             var center = (float3)((dmin + dmax) * 0.5);
-            for (int i = 0; i < vertices.Length; i++)
-                vertices[i] -= center;
 
             var translate = float4x4.Translate(center);
             for (int i = 0; i < polygons.Length; i++)
@@ -153,6 +156,16 @@ namespace Chisel.Core
                 
                 surface.surfaceDescription.UV0 = new UVMatrix(newUVMatrix);
             }
+
+#if false
+            for (int i = 0; i < vertices.Length; i++)
+                vertices[i] -= center;
+#else
+            Profiler.BeginSample("GetVertexFromIntersectingPlanes");
+            for (int v = 0; v < vertices.Length; v++)
+                vertices[v] = GetVertexFromIntersectingPlanes(v);
+            Profiler.EndSample();
+#endif
             Profiler.EndSample();
             return center;
         }
@@ -421,8 +434,7 @@ namespace Chisel.Core
 
         private static float GetEdgeHeuristic(TrianglePathCache cache, float4[] planes, float3[] vertices, int vi0, int vi1, int vi2)
         {
-            int polygonIndex;
-            if (!cache.HardEdges.TryGetValue(VertPair.Create(vi0, vi1), out polygonIndex))
+            if (!cache.HardEdges.TryGetValue(VertPair.Create(vi0, vi1), out int polygonIndex))
                 return 0;
             
             if (polygonIndex < 0 || polygonIndex >= planes.Length)
@@ -433,9 +445,9 @@ namespace Chisel.Core
         
         private static float GetTriangleHeuristic(TrianglePathCache cache, float4[] planes, float3[] vertices, int vi0, int vi1, int vi2)
         {
-            var pair0 = VertPair.Create(vi0, vi1);
-            var pair1 = VertPair.Create(vi1, vi2);
-            var pair2 = VertPair.Create(vi2, vi0);
+            //var pair0 = VertPair.Create(vi0, vi1);
+            //var pair1 = VertPair.Create(vi1, vi2);
+            //var pair2 = VertPair.Create(vi2, vi0);
                 
             return GetEdgeHeuristic(cache, planes, vertices, vi0, vi1, vi2) +
                    GetEdgeHeuristic(cache, planes, vertices, vi1, vi2, vi0) +
@@ -470,8 +482,8 @@ namespace Chisel.Core
                     index = cache.AllTriangles.Count;
                     cache.TriangleIndices[triangleIndex] = index;
                     cache.AllTriangles.Add(triangle);
-                } else
-                    triangle = cache.AllTriangles[index];
+                } //else
+                    //triangle = cache.AllTriangles[index];
 
                 triangles = new [] { index };
                 return GetTriangleHeuristic(cache, planes, vertices, vi0, vi1, vi2);
@@ -518,7 +530,7 @@ namespace Chisel.Core
                     }
                     
                     float leftHeuristic;
-                    #region Left Path
+#region Left Path
                     int[] leftTriangles;
                     if (startIndex != -1 || leftPath.triangles == null)
                     {
@@ -553,7 +565,7 @@ namespace Chisel.Core
                         leftHeuristic		= leftPath.heuristic;
                         leftTriangles		= leftPath.triangles;
                     }
-                    #endregion
+#endregion
 
                     var newHeuristic = leftHeuristic;
                     if (newHeuristic >= curHeuristic + kEqualityEpsilon)
@@ -583,7 +595,7 @@ namespace Chisel.Core
                     }
                     
                     float rightHeuristic;
-                    #region Right Path
+#region Right Path
                     int[] rightTriangles;
                     if (startIndex != -1 || rightPath.triangles == null)
                     {
@@ -613,7 +625,7 @@ namespace Chisel.Core
                         rightHeuristic		= rightPath.heuristic;
                         rightTriangles		= rightPath.triangles;
                     }
-                    #endregion
+#endregion
 
                     newHeuristic += rightHeuristic;
                     if (newHeuristic >= curHeuristic + kEqualityEpsilon)
@@ -864,7 +876,7 @@ namespace Chisel.Core
 
                 var newHalfEdgeCount            = halfEdges.Length - edgeOffsetBeyondPolygon + extraHalfEdges;
                 var newHalfEdgePolygonIndices   = new int[newHalfEdgeCount];
-                var newHalfEdges                = new BrushMesh.HalfEdge[newHalfEdgeCount];
+                var newHalfEdges                = new HalfEdge[newHalfEdgeCount];
                 for (int e = 0; e < newHalfEdges.Length; e++)
                     newHalfEdges[e].twinIndex = -1;
                 Array.ConstrainedCopy(halfEdges, 0, 
@@ -873,7 +885,7 @@ namespace Chisel.Core
                 Array.ConstrainedCopy(halfEdgePolygonIndices, 0, 
                                       newHalfEdgePolygonIndices, 0, 
                                       firstEdge + newEdgeCount);
-                var lastIndex = halfEdges.Length - lastEdge;
+                //var lastIndex = halfEdges.Length - lastEdge;
                 if (lastEdge < halfEdges.Length)
                 {
                     Array.ConstrainedCopy(halfEdges,    lastEdge, 
@@ -980,7 +992,7 @@ namespace Chisel.Core
         {
             edgeRemap = null;
             polygonRemap = null;
-            const float kDistanceEpsilon = 0.0001f;
+            const float kDistanceEpsilon = 0.0001f; // TODO: why??
 
             // TODO: optimize
 
