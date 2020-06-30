@@ -36,14 +36,6 @@ namespace Chisel.Core
         }
     }
 
-    // Note: Stored in BlobAsset at runtime/editor-time
-    public struct BrushSurfacePair
-    {
-        public int brushNodeIndex0;
-        public int brushNodeIndex1;
-        public int basePlaneIndex;
-    }
-    
     public struct BrushPair : IEquatable<BrushPair>, IEqualityComparer<BrushPair>, IComparable<BrushPair>, IComparer<BrushPair>
     {
         public IndexOrder       brushIndexOrder0;
@@ -406,17 +398,20 @@ namespace Chisel.Core
         public BlobArray<float3>        usedVertices;
         public BlobArray<SurfaceInfo>   surfaceInfos;
     }
-    
+
+
+    // Note: Stored in BlobAsset at runtime/editor-time
+    public struct BrushSurfacePair
+    {
+        public int brushNodeOrder1; // BrushIntersectionLoop.surfaceInfo has brushNode*INDEX*
+        public int basePlaneIndex;  // BrushIntersectionLoop.surfaceInfo has identical basePlaneIndex
+    }
+
     public struct BrushIntersectionLoop
     {
         public BrushSurfacePair     pair;
         public SurfaceInfo          surfaceInfo;
         public BlobArray<float3>    loopVertices;
-    }
-
-    public struct BrushIntersectionLoops
-    {
-        public BlobArray<BrushIntersectionLoop> loops;
     }
 
     public struct BrushPairIntersection
