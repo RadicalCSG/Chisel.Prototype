@@ -157,15 +157,14 @@ namespace Chisel.Core
                 surface.surfaceDescription.UV0 = new UVMatrix(newUVMatrix);
             }
 
-#if false
             for (int i = 0; i < vertices.Length; i++)
                 vertices[i] -= center;
-#else
+
             Profiler.BeginSample("GetVertexFromIntersectingPlanes");
             for (int v = 0; v < vertices.Length; v++)
                 vertices[v] = GetVertexFromIntersectingPlanes(v);
             Profiler.EndSample();
-#endif
+
             Profiler.EndSample();
             return center;
         }
