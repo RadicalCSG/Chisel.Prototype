@@ -10,9 +10,9 @@ namespace Chisel.Core
     public class ChiselBrushDefinition : IChiselGenerator
     {
         const int kLatestVersion = 1;
-        [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
-                                                        // new instances will have the latest version
-
+        [SerializeField] int version = 0;
+        
+        // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
         public BrushMesh                brushOutline;
 
         [NamedItems(overflow = "Surface {0}")]
