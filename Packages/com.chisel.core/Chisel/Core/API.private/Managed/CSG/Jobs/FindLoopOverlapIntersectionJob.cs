@@ -98,10 +98,6 @@ namespace Chisel.Core
             if (surfaceCount == 0)
                 return;
 
-            var intersectionCount = intersectionLoopBlobs.CountValuesForKey(brushNodeOrder);
-            if (intersectionCount == 0)
-                return;
-
             if (!basePolygonSurfaceInfos.IsCreated || basePolygonSurfaceInfos.Length < surfaceCount)
             {
                 if (basePolygonSurfaceInfos.IsCreated) basePolygonSurfaceInfos.Dispose();
@@ -121,43 +117,45 @@ namespace Chisel.Core
             } else
                 basePolygonEdges.ClearChildren();
             basePolygonEdges.ResizeExact(surfaceCount);
-            
-            if (!brushIntersections.IsCreated)
-            {
-                brushIntersections = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(intersectionCount, Allocator.Temp);
-            } else
-            {
-                brushIntersections.Clear();
-                if (brushIntersections.Capacity < intersectionCount)
-                    brushIntersections.Capacity = intersectionCount;
-            }
- 
-            if (!usedNodeOrders.IsCreated || usedNodeOrders.Length < maxNodeOrder)
-            {
-                if (usedNodeOrders.IsCreated) usedNodeOrders.Dispose();
-                usedNodeOrders = new NativeBitArray(maxNodeOrder, Allocator.Temp);
-            } else
-                usedNodeOrders.Clear();
 
+            var intersectionCount = intersectionLoopBlobs.CountValuesForKey(brushNodeOrder);
+            
             var uniqueBrushOrderCount = 0;
-            var enumerator = intersectionLoopBlobs.GetValuesForKey(brushNodeOrder);
-            
-            while (enumerator.MoveNext())
-            {
-                var item                = enumerator.Current;
-                ref var pair            = ref item.Value.pair;
+            if (intersectionCount > 0)
+            {             
+                if (!brushIntersections.IsCreated)
+                {
+                    brushIntersections = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(intersectionCount, Allocator.Temp);
+                } else
+                {
+                    brushIntersections.Clear();
+                    if (brushIntersections.Capacity < intersectionCount)
+                        brushIntersections.Capacity = intersectionCount;
+                }
+ 
+                if (!usedNodeOrders.IsCreated || usedNodeOrders.Length < maxNodeOrder)
+                {
+                    if (usedNodeOrders.IsCreated) usedNodeOrders.Dispose();
+                    usedNodeOrders = new NativeBitArray(maxNodeOrder, Allocator.Temp);
+                } else
+                    usedNodeOrders.Clear();
+
+                var enumerator = intersectionLoopBlobs.GetValuesForKey(brushNodeOrder);
+                while (enumerator.MoveNext())
+                {
+                    var item                = enumerator.Current;
+                    ref var pair            = ref item.Value.pair;
                     
-                var otherNodeOrder1 = pair.brushNodeOrder1;
-                uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
-                usedNodeOrders.Set(otherNodeOrder1, true);
+                    var otherNodeOrder1 = pair.brushNodeOrder1;
+                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
+                    usedNodeOrders.Set(otherNodeOrder1, true);
 
-                //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
-                //Debug.Assert(outputSurface.surfaceInfo.basePlaneIndex == pair.basePlaneIndex);
+                    //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
+                    //Debug.Assert(outputSurface.surfaceInfo.basePlaneIndex == pair.basePlaneIndex);
 
-                brushIntersections.Add(item);
+                    brushIntersections.Add(item);
+                }
             }
-
-
             
             hashedVertices.AddUniqueVertices(ref basePolygonBlob.vertices); /*OUTPUT*/
 
