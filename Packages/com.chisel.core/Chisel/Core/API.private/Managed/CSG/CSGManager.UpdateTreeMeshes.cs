@@ -132,13 +132,13 @@ namespace Chisel.Core
                 s_TreeUpdates.Length < treeNodeIDs.Length)
                 s_TreeUpdates = new TreeUpdate[treeNodeIDs.Length];
             var treeUpdateLength = 0;
-            Profiler.BeginSample("Tag_Setup");
+            Profiler.BeginSample("CSG_Setup");
             for (int t = 0; t < treeNodeIDs.Length; t++)
             {
                 var treeNodeIndex       = treeNodeIDs[t] - 1;
                 var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
 
-                Profiler.BeginSample("Tag_Reset");
+                Profiler.BeginSample("CSG_Reset");
                 treeInfo.Reset();
                 Profiler.EndSample();
 
@@ -319,7 +319,7 @@ namespace Chisel.Core
                 Profiler.EndSample();
 
 
-                Profiler.BeginSample("CSG_Allocations");//time=2.45ms
+                Profiler.BeginSample("CSG_Allocations[1]");//time=2.45ms
                 var allTreeBrushIndexOrders     = s_AllTreeBrushIndexOrdersList.ToNativeArray(Allocator.TempJob);
                 var nodeIndexToNodeOrder        = nodeIndexToNodeOrderArray.ToNativeArray(Allocator.TempJob);
                 var rebuildTreeBrushIndexOrders = s_RebuildTreeBrushIndexOrdersList.ToNativeList(Allocator.TempJob);
@@ -370,15 +370,14 @@ namespace Chisel.Core
                     Profiler.EndSample();
                 }
 
-
-                Profiler.BeginSample("CSG_Allocations");
-                Profiler.BeginSample("CSG_BrushOutputLoops");// TODO: make this a job
+                Profiler.BeginSample("CSG_BrushOutputLoops");
                 var brushLoopCount = rebuildTreeBrushIndexOrders.Length;                
                 for (int index = 0; index < brushLoopCount; index++)
                 {
                     var brushIndexOrder = rebuildTreeBrushIndexOrders[index];
 
-                    if (rebuildTreeBrushIndexOrders.Contains(brushIndexOrder))
+                    // Why was I doing this??
+                    //if (rebuildTreeBrushIndexOrders.Contains(brushIndexOrder))
                     {
                         int brushNodeIndex = brushIndexOrder.nodeIndex;
                         if (brushRenderBufferCache.TryGetValue(brushNodeIndex, out var oldBrushRenderBuffer) &&
@@ -388,7 +387,8 @@ namespace Chisel.Core
                     }
                 }
                 Profiler.EndSample();
-                
+
+                Profiler.BeginSample("CSG_Allocations[2]");                
                 // TODO: figure out more accurate maximum sizes
                 var triangleArraySize               = GeometryMath.GetTriangleArraySize(allTreeBrushIndexOrders.Length);
                 var intersectionCount               = triangleArraySize;
@@ -1068,7 +1068,7 @@ namespace Chisel.Core
                 Profiler.EndSample();
             
                 //JobHandle.ScheduleBatchedJobs();
-                Profiler.BeginSample("Tag_Complete");
+                Profiler.BeginSample("CSG_JobComplete");
                 finalJobHandle.Complete();
                 Profiler.EndSample();
             
@@ -1105,7 +1105,7 @@ namespace Chisel.Core
             { 
                 // Note: Seems that scheduling a Dispose will cause previous jobs to be completed?
                 //       Actually faster to just call them on main thread?
-                Profiler.BeginSample("Tag_BrushOutputLoopsDispose");
+                Profiler.BeginSample("CSG_BrushOutputLoopsDispose");
                 {
                     var disposeJobHandle = finalJobHandle;
                     for (int t = 0; t < treeUpdateLength; t++)
@@ -1157,10 +1157,6 @@ namespace Chisel.Core
                 for (int i = 0; i < s_TreeUpdates.Length; i++)
                     s_TreeUpdates[i] = default;
             }
-#if UNITY_EDITOR
-            GC.Collect(0, GCCollectionMode.Optimized, false, true);
-#endif
-
             return finalJobHandle;
         }
 
