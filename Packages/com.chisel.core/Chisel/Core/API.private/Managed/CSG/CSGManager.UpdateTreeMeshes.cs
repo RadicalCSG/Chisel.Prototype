@@ -110,6 +110,30 @@ namespace Chisel.Core
 
                 int brushCount = treeBrushes.Count;
 
+                #region Build lookup tables to find the tree node-order by node-index                
+                var nodeIndexMin = int.MaxValue;
+                var nodeIndexMax = 0;
+                for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
+                {
+                    int nodeID     = treeBrushes[nodeOrder];
+                    int nodeIndex  = nodeID - 1;                    
+                    nodeIndexMin = math.min(nodeIndexMin, nodeIndex);
+                    nodeIndexMax = math.max(nodeIndexMax, nodeIndex);
+                }
+
+                var nodeIndexToNodeOrderOffset  = nodeIndexMin;
+                var desiredLength = (nodeIndexMax - nodeIndexMin) + 1;
+                if (nodeIndexToNodeOrderArray == null ||
+                    nodeIndexToNodeOrderArray.Length < desiredLength)
+                    nodeIndexToNodeOrderArray = new int[desiredLength];
+                for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
+                {
+                    int nodeID     = treeBrushes[nodeOrder];
+                    int nodeIndex  = nodeID - 1;             
+                    nodeIndexToNodeOrderArray[nodeIndex - nodeIndexToNodeOrderOffset] = nodeOrder;
+                }
+                #endregion
+
 
                 var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeIndex];
                 chiselLookupValues.EnsureCapacity(brushCount);
@@ -139,6 +163,7 @@ namespace Chisel.Core
                 ref var brushTreeSpaceBoundCache    = ref chiselLookupValues.brushTreeSpaceBoundCache;
                 ref var treeSpaceVerticesCache      = ref chiselLookupValues.treeSpaceVerticesCache;
                 ref var brushesTouchedByBrushCache  = ref chiselLookupValues.brushesTouchedByBrushCache;
+
                 
                 // TODO: do this in job, build brushMeshList in same job
                 #region Build all BrushMeshBlobs
@@ -151,8 +176,6 @@ namespace Chisel.Core
                 s_AllTreeBrushIndexOrdersList.Clear();
                 s_BrushMeshList.Clear();
                 s_RebuildTreeBrushIndexOrdersList.Clear();
-                var nodeIndexMin = int.MaxValue;
-                var nodeIndexMax = 0;
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
                 for (int brushNodeOrder = 0, i = 0; i < brushCount; i++)
                 {
@@ -174,26 +197,9 @@ namespace Chisel.Core
 
                     s_BrushMeshList.Add(brushMeshID == 0 ? BlobAssetReference<BrushMeshBlob>.Null : brushMeshBlobs[brushMeshID - 1]);
 
-                    nodeIndexMin = math.min(nodeIndexMin, brushNodeIndex);
-                    nodeIndexMax = math.max(nodeIndexMax, brushNodeIndex);
-
                     var nodeFlags = CSGManager.nodeFlags[brushNodeIndex];
                     if (nodeFlags.status != NodeStatusFlags.None)
                         s_RebuildTreeBrushIndexOrdersList.Add(brushIndexOrder);
-                }
-                #endregion
-
-                #region Build lookup tables to find the tree node-order by node-index
-                var nodeIndexToNodeOrderOffset  = nodeIndexMin;
-                var desiredLength = (nodeIndexMax - nodeIndexMin) + 1;
-                if (nodeIndexToNodeOrderArray == null ||
-                    nodeIndexToNodeOrderArray.Length < desiredLength)
-                    nodeIndexToNodeOrderArray = new int[desiredLength];
-                for (int i = 0; i < brushCount; i++)
-                {
-                    var nodeIndex = s_AllTreeBrushIndexOrdersList[i].nodeIndex;
-                    var nodeOrder = s_AllTreeBrushIndexOrdersList[i].nodeOrder;
-                    nodeIndexToNodeOrderArray[nodeIndex - nodeIndexToNodeOrderOffset] = nodeOrder;
                 }
                 #endregion
                 
