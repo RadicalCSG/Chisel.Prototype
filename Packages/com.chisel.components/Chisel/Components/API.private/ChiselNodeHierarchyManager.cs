@@ -1427,7 +1427,8 @@ namespace Chisel.Components
                     
                     __childNodes.Clear();
                     GetChildrenOfHierachyItem(__childNodes, item);
-                    
+                    if (__childNodes.Count == 0)
+                        continue;
                     item.Component.SetChildren(__childNodes);
                 }
                 updateChildrenQueue.Clear();

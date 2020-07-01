@@ -251,7 +251,9 @@ namespace Chisel.Components
                 Debug.LogWarning("SetChildren called on a ChiselModel that isn't properly initialized", this);
                 return;
             }
-            if (!Node.SetChildren(childNodes.ToArray()))
+            if (childNodes.Count == 0)
+                return;
+            if (!Node.SetChildren(childNodes))
                 Debug.LogError("Failed to assign list of children to tree node");
         }
 

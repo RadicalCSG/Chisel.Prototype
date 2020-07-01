@@ -9,6 +9,13 @@ namespace Chisel.Core
 {
     public static class BlobBuilderExtensions
     {
+        public unsafe static void ClearValues<T>(ref BlobArray<T> array) where T : unmanaged
+        {
+            if (array.Length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * sizeof(T));
+        }
+
         public static unsafe BlobBuilderArray<T> Construct<T>(this BlobBuilder builder, ref BlobArray<T> blobArray, NativeList<T> data) where T : unmanaged
         {
             var blobBuilderArray = builder.Allocate(ref blobArray, data.Length);

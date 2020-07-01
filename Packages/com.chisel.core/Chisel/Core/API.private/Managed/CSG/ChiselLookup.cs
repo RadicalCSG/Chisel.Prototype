@@ -289,18 +289,7 @@ namespace Chisel.Core
             return compactTree;
         }
     }
-    /*
-    struct BrushIntersectionIndex
-    {
-        public int nodeIndex;
-        public int bottomUpStart;
-        public int bottomUpEnd;
-        public int intersectionStart;
-        public int intersectionEnd;
 
-        public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd}, {nameof(intersectionStart)}: {intersectionStart}, {nameof(intersectionEnd)}: {intersectionEnd})"; }
-    }
-    */
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BrushIntersection
     {
@@ -327,10 +316,27 @@ namespace Chisel.Core
 
             index <<= 1;
             var int32Index = index >> 5;	// divide by 32
-            var bitIndex = index & 31;	// remainder
+            var bitIndex = index & 31;	    // remainder
             var twoBit = ((UInt32)3) << bitIndex;
 
             return (IntersectionType)((intersectionBits[int32Index] & twoBit) >> bitIndex);
+        }
+
+        public void Set(int index, IntersectionType value)
+        {
+            index -= Offset;
+            if (index < 0 || index >= Length)
+                return;
+
+            index <<= 1;
+            var int32Index = index >> 5;	// divide by 32
+            var bitIndex = index & 31;	    // remainder
+            var twoBit = (UInt32)3 << bitIndex;
+            var twoBitValue = ((UInt32)value) << bitIndex;
+
+            var originalInt32 = intersectionBits[int32Index];
+
+            intersectionBits[int32Index] = (originalInt32 & ~twoBit) | twoBitValue;
         }
     }
         

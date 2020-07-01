@@ -592,7 +592,6 @@ namespace Chisel.Core
 
             DirtySelfAndChildren(nodeID, NodeStatusFlags.TransformationModified);
             SetDirtyWithFlag(nodeID, NodeStatusFlags.TransformationModified);
-            UpdateNodeTransformation(ref chiselLookupValues.transformationCache, nodeIndex);
             return true;
         }
 
@@ -1137,6 +1136,50 @@ namespace Chisel.Core
             return true;
         }
 
+        
+        internal static bool SetChildNodes(Int32 nodeID, List<CSGTreeNode> children)
+        {
+            if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return false;
+            if (children == null)
+                throw new ArgumentNullException(nameof(children));
+            if (nodeID == CSGTreeNode.InvalidNodeID)
+                throw new ArgumentException("nodeID equals " + CSGTreeNode.InvalidNode);
+            if (children.Count == 0)
+                return true;
+
+            var foundNodes = new HashSet<int>();
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (nodeID == children[i].NodeID)
+                    return false;
+                if (!foundNodes.Add(children[i].NodeID))
+                {
+                    Debug.LogError("Have duplicate child");
+                    return false;
+                }
+            }
+            
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (IsAncestor(nodeID, children[i].NodeID))
+                {
+                    Debug.LogError("Trying to set ancestor of node as child");
+                    return false;
+                }
+            }
+
+            if (!ClearChildNodes(nodeID))
+                return false;
+
+            foreach(var child in children)
+            {
+                if (!AddChildNode(nodeID, child.nodeID))
+                    return false;
+                SetDirtyWithFlag(child.nodeID, NodeStatusFlags.HierarchyModified);
+            }
+            SetDirtyWithFlag(nodeID);
+            return true;
+        }
 
         internal static bool SetChildNodes(Int32 nodeID, CSGTreeNode[] children)
         {

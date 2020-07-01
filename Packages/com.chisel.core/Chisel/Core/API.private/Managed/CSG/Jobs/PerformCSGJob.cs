@@ -109,12 +109,12 @@ namespace Chisel.Core
                                int                              surfaceLoopIndex, 
                                
                                NativeListArray<int>             holeIndices,
-                               NativeList<IndexSurfaceInfo>         allInfos,
+                               NativeList<IndexSurfaceInfo>     allInfos,
                                NativeListArray<Edge>            allEdges, 
 
                                NativeListArray<Edge>.NativeList intersectionLoop, 
                                CategoryGroupIndex               intersectionCategory,
-                               IndexSurfaceInfo                     intersectionInfo)
+                               IndexSurfaceInfo                 intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
                 return;
@@ -259,9 +259,6 @@ namespace Chisel.Core
                     if (intersectedHoleIndices.IsCreated) intersectedHoleIndices.Dispose();
                     intersectedHoleIndices = new NativeArray<int>(currentHoleIndices.Length, Allocator.Temp);
                 }
-
-                // Figure out why this is seemingly not necessary?
-                //var intersectedHoleIndices = stackalloc int[currentHoleIndices.Length];
                 var intersectedHoleIndicesLength = 0;
 
                 // the output of cutting operations are both holes for the original polygon (categorized_loop)
@@ -297,6 +294,7 @@ namespace Chisel.Core
                         //Debug.Assert(holeIndices.IsAllocated(allInfos.Length - 1));
                     }
                 }
+
                 // This loop is a hole 
                 if (currentHoleIndices.Capacity < currentHoleIndices.Length + 1) // TODO: figure out why capacity is sometimes not enough
                     currentHoleIndices.Capacity = currentHoleIndices.Length + 16;

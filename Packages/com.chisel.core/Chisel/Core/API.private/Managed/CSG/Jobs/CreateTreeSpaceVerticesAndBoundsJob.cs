@@ -47,6 +47,9 @@ namespace Chisel.Core
             var transform       = transformations[brushNodeOrder];
 
             var mesh                    = brushMeshLookup[brushNodeOrder];
+            if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
+                !mesh.IsCreated)
+                return;
             ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.nodeToTree;
 

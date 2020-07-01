@@ -36,12 +36,6 @@ namespace Chisel.Core
         internal static Int32	GetNodeOperationType(Int32 nodeID)												{ return (int)CSGManager.GetNodeOperationType(nodeID); }
         internal static bool	SetNodeOperationType(Int32 nodeID, CSGOperationType operation)					{ return CSGManager.SetNodeOperationType(nodeID, operation); }
 
-
-        internal static bool SetChildNodes(Int32 nodeID, CSGTreeNode[] children)
-        {
-            return CSGManager.SetChildNodes(nodeID, children);
-        }
-
         internal static CSGTreeNode[] GetChildNodes(Int32 nodeID)
         {
             return CSGManager.GetChildNodes(nodeID);

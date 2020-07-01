@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -28,7 +29,7 @@ namespace Chisel.Core
                 return new CSGTree() { treeNodeID = 0 };
             if (children != null && children.Length > 0)
             {
-                if (!CSGTreeNode.SetChildNodes(treeNodeID, children))
+                if (!CSGManager.SetChildNodes(treeNodeID, children))
                 {
                     CSGTreeNode.DestroyNode(treeNodeID);
                     return new CSGTree() { treeNodeID = 0 };
@@ -105,7 +106,12 @@ namespace Chisel.Core
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(CSGTreeNode[] array)				{ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.SetChildNodes(treeNodeID, array); }
+        public bool SetChildren	(CSGTreeNode[] array)				{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.SetChildNodes(treeNodeID, array); }
+
+        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
+        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The list itself cannot be null.</param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        public bool SetChildren(List<CSGTreeNode> list) { if (list == null) throw new ArgumentNullException("list"); return CSGManager.SetChildNodes(treeNodeID, list); }
 
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTree"/>.</param>
