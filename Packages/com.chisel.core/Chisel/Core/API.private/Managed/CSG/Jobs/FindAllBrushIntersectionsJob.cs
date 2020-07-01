@@ -227,22 +227,22 @@ namespace Chisel.Core
         {
             if (result != IntersectionType.NoIntersection)
             {
-                int brush0NodeIndex = brush0IndexOrder.nodeIndex;
-                int brush1NodeIndex = brush1IndexOrder.nodeIndex;
+                int brush0NodeOrder = brush0IndexOrder.nodeOrder;
+                int brush1NodeOrder = brush1IndexOrder.nodeOrder;
                 if (result == IntersectionType.Intersection)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
                 } else
                 if (result == IntersectionType.AInsideB)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
                 } else
                 //if (intersectionType == IntersectionType.BInsideA)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
                 }
             }
         }
@@ -342,22 +342,22 @@ namespace Chisel.Core
         {
             if (result != IntersectionType.NoIntersection)
             {
-                int brush0NodeIndex = brush0IndexOrder.nodeIndex;
-                int brush1NodeIndex = brush1IndexOrder.nodeIndex;
+                int brush0NodeOrder = brush0IndexOrder.nodeOrder;
+                int brush1NodeOrder = brush1IndexOrder.nodeOrder;
                 if (result == IntersectionType.Intersection)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
                 } else
                 if (result == IntersectionType.AInsideB)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
                 } else
                 //if (intersectionType == IntersectionType.BInsideA)
                 {
-                    brushBrushIntersections.Add(brush0NodeIndex, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
-                    brushBrushIntersections.Add(brush1NodeIndex, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
                 }
             }
         }    

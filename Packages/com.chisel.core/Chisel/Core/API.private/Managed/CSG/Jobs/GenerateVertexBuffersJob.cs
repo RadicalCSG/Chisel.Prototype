@@ -27,15 +27,15 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> submeshSurfaces;
 
+        [NoAlias, WriteOnly] public NativeArray<int> generatedMeshBrushIndices;
+
         [NoAlias] public NativeArray<int>		generatedMeshIndices; 
-        [NoAlias] public NativeArray<int>		generatedMeshBrushIndices; 
         [NoAlias] public NativeArray<float3>    generatedMeshPositions;
-        [NativeDisableContainerSafetyRestriction]//optional
-        [NoAlias] public NativeArray<float4>    generatedMeshTangents;
-        [NativeDisableContainerSafetyRestriction]//optional
-        [NoAlias] public NativeArray<float3>    generatedMeshNormals;
-        [NativeDisableContainerSafetyRestriction]//optional
-        [NoAlias] public NativeArray<float2>    generatedMeshUV0; 
+
+        //optional
+        [NativeDisableContainerSafetyRestriction] [NoAlias, WriteOnly] public NativeArray<float4>    generatedMeshTangents;
+        [NativeDisableContainerSafetyRestriction] [NoAlias, WriteOnly] public NativeArray<float3>    generatedMeshNormals;
+        [NativeDisableContainerSafetyRestriction] [NoAlias, WriteOnly] public NativeArray<float2>    generatedMeshUV0; 
             
         static void ComputeTangents(NativeArray<int>        meshIndices,
                                     NativeArray<float3>	    positions,

@@ -5,6 +5,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -160,6 +161,7 @@ namespace Chisel.Core
             if (subMeshCount.indexCount == 0 || subMeshCount.vertexCount == 0) { Debug.LogWarning("GetGeneratedMesh: Mesh is empty"); return null; }
 
 
+            Profiler.BeginSample("Alloc");
             var generatedMesh			= new GeneratedMeshContents();
             var usedVertexChannels		= meshDescription.meshQuery.UsedVertexChannels;
             var vertexCount				= meshDescription.vertexCount;
@@ -183,6 +185,7 @@ namespace Chisel.Core
             
             var submeshVertexCount	= subMeshCount.vertexCount;
             var submeshIndexCount	= subMeshCount.indexCount;
+            Profiler.EndSample();
 
             if (subMeshCount.surfaces == null ||
                 submeshVertexCount != generatedMesh.positions.Length ||
@@ -192,10 +195,14 @@ namespace Chisel.Core
                 return null;
 
 
+            Profiler.BeginSample("Alloc");
             var submeshSurfaces          = new NativeArray<SubMeshSurface>(subMeshCount.surfaces.Count, Allocator.TempJob);
             for (int n = 0; n < subMeshCount.surfaces.Count; n++)
                 submeshSurfaces[n] = subMeshCount.surfaces[n];
+            Profiler.EndSample();
 
+
+            Profiler.BeginSample("Generate");
             var generateVertexBuffersJob = new GenerateVertexBuffersJob
             {   
                 meshQuery                   = subMeshCount.meshQuery,
@@ -213,11 +220,13 @@ namespace Chisel.Core
                 generatedMeshNormals        = generatedMesh.normals,
                 generatedMeshUV0            = generatedMesh.uv0
             };
-            generateVertexBuffersJob.Run();
+            generateVertexBuffersJob.Execute();
 
             generateVertexBuffersJob.submeshSurfaces.Dispose();
             generateVertexBuffersJob.submeshSurfaces = default;
+            Profiler.EndSample();
 
+            Profiler.BeginSample("Bounds");
             var min = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             var max = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
             for (int i = 0, count = subMeshCount.indexCount; i < count; i++)
@@ -231,6 +240,7 @@ namespace Chisel.Core
                 max.y = Mathf.Max(max.y, position.y);
                 max.z = Mathf.Max(max.z, position.z);
             }
+            Profiler.EndSample();
 
             var boundsCenter = (max + min) * 0.5f;
             var boundsSize	 = (max - min);

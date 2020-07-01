@@ -20,8 +20,6 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                             nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                          nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
@@ -142,10 +140,7 @@ namespace Chisel.Core
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-
-            Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
 
             if (treeSpaceVerticesArray[brushNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
@@ -231,8 +226,7 @@ namespace Chisel.Core
             ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
-                var intersectingNodeIndex = brushIntersections[i].nodeIndex;
-                var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
+                var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder < brushNodeOrder)
                     continue;
 
@@ -269,10 +263,10 @@ namespace Chisel.Core
                 var polygon = polygons[validPolygons[i].basePlaneIndex];
                 polygonArray[i] = new BasePolygon()
                 {
-                    surfaceInfo = new SurfaceInfo()
+                    nodeIndexOrder      = brushIndexOrder,
+                    surfaceInfo     = new SurfaceInfo()
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
-                        brushIndex          = brushIndexOrder.nodeIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,

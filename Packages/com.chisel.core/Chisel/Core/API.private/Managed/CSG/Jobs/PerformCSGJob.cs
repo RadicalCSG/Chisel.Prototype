@@ -16,8 +16,6 @@ namespace Chisel.Core
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushNodeIndexOrders;        
 
-        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableLookup;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
@@ -30,13 +28,13 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<EdgeCategory> categories2;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         outEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          intersectedHoleIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  intersectionSurfaceInfo;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IndexSurfaceInfo> intersectionSurfaceInfo;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          nodeIndextoTableIndex;
         [NativeDisableContainerSafetyRestriction] NativeBitArray            destroyedEdges;
         
-        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>   allInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>   intersectionSurfaceInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>   basePolygonSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  allInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  intersectionSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  basePolygonSurfaceInfos;
         [NativeDisableContainerSafetyRestriction] NativeList<float4>        alltreeSpacePlanes;
         [NativeDisableContainerSafetyRestriction] NativeList<LoopSegment>   allSegments;
         [NativeDisableContainerSafetyRestriction] NativeList<Edge>          allCombinedEdges;
@@ -111,12 +109,12 @@ namespace Chisel.Core
                                int                              surfaceLoopIndex, 
                                
                                NativeListArray<int>             holeIndices,
-                               NativeList<SurfaceInfo>          allInfos,
+                               NativeList<IndexSurfaceInfo>         allInfos,
                                NativeListArray<Edge>            allEdges, 
 
                                NativeListArray<Edge>.NativeList intersectionLoop, 
-                               CategoryGroupIndex               intersectionCategory, 
-                               SurfaceInfo                      intersectionInfo)
+                               CategoryGroupIndex               intersectionCategory,
+                               IndexSurfaceInfo                     intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
                 return;
@@ -152,9 +150,8 @@ namespace Chisel.Core
             }
 
             int inside2 = 0, outside2 = 0;
-            //var categories2             = stackalloc EdgeCategory[currentLoopEdges.Length];
-            int intersectionBrushIndex  = intersectionInfo.brushIndex;
-            int intersectionBrushOrder  = nodeIndexToNodeOrder[intersectionBrushIndex - nodeIndexToNodeOrderOffset];
+            //var categories2           = stackalloc EdgeCategory[currentLoopEdges.Length];
+            int intersectionBrushOrder  = intersectionInfo.brushIndexOrder.nodeOrder;
             var treeSpacePlanes1        = brushTreeSpacePlanes[intersectionBrushOrder];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
@@ -166,9 +163,8 @@ namespace Chisel.Core
             var aligned2 = currentLoopEdges.Length - (inside2 + outside2);
 
             int inside1 = 0, outside1 = 0;
-            //var categories1         = stackalloc EdgeCategory[intersectionLoop.Length];
-            int currentBrushIndex   = currentInfo.brushIndex;
-            int currentBrushOrder   = nodeIndexToNodeOrder[currentBrushIndex - nodeIndexToNodeOrderOffset];
+            //var categories1       = stackalloc EdgeCategory[intersectionLoop.Length];
+            int currentBrushOrder   = currentInfo.brushIndexOrder.nodeOrder;
             var treeSpacePlanes2    = brushTreeSpacePlanes[currentBrushOrder];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
@@ -282,7 +278,7 @@ namespace Chisel.Core
                         continue;
 
                     var holeInfo            = allInfos[holeIndex];
-                    int holeBrushNodeIndex  = holeInfo.brushIndex;
+                    int holeBrushNodeIndex  = holeInfo.brushIndexOrder.nodeIndex;/**/
 
                     bool touches = brushesTouchedByBrushRef.Get(holeBrushNodeIndex) != IntersectionType.NoIntersection;
                     
@@ -374,7 +370,7 @@ namespace Chisel.Core
             return normal;
         }
 
-        void CleanUp(NativeList<SurfaceInfo> allInfos, NativeListArray<Edge> allEdges, HashedVertices brushVertices, NativeListArray<int>.NativeList loopIndices, NativeListArray<int> holeIndices)
+        void CleanUp(NativeList<IndexSurfaceInfo> allInfos, NativeListArray<Edge> allEdges, HashedVertices brushVertices, NativeListArray<int>.NativeList loopIndices, NativeListArray<int> holeIndices)
         {
             for (int l = loopIndices.Length - 1; l >= 0; l--)
             {
@@ -429,8 +425,7 @@ namespace Chisel.Core
                 int totalPlaneCount = 0;
                 int totalEdgeCount = baseLoopEdges.Length;
                 {
-                    int brushNodeIndex  = allInfos[baseloopIndex].brushIndex;
-                    int brushNodeOrder  = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
+                    int brushNodeOrder  = allInfos[baseloopIndex].brushIndexOrder.nodeOrder;
                     ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
                     totalPlaneCount += treeSpacePlanes.Length;
                 }
@@ -440,8 +435,7 @@ namespace Chisel.Core
                     var holeEdges = allEdges[holeIndex];
                     totalEdgeCount += holeEdges.Length;
                     
-                    int brushNodeIndex  = allInfos[holeIndex].brushIndex;
-                    int brushNodeOrder  = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
+                    int brushNodeOrder  = allInfos[holeIndex].brushIndexOrder.nodeOrder;
                     ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
 
                     totalPlaneCount += treeSpacePlanes.Length;
@@ -501,8 +495,7 @@ namespace Chisel.Core
                             }
                         }
 
-                        int brushNodeIndex  = allInfos[holeIndex].brushIndex;
-                        int brushNodeOrder  = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
+                        int brushNodeOrder = allInfos[holeIndex].brushIndexOrder.nodeOrder;
                         ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
                         
                         var planesLength    = treeSpacePlanes.Length;
@@ -526,8 +519,7 @@ namespace Chisel.Core
                     }
                     if (baseLoopEdges.Length > 0)
                     {
-                        int brushNodeIndex  = allInfos[baseloopIndex].brushIndex;
-                        int brushNodeOrder  = nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset];
+                        int brushNodeOrder = allInfos[baseloopIndex].brushIndexOrder.nodeOrder;
                         ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
 
                         var planesLength    = treeSpacePlanes.Length;
@@ -686,8 +678,8 @@ namespace Chisel.Core
             var count = input.BeginForEachIndex(index);
             if (count == 0)
                 return;
-            var brushNodeIndex = input.Read<int>();
-            var brushNodeOrder = input.Read<int>();
+            var brushIndexOrder = input.Read<IndexOrder>();
+            var brushNodeOrder = brushIndexOrder.nodeOrder;
             var surfaceCount = input.Read<int>();
             var vertexCount = input.Read<int>();
             if (!brushVertices.IsCreated || brushVertices.Capacity < vertexCount)
@@ -706,7 +698,7 @@ namespace Chisel.Core
             var basePolygonEdgesLength = input.Read<int>();
             if (!basePolygonSurfaceInfos.IsCreated)
             {
-                basePolygonSurfaceInfos = new NativeList<SurfaceInfo>(basePolygonEdgesLength, Allocator.Temp);
+                basePolygonSurfaceInfos = new NativeList<IndexSurfaceInfo>(basePolygonEdgesLength, Allocator.Temp);
             } else
             {
                 basePolygonSurfaceInfos.Clear();
@@ -725,7 +717,7 @@ namespace Chisel.Core
             basePolygonEdges.ResizeExact(basePolygonEdgesLength);
             for (int l = 0; l < basePolygonEdgesLength; l++)
             {
-                basePolygonSurfaceInfos[l] = input.Read<SurfaceInfo>();
+                basePolygonSurfaceInfos[l] = input.Read<IndexSurfaceInfo>();
                 var edgesLength     = input.Read<int>();
                 var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(l, edgesLength);
                 //edgesInner.ResizeUninitialized(edgesLength);
@@ -738,7 +730,7 @@ namespace Chisel.Core
             var intersectionEdgesLength = input.Read<int>();
             if (!intersectionSurfaceInfos.IsCreated)
             {
-                intersectionSurfaceInfos = new NativeList<SurfaceInfo>(intersectionEdgesLength, Allocator.Temp);
+                intersectionSurfaceInfos = new NativeList<IndexSurfaceInfo>(intersectionEdgesLength, Allocator.Temp);
             } else
             {
                 intersectionSurfaceInfos.Clear();
@@ -758,7 +750,7 @@ namespace Chisel.Core
             intersectionEdges.ResizeExact(intersectionEdgesLength);
             for (int l = 0; l < intersectionEdgesLength; l++)
             {
-                intersectionSurfaceInfos[l] = input.Read<SurfaceInfo>();
+                intersectionSurfaceInfos[l] = input.Read<IndexSurfaceInfo>();
                 var edgesLength = input.Read<int>();
                 var edgesInner  = intersectionEdges.AllocateWithCapacityForIndex(l, edgesLength);
                 //edgesInner.ResizeUninitialized(edgesLength);
@@ -793,10 +785,9 @@ namespace Chisel.Core
             if (!intersectionSurfaceInfo.IsCreated || intersectionSurfaceInfo.Length < surfaceInfoCount)
             {
                 if (intersectionSurfaceInfo.IsCreated) intersectionSurfaceInfo.Dispose();
-                intersectionSurfaceInfo = new NativeArray<SurfaceInfo>(surfaceInfoCount, Allocator.Temp);
+                intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(surfaceInfoCount, Allocator.Temp);
             }
 
-            //var intersectionSurfaceInfo = stackalloc SurfaceInfo[surfaceInfoCount];
             int intersectionLoopCount = intersectionSurfaceInfos.Length + (routingTableNodeIndices.Length * surfaceCount);
             if (!intersectionLoops.IsCreated || intersectionLoops.Capacity < intersectionLoopCount)
             {
@@ -830,7 +821,7 @@ namespace Chisel.Core
                 for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
                 {
                     var surfaceInfo         = intersectionSurfaceInfos[i];
-                    int brushNodeIndex1     = surfaceInfo.brushIndex;
+                    int brushNodeIndex1     = surfaceInfo.brushIndexOrder.nodeIndex;/**/
 
                     // brush does not exist in routing table (has been deduced to not have any effect)
                     if (!ChiselNativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
@@ -872,7 +863,7 @@ namespace Chisel.Core
 
             if (!allInfos.IsCreated)
             {
-                allInfos = new NativeList<SurfaceInfo>(maxLoops, Allocator.Temp);
+                allInfos = new NativeList<IndexSurfaceInfo>(maxLoops, Allocator.Temp);
             } else
             {
                 allInfos.Clear();
@@ -974,8 +965,7 @@ namespace Chisel.Core
             }
 
             output.BeginForEachIndex(index);
-            output.Write(brushNodeIndex);
-            output.Write(brushNodeOrder);
+            output.Write(brushIndexOrder);
             output.Write(brushVertices.Length);
             for (int l = 0; l < brushVertices.Length; l++)
                 output.Write(brushVertices[l]);
@@ -992,7 +982,8 @@ namespace Chisel.Core
             output.Write(allEdges.Length);
             for (int l = 0; l < allEdges.Length; l++)
             {
-                output.Write(allInfos[l]);
+                var surfaceInfo = allInfos[l];
+                output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory });
                 var edges = allEdges[l].AsArray();
                 output.Write(edges.Length);
                 for (int e = 0; e < edges.Length; e++)

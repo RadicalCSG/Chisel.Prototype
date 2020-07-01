@@ -16,8 +16,6 @@ namespace Chisel.Core
         struct Empty { }
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
         [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
@@ -57,9 +55,7 @@ namespace Chisel.Core
                 for (int i = 0; i < intersections.Length; i++)
                 {
                     var intersection        = intersections[i];
-                    int brushIndex1         = intersection.nodeIndex;
-                    int brushOrder1         = nodeIndexToNodeOrder[brushIndex1 - nodeIndexToNodeOrderOffset];
-                    var brushNodeOrder1     = new IndexOrder { nodeIndex = brushIndex1, nodeOrder = brushOrder1 };
+                    var brushNodeOrder1     = intersection.nodeIndexOrder;
 
                     var brushPair       = new BrushPair
                     {
@@ -68,7 +64,7 @@ namespace Chisel.Core
                         brushIndexOrder1 = brushNodeOrder1
                     };
 
-                    if (brushNodeOrder0 > brushOrder1) // ensures we do calculations exactly the same for each brush pair
+                    if (brushNodeOrder0 > brushNodeOrder1.nodeOrder) // ensures we do calculations exactly the same for each brush pair
                         brushPair.Flip();
 
                     if (brushPairMap.TryAdd(brushPair, empty))

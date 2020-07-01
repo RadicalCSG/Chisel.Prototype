@@ -19,8 +19,6 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                    brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>              treeSpaceVerticesArray;
-        [NoAlias, ReadOnly] public NativeArray<int>                                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                                      nodeIndexToNodeOrderOffset;
         
         // Read Write
         [NoAlias] public NativeArray<BlobAssetReference<BrushPairIntersection>>                             intersectingBrushes;
@@ -549,12 +547,8 @@ namespace Chisel.Core
 
                 var builder = new BlobBuilder(Allocator.Temp, totalSize);
                 ref var root = ref builder.ConstructRoot<BrushIntersectionLoop>();
-                
-                root.pair = new BrushSurfacePair
-                {
-                    brushNodeOrder1     = brushIndexOrder1.nodeOrder,
-                    basePlaneIndex      = basePlaneIndex
-                };
+
+                root.indexOrder = brushIndexOrder1;
                 root.surfaceInfo = surfaceInfo;
                 var dstVertices = builder.Allocate(ref root.loopVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
@@ -572,6 +566,8 @@ namespace Chisel.Core
             if (index >= intersectingBrushes.Length)
                 return;
 
+            // Note: although is a BlobAssetReference, it only exists during a single frame and 
+            //       its IndexOrder's are always correct
             var intersectionAsset               = intersectingBrushes[index];
             intersectingBrushes[index] = default;
             ref var intersection                = ref intersectionAsset.Value;
@@ -579,15 +575,7 @@ namespace Chisel.Core
             ref var brushPairIntersection1      = ref intersection.brushes[1];
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
-            int brushNodeIndex0                 = brushIndexOrder0.nodeIndex;
-            int brushNodeIndex1                 = brushIndexOrder1.nodeIndex;
-
-            // Fixup nodeOrder
-            var brushNodeOrder0 = nodeIndexToNodeOrder[brushNodeIndex0 - nodeIndexToNodeOrderOffset];
-            var brushNodeOrder1 = nodeIndexToNodeOrder[brushNodeIndex1 - nodeIndexToNodeOrderOffset];
-            brushIndexOrder0.nodeOrder = brushNodeOrder0;
-            brushIndexOrder1.nodeOrder = brushNodeOrder1;
-
+            
             int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVertices.Length);
             int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVertices.Length);
             int intersectionStream0Capacity     = math.max(1, brushPairIntersection1.usedPlanePairs.Length) * brushPairIntersection0.localSpacePlanes0.Length;
@@ -632,14 +620,14 @@ namespace Chisel.Core
 
             // TODO: fill them with original brush vertices so that they're always snapped to these
             
-            if (brushNodeOrder0 < brushNodeOrder1)
+            if (brushIndexOrder0.nodeOrder < brushIndexOrder1.nodeOrder)
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushNodeOrder0].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushNodeOrder1].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
             } else
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushNodeOrder1].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushNodeOrder0].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
             }
 
 
@@ -713,7 +701,7 @@ namespace Chisel.Core
 
             if (foundIndices0Length >= 3)
             {
-                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushNodeOrder0].Value;
+                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
                 GenerateLoop(brushIndexOrder0,
                              brushIndexOrder1,
                              ref intersection.brushes[0].surfaceInfos,
@@ -725,7 +713,7 @@ namespace Chisel.Core
 
             if (foundIndices1Length >= 3)
             {
-                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushNodeOrder1].Value;
+                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
                 GenerateLoop(brushIndexOrder1,
                              brushIndexOrder0,
                              ref intersection.brushes[1].surfaceInfos,

@@ -166,9 +166,11 @@ namespace Chisel.Components
             var tree				= model.Node;
             if (!tree.Valid)
                 return;
-            
+
+            Profiler.BeginSample("GetMeshDescriptions");
             var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
             var meshDescriptions	= tree.GetMeshDescriptions(meshTypes, model.VertexChannelMask);
+            Profiler.EndSample();
 
             if (meshDescriptions != null)
             {
@@ -176,7 +178,9 @@ namespace Chisel.Components
                 Array.Sort(meshDescriptions, kMeshDescriptionSorterDelegate);
             }
 
+            Profiler.BeginSample("Update");
             model.generated.Update(model, meshDescriptions);
+            Profiler.EndSample();
         }
     }
 }

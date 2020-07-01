@@ -1,6 +1,7 @@
 using UnityEngine;
 using Chisel.Core;
 using System;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -84,7 +85,9 @@ namespace Chisel.Components
                 }
             } else
             {
+                Profiler.BeginSample("CopyFromPositionOnly");
                 meshIsModified = sharedMesh.CopyFromPositionOnly(ref geometryHashValue, generatedMeshContents);
+                Profiler.EndSample();
             }
 
             if (meshCollider.sharedMesh != sharedMesh)

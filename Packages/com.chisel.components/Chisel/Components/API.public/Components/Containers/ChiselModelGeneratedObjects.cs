@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine.Rendering;
 using System.Transactions;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {        
@@ -252,6 +253,7 @@ namespace Chisel.Components
 
         public void Update(ChiselModel model, GeneratedMeshDescription[] meshDescriptions)
         {
+            Profiler.BeginSample("Setup");
             var modelState = GameObjectState.Create(model);
             ChiselObjectUtility.UpdateContainerFlags(generatedDataContainer, modelState);
 
@@ -285,6 +287,7 @@ namespace Chisel.Components
             ChiselColliderObjects.UpdateColliders(model, colliders);
 
             renderMaterials.Clear();
+            Profiler.EndSample();
 
             // Loop through all meshDescriptions with LayerParameter1, and create renderable meshes from them
             if (meshDescriptions == null || meshDescriptions.Length == 0)
@@ -302,6 +305,7 @@ namespace Chisel.Components
                 }
             } else
             {
+                Profiler.BeginSample("Set Renderables");
                 if (meshDescriptions[0].meshQuery.LayerParameterIndex == LayerParameterIndex.LayerParameter1)
                 {
                     var prevQuery = meshDescriptions[0].meshQuery;
@@ -334,7 +338,9 @@ namespace Chisel.Components
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                     }
                 }
+                Profiler.EndSample();
 
+                Profiler.BeginSample("Set Colliders");
                 if (descriptionIndex < meshDescriptions.Length &&
                     meshDescriptions[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.LayerParameter2)
                 {
@@ -406,6 +412,7 @@ namespace Chisel.Components
                         colliders[i].Update(model, meshDescription);
                     }
                 }
+                Profiler.EndSample();
             }
             
             Debug.Assert(meshDescriptions == null || descriptionIndex == meshDescriptions.Length);

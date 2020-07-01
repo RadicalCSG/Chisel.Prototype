@@ -74,8 +74,9 @@ namespace Chisel.Core
             if (count == 0)
                 return;
 
-            var brushNodeIndex = input.Read<int>();
-            var brushNodeOrder = input.Read<int>();
+            var brushIndexOrder = input.Read<IndexOrder>();
+            var brushNodeOrder = brushIndexOrder.nodeOrder;
+            var brushNodeIndex = brushIndexOrder.nodeIndex;
             var vertexCount = input.Read<int>();
             if (!brushVertices.IsCreated || brushVertices.Capacity < vertexCount)
             {

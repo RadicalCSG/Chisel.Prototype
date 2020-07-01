@@ -19,8 +19,6 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesJob : IJobParallelFor
     {
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read/Write
@@ -36,9 +34,7 @@ namespace Chisel.Core
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
 
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
             if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
@@ -66,8 +62,7 @@ namespace Chisel.Core
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
-                var intersectingNodeIndex = brushIntersections[i].nodeIndex;
-                var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
+                var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder < brushNodeOrder)
                     continue;
 
@@ -91,8 +86,6 @@ namespace Chisel.Core
     struct MergeTouchingBrushVertices2Job : IJobParallelFor
     {
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read/Write
@@ -108,9 +101,7 @@ namespace Chisel.Core
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeIndex  = brushIndexOrder.nodeIndex;
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            Debug.Assert(nodeIndexToNodeOrder[brushNodeIndex - nodeIndexToNodeOrderOffset] == brushNodeOrder);
 
             var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
             if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
@@ -138,8 +129,7 @@ namespace Chisel.Core
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
-                var intersectingNodeIndex = brushIntersections[i].nodeIndex;
-                var intersectingNodeOrder = nodeIndexToNodeOrder[intersectingNodeIndex - nodeIndexToNodeOrderOffset];
+                var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder < brushNodeOrder)
                     continue;
 

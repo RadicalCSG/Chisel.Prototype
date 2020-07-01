@@ -6,6 +6,7 @@ using System;
 using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
 using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
 using UnityEngine.Rendering;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -244,6 +245,7 @@ namespace Chisel.Components
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
             try
             {
+                Profiler.BeginSample("Collect Surfaces");
                 for (int i = startIndex; i < endIndex; i++)
                 {
                     ref var meshDescription = ref meshDescriptions[i];
@@ -260,6 +262,7 @@ namespace Chisel.Components
                     __foundContents.Add(generatedMeshContents);
                     __foundMaterials.Add(renderMaterial);
                 }
+                Profiler.EndSample();
                 triangleBrushes.Clear();
                 if (__foundContents.Count == 0)
                 {
@@ -270,8 +273,12 @@ namespace Chisel.Components
                     }
                 } else
                 {
+                    Profiler.BeginSample("CopyMeshFrom");
                     meshIsModified = sharedMesh.CopyMeshFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
+                    Profiler.EndSample();
                 }
+
+                Profiler.BeginSample("Update Component");
                 if (renderMaterials != null && 
                     renderMaterials.Length == __foundMaterials.Count)
                 {
@@ -287,6 +294,7 @@ namespace Chisel.Components
                 SetMaterialsIfModified(meshRenderer, renderMaterials);
                 if (meshRenderer.enabled != expectedEnabled)
                     meshRenderer.enabled = expectedEnabled;
+                Profiler.EndSample();
             }
             finally
             {

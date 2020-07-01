@@ -304,12 +304,12 @@ namespace Chisel.Core
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BrushIntersection
     {
-        public int              nodeIndex;
+        public IndexOrder       nodeIndexOrder;
         public IntersectionType type;
         public int              bottomUpStart;
         public int              bottomUpEnd;
 
-        public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
+        public override string ToString() { return $"({nameof(nodeIndexOrder.nodeIndex)}: {nodeIndexOrder.nodeIndex}, {nameof(type)}: {type}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
     }
 
     struct BrushesTouchedByBrush
@@ -343,7 +343,13 @@ namespace Chisel.Core
     // Note: Stored in BlobAsset at runtime/editor-time
     public struct SurfaceInfo
     {
-        public int                  brushIndex;
+        public ushort               basePlaneIndex;
+        public CategoryGroupIndex   interiorCategory;
+    }
+
+    public struct IndexSurfaceInfo
+    {
+        public IndexOrder           brushIndexOrder;
         public ushort               basePlaneIndex;
         public CategoryGroupIndex   interiorCategory;
     }
@@ -351,6 +357,7 @@ namespace Chisel.Core
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BasePolygon
     {
+        public IndexOrder       nodeIndexOrder;
         public SurfaceInfo      surfaceInfo;
         public int              startEdgeIndex;
         public int              endEdgeIndex;
@@ -382,6 +389,32 @@ namespace Chisel.Core
         InvalidValue
     };
 
+
+    // Note: Stored in BlobAsset at runtime/editor-time
+    public struct BrushSurfacePair
+    {
+        public int brushNodeOrder1; // BrushIntersectionLoop.surfaceInfo has brushNode*INDEX*
+        public int basePlaneIndex;  // BrushIntersectionLoop.surfaceInfo has identical basePlaneIndex
+    }
+
+    // TODO: Could be optimized further by storing ALL vertices in a single array (somehow),
+    // which would allow us to store everything else in a simple struct (no need for BlobAssetReference)
+    // Note: Temporary BlobAssetReference that only exists during a single frame
+    public struct BrushIntersectionLoop
+    {
+        public IndexOrder           indexOrder;
+        public SurfaceInfo          surfaceInfo;
+        public BlobArray<float3>    loopVertices;
+    }
+
+    // Note: Temporary BlobAssetReference that only exists during a single frame
+    public struct BrushPairIntersection
+    {
+        public IntersectionType type;
+        // Note: that the localSpacePlanes0/localSpacePlaneIndices0 parameters for both brush0 and brush1 are in localspace of >brush0<
+        public BlobArray<BrushIntersectionInfo> brushes;
+    }
+
     public struct BrushIntersectionInfo
     {
         public IndexOrder               brushIndexOrder;
@@ -397,30 +430,6 @@ namespace Chisel.Core
 
         public BlobArray<float3>        usedVertices;
         public BlobArray<SurfaceInfo>   surfaceInfos;
-    }
-
-
-    // Note: Stored in BlobAsset at runtime/editor-time
-    public struct BrushSurfacePair
-    {
-        public int brushNodeOrder1; // BrushIntersectionLoop.surfaceInfo has brushNode*INDEX*
-        public int basePlaneIndex;  // BrushIntersectionLoop.surfaceInfo has identical basePlaneIndex
-    }
-
-    // TODO: Could be optimized further by storing ALL vertices in a single array (somehow),
-    // which would allow us to store everything else in a simple struct (no need for BlobAssetReference)
-    public struct BrushIntersectionLoop
-    {
-        public BrushSurfacePair     pair;
-        public SurfaceInfo          surfaceInfo;
-        public BlobArray<float3>    loopVertices;
-    }
-
-    public struct BrushPairIntersection
-    {
-        public IntersectionType type;
-        // Note: that the localSpacePlanes0/localSpacePlaneIndices0 parameters for both brush0 and brush1 are in localspace of >brush0<
-        public BlobArray<BrushIntersectionInfo> brushes;
     }
 
 
