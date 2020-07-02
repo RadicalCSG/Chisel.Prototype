@@ -46,7 +46,7 @@ namespace Chisel.Core
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
             var transform       = transformations[brushNodeOrder];
 
-            var mesh                    = brushMeshLookup[brushNodeOrder];
+            var mesh            = brushMeshLookup[brushNodeOrder];
             if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
                 !mesh.IsCreated)
                 return;

@@ -25,7 +25,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              updateBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter   brushBrushIntersections;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter                brushBrushIntersections;
         [NoAlias, WriteOnly] public NativeHashMap<int, IndexOrder>.ParallelWriter       brushesThatNeedIndirectUpdate;
 
         // Per thread scratch memory
@@ -227,22 +227,20 @@ namespace Chisel.Core
         {
             if (result != IntersectionType.NoIntersection)
             {
-                int brush0NodeOrder = brush0IndexOrder.nodeOrder;
-                int brush1NodeOrder = brush1IndexOrder.nodeOrder;
                 if (result == IntersectionType.Intersection)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
                 } else
                 if (result == IntersectionType.AInsideB)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
                 } else
                 //if (intersectionType == IntersectionType.BInsideA)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
                 }
             }
         }
@@ -266,7 +264,7 @@ namespace Chisel.Core
         [NoAlias] public NativeList<IndexOrder>                                         updateBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeMultiHashMap<int, BrushPair>.ParallelWriter   brushBrushIntersections;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter    brushBrushIntersections;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
@@ -342,22 +340,20 @@ namespace Chisel.Core
         {
             if (result != IntersectionType.NoIntersection)
             {
-                int brush0NodeOrder = brush0IndexOrder.nodeOrder;
-                int brush1NodeOrder = brush1IndexOrder.nodeOrder;
                 if (result == IntersectionType.Intersection)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.Intersection });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.Intersection });
                 } else
                 if (result == IntersectionType.AInsideB)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.BInsideA });
                 } else
                 //if (intersectionType == IntersectionType.BInsideA)
                 {
-                    brushBrushIntersections.Add(brush0NodeOrder, new BrushPair() { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
-                    brushBrushIntersections.Add(brush1NodeOrder, new BrushPair() { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush0IndexOrder, brushIndexOrder1 = brush1IndexOrder, type = IntersectionType.BInsideA });
+                    brushBrushIntersections.AddNoResize(new BrushPair { brushIndexOrder0 = brush1IndexOrder, brushIndexOrder1 = brush0IndexOrder, type = IntersectionType.AInsideB });
                 }
             }
         }    
