@@ -75,8 +75,10 @@ namespace Chisel.Components
             var meshIsModified = false;
 
             // Retrieve the generatedMesh, and store it in the Unity Mesh
-            var generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription);
-            if (generatedMeshContents == null || generatedMeshContents.indices.Length == 0)
+            var modelTree = model.Node;
+            GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
+            if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents) || 
+                generatedMeshContents.indices.Length == 0)
             {
                 if (sharedMesh.vertexCount > 0)
                 {
@@ -96,7 +98,7 @@ namespace Chisel.Components
             var expectedEnabled = sharedMesh.vertexCount > 0;
             if (meshCollider.enabled != expectedEnabled)
                 meshCollider.enabled = expectedEnabled;
-            generatedMeshContents?.Dispose();
+            generatedMeshContents.Dispose();
 
 #if UNITY_EDITOR
             if (meshIsModified)

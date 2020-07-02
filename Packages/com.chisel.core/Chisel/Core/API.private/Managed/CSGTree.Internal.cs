@@ -22,11 +22,6 @@ namespace Chisel.Core
         {
             return CSGManager.GetMeshDescriptions(treeNodeID, meshQueries, vertexChannelMask);
         }
-
-        private static GeneratedMeshContents GetGeneratedMesh(int treeNodeID, GeneratedMeshDescription meshDescription)
-        {
-            return CSGManager.GetGeneratedMesh(treeNodeID, meshDescription);
-        }
         
         // Do not use. This method might be removed/renamed in the future
         [EditorBrowsable(EditorBrowsableState.Never)]

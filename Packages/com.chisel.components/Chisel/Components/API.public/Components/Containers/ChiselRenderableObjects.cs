@@ -7,6 +7,8 @@ using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
 using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
 using UnityEngine.Rendering;
 using UnityEngine.Profiling;
+using Unity.Jobs;
+using Unity.Collections;
 
 namespace Chisel.Components
 {
@@ -245,24 +247,50 @@ namespace Chisel.Components
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
             try
             {
+                JobHandle dependencies = default;
+                JobHandle allCreatedContents = default;
+
+                
+                const long kHashMagicValue = (long)1099511628211ul;
+                UInt64 combinedGeometryHashValue = 0;
+                UInt64 combinedSurfaceHashValue = 0;
+
+                for (int i = startIndex; i < endIndex; i++)
+                {
+                    ref var meshDescription = ref meshDescriptions[i];
+                    if (meshDescription.vertexCount < 3 ||
+                        meshDescription.indexCount < 3)
+                        continue;
+
+                    combinedGeometryHashValue   = (combinedGeometryHashValue ^ meshDescription.geometryHashValue) * kHashMagicValue;
+                    combinedSurfaceHashValue    = (combinedSurfaceHashValue  ^ meshDescription.surfaceHashValue) * kHashMagicValue;
+                }
+
+                if (geometryHashValue == combinedGeometryHashValue &&
+                    surfaceHashValue  == combinedSurfaceHashValue)
+                    return;
+
                 Profiler.BeginSample("Collect Surfaces");
                 for (int i = startIndex; i < endIndex; i++)
                 {
                     ref var meshDescription = ref meshDescriptions[i];
-                    var generatedMeshContents = model.Node.GetGeneratedMesh(meshDescription);
-                    if (generatedMeshContents == null)
-                        continue;
-                    if (generatedMeshContents.indices.Length == 0)
+                    var modelTree = model.Node;
+                    GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
+                    JobHandle createContents = default;
+                    if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out createContents, dependencies))
                     {
                         generatedMeshContents.Dispose();
                         continue;
                     }
+
+                    allCreatedContents = JobHandle.CombineDependencies(allCreatedContents, createContents);
                     var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                     __foundContents.Add(generatedMeshContents);
                     __foundMaterials.Add(renderMaterial);
                 }
                 Profiler.EndSample();
+
                 triangleBrushes.Clear();
                 if (__foundContents.Count == 0)
                 {
@@ -273,10 +301,17 @@ namespace Chisel.Components
                     }
                 } else
                 {
+                    Profiler.BeginSample("Complete");
+                    allCreatedContents.Complete();
+                    Profiler.EndSample();
+
                     Profiler.BeginSample("CopyMeshFrom");
-                    meshIsModified = sharedMesh.CopyMeshFrom(ref geometryHashValue, ref surfaceHashValue, __foundContents, triangleBrushes);
+                    meshIsModified = sharedMesh.CopyMeshFrom(__foundContents, triangleBrushes);
                     Profiler.EndSample();
                 }
+
+                geometryHashValue = combinedGeometryHashValue;
+                surfaceHashValue = combinedSurfaceHashValue;
 
                 Profiler.BeginSample("Update Component");
                 if (renderMaterials != null && 

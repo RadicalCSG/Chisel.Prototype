@@ -22,10 +22,12 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public MeshQuery    meshQuery;
         [NoAlias, ReadOnly] public int		    surfaceIdentifier;
 
-        [NoAlias, ReadOnly] public int		    submeshIndexCount;
-        [NoAlias, ReadOnly] public int		    submeshVertexCount;
+        [NoAlias, ReadOnly] public int		    subMeshIndexCount;
+        [NoAlias, ReadOnly] public int		    subMeshVertexCount;
 
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> submeshSurfaces;
+        [NoAlias, ReadOnly] public int          surfacesOffset;
+        [NoAlias, ReadOnly] public int          surfacesCount;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> subMeshSurfaces;
 
         [NoAlias, WriteOnly] public NativeArray<int> generatedMeshBrushIndices;
 
@@ -120,18 +122,18 @@ namespace Chisel.Core
             bool needTempNormals	= useTangents && !useNormals;
             bool needTempUV0		= useTangents && !useUV0s;
 
-            var normals	= needTempNormals ? new NativeArray<float3>(submeshVertexCount, Allocator.Temp) : generatedMeshNormals;
-            var uv0s	= needTempUV0     ? new NativeArray<float2>(submeshVertexCount, Allocator.Temp) : generatedMeshUV0;
+            var normals	= needTempNormals ? new NativeArray<float3>(subMeshVertexCount, Allocator.Temp) : generatedMeshNormals;
+            var uv0s	= needTempUV0     ? new NativeArray<float2>(subMeshVertexCount, Allocator.Temp) : generatedMeshUV0;
 
             // double snap_size = 1.0 / ants.SnapDistance();
 
             { 
                 // copy all the vertices & indices to the sub-meshes for each material
-                for (int surfaceIndex = 0, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, surfaceCount = (int)submeshSurfaces.Length;
-                        surfaceIndex < surfaceCount;
+                for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
+                        surfaceIndex < lastSurfaceIndex;
                         ++surfaceIndex)
                 {
-                    var subMeshSurface = submeshSurfaces[surfaceIndex];
+                    var subMeshSurface = subMeshSurfaces[surfaceIndex];
                     ref var sourceBuffer = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                     if (sourceBuffer.indices.Length == 0 ||
                         sourceBuffer.vertices.Length == 0)

@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities.UniversalDelegates;
 
 namespace Chisel.Core
 {
@@ -22,7 +23,8 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
-        [NoAlias, ReadOnly] public NativeMultiHashMap<int, BlobAssetReference<BrushIntersectionLoop>>  intersectionLoopBlobs;
+        [NoAlias, ReadOnly] public NativeArray<int2>                                        outputSurfacesRange;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoop>>   outputSurfaces;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygons;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         
@@ -50,7 +52,7 @@ namespace Chisel.Core
                 if (diff != 0)
                     return diff;
 
-                return x.Value.indexOrder.nodeOrder - y.Value.indexOrder.nodeOrder;
+                return x.Value.indexOrder1.nodeOrder - y.Value.indexOrder1.nodeOrder;
             }
         }
 
@@ -115,7 +117,8 @@ namespace Chisel.Core
                 basePolygonEdges.ClearChildren();
             basePolygonEdges.ResizeExact(surfaceCount);
 
-            var intersectionCount = intersectionLoopBlobs.CountValuesForKey(brushNodeOrder);
+            var intersectionOffset = outputSurfacesRange[brushNodeOrder].x;
+            var intersectionCount  = outputSurfacesRange[brushNodeOrder].y;
             
             var uniqueBrushOrderCount = 0;
             if (intersectionCount > 0)
@@ -137,11 +140,11 @@ namespace Chisel.Core
                 } else
                     usedNodeOrders.Clear();
 
-                var enumerator = intersectionLoopBlobs.GetValuesForKey(brushNodeOrder);
-                while (enumerator.MoveNext())
+                intersectionCount += intersectionOffset;
+                for (int i = intersectionOffset; i < intersectionCount; i++)
                 {
-                    var item            = enumerator.Current;
-                    var otherNodeOrder1 = item.Value.indexOrder.nodeOrder;
+                    var item            = outputSurfaces[i];
+                    var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
                     
                     uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
                     usedNodeOrders.Set(otherNodeOrder1, true);
@@ -276,14 +279,14 @@ namespace Chisel.Core
                         var intersectionSurfaceOffset   = intersectionSurfaceSegments[s].x;
                         for (int l0 = intersectionSurfaceCount - 1; l0 >= 0; l0--)
                         {
-                            int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder.nodeOrder;
+                            int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder1.nodeOrder;
                             var edges                   = intersectionEdges[intersectionSurfaceOffset + l0];
                             for (int l1 = 0; l1 < intersectionSurfaceCount; l1++)
                             {
                                 if (l0 == l1)
                                     continue;
                             
-                                int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].Value.indexOrder.nodeOrder;// intersectionIndex1.w;
+                                int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].Value.indexOrder1.nodeOrder;// intersectionIndex1.w;
 
                                 FindLoopPlaneIntersections(brushTreeSpacePlanes, intersectionBrushOrder1, intersectionBrushOrder0, hashedVertices, edges);
 
@@ -317,7 +320,7 @@ namespace Chisel.Core
                         var bp_edges = basePolygonEdges[s];
                         for (int l0 = 0; l0 < intersectionSurfaceCount; l0++)
                         {
-                            int intersectionBrushOrder  = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder.nodeOrder;// intersectionIndex.w;
+                            int intersectionBrushOrder  = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder1.nodeOrder;// intersectionIndex.w;
                             var in_edges                = intersectionEdges[intersectionSurfaceOffset + l0];
 
                             FindLoopVertexOverlaps(brushTreeSpacePlanes, intersectionBrushOrder, hashedVertices, bp_edges, in_edges);
@@ -360,7 +363,7 @@ namespace Chisel.Core
                     intersectionSurfaceInfos.AddNoResize(
                         new IndexSurfaceInfo
                         {
-                            brushIndexOrder = intersection.indexOrder,
+                            brushIndexOrder = intersection.indexOrder1,
                             interiorCategory = surfaceInfo.interiorCategory,
                             basePlaneIndex = surfaceInfo.basePlaneIndex
                         }); //OUTPUT

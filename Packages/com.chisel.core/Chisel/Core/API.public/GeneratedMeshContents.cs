@@ -10,11 +10,17 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree" /><seealso cref="Chisel.Core.CSGTree.GetGeneratedMesh" />
     /// <seealso cref="Chisel.Core.GeneratedMeshDescription"/><seealso cref="Chisel.Core.SurfaceDescription"/>
     /// <seealso href="https://docs.unity3d.com/ScriptReference/Mesh.html">UnityEngine.Mesh</seealso>
-    public sealed class GeneratedMeshContents : IDisposable
+    public struct GeneratedMeshContents : IDisposable
     {
         /// <value>Describes the GeneratedMesh.</value>
         /// <remarks>This is a copy of the description used to retrieve the GeneratedMeshContents by calling <see cref="Chisel.Core.CSGTree.GetGeneratedMesh" />.</remarks>
         public GeneratedMeshDescription description;
+
+        /// <value>Number of indices in mesh.</value>
+        public int           		    indexCount;
+        
+        /// <value>Number of vertices in mesh.</value>
+        public int           		    vertexCount;
 
         /// <value>Triplet indices to the vertices that make up the triangles in this mesh.</value>
         public NativeArray<int> 		indices;
@@ -44,44 +50,6 @@ namespace Chisel.Core
         /// </remarks>
         public NativeArray<float2>      uv0;
 
-        /// <value>Bounds of the mesh.</value>
-        public UnityEngine.Bounds       bounds;
-
-        /// <summary>Copies the contents of the generated mesh to a [UnityEngine.Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html).</summary>
-        /// <param name="mesh">The mesh to copy the <see cref="Chisel.Core.GeneratedMeshContents"/> into</param>
-        /// <remarks><code>
-        /// MeshDescription meshDescription = ... ;
-        /// GeneratedMeshContents contents = tree.GetGeneratedMesh(meshDescription);
-        /// UnityEngine.Mesh unityMesh = new UnityEngine.Mesh();
-        /// contents.CopyTo(unityMesh);
-        /// </code>
-        /// See the [Create Unity Meshes](~/documentation/createUnityMesh.md) article for more information.
-        /// </remarks>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="mesh"/> is null.</exception>
-        /// <exception cref="System.ArgumentException">Thrown when <paramref name="mesh"/> is invalid. This can happen when the mesh has already been destroyed.</exception>
-        public void CopyTo(UnityEngine.Mesh mesh)
-        { 
-            if (object.ReferenceEquals(mesh, null))
-                throw new ArgumentNullException("mesh");
-            if (!mesh)
-                throw new ArgumentException("mesh", "mesh is not valid, it might have already been destroyed");
-
-            if (description.vertexCount < 3 ||
-                description.indexCount < 3)
-            {
-                mesh.Clear();
-                return;
-            }
-            
-            mesh.SetVertices(positions);
-            if (normals  .IsCreated) mesh.SetNormals(normals);
-            if (tangents .IsCreated) mesh.SetTangents(tangents);
-            if (uv0      .IsCreated) mesh.SetUVs(0, uv0);
-            
-            mesh.SetTriangles(indices.ToArray(), 0, false);
-            mesh.bounds = bounds; 
-        }
-
         public void Dispose()
         {
             if (indices     .IsCreated) indices.Dispose();
@@ -91,12 +59,17 @@ namespace Chisel.Core
             if (normals     .IsCreated) normals.Dispose();
             if (uv0         .IsCreated) uv0.Dispose();
             
-            indices      = default;
-            brushIndices = default;
-            positions    = default;
-            tangents     = default;
-            normals      = default;
-            uv0          = default;
+            indices         = default;
+            brushIndices    = default;
+            positions       = default;
+            tangents        = default;
+            normals         = default;
+            uv0             = default;
+            
+            indexCount      = 0;
+            vertexCount     = 0;
+
+            description     = default;
         }
     };
 }

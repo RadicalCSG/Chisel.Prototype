@@ -408,7 +408,8 @@ namespace Chisel.Core
     // Note: Temporary BlobAssetReference that only exists during a single frame
     public struct BrushIntersectionLoop
     {
-        public IndexOrder           indexOrder;
+        public IndexOrder           indexOrder0;
+        public IndexOrder           indexOrder1;
         public SurfaceInfo          surfaceInfo;
         public BlobArray<float3>    loopVertices;
     }

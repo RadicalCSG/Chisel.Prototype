@@ -170,8 +170,8 @@ namespace Chisel.Core
         /// <param name="previousGeneratedMeshContents">The previously generated <see cref="Chisel.Core.GeneratedMeshContents"/>, this can reuse allocated memory if the mesh hasn't changed shape. (optional)</param>
         /// <returns>A <see cref="Chisel.Core.GeneratedMeshContents"/> that can be used to initialize a [UnityEngine.Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) with.</returns>
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions"/>
-        public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
-
+        public bool		                    GetGeneratedMesh	(ref GeneratedMeshDescription meshDescription, ref GeneratedMeshContents generatedMeshContents) { return CSGManager.GetGeneratedMesh(treeNodeID, ref meshDescription, ref generatedMeshContents); }
+        
         // TODO: add description / make this more consistent
         public static CSGTree	Find(int userID)			{ return new CSGTree { treeNodeID = FindTreeByUserID(userID) }; }
 

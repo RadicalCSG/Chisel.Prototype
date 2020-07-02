@@ -24,7 +24,7 @@ namespace Chisel.Core
         [NoAlias] public NativeArray<BlobAssetReference<BrushPairIntersection>>                             intersectingBrushes;
 
         // Write
-        [NoAlias, WriteOnly] public NativeMultiHashMap<int, BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter   outputSurfaces;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter    outputSurfaces;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;
@@ -408,7 +408,7 @@ namespace Chisel.Core
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
                           ref int                           foundIndices0Length,
                           ref HashedVertices                hashedVertices,
-                          NativeMultiHashMap<int, BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
+                          NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
             for (int i = 0; i < foundIndices0Length - 1; i++)
@@ -548,14 +548,14 @@ namespace Chisel.Core
                 var builder = new BlobBuilder(Allocator.Temp, totalSize);
                 ref var root = ref builder.ConstructRoot<BrushIntersectionLoop>();
 
-                root.indexOrder = brushIndexOrder1;
+                root.indexOrder0 = brushIndexOrder0;
+                root.indexOrder1 = brushIndexOrder1;
                 root.surfaceInfo = surfaceInfo;
                 var dstVertices = builder.Allocate(ref root.loopVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
                     dstVertices[d] = srcVertices[uniqueIndices[offset + d]];
 
-                outputSurfaces.Add(brushIndexOrder0.nodeOrder, 
-                                   builder.CreateBlobAssetReference<BrushIntersectionLoop>(Allocator.TempJob));
+                outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoop>(Allocator.TempJob));
             }
 
             //builder.Dispose(); // Allocated with Temp, so don't need dispose
