@@ -21,8 +21,10 @@ namespace Chisel.Core
     {   
         [NoAlias, ReadOnly] public MeshQuery    meshQuery;
         [NoAlias, ReadOnly] public int		    surfaceIdentifier;
-
+        
+        [NoAlias, ReadOnly] public int		    subMeshIndexOffset;
         [NoAlias, ReadOnly] public int		    subMeshIndexCount;
+        [NoAlias, ReadOnly] public int		    subMeshVertexOffset;
         [NoAlias, ReadOnly] public int		    subMeshVertexCount;
 
         [NoAlias, ReadOnly] public int          surfacesOffset;
@@ -31,7 +33,9 @@ namespace Chisel.Core
 
         [NoAlias, WriteOnly] public NativeArray<int> generatedMeshBrushIndices;
 
-        [NoAlias] public NativeArray<int>		generatedMeshIndices; 
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeArray<int>		generatedMeshIndices;
+        [NativeDisableContainerSafetyRestriction]
         [NoAlias] public NativeArray<float3>    generatedMeshPositions;
 
         //optional
@@ -39,14 +43,13 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] [NoAlias, WriteOnly] public NativeArray<float3>    generatedMeshNormals;
         [NativeDisableContainerSafetyRestriction] [NoAlias, WriteOnly] public NativeArray<float2>    generatedMeshUV0; 
             
-        static void ComputeTangents(NativeArray<int>        meshIndices,
-                                    NativeArray<float3>	    positions,
-                                    NativeArray<float2>	    uvs,
-                                    NativeArray<float3>	    normals,
-                                    NativeArray<float4>	    tangents) 
+        static void ComputeTangents(NativeSlice<int>        meshIndices,
+                                    NativeSlice<float3>	    positions,
+                                    NativeSlice<float2>	    uvs,
+                                    NativeSlice<float3>	    normals,
+                                    NativeSlice<float4>	    tangents) 
         {
-            if (!meshIndices.IsCreated || !positions.IsCreated || !uvs.IsCreated || !tangents.IsCreated ||
-                meshIndices.Length == 0 ||
+            if (meshIndices.Length == 0 ||
                 positions.Length == 0)
                 return;
 
@@ -115,16 +118,169 @@ namespace Chisel.Core
         }
 
         public void Execute()
-        { 
+        {
+            if (subMeshIndexCount == 0 || subMeshVertexCount == 0)
+                return;
+
             bool useTangents		= (meshQuery.UsedVertexChannels & VertexChannelFlags.Tangent) == VertexChannelFlags.Tangent;
             bool useNormals		    = (meshQuery.UsedVertexChannels & VertexChannelFlags.Normal ) == VertexChannelFlags.Normal;
             bool useUV0s			= (meshQuery.UsedVertexChannels & VertexChannelFlags.UV0    ) == VertexChannelFlags.UV0;
             bool needTempNormals	= useTangents && !useNormals;
             bool needTempUV0		= useTangents && !useUV0s;
+            
+            var generatedMeshIndicesSlice       = generatedMeshIndices      .Slice(subMeshIndexOffset, subMeshIndexCount);
+            var generatedMeshBrushIndicesSlice  = generatedMeshBrushIndices .Slice(subMeshIndexOffset / 3, subMeshIndexCount / 3);
+            var generatedMeshPositionsSlice     = generatedMeshPositions    .Slice(subMeshVertexOffset, subMeshVertexCount);
+            var generatedMeshTangentsSlice      = generatedMeshTangents.IsCreated ? generatedMeshTangents.Slice(subMeshVertexOffset, subMeshVertexCount) : default;
+            var generatedMeshNormalsSlice       = generatedMeshNormals .IsCreated ? generatedMeshNormals .Slice(subMeshVertexOffset, subMeshVertexCount) : default;
+            var generatedMeshUV0Slice           = generatedMeshUV0     .IsCreated ? generatedMeshUV0     .Slice(subMeshVertexOffset, subMeshVertexCount) : default;
 
-            var normals	= needTempNormals ? new NativeArray<float3>(subMeshVertexCount, Allocator.Temp) : generatedMeshNormals;
-            var uv0s	= needTempUV0     ? new NativeArray<float2>(subMeshVertexCount, Allocator.Temp) : generatedMeshUV0;
+            var normals	= needTempNormals ? new NativeArray<float3>(subMeshVertexCount, Allocator.Temp).Slice() : generatedMeshNormalsSlice;
+            var uv0s	= needTempUV0     ? new NativeArray<float2>(subMeshVertexCount, Allocator.Temp).Slice() : generatedMeshUV0Slice;
 
+            // double snap_size = 1.0 / ants.SnapDistance();
+
+            { 
+                // copy all the vertices & indices to the sub-meshes for each material
+                for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
+                        surfaceIndex < lastSurfaceIndex;
+                        ++surfaceIndex)
+                {
+                    var subMeshSurface = subMeshSurfaces[surfaceIndex];
+                    ref var sourceBuffer = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
+                    if (sourceBuffer.indices.Length == 0 ||
+                        sourceBuffer.vertices.Length == 0)
+                        continue;
+
+                    var brushNodeID = subMeshSurface.brushNodeID;
+
+                    for (int i = 0, sourceIndexCount = sourceBuffer.indices.Length; i < sourceIndexCount; i += 3)
+                    {
+                        generatedMeshBrushIndicesSlice[brushIDIndexOffset] = brushNodeID; brushIDIndexOffset++;
+                    }
+
+                    for (int i = 0, sourceIndexCount = sourceBuffer.indices.Length; i < sourceIndexCount; i ++)
+                    {
+                        generatedMeshIndicesSlice[subMeshIndexOffset + indexOffset] = (int)(sourceBuffer.indices[i] + vertexOffset); indexOffset++;
+                    }
+
+                    var sourceVertexCount = sourceBuffer.vertices.Length;
+
+                    generatedMeshPositionsSlice.CopyFrom(vertexOffset, ref sourceBuffer.vertices, 0, sourceVertexCount);
+
+                    if (useUV0s || needTempUV0) uv0s.CopyFrom(vertexOffset, ref sourceBuffer.uv0, 0, sourceVertexCount);
+                    if (useNormals || needTempNormals) normals.CopyFrom(vertexOffset, ref sourceBuffer.normals, 0, sourceVertexCount);
+                    vertexOffset += sourceVertexCount;
+                }
+            }
+
+            if (useTangents)
+            {
+                ComputeTangents(generatedMeshIndicesSlice,
+                                generatedMeshPositionsSlice,
+                                uv0s,
+                                normals,
+                                generatedMeshTangentsSlice);
+            }
+        }
+    }
+
+    
+    [BurstCompile(CompileSynchronously = true)]
+    struct GenerateVertexBuffersSlicedJob : IJob
+    {   
+        [NoAlias, ReadOnly] public MeshQuery    meshQuery;
+        [NoAlias, ReadOnly] public int		    surfaceIdentifier;
+        
+        [NoAlias, ReadOnly] public int          surfacesOffset;
+        [NoAlias, ReadOnly] public int          surfacesCount;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> subMeshSurfaces;
+
+        [NoAlias, WriteOnly] public NativeSlice<int> generatedMeshBrushIndices;
+
+        [NoAlias] public NativeSlice<int>		generatedMeshIndices;
+        [NoAlias] public NativeSlice<float3>    generatedMeshPositions;
+        [NoAlias] public NativeSlice<float2>    generatedMeshUV0; 
+        [NoAlias] public NativeSlice<float3>    generatedMeshNormals;
+
+        [NoAlias, WriteOnly] public NativeSlice<float4>    generatedMeshTangents;
+            
+        static void ComputeTangents(NativeSlice<int>        meshIndices,
+                                    NativeSlice<float3>	    positions,
+                                    NativeSlice<float2>	    uvs,
+                                    NativeSlice<float3>	    normals,
+                                    NativeSlice<float4>	    tangents) 
+        {
+            if (meshIndices.Length == 0 ||
+                positions.Length == 0)
+                return;
+
+            var tangentU = new NativeArray<float3>(positions.Length, Allocator.Temp);
+            var tangentV = new NativeArray<float3>(positions.Length, Allocator.Temp);
+
+            for (int i = 0; i < meshIndices.Length; i+=3) 
+            {
+                int i0 = meshIndices[i + 0];
+                int i1 = meshIndices[i + 1];
+                int i2 = meshIndices[i + 2];
+
+                var v1 = positions[i0];
+                var v2 = positions[i1];
+                var v3 = positions[i2];
+        
+                var w1 = uvs[i0];
+                var w2 = uvs[i1];
+                var w3 = uvs[i2];
+
+                var edge1 = v2 - v1;
+                var edge2 = v3 - v1;
+
+                var uv1 = w2 - w1;
+                var uv2 = w3 - w1;
+        
+                var r = 1.0f / (uv1.x * uv2.y - uv1.y * uv2.x);
+                if (math.isnan(r) || math.isfinite(r))
+                    r = 0.0f;
+
+                var udir = new float3(
+                    ((edge1.x * uv2.y) - (edge2.x * uv1.y)) * r,
+                    ((edge1.y * uv2.y) - (edge2.y * uv1.y)) * r,
+                    ((edge1.z * uv2.y) - (edge2.z * uv1.y)) * r
+                );
+
+                var vdir = new float3(
+                    ((edge1.x * uv2.x) - (edge2.x * uv1.x)) * r,
+                    ((edge1.y * uv2.x) - (edge2.y * uv1.x)) * r,
+                    ((edge1.z * uv2.x) - (edge2.z * uv1.x)) * r
+                );
+
+                tangentU[i0] += udir;
+                tangentU[i1] += udir;
+                tangentU[i2] += udir;
+
+                tangentV[i0] += vdir;
+                tangentV[i1] += vdir;
+                tangentV[i2] += vdir;
+            }
+
+            for (int i = 0; i < positions.Length; i++) 
+            {
+                var n	= normals[i];
+                var t0	= tangentU[i];
+                var t1	= tangentV[i];
+
+                n = math.normalizesafe(n);
+                var t = t0 - (n * math.dot(n, t0));
+                t = math.normalizesafe(t);
+
+                var c = math.cross(n, t0);
+                float w = (math.dot(c, t1) < 0) ? 1.0f : -1.0f;
+                tangents[i] = new float4(t.x, t.y, t.z, w);
+            }
+        }
+
+        public void Execute()
+        {
             // double snap_size = 1.0 / ants.SnapDistance();
 
             { 
@@ -152,23 +308,20 @@ namespace Chisel.Core
                     }
 
                     var sourceVertexCount = sourceBuffer.vertices.Length;
-                     
+
                     generatedMeshPositions.CopyFrom(vertexOffset, ref sourceBuffer.vertices, 0, sourceVertexCount);
 
-                    if (useUV0s || needTempUV0) uv0s.CopyFrom(vertexOffset, ref sourceBuffer.uv0, 0, sourceVertexCount);
-                    if (useNormals || needTempNormals) normals.CopyFrom(vertexOffset, ref sourceBuffer.normals, 0, sourceVertexCount);
+                    generatedMeshUV0.CopyFrom(vertexOffset, ref sourceBuffer.uv0, 0, sourceVertexCount);
+                    generatedMeshNormals.CopyFrom(vertexOffset, ref sourceBuffer.normals, 0, sourceVertexCount);
                     vertexOffset += sourceVertexCount;
                 }
             }
 
-            if (useTangents)
-            {
-                ComputeTangents(generatedMeshIndices,
-                                generatedMeshPositions,
-                                uv0s,
-                                normals,
-                                generatedMeshTangents);
-            }
+            ComputeTangents(generatedMeshIndices,
+                            generatedMeshPositions,
+                            generatedMeshUV0,
+                            generatedMeshNormals,
+                            generatedMeshTangents);
         }
     }
 }

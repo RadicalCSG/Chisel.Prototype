@@ -74,32 +74,35 @@ namespace Chisel.Components
         {
             var meshIsModified = false;
 
-            // Retrieve the generatedMesh, and store it in the Unity Mesh
-            var modelTree = model.Node;
-            GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-            if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents) || 
-                generatedMeshContents.indices.Length == 0)
+            if (geometryHashValue != meshDescription.geometryHashValue)
             {
-                if (sharedMesh.vertexCount > 0)
+                geometryHashValue = meshDescription.geometryHashValue;
+
+                // Retrieve the generatedMesh, and store it in the Unity Mesh
+                var modelTree = model.Node;
+                GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
+                if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents))
                 {
-                    sharedMesh.Clear(keepVertexLayout: true);
-                    meshIsModified = true;
+                    if (sharedMesh.vertexCount > 0)
+                    {
+                        sharedMesh.Clear(keepVertexLayout: true);
+                        meshIsModified = true;
+                    }
+                } else
+                {
+                    Profiler.BeginSample("CopyFromPositionOnly");
+                    meshIsModified = sharedMesh.CopyFromPositionOnly(generatedMeshContents);
+                    Profiler.EndSample();
                 }
-            } else
-            {
-                Profiler.BeginSample("CopyFromPositionOnly");
-                meshIsModified = sharedMesh.CopyFromPositionOnly(ref geometryHashValue, generatedMeshContents);
-                Profiler.EndSample();
+
+                if (meshCollider.sharedMesh != sharedMesh)
+                    meshIsModified = true;
+
+                var expectedEnabled = sharedMesh.vertexCount > 0;
+                if (meshCollider.enabled != expectedEnabled)
+                    meshCollider.enabled = expectedEnabled;
+                generatedMeshContents.Dispose();
             }
-
-            if (meshCollider.sharedMesh != sharedMesh)
-                meshIsModified = true;
-
-            var expectedEnabled = sharedMesh.vertexCount > 0;
-            if (meshCollider.enabled != expectedEnabled)
-                meshCollider.enabled = expectedEnabled;
-            generatedMeshContents.Dispose();
-
 #if UNITY_EDITOR
             if (meshIsModified)
             {

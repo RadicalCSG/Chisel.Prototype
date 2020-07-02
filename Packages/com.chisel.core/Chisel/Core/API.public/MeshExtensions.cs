@@ -8,25 +8,11 @@ namespace Chisel.Core
 {
     public static class MeshExtensions
     {
-        public static bool CopyFromPositionOnly(this UnityEngine.Mesh mesh, ref ulong geometryHashValue, GeneratedMeshContents contents)
+        public static bool CopyFromPositionOnly(this UnityEngine.Mesh mesh, GeneratedMeshContents contents)
         { 
             if (object.ReferenceEquals(contents, null))
                 throw new ArgumentNullException("contents");
             
-            if (contents.vertexCount < 3 ||
-                contents.indexCount < 3)
-            {
-                if (mesh.vertexCount == 0)
-                    return false;
-                mesh.Clear(keepVertexLayout: true);
-                return true;
-            }
-
-            if (geometryHashValue == contents.description.geometryHashValue)
-                return false;
-
-            geometryHashValue = contents.description.geometryHashValue;
-
             mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(contents.positions);
             mesh.SetTriangles(contents.indices.ToArray(), 0, false);
@@ -49,7 +35,7 @@ namespace Chisel.Core
             {
                 if (mesh.vertexCount == 0)
                     return false;
-                mesh.Clear();
+                mesh.Clear(keepVertexLayout: true);
                 return true; 
             }
 
@@ -88,6 +74,67 @@ namespace Chisel.Core
                 var submesh         = n;
                 var calculateBounds = false;
                 int baseVertex      = sBaseVertices[n];
+                //mesh.SetSubMesh()
+                mesh.SetTriangles(triangles: triangles, submesh: submesh, calculateBounds: calculateBounds, baseVertex: baseVertex);
+                n++;
+            }
+            mesh.RecalculateBounds();
+            return true;
+        }
+        
+        public static bool CopyMeshFrom(this UnityEngine.Mesh mesh, GeneratedMeshContents contents, List<int> triangleBrushes)
+        { 
+            if (object.ReferenceEquals(contents, null))
+                throw new ArgumentNullException("contents");
+
+            if (contents.subMeshes.Length == 0 ||
+                contents.indexCount == 0 ||
+                contents.vertexCount == 0)
+            {
+                if (mesh.vertexCount == 0)
+                    return false;
+                mesh.Clear(keepVertexLayout: true);
+                return true; 
+            }
+            /*
+            sPositionsList  .Clear();
+            sNormalsList    .Clear();
+            sTangentsList   .Clear();
+            sUV0List        .Clear();
+            sBaseVertices   .Clear();
+
+            for (int i = 0; i < contents.Count; i++)
+            {
+                if (contents[i].positions.Length == 0 ||
+                    contents[i].indices.Length == 0)
+                    continue;
+
+                sBaseVertices.Add(sPositionsList.Count);
+                sPositionsList.AddRange(contents[i].positions);
+                if (contents[i].normals .IsCreated) sNormalsList .AddRange(contents[i].normals);
+                if (contents[i].tangents.IsCreated) sTangentsList.AddRange(contents[i].tangents);
+                if (contents[i].uv0     .IsCreated) sUV0List     .AddRange(contents[i].uv0);
+            }
+            */
+            mesh.Clear(keepVertexLayout: true);
+            mesh.SetVertices(contents.positions);
+            if (contents.normals .IsCreated) mesh.SetNormals(contents.normals);
+            if (contents.tangents.IsCreated) mesh.SetTangents(contents.tangents);
+            if (contents.uv0     .IsCreated) mesh.SetUVs(0, contents.uv0);
+
+            triangleBrushes.AddRange(contents.brushIndices);
+
+            mesh.subMeshCount = contents.subMeshes.Length;
+            for (int i = 0,n=0; i < contents.subMeshes.Length; i++)
+            {
+                if (contents.subMeshes[i].indexCount == 0)
+                    continue;
+                
+                //triangleBrushes.AddRange(contents[i].brushIndices);
+                var triangles       = contents.indices.Slice(contents.subMeshes[i].baseIndex, contents.subMeshes[i].indexCount).ToArray();
+                var submesh         = n;
+                var calculateBounds = false;
+                int baseVertex      = contents.subMeshes[i].baseVertex;//sBaseVertices[n];
                 //mesh.SetSubMesh()
                 mesh.SetTriangles(triangles: triangles, submesh: submesh, calculateBounds: calculateBounds, baseVertex: baseVertex);
                 n++;

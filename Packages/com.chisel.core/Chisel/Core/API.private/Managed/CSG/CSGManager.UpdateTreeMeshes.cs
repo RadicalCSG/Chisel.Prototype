@@ -20,12 +20,11 @@ namespace Chisel.Core
             public readonly List<int>                       treeBrushes         = new List<int>();
             public readonly List<GeneratedMeshDescription>  meshDescriptions    = new List<GeneratedMeshDescription>();
             public readonly List<SubMeshCounts>             subMeshCounts       = new List<SubMeshCounts>();
-            //public readonly List<SubMeshSurface>          subMeshSurfaces     = new List<SubMeshSurface>();
 
             public NativeList<SubMeshSurface>               subMeshSurfaces;
             
-            public void Reset() 
-            { 
+            public void Reset()
+            {
                 subMeshCounts.Clear();
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Clear();
@@ -1489,20 +1488,6 @@ namespace Chisel.Core
 #endregion
 
 #region Reset/Rebuild
-        static void Reset()
-        {
-            for (int t = 0; t < trees.Count; t++)
-            {
-                var treeNodeID = trees[t];
-                if (!IsValidNodeID(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree))
-                    continue;
-
-                var treeNodeIndex   = treeNodeID - 1;
-                var treeInfo        = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
-                treeInfo.Reset();
-            }
-        }
-
         internal static bool UpdateAllTreeMeshes(out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
@@ -1530,7 +1515,6 @@ namespace Chisel.Core
 
         internal static bool RebuildAll()
         {
-            Reset();
             if (!UpdateAllTreeMeshes(out JobHandle handle))
                 return false;
             handle.Complete();

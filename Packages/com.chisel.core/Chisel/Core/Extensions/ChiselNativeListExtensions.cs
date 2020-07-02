@@ -104,6 +104,21 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        public static void CopyFrom<T>(this NativeSlice<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        {
+            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
+                throw new ArgumentOutOfRangeException("srcCount");
+            if (dstIndex < 0 || dstIndex + srcCount > dstArray.Length)
+                throw new ArgumentOutOfRangeException("dstIndex");
+            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
+                throw new ArgumentOutOfRangeException("srcIndex");
+
+            var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
+            var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
+        }
+
         public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)

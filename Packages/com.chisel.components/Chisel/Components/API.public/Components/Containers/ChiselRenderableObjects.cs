@@ -247,10 +247,6 @@ namespace Chisel.Components
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
             try
             {
-                JobHandle dependencies = default;
-                JobHandle allCreatedContents = default;
-
-                
                 const long kHashMagicValue = (long)1099511628211ul;
                 UInt64 combinedGeometryHashValue = 0;
                 UInt64 combinedSurfaceHashValue = 0;
@@ -266,52 +262,55 @@ namespace Chisel.Components
                     combinedSurfaceHashValue    = (combinedSurfaceHashValue  ^ meshDescription.surfaceHashValue) * kHashMagicValue;
                 }
 
-                if (geometryHashValue == combinedGeometryHashValue &&
-                    surfaceHashValue  == combinedSurfaceHashValue)
-                    return;
-
-                Profiler.BeginSample("Collect Surfaces");
-                for (int i = startIndex; i < endIndex; i++)
+                if (geometryHashValue != combinedGeometryHashValue ||
+                    surfaceHashValue != combinedSurfaceHashValue)
                 {
-                    ref var meshDescription = ref meshDescriptions[i];
-                    var modelTree = model.Node;
-                    GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-                    JobHandle createContents = default;
-                    if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out createContents, dependencies))
+                    JobHandle dependencies = default;
+                    JobHandle allCreatedContents = default;
+
+
+                    Profiler.BeginSample("Collect Surfaces");
+                    for (int i = startIndex; i < endIndex; i++)
                     {
-                        generatedMeshContents.Dispose();
-                        continue;
+                        ref var meshDescription = ref meshDescriptions[i];
+                        var modelTree = model.Node;
+                        GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
+                        JobHandle createContents = default;
+                        if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out createContents, dependencies))
+                        {
+                            generatedMeshContents.Dispose();
+                            continue;
+                        }
+                        allCreatedContents = JobHandle.CombineDependencies(allCreatedContents, createContents);
+                        var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
+
+                        __foundContents.Add(generatedMeshContents);
+                        __foundMaterials.Add(renderMaterial);
                     }
-
-                    allCreatedContents = JobHandle.CombineDependencies(allCreatedContents, createContents);
-                    var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
-
-                    __foundContents.Add(generatedMeshContents);
-                    __foundMaterials.Add(renderMaterial);
-                }
-                Profiler.EndSample();
-
-                triangleBrushes.Clear();
-                if (__foundContents.Count == 0)
-                {
-                    if (sharedMesh.vertexCount > 0)
-                    {
-                        meshIsModified = true;
-                        sharedMesh.Clear(keepVertexLayout: true);
-                    }
-                } else
-                {
-                    Profiler.BeginSample("Complete");
-                    allCreatedContents.Complete();
                     Profiler.EndSample();
 
-                    Profiler.BeginSample("CopyMeshFrom");
-                    meshIsModified = sharedMesh.CopyMeshFrom(__foundContents, triangleBrushes);
-                    Profiler.EndSample();
-                }
+                    triangleBrushes.Clear();
+                    if (__foundContents.Count == 0)
+                    {
+                        if (sharedMesh.vertexCount > 0)
+                        {
+                            meshIsModified = true;
+                            sharedMesh.Clear(keepVertexLayout: true);
+                        }
+                    } else
+                    {
+                        Profiler.BeginSample("Complete");
+                        allCreatedContents.Complete();
+                        Profiler.EndSample();
 
-                geometryHashValue = combinedGeometryHashValue;
-                surfaceHashValue = combinedSurfaceHashValue;
+                        Profiler.BeginSample("CopyMeshFrom");
+                        meshIsModified = sharedMesh.CopyMeshFrom(__foundContents, triangleBrushes);
+                        Profiler.EndSample();
+                    }
+
+                    geometryHashValue = combinedGeometryHashValue;
+                    surfaceHashValue = combinedSurfaceHashValue;
+                }
 
                 Profiler.BeginSample("Update Component");
                 if (renderMaterials != null && 
