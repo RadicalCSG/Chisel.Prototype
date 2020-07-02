@@ -2,6 +2,8 @@ using UnityEngine;
 using Chisel.Core;
 using System;
 using UnityEngine.Profiling;
+using Unity.Jobs;
+using Unity.Collections;
 
 namespace Chisel.Components
 {
@@ -81,7 +83,7 @@ namespace Chisel.Components
                 // Retrieve the generatedMesh, and store it in the Unity Mesh
                 var modelTree = model.Node;
                 GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-                if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents))
+                if (!CSGManager.GetGeneratedMeshPositionOnly(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out JobHandle jobHandle))
                 {
                     if (sharedMesh.vertexCount > 0)
                     {
@@ -90,6 +92,8 @@ namespace Chisel.Components
                     }
                 } else
                 {
+                    jobHandle.Complete();
+
                     Profiler.BeginSample("CopyFromPositionOnly");
                     meshIsModified = sharedMesh.CopyFromPositionOnly(generatedMeshContents);
                     Profiler.EndSample();

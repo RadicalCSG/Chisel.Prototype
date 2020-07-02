@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Chisel.Core
 {
@@ -15,7 +16,9 @@ namespace Chisel.Core
             
             mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(contents.positions);
-            mesh.SetTriangles(contents.indices.ToArray(), 0, false);
+            mesh.SetIndexBufferParams(contents.indexCount, IndexFormat.UInt32);
+            mesh.SetIndexBufferData(contents.indices, 0, 0, contents.indexCount, MeshUpdateFlags.Default);
+            mesh.subMeshCount = 1;
             mesh.RecalculateBounds();
             return true;
         }
@@ -96,26 +99,7 @@ namespace Chisel.Core
                 mesh.Clear(keepVertexLayout: true);
                 return true; 
             }
-            /*
-            sPositionsList  .Clear();
-            sNormalsList    .Clear();
-            sTangentsList   .Clear();
-            sUV0List        .Clear();
-            sBaseVertices   .Clear();
 
-            for (int i = 0; i < contents.Count; i++)
-            {
-                if (contents[i].positions.Length == 0 ||
-                    contents[i].indices.Length == 0)
-                    continue;
-
-                sBaseVertices.Add(sPositionsList.Count);
-                sPositionsList.AddRange(contents[i].positions);
-                if (contents[i].normals .IsCreated) sNormalsList .AddRange(contents[i].normals);
-                if (contents[i].tangents.IsCreated) sTangentsList.AddRange(contents[i].tangents);
-                if (contents[i].uv0     .IsCreated) sUV0List     .AddRange(contents[i].uv0);
-            }
-            */
             mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(contents.positions);
             if (contents.normals .IsCreated) mesh.SetNormals(contents.normals);
@@ -124,20 +108,23 @@ namespace Chisel.Core
 
             triangleBrushes.AddRange(contents.brushIndices);
 
+
+            mesh.SetIndexBufferParams(contents.indexCount, IndexFormat.UInt32);
+            mesh.SetIndexBufferData(contents.indices, 0, 0, contents.indexCount, MeshUpdateFlags.Default);
+
             mesh.subMeshCount = contents.subMeshes.Length;
-            for (int i = 0,n=0; i < contents.subMeshes.Length; i++)
+            for (int i = 0; i < contents.subMeshes.Length; i++)
             {
-                if (contents.subMeshes[i].indexCount == 0)
-                    continue;
-                
-                //triangleBrushes.AddRange(contents[i].brushIndices);
-                var triangles       = contents.indices.Slice(contents.subMeshes[i].baseIndex, contents.subMeshes[i].indexCount).ToArray();
-                var submesh         = n;
-                var calculateBounds = false;
-                int baseVertex      = contents.subMeshes[i].baseVertex;//sBaseVertices[n];
-                //mesh.SetSubMesh()
-                mesh.SetTriangles(triangles: triangles, submesh: submesh, calculateBounds: calculateBounds, baseVertex: baseVertex);
-                n++;
+                mesh.SetSubMesh(i, new SubMeshDescriptor
+                {
+                    baseVertex  = contents.subMeshes[i].baseVertex,
+                    firstVertex = 0,
+                    vertexCount = contents.subMeshes[i].vertexCount,
+                    indexStart	= contents.subMeshes[i].baseIndex,
+                    indexCount	= contents.subMeshes[i].indexCount,
+                    bounds	    = new Bounds(),
+                    topology	= MeshTopology.Triangles,
+                }, MeshUpdateFlags.Default);
             }
             mesh.RecalculateBounds();
             return true;

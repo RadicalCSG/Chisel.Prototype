@@ -84,12 +84,12 @@ namespace Chisel.Core
             
             if (!brushIntersections.IsCreated)
             {
-                brushIntersections  = new NativeList<BrushIntersection>(treeBrushIndexOrders.Length, Allocator.Temp);
+                brushIntersections  = new NativeList<BrushIntersection>(intersectionCount, Allocator.Temp);
             } else
             {
                 brushIntersections.Clear();
-                if (brushIntersections.Capacity < treeBrushIndexOrders.Length)
-                    brushIntersections.Capacity = treeBrushIndexOrders.Length;
+                if (brushIntersections.Capacity < intersectionCount)
+                    brushIntersections.Capacity = intersectionCount;
             }
 
             { 

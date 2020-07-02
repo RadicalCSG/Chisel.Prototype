@@ -229,15 +229,12 @@ namespace Chisel.Core
             var generateVertexBuffersJob = new GenerateVertexBuffersJob
             {   
                 meshQuery                   = subMeshCount.meshQuery,
-                surfaceIdentifier           = subMeshCount.surfaceIdentifier,
-
+                 
                 surfacesOffset              = surfacesOffset,
                 surfacesCount               = surfacesCount,
                 subMeshSurfaces             = subMeshSurfaces,
                 
-                subMeshIndexOffset          = 0,
                 subMeshIndexCount           = generatedMeshContents.indexCount, 
-                subMeshVertexOffset         = 0,
                 subMeshVertexCount          = generatedMeshContents.vertexCount,
 
                 generatedMeshIndices        = generatedMeshContents.indices,
@@ -252,9 +249,105 @@ namespace Chisel.Core
             return true;
         }
 
+        
+        public static bool GetGeneratedMeshPositionOnly(int treeNodeID, ref GeneratedMeshDescription meshDescription, ref GeneratedMeshContents generatedMeshContents, Allocator allocator, out JobHandle jobHandle, JobHandle dependencies = default)
+        {
+            jobHandle = default;
+            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) return false;
+
+            if (nodeHierarchies[treeNodeID - 1].treeInfo == null) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
+
+            TreeInfo treeInfo = nodeHierarchies[treeNodeID - 1].treeInfo;
+            if (treeInfo == null) { Debug.LogError("GetGeneratedMesh: Invalid node index used"); return false; }
+            if (treeInfo.subMeshCounts == null) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
+
+            if (meshDescription.vertexCount < 3 ||
+                meshDescription.indexCount < 3)
+            {
+                Debug.LogWarning(string.Format("{0} called with a {1} that isn't valid", typeof(CSGTree).Name, typeof(GeneratedMeshDescription).Name));
+                return false;
+            }
+
+            var meshIndex		= meshDescription.meshQueryIndex;
+            var subMeshIndex	= meshDescription.subMeshQueryIndex;
+            if (meshIndex    < 0) { Debug.LogError("GetGeneratedMesh: MeshIndex cannot be negative"); return false; }
+            if (subMeshIndex < 0) { Debug.LogError("GetGeneratedMesh: SubMeshIndex cannot be negative"); return false; }
+
+            
+            int subMeshCountSize = (int)treeInfo.subMeshCounts.Count;
+            if (subMeshIndex >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: SubMeshIndex is higher than the number of generated meshes"); return false; }
+            if (meshIndex    >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: MeshIndex is higher than the number of generated meshes"); return false; }
+
+            int foundIndex = -1;
+            for (int i = 0; i < subMeshCountSize; i++)
+            {
+                if (meshIndex    == treeInfo.subMeshCounts[i].meshIndex &&
+                    subMeshIndex == treeInfo.subMeshCounts[i].subMeshIndex)
+                {
+                    foundIndex = i;
+                    break;
+                }
+            }
+            if (foundIndex < 0 || foundIndex >= subMeshCountSize) { Debug.LogError("GetGeneratedMesh: Could not find mesh associated with MeshIndex/SubMeshIndex pair"); return false; }
+            
+            var subMeshCount = treeInfo.subMeshCounts[foundIndex];
+            if (subMeshCount.indexCount > meshDescription.indexCount) { Debug.LogError("GetGeneratedMesh: The destination indices array (" + meshDescription.indexCount + ") is smaller than the size of the source data (" + (int)subMeshCount.indexCount + ")"); return false; }
+            if (subMeshCount.vertexCount > meshDescription.vertexCount) { Debug.LogError("GetGeneratedMesh: The destination vertices array (" + meshDescription.vertexCount + ") is smaller than the size of the source data (" + (int)subMeshCount.vertexCount + ")"); return false; }
+            if (subMeshCount.indexCount == 0 || subMeshCount.vertexCount == 0) { Debug.LogWarning("GetGeneratedMesh: Mesh is empty"); return false; }
+
+
+            var usedVertexChannels		= meshDescription.meshQuery.UsedVertexChannels;
+            var vertexCount				= meshDescription.vertexCount;
+            var indexCount				= meshDescription.indexCount;
+
+            var surfacesOffset  = subMeshCount.surfacesOffset;
+            var surfacesCount   = subMeshCount.surfacesCount;
+            var subMeshSurfaces = treeInfo.subMeshSurfaces;
+            if (!subMeshSurfaces.IsCreated ||
+                surfacesCount == 0 ||
+                subMeshCount.vertexCount != vertexCount ||
+                subMeshCount.indexCount  != indexCount ||
+                subMeshCount.vertexCount == 0 ||
+                subMeshCount.indexCount == 0)
+                return false;
+
+            // create our arrays on the managed side with the correct size
+
+            Profiler.BeginSample("Alloc");
+            Realloc(ref generatedMeshContents.positions,    vertexCount,    allocator);
+            Realloc(ref generatedMeshContents.indices,      indexCount,     allocator);
+            Realloc(ref generatedMeshContents.brushIndices, indexCount / 3, allocator);
+            Profiler.EndSample();
+
+            if (!generatedMeshContents.indices.IsCreated ||
+                !generatedMeshContents.positions.IsCreated)
+                return false;
+            
+            generatedMeshContents.vertexCount   = vertexCount;
+            generatedMeshContents.indexCount    = indexCount;
+            
+            Profiler.BeginSample("Generate");
+            var generateVertexBuffersJob = new GenerateVertexBuffersPositionOnlyJob
+            {   
+                surfacesOffset              = surfacesOffset,
+                surfacesCount               = surfacesCount,
+                subMeshSurfaces             = subMeshSurfaces,
+                
+                subMeshIndexCount           = generatedMeshContents.indexCount, 
+                subMeshVertexCount          = generatedMeshContents.vertexCount,
+
+                generatedMeshIndices        = generatedMeshContents.indices,
+                generatedMeshBrushIndices   = generatedMeshContents.brushIndices,
+                generatedMeshPositions      = generatedMeshContents.positions
+            };
+            jobHandle = generateVertexBuffersJob.Schedule(dependencies);
+            Profiler.EndSample();
+            return true;
+        }
+
 
         static List<SubMeshCounts> s_ValidMeshDescriptions = new List<SubMeshCounts>();
-        public static bool GetGeneratedMesh(int treeNodeID, ref GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex, ref GeneratedMeshContents generatedMeshContents, Allocator allocator, out JobHandle jobHandle, JobHandle dependencies = default)
+        public static bool GetGeneratedMeshes(int treeNodeID, GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex, ref GeneratedMeshContents generatedMeshContents, Allocator allocator, out JobHandle jobHandle, JobHandle dependencies = default)
         {
             s_ValidMeshDescriptions.Clear();
             jobHandle = default;
@@ -350,9 +443,6 @@ namespace Chisel.Core
                 !generatedMeshContents.positions.IsCreated)
                 return false;
 
-            generatedMeshContents.vertexCount = totalVertexCount;
-            generatedMeshContents.indexCount = totalIndexCount;
-
             ref var subMeshes = ref generatedMeshContents.subMeshes;
 
             int currentBaseVertex = 0;
@@ -368,42 +458,39 @@ namespace Chisel.Core
 
                 subMeshes[d] = new GeneratedSubMesh
                 { 
-                    baseVertex = currentBaseVertex,
-                    baseIndex  = currentBaseIndex,
-                    indexCount = indexCount
+                    baseVertex          = currentBaseVertex,
+                    baseIndex           = currentBaseIndex,
+                    indexCount          = indexCount,
+                    vertexCount         = vertexCount,
+                    surfacesOffset      = surfacesOffset,
+                    surfacesCount       = surfacesCount,
                 };
-                
-                var generatedMeshIndicesSlice       = generatedMeshContents.indices      .Slice(currentBaseIndex, generatedMeshContents.indexCount);
-                var generatedMeshBrushIndicesSlice  = generatedMeshContents.brushIndices .Slice(currentBaseIndex / 3, generatedMeshContents.indexCount / 3);
-                var generatedMeshPositionsSlice     = generatedMeshContents.positions    .Slice(currentBaseVertex, generatedMeshContents.vertexCount);
-                var generatedMeshTangentsSlice      = generatedMeshContents.tangents     .Slice(currentBaseVertex, generatedMeshContents.vertexCount);
-                var generatedMeshNormalsSlice       = generatedMeshContents.normals      .Slice(currentBaseVertex, generatedMeshContents.vertexCount);
-                var generatedMeshUV0Slice           = generatedMeshContents.uv0          .Slice(currentBaseVertex, generatedMeshContents.vertexCount);
 
-                Profiler.BeginSample("Generate");
-                var generateVertexBuffersJob = new GenerateVertexBuffersSlicedJob
-                {   
-                    meshQuery                   = subMeshCount.meshQuery,
-                    surfaceIdentifier           = subMeshCount.surfaceIdentifier,
 
-                    surfacesOffset              = surfacesOffset,
-                    surfacesCount               = surfacesCount,
-                    subMeshSurfaces             = subMeshSurfaces.AsDeferredJobArray(),
-
-                    generatedMeshIndices        = generatedMeshIndicesSlice,
-                    generatedMeshBrushIndices   = generatedMeshBrushIndicesSlice,
-                    generatedMeshPositions      = generatedMeshPositionsSlice,
-                    generatedMeshTangents       = generatedMeshTangentsSlice,
-                    generatedMeshNormals        = generatedMeshNormalsSlice,
-                    generatedMeshUV0            = generatedMeshUV0Slice
-                };
-                jobHandle = generateVertexBuffersJob.Schedule(dependencies);
-                Profiler.EndSample();
                 success = true;
 
                 currentBaseVertex += vertexCount;
                 currentBaseIndex += indexCount;
             }
+
+            generatedMeshContents.vertexCount = totalVertexCount;
+            generatedMeshContents.indexCount = totalIndexCount;
+
+            Profiler.BeginSample("Generate");
+            var generateVertexBuffersJob = new GenerateVertexBuffersSlicedJob
+            {   
+                subMeshes                   = subMeshes,
+                subMeshSurfaces             = subMeshSurfaces.AsDeferredJobArray(),
+
+                generatedMeshIndices        = generatedMeshContents.indices,
+                generatedMeshBrushIndices   = generatedMeshContents.brushIndices,
+                generatedMeshPositions      = generatedMeshContents.positions,
+                generatedMeshTangents       = generatedMeshContents.tangents,
+                generatedMeshNormals        = generatedMeshContents.normals,
+                generatedMeshUV0            = generatedMeshContents.uv0
+            };
+            jobHandle = generateVertexBuffersJob.Schedule(dependencies);
+            Profiler.EndSample();
             return success;
         }
 
