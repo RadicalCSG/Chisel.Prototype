@@ -63,6 +63,7 @@ namespace Chisel.Components
 
         public static void UpdateModels()
         {
+
             // Update the tree meshes
             Profiler.BeginSample("Flush");
             try
@@ -79,9 +80,10 @@ namespace Chisel.Components
             }
 
 #if UNITY_EDITOR
+            Profiler.BeginSample("OnVisibilityChanged");
             ChiselGeneratedComponentManager.OnVisibilityChanged();
+            Profiler.EndSample();
 #endif
-
 
             for (int m = 0; m < registeredModels.Count; m++)
             {
@@ -143,17 +145,6 @@ namespace Chisel.Components
             }
         }
 
-        static int MeshDescriptionSorter(GeneratedMeshDescription x, GeneratedMeshDescription y)
-        {
-            if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
-            if (x.meshQuery.LayerQuery          != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
-            if (x.surfaceParameter  != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
-            if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
-            return 0;
-        }
-
-        static Comparison<GeneratedMeshDescription> kMeshDescriptionSorterDelegate = MeshDescriptionSorter;
-
         internal static void UpdateModelMeshDescriptions(ChiselModel model)
         {
             if (!ChiselModelGeneratedObjects.IsValid(model.generated))
@@ -169,17 +160,11 @@ namespace Chisel.Components
 
             Profiler.BeginSample("GetMeshDescriptions");
             var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
-            var meshDescriptions	= tree.GetMeshDescriptions(meshTypes, model.VertexChannelMask);
+            CSGManager.GetMeshDescriptions(tree.NodeID, meshTypes, model.VertexChannelMask, out var meshDescriptions, out var meshContents);
             Profiler.EndSample();
 
-            if (meshDescriptions != null)
-            {
-                // Sort all meshDescriptions so that meshes that can be merged are next to each other
-                Array.Sort(meshDescriptions, kMeshDescriptionSorterDelegate);
-            }
-
             Profiler.BeginSample("Update");
-            model.generated.Update(model, meshDescriptions);
+            model.generated.Update(model, meshDescriptions, meshContents);
             Profiler.EndSample();
         }
     }

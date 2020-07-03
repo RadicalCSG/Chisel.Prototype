@@ -228,9 +228,6 @@ namespace Chisel.Components
             }
             finally
             {
-                for (int i = 0; i < __foundContents.Count; i++)
-                    __foundContents[i].Dispose();
-                __foundContents.Clear();
                 __foundMaterials.Clear();
             }
             UpdateSettings(model, state, meshIsModified);
@@ -240,8 +237,7 @@ namespace Chisel.Components
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
-        static readonly List<GeneratedMeshContents> __foundContents     = new List<GeneratedMeshContents>(); // static to avoid allocations
-        public void Update(ChiselModel model, GameObjectState state, GeneratedMeshDescription[] meshDescriptions, int startIndex, int endIndex)
+        public void Update(ChiselModel model, GameObjectState state, List<GeneratedMeshDescription> meshDescriptions, GeneratedMeshContents generatedMeshContents, int startIndex, int endIndex)
         {
             bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
@@ -253,7 +249,7 @@ namespace Chisel.Components
 
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    ref var meshDescription = ref meshDescriptions[i];
+                    var meshDescription = meshDescriptions[i];
                     if (meshDescription.vertexCount < 3 ||
                         meshDescription.indexCount < 3)
                         continue;
@@ -265,60 +261,19 @@ namespace Chisel.Components
                 //if (geometryHashValue != combinedGeometryHashValue ||
                 //    surfaceHashValue != combinedSurfaceHashValue)
                 {
-                    JobHandle dependencies = default;
-                    JobHandle allCreatedContents = default;
-
                     triangleBrushes.Clear();
                     var modelTree = model.Node;
 
-                    /*/
-                    Profiler.BeginSample("Collect Surfaces");
-                    for (int i = startIndex; i < endIndex; i++)
-                    {
-                        ref var meshDescription = ref meshDescriptions[i];
-                        GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-                        JobHandle createContents = default;
-                        if (!CSGManager.GetGeneratedMesh(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out createContents, dependencies))
-                        {
-                            generatedMeshContents.Dispose();
-                            continue;
-                        }
-                        allCreatedContents = JobHandle.CombineDependencies(allCreatedContents, createContents);
-                        var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
-
-                        __foundContents.Add(generatedMeshContents);
-                        __foundMaterials.Add(renderMaterial);
-                    }
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("Complete");
-                    allCreatedContents.Complete();
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("CopyMeshFrom");
-                    if (__foundContents.Count == 0)
+                    Profiler.BeginSample("Collect Materials");
+                    if (generatedMeshContents.vertexCount == 0 ||
+                        generatedMeshContents.indexCount == 0)
                     {
                         if (sharedMesh.vertexCount > 0) { meshIsModified = true; sharedMesh.Clear(keepVertexLayout: true); }
                     } else
                     {
-                        meshIsModified = sharedMesh.CopyMeshFrom(__foundContents, triangleBrushes);
-                    }
-                    Profiler.EndSample();
-                    /*/
-                    Profiler.BeginSample("Collect Surfaces");
-                    GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-                    JobHandle createContents = default;
-                    if (!CSGManager.GetGeneratedMeshes(modelTree.NodeID, meshDescriptions, startIndex, endIndex, ref generatedMeshContents, Allocator.TempJob, out createContents, dependencies))
-                    {
-                        generatedMeshContents.Dispose();
-                        if (sharedMesh.vertexCount > 0) { meshIsModified = true; sharedMesh.Clear(keepVertexLayout: true); }
-                    } else
-                    {
-                        __foundContents.Add(generatedMeshContents);
-                        allCreatedContents = JobHandle.CombineDependencies(allCreatedContents, createContents);
                         for (int i = startIndex; i < endIndex; i++)
                         {
-                            ref var meshDescription = ref meshDescriptions[i];
+                            var meshDescription = meshDescriptions[i];
                             var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                             __foundMaterials.Add(renderMaterial);
@@ -327,14 +282,9 @@ namespace Chisel.Components
                     }
                     Profiler.EndSample();
 
-                    Profiler.BeginSample("Complete");
-                    allCreatedContents.Complete();
-                    Profiler.EndSample();
-
                     Profiler.BeginSample("CopyMeshFrom");
                     meshIsModified = sharedMesh.CopyMeshFrom(generatedMeshContents, triangleBrushes);
                     Profiler.EndSample();
-                    //*/
 
                     //geometryHashValue = combinedGeometryHashValue;
                     //surfaceHashValue = combinedSurfaceHashValue;
@@ -360,9 +310,6 @@ namespace Chisel.Components
             }
             finally
             {
-                for (int i = 0; i < __foundContents.Count; i++)
-                    __foundContents[i].Dispose();
-                __foundContents.Clear();
                 __foundMaterials.Clear();
             }
             UpdateSettings(model, state, meshIsModified);

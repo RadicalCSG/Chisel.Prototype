@@ -72,7 +72,7 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
-        public void Update(ChiselModel model, GeneratedMeshDescription meshDescription)
+        public void Update(ChiselModel model, GeneratedMeshDescription meshDescription, GeneratedMeshContents generatedMeshContents)
         {
             var meshIsModified = false;
 
@@ -82,8 +82,8 @@ namespace Chisel.Components
 
                 // Retrieve the generatedMesh, and store it in the Unity Mesh
                 var modelTree = model.Node;
-                GeneratedMeshContents generatedMeshContents = new GeneratedMeshContents();
-                if (!CSGManager.GetGeneratedMeshPositionOnly(modelTree.NodeID, ref meshDescription, ref generatedMeshContents, Allocator.TempJob, out JobHandle jobHandle))
+                if (generatedMeshContents.indexCount == 0 ||
+                    generatedMeshContents.vertexCount == 0)
                 {
                     if (sharedMesh.vertexCount > 0)
                     {
@@ -92,8 +92,6 @@ namespace Chisel.Components
                     }
                 } else
                 {
-                    jobHandle.Complete();
-
                     Profiler.BeginSample("CopyFromPositionOnly");
                     meshIsModified = sharedMesh.CopyFromPositionOnly(generatedMeshContents);
                     Profiler.EndSample();
@@ -105,7 +103,6 @@ namespace Chisel.Components
                 var expectedEnabled = sharedMesh.vertexCount > 0;
                 if (meshCollider.enabled != expectedEnabled)
                     meshCollider.enabled = expectedEnabled;
-                generatedMeshContents.Dispose();
             }
 #if UNITY_EDITOR
             if (meshIsModified)

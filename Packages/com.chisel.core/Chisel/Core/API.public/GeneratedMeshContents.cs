@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Mathematics;
 
@@ -24,28 +25,28 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree" /><seealso cref="Chisel.Core.CSGTree.GetGeneratedMesh" />
     /// <seealso cref="Chisel.Core.GeneratedMeshDescription"/><seealso cref="Chisel.Core.SurfaceDescription"/>
     /// <seealso href="https://docs.unity3d.com/ScriptReference/Mesh.html">UnityEngine.Mesh</seealso>
-    public struct GeneratedMeshContents : IDisposable
+    public struct GeneratedMeshContents// : IDisposable
     {
         /// <value>Number of indices in mesh.</value>
-        public int           		    indexCount;
+        public int           		    indexCount      { get { return indices.IsCreated ? indices.Length : 0; } }
         
         /// <value>Number of vertices in mesh.</value>
-        public int           		    vertexCount;
+        public int           		    vertexCount     { get { return positions.IsCreated ? positions.Length : 0; } }
 
-        public NativeArray<GeneratedSubMesh> subMeshes;
+        public NativeList<GeneratedSubMesh> subMeshes;
 
         /// <value>Triplet indices to the vertices that make up the triangles in this mesh.</value>
-        public NativeArray<int> 		indices;
+        public NativeList<int> 		    indices;
 
         /// <value>A brush index per triangle.</value>
-        public NativeArray<int> 		brushIndices;
+        public NativeList<int> 		    brushIndices;
         
         /// <value>Position for each vertex.</value>
-        public NativeArray<float3>	    positions;        
+        public NativeList<float3>	    positions;        
 
         /// <value>Tangent for each vertex.</value>
         /// <remarks><note>Can be null when the <see cref="description"/> has no tangents set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note></remarks>
-        public NativeArray<float4>      tangents;
+        public NativeList<float4>       tangents;
         
         /// <value>Normal for each vertex.</value>
         /// <remarks>Each <seealso cref="Chisel.Core.BrushMesh.Polygon"/> has a <seealso cref="Chisel.Core.SurfaceDescription.smoothingGroup"/> field in its <seealso cref="Chisel.Core.SurfaceDescription"/>.
@@ -53,14 +54,14 @@ namespace Chisel.Core
         /// If the <seealso cref="Chisel.Core.SurfaceDescription.smoothingGroup"/> is set to 0 the normal of the polygon is used.
         /// <note>Can be null when the <see cref="description"/>  has no normals set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note>
         /// </remarks>
-        public NativeArray<float3>      normals;
+        public NativeList<float3>       normals;
 
         /// <value>First uv channel for each vertex.</value>
         /// <remarks>These are created by multiplying the vertices of the <seealso cref="Chisel.Core.BrushMesh"/>, which was used to generate this geometry, 
         /// by the <seealso cref="Chisel.Core.SurfaceDescription.UV0" /> <seealso cref="Chisel.Core.UVMatrix"/> of the <seealso cref="Chisel.Core.SurfaceDescription"/> of the vertex.
         /// <note>Can be null when the <see cref="description"/> has no <seealso cref="Chisel.Core.VertexChannelFlags.UV0" /> set in its <see cref="Chisel.Core.MeshQuery.UsedVertexChannels"/>.</note>
         /// </remarks>
-        public NativeArray<float2>      uv0;
+        public NativeList<float2>       uv0;
 
         public void Dispose()
         {
@@ -79,9 +80,6 @@ namespace Chisel.Core
             tangents        = default;
             normals         = default;
             uv0             = default;
-            
-            indexCount      = 0;
-            vertexCount     = 0;
         }
     };
 }

@@ -15,10 +15,10 @@ namespace Chisel.Core
                 throw new ArgumentNullException("contents");
             
             mesh.Clear(keepVertexLayout: true);
-            mesh.SetVertices(contents.positions);
+            mesh.SetVertices(contents.positions.AsArray());
             mesh.SetIndexBufferParams(contents.indexCount, IndexFormat.UInt32);
-            mesh.SetIndexBufferData(contents.indices, 0, 0, contents.indexCount, MeshUpdateFlags.Default);
-            mesh.subMeshCount = 1;
+            mesh.SetIndexBufferData(contents.indices.AsArray(), 0, 0, contents.indexCount, MeshUpdateFlags.Default);
+            mesh.subMeshCount = 0;
             mesh.RecalculateBounds();
             return true;
         }
@@ -101,16 +101,16 @@ namespace Chisel.Core
             }
 
             mesh.Clear(keepVertexLayout: true);
-            mesh.SetVertices(contents.positions);
-            if (contents.normals .IsCreated) mesh.SetNormals(contents.normals);
-            if (contents.tangents.IsCreated) mesh.SetTangents(contents.tangents);
-            if (contents.uv0     .IsCreated) mesh.SetUVs(0, contents.uv0);
+            mesh.SetVertices(contents.positions.AsArray());
+            if (contents.normals .IsCreated) mesh.SetNormals(contents.normals.AsArray());
+            if (contents.tangents.IsCreated) mesh.SetTangents(contents.tangents.AsArray());
+            if (contents.uv0     .IsCreated) mesh.SetUVs(0, contents.uv0.AsArray());
 
-            triangleBrushes.AddRange(contents.brushIndices);
+            triangleBrushes.AddRange(contents.brushIndices.AsArray());
 
 
             mesh.SetIndexBufferParams(contents.indexCount, IndexFormat.UInt32);
-            mesh.SetIndexBufferData(contents.indices, 0, 0, contents.indexCount, MeshUpdateFlags.Default);
+            mesh.SetIndexBufferData(contents.indices.AsArray(), 0, 0, contents.indexCount, MeshUpdateFlags.Default);
 
             mesh.subMeshCount = contents.subMeshes.Length;
             for (int i = 0; i < contents.subMeshes.Length; i++)

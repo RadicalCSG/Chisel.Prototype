@@ -15,17 +15,40 @@ namespace Chisel.Core
 {
     static partial class CSGManager
     {
+        public struct SectionData
+        {
+            public int surfacesOffset;
+            public int surfacesCount;
+            public MeshQuery meshQuery;
+        }
+        public struct BrushData
+        {
+            public int brushNodeID;
+            public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+        }
+
         internal sealed class TreeInfo
         {
             public readonly List<int>                       treeBrushes         = new List<int>();
             public readonly List<GeneratedMeshDescription>  meshDescriptions    = new List<GeneratedMeshDescription>();
-            //public readonly List<SubMeshCounts>             subMeshCounts       = new List<SubMeshCounts>();
+            public readonly List<GeneratedMeshContents>     contents            = new List<GeneratedMeshContents>();
+            //public readonly List<SubMeshCounts>           subMeshCounts       = new List<SubMeshCounts>();
             
+            public NativeList<MeshQuery>                    meshQueries;
+            public NativeList<SectionData>                  sections;
+            public NativeList<BrushData>                    brushRenderBuffers;
             public NativeList<SubMeshCounts>                subMeshCounts;
             public NativeList<SubMeshSurface>               subMeshSurfaces;
+
             
             public void Reset()
             {
+                if (meshQueries.IsCreated)
+                    meshQueries.Clear();
+                if (sections.IsCreated)
+                    sections.Clear();
+                if (brushRenderBuffers.IsCreated)
+                    brushRenderBuffers.Clear();
                 if (subMeshCounts.IsCreated)
                     subMeshCounts.Clear();
                 if (subMeshSurfaces.IsCreated)
@@ -34,6 +57,18 @@ namespace Chisel.Core
 
             public void Dispose()
             {
+                if (meshQueries.IsCreated)
+                    meshQueries.Dispose();
+                meshQueries = default;
+
+                if (sections.IsCreated)
+                    sections.Dispose();
+                sections = default;
+
+                if (brushRenderBuffers.IsCreated)
+                    brushRenderBuffers.Dispose();
+                brushRenderBuffers = default;
+
                 if (subMeshCounts.IsCreated)
                     subMeshCounts.Dispose();
                 subMeshCounts = default;
@@ -41,6 +76,10 @@ namespace Chisel.Core
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Dispose();
                 subMeshSurfaces = default;
+
+                for (int i = 0; i < contents.Count; i++)
+                    contents[i].Dispose();
+                contents.Clear();
             }
         }
 

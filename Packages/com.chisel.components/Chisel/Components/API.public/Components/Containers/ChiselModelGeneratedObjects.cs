@@ -251,7 +251,8 @@ namespace Chisel.Components
             }
         }
 
-        public void Update(ChiselModel model, GeneratedMeshDescription[] meshDescriptions)
+        public void Update(ChiselModel model, List<GeneratedMeshDescription> meshDescriptions,
+                                              List<GeneratedMeshContents> meshContents)
         {
             Profiler.BeginSample("Setup");
             var modelState = GameObjectState.Create(model);
@@ -278,7 +279,7 @@ namespace Chisel.Components
             Debug.Assert(LayerParameterIndex.LayerParameter1 < LayerParameterIndex.LayerParameter2);
             Debug.Assert((LayerParameterIndex.LayerParameter1 + 1) == LayerParameterIndex.LayerParameter2);
             Debug.Assert(meshDescriptions == null ||
-                         meshDescriptions.Length == 0 ||
+                         meshDescriptions.Count == 0 ||
                          meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1);
 
             int descriptionIndex = 0;
@@ -290,7 +291,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             // Loop through all meshDescriptions with LayerParameter1, and create renderable meshes from them
-            if (meshDescriptions == null || meshDescriptions.Length == 0)
+            if (meshDescriptions == null || meshDescriptions.Count == 0)
             {
                 for (int renderIndex = 0; renderIndex < renderables.Length; renderIndex++)
                 {
@@ -305,16 +306,18 @@ namespace Chisel.Components
                 }
             } else
             {
+                var contentsIndex = 0;
+                
                 Profiler.BeginSample("Set Renderables");
-                if (meshDescriptions[0].meshQuery.LayerParameterIndex == LayerParameterIndex.LayerParameter1)
+                if (meshDescriptions[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                 {
                     var prevQuery = meshDescriptions[0].meshQuery;
                     var startIndex = 0;
-                    for (; descriptionIndex < meshDescriptions.Length; descriptionIndex++)
+                    for (; descriptionIndex < meshDescriptions.Count; descriptionIndex++)
                     {
-                        ref var meshDescriptionIterator = ref meshDescriptions[descriptionIndex];
+                        var meshDescriptionIterator = meshDescriptions[descriptionIndex];
                         // Exit when layerParameterIndex is no longer LayerParameter1
-                        if (meshDescriptionIterator.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter1)
+                        if (meshDescriptionIterator.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
                             break;
 
                         var currQuery = meshDescriptionIterator.meshQuery;
@@ -324,7 +327,8 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
-                        renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);
+                        renderables[renderIndex].Update(model, modelState, meshDescriptions, meshContents[contentsIndex], startIndex, descriptionIndex);
+                        contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                         startIndex = descriptionIndex;
                         prevQuery = currQuery;
@@ -334,26 +338,28 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
-                        renderables[renderIndex].Update(model, modelState, meshDescriptions, startIndex, descriptionIndex);
+                        renderables[renderIndex].Update(model, modelState, meshDescriptions, meshContents[contentsIndex], startIndex, descriptionIndex);
+                        contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                     }
                 }
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Set Colliders");
-                if (descriptionIndex < meshDescriptions.Length &&
-                    meshDescriptions[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.LayerParameter2)
+                if (descriptionIndex < meshDescriptions.Count &&
+                    meshDescriptions[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                 {
-                    Debug.Assert(meshDescriptions[meshDescriptions.Length - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.LayerParameter2);
+                    Debug.Assert(meshDescriptions[meshDescriptions.Count - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial);
 
-                    var colliderCount = meshDescriptions.Length - descriptionIndex;
+                    var colliderCount = meshDescriptions.Count - descriptionIndex;
                     bool rebuild = true;
                     if (colliderCount == colliders.Length)
                     {
                         rebuild = false;
-                        for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
+                        var oldDescriptionIndex = descriptionIndex;
+                        for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
                         {
-                            ref var meshDescription = ref meshDescriptions[descriptionIndex];
+                            var meshDescription = meshDescriptions[descriptionIndex];
                             // Exit when layerParameterIndex is no longer LayerParameter2
                             if (meshDescription.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter2)
                                 break;
@@ -365,14 +371,15 @@ namespace Chisel.Components
                                 break;
                             }
                         }
+                        descriptionIndex = oldDescriptionIndex;
                     }
                     if (rebuild)
                     {
                         var newColliders = new ChiselColliderObjects[colliderCount];
                         var oldDescriptionIndex = descriptionIndex;
-                        for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
+                        for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
                         {
-                            ref var meshDescription = ref meshDescriptions[descriptionIndex];
+                            var meshDescription = meshDescriptions[descriptionIndex];
                             // Exit when layerParameterIndex is no longer LayerParameter2
                             if (meshDescription.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter2)
                                 break;
@@ -401,21 +408,22 @@ namespace Chisel.Components
                         descriptionIndex = oldDescriptionIndex;
                     }
                     // Loop through all meshDescriptions with LayerParameter2, and create collider meshes from them
-                    for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
+                    for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
                     {
-                        ref var meshDescription = ref meshDescriptions[descriptionIndex];
+                        var meshDescription = meshDescriptions[descriptionIndex];
 
                         // Exit when layerParameterIndex is no longer LayerParameter2
                         if (meshDescription.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter2)
                             break;
 
-                        colliders[i].Update(model, meshDescription);
+                        colliders[i].Update(model, meshDescription, meshContents[contentsIndex]);
+                        contentsIndex++;
                     }
                 }
                 Profiler.EndSample();
             }
             
-            Debug.Assert(meshDescriptions == null || descriptionIndex == meshDescriptions.Length);
+            Debug.Assert(meshDescriptions == null || descriptionIndex == meshDescriptions.Count);
         }
 
 #if UNITY_EDITOR
