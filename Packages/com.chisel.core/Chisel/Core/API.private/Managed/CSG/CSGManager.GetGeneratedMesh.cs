@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -64,7 +65,7 @@ namespace Chisel.Core
 
     static partial class CSGManager
     {
-        const int kMaxPhysicsVertexCount = 32000;
+        const int kMaxPhysicsIndexCount = 32000;
 
 
         internal struct SubMeshCounts
@@ -83,17 +84,6 @@ namespace Chisel.Core
             
             public int      surfacesOffset;
             public int      surfacesCount;
-        };
-
-        private struct MeshID
-        {
-            public MeshQuery	meshQuery;
-            public Int32		surfaceParameter;
-
-            public static bool operator ==(MeshID left, MeshID right) { return (left.meshQuery == right.meshQuery && left.surfaceParameter == right.surfaceParameter); }
-            public static bool operator !=(MeshID left, MeshID right) { return (left.meshQuery != right.meshQuery || left.surfaceParameter != right.surfaceParameter); }
-            public override bool Equals(object obj) { if (ReferenceEquals(this, obj)) return true; if (!(obj is MeshID)) return false; var other = (MeshID)obj; return other == this; }
-            public override int GetHashCode() { return surfaceParameter.GetHashCode() ^ meshQuery.GetHashCode(); }
         };
 
         internal sealed class BrushInfo
@@ -151,7 +141,7 @@ namespace Chisel.Core
 
             TreeInfo treeInfo = nodeHierarchies[treeNodeID - 1].treeInfo;
             if (treeInfo == null) { Debug.LogError("GetGeneratedMesh: Invalid node index used"); return false; }
-            if (treeInfo.subMeshCounts == null) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
+            if (!treeInfo.subMeshCounts.IsCreated) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
 
             if (meshDescription.vertexCount < 3 ||
                 meshDescription.indexCount < 3)
@@ -166,7 +156,7 @@ namespace Chisel.Core
             if (subMeshIndex < 0) { Debug.LogError("GetGeneratedMesh: SubMeshIndex cannot be negative"); return false; }
 
             
-            int subMeshCountSize = (int)treeInfo.subMeshCounts.Count;
+            int subMeshCountSize = (int)treeInfo.subMeshCounts.Length;
             if (subMeshIndex >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: SubMeshIndex is higher than the number of generated meshes"); return false; }
             if (meshIndex    >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: MeshIndex is higher than the number of generated meshes"); return false; }
 
@@ -259,7 +249,7 @@ namespace Chisel.Core
 
             TreeInfo treeInfo = nodeHierarchies[treeNodeID - 1].treeInfo;
             if (treeInfo == null) { Debug.LogError("GetGeneratedMesh: Invalid node index used"); return false; }
-            if (treeInfo.subMeshCounts == null) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
+            if (!treeInfo.subMeshCounts.IsCreated) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
 
             if (meshDescription.vertexCount < 3 ||
                 meshDescription.indexCount < 3)
@@ -274,7 +264,7 @@ namespace Chisel.Core
             if (subMeshIndex < 0) { Debug.LogError("GetGeneratedMesh: SubMeshIndex cannot be negative"); return false; }
 
             
-            int subMeshCountSize = (int)treeInfo.subMeshCounts.Count;
+            int subMeshCountSize = (int)treeInfo.subMeshCounts.Length;
             if (subMeshIndex >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: SubMeshIndex is higher than the number of generated meshes"); return false; }
             if (meshIndex    >= (int)subMeshCountSize) { Debug.LogError("GetGeneratedMesh: MeshIndex is higher than the number of generated meshes"); return false; }
 
@@ -357,9 +347,9 @@ namespace Chisel.Core
 
             TreeInfo treeInfo = nodeHierarchies[treeNodeID - 1].treeInfo;
             if (treeInfo == null) { Debug.LogError("GetGeneratedMesh: Invalid node index used"); return false; }
-            if (treeInfo.subMeshCounts == null) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
+            if (!treeInfo.subMeshCounts.IsCreated) { Debug.LogWarning("Tree has not been initialized properly"); return false; }
 
-            int subMeshCountSize = (int)treeInfo.subMeshCounts.Count;
+            int subMeshCountSize = (int)treeInfo.subMeshCounts.Length;
             var subMeshSurfaces = treeInfo.subMeshSurfaces;
             if (!subMeshSurfaces.IsCreated)
                 return false;
@@ -522,7 +512,8 @@ namespace Chisel.Core
                 return null;
             }
 
-            treeInfo.subMeshCounts.Clear();
+            if (treeInfo.subMeshCounts.IsCreated)
+                treeInfo.subMeshCounts.Clear();
             treeInfo.meshDescriptions.Clear();
 
             if (nodeFlags[treeNodeIndex].IsNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate))
@@ -548,10 +539,11 @@ namespace Chisel.Core
                 nodeFlags[treeNodeIndex] = flags;
             }
 
-            if (treeInfo.subMeshCounts.Count <= 0)
+            if (!treeInfo.subMeshCounts.IsCreated ||
+                treeInfo.subMeshCounts.Length <= 0)
                 return null;
 
-            for (int i = (int)treeInfo.subMeshCounts.Count - 1; i >= 0; i--)
+            for (int i = (int)treeInfo.subMeshCounts.Length - 1; i >= 0; i--)
             {
                 var subMesh = treeInfo.subMeshCounts[i];
 
@@ -562,9 +554,9 @@ namespace Chisel.Core
 
                 // Make sure the mesh is valid
                 if (subMesh.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial &&
-                    subMesh.vertexCount >= kMaxPhysicsVertexCount)
+                    subMesh.vertexCount >= kMaxPhysicsIndexCount)
                 {
-                    Debug.LogError("Mesh has too many vertices (" + subMesh.vertexCount + " > " + kMaxPhysicsVertexCount + ")");
+                    Debug.LogError("Mesh has too many vertices (" + subMesh.vertexCount + " > " + kMaxPhysicsIndexCount + ")");
                     continue;
                 }
 
@@ -596,22 +588,14 @@ namespace Chisel.Core
             return treeInfo.meshDescriptions.ToArray();
         }
 
-        static Dictionary<MeshID, int>      uniqueMeshDescriptions  = new Dictionary<MeshID, int>();
-
         class MeshQuerySurfaces
         {
-            public readonly List<SubMeshSurfaceQuery> querySurfaces = new List<SubMeshSurfaceQuery>();
+            public readonly List<SubMeshSurface> querySurfaces = new List<SubMeshSurface>();
         }
         
-        internal struct SubMeshSurfaceQuery
+        struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
         {
-            public int              surfaceParameter;
-            public SubMeshSurface   surface;
-        }
-
-        struct SubMeshSurfaceQueryComparer : IComparer<SubMeshSurfaceQuery>
-        {
-            public int Compare(SubMeshSurfaceQuery x, SubMeshSurfaceQuery y)
+            public int Compare(SubMeshSurface x, SubMeshSurface y)
             {
                 return x.surfaceParameter.CompareTo(y.surfaceParameter);
             }
@@ -622,16 +606,18 @@ namespace Chisel.Core
                                               MeshQuery[] meshQueries,
                                               VertexChannelFlags vertexChannelMask)
         {
-            var subMeshCounts = treeInfo.subMeshCounts;
-            subMeshCounts.Clear();
-            if (treeInfo.subMeshSurfaces.IsCreated)
-                treeInfo.subMeshSurfaces.Clear();
-
             var treeBrushNodeIDs = treeInfo.treeBrushes;
             var treeBrushNodeCount = (Int32)(treeBrushNodeIDs.Count);
             if (treeBrushNodeCount <= 0)
+            {
+                if (treeInfo.subMeshCounts.IsCreated)
+                    treeInfo.subMeshCounts.Clear();
+                if (treeInfo.subMeshSurfaces.IsCreated)
+                    treeInfo.subMeshSurfaces.Clear();
                 return;
+            }
 
+            Profiler.BeginSample("Allocate 1");
             if (meshQuerySurfaces == null ||
                 meshQuerySurfaces.Length < meshQueries.Length)
             {
@@ -643,8 +629,9 @@ namespace Chisel.Core
                 for (int i = 0; i < meshQueries.Length; i++)
                     meshQuerySurfaces[i].querySurfaces.Clear();
             }
+            Profiler.EndSample();
 
-            uniqueMeshDescriptions.Clear();
+            Profiler.BeginSample("Find Surfaces");
             int surfaceCount = 0;
             for (int b = 0, count_b = treeBrushNodeCount; b < count_b; b++)
             {
@@ -706,21 +693,20 @@ namespace Chisel.Core
                         }
 
                         var querySurfaces = meshQuerySurfaces[t].querySurfaces;
-                        querySurfaces.Add(new SubMeshSurfaceQuery
+                        querySurfaces.Add(new SubMeshSurface
                         {
+                            surfaceIndex        = j,
+                            brushNodeID         = brushNodeID,
                             surfaceParameter    = surfaceParameter,
-                            surface             = new SubMeshSurface
-                            {
-                                surfaceIndex        = j,
-                                brushNodeID         = brushNodeID,
-                                brushRenderBuffer   = brushRenderBuffer
-                            }
+                            brushRenderBuffer   = brushRenderBuffer
                         });
                         surfaceCount++;
                     }
                 }
             }
+            Profiler.EndSample();
 
+            Profiler.BeginSample("Allocate 2");
             var surfaceCapacity = surfaceCount * meshQueries.Length;
             if (treeInfo.subMeshSurfaces.IsCreated)
             {
@@ -728,76 +714,90 @@ namespace Chisel.Core
                 if (treeInfo.subMeshSurfaces.Capacity < surfaceCapacity)
                     treeInfo.subMeshSurfaces.Capacity = surfaceCapacity;
             } else
-                treeInfo.subMeshSurfaces = new NativeList<SubMeshSurface>(surfaceCapacity, Allocator.Persistent);            
-            var subMeshSurfaces = treeInfo.subMeshSurfaces;
+                treeInfo.subMeshSurfaces = new NativeList<SubMeshSurface>(surfaceCapacity, Allocator.Persistent);
 
-            var comparer = new SubMeshSurfaceQueryComparer();
+            var subMeshCapacity = surfaceCount * meshQueries.Length;
+            if (treeInfo.subMeshCounts.IsCreated)
+            {
+                treeInfo.subMeshCounts.Clear();
+                if (treeInfo.subMeshCounts.Capacity < subMeshCapacity)
+                    treeInfo.subMeshCounts.Capacity = subMeshCapacity;
+            } else
+                treeInfo.subMeshCounts = new NativeList<SubMeshCounts>(subMeshCapacity, Allocator.Persistent);
+            var subMeshCounts = treeInfo.subMeshCounts;
+
+            Profiler.EndSample();
+
+            Profiler.BeginSample("Sort");
+            var comparer = new SubMeshSurfaceComparer();
             for (int t = 0; t < meshQueries.Length; t++)
+            {
+                var querySurfaces = meshQuerySurfaces[t].querySurfaces;
+                querySurfaces.Sort(comparer);
+            }
+            Profiler.EndSample();
+
+            var subMeshSurfaces = treeInfo.subMeshSurfaces;
+            Profiler.BeginSample("Assign");
+            for (int t = 0, meshIndex = 0, surfacesOffset = 0; t < meshQueries.Length; t++)
             {
                 var meshQuery       = meshQueries[t];
                 var querySurfaces   = meshQuerySurfaces[t].querySurfaces;
                 var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
-                querySurfaces.Sort(comparer);
+                if (querySurfaces.Count == 0)
+                    continue;
 
                 for (int b = 0; b < querySurfaces.Count; b++)
+                    subMeshSurfaces.AddNoResize(querySurfaces[b]);
+
+                var currentSubMesh = new SubMeshCounts
                 {
-                    var subMeshSurfaceQuery         = querySurfaces[b];
-                    var subMeshSurface              = subMeshSurfaceQuery.surface;
+                    meshIndex           = meshIndex,
+                    subMeshIndex        = 0,
+                    meshQuery           = meshQuery,
+                    surfaceIdentifier   = querySurfaces[0].surfaceParameter,
+                    surfacesOffset      = surfacesOffset
+                };
+                for (int b = 0; b < querySurfaces.Count; b++)
+                {
+                    var subMeshSurface              = querySurfaces[b];
+                    var surfaceParameter            = subMeshSurface.surfaceParameter;
                     ref var brushRenderBufferRef    = ref subMeshSurface.brushRenderBuffer.Value;
                     ref var brushSurfaceBuffer      = ref brushRenderBufferRef.surfaces[subMeshSurface.surfaceIndex];
                     var surfaceVertexCount          = brushSurfaceBuffer.vertices.Length;
                     var surfaceIndexCount           = brushSurfaceBuffer.indices.Length;
 
-                    ref var surfaceLayers           = ref brushSurfaceBuffer.surfaceLayers;
-
-
-                    var meshID = new MeshID { meshQuery = meshQuery, surfaceParameter = subMeshSurfaceQuery.surfaceParameter };
-
-                    if (!uniqueMeshDescriptions.TryGetValue(meshID, out int generatedMeshIndex))
-                        generatedMeshIndex = -1;
-
-                    SubMeshCounts currentSubMesh;
-                    if (generatedMeshIndex == -1 
-                        || (isPhysics &&
-                            (subMeshCounts[generatedMeshIndex].vertexCount + surfaceVertexCount) >= kMaxPhysicsVertexCount))
+                    if (currentSubMesh.surfaceIdentifier != surfaceParameter || 
+                        (isPhysics && currentSubMesh.indexCount >= kMaxPhysicsIndexCount))
                     {
-                        int meshIndex, subMeshIndex;
-                        if (generatedMeshIndex != -1)
-                        {
-                            var prevMeshCountIndex = generatedMeshIndex;
-                            generatedMeshIndex = (int)subMeshCounts.Count;
-                            subMeshIndex = subMeshCounts[prevMeshCountIndex].subMeshIndex + 1;
-                            meshIndex = subMeshCounts[prevMeshCountIndex].meshIndex;
-                        } else
-                        {
-                            generatedMeshIndex = (int)subMeshCounts.Count;
-                            meshIndex = generatedMeshIndex;
-                            subMeshIndex = 0;
-                        }
-
-                        uniqueMeshDescriptions[meshID] = generatedMeshIndex;
-                        currentSubMesh = new SubMeshCounts
-                        {
-                            meshIndex           = meshIndex,
-                            subMeshIndex        = subMeshIndex,
-                            meshQuery           = meshID.meshQuery,
-                            surfaceIdentifier   = subMeshSurfaceQuery.surfaceParameter,
-                            surfacesOffset      = subMeshSurfaces.Length
-                        };
-                        subMeshCounts.Add(currentSubMesh);
-                    } else
-                        currentSubMesh = subMeshCounts[generatedMeshIndex];
+                        // Store the previous subMeshCount
+                        subMeshCounts.AddNoResize(currentSubMesh);
+                        
+                        // Create the new SubMeshCount
+                        currentSubMesh.surfaceIdentifier   = surfaceParameter;
+                        currentSubMesh.subMeshIndex++;
+                        currentSubMesh.surfaceHash         = 0;
+                        currentSubMesh.geometryHash        = 0;
+                        currentSubMesh.indexCount          = 0;
+                        currentSubMesh.vertexCount         = 0;
+                        currentSubMesh.surfacesOffset      += currentSubMesh.surfacesCount;
+                        currentSubMesh.surfacesCount       = 0;
+                    } 
 
                     currentSubMesh.indexCount   += surfaceIndexCount;
                     currentSubMesh.vertexCount  += surfaceVertexCount;
                     currentSubMesh.surfaceHash  = math.hash(new uint2(currentSubMesh.surfaceHash, brushSurfaceBuffer.surfaceHash));
                     currentSubMesh.geometryHash = math.hash(new uint2(currentSubMesh.geometryHash, brushSurfaceBuffer.geometryHash));
                     currentSubMesh.surfacesCount++;
-                    subMeshSurfaces.AddNoResize(subMeshSurface);
-                    subMeshCounts[generatedMeshIndex] = currentSubMesh;
+                    //surfacesOffset++;
                 }
+                // Store the last subMeshCount
+                subMeshCounts.AddNoResize(currentSubMesh);
+                surfacesOffset = currentSubMesh.surfacesOffset + currentSubMesh.surfacesCount;
+                meshIndex++;
             }
+            Profiler.EndSample();
         }
 
         private static void UpdateDelayedHierarchyModifications()

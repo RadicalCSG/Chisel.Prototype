@@ -19,19 +19,25 @@ namespace Chisel.Core
         {
             public readonly List<int>                       treeBrushes         = new List<int>();
             public readonly List<GeneratedMeshDescription>  meshDescriptions    = new List<GeneratedMeshDescription>();
-            public readonly List<SubMeshCounts>             subMeshCounts       = new List<SubMeshCounts>();
-
+            //public readonly List<SubMeshCounts>             subMeshCounts       = new List<SubMeshCounts>();
+            
+            public NativeList<SubMeshCounts>                subMeshCounts;
             public NativeList<SubMeshSurface>               subMeshSurfaces;
             
             public void Reset()
             {
-                subMeshCounts.Clear();
+                if (subMeshCounts.IsCreated)
+                    subMeshCounts.Clear();
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Clear();
             }
 
             public void Dispose()
             {
+                if (subMeshCounts.IsCreated)
+                    subMeshCounts.Dispose();
+                subMeshCounts = default;
+
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Dispose();
                 subMeshSurfaces = default;

@@ -43,6 +43,12 @@ namespace Chisel.Core
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        public static void AddRangeNoResize<T>(this NativeList<T> list, List<T> elements) where T : struct
+        {
+            foreach(var item in elements)
+                list.AddNoResize(item);
+        }
+
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count > elements.Length)

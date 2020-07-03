@@ -12,6 +12,7 @@ namespace Chisel.Core
     internal struct SubMeshSurface
     {
         public int surfaceIndex;
+        public int surfaceParameter;
         public int brushNodeID;
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
