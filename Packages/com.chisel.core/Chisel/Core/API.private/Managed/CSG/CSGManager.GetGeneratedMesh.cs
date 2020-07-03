@@ -529,7 +529,7 @@ namespace Chisel.Core
             UnityEngine.Profiling.Profiler.BeginSample("CombineSubMeshes");
             try
             {
-                CombineSubMeshes(treeInfo, meshQueries, vertexChannelMask);
+                CombineSubMeshes(treeNodeIndex, treeInfo, meshQueries, vertexChannelMask);
             } finally { UnityEngine.Profiling.Profiler.EndSample(); }
 
 
@@ -588,11 +588,6 @@ namespace Chisel.Core
             return treeInfo.meshDescriptions.ToArray();
         }
 
-        class MeshQuerySurfaces
-        {
-            public readonly List<SubMeshSurface> querySurfaces = new List<SubMeshSurface>();
-        }
-        
         struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
         {
             public int Compare(SubMeshSurface x, SubMeshSurface y)
@@ -601,8 +596,16 @@ namespace Chisel.Core
             }
         }
 
-        static MeshQuerySurfaces[]  meshQuerySurfaces   = null;
-        internal static void CombineSubMeshes(TreeInfo treeInfo,
+        struct BrushData
+        {
+            public int brushNodeID;
+            public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+        }
+
+        static readonly List<BrushData> s_BrushRenderBuffers = new List<BrushData>();
+        static readonly List<int2> s_Sections = new List<int2>();
+        internal static void CombineSubMeshes(int treeNodeIndex,
+                                              TreeInfo treeInfo,
                                               MeshQuery[] meshQueries,
                                               VertexChannelFlags vertexChannelMask)
         {
@@ -617,19 +620,11 @@ namespace Chisel.Core
                 return;
             }
 
-            Profiler.BeginSample("Allocate 1");
-            if (meshQuerySurfaces == null ||
-                meshQuerySurfaces.Length < meshQueries.Length)
-            {
-                meshQuerySurfaces = new MeshQuerySurfaces[meshQueries.Length];
-                for (int i = 0; i < meshQueries.Length; i++)
-                    meshQuerySurfaces[i] = new MeshQuerySurfaces();
-            } else
-            {
-                for (int i = 0; i < meshQueries.Length; i++)
-                    meshQuerySurfaces[i].querySurfaces.Clear();
-            }
-            Profiler.EndSample();
+            var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
+
+            s_BrushRenderBuffers.Clear();
+            if (s_BrushRenderBuffers.Capacity < treeBrushNodeCount)
+                s_BrushRenderBuffers.Capacity = treeBrushNodeCount;
 
             Profiler.BeginSample("Find Surfaces");
             int surfaceCount = 0;
@@ -640,16 +635,6 @@ namespace Chisel.Core
                     continue;
 
                 var brushNodeIndex  = brushNodeID - 1;
-                var nodeType = nodeFlags[brushNodeIndex].nodeType;
-                if (nodeType != CSGNodeType.Brush)
-                    continue;
-
-                var brushInfo = nodeHierarchies[brushNodeIndex].brushInfo;
-                if (brushInfo == null)
-                    continue;
-            
-                var treeNodeID          = nodeHierarchies[brushNodeIndex].treeNodeID;
-                var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeID - 1];
 
                 if (!chiselLookupValues.brushRenderBufferCache.TryGetValue(brushNodeIndex, out var brushRenderBuffer) ||
                     !brushRenderBuffer.IsCreated)
@@ -661,52 +646,15 @@ namespace Chisel.Core
                 if (surfaces.Length == 0)
                     continue;
 
-                for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
-                {
-                    ref var brushSurfaceBuffer = ref surfaces[j];
-                    var surfaceVertexCount = brushSurfaceBuffer.vertices.Length;
-                    var surfaceIndexCount = brushSurfaceBuffer.indices.Length;
+                s_BrushRenderBuffers.Add(new BrushData{
+                    brushNodeID = brushNodeID,
+                    brushRenderBuffer = brushRenderBuffer
+                });
 
-                    if (surfaceVertexCount <= 0 || surfaceIndexCount <= 0)
-                        continue;
-
-                    ref var surfaceLayers = ref brushSurfaceBuffer.surfaceLayers;
-
-                    for (int t = 0; t < meshQueries.Length; t++)
-                    {
-                        var meshQuery = meshQueries[t];
-                        var core_surface_flags = surfaceLayers.layerUsage;
-                        if ((core_surface_flags & meshQuery.LayerQueryMask) != meshQuery.LayerQuery)
-                            continue;
-
-                        int surfaceParameter = 0;
-                        if (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
-                            meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex)
-                        {
-                            // TODO: turn this into array lookup
-                            switch (meshQuery.LayerParameterIndex)
-                            {
-                                case LayerParameterIndex.LayerParameter1: surfaceParameter = surfaceLayers.layerParameter1; break;
-                                case LayerParameterIndex.LayerParameter2: surfaceParameter = surfaceLayers.layerParameter2; break;
-                                case LayerParameterIndex.LayerParameter3: surfaceParameter = surfaceLayers.layerParameter3; break;
-                            }
-                        }
-
-                        var querySurfaces = meshQuerySurfaces[t].querySurfaces;
-                        querySurfaces.Add(new SubMeshSurface
-                        {
-                            surfaceIndex        = j,
-                            brushNodeID         = brushNodeID,
-                            surfaceParameter    = surfaceParameter,
-                            brushRenderBuffer   = brushRenderBuffer
-                        });
-                        surfaceCount++;
-                    }
-                }
+                surfaceCount += surfaces.Length;
             }
-            Profiler.EndSample();
-
-            Profiler.BeginSample("Allocate 2");
+            
+            Profiler.BeginSample("Allocate 1");
             var surfaceCapacity = surfaceCount * meshQueries.Length;
             if (treeInfo.subMeshSurfaces.IsCreated)
             {
@@ -724,32 +672,89 @@ namespace Chisel.Core
                     treeInfo.subMeshCounts.Capacity = subMeshCapacity;
             } else
                 treeInfo.subMeshCounts = new NativeList<SubMeshCounts>(subMeshCapacity, Allocator.Persistent);
-            var subMeshCounts = treeInfo.subMeshCounts;
 
-            Profiler.EndSample();
-
-            Profiler.BeginSample("Sort");
-            var comparer = new SubMeshSurfaceComparer();
-            for (int t = 0; t < meshQueries.Length; t++)
-            {
-                var querySurfaces = meshQuerySurfaces[t].querySurfaces;
-                querySurfaces.Sort(comparer);
-            }
+            s_Sections.Clear();
+            if (s_Sections.Capacity < meshQueries.Length)
+                s_Sections.Capacity = meshQueries.Length;
             Profiler.EndSample();
 
             var subMeshSurfaces = treeInfo.subMeshSurfaces;
+            for (int t = 0; t < meshQueries.Length; t++)
+            {
+                var meshQuery = meshQueries[t];
+                var surfacesStart = subMeshSurfaces.Length;
+                for (int b = 0, count_b = s_BrushRenderBuffers.Count; b < count_b; b++)
+                {
+                    var brushData = s_BrushRenderBuffers[b];
+                    var brushNodeID = brushData.brushNodeID;
+                    var brushRenderBuffer = brushData.brushRenderBuffer;
+                    ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
+                    ref var surfaces = ref brushRenderBufferRef.surfaces;
+
+                    for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
+                    {
+                        ref var surface = ref surfaces[j];
+                        if (surface.vertices.Length <= 0 || surface.indices.Length <= 0)
+                            continue;
+
+                        ref var surfaceLayers = ref surface.surfaceLayers;
+
+                        var core_surface_flags = surfaceLayers.layerUsage;
+                        if ((core_surface_flags & meshQuery.LayerQueryMask) != meshQuery.LayerQuery)
+                            continue;
+
+                        int surfaceParameter = 0;
+                        if (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                            meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex)
+                        {
+                            // TODO: turn this into array lookup
+                            switch (meshQuery.LayerParameterIndex)
+                            {
+                                case LayerParameterIndex.LayerParameter1: surfaceParameter = surfaceLayers.layerParameter1; break;
+                                case LayerParameterIndex.LayerParameter2: surfaceParameter = surfaceLayers.layerParameter2; break;
+                                case LayerParameterIndex.LayerParameter3: surfaceParameter = surfaceLayers.layerParameter3; break;
+                            }
+                        }
+
+                        subMeshSurfaces.AddNoResize(new SubMeshSurface
+                        {
+                            surfaceIndex        = j,
+                            brushNodeID         = brushNodeID,
+                            surfaceParameter    = surfaceParameter,
+                            brushRenderBuffer   = brushRenderBuffer
+                        });
+                    }
+                }
+                s_Sections.Add(new int2(surfacesStart, subMeshSurfaces.Length - surfacesStart));
+            }
+            Profiler.EndSample();
+
+            var surfacesArray = subMeshSurfaces.AsArray();
+
+            Profiler.BeginSample("Sort");
+            var subMeshCounts = treeInfo.subMeshCounts;
+            var comparer = new SubMeshSurfaceComparer();
+            for (int t = 0; t < s_Sections.Count; t++)
+            {
+                var section = s_Sections[t];
+                if (section.y == 0)
+                    continue;
+
+                var slice = surfacesArray.Slice(section.x, section.y);
+                slice.Sort(comparer);
+            }
+            Profiler.EndSample();
+
             Profiler.BeginSample("Assign");
             for (int t = 0, meshIndex = 0, surfacesOffset = 0; t < meshQueries.Length; t++)
             {
-                var meshQuery       = meshQueries[t];
-                var querySurfaces   = meshQuerySurfaces[t].querySurfaces;
-                var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
-
-                if (querySurfaces.Count == 0)
+                var section = s_Sections[t];
+                if (section.y == 0)
                     continue;
 
-                for (int b = 0; b < querySurfaces.Count; b++)
-                    subMeshSurfaces.AddNoResize(querySurfaces[b]);
+                var meshQuery       = meshQueries[t];
+                var querySurfaces   = surfacesArray.Slice(section.x, section.y);
+                var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
                 var currentSubMesh = new SubMeshCounts
                 {
@@ -759,7 +764,7 @@ namespace Chisel.Core
                     surfaceIdentifier   = querySurfaces[0].surfaceParameter,
                     surfacesOffset      = surfacesOffset
                 };
-                for (int b = 0; b < querySurfaces.Count; b++)
+                for (int b = 0; b < querySurfaces.Length; b++)
                 {
                     var subMeshSurface              = querySurfaces[b];
                     var surfaceParameter            = subMeshSurface.surfaceParameter;
@@ -790,7 +795,6 @@ namespace Chisel.Core
                     currentSubMesh.surfaceHash  = math.hash(new uint2(currentSubMesh.surfaceHash, brushSurfaceBuffer.surfaceHash));
                     currentSubMesh.geometryHash = math.hash(new uint2(currentSubMesh.geometryHash, brushSurfaceBuffer.geometryHash));
                     currentSubMesh.surfacesCount++;
-                    //surfacesOffset++;
                 }
                 // Store the last subMeshCount
                 subMeshCounts.AddNoResize(currentSubMesh);
