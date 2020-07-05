@@ -31,13 +31,14 @@ namespace Chisel.Core
         {
             public readonly List<int>                       treeBrushes         = new List<int>();
             public readonly List<GeneratedMeshDescription>  meshDescriptions    = new List<GeneratedMeshDescription>();
-            public readonly List<GeneratedMeshContents>     contents            = new List<GeneratedMeshContents>();
+            public VertexBufferContents                     vertexBufferContents;
             //public readonly List<SubMeshCounts>           subMeshCounts       = new List<SubMeshCounts>();
-            
+
             public NativeList<MeshQuery>                    meshQueries;
             public NativeList<SectionData>                  sections;
             public NativeList<BrushData>                    brushRenderBuffers;
             public NativeList<SubMeshCounts>                subMeshCounts;
+            public NativeList<VertexBufferInit>             subMeshSections;
             public NativeList<SubMeshSurface>               subMeshSurfaces;
 
             
@@ -51,6 +52,8 @@ namespace Chisel.Core
                     brushRenderBuffers.Clear();
                 if (subMeshCounts.IsCreated)
                     subMeshCounts.Clear();
+                if (subMeshSections.IsCreated)
+                    subMeshSections.Clear();
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Clear();
             }
@@ -73,13 +76,16 @@ namespace Chisel.Core
                     subMeshCounts.Dispose();
                 subMeshCounts = default;
 
+                if (subMeshSections.IsCreated)
+                    subMeshSections.Dispose();
+                subMeshSections = default;
+
                 if (subMeshSurfaces.IsCreated)
                     subMeshSurfaces.Dispose();
                 subMeshSurfaces = default;
 
-                for (int i = 0; i < contents.Count; i++)
-                    contents[i].Dispose();
-                contents.Clear();
+                vertexBufferContents.Dispose();
+                vertexBufferContents = default;
             }
         }
 

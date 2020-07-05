@@ -237,7 +237,7 @@ namespace Chisel.Components
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
-        public void Update(ChiselModel model, GameObjectState state, List<GeneratedMeshDescription> meshDescriptions, GeneratedMeshContents generatedMeshContents, int startIndex, int endIndex)
+        public void Update(ChiselModel model, GameObjectState state, List<GeneratedMeshDescription> meshDescriptions, ref VertexBufferContents contents, int contentsIndex, int startIndex, int endIndex)
         {
             bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
@@ -265,8 +265,12 @@ namespace Chisel.Components
                     var modelTree = model.Node;
 
                     Profiler.BeginSample("Collect Materials");
-                    if (generatedMeshContents.vertexCount == 0 ||
-                        generatedMeshContents.indexCount == 0)
+
+                    var vertexCount = contents.positions[contentsIndex].Length;
+                    var indexCount  = contents.indices[contentsIndex].Length;
+
+                    if (vertexCount == 0 ||
+                        indexCount == 0)
                     {
                         if (sharedMesh.vertexCount > 0) { meshIsModified = true; sharedMesh.Clear(keepVertexLayout: true); }
                     } else
@@ -283,7 +287,7 @@ namespace Chisel.Components
                     Profiler.EndSample();
 
                     Profiler.BeginSample("CopyMeshFrom");
-                    meshIsModified = sharedMesh.CopyMeshFrom(generatedMeshContents, triangleBrushes);
+                    meshIsModified = sharedMesh.CopyMeshFrom(ref contents, contentsIndex, triangleBrushes);
                     Profiler.EndSample();
 
                     //geometryHashValue = combinedGeometryHashValue;

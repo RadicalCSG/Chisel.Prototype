@@ -164,7 +164,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("Update");
-            model.generated.Update(model, meshDescriptions, meshContents);
+            model.generated.Update(model, meshDescriptions, ref meshContents);
             Profiler.EndSample();
         }
     }

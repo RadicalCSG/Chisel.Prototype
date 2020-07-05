@@ -252,7 +252,7 @@ namespace Chisel.Components
         }
 
         public void Update(ChiselModel model, List<GeneratedMeshDescription> meshDescriptions,
-                                              List<GeneratedMeshContents> meshContents)
+                                              ref VertexBufferContents meshContents)
         {
             Profiler.BeginSample("Setup");
             var modelState = GameObjectState.Create(model);
@@ -327,7 +327,7 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
-                        renderables[renderIndex].Update(model, modelState, meshDescriptions, meshContents[contentsIndex], startIndex, descriptionIndex);
+                        renderables[renderIndex].Update(model, modelState, meshDescriptions, ref meshContents, contentsIndex, startIndex, descriptionIndex);
                         contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                         startIndex = descriptionIndex;
@@ -338,7 +338,7 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
-                        renderables[renderIndex].Update(model, modelState, meshDescriptions, meshContents[contentsIndex], startIndex, descriptionIndex);
+                        renderables[renderIndex].Update(model, modelState, meshDescriptions, ref meshContents, contentsIndex, startIndex, descriptionIndex);
                         contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                     }
@@ -416,7 +416,7 @@ namespace Chisel.Components
                         if (meshDescription.meshQuery.LayerParameterIndex != LayerParameterIndex.LayerParameter2)
                             break;
 
-                        colliders[i].Update(model, meshDescription, meshContents[contentsIndex]);
+                        colliders[i].Update(model, meshDescription, ref meshContents, contentsIndex);
                         contentsIndex++;
                     }
                 }
