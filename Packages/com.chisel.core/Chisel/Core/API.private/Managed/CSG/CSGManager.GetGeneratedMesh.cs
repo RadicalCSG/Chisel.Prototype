@@ -265,77 +265,284 @@ namespace Chisel.Core
             [NoAlias] public NativeList<float2>             generatedMeshUV0; 
             [NoAlias] public NativeList<float3>             generatedMeshNormals;
             
-            static void ComputeTangents(NativeSlice<int>        meshIndices,
+            
+            static void ComputeTriangleTangentBasis(float3 vertices0, float3 vertices1, float3 vertices2, 
+                                                    float2 uvs0, float2 uvs1, float2 uvs2, 
+                                                    out double3 tangent0,
+                                                    out double3 binormal0,
+                                                    out double3 tangent1,
+                                                    out double3 binormal1,
+                                                    out double3 tangent2,
+                                                    out double3 binormal2)
+            {
+                double3 p = new double3(vertices1.x - vertices0.x, vertices1.y - vertices0.y, vertices1.z - vertices0.z );
+                double3 q = new double3(vertices2.x - vertices0.x, vertices2.y - vertices0.y, vertices2.z - vertices0.z );
+
+                double2 s = new double2(uvs1.x - uvs0.x, uvs2.x - uvs0.x);
+                double2 t = new double2(uvs1.y - uvs0.y, uvs2.y - uvs0.y);
+
+                var tangent  = double3.zero;
+                var binormal = double3.zero;
+
+                double div      = s[0] * t[1] - s[1] * t[0];
+                double areaMult = math.abs(div);
+
+                if (areaMult >= 1e-8)
+                {
+                    double r = 1.0 / div;
+
+                    s[0] *= r;  t[0] *= r;
+                    s[1] *= r;  t[1] *= r;
+
+
+                    tangent.x  = (t[1] * p[0] - t[0] * q[0]);
+                    tangent.y  = (t[1] * p[1] - t[0] * q[1]);
+                    tangent.z  = (t[1] * p[2] - t[0] * q[2]);
+
+                    binormal.x  = (s[0] * q[0] - s[1] * p[0]);
+                    binormal.y  = (s[0] * q[1] - s[1] * p[1]);
+                    binormal.z  = (s[0] * q[2] - s[1] * p[2]);
+
+                    // weight by area
+
+                    tangent    = math.normalize(tangent);
+                    tangent.x *= areaMult;
+                    tangent.y *= areaMult;
+                    tangent.z *= areaMult;
+
+                    binormal    = math.normalize(binormal);
+                    binormal.x *= areaMult;
+                    binormal.y *= areaMult;
+                    binormal.z *= areaMult;
+                }
+
+
+                {
+                    double3 edge1 = vertices2 - vertices0;
+                    double3 edge2 = vertices1 - vertices0;
+
+                    // weight by angle
+
+                    double angle = math.dot(math.normalize(edge1), math.normalize(edge2));
+                    double w     = math.acos(math.clamp(angle, -1.0, 1.0));
+
+                    tangent0  = w * tangent;
+                    binormal0 = w * binormal;
+                }
+
+                {
+                    double3 edge1 = vertices0 - vertices1;
+                    double3 edge2 = vertices2 - vertices1;
+
+                    // weight by angle
+
+                    double angle = math.dot(math.normalize(edge1), math.normalize(edge2));
+                    double w = math.acos(math.clamp(angle, -1.0, 1.0));
+
+                    tangent1 = w * tangent;
+                    binormal1 = w * binormal;
+                }
+
+                {
+                    double3 edge1 = vertices1 - vertices2;
+                    double3 edge2 = vertices0 - vertices2;
+
+                    // weight by angle
+
+                    double angle = math.dot(math.normalize(edge1), math.normalize(edge2));
+                    double w = math.acos(math.clamp(angle, -1.0, 1.0));
+
+                    tangent2 = w * tangent;
+                    binormal2 = w * binormal;
+                }
+
+            }
+            
+            static float4 OrthogonalizeTangent(double3 tangent, double3 binormal, float3 normalf)
+            {
+                double3 normal = new double3( normalf.x, normalf.y, normalf.z );
+
+                double NdotT = math.dot(normal, tangent);
+                double3 newTangent = new double3(tangent.x - NdotT * normal.x, tangent.y - NdotT * normal.y, tangent.z - NdotT * normal.z);
+
+                double magT = math.length(newTangent);
+                newTangent /= magT;
+
+                double NdotB = math.dot(normal, binormal);
+                double TdotB = math.dot(newTangent, binormal) * magT;
+
+                double3 newBinormal = new double3
+                (
+                    binormal.x - NdotB * normal.x - TdotB * newTangent.x,
+                    binormal.y - NdotB * normal.y - TdotB * newTangent.y,
+                    binormal.z - NdotB * normal.z - TdotB * newTangent.z
+                );
+
+                double magB = math.length(newBinormal);
+                newBinormal /= magB;
+
+
+                float3 tangentf = new float3((float)newTangent.x, (float)newTangent.y, (float)newTangent.z);
+                float3 binormalf = new float3((float)newBinormal.x, (float)newBinormal.y, (float)newBinormal.z);
+
+
+                const double kNormalizeEpsilon = 1e-6;
+
+                if (magT <= kNormalizeEpsilon || magB <= kNormalizeEpsilon)
+                {
+                    // Create tangent basis from scratch - we can safely use float3 here - no computations ;-)
+
+                    var dpXN = math.abs(math.dot(new float3(1, 0, 0), normalf));
+                    var dpYN = math.abs(math.dot(new float3(0, 1, 0), normalf));
+                    var dpZN = math.abs(math.dot(new float3(0, 0, 1), normalf));
+
+                    float3 axis1, axis2;
+                    if (dpXN <= dpYN && dpXN <= dpZN)
+                    {
+                        axis1 = new float3(1,0,0);
+                        if (dpYN <= dpZN)
+                            axis2 = new float3(0, 1, 0);
+                        else
+                            axis2 = new float3(0, 0, 1);
+                    }
+                    else if (dpYN <= dpXN && dpYN <= dpZN)
+                    {
+                        axis1 = new float3(0, 1, 0);
+                        if (dpXN <= dpZN)
+                            axis2 = new float3(1, 0, 0);
+                        else
+                            axis2 = new float3(0, 0, 1);
+                    }
+                    else
+                    {
+                        axis1 = new float3(0, 0, 1);
+                        if (dpXN <= dpYN)
+                            axis2 = new float3(1, 0, 0);
+                        else
+                            axis2 = new float3(0, 1, 0);
+                    }
+
+
+                    tangentf = axis1 - math.dot(normalf, axis1) * normalf;
+                    binormalf = axis2 - math.dot(normalf, axis2) * normalf - math.dot(tangentf, axis2) * math.normalizesafe(tangentf);
+
+                    tangentf = math.normalizesafe(tangentf);
+                    binormalf = math.normalizesafe(binormalf);
+                }
+
+                float dp = math.dot(math.cross(normalf, tangentf), binormalf);
+                return new float4(tangentf.x, tangentf.y, tangentf.z, (dp > 0) ? 1 : -1);
+            }
+
+            static void ComputeTangents(NativeSlice<int>        indices,
                                         NativeSlice<float3>	    positions,
                                         NativeSlice<float2>	    uvs,
                                         NativeSlice<float3>	    normals,
                                         NativeSlice<float4>	    tangents) 
             {
-                if (meshIndices.Length == 0 ||
-                    positions.Length == 0)
-                    return;
 
-                var tangentU = new NativeArray<float3>(positions.Length, Allocator.Temp);
-                var tangentV = new NativeArray<float3>(positions.Length, Allocator.Temp);
+                var triTangents     = new NativeArray<double3>(positions.Length, Allocator.Temp);
+                var triBinormals    = new NativeArray<double3>(positions.Length, Allocator.Temp);
 
-                for (int i = 0; i < meshIndices.Length; i+=3) 
+                for (int i = 0; i < indices.Length; i += 3)
                 {
-                    int i0 = meshIndices[i + 0];
-                    int i1 = meshIndices[i + 1];
-                    int i2 = meshIndices[i + 2];
+                    var index0 = indices[i + 0];
+                    var index1 = indices[i + 1];
+                    var index2 = indices[i + 2];
 
-                    var v1 = positions[i0];
-                    var v2 = positions[i1];
-                    var v3 = positions[i2];
-        
-                    var w1 = uvs[i0];
-                    var w2 = uvs[i1];
-                    var w3 = uvs[i2];
+                    var vertices0 = positions[index0];
+                    var vertices1 = positions[index1];
+                    var vertices2 = positions[index2];
+                    var uvs0 = uvs[index0];
+                    var uvs1 = uvs[index1];
+                    var uvs2 = uvs[index2];
 
-                    var edge1 = v2 - v1;
-                    var edge2 = v3 - v1;
+                    var p = new double3(vertices1.x - vertices0.x, vertices1.y - vertices0.y, vertices1.z - vertices0.z );
+                    var q = new double3(vertices2.x - vertices0.x, vertices2.y - vertices0.y, vertices2.z - vertices0.z );
+                    var s = new double2(uvs1.x - uvs0.x, uvs2.x - uvs0.x);
+                    var t = new double2(uvs1.y - uvs0.y, uvs2.y - uvs0.y);
 
-                    var uv1 = w2 - w1;
-                    var uv2 = w3 - w1;
-        
-                    var r = 1.0f / (uv1.x * uv2.y - uv1.y * uv2.x);
-                    if (math.isnan(r) || math.isfinite(r))
-                        r = 0.0f;
+                    var scale       = s.x * t.y - s.y * t.x;
+                    var absScale    = math.abs(scale);
+                    p *= scale; q *= scale;
 
-                    var udir = new float3(
-                        ((edge1.x * uv2.y) - (edge2.x * uv1.y)) * r,
-                        ((edge1.y * uv2.y) - (edge2.y * uv1.y)) * r,
-                        ((edge1.z * uv2.y) - (edge2.z * uv1.y)) * r
-                    );
+                    var tangent  = math.normalize(t.y * p - t.x * q) * absScale;
+                    var binormal = math.normalize(s.x * q - s.y * p) * absScale;
 
-                    var vdir = new float3(
-                        ((edge1.x * uv2.x) - (edge2.x * uv1.x)) * r,
-                        ((edge1.y * uv2.x) - (edge2.y * uv1.x)) * r,
-                        ((edge1.z * uv2.x) - (edge2.z * uv1.x)) * r
-                    );
+                    var edge20 = math.normalize(vertices2 - vertices0);
+                    var edge01 = math.normalize(vertices0 - vertices1);
+                    var edge12 = math.normalize(vertices1 - vertices2);
 
-                    tangentU[i0] += udir;
-                    tangentU[i1] += udir;
-                    tangentU[i2] += udir;
+                    var angle0 = math.dot(edge20, -edge01);
+                    var angle1 = math.dot(edge01, -edge12);
+                    var angle2 = math.dot(edge12, -edge20);
+                    var weight0 = math.acos(math.clamp(angle0, -1.0, 1.0));
+                    var weight1 = math.acos(math.clamp(angle1, -1.0, 1.0));
+                    var weight2 = math.acos(math.clamp(angle2, -1.0, 1.0));
 
-                    tangentV[i0] += vdir;
-                    tangentV[i1] += vdir;
-                    tangentV[i2] += vdir;
+                    triTangents[index0] = weight0 * tangent;
+                    triTangents[index1] = weight1 * tangent;
+                    triTangents[index2] = weight2 * tangent;
+
+                    triBinormals[index0] = weight0 * binormal;
+                    triBinormals[index1] = weight1 * binormal;
+                    triBinormals[index2] = weight2 * binormal;
                 }
 
-                for (int i = 0; i < positions.Length; i++) 
+                for (int v = 0; v < positions.Length; ++v)
                 {
-                    var n	= normals[i];
-                    var t0	= tangentU[i];
-                    var t1	= tangentV[i];
+                    var originalTangent  = triTangents[v];
+                    var originalBinormal = triBinormals[v];
+                    var normal           = (double3)normals[v];
 
-                    n = math.normalizesafe(n);
-                    var t = t0 - (n * math.dot(n, t0));
-                    t = math.normalizesafe(t);
+                    var dotTangent = math.dot(normal, originalTangent);
+                    var newTangent = new double3(originalTangent.x - dotTangent * normal.x, 
+                                                 originalTangent.y - dotTangent * normal.y, 
+                                                 originalTangent.z - dotTangent * normal.z);
+                    var tangentMagnitude = math.length(newTangent);
+                    newTangent /= tangentMagnitude;
 
-                    var c = math.cross(n, t0);
-                    float w = (math.dot(c, t1) < 0) ? 1.0f : -1.0f;
-                    tangents[i] = new float4(t.x, t.y, t.z, w);
+                    var dotBinormal = math.dot(normal, originalBinormal);
+                    dotTangent      = math.dot(newTangent, originalBinormal) * tangentMagnitude;
+                    var newBinormal = new double3(originalBinormal.x - dotBinormal * normal.x - dotTangent * newTangent.x,
+                                                  originalBinormal.y - dotBinormal * normal.y - dotTangent * newTangent.y,
+                                                  originalBinormal.z - dotBinormal * normal.z - dotTangent * newTangent.z);
+                    var binormalMagnitude = math.length(newBinormal);
+                    newBinormal /= binormalMagnitude;
+
+                    const double kNormalizeEpsilon = 1e-6;
+                    if (tangentMagnitude <= kNormalizeEpsilon || binormalMagnitude <= kNormalizeEpsilon)
+                    {
+                        var dpXN = math.abs(math.dot(new double3(1, 0, 0), normal));
+                        var dpYN = math.abs(math.dot(new double3(0, 1, 0), normal));
+                        var dpZN = math.abs(math.dot(new double3(0, 0, 1), normal));
+
+                        double3 axis1, axis2;
+                        if (dpXN <= dpYN && dpXN <= dpZN)
+                        {
+                            axis1 = new double3(1,0,0);
+                            axis2 = (dpYN <= dpZN) ? new double3(0, 1, 0) : new double3(0, 0, 1);
+                        }
+                        else if (dpYN <= dpXN && dpYN <= dpZN)
+                        {
+                            axis1 = new double3(0, 1, 0);
+                            axis2 = (dpXN <= dpZN) ? new double3(1, 0, 0) : new double3(0, 0, 1);
+                        }
+                        else
+                        {
+                            axis1 = new double3(0, 0, 1);
+                            axis2 = (dpXN <= dpYN) ? new double3(1, 0, 0) : new double3(0, 1, 0);
+                        }
+
+                        newTangent  = axis1 - math.dot(normal, axis1) * normal;
+                        newBinormal = axis2 - math.dot(normal, axis2) * normal - math.dot(newTangent, axis2) * math.normalizesafe(newTangent);
+
+                        newTangent  = math.normalizesafe(newTangent);
+                        newBinormal = math.normalizesafe(newBinormal);
+                    }
+
+                    var dp = math.dot(math.cross(normal, newTangent), newBinormal);
+                    tangents[v] = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
                 }
             }
 
@@ -510,17 +717,12 @@ namespace Chisel.Core
                             vertexOffset += sourceVertexCount;
                         }
                     }
-                    // TODO: figure out why some brushes (after import) have completely wrong normals, 
-                    //       yet their planes seem ... fine?
-                    //       we're currently recalculating the normals/tangents on the mesh, so this is 
-                    //       unecessary work until we have normal smoothing
-                    /*
+
                     ComputeTangents(generatedMeshIndicesSlice,
                                     generatedMeshPositionsSlice,
                                     generatedMeshUV0Slice,
                                     generatedMeshNormalsSlice,
                                     generatedMeshTangentsSlice);
-                    */
                 }
             }
         }

@@ -4,6 +4,7 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Rendering;
 
 namespace Chisel.Core
@@ -40,18 +41,24 @@ namespace Chisel.Core
             }
 
             mesh.Clear(keepVertexLayout: true);
+            Profiler.BeginSample("SetVertices");
             mesh.SetVertices(contents.positions.AsArray());
             if (contents.normals .IsCreated) mesh.SetNormals(contents.normals.AsArray());
             if (contents.tangents.IsCreated) mesh.SetTangents(contents.tangents.AsArray());
             if (contents.uv0     .IsCreated) mesh.SetUVs(0, contents.uv0.AsArray());
+            Profiler.EndSample();
 
+            Profiler.BeginSample("SetTriangleBrushes");
             triangleBrushes.AddRange(contents.brushIndices.AsArray());
+            Profiler.EndSample();
 
-
+            Profiler.BeginSample("SetIndexBuffer");
             mesh.SetIndexBufferParams(contents.indexCount, IndexFormat.UInt32);
             mesh.SetIndexBufferData(contents.indices.AsArray(), 0, 0, contents.indexCount, MeshUpdateFlags.Default);
+            Profiler.EndSample();
 
             mesh.subMeshCount = contents.subMeshes.Length;
+            Profiler.BeginSample("SetSubMesh");
             for (int i = 0; i < contents.subMeshes.Length; i++)
             {
                 mesh.SetSubMesh(i, new SubMeshDescriptor
@@ -65,12 +72,11 @@ namespace Chisel.Core
                     topology	= MeshTopology.Triangles,
                 }, MeshUpdateFlags.Default);
             }
-            mesh.RecalculateBounds();
+            Profiler.EndSample();
             
-            // TODO: figure out why some brushes (after import) have completely wrong normals, 
-            //       yet their planes seem ... fine?
-            mesh.RecalculateNormals();
-            mesh.RecalculateTangents();
+            Profiler.BeginSample("Recalculate");
+            mesh.RecalculateBounds();
+            Profiler.EndSample();
             return true;
         }
     }
