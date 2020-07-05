@@ -178,7 +178,8 @@ namespace UnitySceneExtensions
                 if (lineMeshes[i].vertexCount == 0 || !mesh)
                     continue;
 
-                Graphics.DrawMesh(mesh, Matrix4x4.identity, lineMaterial, 0, camera, 0, null, false, false);
+                if (lineMaterial.SetPass(0))
+                    Graphics.DrawMeshNow(mesh, Matrix4x4.identity, 0);
             }
         }
 

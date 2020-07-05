@@ -128,7 +128,8 @@ namespace UnitySceneExtensions
                     if (pointMeshes[i].vertexCount == 0 ||
                         pointMeshes[i].pointIndexCount == 0)
                         continue;
-                    Graphics.DrawMesh(pointMeshes[i].pointMesh, Matrix4x4.identity, pointMaterial, 0, camera, 0, null, false, false);
+                    if (pointMaterial.SetPass(0))
+                        Graphics.DrawMeshNow(pointMeshes[i].pointMesh, Matrix4x4.identity, 0);
                 }
             }
             if (lineMaterial)
@@ -138,7 +139,8 @@ namespace UnitySceneExtensions
                     if (pointMeshes[i].vertexCount == 0 ||
                         pointMeshes[i].lineIndexCount == 0)
                         continue;
-                    Graphics.DrawMesh(pointMeshes[i].lineMesh, Matrix4x4.identity, lineMaterial, 0, camera, 0, null, false, false);
+                    if (lineMaterial.SetPass(0))
+                        Graphics.DrawMeshNow(pointMeshes[i].lineMesh, Matrix4x4.identity, 0);
                 }
             }
         }
