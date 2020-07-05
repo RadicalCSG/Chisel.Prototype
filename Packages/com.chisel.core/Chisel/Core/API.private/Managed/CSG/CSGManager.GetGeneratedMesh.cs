@@ -510,12 +510,17 @@ namespace Chisel.Core
                             vertexOffset += sourceVertexCount;
                         }
                     }
-
+                    // TODO: figure out why some brushes (after import) have completely wrong normals, 
+                    //       yet their planes seem ... fine?
+                    //       we're currently recalculating the normals/tangents on the mesh, so this is 
+                    //       unecessary work until we have normal smoothing
+                    /*
                     ComputeTangents(generatedMeshIndicesSlice,
                                     generatedMeshPositionsSlice,
                                     generatedMeshUV0Slice,
                                     generatedMeshNormalsSlice,
                                     generatedMeshTangentsSlice);
+                    */
                 }
             }
         }

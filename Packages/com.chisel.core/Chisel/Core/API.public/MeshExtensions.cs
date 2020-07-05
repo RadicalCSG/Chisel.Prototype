@@ -66,8 +66,11 @@ namespace Chisel.Core
                 }, MeshUpdateFlags.Default);
             }
             mesh.RecalculateBounds();
-            //mesh.RecalculateNormals();
-            //mesh.RecalculateTangents();
+            
+            // TODO: figure out why some brushes (after import) have completely wrong normals, 
+            //       yet their planes seem ... fine?
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
             return true;
         }
     }
