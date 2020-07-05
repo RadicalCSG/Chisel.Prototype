@@ -333,7 +333,7 @@ namespace Chisel.Components
 
         // Let the hierarchy manager know that this/these node(s) has/have moved, so we can regenerate meshes
         public static void RebuildTreeNodes(ChiselNode node) { rebuildTreeNodes.Add(node); }
-        public static void UpdateTreeNodeTranformation(ChiselNode node) { updateTransformationNodes.Add(node); }
+        public static void UpdateTreeNodeTransformation(ChiselNode node) { updateTransformationNodes.Add(node); }
         public static void NotifyTransformationChanged(HashSet<ChiselNode> nodes) { foreach (var node in nodes) updateTransformationNodes.Add(node); }
         public static void UpdateAllTransformations() { foreach (var node in registeredNodes) updateTransformationNodes.Add(node); }
 

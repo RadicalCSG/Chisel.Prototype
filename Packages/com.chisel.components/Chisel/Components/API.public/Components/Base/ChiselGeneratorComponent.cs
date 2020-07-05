@@ -162,7 +162,7 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
             }
         }
 
@@ -182,11 +182,11 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
             }
         }
 
-        internal override void UpdateTransformation()
+        public override void UpdateTransformation()
         {
             // TODO: recalculate transformation based on hierarchy up to (but not including) model
             var transform = hierarchyItem.Transform;
