@@ -67,7 +67,7 @@ namespace Chisel.Core
 
     static partial class CSGManager
     {
-        const int kMaxPhysicsIndexCount = 32000;
+        const int kMaxPhysicsVertexCount = 64000;
 
 
         internal struct SubMeshCounts
@@ -105,45 +105,6 @@ namespace Chisel.Core
             }
         }
 
-        static void Realloc<T>(ref NativeArray<T> oldArray, int newSize, Allocator allocator, bool arrayIsUsed = true) where T:struct
-        {
-            if (oldArray.IsCreated)
-            {
-                if (!arrayIsUsed)
-                {
-                    oldArray.Dispose();
-                    oldArray = default;
-                    return;
-                }
-
-                if (oldArray.Length == newSize)
-                {
-                    oldArray.ClearStruct();
-                    return;
-                }
-
-                oldArray.Dispose();
-            }
-
-            oldArray = new NativeArray<T>(newSize, allocator);
-        }
-
-        static void Realloc<T>(ref NativeList<T> oldList, int newSize, Allocator allocator, bool arrayIsUsed = true) where T : struct
-        {
-            if (oldList.IsCreated)
-            {
-                if (!arrayIsUsed)
-                {
-                    oldList.Dispose();
-                    oldList = default;
-                    return;
-                }
-            } else
-                oldList = new NativeList<T>(newSize, allocator);
-            oldList.Clear();
-            oldList.Resize(newSize, NativeArrayOptions.ClearMemory);
-        }
-
         static JobHandle GetGeneratedMeshPositionOnly(TreeInfo treeInfo, ref SubMeshCounts subMeshCount, ref GeneratedMeshContents generatedMeshContents, JobHandle dependencies = default)
         {
             var allocator = Allocator.Persistent;
@@ -156,9 +117,6 @@ namespace Chisel.Core
             {
                 subMeshCount                = subMeshCount,
                 subMeshSurfaces             = treeInfo.subMeshSurfaces,
-                
-                subMeshIndexCount           = generatedMeshContents.indexCount, 
-                subMeshVertexCount          = generatedMeshContents.vertexCount,
 
                 generatedMeshIndices        = generatedMeshContents.indices,
                 generatedMeshBrushIndices   = generatedMeshContents.brushIndices,
@@ -173,9 +131,6 @@ namespace Chisel.Core
             [NoAlias, ReadOnly] public SubMeshCounts subMeshCount;
 
             [NoAlias, ReadOnly] public NativeArray<SubMeshSurface> subMeshSurfaces;
-
-            [NoAlias, ReadOnly] public int		    subMeshIndexCount;
-            [NoAlias, ReadOnly] public int		    subMeshVertexCount;
 
             [NoAlias] public NativeList<int>        generatedMeshBrushIndices;
             [NoAlias] public NativeList<int>		generatedMeshIndices;
@@ -208,9 +163,6 @@ namespace Chisel.Core
                 Realloc(ref generatedMeshPositions,    vertexCount);
                 Realloc(ref generatedMeshIndices,      indexCount);
                 Realloc(ref generatedMeshBrushIndices, indexCount / 3);
-
-                if (subMeshIndexCount == 0 || subMeshVertexCount == 0)
-                    return;
 
                 var generatedMeshBrushIndicesArray  = generatedMeshBrushIndices.AsArray();
                 var generatedMeshIndicesArray       = generatedMeshIndices.AsArray();
@@ -629,7 +581,8 @@ namespace Chisel.Core
             combineSubMeshesJobHandle.Complete(); // <-- can't read from treeInfo.subMeshCounts otherwise
 
             var subMeshCounts = treeInfo.subMeshCounts;
-            if (subMeshCounts.Length > 0)
+            if (subMeshCounts.IsCreated &&
+                subMeshCounts.Length > 0)
             {
                 // Sort all meshDescriptions so that meshes that can be merged are next to each other
                 subMeshCounts.Sort(new SubMeshCountsComparer());
@@ -742,7 +695,8 @@ namespace Chisel.Core
             }
 
 
-            if (treeInfo.subMeshCounts.Length == 0 ||
+            if (!treeInfo.subMeshCounts.IsCreated || 
+                treeInfo.subMeshCounts.Length == 0 ||
                 treeInfo.subMeshCounts[0].vertexCount <= 0 ||
                 treeInfo.subMeshCounts[0].indexCount <= 0)
             {
@@ -1028,7 +982,7 @@ namespace Chisel.Core
                         var surfaceIndexCount           = brushSurfaceBuffer.indices.Length;
 
                         if (currentSubMesh.surfaceParameter != surfaceParameter || 
-                            (isPhysics && currentSubMesh.indexCount >= kMaxPhysicsIndexCount))
+                            (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))
                         {
                             // Store the previous subMeshCount
                             if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
