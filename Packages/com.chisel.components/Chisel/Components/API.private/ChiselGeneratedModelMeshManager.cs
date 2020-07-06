@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -97,13 +98,30 @@ namespace Chisel.Components
                 if (!tree.Dirty)
                     continue;
 
-                Profiler.BeginSample("UpdateModelMeshDescriptions");
-                UpdateModelMeshDescriptions(model);
-                Profiler.EndSample();
+                // Skip invalid brushes since they won't work anyway
+                if (!tree.Valid)
+                    continue;
 
                 updateList.Add(model);
             }
-            
+
+            Profiler.BeginSample("UpdateModelMeshDescriptions");
+            foreach (var model in updateList)
+            {
+                if (!CSGManager.GetMeshContents(model.Node.NodeID, out var meshDescriptions, out var vertexBufferContents))
+                    continue;
+                
+                if (!ChiselModelGeneratedObjects.IsValid(model.generated))
+                {
+                    if (model.generated != null)
+                        model.generated.Destroy();
+                    model.generated = ChiselModelGeneratedObjects.Create(model);
+                }
+                model.generated.Update(model, meshDescriptions, vertexBufferContents);
+            }
+            Profiler.EndSample();
+
+
             bool modifications = false;
             try
             {
@@ -143,29 +161,6 @@ namespace Chisel.Components
                 PostUpdateModels?.Invoke();
                 Profiler.EndSample();
             }
-        }
-
-        internal static void UpdateModelMeshDescriptions(ChiselModel model)
-        {
-            if (!ChiselModelGeneratedObjects.IsValid(model.generated))
-            {
-                if (model.generated != null)
-                    model.generated.Destroy();
-                model.generated = ChiselModelGeneratedObjects.Create(model);
-            }
-
-            var tree				= model.Node;
-            if (!tree.Valid)
-                return;
-
-            Profiler.BeginSample("GetMeshDescriptions");
-            var meshTypes			= ChiselMeshQueryManager.GetMeshQuery(model);
-            CSGManager.GetMeshDescriptions(tree.NodeID, meshTypes, model.VertexChannelMask, out var meshDescriptions, out var meshContents);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("Update");
-            model.generated.Update(model, meshDescriptions, ref meshContents);
-            Profiler.EndSample();
         }
     }
 }

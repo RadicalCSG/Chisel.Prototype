@@ -13,7 +13,7 @@ namespace Chisel.Core
     {
         public int surfaceIndex;
         public int surfaceParameter;
-        public int brushNodeID;
+        public int brushNodeIndex;
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
     /*

@@ -82,6 +82,69 @@ namespace Chisel.Core
         public int totalVertexCount;
         public int totalIndexCount;
     }
+    
+    public struct BrushData
+    {
+        public int brushNodeIndex;
+        public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct FindBrushRenderBuffersJob : IJob
+    {
+        [NoAlias, ReadOnly] public int meshQueryLength;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
+
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeList<BrushData>           brushRenderData;
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeList<SubMeshSurface>      subMeshSurfaces;
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeList<SubMeshCounts>       subMeshCounts;
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeList<VertexBufferInit>    subMeshSections;
+
+        public void Execute()
+        {
+            if (brushRenderData.Capacity < allTreeBrushIndexOrders.Length)
+                brushRenderData.Capacity = allTreeBrushIndexOrders.Length;
+
+            int surfaceCount = 0;
+            for (int b = 0, count_b = allTreeBrushIndexOrders.Length; b < count_b; b++)
+            {
+                var brushNodeIndex = allTreeBrushIndexOrders[b].nodeIndex;
+
+                if (!brushRenderBufferCache.TryGetValue(brushNodeIndex, out var brushRenderBuffer) ||
+                    !brushRenderBuffer.IsCreated)
+                    continue;
+
+                ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
+                ref var surfaces = ref brushRenderBufferRef.surfaces;
+
+                if (surfaces.Length == 0)
+                    continue;
+
+                brushRenderData.AddNoResize(new BrushData{
+                    brushNodeIndex      = brushNodeIndex,
+                    brushRenderBuffer   = brushRenderBuffer
+                });
+
+                surfaceCount += surfaces.Length;
+            }
+            
+            var surfaceCapacity = surfaceCount * meshQueryLength;
+            if (subMeshSurfaces.Capacity < surfaceCapacity)
+                subMeshSurfaces.Capacity = surfaceCapacity;
+
+            var subMeshCapacity = surfaceCount * meshQueryLength;
+            if (subMeshCounts.Capacity < subMeshCapacity)
+                subMeshCounts.Capacity = subMeshCapacity;
+            
+            if (subMeshSections.Capacity < subMeshCapacity)
+                subMeshSections.Capacity = subMeshCapacity;
+        }
+    }
 
     [BurstCompile(CompileSynchronously = true)]
     struct AllocateVertexBuffersJob : IJob
@@ -266,7 +329,8 @@ namespace Chisel.Core
                             ++surfaceIndex)
                     {
                         var subMeshSurface      = subMeshSurfaces[surfaceIndex];
-                        var brushNodeID         = subMeshSurface.brushNodeID;
+                        var brushNodeIndex      = subMeshSurface.brushNodeIndex;
+                        var brushNodeID         = brushNodeIndex + 1;
                         ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
                         ref var sourceIndices   = ref sourceBuffer.indices;
@@ -332,7 +396,8 @@ namespace Chisel.Core
                         ++surfaceIndex)
                 {
                     var subMeshSurface      = subMeshSurfaces[surfaceIndex];
-                    var brushNodeID         = subMeshSurface.brushNodeID;
+                    var brushNodeIndex      = subMeshSurface.brushNodeIndex;
+                    var brushNodeID         = brushNodeIndex + 1;
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                     ref var srcIndices      = ref sourceBuffer.indices;
                     ref var srcVertices     = ref sourceBuffer.vertices;
@@ -471,6 +536,313 @@ namespace Chisel.Core
 
                 var dp = math.dot(math.cross(normal, newTangent), newBinormal);
                 tangents[v] = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
+            }
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct GenerateMeshDescriptionJob : IJob
+    {
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts> subMeshCounts;
+
+        [NativeDisableContainerSafetyRestriction]
+        [NoAlias] public NativeList<GeneratedMeshDescription> meshDescriptions;
+
+        public void Execute()
+        {
+            if (meshDescriptions.Capacity < subMeshCounts.Length)
+                meshDescriptions.Capacity = subMeshCounts.Length;
+
+            for (int i = 0; i < subMeshCounts.Length; i++)
+            {
+                var subMesh = subMeshCounts[i];
+
+                var description = new GeneratedMeshDescription
+                {
+                    meshQuery           = subMesh.meshQuery,
+                    surfaceParameter    = subMesh.surfaceParameter,
+                    meshQueryIndex      = subMesh.meshQueryIndex,
+                    subMeshQueryIndex   = subMesh.subMeshQueryIndex,
+
+                    geometryHashValue   = subMesh.geometryHashValue,
+                    surfaceHashValue    = subMesh.surfaceHashValue,
+
+                    vertexCount         = subMesh.vertexCount,
+                    indexCount          = subMesh.indexCount
+                };
+
+                meshDescriptions.Add(description);
+            }
+        }
+    }
+    
+    public struct SectionData
+    {
+        public int surfacesOffset;
+        public int surfacesCount;
+        public MeshQuery meshQuery;
+    }
+    
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct PrepareSubSectionsJob : IJob
+    {
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>       meshQueries;
+        [NoAlias, ReadOnly] public NativeArray<BrushData>       brushRenderData;
+            
+        [NoAlias, WriteOnly] public NativeList<SubMeshSurface>  subMeshSurfaces;
+        [NoAlias, WriteOnly] public NativeList<SectionData>     sections;
+
+        public void Execute()
+        {
+            var surfacesLength = 0;
+            for (int t = 0; t < meshQueries.Length; t++)
+            {
+                var meshQuery       = meshQueries[t];
+                var surfacesOffset  = surfacesLength;
+                for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
+                {
+                    var brushData                   = brushRenderData[b];
+                    var brushNodeIndex              = brushData.brushNodeIndex;
+                    var brushRenderBuffer           = brushData.brushRenderBuffer;
+                    ref var brushRenderBufferRef    = ref brushRenderBuffer.Value;
+                    ref var surfaces                = ref brushRenderBufferRef.surfaces;
+
+                    for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
+                    {
+                        ref var surface = ref surfaces[j];
+                        if (surface.vertices.Length <= 0 || surface.indices.Length <= 0)
+                            continue;
+
+                        ref var surfaceLayers = ref surface.surfaceLayers;
+
+                        var core_surface_flags = surfaceLayers.layerUsage;
+                        if ((core_surface_flags & meshQuery.LayerQueryMask) != meshQuery.LayerQuery)
+                            continue;
+
+                        int surfaceParameter = 0;
+                        if (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                            meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex)
+                        {
+                            // TODO: turn this into array lookup
+                            switch (meshQuery.LayerParameterIndex)
+                            {
+                                case LayerParameterIndex.LayerParameter1: surfaceParameter = surfaceLayers.layerParameter1; break;
+                                case LayerParameterIndex.LayerParameter2: surfaceParameter = surfaceLayers.layerParameter2; break;
+                                case LayerParameterIndex.LayerParameter3: surfaceParameter = surfaceLayers.layerParameter3; break;
+                            }
+                        }
+
+                        subMeshSurfaces.AddNoResize(new SubMeshSurface
+                        {
+                            surfaceIndex        = j,
+                            brushNodeIndex      = brushNodeIndex,
+                            surfaceParameter    = surfaceParameter,
+                            brushRenderBuffer   = brushRenderBuffer
+                        });
+                        surfacesLength++;
+                    }
+                }
+                var surfacesCount = surfacesLength - surfacesOffset;
+                if (surfacesCount == 0)
+                    continue;
+                sections.AddNoResize(new SectionData
+                { 
+                    surfacesOffset  = surfacesOffset,
+                    surfacesCount   = surfacesCount,
+                    meshQuery       = meshQuery
+                });
+            }
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct SortSurfacesJob : IJob
+    {
+        const int kMaxPhysicsVertexCount = 64000;
+
+        [NoAlias, ReadOnly] public NativeArray<SectionData>         sections;
+
+        // Read/Write (Sort)
+        [NoAlias] public NativeArray<SubMeshSurface>                subMeshSurfaces;
+        [NoAlias] public NativeList<SubMeshCounts>                  subMeshCounts;
+
+        [NoAlias, WriteOnly] public NativeList<VertexBufferInit>    subMeshSections;
+            
+        struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
+        {
+            public int Compare(SubMeshSurface x, SubMeshSurface y)
+            {
+                return x.surfaceParameter.CompareTo(y.surfaceParameter);
+            }
+        }
+        
+        struct SubMeshCountsComparer : IComparer<SubMeshCounts>
+        {
+            public int Compare(SubMeshCounts x, SubMeshCounts y)
+            {
+                if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
+                if (x.meshQuery.LayerQuery != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
+                if (x.surfaceParameter != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
+                if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
+                return 0;
+            }
+        }
+
+
+        public void Execute()
+        {
+            var comparer = new SubMeshSurfaceComparer();
+            for (int t = 0, meshIndex = 0, surfacesOffset = 0; t < sections.Length; t++)
+            {
+                var section = sections[t];
+                if (section.surfacesCount == 0)
+                    continue;
+                var slice = subMeshSurfaces.Slice(section.surfacesOffset, section.surfacesCount);
+                slice.Sort(comparer);
+
+
+                var meshQuery       = section.meshQuery;
+                var querySurfaces   = subMeshSurfaces.Slice(section.surfacesOffset, section.surfacesCount);
+                var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
+
+                var currentSubMesh = new SubMeshCounts
+                {
+                    meshQueryIndex      = meshIndex,
+                    subMeshQueryIndex   = 0,
+                    meshQuery           = meshQuery,
+                    surfaceParameter    = querySurfaces[0].surfaceParameter,
+                    surfacesOffset      = surfacesOffset
+                };
+                for (int b = 0; b < querySurfaces.Length; b++)
+                {
+                    var subMeshSurface              = querySurfaces[b];
+                    var surfaceParameter            = subMeshSurface.surfaceParameter;
+                    ref var brushRenderBufferRef    = ref subMeshSurface.brushRenderBuffer.Value;
+                    ref var brushSurfaceBuffer      = ref brushRenderBufferRef.surfaces[subMeshSurface.surfaceIndex];
+                    var surfaceVertexCount          = brushSurfaceBuffer.vertices.Length;
+                    var surfaceIndexCount           = brushSurfaceBuffer.indices.Length;
+
+                    if (currentSubMesh.surfaceParameter != surfaceParameter || 
+                        (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))
+                    {
+                        // Store the previous subMeshCount
+                        if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
+                            subMeshCounts.AddNoResize(currentSubMesh);
+                        
+                        // Create the new SubMeshCount
+                        currentSubMesh.surfaceParameter   = surfaceParameter;
+                        currentSubMesh.subMeshQueryIndex++;
+                        currentSubMesh.surfaceHashValue         = 0;
+                        currentSubMesh.geometryHashValue        = 0;
+                        currentSubMesh.indexCount          = 0;
+                        currentSubMesh.vertexCount         = 0;
+                        currentSubMesh.surfacesOffset      += currentSubMesh.surfacesCount;
+                        currentSubMesh.surfacesCount       = 0;
+                    } 
+
+                    currentSubMesh.indexCount   += surfaceIndexCount;
+                    currentSubMesh.vertexCount  += surfaceVertexCount;
+                    currentSubMesh.surfaceHashValue  = math.hash(new uint2(currentSubMesh.surfaceHashValue, brushSurfaceBuffer.surfaceHash));
+                    currentSubMesh.geometryHashValue = math.hash(new uint2(currentSubMesh.geometryHashValue, brushSurfaceBuffer.geometryHash));
+                    currentSubMesh.surfacesCount++;
+                }
+                // Store the last subMeshCount
+                if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
+                    subMeshCounts.AddNoResize(currentSubMesh);
+                surfacesOffset = currentSubMesh.surfacesOffset + currentSubMesh.surfacesCount;
+                meshIndex++;
+            }
+
+            // Sort all meshDescriptions so that meshes that can be merged are next to each other
+            subMeshCounts.Sort(new SubMeshCountsComparer());
+
+
+            int descriptionIndex = 0;
+            //var contentsIndex = 0;
+            if (subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+            {
+                var prevQuery = subMeshCounts[0].meshQuery;
+                var startIndex = 0;
+                for (; descriptionIndex < subMeshCounts.Length; descriptionIndex++)
+                {
+                    var subMeshCount = subMeshCounts[descriptionIndex];
+                    // Exit when layerParameterIndex is no longer LayerParameter1
+                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
+                        break;
+
+                    var currQuery = subMeshCount.meshQuery;
+                    if (prevQuery == currQuery)
+                    {
+                        continue;
+                    }
+
+                    int totalVertexCount = 0;
+                    int totalIndexCount = 0;
+                    for (int i=startIndex; i < descriptionIndex; i++)
+                    {
+                        totalVertexCount += subMeshCounts[i].vertexCount;
+                        totalIndexCount += subMeshCounts[i].indexCount;
+                    }
+
+                    // Group by all subMeshCounts with same query
+                    subMeshSections.AddNoResize(new VertexBufferInit
+                    {
+                        layerParameterIndex = subMeshCounts[startIndex].meshQuery.LayerParameterIndex,
+                        startIndex          = startIndex, 
+                        endIndex            = descriptionIndex,
+                        totalVertexCount    = totalVertexCount,
+                        totalIndexCount     = totalIndexCount,
+                    });
+
+                    startIndex = descriptionIndex;
+                    prevQuery = currQuery;
+                }
+
+                {
+                    int totalVertexCount = 0;
+                    int totalIndexCount = 0;
+                    for (int i = startIndex; i < descriptionIndex; i++)
+                    {
+                        totalVertexCount += subMeshCounts[i].vertexCount;
+                        totalIndexCount += subMeshCounts[i].indexCount;
+                    }
+
+                    subMeshSections.AddNoResize(new VertexBufferInit
+                    {
+                        layerParameterIndex = subMeshCounts[startIndex].meshQuery.LayerParameterIndex,
+                        startIndex          = startIndex,
+                        endIndex            = descriptionIndex,
+                        totalVertexCount    = totalVertexCount,
+                        totalIndexCount     = totalIndexCount
+                    });
+                }
+            }
+                
+
+            if (descriptionIndex < subMeshCounts.Length &&
+                subMeshCounts[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
+            {
+                Debug.Assert(subMeshCounts[subMeshCounts.Length - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial);
+
+                // Loop through all subMeshCounts with LayerParameter2, and create collider meshes from them
+                for (int i = 0; descriptionIndex < subMeshCounts.Length; descriptionIndex++, i++)
+                {
+                    var subMeshCount = subMeshCounts[descriptionIndex];
+
+                    // Exit when layerParameterIndex is no longer LayerParameter2
+                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.PhysicsMaterial)
+                        break;
+
+                    subMeshSections.AddNoResize(new VertexBufferInit
+                    {
+                        layerParameterIndex = subMeshCount.meshQuery.LayerParameterIndex,
+                        startIndex          = descriptionIndex,
+                        endIndex            = descriptionIndex,
+                        totalVertexCount    = subMeshCount.vertexCount,
+                        totalIndexCount     = subMeshCount.indexCount
+                    });
+                }
             }
         }
     }

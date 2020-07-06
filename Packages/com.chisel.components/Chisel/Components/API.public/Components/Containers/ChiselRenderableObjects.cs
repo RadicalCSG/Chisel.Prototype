@@ -237,7 +237,7 @@ namespace Chisel.Components
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
-        public void Update(ChiselModel model, GameObjectState state, List<GeneratedMeshDescription> meshDescriptions, ref VertexBufferContents contents, int contentsIndex, int startIndex, int endIndex)
+        public void Update(ChiselModel model, GameObjectState state, NativeList<GeneratedMeshDescription> meshDescriptions, ref VertexBufferContents contents, int contentsIndex, int startIndex, int endIndex)
         {
             bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array

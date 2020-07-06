@@ -63,7 +63,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions" />
     /// <seealso cref="Chisel.Core.CSGTree.GetGeneratedMesh" />
     /// <seealso cref="Chisel.Core.GeneratedMeshContents"/>
-    [Serializable, StructLayout(LayoutKind.Sequential, Pack = 8)]
+    [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct GeneratedMeshDescription
     {
         public MeshQuery	meshQuery;

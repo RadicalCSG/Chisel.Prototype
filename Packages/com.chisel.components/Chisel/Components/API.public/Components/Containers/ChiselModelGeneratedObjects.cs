@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Rendering;
 using System.Transactions;
 using UnityEngine.Profiling;
+using Unity.Collections;
 
 namespace Chisel.Components
 {        
@@ -251,8 +252,8 @@ namespace Chisel.Components
             }
         }
 
-        public void Update(ChiselModel model, List<GeneratedMeshDescription> meshDescriptions,
-                                              ref VertexBufferContents meshContents)
+        public void Update(ChiselModel model, NativeList<GeneratedMeshDescription>  meshDescriptions,
+                                              VertexBufferContents                  meshContents)
         {
             Profiler.BeginSample("Setup");
             var modelState = GameObjectState.Create(model);
@@ -278,8 +279,8 @@ namespace Chisel.Components
                         
             Debug.Assert(LayerParameterIndex.LayerParameter1 < LayerParameterIndex.LayerParameter2);
             Debug.Assert((LayerParameterIndex.LayerParameter1 + 1) == LayerParameterIndex.LayerParameter2);
-            Debug.Assert(meshDescriptions == null ||
-                         meshDescriptions.Count == 0 ||
+            Debug.Assert(!meshDescriptions.IsCreated ||
+                         meshDescriptions.Length == 0 ||
                          meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1);
 
             int descriptionIndex = 0;
@@ -291,7 +292,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             // Loop through all meshDescriptions with LayerParameter1, and create renderable meshes from them
-            if (meshDescriptions == null || meshDescriptions.Count == 0)
+            if (!meshDescriptions.IsCreated || meshDescriptions.Length == 0)
             {
                 for (int renderIndex = 0; renderIndex < renderables.Length; renderIndex++)
                 {
@@ -313,7 +314,7 @@ namespace Chisel.Components
                 {
                     var prevQuery = meshDescriptions[0].meshQuery;
                     var startIndex = 0;
-                    for (; descriptionIndex < meshDescriptions.Count; descriptionIndex++)
+                    for (; descriptionIndex < meshDescriptions.Length; descriptionIndex++)
                     {
                         var meshDescriptionIterator = meshDescriptions[descriptionIndex];
                         // Exit when layerParameterIndex is no longer LayerParameter1
@@ -346,18 +347,18 @@ namespace Chisel.Components
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Set Colliders");
-                if (descriptionIndex < meshDescriptions.Count &&
+                if (descriptionIndex < meshDescriptions.Length &&
                     meshDescriptions[descriptionIndex].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                 {
-                    Debug.Assert(meshDescriptions[meshDescriptions.Count - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial);
+                    Debug.Assert(meshDescriptions[meshDescriptions.Length - 1].meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial);
 
-                    var colliderCount = meshDescriptions.Count - descriptionIndex;
+                    var colliderCount = meshDescriptions.Length - descriptionIndex;
                     bool rebuild = true;
                     if (colliderCount == colliders.Length)
                     {
                         rebuild = false;
                         var oldDescriptionIndex = descriptionIndex;
-                        for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
+                        for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
                         {
                             var meshDescription = meshDescriptions[descriptionIndex];
                             // Exit when layerParameterIndex is no longer LayerParameter2
@@ -377,7 +378,7 @@ namespace Chisel.Components
                     {
                         var newColliders = new ChiselColliderObjects[colliderCount];
                         var oldDescriptionIndex = descriptionIndex;
-                        for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
+                        for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
                         {
                             var meshDescription = meshDescriptions[descriptionIndex];
                             // Exit when layerParameterIndex is no longer LayerParameter2
@@ -408,7 +409,7 @@ namespace Chisel.Components
                         descriptionIndex = oldDescriptionIndex;
                     }
                     // Loop through all meshDescriptions with LayerParameter2, and create collider meshes from them
-                    for (int i = 0; descriptionIndex < meshDescriptions.Count; descriptionIndex++, i++)
+                    for (int i = 0; descriptionIndex < meshDescriptions.Length; descriptionIndex++, i++)
                     {
                         var meshDescription = meshDescriptions[descriptionIndex];
 
@@ -423,7 +424,7 @@ namespace Chisel.Components
                 Profiler.EndSample();
             }
             
-            Debug.Assert(meshDescriptions == null || descriptionIndex == meshDescriptions.Count);
+            Debug.Assert(!meshDescriptions.IsCreated || descriptionIndex == meshDescriptions.Length);
         }
 
 #if UNITY_EDITOR
