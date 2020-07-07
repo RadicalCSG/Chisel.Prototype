@@ -13,30 +13,25 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct FindBrushPairsJob : IJob
     {
-        struct Empty { }
-
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
         [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeHashMap<BrushPair, Empty> brushPairMap;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray usedLookup;
 
         public void Execute()
         {
-            var maxPairs = GeometryMath.GetTriangleArraySize(treeBrushIndexOrders.Length);
+            var maxOrder = treeBrushIndexOrders.Length;
+            var maxPairs = (maxOrder * maxOrder);
 
-            if (!brushPairMap.IsCreated)
+            if (!usedLookup.IsCreated || usedLookup.Length < maxPairs)
             {
-                brushPairMap = new NativeHashMap<BrushPair, FindBrushPairsJob.Empty>(maxPairs, Allocator.Temp);
+                if (usedLookup.IsCreated) usedLookup.Dispose();
+                usedLookup = new NativeBitArray(maxPairs, Allocator.Temp);
             } else
-            {
-                brushPairMap.Clear();
-                if (brushPairMap.Capacity < maxPairs)
-                    brushPairMap.Capacity = maxPairs;
-            }
+                usedLookup.Clear();
 
-            var empty = new Empty();
             for (int b0 = 0; b0 < treeBrushIndexOrders.Length; b0++)
             {
                 var brushIndexOrder0        = treeBrushIndexOrders[b0];
@@ -67,13 +62,15 @@ namespace Chisel.Core
                     if (brushNodeOrder0 > brushNodeOrder1) // ensures we do calculations exactly the same for each brush pair
                         brushPair.Flip();
 
-                    if (brushPairMap.TryAdd(brushPair, empty))
+                    int testIndex = (brushPair.brushIndexOrder0.nodeOrder * maxOrder) + brushPair.brushIndexOrder1.nodeOrder;
+
+                    if (!usedLookup.IsSet(testIndex))
                     {
+                        usedLookup.Set(testIndex, true);
                         uniqueBrushPairs.AddNoResize(brushPair);
                     }
                 }
             }
-            brushPairMap.Dispose();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Jobs;
@@ -29,7 +29,6 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         outEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          intersectedHoleIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<IndexSurfaceInfo> intersectionSurfaceInfo;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>          nodeIndextoTableIndex;
         [NativeDisableContainerSafetyRestriction] NativeBitArray            destroyedEdges;
         
         [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  allInfos;
@@ -357,8 +356,8 @@ namespace Chisel.Core
             for (int n = 0; n < edges.Length; n++)
             {
                 var edge = edges[n];
-                var prevVertex = vertices[edge.index1];
-                var currVertex = vertices[edge.index2];
+                var prevVertex = vertices[(int)edge.index1];
+                var currVertex = vertices[(int)edge.index2];
                 normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
                 normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
                 normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
@@ -774,19 +773,18 @@ namespace Chisel.Core
 
             
 
-
-            ref var routingTableNodeIndices = ref routingTableRef.Value.nodes;
+            ref var nodeIndexToTableIndex   = ref routingTableRef.Value.nodeIndexToTableIndex;
             ref var routingLookups          = ref routingTableRef.Value.routingLookups;
             var routingLookupsLength        = routingLookups.Length;
 
-            var surfaceInfoCount = routingTableNodeIndices.Length * surfaceCount;
+            var surfaceInfoCount = routingLookupsLength * surfaceCount;
             if (!intersectionSurfaceInfo.IsCreated || intersectionSurfaceInfo.Length < surfaceInfoCount)
             {
                 if (intersectionSurfaceInfo.IsCreated) intersectionSurfaceInfo.Dispose();
                 intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(surfaceInfoCount, Allocator.Temp);
             }
 
-            int intersectionLoopCount = intersectionSurfaceInfos.Length + (routingTableNodeIndices.Length * surfaceCount);
+            int intersectionLoopCount = intersectionSurfaceInfos.Length + (routingLookupsLength * surfaceCount);
             if (!intersectionLoops.IsCreated || intersectionLoops.Capacity < intersectionLoopCount)
             {
                 if (intersectionLoops.IsCreated) intersectionLoops.Dispose();
@@ -796,22 +794,7 @@ namespace Chisel.Core
             intersectionLoops.ResizeExact(intersectionLoopCount);
 
             {
-                int maxIndex = 0;
-                for (int i = 0; i < routingTableNodeIndices.Length; i++)
-                    maxIndex = math.max(maxIndex, routingTableNodeIndices[i]);
-
-                var indexToTableIndexCount = maxIndex + 1;
-                if (!nodeIndextoTableIndex.IsCreated || nodeIndextoTableIndex.Length < indexToTableIndexCount)
-                {
-                    if (nodeIndextoTableIndex.IsCreated) nodeIndextoTableIndex.Dispose();
-                    nodeIndextoTableIndex = new NativeArray<int>(indexToTableIndexCount, Allocator.Temp);
-                }
-
-                //var nodeIndextoTableIndex = stackalloc int[maxIndex + 1];
-                for (int i = 0; i < routingTableNodeIndices.Length; i++)
-                    nodeIndextoTableIndex[routingTableNodeIndices[i]] = i + 1;
-
-                // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIndextoTableIndex[surfaceInfo.brushNodeID], 
+                // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIndexToTableIndex[surfaceInfo.brushNodeID], 
                 //       have a sequential list of all data. 
                 //       Have segment list to determine which part of array belong to which brushNodeID
                 //       Don't need bottom part, can determine this in Job
@@ -821,15 +804,13 @@ namespace Chisel.Core
                     var surfaceInfo         = intersectionSurfaceInfos[i];
                     int brushNodeIndex1     = surfaceInfo.brushIndexOrder.nodeIndex;/**/
 
-                    // brush does not exist in routing table (has been deduced to not have any effect)
-                    if (!ChiselNativeListExtensions.Contains(ref routingTableNodeIndices, brushNodeIndex1))
+                    // check if brush does not exist in routing table (will not have any effect)
+                    if (brushNodeIndex1 >= nodeIndexToTableIndex.Length)
                         continue;
 
-                    var routingTableIndex = nodeIndextoTableIndex[brushNodeIndex1];
-                    if (routingTableIndex == 0)
+                    var routingTableIndex = nodeIndexToTableIndex[brushNodeIndex1];
+                    if (routingTableIndex == -1)
                         continue;
-
-                    routingTableIndex--;
 
                     var surfaceIndex    = surfaceInfo.basePlaneIndex;
                     int offset          = routingTableIndex + (surfaceIndex * routingLookupsLength);

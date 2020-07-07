@@ -18,20 +18,21 @@ namespace Chisel.Core
         const double kBoundsDistanceEpsilon = CSGConstants.kBoundsDistanceEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>       brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
-        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                              brushTreeSpaceBounds;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              updateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
+        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                          brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          updateBrushIndexOrders;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter                brushBrushIntersections;
-        [NoAlias, WriteOnly] public NativeHashMap<int, IndexOrder>.ParallelWriter       brushesThatNeedIndirectUpdate;
+        [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter            brushBrushIntersections;
+        [NoAlias, WriteOnly] public NativeList<IndexOrder>.ParallelWriter           brushesThatNeedIndirectUpdate;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes1;
         [NativeDisableContainerSafetyRestriction] NativeBitArray            foundBrushes;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray            usedBrushes;
 
         static void TransformOtherIntoBrushSpace(ref float4x4 treeToBrushSpaceMatrix, ref float4x4 brushToTreeSpaceMatrix, ref BlobArray<float4> srcPlanes, NativeArray<float4> dstPlanes)
         {
@@ -161,6 +162,11 @@ namespace Chisel.Core
             if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
                 foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
             foundBrushes.Clear();
+
+            if (!usedBrushes.IsCreated || usedBrushes.Length < allTreeBrushIndexOrders.Length)
+                usedBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            usedBrushes.Clear();
+
             // TODO: figure out a way to avoid needing this
             for (int a = 0; a < updateBrushIndexOrders.Length; a++)
                 foundBrushes.Set(updateBrushIndexOrders[a].nodeOrder, true);
@@ -181,13 +187,17 @@ namespace Chisel.Core
                         continue;
                     if (!found)
                     {
-                        brushesThatNeedIndirectUpdate.TryAdd(brush0IndexOrder.nodeOrder, brush0IndexOrder);
-                        //foundBrushes.Set(brush0NodeOrder, true);
+                        if (!usedBrushes.IsSet(brush0IndexOrder.nodeOrder))
+                        {
+                            usedBrushes.Set(brush0IndexOrder.nodeOrder, true);
+                            brushesThatNeedIndirectUpdate.AddNoResize(brush0IndexOrder);
+                        }
                     }
                     if (brush0NodeOrder > brush1NodeOrder)
                         StoreIntersection(brush0IndexOrder, brush1IndexOrder, result);
                 }
             }
+
             //*/
 
         }
@@ -254,14 +264,14 @@ namespace Chisel.Core
         const double kBoundsDistanceEpsilon = CSGConstants.kBoundsDistanceEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>       brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
-        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                              brushTreeSpaceBounds;
-        [NoAlias, ReadOnly] public NativeHashMap<int, IndexOrder>                       brushesThatNeedIndirectUpdate;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
+        [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                          brushTreeSpaceBounds;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          brushesThatNeedIndirectUpdate;
         
         // Read/Write
-        [NoAlias] public NativeList<IndexOrder>                                         updateBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                                     updateBrushIndexOrders;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter    brushBrushIntersections;
@@ -272,15 +282,14 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            var brushesThatNeedIndirectUpdateArray = brushesThatNeedIndirectUpdate.GetValueArray(Allocator.Temp);
-            updateBrushIndexOrders.AddRange(brushesThatNeedIndirectUpdateArray);
+            updateBrushIndexOrders.AddRange(brushesThatNeedIndirectUpdate);
 
             var comparer = new IndexOrderComparer();
             updateBrushIndexOrders.Sort(comparer);
 
-            for (int index1 = 0; index1 < brushesThatNeedIndirectUpdateArray.Length; index1++)
+            for (int index1 = 0; index1 < brushesThatNeedIndirectUpdate.Length; index1++)
             {
-                var brush1IndexOrder = brushesThatNeedIndirectUpdateArray[index1];
+                var brush1IndexOrder = brushesThatNeedIndirectUpdate[index1];
                 int brush1NodeOrder  = brush1IndexOrder.nodeOrder;
                 for (int index0 = 0; index0 < allTreeBrushIndexOrders.Length; index0++)
                 {

@@ -25,9 +25,6 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
 
-        // Write
-        //[NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
-
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
 
@@ -91,9 +88,6 @@ namespace Chisel.Core
         // Read/Write
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
-
-        // Write
-        //[NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter treeSpaceVerticesLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;

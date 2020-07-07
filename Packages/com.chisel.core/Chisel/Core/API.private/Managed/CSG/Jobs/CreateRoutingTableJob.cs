@@ -9,6 +9,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.CompilerServices;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -29,7 +30,6 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<int>                  combineIndexRemap;
         [NativeDisableContainerSafetyRestriction] NativeList<int>                   routingSteps;
         [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>        routingLookups;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  nodes;
         [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    routingTable;
         [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    tempStackArray;
         [NativeDisableContainerSafetyRestriction] NativeList<QueuedEvent>           queuedEvents;
@@ -55,12 +55,12 @@ namespace Chisel.Core
             var maxNodes        = topDownNodes.Length;
             var maxRoutes       = maxNodes * MaxRoutesPerNode;
 
-            if (!routingTable.IsCreated || routingTable.Length < maxRoutes)
+            if (!routingTable.IsCreated || routingTable.Length < maxRoutes * 2)
             {
                 if (routingTable.IsCreated) routingTable.Dispose();
                 routingTable = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
             }
-            if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes)
+            if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes * 2)
             {
                 if (tempStackArray.IsCreated) tempStackArray.Dispose();
                 tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
@@ -82,19 +82,12 @@ namespace Chisel.Core
 
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root    = ref builder.ConstructRoot<RoutingTable>();
-            var inputs      = builder.Allocate(ref root.inputs,         categoryStackNodeCount);
             var routingRows = builder.Allocate(ref root.routingRows,    categoryStackNodeCount);
 
             if (!routingLookups.IsCreated || routingLookups.Length < maxNodes)
             {
                 if (routingLookups.IsCreated) routingLookups.Dispose();
                 routingLookups = new NativeArray<RoutingLookup>(maxNodes, Allocator.Temp);
-            }
-
-            if (!nodes.IsCreated || nodes.Length < maxNodes)
-            {
-                if (nodes.IsCreated) nodes.Dispose();
-                nodes = new NativeArray<int>(maxNodes, Allocator.Temp);
             }
 
             {
@@ -107,20 +100,27 @@ namespace Chisel.Core
                     int start_index = i;
                     do
                     {
-                        inputs[i]       = routingTable[i].input;
-                        routingRows[i]  = routingTable[i].routingRow;
+                        routingRows[i] = routingTable[i].routingRow;
                         i++;
                     } while (i < categoryStackNodeCount && routingTable[i].nodeIndex == cutting_node_index);
                     int end_index = i;
 
-
-                    nodes[nodeCounter] = cutting_node_index;
                     routingLookups[nodeCounter] = new RoutingLookup(start_index, end_index);
                     nodeCounter++;
                 }
 
-                builder.Construct(ref root.routingLookups,  routingLookups, nodeCounter);
-                builder.Construct(ref root.nodes,           nodes,          nodeCounter);
+                builder.Construct(ref root.routingLookups, routingLookups, nodeCounter);
+                
+                int maxNodeIndex = 0;
+                for (int i = 0; i < nodeCounter; i++)
+                    maxNodeIndex = math.max(maxNodeIndex, routingTable[routingLookups[i].startIndex].nodeIndex);
+                
+                var indexToTableIndexCount = maxNodeIndex + 1;
+                var nodeIndexToTableIndex = builder.Allocate(ref root.nodeIndexToTableIndex, indexToTableIndexCount);
+                for (int i = 0; i < indexToTableIndexCount; i++)
+                    nodeIndexToTableIndex[i] = -1;
+                for (int i = 0; i < nodeCounter; i++)
+                    nodeIndexToTableIndex[routingTable[routingLookups[i].startIndex].nodeIndex] = i;
                         
                 var routingTableBlob = builder.CreateBlobAssetReference<RoutingTable>(Allocator.Persistent);
                 routingTableLookup[processedNodeOrder] = routingTableBlob;
@@ -479,10 +479,10 @@ namespace Chisel.Core
 #endif
 
                 int startRightStackRowIndex = 0;
-                for (int stackIndex = 0; stackIndex < routingSteps.Length - 1; stackIndex++)
+                int routingLength           = routingSteps[0];
+                for (int stackIndex = 1; stackIndex < routingSteps.Length; stackIndex++)
                 {
-                    int routingLength           = routingSteps[stackIndex];
-                    int routingStep             = routingSteps[stackIndex + 1];
+                    int routingStep             = routingSteps[stackIndex];
                     int endRightStackRowIndex   = startRightStackRowIndex + routingLength;
 
                     // duplicate route multiple times
@@ -511,10 +511,11 @@ namespace Chisel.Core
                     prevNodeIndex   = startSearchRowIndex;
                     startSearchRowIndex = leftStackEnd;
                     startRightStackRowIndex += routingLength;
+                    routingLength = routingStep;
                 }
 
                 {
-                    int routingLength = routingSteps[routingSteps.Length - 1];
+                    //int routingLength = routingSteps[routingSteps.Length - 1];
                     int endRightStackRowIndex = startRightStackRowIndex + routingLength;
 
                     // Duplicate route multiple times, bake operation into table for last node
