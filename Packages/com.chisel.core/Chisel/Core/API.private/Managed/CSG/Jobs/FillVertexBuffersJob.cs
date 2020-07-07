@@ -93,8 +93,8 @@ namespace Chisel.Core
     struct FindBrushRenderBuffersJob : IJob
     {
         [NoAlias, ReadOnly] public int meshQueryLength;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                          allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBuffers;
 
         [NativeDisableContainerSafetyRestriction]
         [NoAlias] public NativeList<BrushData>           brushRenderData;
@@ -113,10 +113,10 @@ namespace Chisel.Core
             int surfaceCount = 0;
             for (int b = 0, count_b = allTreeBrushIndexOrders.Length; b < count_b; b++)
             {
-                var brushNodeIndex = allTreeBrushIndexOrders[b].nodeIndex;
-
-                if (!brushRenderBufferCache.TryGetValue(brushNodeIndex, out var brushRenderBuffer) ||
-                    !brushRenderBuffer.IsCreated)
+                var brushNodeIndex      = allTreeBrushIndexOrders[b].nodeIndex;
+                var brushNodeOrder      = allTreeBrushIndexOrders[b].nodeOrder;
+                var brushRenderBuffer   = brushRenderBuffers[brushNodeOrder];
+                if (!brushRenderBuffer.IsCreated)
                     continue;
 
                 ref var brushRenderBufferRef = ref brushRenderBuffer.Value;

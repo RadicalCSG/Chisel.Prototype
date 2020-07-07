@@ -31,9 +31,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeStream.Reader input;
 
         // Write
-        [NoAlias, WriteOnly] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter brushRenderBufferCache;
-
-        //[NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
+        [NativeDisableParallelForRestriction]
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float3>   surfaceVertices;
@@ -485,32 +484,7 @@ namespace Chisel.Core
             }
 
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
-
-            //brushRenderBuffers[brushNodeOrder] = brushRenderBuffer;
-            brushRenderBufferCache.TryAdd(brushNodeIndex, brushRenderBuffer);
-
-            // Allocated using Temp, so do not need to dispose
-            /*
-            builder.Dispose();
-            loops.Dispose();
-            surfaceIndexList.Dispose();
-
-
-            context_children.Dispose();
-            context_inputEdgesCopy.Dispose();
-
-            context_points.Dispose();
-            context_edges.Dispose();
-
-            context_allEdges.Dispose();
-            context_sortedPoints.Dispose();
-            context_triangles.Dispose();
-            context_triangleInterior.Dispose();
-            context_advancingFrontNodes.Dispose();
-            context_edgeLookupEdges.Dispose();
-            context_edgeLookups.Dispose();
-            context_foundLoops.Dispose();
-            */
+            brushRenderBuffers[brushNodeOrder] = brushRenderBuffer;
         }
     }
 }
