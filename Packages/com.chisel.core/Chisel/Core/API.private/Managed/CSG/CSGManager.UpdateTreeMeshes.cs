@@ -868,13 +868,13 @@ namespace Chisel.Core
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
                             // Read
-                            treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders,
-                            brushMeshLookup         = treeUpdate.brushMeshLookup,
-                            transformations         = treeUpdate.transformations,
+                            rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders,
+                            brushMeshLookup             = treeUpdate.brushMeshLookup,
+                            transformations             = treeUpdate.transformations,
 
                             // Write
-                            brushTreeSpaceBounds    = treeUpdate.brushTreeSpaceBounds,
-                            treeSpaceVerticesArray  = treeUpdate.treeSpaceVerticesArray,
+                            brushTreeSpaceBounds        = treeUpdate.brushTreeSpaceBounds,
+                            treeSpaceVerticesArray      = treeUpdate.treeSpaceVerticesArray,
                         };
 #if RUN_IN_SERIAL
                         treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle = createTreeSpaceVerticesAndBoundsJob.
@@ -1163,10 +1163,11 @@ namespace Chisel.Core
                         var findBrushPairsJob = new FindBrushPairsJob
                         {
                             // Read
+                            maxOrder                    = treeUpdate.allTreeBrushIndexOrders.Length,
 #if RUN_IN_SERIAL
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
+                            rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
 #else
-                            treeBrushIndexOrders        = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
 #endif
                             brushesTouchedByBrushes     = treeUpdate.brushesTouchedByBrushes,
                                     

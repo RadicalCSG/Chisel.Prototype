@@ -13,7 +13,8 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct FindBrushPairsJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public int maxOrder;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
         [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
 
@@ -22,7 +23,6 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            var maxOrder = treeBrushIndexOrders.Length;
             var maxPairs = (maxOrder * maxOrder);
 
             if (!usedLookup.IsCreated || usedLookup.Length < maxPairs)
@@ -32,9 +32,9 @@ namespace Chisel.Core
             } else
                 usedLookup.Clear();
 
-            for (int b0 = 0; b0 < treeBrushIndexOrders.Length; b0++)
+            for (int b0 = 0; b0 < rebuildTreeBrushIndexOrders.Length; b0++)
             {
-                var brushIndexOrder0        = treeBrushIndexOrders[b0];
+                var brushIndexOrder0        = rebuildTreeBrushIndexOrders[b0];
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
 
                 var brushesTouchedByBrush   = brushesTouchedByBrushes[brushNodeOrder0];
