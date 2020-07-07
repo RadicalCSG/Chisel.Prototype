@@ -80,12 +80,6 @@ namespace Chisel.Components
                 Profiler.EndSample();
             }
 
-#if UNITY_EDITOR
-            Profiler.BeginSample("OnVisibilityChanged");
-            ChiselGeneratedComponentManager.OnVisibilityChanged();
-            Profiler.EndSample();
-#endif
-
             for (int m = 0; m < registeredModels.Count; m++)
             {
                 var model = registeredModels[m];

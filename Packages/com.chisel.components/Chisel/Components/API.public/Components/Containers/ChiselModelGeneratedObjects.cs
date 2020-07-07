@@ -312,6 +312,9 @@ namespace Chisel.Components
                 Profiler.BeginSample("Set Renderables");
                 if (meshDescriptions[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                 {
+                    if (renderMaterials.Capacity < meshDescriptions.Length)
+                        renderMaterials.Capacity = meshDescriptions.Length;
+
                     var prevQuery = meshDescriptions[0].meshQuery;
                     var startIndex = 0;
                     for (; descriptionIndex < meshDescriptions.Length; descriptionIndex++)
@@ -328,7 +331,9 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
+                        Profiler.BeginSample("Update");
                         renderables[renderIndex].Update(model, modelState, meshDescriptions, ref meshContents, contentsIndex, startIndex, descriptionIndex);
+                        Profiler.EndSample();
                         contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                         startIndex = descriptionIndex;
@@ -339,7 +344,9 @@ namespace Chisel.Components
                         var renderIndex = (int)(prevQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
 
                         // Group by all meshDescriptions with same query
+                        Profiler.BeginSample("Update");
                         renderables[renderIndex].Update(model, modelState, meshDescriptions, ref meshContents, contentsIndex, startIndex, descriptionIndex);
+                        Profiler.EndSample();
                         contentsIndex++;
                         renderMaterials.AddRange(renderables[renderIndex].renderMaterials);
                     }
@@ -430,6 +437,7 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public void UpdateVisibilityMeshes()
         {
+            ChiselGeneratedComponentManager.UpdateVisibility();
             if (!needVisibilityMeshUpdate)
                 return;
             

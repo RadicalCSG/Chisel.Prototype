@@ -43,11 +43,6 @@ namespace Chisel.Components
         public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, LayerUsageFlags query)
         {
             var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state);
-            var sharedMesh      = new Mesh { name = name };
-#if UNITY_EDITOR
-            var partialMesh     = new Mesh { name = name };
-            partialMesh.hideFlags = HideFlags.DontSave;
-#endif
             var meshFilter      = renderContainer.AddComponent<MeshFilter>();
             var meshRenderer    = renderContainer.AddComponent<MeshRenderer>();
             meshRenderer.enabled = false;
@@ -59,14 +54,24 @@ namespace Chisel.Components
                 container       = renderContainer,
                 meshFilter      = meshFilter,
                 meshRenderer    = meshRenderer,
-                sharedMesh      = sharedMesh,
-#if UNITY_EDITOR
-                partialMesh     = partialMesh,
-#endif
                 renderMaterials = new Material[0]
             };
+            renderObjects.EnsureMeshesAllocated();
             renderObjects.Initialize();
             return renderObjects;
+        }
+
+
+        void EnsureMeshesAllocated()
+        {
+            if (sharedMesh == null) sharedMesh = new Mesh { name = meshFilter.gameObject.name };
+#if UNITY_EDITOR
+            if (partialMesh == null)
+            {
+                partialMesh = new Mesh { name = meshFilter.gameObject.name };
+                partialMesh.hideFlags = HideFlags.DontSave;
+            }
+#endif
         }
 
         public void Destroy()
@@ -275,13 +280,15 @@ namespace Chisel.Components
                         if (sharedMesh.vertexCount > 0) { meshIsModified = true; sharedMesh.Clear(keepVertexLayout: true); }
                     } else
                     {
+                        var desiredCapacity = __foundMaterials.Count + (endIndex - startIndex);
+                        if (__foundMaterials.Capacity < desiredCapacity)
+                            __foundMaterials.Capacity = desiredCapacity;
                         for (int i = startIndex; i < endIndex; i++)
                         {
                             var meshDescription = meshDescriptions[i];
                             var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                             __foundMaterials.Add(renderMaterial);
-
                         }
                     }
                     Profiler.EndSample();
@@ -345,6 +352,7 @@ namespace Chisel.Components
         static readonly List<int>       sDstTriangles   = new List<int>();
         internal void UpdateVisibilityMesh()
         {
+            EnsureMeshesAllocated();
             var srcMesh = sharedMesh;
             var dstMesh = partialMesh;
 

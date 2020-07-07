@@ -213,15 +213,12 @@ namespace Chisel.Core
                 } else
                 if (section.layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                 {
-                    brushIndicesArray.AllocateWithCapacityForIndex(i, totalIndexCount / 3);
                     indicesArray     .AllocateWithCapacityForIndex(i, totalIndexCount);
                     positionsArray   .AllocateWithCapacityForIndex(i, totalVertexCount);
                         
-                    brushIndicesArray[i].Clear();
                     indicesArray     [i].Clear();
                     positionsArray   [i].Clear();
 
-                    brushIndicesArray[i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
                     indicesArray     [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
                     positionsArray   [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
                 }
@@ -346,9 +343,8 @@ namespace Chisel.Core
                             sourceVertexCount == 0)
                             continue;
 
-                        for (int i = 0; i < sourceBrushCount; i ++)
+                        for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
                             brushIndices[brushIDIndexOffset] = brushNodeID;
-                        brushIDIndexOffset += sourceBrushCount;
 
                         for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
                             indices[indexOffset] = (int)(sourceIndices[i] + indexVertexOffset);
@@ -382,11 +378,9 @@ namespace Chisel.Core
                 var surfacesOffset  = subMeshCount.surfacesOffset;
                 var surfacesCount   = subMeshCount.surfacesCount;
                 
-                var brushIndices    = this.brushIndicesArray[index];
                 var indices         = this.indicesArray[index];
                 var positions       = this.positionsArray[index];
                 
-                var brushIndicesArray  = brushIndices.AsArray();
                 var indicesArray       = indices.AsArray();
                 var positionsArray     = positions.AsArray();
 
@@ -410,9 +404,6 @@ namespace Chisel.Core
                         sourceVertexCount == 0)
                         continue;
 
-
-                    for (int i = 0; i < sourceBrushCount; i++)
-                        brushIndicesArray[brushIDIndexOffset] = brushNodeID;
                     brushIDIndexOffset += sourceBrushCount;
 
                     for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
