@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -112,7 +113,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.LayerUsageFlags"/>
     /// <seealso cref="Chisel.Core.LayerParameterIndex"/>
     [Serializable, StructLayout(LayoutKind.Sequential)]
-    public struct SurfaceLayers
+    public unsafe struct SurfaceLayers
     {
         /// <value>Describe to what layers this surface belongs.</value>
         /// <remarks>Can be used to define if the surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</remarks>
@@ -128,7 +129,7 @@ namespace Chisel.Core
         /// </code>
         /// </remarks>
         /// <seealso cref="Chisel.Core.LayerParameterIndex.LayerParameter1"/>.
-        public Int32			layerParameter1;
+        public Int32			layerParameter1 { get { return layerParameters[0]; } set { layerParameters[0] = value; } }
 
         /// <value>Second layer-parameter.</value>
         /// <remarks>Could be, for instance, an instanceID to a [PhysicMaterial](https://docs.unity3d.com/ScriptReference/PhysicMaterial.html), which can then be found using [EditorUtility.InstanceIDToObject](https://docs.unity3d.com/ScriptReference/EditorUtility.InstanceIDToObject.html)
@@ -140,12 +141,13 @@ namespace Chisel.Core
         /// </code>
         /// </remarks>
         /// <seealso cref="Chisel.Core.LayerParameterIndex.LayerParameter2"/>.
-        public Int32			layerParameter2;
+        public Int32			layerParameter2 { get { return layerParameters[1]; } set { layerParameters[1] = value; } }
 
         /// <value>Third layer-parameter.</value>
         /// <remarks>A value of 0 means that it's not set.</remarks>
-        public Int32			layerParameter3;
+        public Int32			layerParameter3 { get { return layerParameters[2]; } set { layerParameters[2] = value; } }
 
         // .. this could be extended in the future, when necessary
+        public int3             layerParameters;
     }
 }

@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -13,6 +14,67 @@ namespace Chisel.Core
 {
     public static unsafe class ChiselNativeListExtensions
     {
+        public static JobHandle ScheduleEnsureCapacity<T1,T2>(NativeList<T1> container, NativeList<T2> lengthList, int multiplier, JobHandle dependency)
+            where T1 : struct
+            where T2 : struct
+        {
+            var jobData = new EnsureCapacityListJob<T1> { List = lengthList.GetUnsafeList(), multiplier = multiplier, Container = container };
+            return jobData.Schedule(dependency);
+        }
+        public static JobHandle ScheduleEnsureCapacity<T1, T2>(NativeList<T1> container, NativeList<T2> lengthList, JobHandle dependency)
+            where T1 : struct
+            where T2 : struct
+        {
+            var jobData = new EnsureCapacityListJob<T1> { List = lengthList.GetUnsafeList(), multiplier = 1, Container = container };
+            return jobData.Schedule(dependency);
+        }
+
+
+        [BurstCompile]
+        struct EnsureCapacityListJob<T> : IJob
+            where T : struct
+        {
+            public NativeList<T> Container;
+            public int multiplier;
+            [ReadOnly]
+            [NativeDisableUnsafePtrRestriction]
+            public UnsafeList* List;
+
+            public void Execute()
+            {
+                Container.Clear();
+                multiplier *= List->Length;
+                if (Container.Capacity < multiplier)
+                    Container.Capacity = multiplier;
+            }
+        }
+        
+        public static JobHandle ScheduleEnsureCapacity<T1,T2>(NativeList<T1> container, NativeArray<T2> lengthArray, JobHandle dependency)
+            where T1 : struct
+            where T2 : struct
+        {
+            var jobData = new EnsureCapacityArrayJob<T1,T2> { LengthArray = lengthArray, Container = container };
+            return jobData.Schedule(dependency);
+        }
+
+
+        [BurstCompile]
+        struct EnsureCapacityArrayJob<T1,T2> : IJob
+            where T1 : struct
+            where T2 : struct
+        {
+            public NativeList<T1> Container;
+
+            public NativeArray<T2> LengthArray;
+
+            public void Execute()
+            {
+                Container.Clear();
+                if (Container.Capacity < LengthArray.Length)
+                    Container.Capacity = LengthArray.Length;
+            }
+        }
+
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
 
         public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged

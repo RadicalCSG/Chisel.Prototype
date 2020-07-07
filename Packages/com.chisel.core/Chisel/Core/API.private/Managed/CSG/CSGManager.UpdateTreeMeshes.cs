@@ -21,27 +21,10 @@ namespace Chisel.Core
             public NativeList<GeneratedMeshDescription>     meshDescriptions;
             public VertexBufferContents                     vertexBufferContents;
             
-            //public NativeList<SectionData>                  sections;
-            //public NativeList<BrushData>                    brushRenderData;
-            //public NativeList<SubMeshCounts>                subMeshCounts;
-            //public NativeList<VertexBufferInit>             subMeshSections;
-            //public NativeList<SubMeshSurface>               subMeshSurfaces;
-
-            
             public void Reset()
             {
                 if (meshDescriptions.IsCreated)
                     meshDescriptions.Clear();
-                //if (sections.IsCreated)
-                //    sections.Clear();
-                //if (brushRenderData.IsCreated)
-                //    brushRenderData.Clear();
-                //if (subMeshCounts.IsCreated)
-                //    subMeshCounts.Clear();
-                //if (subMeshSections.IsCreated)
-                //    subMeshSections.Clear();
-                //if (subMeshSurfaces.IsCreated)
-                //    subMeshSurfaces.Clear();
             }
 
             public void Dispose()
@@ -49,26 +32,6 @@ namespace Chisel.Core
                 if (meshDescriptions.IsCreated)
                     meshDescriptions.Dispose();
                 meshDescriptions = default;
-
-                //if (sections.IsCreated)
-                //    sections.Dispose();
-                //sections = default;
-
-                //if (brushRenderData.IsCreated)
-                //    brushRenderData.Dispose();
-                //brushRenderData = default;
-
-                //if (subMeshCounts.IsCreated)
-                //    subMeshCounts.Dispose();
-                //subMeshCounts = default;
-
-                //if (subMeshSections.IsCreated)
-                //    subMeshSections.Dispose();
-                //subMeshSections = default;
-
-                //if (subMeshSurfaces.IsCreated)
-                //    subMeshSurfaces.Dispose();
-                //subMeshSurfaces = default;
 
                 vertexBufferContents.Dispose();
                 vertexBufferContents = default;
@@ -136,11 +99,11 @@ namespace Chisel.Core
                 intersectingBrushes             .Clear();
                 rebuildTreeBrushIndexOrders     .Clear();
                 
-                sections                    .Clear();
-                brushRenderData             .Clear();
-                subMeshCounts               .Clear();
-                subMeshSections             .Clear();
-                subMeshSurfaces             .Clear();
+                sections                        .Clear();
+                brushRenderData                 .Clear();
+                subMeshCounts                   .Clear();
+                subMeshSections                 .Clear();
+                subMeshSurfaces                 .Clear();
                 Profiler.EndSample();
                 
 
@@ -176,6 +139,8 @@ namespace Chisel.Core
                     Dispose(lastJobHandle, onlyBlobs: false);
                 Profiler.EndSample();
 
+                lastJobHandle = default;
+
                 Profiler.BeginSample("NEW");
                 this.brushCount                 = newBrushCount;
                 var triangleArraySize           = GeometryMath.GetTriangleArraySize(newBrushCount);
@@ -202,7 +167,9 @@ namespace Chisel.Core
                 brushRenderBuffers              = new NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>(newBrushCount, Allocator.Persistent);
                 
                 brushRenderData                 = new NativeList<BrushData>(newBrushCount, Allocator.Persistent);
-            
+
+                meshQueries = default;
+
                 Profiler.EndSample();
             }
             
@@ -231,6 +198,9 @@ namespace Chisel.Core
                     intersectingBrushes.Clear();
                 }
                 Profiler.EndSample();
+
+                if (meshQueries.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshQueries.Dispose(disposeJobHandle));
+                meshQueries = default;
 
                 if (onlyBlobs)
                     return;
@@ -290,6 +260,7 @@ namespace Chisel.Core
                 outputSurfacesRange           = default;
                 intersectingBrushes           = default;
                 treeSpaceVerticesArray        = default;
+                meshQueries = default;
 
                 brushCount = 0;
             }
@@ -1470,6 +1441,7 @@ namespace Chisel.Core
                         var dependencies        = treeUpdate.allGenerateSurfaceTrianglesJobHandle;
                         var chiselLookupValues  = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
 
+                        dependencies = ChiselNativeListExtensions.ScheduleEnsureCapacity(treeUpdate.brushRenderData, treeUpdate.allTreeBrushIndexOrders, dependencies);
                         var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
                         {
                             meshQueryLength         = treeUpdate.meshQueries.Length,
@@ -1721,9 +1693,6 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
 
-                        treeUpdate.meshQueries.Dispose();
-                        treeUpdate.meshQueries = default;
-
                         // TODO: put in job?
                         treeUpdate.Dispose(disposeJobHandle, onlyBlobs: true);
                         //Clear(); // <-- do this in same job
@@ -1770,7 +1739,7 @@ namespace Chisel.Core
             }
         }
 
-#region Rebuild / Update
+        #region Rebuild / Update
         static NodeTransformations GetNodeTransformation(int nodeIndex)
         {
             // TODO: clean this up and make this sensible
@@ -1789,9 +1758,9 @@ namespace Chisel.Core
 
             return new NodeTransformations { nodeToTree = nodeTransform.nodeToTree, treeToNode = nodeTransform.treeToNode };
         }
-#endregion
+        #endregion
 
-#region Reset/Rebuild
+        #region Reset/Rebuild
         internal static bool UpdateAllTreeMeshes(out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
@@ -1824,6 +1793,6 @@ namespace Chisel.Core
             handle.Complete();
             return true;
         }
-#endregion
+        #endregion
     }
 }
