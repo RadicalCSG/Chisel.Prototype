@@ -122,8 +122,26 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         static Dictionary<int, VisibilityState> visibilityStateLookup = new Dictionary<int, VisibilityState>();
         public static bool IsBrushVisible(int brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
+
+        static bool updateVisibilityFlag = false;
         public static void OnVisibilityChanged()
         {
+            updateVisibilityFlag = true;
+            UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
+            UnityEditor.EditorApplication.delayCall += OnUnityIndeterministicMessageOrderingWorkAround;
+        }
+
+        static void OnUnityIndeterministicMessageOrderingWorkAround()
+        {
+            UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
+            UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+        }
+
+        public static void UpdateVisibility()
+        {
+            if (!updateVisibilityFlag)
+                return;
+            updateVisibilityFlag = false;
             // TODO: 1. turn off rendering regular meshes when we have partial visibility of model contents
             //       2. find a way to render partial mesh instead
             //          A. needs to show lightmap of original mesh, even when modified

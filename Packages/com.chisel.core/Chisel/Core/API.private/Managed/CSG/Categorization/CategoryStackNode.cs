@@ -15,14 +15,11 @@ using UnityEngine;
 
 namespace Chisel.Core 
 {
-    internal unsafe struct CategoryStackNode
+    internal struct CategoryStackNode
     { 
+        public CategoryRoutingRow   routingRow;
         public int                  nodeIndex;
         public CSGOperationType     operation;
         public CategoryGroupIndex   input;
-        public CategoryRoutingRow   routingRow;
-
-        public override string ToString() { return ToString(lastNode: false); }
-        public string ToString(bool lastNode) { return $"'{nodeIndex}': {(int)input} -> {routingRow.ToString(lastNode)}"; }
     }
 }

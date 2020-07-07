@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Entities.UniversalDelegates;
 
 namespace Chisel.Core
 {
@@ -21,10 +22,9 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>                                         nodeIndexToNodeOrder;
-        [NoAlias, ReadOnly] public int                                                      nodeIndexToNodeOrderOffset;
         [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
-        [NoAlias, ReadOnly] public NativeMultiHashMap<int, BlobAssetReference<BrushIntersectionLoop>>  intersectionLoopBlobs;
+        [NoAlias, ReadOnly] public NativeArray<int2>                                        outputSurfacesRange;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoop>>   outputSurfaces;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygons;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         
@@ -33,10 +33,10 @@ namespace Chisel.Core
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         inputEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<ushort>       srcIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  basePolygonSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeArray<IndexSurfaceInfo> basePolygonSurfaceInfos;
         [NativeDisableContainerSafetyRestriction] NativeList<ushort>        tempList;
         [NativeDisableContainerSafetyRestriction] NativeList<BlobAssetReference<BrushIntersectionLoop>> brushIntersections;
-        [NativeDisableContainerSafetyRestriction] NativeList<SurfaceInfo>   intersectionSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  intersectionSurfaceInfos;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     basePolygonEdges;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionEdges;
         [NativeDisableContainerSafetyRestriction] NativeBitArray            usedNodeOrders;
@@ -48,11 +48,11 @@ namespace Chisel.Core
         {
             public int Compare(BlobAssetReference<BrushIntersectionLoop> x, BlobAssetReference<BrushIntersectionLoop> y)
             {
-                var diff = x.Value.pair.basePlaneIndex - y.Value.pair.basePlaneIndex;
+                var diff = x.Value.surfaceInfo.basePlaneIndex - y.Value.surfaceInfo.basePlaneIndex;
                 if (diff != 0)
                     return diff;
 
-                return x.Value.pair.brushNodeOrder1 - y.Value.pair.brushNodeOrder1;
+                return x.Value.indexOrder1.nodeOrder - y.Value.indexOrder1.nodeOrder;
             }
         }
 
@@ -85,7 +85,6 @@ namespace Chisel.Core
         public void Execute(int index)
         {
             var brushIndexOrder     = treeBrushIndexOrders[index];
-            int brushNodeIndex      = brushIndexOrder.nodeIndex;
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
             // Can happen when BrushMeshes are not initialized correctly
@@ -101,7 +100,7 @@ namespace Chisel.Core
             if (!basePolygonSurfaceInfos.IsCreated || basePolygonSurfaceInfos.Length < surfaceCount)
             {
                 if (basePolygonSurfaceInfos.IsCreated) basePolygonSurfaceInfos.Dispose();
-                basePolygonSurfaceInfos = new NativeArray<SurfaceInfo>(surfaceCount, Allocator.Temp);
+                basePolygonSurfaceInfos = new NativeArray<IndexSurfaceInfo>(surfaceCount, Allocator.Temp);
             }
 
             if (!hashedVertices.IsCreated)
@@ -118,7 +117,8 @@ namespace Chisel.Core
                 basePolygonEdges.ClearChildren();
             basePolygonEdges.ResizeExact(surfaceCount);
 
-            var intersectionCount = intersectionLoopBlobs.CountValuesForKey(brushNodeOrder);
+            var intersectionOffset = outputSurfacesRange[brushNodeOrder].x;
+            var intersectionCount  = outputSurfacesRange[brushNodeOrder].y;
             
             var uniqueBrushOrderCount = 0;
             if (intersectionCount > 0)
@@ -140,13 +140,12 @@ namespace Chisel.Core
                 } else
                     usedNodeOrders.Clear();
 
-                var enumerator = intersectionLoopBlobs.GetValuesForKey(brushNodeOrder);
-                while (enumerator.MoveNext())
+                intersectionCount += intersectionOffset;
+                for (int i = intersectionOffset; i < intersectionCount; i++)
                 {
-                    var item                = enumerator.Current;
-                    ref var pair            = ref item.Value.pair;
+                    var item            = outputSurfaces[i];
+                    var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
                     
-                    var otherNodeOrder1 = pair.brushNodeOrder1;
                     uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
                     usedNodeOrders.Set(otherNodeOrder1, true);
 
@@ -172,7 +171,14 @@ namespace Chisel.Core
                     for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
                         edges.AddNoResize(basePolygonBlob.edges[e]);
 
-                    basePolygonSurfaceInfos[s] = basePolygonBlob.polygons[s].surfaceInfo;
+                    ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
+                    ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
+                    basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
+                    {
+                        brushIndexOrder = nodeIndexOrder,
+                        interiorCategory = surfaceInfo.interiorCategory,
+                        basePlaneIndex = surfaceInfo.basePlaneIndex
+                    };
                 }
 
                 if (intersectionEdges.IsCreated)
@@ -183,8 +189,7 @@ namespace Chisel.Core
                 
 
                 output.BeginForEachIndex(index);
-                output.Write(brushNodeIndex);
-                output.Write(brushNodeOrder);
+                output.Write(brushIndexOrder);
                 output.Write(surfaceCount);
                 output.Write(hashedVertices.Length);
                 for (int l = 0; l < hashedVertices.Length; l++)
@@ -231,7 +236,14 @@ namespace Chisel.Core
                             for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
                                 edges.AddNoResize(basePolygonBlob.edges[e]);
 
-                            basePolygonSurfaceInfos[s] = basePolygonBlob.polygons[s].surfaceInfo;
+                            ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
+                            ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
+                            basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
+                            {
+                                brushIndexOrder = nodeIndexOrder,
+                                interiorCategory = surfaceInfo.interiorCategory,
+                                basePlaneIndex = surfaceInfo.basePlaneIndex
+                            };
                         }
 
                         { 
@@ -267,14 +279,14 @@ namespace Chisel.Core
                         var intersectionSurfaceOffset   = intersectionSurfaceSegments[s].x;
                         for (int l0 = intersectionSurfaceCount - 1; l0 >= 0; l0--)
                         {
-                            int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].Value.pair.brushNodeOrder1;
+                            int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder1.nodeOrder;
                             var edges                   = intersectionEdges[intersectionSurfaceOffset + l0];
                             for (int l1 = 0; l1 < intersectionSurfaceCount; l1++)
                             {
                                 if (l0 == l1)
                                     continue;
                             
-                                int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].Value.pair.brushNodeOrder1;// intersectionIndex1.w;
+                                int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].Value.indexOrder1.nodeOrder;// intersectionIndex1.w;
 
                                 FindLoopPlaneIntersections(brushTreeSpacePlanes, intersectionBrushOrder1, intersectionBrushOrder0, hashedVertices, edges);
 
@@ -308,7 +320,7 @@ namespace Chisel.Core
                         var bp_edges = basePolygonEdges[s];
                         for (int l0 = 0; l0 < intersectionSurfaceCount; l0++)
                         {
-                            int intersectionBrushOrder  = brushIntersections[intersectionSurfaceOffset + l0].Value.pair.brushNodeOrder1;// intersectionIndex.w;
+                            int intersectionBrushOrder  = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder1.nodeOrder;// intersectionIndex.w;
                             var in_edges                = intersectionEdges[intersectionSurfaceOffset + l0];
 
                             FindLoopVertexOverlaps(brushTreeSpacePlanes, intersectionBrushOrder, hashedVertices, bp_edges, in_edges);
@@ -336,7 +348,7 @@ namespace Chisel.Core
 
                 if (!intersectionSurfaceInfos.IsCreated)
                 {
-                    intersectionSurfaceInfos = new NativeList<SurfaceInfo>(brushIntersections.Length, Allocator.Temp);
+                    intersectionSurfaceInfos = new NativeList<IndexSurfaceInfo>(brushIntersections.Length, Allocator.Temp);
                 } else
                 {
                     intersectionSurfaceInfos.Clear();
@@ -347,12 +359,18 @@ namespace Chisel.Core
                 for (int k = 0; k < brushIntersections.Length; k++)
                 {
                     ref var intersection = ref brushIntersections[k].Value;
-                    intersectionSurfaceInfos.AddNoResize(intersection.surfaceInfo); //OUTPUT
+                    ref var surfaceInfo  = ref intersection.surfaceInfo;
+                    intersectionSurfaceInfos.AddNoResize(
+                        new IndexSurfaceInfo
+                        {
+                            brushIndexOrder = intersection.indexOrder1,
+                            interiorCategory = surfaceInfo.interiorCategory,
+                            basePlaneIndex = surfaceInfo.basePlaneIndex
+                        }); //OUTPUT
                 }
 
                 output.BeginForEachIndex(index);
-                output.Write(brushNodeIndex);
-                output.Write(brushNodeOrder);
+                output.Write(brushIndexOrder);
                 output.Write(surfaceCount);
                 output.Write(hashedVertices.Length);
                 for (int l = 0; l < hashedVertices.Length; l++)

@@ -18,7 +18,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
     {
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                             transformations;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
 
@@ -42,11 +42,14 @@ namespace Chisel.Core
 
         public void Execute(int b)
         {
-            var brushIndexOrder = treeBrushIndexOrders[b];
+            var brushIndexOrder = rebuildTreeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
             var transform       = transformations[brushNodeOrder];
 
-            var mesh                    = brushMeshLookup[brushNodeOrder];
+            var mesh            = brushMeshLookup[brushNodeOrder];
+            if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
+                !mesh.IsCreated)
+                return;
             ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.nodeToTree;
 

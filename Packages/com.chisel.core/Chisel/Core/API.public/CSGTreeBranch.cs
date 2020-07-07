@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -32,7 +33,7 @@ namespace Chisel.Core
             if (children != null && children.Length > 0)
             {
                 if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(userID, operation);
-                if (!CSGTreeNode.SetChildNodes(branchNodeID, children))
+                if (!CSGManager.SetChildNodes(branchNodeID, children))
                 {
                     CSGTreeNode.DestroyNode(branchNodeID);
                     return new CSGTreeBranch() { branchNodeID = 0 };
@@ -52,7 +53,7 @@ namespace Chisel.Core
                 return new CSGTreeBranch() { branchNodeID = 0 };
             if (children != null && children.Length > 0)
             {
-                if (!CSGTreeNode.SetChildNodes(branchNodeID, children))
+                if (!CSGManager.SetChildNodes(branchNodeID, children))
                 {
                     CSGTreeNode.DestroyNode(branchNodeID);
                     return new CSGTreeBranch() { branchNodeID = 0 };
@@ -141,7 +142,12 @@ namespace Chisel.Core
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeBranch"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(CSGTreeNode[] array)			{ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.SetChildNodes(branchNodeID, array); }
+        public bool SetChildren	(CSGTreeNode[] array)			{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.SetChildNodes(branchNodeID, array); }
+
+        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeBranch"/> to the give list of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
+        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The list itself cannot be null.</param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        public bool SetChildren	(List<CSGTreeNode> list)		{ if (list == null) throw new ArgumentNullException("list"); return CSGManager.SetChildNodes(branchNodeID, list); }
 
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>

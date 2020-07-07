@@ -618,7 +618,7 @@ namespace Chisel.Core
                 throw new IndexOutOfRangeException($"Value {value} must be positive.");
 
             if ((uint)value >= (uint)length)
-                throw new IndexOutOfRangeException($"Value {value} is out of range in NativeList of '{length}' Length.");
+                throw new IndexOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -628,7 +628,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
 
             if ((uint)value < (uint)length)
-                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeList of '{length}' Length.");
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -638,7 +638,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
 
             if ((uint)value >= (uint)length)
-                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeList of '{length}' Length.");
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

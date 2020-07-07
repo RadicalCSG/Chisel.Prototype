@@ -1,9 +1,11 @@
 {
     "name": "com.chisel.components",
+    "rootNamespace": "",
     "references": [
         "com.chisel.core",
         "com.scene.handle.extensions.runtime",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -11,5 +13,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

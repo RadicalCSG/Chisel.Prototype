@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -15,6 +17,14 @@ namespace Chisel.Core
                 return;
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * sizeof(T));
         }
+
+        public unsafe static void ClearStruct<T>(this NativeArray<T> array) where T : struct
+        {
+            if (array.Length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * Marshal.SizeOf<T>());
+        }
+        
 
         public unsafe static NativeArray<T> ToNativeArray<T>(this List<T> list, Allocator allocator) where T : struct
         {

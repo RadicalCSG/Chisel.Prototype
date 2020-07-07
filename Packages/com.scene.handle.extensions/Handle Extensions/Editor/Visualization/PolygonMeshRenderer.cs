@@ -368,8 +368,9 @@ namespace UnitySceneExtensions
                 var mesh = triangleMeshes[i].mesh;
                 if (triangleMeshes[i].vertexCount == 0 || !mesh)
                     continue;
-                Graphics.DrawMesh(mesh, Matrix4x4.identity, polygonMaterial, 0, camera, 0, null, false, false);
-                //Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+
+                if (polygonMaterial.SetPass(0))
+                    Graphics.DrawMeshNow(mesh, Matrix4x4.identity, 0);
             }
         }
 

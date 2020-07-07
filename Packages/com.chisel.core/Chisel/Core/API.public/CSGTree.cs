@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -28,7 +29,7 @@ namespace Chisel.Core
                 return new CSGTree() { treeNodeID = 0 };
             if (children != null && children.Length > 0)
             {
-                if (!CSGTreeNode.SetChildNodes(treeNodeID, children))
+                if (!CSGManager.SetChildNodes(treeNodeID, children))
                 {
                     CSGTreeNode.DestroyNode(treeNodeID);
                     return new CSGTree() { treeNodeID = 0 };
@@ -105,7 +106,12 @@ namespace Chisel.Core
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(CSGTreeNode[] array)				{ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.SetChildNodes(treeNodeID, array); }
+        public bool SetChildren	(CSGTreeNode[] array)				{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.SetChildNodes(treeNodeID, array); }
+
+        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
+        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The list itself cannot be null.</param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        public bool SetChildren(List<CSGTreeNode> list) { if (list == null) throw new ArgumentNullException("list"); return CSGManager.SetChildNodes(treeNodeID, list); }
 
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTree"/>.</param>
@@ -149,7 +155,7 @@ namespace Chisel.Core
         public CSGTreeNode[] ChildrenToArray() { return CSGTreeNode.GetChildNodes(treeNodeID); }
         #endregion
 
-
+        /*
         /// <summary>Determines what meshes would be generated from the tree from the given <paramref name="meshQuery"/> and <paramref name="vertexChannelMask"/>.</summary>
         /// <remarks>See the [Create Unity Meshes](~/documentation/createUnityMesh.md) article for more information.</remarks>
         /// <param name="meshQuery">An array of <see cref="Chisel.Core.MeshQuery"/>'s which describe which surfaces should be combined into meshes</param>
@@ -164,7 +170,8 @@ namespace Chisel.Core
         /// <param name="previousGeneratedMeshContents">The previously generated <see cref="Chisel.Core.GeneratedMeshContents"/>, this can reuse allocated memory if the mesh hasn't changed shape. (optional)</param>
         /// <returns>A <see cref="Chisel.Core.GeneratedMeshContents"/> that can be used to initialize a [UnityEngine.Mesh](https://docs.unity3d.com/ScriptReference/Mesh.html) with.</returns>
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions"/>
-        public GeneratedMeshContents		GetGeneratedMesh	(GeneratedMeshDescription meshDescription) { return GetGeneratedMesh(treeNodeID, meshDescription); }
+        public bool		                    GetGeneratedMesh	(ref GeneratedMeshDescription meshDescription, ref GeneratedMeshContents generatedMeshContents) { return CSGManager.GetGeneratedMesh(treeNodeID, ref meshDescription, ref generatedMeshContents); }
+        */
 
         // TODO: add description / make this more consistent
         public static CSGTree	Find(int userID)			{ return new CSGTree { treeNodeID = FindTreeByUserID(userID) }; }

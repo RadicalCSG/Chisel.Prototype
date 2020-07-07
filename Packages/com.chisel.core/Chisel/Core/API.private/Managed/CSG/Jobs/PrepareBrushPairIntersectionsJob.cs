@@ -191,9 +191,7 @@ namespace Chisel.Core
             var brushPair           = uniqueBrushPairs[index];
             var brushIndexOrder0    = brushPair.brushIndexOrder0;
             var brushIndexOrder1    = brushPair.brushIndexOrder1;
-            int brushNodeIndex0     = brushIndexOrder0.nodeIndex;
             int brushNodeOrder0     = brushIndexOrder0.nodeOrder;
-            int brushNodeIndex1     = brushIndexOrder1.nodeIndex;
             int brushNodeOrder1     = brushIndexOrder1.nodeOrder;
 
             var blobMesh0 = brushMeshLookup[brushNodeOrder0];
@@ -284,8 +282,7 @@ namespace Chisel.Core
                 surfaceInfos0[i] = new SurfaceInfo
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    basePlaneIndex      = (ushort)i,
-                    brushIndex          = brushIndexOrder1.nodeIndex
+                    basePlaneIndex      = (ushort)i
                 };
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
@@ -293,8 +290,7 @@ namespace Chisel.Core
                 surfaceInfos1[i] = new SurfaceInfo
                 {
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    basePlaneIndex      = (ushort)i,
-                    brushIndex          = brushIndexOrder0.nodeIndex
+                    basePlaneIndex      = (ushort)i
                 };
             }
 

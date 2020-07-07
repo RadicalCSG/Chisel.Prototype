@@ -162,7 +162,7 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
             }
         }
 
@@ -182,11 +182,11 @@ namespace Chisel.Components
                 UpdateInternalTransformation();
 
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                ChiselNodeHierarchyManager.UpdateTreeNodeTranformation(this);
+                ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
             }
         }
 
-        internal override void UpdateTransformation()
+        public override void UpdateTransformation()
         {
             // TODO: recalculate transformation based on hierarchy up to (but not including) model
             var transform = hierarchyItem.Transform;
@@ -304,16 +304,13 @@ namespace Chisel.Components
                 instances = brushContainerAsset ? brushContainerAsset.Instances : null;
             }
 
+            if (instances == null)
+                return false;
+
             var requiredNodeLength	= RequiredNodeLength(instances);
             
             if (Nodes != null && Nodes.Length == requiredNodeLength)
             {
-                if (Nodes.Length == 0)
-                {
-                    var brush = (CSGTreeBrush)Nodes[0];
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    brush.Operation = CSGOperationType.Additive;
-                } else
                 if (Nodes.Length == 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;
@@ -332,7 +329,7 @@ namespace Chisel.Components
             } else
             {
                 bool needRebuild = (Nodes != null && instances != null && instances.Length > 0) && Nodes.Length != requiredNodeLength;
-                if (Nodes.Length <= 1)
+                if (Nodes.Length == 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;
                     if (brush.BrushMesh != BrushMeshInstance.InvalidInstance)
@@ -366,13 +363,14 @@ namespace Chisel.Components
 
             if (requiredNodeLength == 0)
             {
-                Nodes = new CSGTreeNode[1];
-                Nodes[0] = CSGTreeBrush.Create(userID: instanceID, operation: operation);
+                Nodes = new CSGTreeNode[0];
+                //Nodes[0] = CSGTreeBrush.Create(userID: instanceID, operation: operation);
             } else
             if (requiredNodeLength == 1)
             {
                 Nodes = new CSGTreeNode[1];
                 Nodes[0] = CSGTreeBrush.Create(userID: instanceID, operation: operation);
+                Nodes[0].Operation = operation;
             } else
             {
                 Nodes = new CSGTreeNode[requiredNodeLength];
@@ -383,8 +381,8 @@ namespace Chisel.Components
                 Nodes[0] = CSGTreeBranch.Create(instanceID, operation: operation, children: children);
                 for (int i = 1; i < Nodes.Length; i++)
                     Nodes[i] = children[i - 1];
+                Nodes[0].Operation = operation;
             }
-            Nodes[0].Operation = operation;
             UpdateInternalTransformation();
         }
 
@@ -425,6 +423,9 @@ namespace Chisel.Components
             GenerateAllTreeNodes();
             Profiler.EndSample();
 
+            if (Nodes.Length ==  0)
+                return Nodes;
+
             Profiler.BeginSample("InitializeBrushMeshInstances");
             InitializeBrushMeshInstances();
             Profiler.EndSample();
@@ -458,7 +459,8 @@ namespace Chisel.Components
 
         public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
-            childNodes.Add(TopNode);
+            if (Nodes.Length > 0)
+                childNodes.Add(TopNode);
         }
 
         public override ChiselBrushContainerAsset[] GetUsedGeneratedBrushes()

@@ -48,7 +48,7 @@ namespace Chisel.Editors
     // TODO: clean up, rename
     public sealed class ChiselClickSelectionManager : ScriptableObject // TODO: doesn't need to be a scriptableobject?
     {
-#region Instance
+        #region Instance
         static ChiselClickSelectionManager _instance;
         public static ChiselClickSelectionManager Instance
         {
@@ -70,7 +70,7 @@ namespace Chisel.Editors
                 return _instance;
             }
         }
-#endregion
+        #endregion
 
 
 
@@ -207,7 +207,7 @@ namespace Chisel.Editors
         }
         
 
-#region DeepSelection (private)
+        #region DeepSelection (private)
         private static List<GameObject>     deepClickIgnoreGameObjectList   = new List<GameObject>();
         private static Vector2  _prevSceenPos = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
         private static Camera   _prevCamera;
@@ -221,7 +221,7 @@ namespace Chisel.Editors
                 _prevCamera = null;
             }
         }
-#endregion
+        #endregion
         
 
         public static GameObject PickClosestGameObject(Vector2 screenPos, out ChiselIntersection intersection)
@@ -305,11 +305,10 @@ namespace Chisel.Editors
                 if (PickClosestGO != null)
                 {
 #if UNITY_2020_2_OR_NEWER
-                    gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, false, out materialIndex);
+                    gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, true, out materialIndex);
 #else
                     gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
 #endif
-
                 } else
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
             }
@@ -456,8 +455,7 @@ namespace Chisel.Editors
             intersection = ChiselIntersection.None;
 
             node = null;
-            Material sharedMaterial;
-            var gameObject = PickModelOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out sharedMaterial);
+            var gameObject = PickModelOrGameObject(camera, pickposition, layers, ref ignore, ref filter, out model, out Material sharedMaterial);
             if (object.Equals(gameObject, null))
                 return null;
 

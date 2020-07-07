@@ -313,10 +313,14 @@ namespace Chisel.Editors
                 
                 foreach (var outline in foundBrushOutlines)
                 {
+                    if (brushOutlines.ContainsKey(outline))
+                        continue;
+
                     if (!outline.brush.Valid ||
                         outline.brush.BrushMesh == BrushMeshInstance.InvalidInstance)
                         continue;
                     
+                    // TODO: should only re-create the wireframe when the brush has changed it's hashes
                     var wireframe = ChiselWireframe.CreateWireframe(outline.brush);
                     brushOutlines[outline] = wireframe;
                 }

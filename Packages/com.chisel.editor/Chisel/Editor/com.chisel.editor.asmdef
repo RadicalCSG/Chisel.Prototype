@@ -1,5 +1,6 @@
 {
     "name": "com.chisel.editor",
+    "rootNamespace": "",
     "references": [
         "com.chisel.core",
         "com.chisel.components",

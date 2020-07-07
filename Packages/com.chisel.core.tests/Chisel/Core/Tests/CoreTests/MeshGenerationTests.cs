@@ -5,6 +5,7 @@ using Chisel.Core;
 
 namespace FoundationTests
 {
+    /*
     [TestFixture]
     public partial class MeshGenerationTests
     {
@@ -263,4 +264,5 @@ namespace FoundationTests
             Assert.AreEqual(materialID1, generatedMesh.description.surfaceParameter);
         }
     }
+    */
 }

@@ -251,7 +251,9 @@ namespace Chisel.Components
                 Debug.LogWarning("SetChildren called on a ChiselModel that isn't properly initialized", this);
                 return;
             }
-            if (!Node.SetChildren(childNodes.ToArray()))
+            if (childNodes.Count == 0)
+                return;
+            if (!Node.SetChildren(childNodes))
                 Debug.LogError("Failed to assign list of children to tree node");
         }
 
@@ -339,33 +341,20 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-        public void Update()
+        MaterialPropertyBlock materialPropertyBlock;
+        public void OnRenderModel(Camera camera)
         {
-            if (generated == null || 
-                UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-
-            // Sometimes Unity 'forgets' to send some messages.
-            if (generated.visibilityState == VisibilityState.Unknown)
-                ChiselGeneratedComponentManager.OnVisibilityChanged();
-
-
-            generated.UpdateVisibilityMeshes();
-
-            Debug.Assert(generated.visibilityState != VisibilityState.Unknown, "Unknown Visibility state");
-            if (generated.visibilityState != VisibilityState.Mixed)
-                return;
-
             // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
             // but still have the same lightmap, and keep lightmap support.
             // We do this by setting forceRenderingOff to true on all MeshRenderers.
             // This makes them behave like before, except that they don't render. This means they are still 
             // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
             // render the sub-mesh with the exact same settings as the MeshRenderer.
+            if (materialPropertyBlock == null)
+                materialPropertyBlock = new MaterialPropertyBlock();
 
             var layer   = gameObject.layer; 
             var matrix  = transform.localToWorldMatrix;
-            var camera  = Camera.current;
             foreach (var renderable in generated.renderables)
             {
                 if (renderable == null)
@@ -378,19 +367,42 @@ namespace Chisel.Components
                 var meshRenderer = renderable.meshRenderer;
                 if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
                     continue;
-
-                var properties = new MaterialPropertyBlock();
-                meshRenderer.GetPropertyBlock(properties);
+                
+                meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                 var castShadows             = (ShadowCastingMode)meshRenderer.shadowCastingMode;
                 var receiveShadows          = (bool)meshRenderer.receiveShadows;
                 var probeAnchor             = (Transform)meshRenderer.probeAnchor;
                 var lightProbeUsage         = (LightProbeUsage)meshRenderer.lightProbeUsage;
                 var lightProbeProxyVolume   = meshRenderer.lightProbeProxyVolumeOverride == null ? null : meshRenderer.lightProbeProxyVolumeOverride.GetComponent<LightProbeProxyVolume>();
-                    
+                
                 for (int submeshIndex = 0; submeshIndex < mesh.subMeshCount; submeshIndex++)
-                    Graphics.DrawMesh(mesh, matrix, renderable.renderMaterials[submeshIndex], layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+                {
+                    Graphics.DrawMesh(mesh, matrix, renderable.renderMaterials[submeshIndex], layer, camera, submeshIndex, materialPropertyBlock, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+                }
             }
+        }
+
+        public void Update()
+        {
+            if (generated == null || 
+                UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            // Sometimes Unity 'forgets' to send some messages.
+            if (generated.visibilityState == VisibilityState.Unknown)
+                ChiselGeneratedComponentManager.OnVisibilityChanged();
+
+            generated.UpdateVisibilityMeshes();
+
+            if (generated.visibilityState != VisibilityState.Mixed)
+            {
+                Camera.onPreCull -= OnRenderModel;
+                return;
+            }
+
+            Camera.onPreCull -= OnRenderModel;
+            Camera.onPreCull += OnRenderModel;
         }
 #endif
     }

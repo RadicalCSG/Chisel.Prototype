@@ -1,5 +1,6 @@
 {
     "name": "com.chisel.core",
+    "rootNamespace": "",
     "references": [
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",

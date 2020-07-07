@@ -101,7 +101,7 @@ namespace Chisel.Components
 
         internal abstract CSGTreeNode[] CreateTreeNodes();
         internal abstract void			ClearTreeNodes(bool clearCaches = false);
-        internal virtual void			UpdateTransformation() { }
+        public virtual void			    UpdateTransformation() { }
         public virtual void				UpdateBrushMeshInstances() { }
 
         internal virtual void SetChildren(List<CSGTreeNode> childNodes) { }

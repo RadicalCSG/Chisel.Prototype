@@ -10,9 +10,8 @@ namespace Chisel.Core
 {
     public struct RoutingTable
     {
-        public BlobArray<CategoryGroupIndex>	inputs;
         public BlobArray<CategoryRoutingRow>	routingRows;
         public BlobArray<RoutingLookup>         routingLookups;
-        public BlobArray<int>	                nodes;        
+        public BlobArray<int>	                nodeIndexToTableIndex;
     }
 }
