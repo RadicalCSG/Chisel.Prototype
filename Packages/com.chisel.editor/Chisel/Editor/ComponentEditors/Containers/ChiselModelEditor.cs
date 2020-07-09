@@ -453,6 +453,9 @@ namespace Chisel.Editors
                     continue;
                 foreach (var renderable in renderables)
                 {
+                    if (renderable != null &&
+                        renderable.renderMaterials != null)
+                        continue;
                     foreach (var material in renderable.renderMaterials)
                     {
                         if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))

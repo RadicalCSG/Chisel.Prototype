@@ -445,7 +445,8 @@ namespace Chisel.Core
             var treeNodeID      = nodeHierarchies[brushNodeIndex].treeNodeID;
             var treeNodeIndex   = treeNodeID - 1;
             var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
-            if (!chiselLookupValues.brushTreeSpaceBoundCache.TryGetValue(brushNodeIndex, out MinMaxAABB result))
+
+            if (!chiselLookupValues.brushTreeSpaceBoundLookup.TryGetValue(brushNodeIndex, out MinMaxAABB result))
                 return false;
 
             bounds = new Bounds();

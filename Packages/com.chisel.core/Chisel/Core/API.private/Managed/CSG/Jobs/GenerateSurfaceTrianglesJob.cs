@@ -76,7 +76,6 @@ namespace Chisel.Core
 
             var brushIndexOrder = input.Read<IndexOrder>();
             var brushNodeOrder = brushIndexOrder.nodeOrder;
-            var brushNodeIndex = brushIndexOrder.nodeIndex;
             var vertexCount = input.Read<int>();
             if (!brushVertices.IsCreated || brushVertices.Capacity < vertexCount)
             {
@@ -437,8 +436,7 @@ namespace Chisel.Core
                         surfaceVertices[surfaceVerticesCount] = brushVertices[vertexIndexSrc];
                         surfaceVerticesCount++;
                         indexRemap[vertexIndexSrc] = vertexIndexDst + 1;
-                    }
-                    else
+                    } else
                         vertexIndexDst--;
                     surfaceIndexList[i] = vertexIndexDst;
                 }

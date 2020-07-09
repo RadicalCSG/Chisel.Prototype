@@ -44,8 +44,8 @@ namespace Chisel.Core
     
     public struct BrushData
     {
-        public int brushNodeIndex; //<- TODO: if we use NodeOrder maybe this could be explicit based on the order in array?
-        public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+        public IndexOrder                                   brushIndexOrder; //<- TODO: if we use NodeOrder maybe this could be explicit based on the order in array?
+        public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -72,7 +72,7 @@ namespace Chisel.Core
             int surfaceCount = 0;
             for (int b = 0, count_b = allTreeBrushIndexOrders.Length; b < count_b; b++)
             {
-                var brushNodeIndex      = allTreeBrushIndexOrders[b].nodeIndex;
+                var brushIndexOrder     = allTreeBrushIndexOrders[b];
                 var brushNodeOrder      = allTreeBrushIndexOrders[b].nodeOrder;
                 var brushRenderBuffer   = brushRenderBuffers[brushNodeOrder];
                 if (!brushRenderBuffer.IsCreated)
@@ -85,7 +85,7 @@ namespace Chisel.Core
                     continue;
 
                 brushRenderData.AddNoResize(new BrushData{
-                    brushNodeIndex      = brushNodeIndex,
+                    brushIndexOrder     = brushIndexOrder,
                     brushRenderBuffer   = brushRenderBuffer
                 });
 
@@ -288,7 +288,6 @@ namespace Chisel.Core
                     {
                         var subMeshSurface      = subMeshSurfaces[surfaceIndex];
                         var brushNodeIndex      = subMeshSurface.brushNodeIndex;
-                        var brushNodeID         = brushNodeIndex + 1;
                         ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
                         ref var sourceIndices   = ref sourceBuffer.indices;
@@ -306,6 +305,7 @@ namespace Chisel.Core
                         ref var sourceNormals   = ref sourceBuffer.normals;
                         ref var sourceTangents  = ref sourceBuffer.tangents;
 
+                        var brushNodeID = brushNodeIndex + 1;
                         for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
                             brushIndices[brushIDIndexOffset] = brushNodeID;
 
@@ -356,8 +356,6 @@ namespace Chisel.Core
                         ++surfaceIndex)
                 {
                     var subMeshSurface      = subMeshSurfaces[surfaceIndex];
-                    var brushNodeIndex      = subMeshSurface.brushNodeIndex;
-                    var brushNodeID         = brushNodeIndex + 1;
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                     ref var srcIndices      = ref sourceBuffer.indices;
                     ref var srcVertices     = ref sourceBuffer.vertices;
@@ -569,7 +567,7 @@ namespace Chisel.Core
                 for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
                 {
                     var brushData                   = brushRenderData[b];
-                    var brushNodeIndex              = brushData.brushNodeIndex;
+                    var brushIndexOrder             = brushData.brushIndexOrder;
                     var brushRenderBuffer           = brushData.brushRenderBuffer;
                     ref var brushRenderBufferRef    = ref brushRenderBuffer.Value;
                     ref var surfaces                = ref brushRenderBufferRef.surfaces;
@@ -586,7 +584,7 @@ namespace Chisel.Core
                         subMeshSurfaces.AddNoResize(new SubMeshSurface
                         {
                             surfaceIndex        = j,
-                            brushNodeIndex      = brushNodeIndex,
+                            brushNodeIndex      = brushIndexOrder.nodeIndex,
                             surfaceParameter    = surfaceParameterIndex < 0 ? 0 : surfaceLayers.layerParameters[surfaceParameterIndex],
                             brushRenderBuffer   = brushRenderBuffer
                         });
