@@ -448,13 +448,16 @@ namespace Chisel.Editors
                 var model = target as ChiselModel;
                 if (!model)
                     continue;
-                var renderMaterials = model.generated?.renderMaterials;
-                if (renderMaterials == null)
+                var renderables = model.generated?.renderables;
+                if (renderables == null)
                     continue;
-                foreach (var material in renderMaterials)
+                foreach (var renderable in renderables)
                 {
-                    if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))
-                        return true;
+                    foreach (var material in renderable.renderMaterials)
+                    {
+                        if (material != null && material.enableInstancing && material.shader != null && HasInstancing(material.shader))
+                            return true;
+                    }
                 }
             }
             return false;

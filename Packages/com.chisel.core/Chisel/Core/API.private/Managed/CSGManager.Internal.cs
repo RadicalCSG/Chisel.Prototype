@@ -60,6 +60,11 @@ namespace Chisel.Core
             }
         };
 
+        internal sealed class TreeInfo
+        {
+            public readonly List<int> treeBrushes = new List<int>();
+        }
+
         struct NodeTransform
         {
             public Matrix4x4 nodeToTree;
@@ -140,7 +145,6 @@ namespace Chisel.Core
 
             internal static void Reset(ref NodeHierarchy data)
             {
-                if (data.treeInfo != null) data.treeInfo.Dispose();
                 data.children       = null;
                 data.treeNodeID     = CSGTreeNode.InvalidNodeID;
                 data.parentNodeID   = CSGTreeNode.InvalidNodeID;
@@ -386,8 +390,6 @@ namespace Chisel.Core
             nodeFlags[nodeIndex] = flags;
 
             var nodeHierarchy = nodeHierarchies[nodeIndex];
-            if (nodeHierarchy.treeInfo != null)
-                nodeHierarchy.treeInfo.Dispose();
             nodeHierarchy.treeInfo		= new TreeInfo();
             nodeHierarchy.children		= new List<int>();
             nodeHierarchies[nodeIndex]	= nodeHierarchy;
