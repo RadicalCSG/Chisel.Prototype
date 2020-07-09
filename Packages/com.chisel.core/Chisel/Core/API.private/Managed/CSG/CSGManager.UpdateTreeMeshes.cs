@@ -272,9 +272,9 @@ namespace Chisel.Core
                 Profiler.BeginSample("NEW");
                 this.brushCount                 = newBrushCount;
                 var triangleArraySize           = GeometryMath.GetTriangleArraySize(newBrushCount);
-                var intersectionCount           = triangleArraySize;
+                var intersectionCount           = math.max(1, triangleArraySize);
                 brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
-                outputSurfaces                  = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(intersectionCount, Allocator.Persistent);
+                outputSurfaces                  = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(newBrushCount * 16, Allocator.Persistent);
                 brushBrushIntersections         = new NativeList<BrushPair>(intersectionCount * 2, Allocator.Persistent);
                 uniqueBrushPairs                = new NativeList<BrushPair>(intersectionCount, Allocator.Persistent);
                 intersectingBrushes             = new NativeList<BlobAssetReference<BrushPairIntersection>>(intersectionCount, Allocator.Persistent);                
@@ -363,7 +363,6 @@ namespace Chisel.Core
                 if (sections                     .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, sections                     .Dispose(disposeJobHandle));
                 if (brushRenderData              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, brushRenderData              .Dispose(disposeJobHandle));
                 if (subMeshCounts                .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshCounts                .Dispose(disposeJobHandle));
-                //if (subMeshSections              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSections              .Dispose(disposeJobHandle));
                 if (subMeshSurfaces              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, subMeshSurfaces              .Dispose(disposeJobHandle));
                 if (allTreeBrushIndexOrders      .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, allTreeBrushIndexOrders      .Dispose(disposeJobHandle));
                 if (rebuildTreeBrushIndexOrders  .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, rebuildTreeBrushIndexOrders  .Dispose(disposeJobHandle));
@@ -734,6 +733,7 @@ namespace Chisel.Core
                 ChiselMeshLookup.Update();
                 Profiler.EndSample();
 
+                int surfaceCount = 0;
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
@@ -746,13 +746,18 @@ namespace Chisel.Core
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
                         Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid."); 
+                    } else
+                    {
+                        surfaceCount += brushMeshBlobs[brushMeshID - 1].Value.polygons.Length;
                     }
 
                     brushMeshLookup[nodeOrder] = brushMeshID == 0 ? BlobAssetReference<BrushMeshBlob>.Null : brushMeshBlobs[brushMeshID - 1];                    
                 }
                 #endregion
 
-                
+                if (currentTree.outputSurfaces.Capacity < surfaceCount)
+                    currentTree.outputSurfaces.Capacity = surfaceCount;
+
                 var anyHierarchyModified = false;
                 rebuildTreeBrushIndexOrders.Clear();
                 s_TransformTreeBrushIndicesList.Clear();
