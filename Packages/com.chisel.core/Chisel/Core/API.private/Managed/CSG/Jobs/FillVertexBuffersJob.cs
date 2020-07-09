@@ -293,8 +293,6 @@ namespace Chisel.Core
                             
                         ref var sourceIndices   = ref sourceBuffer.indices;
                         ref var sourceVertices  = ref sourceBuffer.vertices;
-                        ref var sourceUV0       = ref sourceBuffer.uv0;
-                        ref var sourceNormals   = ref sourceBuffer.normals;
 
                         var sourceIndexCount    = sourceIndices.Length;
                         var sourceVertexCount   = sourceVertices.Length;
@@ -303,6 +301,10 @@ namespace Chisel.Core
                         if (sourceIndexCount == 0 ||
                             sourceVertexCount == 0)
                             continue;
+                        
+                        ref var sourceUV0       = ref sourceBuffer.uv0;
+                        ref var sourceNormals   = ref sourceBuffer.normals;
+                        ref var sourceTangents  = ref sourceBuffer.tangents;
 
                         for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
                             brushIndices[brushIDIndexOffset] = brushNodeID;
@@ -314,13 +316,14 @@ namespace Chisel.Core
                         positions   .CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
                         uv0         .CopyFrom(vertexOffset, ref sourceUV0,      0, sourceVertexCount);
                         normals     .CopyFrom(vertexOffset, ref sourceNormals,  0, sourceVertexCount);
+                        tangents    .CopyFrom(vertexOffset, ref sourceTangents, 0, sourceVertexCount);
                         indexVertexOffset += sourceVertexCount;
                     }
 
                     currentBaseVertex += vertexCount;
                     currentBaseIndex += indexCount;
                 }
-
+                /*
                 // TODO: do this per brush & cache this!!
                 ComputeTangents(indices,
                                 positions,
@@ -329,6 +332,7 @@ namespace Chisel.Core
                                 tangents,
                                 totalIndices:  currentBaseIndex,
                                 totalVertices: currentBaseVertex);
+                */
 
             } else
             if (layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
@@ -377,7 +381,7 @@ namespace Chisel.Core
                 }
             }
         }
-        
+        /*
         static void ComputeTangents(NativeArray<int>        indices,
                                     NativeArray<float3>	    positions,
                                     NativeArray<float2>	    uvs,
@@ -491,6 +495,7 @@ namespace Chisel.Core
                 tangents[v] = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
             }
         }
+        */
     }
 
     [BurstCompile(CompileSynchronously = true)]
