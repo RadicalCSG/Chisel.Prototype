@@ -506,7 +506,6 @@ namespace Chisel.Core
                 if (brushRenderBufferLookup.Capacity < brushCount)
                     brushRenderBufferLookup.Capacity = brushCount;
 
-
                 if (brushIndices.Capacity < brushCount)
                     brushIndices.Capacity = brushCount;
 
@@ -559,6 +558,11 @@ namespace Chisel.Core
                 brushTreeSpaceBoundCache = default;
                 if (treeSpaceVerticesCache.IsCreated)
                 {
+                    foreach (var item in treeSpaceVerticesCache)
+                    {
+                        if (item.IsCreated)
+                            item.Dispose();
+                    }
                     treeSpaceVerticesCache.Clear();
                     treeSpaceVerticesCache.Dispose();
                 }

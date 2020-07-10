@@ -18,13 +18,13 @@ namespace Chisel.Core
     struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
         // Read
-        [NoAlias,ReadOnly] public NativeArray<IndexOrder>                           treeBrushIndexOrders;
-        [NoAlias,ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>    brushMeshLookup;
-        [NoAlias,ReadOnly] public NativeArray<NodeTransformations>                  transformations;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                           treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>    brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                  transformations;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias,WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes;
 
 
         BlobAssetReference<BrushTreeSpacePlanes> Build(BlobAssetReference<BrushMeshBlob> brushMeshBlob, float4x4 nodeToTreeTransformation)

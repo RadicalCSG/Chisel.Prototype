@@ -51,10 +51,12 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct FindBrushRenderBuffersJob : IJob
     {
+        // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBuffers;
 
+        // Write
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeList<BrushData>      brushRenderData;
         [NativeDisableParallelForRestriction]
@@ -190,9 +192,9 @@ namespace Chisel.Core
     struct FillVertexBuffersJob : IJobParallelFor
     {
         // Read Only
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>    subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>       subMeshCounts;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>      subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>  subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>   subMeshCounts;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>  subMeshSurfaces;
 
         // Read / Write 
         [NativeDisableParallelForRestriction]
@@ -200,7 +202,7 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeListArray<int>                   brushIndicesArray;  // indexCount / 3
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<int>		           indicesArray;       // indexCount
+        [NoAlias] public NativeListArray<int>		            indicesArray;       // indexCount
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeListArray<float3>                positionsArray;     // vertexCount
         [NativeDisableParallelForRestriction]
@@ -543,9 +545,11 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct PrepareSubSectionsJob : IJob
     {
+        // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>       meshQueries;
         [NoAlias, ReadOnly] public NativeArray<BrushData>       brushRenderData;
             
+        // Write
         [NoAlias, WriteOnly] public NativeList<SubMeshSurface>  subMeshSurfaces;
         [NoAlias, WriteOnly] public NativeList<SectionData>     sections;
 
@@ -609,12 +613,14 @@ namespace Chisel.Core
     {
         const int kMaxPhysicsVertexCount = 64000;
 
+        // Read
         [NoAlias, ReadOnly] public NativeArray<SectionData>         sections;
 
-        // Read/Write (Sort)
+        // Read Write (Sort)
         [NoAlias] public NativeArray<SubMeshSurface>                subMeshSurfaces;
         [NoAlias] public NativeList<SubMeshCounts>                  subMeshCounts;
 
+        // Write
         [NoAlias, WriteOnly] public NativeList<SubMeshSection>    subMeshSections;
             
         struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>

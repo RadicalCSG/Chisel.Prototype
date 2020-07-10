@@ -13,6 +13,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct PerformCSGJob : IJobParallelFor
     {
+        // Read
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushNodeIndexOrders;        
 
@@ -21,6 +22,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
+        
+        // Write
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory

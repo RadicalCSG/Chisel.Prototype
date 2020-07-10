@@ -23,6 +23,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)] // Fails for some reason    
     struct GenerateSurfaceTrianglesJob : IJobParallelFor
     {
+        // Read
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              treeBrushNodeIndexOrders;
         

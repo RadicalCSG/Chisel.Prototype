@@ -18,6 +18,7 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVerticesJob : IJobParallelFor
     {
+        // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
@@ -82,10 +83,11 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct MergeTouchingBrushVertices2Job : IJobParallelFor
     {
+        // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
-        // Read/Write
+        // Read Write
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
 

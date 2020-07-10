@@ -7,6 +7,7 @@ using UnityEngine.Rendering;
 using System.Transactions;
 using UnityEngine.Profiling;
 using Unity.Collections;
+using Unity.Jobs;
 
 namespace Chisel.Components
 {        
@@ -274,6 +275,9 @@ namespace Chisel.Components
                 ChiselObjectUtility.UpdateContainerFlags(renderableContainer, modelState);
                 ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
             }
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateComponents");
 
             ref var meshDescriptions = ref vertexBufferContents.meshDescriptions;
 
@@ -283,12 +287,8 @@ namespace Chisel.Components
                          meshDescriptions.Length == 0 ||
                          meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1);
 
-            ChiselRenderObjects.UpdateProperties(model, meshRenderers);
-            ChiselColliderObjects.UpdateColliders(model, colliders);
+            // TODO: would love to use something like MeshDataArray here, but it seems to be impossible to use without stalling the pipeline
 
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateComponents");
             // Loop through all meshDescriptions with LayerParameter1, and create renderable meshes from them
             if (!meshDescriptions.IsCreated || meshDescriptions.Length == 0)
             {
@@ -357,6 +357,11 @@ namespace Chisel.Components
                 }
                 colliders = newColliders;
             }
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateComponentSettings");
+            ChiselRenderObjects.UpdateProperties(model, meshRenderers);
+            ChiselColliderObjects.UpdateColliders(model, colliders);
             Profiler.EndSample();
         }
 
