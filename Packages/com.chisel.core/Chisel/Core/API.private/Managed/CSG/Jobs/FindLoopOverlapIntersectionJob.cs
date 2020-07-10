@@ -21,6 +21,7 @@ namespace Chisel.Core
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
+        // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
         [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
         [NoAlias, ReadOnly] public NativeArray<int2>                                        outputSurfacesRange;
@@ -28,6 +29,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygons;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         
+        // Write
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory

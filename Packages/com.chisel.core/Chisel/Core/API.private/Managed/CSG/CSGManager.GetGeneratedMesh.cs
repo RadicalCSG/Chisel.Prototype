@@ -12,25 +12,6 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
-    public struct ChiselSurfaceRenderBuffer
-    {
-        public BlobArray<Int32>		indices;
-        public BlobArray<float3>	vertices;
-        public BlobArray<float3>	normals;
-        public BlobArray<float2>    uv0;
-
-        public uint             geometryHash;
-        public uint             surfaceHash;
-
-        public SurfaceLayers    surfaceLayers;
-        public Int32		    surfaceIndex;
-    };
-
-    public struct ChiselBrushRenderBuffer
-    {
-        public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
-    };
-
     internal sealed class Outline
     {
         public Int32[] visibleOuterLines;
@@ -84,27 +65,6 @@ namespace Chisel.Core
             }
         }
         
-        public static bool GetMeshContents(Int32                                    treeNodeID,
-                                           out NativeList<GeneratedMeshDescription> descriptions,
-                                           out VertexBufferContents                 outputContents)
-        {
-            descriptions = default;
-            outputContents = default;
-
-
-            var treeNodeIndex       = treeNodeID - 1;
-            var flags = nodeFlags[treeNodeIndex];
-            if (!flags.IsNodeFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
-                return false;
-
-            var treeInfo = nodeHierarchies[treeNodeIndex].treeInfo;
-            descriptions = treeInfo.meshDescriptions;
-            outputContents = treeInfo.vertexBufferContents;
-            flags.UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
-            nodeFlags[treeNodeIndex] = flags;
-            return true;
-        }
-
         private static void UpdateDelayedHierarchyModifications()
         {
             for (var i = 0; i < branches.Count; i++)

@@ -35,7 +35,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<QueuedEvent>           queuedEvents;
         
 
-        const int MaxRoutesPerNode = 16; // TODO: figure out the actual possible theoretical maximum
+        const int kMaxRoutesPerNode = 16; // TODO: figure out the actual possible theoretical maximum
 
         public void Execute(int index)
         {
@@ -53,7 +53,7 @@ namespace Chisel.Core
 
             ref var topDownNodes = ref compactTree.Value.topDownNodes;
             var maxNodes        = topDownNodes.Length;
-            var maxRoutes       = maxNodes * MaxRoutesPerNode;
+            var maxRoutes       = maxNodes * kMaxRoutesPerNode;
 
             if (!routingTable.IsCreated || routingTable.Length < maxRoutes * 2)
             {

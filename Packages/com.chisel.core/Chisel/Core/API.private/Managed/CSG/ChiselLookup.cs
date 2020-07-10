@@ -290,6 +290,26 @@ namespace Chisel.Core
         }
     }
 
+    public struct ChiselSurfaceRenderBuffer
+    {
+        public BlobArray<Int32>		indices;
+        public BlobArray<float3>	vertices;
+        public BlobArray<float3>	normals;
+        public BlobArray<float4>	tangents;
+        public BlobArray<float2>    uv0;
+
+        public uint             geometryHash;
+        public uint             surfaceHash;
+
+        public SurfaceLayers    surfaceLayers;
+        public Int32		    surfaceIndex;
+    };
+
+    public struct ChiselBrushRenderBuffer
+    {
+        public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
+    };
+
     // Note: Stored in BlobAsset at runtime/editor-time
     struct BrushIntersection
     {
@@ -444,32 +464,51 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
-            public NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
-            public NativeHashMap<int, MinMaxAABB>                                       brushTreeSpaceBoundCache;
-            public NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
-            public NativeHashMap<int, BlobAssetReference<RoutingTable>>                 routingTableCache;
-            public NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
-            public NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
-            public NativeHashMap<int, NodeTransformations>                              transformationCache;
-            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+            public NativeList<int> brushIndices;
+            
+            public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+            public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
+            public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+            public NativeList<BlobAssetReference<RoutingTable>>                 routingTableCache;
+            public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+            public NativeList<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+            public NativeList<NodeTransformations>                              transformationCache;
+            public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+            
+            public NativeHashMap<int, MinMaxAABB>                                   brushTreeSpaceBoundLookup;
+            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferLookup;
 
-            public BlobAssetReference<CompactTree>                                      compactTree;
+            public BlobAssetReference<CompactTree>                              compactTree;
 
             internal void Initialize()
             {
+                brushIndices = new NativeList<int>(1000, Allocator.Persistent);
+                
+                brushTreeSpaceBoundLookup    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
+                brushRenderBufferLookup      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+
                 // brushIndex
-                basePolygonCache            = new NativeHashMap<int, BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
-                brushTreeSpaceBoundCache    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
-                treeSpaceVerticesCache      = new NativeHashMap<int, BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
-                routingTableCache           = new NativeHashMap<int, BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
-                brushTreeSpacePlaneCache    = new NativeHashMap<int, BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
-                brushesTouchedByBrushCache  = new NativeHashMap<int, BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
-                transformationCache         = new NativeHashMap<int, NodeTransformations>(1000, Allocator.Persistent);
-                brushRenderBufferCache      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                basePolygonCache            = new NativeList<BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundCache    = new NativeList<MinMaxAABB>(1000, Allocator.Persistent);
+                treeSpaceVerticesCache      = new NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>(1000, Allocator.Persistent);
+                routingTableCache           = new NativeList<BlobAssetReference<RoutingTable>>(1000, Allocator.Persistent);
+                brushTreeSpacePlaneCache    = new NativeList<BlobAssetReference<BrushTreeSpacePlanes>>(1000, Allocator.Persistent);
+                brushesTouchedByBrushCache  = new NativeList<BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
+                transformationCache         = new NativeList<NodeTransformations>(1000, Allocator.Persistent);
+                brushRenderBufferCache      = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
             }
 
             internal void EnsureCapacity(int brushCount)
             {
+                if (brushTreeSpaceBoundLookup.Capacity < brushCount)
+                    brushTreeSpaceBoundLookup.Capacity = brushCount;
+
+                if (brushRenderBufferLookup.Capacity < brushCount)
+                    brushRenderBufferLookup.Capacity = brushCount;
+
+                if (brushIndices.Capacity < brushCount)
+                    brushIndices.Capacity = brushCount;
+
                 if (basePolygonCache.Capacity < brushCount)
                     basePolygonCache.Capacity = brushCount;
 
@@ -497,93 +536,97 @@ namespace Chisel.Core
 
             internal void Dispose()
             {
+                if (brushIndices.IsCreated)
+                    brushIndices.Dispose();
+                brushIndices = default;
                 if (basePolygonCache.IsCreated)
                 {
-                    using (var items = basePolygonCache.GetValueArray(Allocator.Temp))
+                    foreach (var item in basePolygonCache)
                     {
-                        foreach (var item in items)
-                        {
-                            if (item.IsCreated)
-                                item.Dispose();
-                        }
-                    basePolygonCache.Clear();
-                        basePolygonCache.Dispose();
+                        if (item.IsCreated)
+                            item.Dispose();
                     }
+                    basePolygonCache.Clear();
+                    basePolygonCache.Dispose();
                 }
+                basePolygonCache = default;
                 if (brushTreeSpaceBoundCache.IsCreated)
                 {
                     brushTreeSpaceBoundCache.Clear();
                     brushTreeSpaceBoundCache.Dispose();
                 }
+                brushTreeSpaceBoundCache = default;
                 if (treeSpaceVerticesCache.IsCreated)
                 {
+                    foreach (var item in treeSpaceVerticesCache)
+                    {
+                        if (item.IsCreated)
+                            item.Dispose();
+                    }
                     treeSpaceVerticesCache.Clear();
                     treeSpaceVerticesCache.Dispose();
                 }
+                treeSpaceVerticesCache = default;
                 if (routingTableCache.IsCreated)
                 {
-                    using (var items = routingTableCache.GetValueArray(Allocator.Temp))
+                    foreach (var item in routingTableCache)
                     {
-                        foreach (var item in items)
-                        {
-                            if (item.IsCreated)
-                                item.Dispose();
-                        }
-                        routingTableCache.Clear();
-                        routingTableCache.Dispose();
+                        if (item.IsCreated)
+                            item.Dispose();
                     }
+                    routingTableCache.Clear();
+                    routingTableCache.Dispose();
                 }
+                routingTableCache = default;
                 if (brushTreeSpacePlaneCache.IsCreated)
                 {
-                    using (var items = brushTreeSpacePlaneCache.GetValueArray(Allocator.Temp))
+                    foreach (var item in brushTreeSpacePlaneCache)
                     {
-                        foreach (var item in items)
-                        {
-                            if (item.IsCreated)
-                                item.Dispose();
-                        }
-                        brushTreeSpacePlaneCache.Clear();
-                        brushTreeSpacePlaneCache.Dispose();
+                        if (item.IsCreated)
+                            item.Dispose();
                     }
+                    brushTreeSpacePlaneCache.Clear();
+                    brushTreeSpacePlaneCache.Dispose();
                 }
+                brushTreeSpacePlaneCache = default;
                 if (brushesTouchedByBrushCache.IsCreated)
                 {
-                    using (var items = brushesTouchedByBrushCache.GetValueArray(Allocator.Temp))
+                    foreach (var item in brushesTouchedByBrushCache)
                     {
-                        foreach (var item in items)
-                        {
-                            if (item.IsCreated)
-                                item.Dispose();
-                        }
-                        brushesTouchedByBrushCache.Clear();
-                        brushesTouchedByBrushCache.Dispose();
+                        if (item.IsCreated)
+                            item.Dispose();
                     }
+                    brushesTouchedByBrushCache.Clear();
+                    brushesTouchedByBrushCache.Dispose();
                 }
+                brushesTouchedByBrushCache = default;
                 if (transformationCache.IsCreated)
                 {
-                    using (var items = transformationCache.GetValueArray(Allocator.Temp))
-                    {
-                        transformationCache.Clear();
-                        transformationCache.Dispose();
-                    }
+                    transformationCache.Clear();
+                    transformationCache.Dispose();
                 }
+                transformationCache = default;
                 if (brushRenderBufferCache.IsCreated)
                 {
-                    using (var items = brushRenderBufferCache.GetValueArray(Allocator.Temp))
+                    foreach (var item in brushRenderBufferCache)
                     {
-                        foreach (var item in items)
-                        {
-                            if (item.IsCreated)
-                                item.Dispose();
-                        }
-                        brushRenderBufferCache.Clear();
-                        brushRenderBufferCache.Dispose();
+                        if (item.IsCreated)
+                            item.Dispose();
                     }
+                    brushRenderBufferCache.Clear();
+                    brushRenderBufferCache.Dispose();
                 }
+                brushRenderBufferCache = default;
                 if (compactTree.IsCreated)
-                {
                     compactTree.Dispose();
-                }
+                compactTree = default;
+
+                if (brushTreeSpaceBoundLookup.IsCreated)
+                    brushTreeSpaceBoundLookup.Dispose();
+                brushTreeSpaceBoundLookup = default;
+                if (brushRenderBufferLookup.IsCreated)
+                    brushRenderBufferLookup.Dispose();
+                brushRenderBufferLookup = default;
             }
         }
 

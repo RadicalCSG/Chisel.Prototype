@@ -9,6 +9,7 @@ using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
 using Debug = UnityEngine.Debug;
+using System.ComponentModel;
 
 namespace Chisel.Core
 {
@@ -26,7 +27,7 @@ namespace Chisel.Core
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter            brushBrushIntersections;
-        [NoAlias, WriteOnly] public NativeList<IndexOrder>.ParallelWriter           brushesThatNeedIndirectUpdate;
+        [NoAlias, WriteOnly] public NativeHashMap<IndexOrder, Empty>.ParallelWriter brushesThatNeedIndirectUpdateHashMap;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
@@ -190,7 +191,7 @@ namespace Chisel.Core
                         if (!usedBrushes.IsSet(brush0IndexOrder.nodeOrder))
                         {
                             usedBrushes.Set(brush0IndexOrder.nodeOrder, true);
-                            brushesThatNeedIndirectUpdate.AddNoResize(brush0IndexOrder);
+                            brushesThatNeedIndirectUpdateHashMap.TryAdd(brush0IndexOrder, new Empty { });
                         }
                     }
                     if (brush0NodeOrder > brush1NodeOrder)
@@ -257,6 +258,24 @@ namespace Chisel.Core
     
     }
 
+
+    [BurstCompile(CompileSynchronously = true)]
+    struct CreateUniqueIndicesArrayJob : IJob
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeHashMap<IndexOrder, Empty> brushesThatNeedIndirectUpdateHashMap;
+
+        // Write
+        [NoAlias, WriteOnly] public NativeList<IndexOrder> brushesThatNeedIndirectUpdate;
+
+        public unsafe void Execute()
+        {
+            var keys = brushesThatNeedIndirectUpdateHashMap.GetKeyArray(Allocator.Temp);
+            brushesThatNeedIndirectUpdate.AddRangeNoResize(keys.GetUnsafePtr(), keys.Length);
+            keys.Dispose();
+        }
+    }
+
     // TODO: make this a parallel job somehow
     [BurstCompile(CompileSynchronously = true)]
     struct FindAllIndirectBrushIntersectionsJob : IJob// IJobParallelFor
@@ -271,7 +290,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          brushesThatNeedIndirectUpdate;
         
         // Read/Write
-        [NoAlias] public NativeList<IndexOrder>                                     updateBrushIndexOrders;
+        [NoAlias] public NativeList<IndexOrder>                             updateBrushIndexOrders;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter    brushBrushIntersections;
@@ -464,6 +483,120 @@ namespace Chisel.Core
             {
                 ref var srcPlane = ref srcPlanes[plane_index];
                 dstPlanes[plane_index] = math.mul(brush1ToBrush0LocalLocalSpace, srcPlane);
+            }
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    internal struct InvalidateBrushCacheJob : IJobParallelFor
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder> invalidatedBrushes;
+
+        // Read Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+
+        public void Execute(int index)
+        {
+            var indexOrder = invalidatedBrushes[index];
+            int nodeOrder = indexOrder.nodeOrder;
+
+            // try
+            {
+                { 
+                    var original = basePolygonCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    basePolygonCache[nodeOrder] = default;
+                }
+                {
+                    var original = treeSpaceVerticesCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    treeSpaceVerticesCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushesTouchedByBrushCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushesTouchedByBrushCache[nodeOrder] = default;
+                }
+                {
+                    var original = routingTableCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    routingTableCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushTreeSpacePlaneCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushTreeSpacePlaneCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushRenderBufferCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushRenderBufferCache[nodeOrder] = default;
+                }
+            }
+            //catch { Debug.Log($"FAIL {indexOrder.nodeIndex}"); throw; }
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    internal struct FixupBrushCacheIndicesJob : IJobParallelFor
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>  allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>         nodeIndexToNodeOrderArray;
+        [NoAlias, ReadOnly] public int                      nodeIndexToNodeOrderOffset;
+
+        // Read Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>      basePolygonCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushCache;
+
+        public void Execute(int index)
+        {
+            var indexOrder  = allTreeBrushIndexOrders[index];
+            int nodeOrder   = indexOrder.nodeOrder;
+
+            {
+                var item = basePolygonCache[nodeOrder];
+                if (item.IsCreated)
+                {
+                    // Fix up node orders
+                    ref var polygons = ref item.Value.polygons;
+                    for (int p = 0; p < polygons.Length; p++)
+                    {
+                        ref var nodeIndexOrder = ref polygons[p].nodeIndexOrder;
+                        nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
+                    }
+                    basePolygonCache[nodeOrder] = item;
+                }
+            }
+
+            {
+                var item = brushesTouchedByBrushCache[nodeOrder];
+                if (item.IsCreated)
+                { 
+                    ref var brushesTouchedByBrush   = ref item.Value;
+                    ref var brushIntersections      = ref brushesTouchedByBrush.brushIntersections;
+                    for (int b = 0; b < brushIntersections.Length; b++)
+                    {
+                        ref var brushIntersection = ref brushIntersections[b];
+                        ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
+                        nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
+                    }
+                    brushesTouchedByBrushCache[nodeOrder] = item;
+                }
             }
         }
     }

@@ -62,6 +62,34 @@ namespace Chisel.Components
             }
         }
 
+        static bool UpdateMeshEvent(CSGTree tree, ref VertexBufferContents vertexBufferContents)
+        {
+            // TODO: clean this up
+            ChiselModel model = null;
+            for (int m = 0; m < registeredModels.Count; m++)
+            {
+                if (!registeredModels[m])
+                    continue;
+
+                if (registeredModels[m].Node == tree)
+                    model = registeredModels[m];
+            }
+            if (model == null)
+                return false;
+
+            if (!ChiselModelGeneratedObjects.IsValid(model.generated))
+            {
+                if (model.generated != null)
+                    model.generated.Destroy();
+                model.generated = ChiselModelGeneratedObjects.Create(model);
+            }
+
+            model.generated.Update(model, vertexBufferContents);
+            componentGenerator.Rebuild(model);
+            PostUpdateModel?.Invoke(model);
+            return true;
+        }
+
         public static void UpdateModels()
         {
 
@@ -69,7 +97,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush())
+                if (!CSGManager.Flush(UpdateMeshEvent))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..
@@ -80,76 +108,6 @@ namespace Chisel.Components
                 Profiler.EndSample();
             }
 
-            for (int m = 0; m < registeredModels.Count; m++)
-            {
-                var model = registeredModels[m];
-                if (!model)
-                    continue;
-
-                var tree = model.Node;
-
-                // See if the tree has been modified
-                if (!tree.Dirty)
-                    continue;
-
-                // Skip invalid brushes since they won't work anyway
-                if (!tree.Valid)
-                    continue;
-
-                updateList.Add(model);
-            }
-
-            Profiler.BeginSample("UpdateModelMeshDescriptions");
-            foreach (var model in updateList)
-            {
-                if (!CSGManager.GetMeshContents(model.Node.NodeID, out var meshDescriptions, out var vertexBufferContents))
-                    continue;
-                
-                if (!ChiselModelGeneratedObjects.IsValid(model.generated))
-                {
-                    if (model.generated != null)
-                        model.generated.Destroy();
-                    model.generated = ChiselModelGeneratedObjects.Create(model);
-                }
-                model.generated.Update(model, meshDescriptions, vertexBufferContents);
-            }
-            Profiler.EndSample();
-
-
-            bool modifications = false;
-            try
-            {
-                for (int m = 0; m < updateList.Count; m++)
-                {
-                    var model = updateList[m];
-
-                    // Generate (or re-use) components and set them up properly
-                    Profiler.BeginSample("componentGenerator.Rebuild");
-                    componentGenerator.Rebuild(model);
-                    Profiler.EndSample();
-                }
-            }
-            finally
-            {
-                for (int m = 0; m < updateList.Count; m++)
-                {
-                    var model = updateList[m];
-                    try
-                    {
-                        modifications = true;
-                        Profiler.BeginSample("PostUpdateModel");
-                        PostUpdateModel?.Invoke(model);
-                        Profiler.EndSample();
-                    }
-                    catch (Exception ex) // if there's a bug in user-code we don't want to end up in a bad state
-                    {
-                        Debug.LogException(ex);
-                    }
-                }
-                updateList.Clear();
-            }
-
-            if (modifications)
             {
                 Profiler.BeginSample("PostUpdateModels");
                 PostUpdateModels?.Invoke();

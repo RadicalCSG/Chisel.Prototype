@@ -242,79 +242,31 @@ namespace Chisel.Components
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
-        public void Update(ChiselModel model, GameObjectState state, NativeList<GeneratedMeshDescription> meshDescriptions, ref VertexBufferContents contents, int contentsIndex, int startIndex, int endIndex)
+        public void Update(ChiselModel model, GameObjectState state, ref VertexBufferContents vertexBufferContents, int contentsIndex)
         {
             bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
             try
             {
-                const long kHashMagicValue = (long)1099511628211ul;
-                UInt64 combinedGeometryHashValue = 0;
-                UInt64 combinedSurfaceHashValue = 0;
-
-                for (int i = startIndex; i < endIndex; i++)
-                {
-                    var meshDescription = meshDescriptions[i];
-                    if (meshDescription.vertexCount < 3 ||
-                        meshDescription.indexCount < 3)
-                        continue;
-
-                    combinedGeometryHashValue   = (combinedGeometryHashValue ^ meshDescription.geometryHashValue) * kHashMagicValue;
-                    combinedSurfaceHashValue    = (combinedSurfaceHashValue  ^ meshDescription.surfaceHashValue) * kHashMagicValue;
-                }
-
-                //if (geometryHashValue != combinedGeometryHashValue ||
-                //    surfaceHashValue != combinedSurfaceHashValue)
-                {
-                    triangleBrushes.Clear();
-                    var modelTree = model.Node;
-
-                    Profiler.BeginSample("Collect Materials");
-
-                    var vertexCount = contents.positions[contentsIndex].Length;
-                    var indexCount  = contents.indices[contentsIndex].Length;
-
-                    if (vertexCount == 0 ||
-                        indexCount == 0)
-                    {
-                        if (sharedMesh.vertexCount > 0) { meshIsModified = true; sharedMesh.Clear(keepVertexLayout: true); }
-                    } else
-                    {
-                        var desiredCapacity = __foundMaterials.Count + (endIndex - startIndex);
-                        if (__foundMaterials.Capacity < desiredCapacity)
-                            __foundMaterials.Capacity = desiredCapacity;
-                        for (int i = startIndex; i < endIndex; i++)
-                        {
-                            var meshDescription = meshDescriptions[i];
-                            var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
-
-                            __foundMaterials.Add(renderMaterial);
-                        }
-                    }
-                    Profiler.EndSample();
-
-                    Profiler.BeginSample("CopyMeshFrom");
-                    meshIsModified = sharedMesh.CopyMeshFrom(ref contents, contentsIndex, triangleBrushes);
-                    Profiler.EndSample();
-
-                    //geometryHashValue = combinedGeometryHashValue;
-                    //surfaceHashValue = combinedSurfaceHashValue;
-                }
-
-                Profiler.BeginSample("Update Component");
-                if (renderMaterials != null && 
-                    renderMaterials.Length == __foundMaterials.Count)
-                {
+                Profiler.BeginSample("CopyMeshFrom");
+                meshIsModified = vertexBufferContents.CopyToMesh(contentsIndex, sharedMesh, __foundMaterials, triangleBrushes);
+                Profiler.EndSample();
+            
+                Profiler.BeginSample("UpdateMaterials");
+                if (renderMaterials != null && renderMaterials.Length == __foundMaterials.Count)
                     __foundMaterials.CopyTo(renderMaterials);
-                } else
+                else
                     renderMaterials = __foundMaterials.ToArray();
+                SetMaterialsIfModified(meshRenderer, renderMaterials);
+                Profiler.EndSample();
+
+                Profiler.BeginSample("UpdateSharedMesh");
                 if (meshFilter.sharedMesh != sharedMesh)
                 {
                     meshFilter.sharedMesh = sharedMesh;
                     meshIsModified = true;
                 }
                 var expectedEnabled = sharedMesh.vertexCount > 0;
-                SetMaterialsIfModified(meshRenderer, renderMaterials);
                 if (meshRenderer.enabled != expectedEnabled)
                     meshRenderer.enabled = expectedEnabled;
                 Profiler.EndSample();
