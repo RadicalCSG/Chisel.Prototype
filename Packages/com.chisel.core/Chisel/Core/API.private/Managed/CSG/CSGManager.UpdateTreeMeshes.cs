@@ -531,14 +531,14 @@ namespace Chisel.Core
                             {
                                 //brushIndices[source] = -1;
 
-                                { var tmp = basePolygonCache[destination]; basePolygonCache[destination] = default; tmp.Dispose(); }
-                                { var tmp = routingTableCache[destination]; routingTableCache[destination] = default; tmp.Dispose(); }
-                                { var tmp = transformationCache[destination]; transformationCache[destination] = default; }
-                                { var tmp = brushRenderBufferCache[destination]; brushRenderBufferCache[destination] = default; tmp.Dispose(); }
-                                { var tmp = treeSpaceVerticesCache[destination]; treeSpaceVerticesCache[destination] = default; tmp.Dispose(); }
-                                { var tmp = brushTreeSpaceBoundCache[destination]; brushTreeSpaceBoundCache[destination] = default; }
-                                { var tmp = brushTreeSpacePlaneCache[destination]; brushTreeSpacePlaneCache[destination] = default; tmp.Dispose(); }
-                                { var tmp = brushesTouchedByBrushCache[destination]; brushesTouchedByBrushCache[destination] = default; tmp.Dispose(); }
+                                { var tmp = basePolygonCache[source]; basePolygonCache[source] = default; tmp.Dispose(); }
+                                { var tmp = routingTableCache[source]; routingTableCache[source] = default; tmp.Dispose(); }
+                                { var tmp = transformationCache[source]; transformationCache[source] = default; }
+                                { var tmp = brushRenderBufferCache[source]; brushRenderBufferCache[source] = default; tmp.Dispose(); }
+                                { var tmp = treeSpaceVerticesCache[source]; treeSpaceVerticesCache[source] = default; tmp.Dispose(); }
+                                { var tmp = brushTreeSpaceBoundCache[source]; brushTreeSpaceBoundCache[source] = default; }
+                                { var tmp = brushTreeSpacePlaneCache[source]; brushTreeSpacePlaneCache[source] = default; tmp.Dispose(); }
+                                { var tmp = brushesTouchedByBrushCache[source]; brushesTouchedByBrushCache[source] = default; tmp.Dispose(); }
                             
                                 //someOtherArray[source].Dispose();
                                 //someOtherArray[source] = default;
