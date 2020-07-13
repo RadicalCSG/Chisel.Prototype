@@ -25,7 +25,7 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              treeBrushNodeIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              rebuildTreeBrushIndexOrders;
         
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygons;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
@@ -33,14 +33,14 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBuffers;
+        [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<float3>   surfaceVertices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float3>   surfaceNormals;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float4>   surfaceTangents;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float2>   surfaceUV0;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>      indexRemap;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceNormals;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float4>       surfaceTangents;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float2>       surfaceUV0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>          indexRemap;
 
         [NativeDisableContainerSafetyRestriction] HashedVertices            brushVertices;
         [NativeDisableContainerSafetyRestriction] NativeListArray<int>      surfaceLoopIndices;
@@ -49,15 +49,15 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeList<int>           loops;
         [NativeDisableContainerSafetyRestriction] NativeList<int>           surfaceIndexList;
         [NativeDisableContainerSafetyRestriction] NativeList<int>           outputSurfaceIndicesArray;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float2>               context_points;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  context_edges;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>                   context_sortedPoints;
-        [NativeDisableContainerSafetyRestriction] NativeList<bool>                  context_triangleInterior;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float2>       context_points;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>          context_edges;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>           context_sortedPoints;
+        [NativeDisableContainerSafetyRestriction] NativeList<bool>          context_triangleInterior;
+        [NativeDisableContainerSafetyRestriction] NativeList<Edge>          context_inputEdgesCopy; 
         [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_edgeLookupEdges;
         [NativeDisableContainerSafetyRestriction] NativeHashMap<int, int>           context_edgeLookups;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Chisel.Core.Edge> context_foundLoops;
         [NativeDisableContainerSafetyRestriction] NativeListArray<int>              context_children;
-        [NativeDisableContainerSafetyRestriction] NativeList<Edge>                  context_inputEdgesCopy; 
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DirectedEdge>         context_allEdges;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.DelaunayTriangle>     context_triangles;
         [NativeDisableContainerSafetyRestriction] NativeList<Poly2Tri.DTSweep.AdvancingFrontNode>   context_advancingFrontNodes;
@@ -503,7 +503,11 @@ namespace Chisel.Core
             }
 
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
-            brushRenderBuffers[brushNodeOrder] = brushRenderBuffer;
+
+            if (brushRenderBufferCache[brushNodeOrder].IsCreated)
+                brushRenderBufferCache[brushNodeOrder].Dispose();
+
+            brushRenderBufferCache[brushNodeOrder] = brushRenderBuffer;
         }
 
         

@@ -54,7 +54,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public int meshQueryLength;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBuffers;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
 
         // Write
         [NativeDisableParallelForRestriction]
@@ -76,7 +76,7 @@ namespace Chisel.Core
             {
                 var brushIndexOrder     = allTreeBrushIndexOrders[b];
                 var brushNodeOrder      = allTreeBrushIndexOrders[b].nodeOrder;
-                var brushRenderBuffer   = brushRenderBuffers[brushNodeOrder];
+                var brushRenderBuffer   = brushRenderBufferCache[brushNodeOrder];
                 if (!brushRenderBuffer.IsCreated)
                     continue;
 
