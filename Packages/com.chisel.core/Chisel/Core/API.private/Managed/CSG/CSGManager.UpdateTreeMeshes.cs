@@ -91,7 +91,7 @@ namespace Chisel.Core
 
             public void EnsureSize(int newBrushCount)
             {
-                if (this.brushCount == newBrushCount)
+                if (this.brushCount == newBrushCount && nodeIndexToNodeOrderArray.IsCreated)
                 {
                     Profiler.BeginSample("CLEAR");
                     Clear();
@@ -332,8 +332,6 @@ namespace Chisel.Core
                 var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
                 
                 var treeBrushes = treeInfo.treeBrushes;
-                if (treeBrushes.Count == 0)
-                    continue;
 
                 ref var currentTree = ref s_TreeUpdates[treeUpdateLength];
 
@@ -421,13 +419,17 @@ namespace Chisel.Core
                 #region Build lookup tables to find the tree node-order by node-index                
                 var nodeIndexMin = int.MaxValue;
                 var nodeIndexMax = 0;
-                for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
+                if (brushCount > 0)
                 {
-                    int nodeID     = treeBrushes[nodeOrder];
-                    int nodeIndex  = nodeID - 1;
-                    nodeIndexMin = math.min(nodeIndexMin, nodeIndex);
-                    nodeIndexMax = math.max(nodeIndexMax, nodeIndex);
-                }
+                    for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
+                    {
+                        int nodeID = treeBrushes[nodeOrder];
+                        int nodeIndex = nodeID - 1;
+                        nodeIndexMin = math.min(nodeIndexMin, nodeIndex);
+                        nodeIndexMax = math.max(nodeIndexMax, nodeIndex);
+                    }
+                } else
+                    nodeIndexMin = 0;
 
                 var nodeIndexToNodeOrderOffset  = nodeIndexMin;
                 var desiredLength = (nodeIndexMax - nodeIndexMin) + 1;
@@ -1698,11 +1700,8 @@ namespace Chisel.Core
 
                         bool wasDirty = tree.Dirty;
 
-                        flags.UnSetNodeFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
+                        flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
                         nodeFlags[treeNodeIndex] = flags;
-
-                        if (treeUpdate.updateCount == 0)
-                            continue;
 
                         // See if the tree has been modified
                         if (!wasDirty)

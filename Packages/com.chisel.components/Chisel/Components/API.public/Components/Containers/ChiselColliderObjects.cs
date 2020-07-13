@@ -108,6 +108,8 @@ namespace Chisel.Components
             for (int i = 0; i < colliders.Length; i++)
             {
                 var meshCollider = colliders[i].meshCollider;
+                if (!meshCollider)
+                    continue;
 
                 if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
                     meshCollider.cookingOptions	=  colliderSettings.cookingOptions;

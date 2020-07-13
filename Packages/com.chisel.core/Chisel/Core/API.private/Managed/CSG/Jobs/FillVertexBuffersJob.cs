@@ -708,6 +708,9 @@ namespace Chisel.Core
                 meshIndex++;
             }
 
+            if (subMeshCounts.Length == 0)
+                return;
+
             // Sort all meshDescriptions so that meshes that can be merged are next to each other
             subMeshCounts.Sort(new SubMeshCountsComparer());
 

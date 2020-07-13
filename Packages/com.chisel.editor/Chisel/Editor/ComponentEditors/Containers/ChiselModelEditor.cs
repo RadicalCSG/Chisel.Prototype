@@ -453,8 +453,8 @@ namespace Chisel.Editors
                     continue;
                 foreach (var renderable in renderables)
                 {
-                    if (renderable != null &&
-                        renderable.renderMaterials != null)
+                    if (renderable == null ||
+                        renderable.renderMaterials == null)
                         continue;
                     foreach (var material in renderable.renderMaterials)
                     {
