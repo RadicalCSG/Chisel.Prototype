@@ -117,7 +117,10 @@ namespace Chisel.Components
             HandleDuplication();
 
             if (!ValidNodes)
+            {
+                ChiselNodeHierarchyManager.RebuildTreeNodes(this);
                 return;
+            }
 
             UpdateGenerator();
             UpdateBrushMeshInstances();
@@ -415,20 +418,12 @@ namespace Chisel.Components
             UpdateGenerator();
             Profiler.EndSample();
 
-            Profiler.BeginSample("UpdateBrushMeshInstances");
-            UpdateBrushMeshInstances();
-            Profiler.EndSample();
-
             Profiler.BeginSample("GenerateAllTreeNodes");
             GenerateAllTreeNodes();
             Profiler.EndSample();
 
             if (Nodes.Length ==  0)
                 return Nodes;
-
-            Profiler.BeginSample("InitializeBrushMeshInstances");
-            InitializeBrushMeshInstances();
-            Profiler.EndSample();
             
             Profiler.BeginSample("UpdateInternalTransformation");
             UpdateInternalTransformation();
@@ -855,6 +850,8 @@ namespace Chisel.Components
             Profiler.BeginSample("UpdateGeneratorInternal");
             UpdateGeneratorInternal();
             Profiler.EndSample();
+
+            brushContainerAsset.SetDirty();
 
             Profiler.BeginSample("UpdateBrushMeshInstances");
             UpdateBrushMeshInstances();

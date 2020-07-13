@@ -30,6 +30,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         
         // Write
+        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory
@@ -91,13 +92,30 @@ namespace Chisel.Core
 
             // Can happen when BrushMeshes are not initialized correctly
             if (basePolygons[brushNodeOrder] == BlobAssetReference<BasePolygonsBlob>.Null)
+            {
+                output.BeginForEachIndex(index);
+                output.Write(brushIndexOrder);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.EndForEachIndex();
                 return;
+            }
 
             ref var basePolygonBlob = ref basePolygons[brushNodeOrder].Value;
-
             var surfaceCount        = basePolygonBlob.polygons.Length;
             if (surfaceCount == 0)
+            {
+                output.BeginForEachIndex(index);
+                output.Write(brushIndexOrder);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.EndForEachIndex();
                 return;
+            }
 
             if (!basePolygonSurfaceInfos.IsCreated || basePolygonSurfaceInfos.Length < surfaceCount)
             {
@@ -398,7 +416,6 @@ namespace Chisel.Core
                         output.Write(edges[e]);
                 }
                 output.EndForEachIndex();
-
             }
         }
 

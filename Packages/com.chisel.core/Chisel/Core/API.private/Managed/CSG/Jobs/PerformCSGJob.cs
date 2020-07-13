@@ -21,9 +21,11 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
+        [NativeDisableParallelForRestriction]
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
         
         // Write
+        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory
@@ -677,7 +679,15 @@ namespace Chisel.Core
         {
             var count = input.BeginForEachIndex(index);
             if (count == 0)
+            {
+                output.BeginForEachIndex(index);
+                output.Write(new IndexOrder());
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.EndForEachIndex();
                 return;
+            }
             var brushIndexOrder = input.Read<IndexOrder>();
             var brushNodeOrder = brushIndexOrder.nodeOrder;
             var surfaceCount = input.Read<int>();
@@ -764,13 +774,27 @@ namespace Chisel.Core
             //int brushNodeIndex = treeBrushNodeIndices[index];
 
             if (surfaceCount == 0)
+            {
+                output.BeginForEachIndex(index);
+                output.Write(brushIndexOrder);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.EndForEachIndex();
                 return;
+            }
 
 
             BlobAssetReference<RoutingTable> routingTableRef = routingTableLookup[brushNodeOrder];
             if (routingTableRef == BlobAssetReference<RoutingTable>.Null)
             {
                 //Debug.LogError("No routing table found");
+                output.BeginForEachIndex(index);
+                output.Write(brushIndexOrder);
+                output.Write(0);
+                output.Write(0);
+                output.Write(0);
+                output.EndForEachIndex();
                 return;
             }
 
