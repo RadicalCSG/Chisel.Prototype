@@ -1720,6 +1720,10 @@ namespace Chisel.Core
                         flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
                         nodeFlags[treeNodeIndex] = flags;
 
+                        if (treeUpdate.updateCount == 0 &&
+                            treeUpdate.brushCount > 0)
+                            continue;
+
                         // See if the tree has been modified
                         if (!wasDirty)
                             continue;
