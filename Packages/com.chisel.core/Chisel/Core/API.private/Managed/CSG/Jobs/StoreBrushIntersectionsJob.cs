@@ -34,10 +34,17 @@ namespace Chisel.Core
             bitset.Set(brushNodeIndex, IntersectionType.Intersection);
             bitset.Set(rootNodeIndex, IntersectionType.Intersection);
 
-            var indexOffset = compactTree.Value.indexOffset;
-            ref var bottomUpNodes               = ref compactTree.Value.bottomUpNodes;
-            ref var bottomUpNodeIndices         = ref compactTree.Value.bottomUpNodeIndices;
-            ref var brushIndexToBottomUpIndex   = ref compactTree.Value.brushIndexToBottomUpIndex;
+            ref var compactTreeRef = ref compactTree.Value;
+            var indexOffset                     = compactTreeRef.indexOffset;
+            ref var bottomUpNodes               = ref compactTreeRef.bottomUpNodes;
+            ref var bottomUpNodeIndices         = ref compactTreeRef.bottomUpNodeIndices;
+            ref var brushIndexToBottomUpIndex   = ref compactTreeRef.brushIndexToBottomUpIndex;
+
+            if (brushNodeIndex < indexOffset || (brushNodeIndex - indexOffset) >= brushIndexToBottomUpIndex.Length)
+            {
+                Debug.Log($"nodeIndex is out of bounds {brushNodeIndex} - {indexOffset} < {brushIndexToBottomUpIndex.Length}");
+                return;
+            }
 
             var intersectionIndex   = brushIndexToBottomUpIndex[brushNodeIndex - indexOffset];
             var intersectionInfo    = bottomUpNodeIndices[intersectionIndex];

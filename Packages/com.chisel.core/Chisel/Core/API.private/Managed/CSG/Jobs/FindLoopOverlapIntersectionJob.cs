@@ -8,8 +8,6 @@ using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.Entities.UniversalDelegates;
 
 namespace Chisel.Core
 {
@@ -166,7 +164,7 @@ namespace Chisel.Core
                     var item            = outputSurfaces[i];
                     var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
                     
-                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
+                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 0 : 1;
                     usedNodeOrders.Set(otherNodeOrder1, true);
 
                     //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
@@ -273,6 +271,9 @@ namespace Chisel.Core
                             {
                                 ref var brushIntersectionLoop   = ref brushIntersections[l].Value;
                                 ref var surfaceInfo             = ref brushIntersectionLoop.surfaceInfo;
+                                UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.nodeIndex == brushIndexOrder.nodeIndex);
+                                UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
+
                                 var basePlaneIndex = surfaceInfo.basePlaneIndex;
                                 if (prevBasePlaneIndex != basePlaneIndex)
                                 {

@@ -57,3 +57,5 @@ Packages/com\.chisel\.core/Chisel/Core/API\.private/Native/Plugin/x64/Chisel\[TE
 UserSettings/EditorUserSettings.asset
 /Assets/Experiments
 /Assets/Experiments.meta
+
+Packages/packages-lock.json

@@ -989,7 +989,7 @@ namespace Chisel.Core
             for (int l = 0; l < allEdges.Length; l++)
             {
                 var surfaceInfo = allInfos[l];
-                output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory });
+                output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory, nodeIndex = surfaceInfo.brushIndexOrder.nodeIndex });
                 var edges = allEdges[l].AsArray();
                 output.Write(edges.Length);
                 for (int e = 0; e < edges.Length; e++)

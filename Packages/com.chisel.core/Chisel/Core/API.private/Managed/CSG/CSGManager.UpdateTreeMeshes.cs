@@ -118,6 +118,7 @@ namespace Chisel.Core
                 rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
                 brushRenderData                 = new NativeList<BrushData>(newBrushCount, Allocator.Persistent);
                 allTreeBrushIndexOrders         = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
+                allTreeBrushIndexOrders.Clear();
                 allTreeBrushIndexOrders.Resize(newBrushCount, NativeArrayOptions.ClearMemory);
 
                 outputSurfacesRange             = new NativeArray<int2>(newBrushCount, Allocator.Persistent);
@@ -413,6 +414,10 @@ namespace Chisel.Core
 
                 ref var vertexBufferContents = ref currentTree.vertexBufferContents;
 
+
+                brushesThatNeedIndirectUpdateHashMap.Clear();
+                brushesThatNeedIndirectUpdate.Clear();
+
                 Profiler.EndSample();
                 #endregion
 
@@ -483,7 +488,7 @@ namespace Chisel.Core
                     if (s_RemapOldOrderToNewOrder == null ||
                         s_RemapOldOrderToNewOrder.Length < previousBrushIndexLength)
                         s_RemapOldOrderToNewOrder = new int2[previousBrushIndexLength];
-                    Array.Clear(s_RemapOldOrderToNewOrder, 0, previousBrushIndexLength);
+                    Array.Clear(s_RemapOldOrderToNewOrder, 0, s_RemapOldOrderToNewOrder.Length);
 
                     s_RemovedBrushes.Clear();
                     for (int n = 0; n < previousBrushIndexLength; n++)
@@ -522,13 +527,17 @@ namespace Chisel.Core
                                 if (!IsValidNodeID(otherBrushID))
                                     continue;
 
+                                // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
+                                if (!treeBrushes.Contains(otherBrushID))
+                                    continue;
+
                                 var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
                                 var otherIndexOrder = new IndexOrder { nodeIndex = otherBrushIndex, nodeOrder = otherBrushOrder };
                                 brushesThatNeedIndirectUpdateHashMap.TryAdd(otherIndexOrder, new Empty());
                             }
                         }
 
-                        Array.Sort(s_RemapOldOrderToNewOrder, new IndexOrderSort());
+                        Array.Sort(s_RemapOldOrderToNewOrder, 0, previousBrushIndexLength, new IndexOrderSort());
 
                         Profiler.BeginSample("REMAP2");
                         for (int n = 0; n < previousBrushIndexLength; n++)
@@ -667,13 +676,18 @@ namespace Chisel.Core
                         (brushMeshID = CSGManager.nodeHierarchies[nodeIndex].brushInfo.brushMeshInstanceID) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid."); 
+                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                    } else
+                    if (brushMeshBlobs.TryGetValue(brushMeshID - 1, out var item))
+                    {
+                        surfaceCount += item.Value.polygons.Length;
+                        brushMeshLookup[nodeOrder] = item;
                     } else
                     {
-                        surfaceCount += brushMeshBlobs[brushMeshID - 1].Value.polygons.Length;
+                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is not initialized.");
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
                     }
-
-                    brushMeshLookup[nodeOrder] = brushMeshID == 0 ? BlobAssetReference<BrushMeshBlob>.Null : brushMeshBlobs[brushMeshID - 1];
                 }
                 Profiler.EndSample();
                 #endregion
@@ -754,8 +768,11 @@ namespace Chisel.Core
                             int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                             var otherBrushID    = otherBrushIndex + 1;
 
-                            // TODO: Remove nodes from "brushIntersections" when the brush is removed from the hierarchy
                             if (!IsValidNodeID(otherBrushID))
+                                continue;
+
+                            // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
+                            if (!treeBrushes.Contains(otherBrushID))
                                 continue;
 
                             var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -941,7 +958,7 @@ namespace Chisel.Core
                             continue;
                         var dependencies = treeUpdate.createUniqueIndicesArrayJobHandle;
                         var chiselLookupValues = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                        var invalidateBrushCacheJob = new InvalidateBrushCacheJob
+                        var invalidateBrushCacheJob = new InvalidateIndirectBrushCacheJob
                         {
                             // Read
                             invalidatedBrushes          = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
@@ -1156,12 +1173,12 @@ namespace Chisel.Core
                         var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                         {
                             // Read
-                            treeBrushIndexOrders    = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
-                            brushMeshLookup         = treeUpdate.brushMeshLookup,
-                            transformations         = chiselLookupValues.transformationCache.AsDeferredJobArray(),
+                            rebuildTreeBrushIndexOrders     = treeUpdate.rebuildTreeBrushIndexOrders.AsDeferredJobArray(),
+                            brushMeshLookup                 = treeUpdate.brushMeshLookup,
+                            transformations                 = chiselLookupValues.transformationCache.AsDeferredJobArray(),
 
                             // Write
-                            brushTreeSpacePlanes    = chiselLookupValues.brushTreeSpacePlaneCache.AsDeferredJobArray()
+                            brushTreeSpacePlanes            = chiselLookupValues.brushTreeSpacePlaneCache.AsDeferredJobArray()
                         };
                         treeUpdate.updateBrushTreeSpacePlanesJobHandle = createBrushTreeSpacePlanesJob.Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
                     }
@@ -1702,6 +1719,10 @@ namespace Chisel.Core
 
                         flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
                         nodeFlags[treeNodeIndex] = flags;
+
+                        if (treeUpdate.updateCount == 0 &&
+                            treeUpdate.brushCount > 0)
+                            continue;
 
                         // See if the tree has been modified
                         if (!wasDirty)

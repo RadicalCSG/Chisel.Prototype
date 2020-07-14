@@ -9,7 +9,6 @@ using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
 using Debug = UnityEngine.Debug;
-using System.ComponentModel;
 
 namespace Chisel.Core
 {
@@ -78,8 +77,10 @@ namespace Chisel.Core
                 {
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                     int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
+                    if (brush0NodeOrder == brush1NodeOrder)
+                        continue;
                     var found = foundBrushes.IsSet(brush0NodeOrder);
-                    if (brush0NodeOrder <= brush1NodeOrder && found)
+                    if (brush0NodeOrder < brush1NodeOrder && found)
                         continue;
                     var result = IntersectionUtility.FindIntersection(brush0NodeOrder, brush1NodeOrder,
                                                                       ref brushMeshLookup, ref brushTreeSpaceBounds, ref transformations,
@@ -92,10 +93,13 @@ namespace Chisel.Core
                         {
                             usedBrushes.Set(brush0IndexOrder.nodeOrder, true);
                             brushesThatNeedIndirectUpdateHashMap.TryAdd(brush0IndexOrder, new Empty { });
+                            IntersectionUtility.StoreIntersection(ref brushBrushIntersections, brush0IndexOrder, brush1IndexOrder, result);
                         }
+                    } else
+                    {
+                        if (brush0NodeOrder > brush1NodeOrder)
+                            IntersectionUtility.StoreIntersection(ref brushBrushIntersections, brush0IndexOrder, brush1IndexOrder, result);
                     }
-                    if (brush0NodeOrder > brush1NodeOrder)
-                        IntersectionUtility.StoreIntersection(ref brushBrushIntersections, brush0IndexOrder, brush1IndexOrder, result);
                 }
             }
         }
@@ -153,7 +157,12 @@ namespace Chisel.Core
                 foundBrushes.Set(updateBrushIndexOrders[a].nodeOrder, true);
 
             //*
-            allUpdateBrushIndexOrders.AddRange(updateBrushIndexOrders);
+            for (int i = 0; i < updateBrushIndexOrders.Length; i++)
+            {
+                var indexOrder = updateBrushIndexOrders[i];
+                if (!allUpdateBrushIndexOrders.Contains(indexOrder))
+                    allUpdateBrushIndexOrders.Add(indexOrder);
+            }
             allUpdateBrushIndexOrders.Sort(new IntersectionUtility.IndexOrderComparer());
 
             for (int index1 = 0; index1 < updateBrushIndexOrders.Length; index1++)
@@ -164,6 +173,9 @@ namespace Chisel.Core
                 {
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                     int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
+                    if (brush0NodeOrder == brush1NodeOrder ||
+                        ChiselNativeListExtensions.Contains(allUpdateBrushIndexOrders, brush0IndexOrder))
+                        continue;
                     if (brush0NodeOrder > brush1NodeOrder)
                     {
                         var result = IntersectionUtility.FindIntersection(brush0NodeOrder, brush1NodeOrder,
@@ -211,6 +223,84 @@ namespace Chisel.Core
         {
             var indexOrder = invalidatedBrushes[index];
             int nodeOrder = indexOrder.nodeOrder;
+
+            if (nodeOrder < 0 ||
+                nodeOrder >= basePolygonCache.Length)
+            {
+                Debug.LogError("nodeOrder out of bounds");
+                return;
+            }
+
+            // try
+            {
+                { 
+                    var original = basePolygonCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    basePolygonCache[nodeOrder] = default;
+                }
+                {
+                    var original = treeSpaceVerticesCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    treeSpaceVerticesCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushesTouchedByBrushCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushesTouchedByBrushCache[nodeOrder] = default;
+                }
+                {
+                    var original = routingTableCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    routingTableCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushTreeSpacePlaneCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushTreeSpacePlaneCache[nodeOrder] = default;
+                }
+                {
+                    var original = brushRenderBufferCache[nodeOrder];
+                    if (original != default && original.IsCreated) original.Dispose();
+                    brushRenderBufferCache[nodeOrder] = default;
+                }
+
+            }
+            //catch { Debug.Log($"FAIL {indexOrder.nodeIndex}"); throw; }
+        }
+    }
+    
+
+    [BurstCompile(CompileSynchronously = true)]
+    internal struct InvalidateIndirectBrushCacheJob : IJobParallelFor
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder> invalidatedBrushes;
+
+        // Read Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+
+        public void Execute(int index)
+        {
+            var indexOrder = invalidatedBrushes[index];
+            int nodeOrder = indexOrder.nodeOrder;
+
+            if (nodeOrder < 0 ||
+                nodeOrder >= basePolygonCache.Length)
+            {
+                UnityEngine.Debug.LogError($"nodeOrder out of bounds {nodeOrder} / {basePolygonCache.Length}");
+                return;
+            }
 
             // try
             {

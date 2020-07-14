@@ -147,7 +147,8 @@ namespace Chisel.Core
 
 
 
-
+            if (!basePolygons[brushNodeOrder].IsCreated)
+                return;
 
             var maxLoops = 0;
             var maxIndices = 0;

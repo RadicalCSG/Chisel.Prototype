@@ -161,16 +161,15 @@ namespace Chisel.Core
             for (int b = 0; b < treeBrushes.Count; b++)
             {
                 var brushNodeID = treeBrushes[b];
-                if (!CSGManager.IsValidNodeID(brushNodeID))
+                if (brushNodeID == 0)
                     continue;
 
-                var brush = new CSGTreeNode() { nodeID = brushNodeID };
-                if (!brush.Valid)
-                    continue;
-
-                minBrushIndex = math.min(brush.NodeID - 1, minBrushIndex);
-                maxBrushIndex = math.max(brush.NodeID - 1, maxBrushIndex);
+                minBrushIndex = math.min(brushNodeID - 1, minBrushIndex);
+                maxBrushIndex = math.max(brushNodeID - 1, maxBrushIndex);
             }
+
+            if (minBrushIndex == nodeHierarchies.Count)
+                minBrushIndex = 0;
 
             var desiredBrushIndexToBottomUpLength = (maxBrushIndex + 1) - minBrushIndex;
             if (s_BrushIndexToBottomUpIndex == null ||
@@ -371,6 +370,7 @@ namespace Chisel.Core
     {
         public ushort               basePlaneIndex;
         public CategoryGroupIndex   interiorCategory;
+        public int                  nodeIndex;
     }
 
     public struct IndexSurfaceInfo
@@ -403,6 +403,7 @@ namespace Chisel.Core
         public BlobArray<Edge>          edges;
         public BlobArray<float3>        vertices;
         public BlobArray<BaseSurface>   surfaces;
+        public int nodeIndex;
     }
     
     public enum IntersectionType : byte

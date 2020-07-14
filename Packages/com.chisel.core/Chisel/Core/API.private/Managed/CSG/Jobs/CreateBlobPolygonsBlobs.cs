@@ -139,14 +139,15 @@ namespace Chisel.Core
 
         public void Execute(int b)
         {
-            var brushIndexOrder = treeBrushIndexOrders[b];
-            int brushNodeOrder  = brushIndexOrder.nodeOrder;
+            var indexOrder = treeBrushIndexOrders[b];
+            int nodeOrder  = indexOrder.nodeOrder;
+            int nodeIndex = indexOrder.nodeIndex;
 
-            if (treeSpaceVerticesArray[brushNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesArray[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
-            var mesh                    = brushMeshLookup[brushNodeOrder];
-            ref var treeSpaceVertices   = ref treeSpaceVerticesArray[brushNodeOrder].Value.treeSpaceVertices;
+            var mesh                    = brushMeshLookup[nodeOrder];
+            ref var treeSpaceVertices   = ref treeSpaceVerticesArray[nodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
@@ -223,11 +224,11 @@ namespace Chisel.Core
             //       then snap them all, then do this job
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
-            ref var brushIntersections = ref brushesTouchedByBrushes[brushNodeOrder].Value.brushIntersections;
+            ref var brushIntersections = ref brushesTouchedByBrushes[nodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
-                if (intersectingNodeOrder < brushNodeOrder)
+                if (intersectingNodeOrder < nodeOrder)
                     continue;
 
                 if (treeSpaceVerticesArray[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
@@ -255,6 +256,7 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BasePolygonsBlob>();
             var polygonArray = builder.Allocate(ref root.polygons, totalSurfaceCount);
+            root.nodeIndex = nodeIndex;
             builder.Construct(ref root.edges,    edges   , totalEdgeCount);
             builder.Construct(ref root.vertices, hashedVertices);
             var surfaceArray = builder.Allocate(ref root.surfaces, totalSurfaceCount);
@@ -263,11 +265,12 @@ namespace Chisel.Core
                 var polygon = polygons[validPolygons[i].basePlaneIndex];
                 polygonArray[i] = new BasePolygon()
                 {
-                    nodeIndexOrder      = brushIndexOrder,
+                    nodeIndexOrder      = indexOrder,
                     surfaceInfo     = new SurfaceInfo()
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
+                        nodeIndex           = nodeIndex,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
@@ -280,7 +283,7 @@ namespace Chisel.Core
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
-            basePolygons[brushNodeOrder] = basePolygonsBlob;
+            basePolygons[nodeOrder] = basePolygonsBlob;
             //builder.Dispose();
 
             //hashedVertices.Dispose();
