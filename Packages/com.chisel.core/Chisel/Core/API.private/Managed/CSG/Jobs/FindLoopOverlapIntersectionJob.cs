@@ -164,7 +164,7 @@ namespace Chisel.Core
                     var item            = outputSurfaces[i];
                     var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
                     
-                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 1 : 0;
+                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 0 : 1;
                     usedNodeOrders.Set(otherNodeOrder1, true);
 
                     //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
