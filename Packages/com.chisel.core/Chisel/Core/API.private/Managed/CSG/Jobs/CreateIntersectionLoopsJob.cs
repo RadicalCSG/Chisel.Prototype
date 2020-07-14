@@ -575,7 +575,10 @@ namespace Chisel.Core
             ref var brushPairIntersection1      = ref intersection.brushes[1];
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
-            
+
+            UnityEngine.Debug.Assert(brushPairIntersection0.brushIndexOrder.nodeIndex == brushIndexOrder0.nodeIndex);
+            UnityEngine.Debug.Assert(brushPairIntersection1.brushIndexOrder.nodeIndex == brushIndexOrder1.nodeIndex);
+
             int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVertices.Length);
             int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVertices.Length);
             int intersectionStream0Capacity     = math.max(1, brushPairIntersection1.usedPlanePairs.Length) * brushPairIntersection0.localSpacePlanes0.Length;
@@ -701,27 +704,39 @@ namespace Chisel.Core
 
             if (foundIndices0Length >= 3)
             {
-                ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
-                GenerateLoop(brushIndexOrder0,
-                             brushIndexOrder1,
-                             ref intersection.brushes[0].surfaceInfos,
-                             ref brushTreeSpacePlanes0,
-                             foundIndices0, ref foundIndices0Length,
-                             ref hashedVertices,
-                             outputSurfaces);
+                if (brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].IsCreated)
+                {
+                    ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
+                    GenerateLoop(brushIndexOrder0,
+                                 brushIndexOrder1,
+                                 ref intersection.brushes[0].surfaceInfos,
+                                 ref brushTreeSpacePlanes0,
+                                 foundIndices0, ref foundIndices0Length,
+                                 ref hashedVertices,
+                                 outputSurfaces);
+                } else
+                {
+                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder0.nodeIndex}");
+                }
             }
 
             if (foundIndices1Length >= 3)
             {
-                ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
-                GenerateLoop(brushIndexOrder1,
-                             brushIndexOrder0,
-                             ref intersection.brushes[1].surfaceInfos,
-                             ref brushTreeSpacePlanes1,
-                             foundIndices1, 
-                             ref foundIndices1Length,
-                             ref hashedVertices,
-                             outputSurfaces);
+                if (brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].IsCreated)
+                {
+                    ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
+                    GenerateLoop(brushIndexOrder1,
+                                 brushIndexOrder0,
+                                 ref intersection.brushes[1].surfaceInfos,
+                                 ref brushTreeSpacePlanes1,
+                                 foundIndices1, 
+                                 ref foundIndices1Length,
+                                 ref hashedVertices,
+                                 outputSurfaces);
+                } else
+                {
+                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder1.nodeIndex}");
+                }
             }
 
             //foundIndices0.Dispose();

@@ -8,8 +8,6 @@ using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.Entities.UniversalDelegates;
 
 namespace Chisel.Core
 {
@@ -273,6 +271,9 @@ namespace Chisel.Core
                             {
                                 ref var brushIntersectionLoop   = ref brushIntersections[l].Value;
                                 ref var surfaceInfo             = ref brushIntersectionLoop.surfaceInfo;
+                                UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.nodeIndex == brushIndexOrder.nodeIndex);
+                                UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
+
                                 var basePlaneIndex = surfaceInfo.basePlaneIndex;
                                 if (prevBasePlaneIndex != basePlaneIndex)
                                 {

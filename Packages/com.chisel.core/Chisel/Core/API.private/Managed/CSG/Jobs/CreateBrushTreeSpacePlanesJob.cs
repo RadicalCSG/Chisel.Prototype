@@ -18,7 +18,7 @@ namespace Chisel.Core
     struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                           treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                           rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>    brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                  transformations;
 
@@ -51,8 +51,15 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            var brushIndexOrder = treeBrushIndexOrders[index];
+            var brushIndexOrder = rebuildTreeBrushIndexOrders[index];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
+            var brushMeshBlob   = brushMeshLookup[brushNodeOrder];
+            if (!brushMeshBlob.IsCreated)
+            {
+                Debug.LogError($"BrushMeshBlob invalid for brush with index {brushIndexOrder.nodeIndex}");
+                brushTreeSpacePlanes[brushNodeOrder] = BlobAssetReference<BrushTreeSpacePlanes>.Null;
+                return;
+            }
             var worldPlanes     = Build(brushMeshLookup[brushNodeOrder], transformations[brushNodeOrder].nodeToTree);
             brushTreeSpacePlanes[brushNodeOrder] = worldPlanes;
         }

@@ -170,7 +170,6 @@ namespace Chisel.Core
 
             if (minBrushIndex == nodeHierarchies.Count)
                 minBrushIndex = 0;
-            }
 
             var desiredBrushIndexToBottomUpLength = (maxBrushIndex + 1) - minBrushIndex;
             if (s_BrushIndexToBottomUpIndex == null ||
@@ -371,6 +370,7 @@ namespace Chisel.Core
     {
         public ushort               basePlaneIndex;
         public CategoryGroupIndex   interiorCategory;
+        public int                  nodeIndex;
     }
 
     public struct IndexSurfaceInfo
@@ -403,6 +403,7 @@ namespace Chisel.Core
         public BlobArray<Edge>          edges;
         public BlobArray<float3>        vertices;
         public BlobArray<BaseSurface>   surfaces;
+        public int nodeIndex;
     }
     
     public enum IntersectionType : byte

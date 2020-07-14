@@ -40,9 +40,9 @@ namespace Chisel.Core
             ref var bottomUpNodeIndices         = ref compactTreeRef.bottomUpNodeIndices;
             ref var brushIndexToBottomUpIndex   = ref compactTreeRef.brushIndexToBottomUpIndex;
 
-            if (brushNodeIndex < indexOffset || brushNodeIndex >= brushIndexToBottomUpIndex.Length)
+            if (brushNodeIndex < indexOffset || (brushNodeIndex - indexOffset) >= brushIndexToBottomUpIndex.Length)
             {
-                Debug.Log($"nodeIndex is out of bounds {brushNodeIndex} - {indexOffset} < {brushIndexToBottomUpIndex.Length} | {compactTreeRef.brushCount}");
+                Debug.Log($"nodeIndex is out of bounds {brushNodeIndex} - {indexOffset} < {brushIndexToBottomUpIndex.Length}");
                 return;
             }
 

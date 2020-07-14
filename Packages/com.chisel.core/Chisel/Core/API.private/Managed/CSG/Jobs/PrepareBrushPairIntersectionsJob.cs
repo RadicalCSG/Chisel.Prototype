@@ -281,16 +281,18 @@ namespace Chisel.Core
             {
                 surfaceInfos0[i] = new SurfaceInfo
                 {
+                    basePlaneIndex      = (ushort)i,
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    basePlaneIndex      = (ushort)i
+                    nodeIndex           = brushIndexOrder0.nodeIndex
                 };
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
             {
                 surfaceInfos1[i] = new SurfaceInfo
                 {
+                    basePlaneIndex      = (ushort)i,
                     interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    basePlaneIndex      = (ushort)i
+                    nodeIndex           = brushIndexOrder1.nodeIndex
                 };
             }
 
