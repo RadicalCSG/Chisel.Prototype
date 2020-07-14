@@ -676,13 +676,15 @@ namespace Chisel.Core
                         (brushMeshID = CSGManager.nodeHierarchies[nodeIndex].brushInfo.brushMeshInstanceID) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid."); 
+                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
                     } else
+                    if (brushMeshBlobs.TryGetValue(brushMeshID - 1, out var item))
                     {
-                        surfaceCount += brushMeshBlobs[brushMeshID - 1].Value.polygons.Length;
-                    }
-
-                    brushMeshLookup[nodeOrder] = brushMeshID == 0 ? BlobAssetReference<BrushMeshBlob>.Null : brushMeshBlobs[brushMeshID - 1];
+                        surfaceCount += item.Value.polygons.Length;
+                        brushMeshLookup[nodeOrder] = item;
+                    } else
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
                 }
                 Profiler.EndSample();
                 #endregion
