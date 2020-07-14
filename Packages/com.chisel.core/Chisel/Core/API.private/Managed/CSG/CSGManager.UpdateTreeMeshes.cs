@@ -118,6 +118,7 @@ namespace Chisel.Core
                 rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
                 brushRenderData                 = new NativeList<BrushData>(newBrushCount, Allocator.Persistent);
                 allTreeBrushIndexOrders         = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
+                allTreeBrushIndexOrders.Clear();
                 allTreeBrushIndexOrders.Resize(newBrushCount, NativeArrayOptions.ClearMemory);
 
                 outputSurfacesRange             = new NativeArray<int2>(newBrushCount, Allocator.Persistent);
@@ -413,6 +414,10 @@ namespace Chisel.Core
 
                 ref var vertexBufferContents = ref currentTree.vertexBufferContents;
 
+
+                brushesThatNeedIndirectUpdateHashMap.Clear();
+                brushesThatNeedIndirectUpdate.Clear();
+
                 Profiler.EndSample();
                 #endregion
 
@@ -520,6 +525,10 @@ namespace Chisel.Core
                                 var otherBrushID    = otherBrushIndex + 1;
 
                                 if (!IsValidNodeID(otherBrushID))
+                                    continue;
+
+                                // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
+                                if (!treeBrushes.Contains(otherBrushID))
                                     continue;
 
                                 var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -754,8 +763,11 @@ namespace Chisel.Core
                             int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                             var otherBrushID    = otherBrushIndex + 1;
 
-                            // TODO: Remove nodes from "brushIntersections" when the brush is removed from the hierarchy
                             if (!IsValidNodeID(otherBrushID))
+                                continue;
+
+                            // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
+                            if (!treeBrushes.Contains(otherBrushID))
                                 continue;
 
                             var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
