@@ -894,8 +894,8 @@ namespace Chisel.Components
                 } else
                 {
                     groupName = "Converted " + NodeTypeName + " to Multiple Brushes";
-                    var operationComponent = ChiselComponentFactory.AddComponent<ChiselOperation>(topGameObject);
-                    operationComponent.Operation = topOperation;
+                    var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(topGameObject);
+                    compositeComponent.Operation = topOperation;
                     var parentTransform = topGameObject.transform;
                     for (int i = 0; i < sourceBrushMeshes.Length; i++)
                     {

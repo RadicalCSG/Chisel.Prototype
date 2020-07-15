@@ -124,14 +124,14 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator Model_AddChildOperation_ModelHasChild()
+        public IEnumerator Model_AddChildComposite_ModelHasChild()
         {
             var model					= TestUtility.CreateUndoableGameObjectWithModel();
             var modelGameObject			= model.gameObject;
 
-            var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject		= operation.gameObject;
-            operation.transform.parent	= model.transform;
+            var composite               = TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject     = composite.gameObject;
+            composite.transform.parent	= model.transform;
 
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
@@ -140,14 +140,14 @@ namespace HierarchyTests
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(operation.Node.NodeID, model.Node[0].NodeID);
+            Assert.AreEqual(composite.Node.NodeID, model.Node[0].NodeID);
         }
 
         [UnityTest]
@@ -216,14 +216,14 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator ModelWithChildOperation_DestroyChildGameObject_ModelHasNoChildren()
+        public IEnumerator ModelWithChildComposite_DestroyChildGameObject_ModelHasNoChildren()
         {
             var model					= TestUtility.CreateUndoableGameObjectWithModel();
             var modelameObject			= model.gameObject;
 
-            var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject		= operation.gameObject;
-            operation.transform.parent	= model.transform;
+            var composite               = TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject     = composite.gameObject;
+            composite.transform.parent	= model.transform;
 
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
@@ -232,22 +232,22 @@ namespace HierarchyTests
             
             Assert.True(modelameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID);
             
-            Undo.DestroyObjectImmediate(operationGameObject);
+            Undo.DestroyObjectImmediate(compositeGameObject);
             yield return null;
             
             Assert.True(modelameObject);
             Assert.True(model);
-            Assert.False(operationGameObject);
-            Assert.False(operation);
+            Assert.False(compositeGameObject);
+            Assert.False(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
@@ -296,14 +296,14 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator ModelWithChildOperation_DestroyChildComponent_ModelHasNoChildren()
+        public IEnumerator ModelWithChildComposite_DestroyChildComponent_ModelHasNoChildren()
         {
             var model					= TestUtility.CreateUndoableGameObjectWithModel();
             var modelGameObject			= model.gameObject;
 
-            var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject		= operation.gameObject;
-            operation.transform.parent	= model.transform;
+            var composite				= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject		= composite.gameObject;
+            composite.transform.parent	= model.transform;
             
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
@@ -312,22 +312,22 @@ namespace HierarchyTests
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID);
             
-            Undo.DestroyObjectImmediate(operation);
+            Undo.DestroyObjectImmediate(composite);
             yield return null;
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.False(operation);
+            Assert.True(compositeGameObject);
+            Assert.False(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
@@ -377,14 +377,14 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator ModelWithChildOperation_DisableChildComponent_ModelHasNoChildren()
+        public IEnumerator ModelWithChildComposite_DisableChildComponent_ModelHasNoChildren()
         {
             var model					= TestUtility.CreateUndoableGameObjectWithModel();
             var modelGameObject			= model.gameObject;
 
-            var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject		= operation.gameObject;
-            operation.transform.parent	= model.transform;
+            var composite				= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject		= composite.gameObject;
+            composite.transform.parent	= model.transform;
             
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
@@ -393,22 +393,22 @@ namespace HierarchyTests
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID);
             
-            operation.enabled = false;
+            composite.enabled = false;
             yield return null;
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 
@@ -457,14 +457,14 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator ModelWithChildOperation_DeactivateChildGameObject_ModelHasNoChildren()
+        public IEnumerator ModelWithChildComposite_DeactivateChildGameObject_ModelHasNoChildren()
         {
             var model					= TestUtility.CreateUndoableGameObjectWithModel();
             var modelGameObject			= model.gameObject;
 
-            var operation				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject		= operation.gameObject;
-            operation.transform.parent	= model.transform;
+            var composite				= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject		= composite.gameObject;
+            composite.transform.parent	= model.transform;
             
             Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
@@ -473,22 +473,22 @@ namespace HierarchyTests
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, operation.Node.Tree.NodeID);
+            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID);
 
-            operationGameObject.SetActive(false);
+            compositeGameObject.SetActive(false);
             yield return null;
             
             Assert.True(modelGameObject);
             Assert.True(model);
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist"); 

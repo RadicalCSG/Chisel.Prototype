@@ -1075,10 +1075,10 @@ namespace Chisel.Editors
             bool hasNoChildren = false;
             foreach (var target in serializedObject.targetObjects)
             {
-                var operation = target as ChiselModel;
-                if (!operation)
+                var model = target as ChiselModel;
+                if (!model)
                     continue;
-                if (operation.transform.childCount == 0)
+                if (model.transform.childCount == 0)
                 {
                     hasNoChildren = true;
                 }

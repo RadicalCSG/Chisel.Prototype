@@ -49,7 +49,6 @@ namespace Chisel.Core
             {
                 polygonVerticesArray = new [] { shapeVertices.ToArray() };
                 polygonIndicesArray = new [] { shapeSegmentIndices.ToArray() };
-
             } else
             { 
                 if (!Decomposition.ConvexPartition(shapeVertices, shapeSegmentIndices,
@@ -71,8 +70,6 @@ namespace Chisel.Core
             // TODO: make path work as a spline, with subdivisions
             // TODO:	make this work well with twisted rotations
             // TODO: make shape/path subdivisions be configurable / automatic
-
-
 
             var brushMeshesList = new List<BrushMesh>();
             for (int p = 0; p < polygonVerticesArray.Length; p++)

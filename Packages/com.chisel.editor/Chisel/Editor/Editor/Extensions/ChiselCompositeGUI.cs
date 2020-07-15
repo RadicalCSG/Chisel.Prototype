@@ -11,7 +11,7 @@ using UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-    public static class ChiselOperationGUI
+    public static class ChiselCompositeGUI
     {
         const int       kOperationToggleWidth   = 32;
         const int       kAutomaticToggleWidth   = 80;
@@ -85,7 +85,7 @@ namespace Chisel.Editors
             rect.yMin+=2;
             EditorGUI.PrefixLabel(rect, EditorGUIUtility.TrTextContent("Operation"));
             rect.yMin-=2;
-            var result = ChiselOperationGUI.ShowOperationChoicesInternal(rect, operation);
+            var result = ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operation);
             if (EditorGUI.EndChangeCheck()) { operation = result; }
         }
 

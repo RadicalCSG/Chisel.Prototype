@@ -34,7 +34,7 @@ namespace Chisel.Components
         }
 
         // TODO: consider grouping functionality
-        internal static ChiselOperation GetGroupOperationForNode(ChiselNode node)
+        internal static ChiselComposite GetGroupCompositeForNode(ChiselNode node)
         {
             /*
             if (!node)
@@ -47,7 +47,7 @@ namespace Chisel.Components
                 if (model)
                     return null;
 
-                var parentOp = parent.GetComponent<ChiselOperation>();
+                var parentOp = parent.GetComponent<ChiselComposite>();
                 if (parentOp &&
                     //!parentOp.PassThrough && 
                     parentOp.HandleAsOne)
@@ -77,9 +77,9 @@ namespace Chisel.Components
             var node = go.GetComponentInChildren<ChiselNode>();
             if (node)
             {
-                var operation = GetGroupOperationForNode(node);
-                group = (operation == null) ? null : operation.gameObject;
-                groupTransform = (operation == null) ? null : operation.transform;
+                var composite = GetGroupCompositeForNode(node);
+                group = (composite == null) ? null : composite.gameObject;
+                groupTransform = (composite == null) ? null : composite.transform;
             }
 
 

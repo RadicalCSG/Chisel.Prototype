@@ -10,27 +10,27 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselOperationDetails : ChiselNodeDetails<ChiselOperation>
+    public sealed class ChiselCompositeDetails : ChiselNodeDetails<ChiselComposite>
     {
-        public override GUIContent GetHierarchyIcon(ChiselOperation node)
+        public override GUIContent GetHierarchyIcon(ChiselComposite node)
         {
             return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.NodeTypeName);
         }
 
-        public override bool HasValidState(ChiselOperation node)
+        public override bool HasValidState(ChiselComposite node)
         {
             return node.HasValidState();
         }
     }
 
-    [CustomEditor(typeof(ChiselOperation))]
+    [CustomEditor(typeof(ChiselComposite))]
     [CanEditMultipleObjects]
-    public sealed class ChiselOperationEditor : ChiselNodeEditor<ChiselOperation>
+    public sealed class ChiselCompositeEditor : ChiselNodeEditor<ChiselComposite>
     {
-        const string kOperationHasNoChildren = "This operation has no chisel nodes as children and will not create any geometry.\nAdd some chisel nodes to see something.";
+        const string kCompositeHasNoChildren = "This operation has no chisel nodes as children and will not create any geometry.\nAdd some chisel nodes to see something.";
 
-        [MenuItem("GameObject/Chisel/Create/" + ChiselOperation.kNodeTypeName, false, 0)]
-        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselOperation.kNodeTypeName); }
+        [MenuItem("GameObject/Chisel/Create/" + ChiselComposite.kNodeTypeName, false, 0)]
+        static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselComposite.kNodeTypeName); }
 
         SerializedProperty operationProp;
         SerializedProperty passThroughProp;
@@ -45,8 +45,8 @@ namespace Chisel.Editors
             }
 
             // Fetch the objects from the GameObject script to display in the inspector
-            operationProp   = serializedObject.FindProperty(ChiselOperation.kOperationFieldName);
-            passThroughProp = serializedObject.FindProperty(ChiselOperation.kPassThroughFieldName);
+            operationProp   = serializedObject.FindProperty(ChiselComposite.kOperationFieldName);
+            passThroughProp = serializedObject.FindProperty(ChiselComposite.kPassThroughFieldName);
 
             ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = "Operation";
@@ -91,11 +91,11 @@ namespace Chisel.Editors
                     {
                         foreach (var target in serializedObject.targetObjects)
                         {
-                            var operation = target as ChiselOperation;
-                            if (!operation)
+                            var composite = target as ChiselComposite;
+                            if (!composite)
                                 continue;
 
-                            ChiselNodeHierarchyManager.UpdateAvailability(operation);
+                            ChiselNodeHierarchyManager.UpdateAvailability(composite);
                         }
                     }
                     OnShapeChanged();
@@ -103,17 +103,17 @@ namespace Chisel.Editors
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)
                 {
-                    var operation = target as ChiselOperation;
-                    if (!operation)
+                    var composite = target as ChiselComposite;
+                    if (!composite)
                         continue;
-                    if (operation.transform.childCount == 0)
+                    if (composite.transform.childCount == 0)
                     {
                         hasNoChildren = true;
                     }
                 }
                 if (hasNoChildren)
                 {
-                    EditorGUILayout.HelpBox(kOperationHasNoChildren, MessageType.Warning, true);
+                    EditorGUILayout.HelpBox(kCompositeHasNoChildren, MessageType.Warning, true);
                 }
             }
             catch (ExitGUIException) { }

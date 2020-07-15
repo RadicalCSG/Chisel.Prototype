@@ -9,13 +9,13 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselOperation : ChiselNode
+    public sealed class ChiselComposite : ChiselNode
     {
         // This ensures names remain identical and the field actually exists, or a compile error occurs.
         public const string kOperationFieldName     = nameof(operation);
         public const string kPassThroughFieldName   = nameof(passThrough);
 
-        public const string kNodeTypeName = "Operation";
+        public const string kNodeTypeName = "Composite";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // bool   HandleAsOne     = false;
@@ -23,10 +23,10 @@ namespace Chisel.Components
         [HideInInspector]
         public CSGTreeBranch Node;
 
-        [SerializeField,HideInInspector] bool passThrough = false; // NOTE: name is used in CSGOperationEditor
+        [SerializeField,HideInInspector] bool passThrough = false; // NOTE: name is used in ChiselCompositeEditor
         public bool PassThrough { get { return passThrough; } set { if (value == passThrough) return; passThrough = value; ChiselNodeHierarchyManager.UpdateAvailability(this); } }
         
-        [SerializeField,HideInInspector] CSGOperationType operation; // NOTE: name is used in CSGOperationEditor
+        [SerializeField,HideInInspector] CSGOperationType operation; // NOTE: name is used in ChiselCompositeEditor
         public CSGOperationType Operation { get { return operation; } set { if (value == operation) return; operation = value; if (Node.Valid) Node.Operation = operation; } }
 
 
@@ -37,7 +37,7 @@ namespace Chisel.Components
                 return true;
             if (!Node.Valid)
                 return false;
-            // An operation makes no sense without any children
+            // A composite makes no sense without any children
             return (transform.childCount > 0);
         }
 
@@ -58,7 +58,7 @@ namespace Chisel.Components
             if (passThrough)
                 return new CSGTreeNode[] { };
             if (Node.Valid)
-                Debug.LogWarning("ChiselOperation already has a treeNode, but trying to create a new one", this);		
+                Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);		
             Node = CSGTreeBranch.Create(userID: GetInstanceID());
             Node.Operation = operation;
             return new CSGTreeNode[] { Node };
@@ -77,7 +77,7 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                Debug.LogWarning("SetChildren called on a ChiselOperation that isn't properly initialized", this);
+                Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} that isn't properly initialized", this);
                 return;
             }
             if (!Node.SetChildren(childNodes.ToArray()))
@@ -97,7 +97,7 @@ namespace Chisel.Components
         // Get all brushes directly contained by this ChiselNode (not its children)
         public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
         {
-            // An operation doesn't contain a CSGTreeBrush node
+            // An composite doesn't contain a CSGTreeBrush node
         }
         
         // TODO: cache this

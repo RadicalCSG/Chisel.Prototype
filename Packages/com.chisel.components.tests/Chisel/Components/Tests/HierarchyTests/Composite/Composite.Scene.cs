@@ -11,21 +11,21 @@ using Chisel.Components;
 
 namespace HierarchyTests
 {
-    public partial class Operation_Scene
+    public partial class Composite_Scene
     {
         [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
 
         [UnityTest]
-        public IEnumerator OperationInScene1_MoveToScene2_OperationOnlyExistsInScene2()
+        public IEnumerator CompositeInScene1_MoveToScene2_CompositeOnlyExistsInScene2()
         {
             var scene2			= TestUtility.defaultScene;
             EditorSceneManager.SaveScene(scene2, TestUtility.tempFilename);
             var scene1			= EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             EditorSceneManager.SetActiveScene(scene1);
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
             
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -33,16 +33,16 @@ namespace HierarchyTests
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(scene1, operation.hierarchyItem.Scene);
+            Assert.AreEqual(scene1, composite.hierarchyItem.Scene);
 
-            Undo.MoveGameObjectToScene(operationGameObject, scene2, "Move gameObject to different scene");
+            Undo.MoveGameObjectToScene(compositeGameObject, scene2, "Move gameObject to different scene");
             yield return null;
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             
-            Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
-            Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
+            Assert.AreEqual(scene2, composite.gameObject.scene, "Composite is not part of expected scene");
+            Assert.AreEqual(scene2, composite.hierarchyItem.Scene, "Composite is not registered to expected scene");
 
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
@@ -52,19 +52,19 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator OperationWithChildInScene1_MoveToScene2_OperationWithChildOnlyExistsInScene2()
+        public IEnumerator CompositeWithChildInScene1_MoveToScene2_CompositeWithChildOnlyExistsInScene2()
         {
             var scene2			= TestUtility.defaultScene;
             EditorSceneManager.SaveScene(scene2, TestUtility.tempFilename);
             var scene1			= EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             EditorSceneManager.SetActiveScene(scene1);
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             var brush			= TestUtility.CreateUndoableGameObjectWithBrush();
             var brushGameObject = brush.gameObject;
-            brush.transform.parent = operation.transform;
+            brush.transform.parent = composite.transform;
             
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
@@ -74,22 +74,22 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
-            Assert.AreEqual(scene1, operation.gameObject.scene);
-            Assert.AreEqual(scene1, operation.hierarchyItem.Scene);
+            Assert.AreEqual(scene1, composite.gameObject.scene);
+            Assert.AreEqual(scene1, composite.hierarchyItem.Scene);
             
-            Undo.MoveGameObjectToScene(operationGameObject, scene2, "Move gameObject to different scene");
+            Undo.MoveGameObjectToScene(compositeGameObject, scene2, "Move gameObject to different scene");
             yield return null;
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             
-            Assert.AreEqual(operation.hierarchyItem, brush.hierarchyItem.Parent);
-            Assert.AreEqual(operation.NodeID, brush.hierarchyItem.Parent.Component.NodeID);
-            Assert.AreEqual(operation.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite.hierarchyItem, brush.hierarchyItem.Parent);
+            Assert.AreEqual(composite.NodeID, brush.hierarchyItem.Parent.Component.NodeID);
+            Assert.AreEqual(composite.NodeID, brush.TopNode.Parent.NodeID);
             
-            Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
-            Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
+            Assert.AreEqual(scene2, composite.gameObject.scene, "Composite is not part of expected scene");
+            Assert.AreEqual(scene2, composite.hierarchyItem.Scene, "Composite is not registered to expected scene");
             
             Assert.AreEqual(scene2, brush.gameObject.scene, "Brush is not part of expected scene");
             Assert.AreEqual(scene2, brush.hierarchyItem.Scene, "Brush is not registered to expected scene");
@@ -102,7 +102,7 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator GameObjectInScene1WithOperation_MoveGameObjectToScene2_OperationOnlyExistsInScene2()
+        public IEnumerator GameObjectInScene1WithComposite_MoveGameObjectToScene2_CompositeOnlyExistsInScene2()
         {
             var scene2			= TestUtility.defaultScene;
             EditorSceneManager.SaveScene(scene2, TestUtility.tempFilename);
@@ -110,9 +110,9 @@ namespace HierarchyTests
             EditorSceneManager.SetActiveScene(scene1);
             var scene1GameObject = new GameObject();
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.transform.parent = scene1GameObject.transform;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.transform.parent = scene1GameObject.transform;
             
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -120,7 +120,7 @@ namespace HierarchyTests
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(scene1, operation.hierarchyItem.Scene);
+            Assert.AreEqual(scene1, composite.hierarchyItem.Scene);
 
             
             Undo.MoveGameObjectToScene(scene1GameObject, scene2, "Move gameObject to different scene");
@@ -129,8 +129,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             
-            Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
-            Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
+            Assert.AreEqual(scene2, composite.gameObject.scene, "Composite is not part of expected scene");
+            Assert.AreEqual(scene2, composite.hierarchyItem.Scene, "Composite is not registered to expected scene");
 
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
@@ -140,7 +140,7 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator GameObjectInScene1WithOperation_MoveOperationToGameObjectInScene2_OperationOnlyExistsInScene2()
+        public IEnumerator GameObjectInScene1WithComposite_MoveCompositeToGameObjectInScene2_CompositeOnlyExistsInScene2()
         {
             var scene2			= TestUtility.defaultScene;
             var scene2GameObject = new GameObject();
@@ -150,9 +150,9 @@ namespace HierarchyTests
             EditorSceneManager.SetActiveScene(scene1);
             var scene1GameObject = new GameObject();
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.transform.parent = scene1GameObject.transform;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.transform.parent = scene1GameObject.transform;
             
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -160,17 +160,17 @@ namespace HierarchyTests
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(scene1, operation.hierarchyItem.Scene);
+            Assert.AreEqual(scene1, composite.hierarchyItem.Scene);
 
             
-            operation.transform.parent = scene2GameObject.transform;
+            composite.transform.parent = scene2GameObject.transform;
             yield return null;
             
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             
-            Assert.AreEqual(scene2, operation.gameObject.scene, "Operation is not part of expected scene");
-            Assert.AreEqual(scene2, operation.hierarchyItem.Scene, "Operation is not registered to expected scene");
+            Assert.AreEqual(scene2, composite.gameObject.scene, "Composite is not part of expected scene");
+            Assert.AreEqual(scene2, composite.hierarchyItem.Scene, "Composite is not registered to expected scene");
 
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1));
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene2));
@@ -180,11 +180,11 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator SaveOperationInScene_LoadScene_OperationTreeNodeIsGenerated()
+        public IEnumerator SaveCompositeInScene_LoadScene_CompositeTreeNodeIsGenerated()
         {
             var scene1	= TestUtility.defaultScene;
             { 
-                TestUtility.CreateUndoableGameObjectWithOperation();
+                TestUtility.CreateUndoableGameObjectWithComposite();
                 EditorSceneManager.SaveScene(scene1, TestUtility.tempFilename);
             }
 
@@ -196,17 +196,17 @@ namespace HierarchyTests
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene2));
             
             var scene3		= EditorSceneManager.OpenScene(TestUtility.tempFilename);
-            var operations	= Object.FindObjectsOfType<ChiselOperation>();
+            var composites	= Object.FindObjectsOfType<ChiselComposite>();
             yield return null;
 
-            Assert.NotNull(operations);
-            Assert.AreEqual(1, operations.Length);
+            Assert.NotNull(composites);
+            Assert.AreEqual(1, composites.Length);
 
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            Assert.AreEqual(scene3, operations[0].gameObject.scene, "Operation is not part of expected scene");
-            Assert.AreEqual(scene3, operations[0].hierarchyItem.Scene, "Operation is not registered to expected scene");
+            Assert.AreEqual(scene3, composites[0].gameObject.scene, "Composite is not part of expected scene");
+            Assert.AreEqual(scene3, composites[0].hierarchyItem.Scene, "Composite is not registered to expected scene");
 
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene1)); // unloaded, so should be unknown to us
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene2)); // unloaded, so should be unknown to us

@@ -11,18 +11,18 @@ using UnityEngine.SceneManagement;
 
 namespace HierarchyTests
 {
-    public partial class Operation_Lifetime
+    public partial class Composite_Lifetime
     {
         [SetUp] public void Setup() { TestUtility.ClearScene(); }
 
         // TODO: test passthrough
 
         [UnityTest]
-        public IEnumerator CreateOperation_DestroyOperationGameObject_OperationDoesNotExist()
+        public IEnumerator CreateComposite_DestroyCompositeGameObject_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -31,22 +31,22 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            Undo.DestroyObjectImmediate(operationGameObject);
+            Undo.DestroyObjectImmediate(compositeGameObject);
             yield return null;
 
-            Assert.False(operationGameObject);
-            Assert.False(operation);
+            Assert.False(compositeGameObject);
+            Assert.False(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_DestroyOperationComponent_OperationDoesNotExist()
+        public IEnumerator CreateComposite_DestroyCompositeComponent_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -55,22 +55,22 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            Undo.DestroyObjectImmediate(operation);
+            Undo.DestroyObjectImmediate(composite);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.False(operation);
+            Assert.True(compositeGameObject);
+            Assert.False(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_DeactivateOperationGameObject_OperationDoesNotExist()
+        public IEnumerator CreateComposite_DeactivateCompositeGameObject_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -79,22 +79,22 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            operationGameObject.SetActive(false);
+            compositeGameObject.SetActive(false);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_DisableOperationComponent_OperationDoesNotExist()
+        public IEnumerator CreateComposite_DisableCompositeComponent_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -103,23 +103,23 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            operation.enabled = false;
+            composite.enabled = false;
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_ActivateOperationGameObject_OperationExists()
+        public IEnumerator CreateComposite_ActivateCompositeGameObject_CompositeExists()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operationGameObject.SetActive(false);
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            compositeGameObject.SetActive(false);
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -128,23 +128,23 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
 
-            operationGameObject.SetActive(true);
+            compositeGameObject.SetActive(true);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_EnableOperationComponent_OperationExists()
+        public IEnumerator CreateComposite_EnableCompositeComponent_CompositeExists()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.enabled = false;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.enabled = false;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -153,93 +153,93 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
 
-            operation.enabled = true;
+            composite.enabled = true;
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_DestroyOperationGameObject_OnlyDirtiesSceneOfOperation()
+        public IEnumerator CreateComposite_DestroyCompositeGameObject_OnlyDirtiesSceneOfComposite()
         {
             var currentScene	= SceneManager.GetActiveScene();
             var newScene		= TestUtility.CreateAdditionalSceneAndActivate();
             Assert.False(currentScene.isDirty);
             Assert.False(newScene.isDirty);
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
-            Assert.AreEqual(newScene, operationGameObject.scene);
+            Assert.AreEqual(newScene, compositeGameObject.scene);
             Assert.True(newScene.isDirty);
             Assert.False(currentScene.isDirty);
 
-            Undo.DestroyObjectImmediate(operationGameObject);
+            Undo.DestroyObjectImmediate(compositeGameObject);
             yield return null;
 
-            Assert.False(operationGameObject);
-            Assert.False(operation);
+            Assert.False(compositeGameObject);
+            Assert.False(composite);
             Assert.True(newScene.isDirty);
             Assert.False(currentScene.isDirty);
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_DestroyOperationComponent_OnlyDirtiesSceneOfOperation()
+        public IEnumerator CreateComposite_DestroyCompositeComponent_OnlyDirtiesSceneOfComposite()
         {
             var currentScene	= SceneManager.GetActiveScene();
             var newScene		= TestUtility.CreateAdditionalSceneAndActivate();
             Assert.False(currentScene.isDirty);
             Assert.False(newScene.isDirty);
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
-            Assert.AreEqual(newScene, operationGameObject.scene);
+            Assert.AreEqual(newScene, compositeGameObject.scene);
             Assert.True(newScene.isDirty);
             Assert.False(currentScene.isDirty);
 
-            Undo.DestroyObjectImmediate(operation);
+            Undo.DestroyObjectImmediate(composite);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.False(operation);
+            Assert.True(compositeGameObject);
+            Assert.False(composite);
             Assert.True(newScene.isDirty);
             Assert.False(currentScene.isDirty);
         }
 
         [Test]
-        public void CreateOperation_OnlyDirtiesSceneOfOperation()
+        public void CreateComposite_OnlyDirtiesSceneOfComposite()
         {
             var currentScene	= SceneManager.GetActiveScene();
             var newScene		= TestUtility.CreateAdditionalSceneAndActivate();
             Assert.False(currentScene.isDirty);
             Assert.False(newScene.isDirty);
 
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
-            Assert.AreEqual(newScene, operationGameObject.scene);
+            Assert.AreEqual(newScene, compositeGameObject.scene);
             Assert.True(newScene.isDirty);
             Assert.False(currentScene.isDirty);
         }
 
         [UnityTest]
-        public IEnumerator OperationWithChildBrush_DestroyOperation_ChildIsDestroyed()
+        public IEnumerator CompositeWithChildBrush_DestroyComposite_ChildIsDestroyed()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject	= operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject	= composite.gameObject;
             
             var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
             var brushGameObject		= brush.gameObject;
-            brush.transform.parent	= operation.transform;
+            brush.transform.parent	= composite.transform;
             
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             Assert.True(brushGameObject); 
             Assert.True(brush);
 
@@ -252,14 +252,14 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
 
-            Assert.AreEqual(1, operation.Node.Count, 1);
-            Assert.AreEqual(operation.Node.NodeID, brush.TopNode.Parent.NodeID); 
+            Assert.AreEqual(1, composite.Node.Count, 1);
+            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID); 
             
-            Undo.DestroyObjectImmediate(operationGameObject);
+            Undo.DestroyObjectImmediate(compositeGameObject);
             yield return null;
             
-            Assert.False(operationGameObject);
-            Assert.False(operation);
+            Assert.False(compositeGameObject);
+            Assert.False(composite);
             Assert.False(brushGameObject); 
             Assert.False(brush);
 
@@ -270,25 +270,25 @@ namespace HierarchyTests
         }
 
         [UnityTest]
-        public IEnumerator Operation1WithOperation2WithChildBrush_DeactivateOperation2GameObject_ChildIsAlsoDeactivated()
+        public IEnumerator Composite1WithComposite2WithChildBrush_DeactivateComposite2GameObject_ChildIsAlsoDeactivated()
         {
             var scene					= TestUtility.defaultScene;
-            var operation1				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operation1GameObject	= operation1.gameObject;
+            var composite1				= TestUtility.CreateUndoableGameObjectWithComposite();
+            var composite1GameObject	= composite1.gameObject;
             
-            var operation2				= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operation2GameObject	= operation2.gameObject;
-            operation2.transform.parent	= operation1.transform;
-            operation2GameObject.SetActive(false);
+            var composite2				= TestUtility.CreateUndoableGameObjectWithComposite();
+            var composite2GameObject	= composite2.gameObject;
+            composite2.transform.parent	= composite1.transform;
+            composite2GameObject.SetActive(false);
             
             var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
             var brushGameObject		= brush.gameObject;
-            brush.transform.parent	= operation2.transform;
+            brush.transform.parent	= composite2.transform;
 
-            Assert.True(operation1GameObject);
-            Assert.True(operation1);
-            Assert.True(operation2GameObject);
-            Assert.True(operation2);
+            Assert.True(composite1GameObject);
+            Assert.True(composite1);
+            Assert.True(composite2GameObject);
+            Assert.True(composite2);
             Assert.True(brushGameObject); 
             Assert.True(brush);
 
@@ -301,18 +301,18 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
 
-            Assert.AreEqual(0, operation1.Node.Count);
+            Assert.AreEqual(0, composite1.Node.Count);
             Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, operation2.Node.NodeID);	
+            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);	
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator CreateOperation_EnablePassThrough_OperationDoesNotExist()
+        public IEnumerator CreateComposite_EnablePassThrough_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -321,24 +321,24 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             
-            operation.PassThrough = true;
+            composite.PassThrough = true;
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
-            Assert.AreEqual(operation.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
+            Assert.AreEqual(composite.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator OperationWithPassThroughEnabled_DisablePassThrough_OperationExists()
+        public IEnumerator CompositeWithPassThroughEnabled_DisablePassThrough_CompositeExists()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.PassThrough = true;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.PassThrough = true;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -346,27 +346,27 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
             
-            operation.PassThrough = false;
+            composite.PassThrough = false;
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
-            Assert.AreNotEqual(operation.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
+            Assert.AreNotEqual(composite.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator OperationWithPassThroughEnabled_DestroyOperationGameObject_OperationDoesNotExist()
+        public IEnumerator CompositeWithPassThroughEnabled_DestroyCompositeGameObject_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.PassThrough = true;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.PassThrough = true;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -374,26 +374,26 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
 
-            Undo.DestroyObjectImmediate(operationGameObject);
+            Undo.DestroyObjectImmediate(compositeGameObject);
             yield return null;
 
-            Assert.False(operationGameObject);
-            Assert.False(operation);
+            Assert.False(compositeGameObject);
+            Assert.False(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator OperationWithPassThroughEnabled_DestroyOperationComponent_OperationDoesNotExist()
+        public IEnumerator CompositeWithPassThroughEnabled_DestroyCompositeComponent_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.PassThrough = true;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.PassThrough = true;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -401,27 +401,27 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
-            Assert.True(operationGameObject);
-            Assert.True(operation);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
 
-            Undo.DestroyObjectImmediate(operation);
+            Undo.DestroyObjectImmediate(composite);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.False(operation);
+            Assert.True(compositeGameObject);
+            Assert.False(composite);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator DeactivatedOperationGameObjectWithPassThroughEnabled_ActivateOperationGameObject_OperationDoesNotExist()
+        public IEnumerator DeactivatedCompositeGameObjectWithPassThroughEnabled_ActivateCompositeGameObject_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operationGameObject.SetActive(false);
-            operation.PassThrough = true;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            compositeGameObject.SetActive(false);
+            composite.PassThrough = true;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -430,25 +430,25 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
 
-            operationGameObject.SetActive(true);
+            compositeGameObject.SetActive(true);
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
-            Assert.AreEqual(operation.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
+            Assert.AreEqual(composite.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));
         }
 
         [UnityTest]
-        public IEnumerator DisabledOperationWithPassThroughEnabled_EnableOperationComponent_OperationDoesNotExist()
+        public IEnumerator DisabledCompositeWithPassThroughEnabled_EnableCompositeComponent_CompositeDoesNotExist()
         {
             var scene				= TestUtility.defaultScene;
-            var operation			= TestUtility.CreateUndoableGameObjectWithOperation();
-            var operationGameObject = operation.gameObject;
-            operation.enabled = false;
-            operation.PassThrough = true;
+            var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
+            var compositeGameObject = composite.gameObject;
+            composite.enabled = false;
+            composite.PassThrough = true;
 
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
@@ -457,12 +457,12 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
 
-            operation.enabled = true;
+            composite.enabled = true;
             yield return null;
 
-            Assert.True(operationGameObject);
-            Assert.True(operation);
-            Assert.AreEqual(operation.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
+            Assert.True(compositeGameObject);
+            Assert.True(composite);
+            Assert.AreEqual(composite.Node, (CSGTreeBranch)CSGTreeNode.InvalidNode);
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(0, CSGManager.TreeNodeCount, "Expected 0 TreeNodes to Exist");
             Assert.AreEqual(0, ChiselNodeHierarchyManager.RootCount(scene));

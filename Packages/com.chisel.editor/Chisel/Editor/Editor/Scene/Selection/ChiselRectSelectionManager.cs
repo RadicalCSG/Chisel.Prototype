@@ -537,7 +537,7 @@ namespace Chisel.Editors
             ChiselIntersection intersection;
             var gameobject = ChiselClickSelectionManager.PickClosestGameObject(mousePosition, out intersection);
 
-            // If we're a child of an operation that has a "handle as one" flag set, return that instead
+            // If we're a child of an composite that has a "handle as one" flag set, return that instead
             gameobject = ChiselSceneQuery.FindSelectionBase(gameobject); 
             
             var selectionType = GetCurrentSelectionType();

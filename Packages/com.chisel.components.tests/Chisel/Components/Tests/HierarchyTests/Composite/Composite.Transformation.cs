@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace HierarchyTests
 {
-    public partial class Operation_Transformation
+    public partial class Composite_Transformation
     {
         [SetUp] public void Setup() { TestUtility.ClearScene(); }
 

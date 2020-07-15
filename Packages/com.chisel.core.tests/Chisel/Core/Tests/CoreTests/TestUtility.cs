@@ -53,22 +53,22 @@ namespace FoundationTests
             Assert.AreEqual(CSGNodeType.None, type);
         }
 
-        public static void ExpectValidBranchWithUserID(ref CSGTreeBranch operation, int userID)
+        public static void ExpectValidBranchWithUserID(ref CSGTreeBranch branch, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(operation.NodeID).Type;
+            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
 
-            Assert.AreEqual(true, operation.Valid);
-            Assert.AreNotEqual(0, operation.NodeID);
-            Assert.AreEqual(userID, operation.UserID);
+            Assert.AreEqual(true, branch.Valid);
+            Assert.AreNotEqual(0, branch.NodeID);
+            Assert.AreEqual(userID, branch.UserID);
             Assert.AreEqual(CSGNodeType.Branch, type);
         }
 
-        public static void ExpectInvalidBranch(ref CSGTreeBranch operation)
+        public static void ExpectInvalidBranch(ref CSGTreeBranch branch)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(operation.NodeID).Type;
+            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
 
-            Assert.AreEqual(false, operation.Valid);
-            Assert.AreEqual(0, operation.UserID);
+            Assert.AreEqual(false, branch.Valid);
+            Assert.AreEqual(0, branch.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
 

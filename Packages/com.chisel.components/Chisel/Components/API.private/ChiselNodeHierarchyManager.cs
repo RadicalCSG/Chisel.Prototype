@@ -18,7 +18,7 @@ using UnityEngine.SceneManagement;
             - make sure it works when unity starts up / loading scene
             - adding/removing/enabling/disabling components, incl. in between nodes
             - adding/removing/activating/deactivating gameObjects
-            - operation passthrough mode
+            - composite passthrough mode
             - undo/redo
             - mind prefabs
             - multiple scenes

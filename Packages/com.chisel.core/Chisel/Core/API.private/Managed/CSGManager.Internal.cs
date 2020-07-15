@@ -21,7 +21,7 @@ namespace Chisel.Core
             //NeedChildUpdate		    = 1,
             NeedPreviousSiblingsUpdate  = 2,
 
-            OperationNeedsUpdate        = 4,
+            BranchNeedsUpdate           = 4,
             
             TreeIsDisabled              = 1024,// TODO: remove, or make more useful
             TreeNeedsUpdate             = 8,
@@ -462,7 +462,7 @@ namespace Chisel.Core
             switch (nodeFlags[nodeID - 1].nodeType)
             {
                 case CSGNodeType.Brush:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.NeedCSGUpdate);
-                case CSGNodeType.Branch:	return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.OperationNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate);
+                case CSGNodeType.Branch:	return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.BranchNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate);
                 case CSGNodeType.Tree:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate);
             }
             return false;
@@ -500,7 +500,7 @@ namespace Chisel.Core
                 return false;
             int treeNodeID = GetTreeOfNode(nodeID);
             var flags = nodeFlags[nodeID - 1];
-            flags.SetNodeFlag(NodeStatusFlags.OperationNeedsUpdate);
+            flags.SetNodeFlag(NodeStatusFlags.BranchNeedsUpdate);
             nodeFlags[nodeID - 1] = flags;
             SetTreeDirtyWithFlag(treeNodeID);
             return true;
@@ -548,7 +548,7 @@ namespace Chisel.Core
             switch (flags.nodeType)
             {
                 case CSGNodeType.Brush:		flags.UnSetNodeFlag(NodeStatusFlags.NeedFullUpdate); nodeFlags[nodeID - 1] = flags; return true;
-                case CSGNodeType.Branch:	flags.UnSetNodeFlag(NodeStatusFlags.OperationNeedsUpdate); nodeFlags[nodeID - 1] = flags; return true;
+                case CSGNodeType.Branch:	flags.UnSetNodeFlag(NodeStatusFlags.BranchNeedsUpdate); nodeFlags[nodeID - 1] = flags; return true;
                 case CSGNodeType.Tree:		flags.UnSetNodeFlag(NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate); nodeFlags[nodeID - 1] = flags; return true;
             }
             return false;
