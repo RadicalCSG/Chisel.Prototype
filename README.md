@@ -21,10 +21,8 @@ Notes:
 - It is *not yet* ready for production, but please feel free to try it out!
 
 Known issues:
-* Intersection vertices aren't yet merged between brushes, which can cause tiny gaps between polygons
 * There are some cases where triangulation fails, possibly related to previous vertex merging issue
   (please collect failure cases so we can later verify we fixed them)
-* Moving a brush using the inspector will not always update it's touching brushes
 * Normal smoothing is not yet implemented
 
 Packages overview:
