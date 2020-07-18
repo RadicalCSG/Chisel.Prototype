@@ -1,16 +1,21 @@
-# Chisel.Prototype
+# [Chisel.Prototype](https://github.com/RadicalCSG/Chisel.Prototype)
 
 Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non destructive** level editing!
 
 ![Example](Documentation/Images/chisel_example.png)
 
 ---
-**[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
-
 [Click here for information on how to get started](GettingStarted.md)
 
+Want to help out?
+[We have some good first issues here](https://github.com/RadicalCSG/Chisel.Prototype/labels/good%20first%20issue)
+
+If you have questions be sure to ask in the discord!
+
+**[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
+
 Notes:
-- Chisel requires Unity 2020.2a15 or newer
+- Chisel requires Unity 2020.2a17 or newer
 - UX is still under development
 - CSG algorithm is still under development
 - It is *not yet* ready for production, but please feel free to try it out!
