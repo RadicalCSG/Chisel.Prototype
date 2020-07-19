@@ -50,7 +50,7 @@ namespace Chisel.Core
                 if (localTransformation != default(Matrix4x4)) CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref localTransformation);
                 if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(brushNodeID, operation);
                 if (flags     != CSGTreeBrushFlags.Default) SetBrushFlags(brushNodeID, flags);
-                if (brushMesh.Valid) SetBrushMesh(brushNodeID, brushMesh);
+                if (brushMesh.Valid) CSGManager.SetBrushMeshID(brushNodeID, brushMesh.brushMeshID);
             } else
                 brushNodeID = 0;
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
@@ -118,26 +118,25 @@ namespace Chisel.Core
 
         #region TreeBrush specific
         /// <value>Gets or sets <see cref="Chisel.Core.CSGTreeBrush"/> specific flags.</value>
-        public CSGTreeBrushFlags Flags				{ get { return GetBrushFlags(brushNodeID); } set { SetBrushFlags(brushNodeID, value); } }
+        public CSGTreeBrushFlags    Flags		    { get { return GetBrushFlags(brushNodeID); } set { SetBrushFlags(brushNodeID, value); } }
 
         /// <value>Sets or gets a <see cref="Chisel.Core.BrushMeshInstance"/></value>
         /// <remarks>By modifying the <see cref="Chisel.Core.BrushMeshInstance"/> you can change the shape of the <see cref="Chisel.Core.CSGTreeBrush"/>
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>
         /// <seealso cref="Chisel.Core.BrushMesh" />
-        
-        public BrushMeshInstance BrushMesh			{ set { SetBrushMesh(brushNodeID, value); } [BurstDiscard] get { return GetBrushMesh(brushNodeID); } }
+        public BrushMeshInstance    BrushMesh		{ set { CSGManager.SetBrushMeshID(brushNodeID, value.brushMeshID); } get { return new BrushMeshInstance { brushMeshID = CSGManager.GetBrushMeshID(brushNodeID) }; } }
 
         /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
-        public Bounds			Bounds				{ get { return GetBrushBounds(brushNodeID); } }
+        public Bounds			    Bounds			{ get { return CSGManager.GetBrushBounds(brushNodeID); } }
         #endregion
         
         #region Transformation
         // TODO: add description
-		public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } [BurstDiscard] set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		
+		public Matrix4x4		LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } [BurstDiscard] set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		
         // TODO: add description
-		public Matrix4x4			TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+		public Matrix4x4		TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
-		public Matrix4x4			NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+		public Matrix4x4		NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         #endregion
         
         #region Comparison

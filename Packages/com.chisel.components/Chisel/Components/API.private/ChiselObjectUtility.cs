@@ -9,9 +9,8 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public UnityEditor.StaticEditorFlags	staticFlags;
 #endif
-        public static GameObjectState Create(ChiselModel model)
+        public static GameObjectState Create(GameObject modelGameObject)
         {
-            var modelGameObject = model.gameObject;
             return new GameObjectState
             {
                 layer           = modelGameObject.layer,

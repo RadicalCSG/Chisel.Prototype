@@ -87,14 +87,14 @@ namespace Chisel.Editors
         static readonly GUIContent RenderingLayerMaskStyle                = new GUIContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
         static readonly GUIContent StaticBatchingWarningContents          = new GUIContent("This model is statically batched and uses an instanced shader at the same time. Instancing will be disabled in such a case. Consider disabling static batching if you want it to be instanced.");
         static readonly GUIContent NoNormalsNoLightmappingContents        = new GUIContent("VertexChannels is set to not have any normals. Normals are needed for lightmapping.");
-        static readonly GUIContent LightmapInfoBoxContents                = new GUIContent("To enable generation of lightmaps for this Model, please enable the 'Lightmap Static' property.");
+        //static readonly GUIContent LightmapInfoBoxContents                = new GUIContent("To enable generation of lightmaps for this Model, please enable the 'Lightmap Static' property.");
         static readonly GUIContent ClampedPackingResolutionContents       = new GUIContent("Object's size in the realtime lightmap has reached the maximum size. Try dividing large brushes into smaller pieces.");
         static readonly GUIContent UVOverlapContents                      = new GUIContent("This model has overlapping UVs. This is caused by Unity's own code.");
         static readonly GUIContent ClampedSizeContents                    = new GUIContent("Object's size in lightmap has reached the max atlas size.", "If you need higher resolution for this object, try dividing large brushes into smaller pieces or set higher max atlas size via the LightmapEditorSettings class.");
         static readonly GUIContent IsTriggerContents                      = new GUIContent("Is Trigger", "Is this model a trigger? Triggers are only supported on convex models.");
         static readonly GUIContent ConvextContents                        = new GUIContent("Convex", "Create a convex collider for this model?");
         static readonly GUIContent VertexChannelMaskContents              = new GUIContent("Vertex Channel Mask", "Select which vertex channels will be used in the generated meshes");
-        static readonly GUIContent SkinWidthContents                      = new GUIContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
+        //static readonly GUIContent SkinWidthContents                      = new GUIContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
         static readonly GUIContent CookingOptionsContents                 = new GUIContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
         static readonly GUIContent DefaultModelContents                   = new GUIContent("This model is the default model, all nodes that are not part of a model are automatically added to this model.");
         static readonly GUIContent StitchLightmapSeamsContents            = new GUIContent("Stitch Seams", "When enabled, seams in baked lightmaps will get smoothed.");
@@ -164,7 +164,7 @@ namespace Chisel.Editors
         SerializedProperty convexProp;
         SerializedProperty isTriggerProp;
         SerializedProperty cookingOptionsProp;
-        SerializedProperty skinWidthProp;
+        //SerializedProperty skinWidthProp;
 
         bool showLighting;
         bool showProbes;
@@ -248,7 +248,7 @@ namespace Chisel.Editors
             convexProp          = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kConvexName}");
             isTriggerProp       = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kIsTriggerName}");
             cookingOptionsProp  = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kCookingOptionsName}");
-            skinWidthProp       = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kSkinWidthName}");
+            //skinWidthProp     = serializedObject.FindProperty($"{ChiselModel.kColliderSettingsName}.{ChiselGeneratedColliderSettings.kSkinWidthName}");
 
             gameObjectsSerializedObject = new SerializedObject(serializedObject.targetObjects.Select(t => ((Component)t).gameObject).ToArray());
             staticEditorFlagsProp = gameObjectsSerializedObject.FindProperty("m_StaticEditorFlags");
@@ -882,10 +882,6 @@ namespace Chisel.Editors
             EditorGUI.showMixedValue = false;
         }
 
-        delegate Texture2D GetHelpIconDelegate(MessageType type);
-
-        GetHelpIconDelegate GetHelpIcon = ReflectionExtensions.CreateDelegate<GetHelpIconDelegate>(typeof(EditorGUIUtility), "GetHelpIcon");
-
         void MeshRendererLightingGUI()
         {
             var oldShowLighting				= showLighting;
@@ -919,7 +915,7 @@ namespace Chisel.Editors
                 {
                     EditorGUILayout.BeginHorizontal(EditorStyles.helpBox); 
                     var messageContents = needLightmapRebuild ? NeedsLightmapBuildContents : NeedsLightmapRebuildContents;
-                    GUILayout.Label(EditorGUIUtility.TrTextContent(messageContents.text, GetHelpIcon(MessageType.Warning)), EditorStyles.wordWrappedLabel);
+                    GUILayout.Label(EditorGUIUtility.TrTextContent(messageContents.text, ChiselEditorUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.wordWrappedLabel);
                     GUILayout.Space(3);
                     var buttonContents = needLightmapRebuild ? ForceBuildUVsContents : ForceRebuildUVsContents;
                     if (GUILayout.Button(buttonContents, GUILayout.ExpandWidth(false)))

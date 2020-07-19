@@ -48,17 +48,18 @@ namespace Chisel.Components
 
         private ChiselGeneratedObjects() { }
 
-        public static ChiselGeneratedObjects Create(ChiselModel model)
+        public static ChiselGeneratedObjects Create(GameObject parentGameObject)
         {
+            var parentTransform     = parentGameObject.transform;
+
             // Make sure there's not a dangling container out there from a previous version
-            var existingContainer = model.FindChildByName(kGeneratedContainerName);
+            var existingContainer   = parentTransform.FindChildByName(kGeneratedContainerName);
             ChiselObjectUtility.SafeDestroy(existingContainer, ignoreHierarchyEvents: true);
 
-            var modelState          = GameObjectState.Create(model);
-            var parent              = model.transform;
-            var container           = ChiselObjectUtility.CreateGameObject(kGeneratedContainerName, parent, modelState);
+            var gameObjectState     = GameObjectState.Create(parentGameObject);
+            var container           = ChiselObjectUtility.CreateGameObject(kGeneratedContainerName, parentTransform, gameObjectState);
             var containerTransform  = container.transform;
-            var colliderContainer   = ChiselObjectUtility.CreateGameObject(kGeneratedMeshColliderName, containerTransform, modelState);
+            var colliderContainer   = ChiselObjectUtility.CreateGameObject(kGeneratedMeshColliderName, containerTransform, gameObjectState);
 
             Debug.Assert((int)LayerUsageFlags.Renderable     == 1);
             Debug.Assert((int)LayerUsageFlags.CastShadows    == 2);
@@ -68,13 +69,13 @@ namespace Chisel.Components
             var renderables = new ChiselRenderObjects[]
             {
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, modelState, LayerUsageFlags.Renderable                               ),
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, modelState,                              LayerUsageFlags.CastShadows ),
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, modelState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, gameObjectState, LayerUsageFlags.Renderable                               ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState,                              LayerUsageFlags.CastShadows ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, gameObjectState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows ),
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, modelState, LayerUsageFlags.Renderable |                               LayerUsageFlags.ReceiveShadows),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, gameObjectState, LayerUsageFlags.Renderable |                               LayerUsageFlags.ReceiveShadows),
                 new ChiselRenderObjects() { invalid = true },
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, modelState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows | LayerUsageFlags.ReceiveShadows),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[7], containerTransform, gameObjectState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows | LayerUsageFlags.ReceiveShadows),
             };
 
             var meshRenderers = new MeshRenderer[]
@@ -252,27 +253,27 @@ namespace Chisel.Components
             }
         }
 
-        public void Update(ChiselModel model, VertexBufferContents vertexBufferContents)
+        public void Update(ChiselModel model, GameObject parentGameObject, VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("Setup");
-            var modelState = GameObjectState.Create(model);
-            ChiselObjectUtility.UpdateContainerFlags(generatedDataContainer, modelState);
+            var parentTransform     = parentGameObject.transform;
+            var gameObjectState     = GameObjectState.Create(parentGameObject);
+            ChiselObjectUtility.UpdateContainerFlags(generatedDataContainer, gameObjectState);
 
-            var modelTransform      = model.transform;
             var containerTransform  = generatedDataContainer.transform;
             var colliderTransform   = colliderContainer.transform;
 
             // Make sure we're always a child of the model
-            ChiselObjectUtility.ResetTransform(containerTransform, requiredParent: modelTransform);
+            ChiselObjectUtility.ResetTransform(containerTransform, requiredParent: parentTransform);
             ChiselObjectUtility.ResetTransform(colliderTransform, requiredParent: containerTransform);
-            ChiselObjectUtility.UpdateContainerFlags(colliderContainer, modelState);
+            ChiselObjectUtility.UpdateContainerFlags(colliderContainer, gameObjectState);
 
             for (int i = 0; i < renderables.Length; i++)
             {
                 if (renderables[i] == null || renderables[i].invalid)
                     continue;
                 var renderableContainer = renderables[i].container;
-                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, modelState);
+                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState);
                 ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
             }
             Profiler.EndSample();
@@ -295,7 +296,7 @@ namespace Chisel.Components
                 for (int renderIndex = 0; renderIndex < renderables.Length; renderIndex++)
                 {
                     if (renderables[renderIndex].Valid)
-                        renderables[renderIndex].Clear(model, modelState);
+                        renderables[renderIndex].Clear(model, gameObjectState);
                 }
 
                 for (int j = 0; j < colliders.Length; j++)
@@ -314,7 +315,7 @@ namespace Chisel.Components
                         var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
                         // Group by all meshDescriptions with same query
                         Profiler.BeginSample("Update");
-                        renderables[renderIndex].Update(model, modelState, ref vertexBufferContents, i);
+                        renderables[renderIndex].Update(model, gameObjectState, ref vertexBufferContents, i);
                         Profiler.EndSample();
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)

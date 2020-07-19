@@ -190,7 +190,7 @@ namespace Chisel.Components
                 generated.Destroy();
 
             if (generated == null)
-                generated = ChiselGeneratedObjects.Create(this);
+                generated = ChiselGeneratedObjects.Create(gameObject);
 
             if (colliderSettings == null)
             {
@@ -237,7 +237,7 @@ namespace Chisel.Components
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (Node.Valid)
-                Debug.LogWarning("ChiselModel already has a treeNode, but trying to create a new one?", this);
+                Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
             return new CSGTreeNode[] { Node };
@@ -248,7 +248,7 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                Debug.LogWarning("SetChildren called on a ChiselModel that isn't properly initialized", this);
+                Debug.LogWarning($"SetChildren called on a {nameof(ChiselModel)} that isn't properly initialized", this);
                 return;
             }
             if (childNodes.Count == 0)
@@ -269,6 +269,8 @@ namespace Chisel.Components
             if (!Node.Valid)
                 return false;
             // A model makes no sense without any children
+            if (hierarchyItem != null)
+                return (hierarchyItem.Children.Count > 0);
             return (transform.childCount > 0);
         }
 

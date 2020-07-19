@@ -329,10 +329,10 @@ namespace Chisel.Core
             var treeUpdateLength = 0;
             for (int t = 0; t < treeNodeIDs.Length; t++)
             {
-                var treeNodeIndex       = treeNodeIDs[t] - 1;
-                var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
+                var treeNodeIndex   = treeNodeIDs[t] - 1;
+                var treeInfo        = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
                 
-                var treeBrushes = treeInfo.treeBrushes;
+                var allTreeBrushes  = treeInfo.allTreeBrushes.items;
 
                 ref var currentTree = ref s_TreeUpdates[treeUpdateLength];
 
@@ -340,7 +340,7 @@ namespace Chisel.Core
                 currentTree.lastJobHandle = default;
 
 
-                int brushCount = treeBrushes.Count;
+                int brushCount = allTreeBrushes.Count;
 
                 var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
                 chiselLookupValues.EnsureCapacity(brushCount);
@@ -428,7 +428,7 @@ namespace Chisel.Core
                 {
                     for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                     {
-                        int nodeID = treeBrushes[nodeOrder];
+                        int nodeID = allTreeBrushes[nodeOrder];
                         int nodeIndex = nodeID - 1;
                         nodeIndexMin = math.min(nodeIndexMin, nodeIndex);
                         nodeIndexMax = math.max(nodeIndexMax, nodeIndex);
@@ -444,7 +444,7 @@ namespace Chisel.Core
                     s_NodeIndexToNodeOrderArray = new int[desiredLength];
                 for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
                 {
-                    int nodeID     = treeBrushes[nodeOrder];
+                    int nodeID     = allTreeBrushes[nodeOrder];
                     int nodeIndex  = nodeID - 1;
                     s_NodeIndexToNodeOrderArray[nodeIndex - nodeIndexToNodeOrderOffset] = nodeOrder;
                     
@@ -528,7 +528,7 @@ namespace Chisel.Core
                                     continue;
 
                                 // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                                if (!treeBrushes.Contains(otherBrushID))
+                                if (!allTreeBrushes.Contains(otherBrushID))
                                     continue;
 
                                 var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -668,7 +668,7 @@ namespace Chisel.Core
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
-                    int nodeID      = treeBrushes[nodeOrder];
+                    int nodeID      = allTreeBrushes[nodeOrder];
                     int nodeIndex   = nodeID - 1;
                     int brushMeshID = 0;
                     if (!IsValidNodeID(nodeID) ||
@@ -706,7 +706,7 @@ namespace Chisel.Core
                     rebuildTreeBrushIndexOrders.Capacity = brushCount;
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
-                    int nodeID     = treeBrushes[nodeOrder];
+                    int nodeID     = allTreeBrushes[nodeOrder];
                     int nodeIndex  = nodeID - 1;
 
                     var nodeFlags = CSGManager.nodeFlags[nodeIndex];
@@ -772,7 +772,7 @@ namespace Chisel.Core
                                 continue;
 
                             // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                            if (!treeBrushes.Contains(otherBrushID))
+                            if (!allTreeBrushes.Contains(otherBrushID))
                                 continue;
 
                             var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -818,7 +818,7 @@ namespace Chisel.Core
                 currentTree.treeNodeIndex   = treeNodeIndex;
                 currentTree.brushCount      = brushCount;
                 currentTree.updateCount     = rebuildTreeBrushIndexOrders.Length;
-                currentTree.maxNodeOrder    = treeBrushes.Count;
+                currentTree.maxNodeOrder    = allTreeBrushes.Count;
                 currentTree.compactTree     = compactTree;
                 currentTree.meshQueries     = meshQueries;
                 #endregion

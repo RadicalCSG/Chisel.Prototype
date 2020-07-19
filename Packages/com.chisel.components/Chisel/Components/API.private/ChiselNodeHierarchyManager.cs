@@ -471,7 +471,7 @@ namespace Chisel.Components
         }
 
         // Find parent node & update siblingIndices for each level
-        static ChiselNode UpdateSiblingIndices(ChiselSceneHierarchy sceneHierarchy, ChiselHierarchyItem hierarchyItem)
+        static ChiselNode UpdateSiblingIndices(ChiselHierarchyItem hierarchyItem)
         {
             var transform	= hierarchyItem.Transform;
             if (!transform)
@@ -486,9 +486,8 @@ namespace Chisel.Components
                 return null;
 
             // Find siblingIndexs up the parents, until we find a ChiselNode
-            ChiselNode parentComponent;
-            if (componentLookup.TryGetValue(parent, out parentComponent) &&
-                !parentComponent.CanHaveChildNodes)
+            if (componentLookup.TryGetValue(parent, out ChiselNode parentComponent) 
+                && !parentComponent.CanHaveChildNodes)
                 parentComponent = null;
             while (ReferenceEquals(parentComponent, null))
             {
@@ -498,7 +497,6 @@ namespace Chisel.Components
                 if (ReferenceEquals(parent, null))
                     break;
 
-                parentComponent = null;
                 if (componentLookup.TryGetValue(parent, out parentComponent) && !parentComponent.CanHaveChildNodes)
                     parentComponent = null;
             }
@@ -799,6 +797,27 @@ namespace Chisel.Components
                 treeNodeLookup[node] = createdTreeNodes;
             else
                 treeNodeLookup.Remove(node);
+        }
+
+        public static ChiselSceneHierarchy GetSceneHierarchyForScene(Scene scene)
+        { 
+            if (sceneHierarchies.TryGetValue(scene, out ChiselSceneHierarchy sceneHierarchy))
+                return sceneHierarchy;
+
+            return sceneHierarchies[scene] = new ChiselSceneHierarchy() { Scene = scene };
+        }
+
+        public static ChiselModel GetDefaultModelForScene(Scene scene)
+        {
+            var sceneHierarchy = GetSceneHierarchyForScene(scene);
+            if (!sceneHierarchy.Scene.IsValid() ||
+                !sceneHierarchy.Scene.isLoaded)
+                return null;
+
+            if (!sceneHierarchy.DefaultModel)
+                sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
+
+            return sceneHierarchy.DefaultModel;
         }
 
 
@@ -1267,17 +1286,11 @@ namespace Chisel.Components
                         !hierarchyItem.Component.IsActive)
                         continue;
         
-                    ChiselSceneHierarchy sceneHierarchy;
-                    var scene = hierarchyItem.Scene;
-                    if (!sceneHierarchies.TryGetValue(scene, out sceneHierarchy))
-                    {
-                        sceneHierarchy = new ChiselSceneHierarchy() { Scene = scene };
-                        sceneHierarchies[scene] = sceneHierarchy;
-                    }
+                    var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
                     hierarchyItem.sceneHierarchy = sceneHierarchy;
 
                     var defaultModel = false;
-                    var parentComponent = UpdateSiblingIndices(sceneHierarchy, hierarchyItem);
+                    var parentComponent = UpdateSiblingIndices(hierarchyItem);
                     if (ReferenceEquals(parentComponent, null))
                     {
                         if (!(hierarchyItem.Component is ChiselModel))
@@ -1498,13 +1511,15 @@ namespace Chisel.Components
 
         static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
         {
+            if (item == null)
+                return;
             for (int i = 0; i < item.Children.Count; i++)
             {
                 var childComponent = item.Children[i].Component;
                 if (!childComponent)
                     continue;
 
-                childComponent.CollectCSGTreeNodes(__childNodes);
+                childComponent.CollectCSGTreeNodes(childNodes);
             }
         }
 

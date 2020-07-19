@@ -113,7 +113,7 @@ namespace Chisel.Components
             {
                 if (model.generated != null)
                     model.generated.Destroy();
-                model.generated = ChiselGeneratedObjects.Create(model);
+                model.generated = ChiselGeneratedObjects.Create(model.gameObject);
             }
 
             UpdateModelFlags(model);

@@ -30,14 +30,17 @@ namespace Chisel.Components
         public CSGOperationType Operation { get { return operation; } set { if (value == operation) return; operation = value; if (Node.Valid) Node.Operation = operation; } }
 
 
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        // Will show a warning icon in hierarchy when a generator has a problem (do not make this method slow, it is called a lot!)
         public override bool HasValidState()
         {
             if (PassThrough)
                 return true;
             if (!Node.Valid)
                 return false;
+
             // A composite makes no sense without any children
+            if (hierarchyItem != null)
+                return (hierarchyItem.Children.Count > 0);
             return (transform.childCount > 0);
         }
 
@@ -52,11 +55,13 @@ namespace Chisel.Components
             base.OnValidateInternal();
         }
 
+        static CSGTreeNode[] kEmptyTreeNodeArray = new CSGTreeNode[] { };
+
         internal override void			ClearTreeNodes (bool clearCaches = false) { Node.SetInvalid(); }	
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (passThrough)
-                return new CSGTreeNode[] { };
+                return kEmptyTreeNodeArray;
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);		
             Node = CSGTreeBranch.Create(userID: GetInstanceID());
@@ -86,7 +91,8 @@ namespace Chisel.Components
 
         public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
-            childNodes.Add(Node);
+            if (!PassThrough)
+                childNodes.Add(Node);
         }
 
         public override int GetAllTreeBrushCount()

@@ -31,9 +31,9 @@ namespace Chisel.Components
             registeredNodeLookup.Clear();
             registeredModels.Clear();
             updateList.Clear();
-            
-            
-            if (PostReset != null) PostReset();
+
+
+            PostReset?.Invoke();
         }
 
         internal static void Unregister(ChiselNode node)
@@ -81,10 +81,10 @@ namespace Chisel.Components
             {
                 if (model.generated != null)
                     model.generated.Destroy();
-                model.generated = ChiselGeneratedObjects.Create(model);
+                model.generated = ChiselGeneratedObjects.Create(model.gameObject);
             }
 
-            model.generated.Update(model, vertexBufferContents);
+            model.generated.Update(model, model.gameObject, vertexBufferContents);
             componentGenerator.Rebuild(model);
             PostUpdateModel?.Invoke(model);
             return true;

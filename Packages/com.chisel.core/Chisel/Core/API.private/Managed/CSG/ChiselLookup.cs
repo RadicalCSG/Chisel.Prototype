@@ -148,9 +148,9 @@ namespace Chisel.Core
         internal static BlobAssetReference<CompactTree> Create(List<CSGManager.NodeHierarchy> nodeHierarchies, int treeNodeIndex)
         {
             var treeInfo            = nodeHierarchies[treeNodeIndex].treeInfo;
-            var treeBrushes         = treeInfo.treeBrushes;
+            var allTreeBrushes      = treeInfo.allTreeBrushes.items;
 
-            if (treeBrushes.Count == 0)
+            if (allTreeBrushes.Count == 0)
                 return BlobAssetReference<CompactTree>.Null;
 
             s_BottomUpNodeIndices.Clear();
@@ -158,9 +158,9 @@ namespace Chisel.Core
             
             var minBrushIndex       = nodeHierarchies.Count;
             var maxBrushIndex       = 0;
-            for (int b = 0; b < treeBrushes.Count; b++)
+            for (int b = 0; b < allTreeBrushes.Count; b++)
             {
-                var brushNodeID = treeBrushes[b];
+                var brushNodeID = allTreeBrushes[b];
                 if (brushNodeID == 0)
                     continue;
 
@@ -177,9 +177,9 @@ namespace Chisel.Core
                 s_BrushIndexToBottomUpIndex = new int[desiredBrushIndexToBottomUpLength];
 
             // Bottom-up -> per brush list of all ancestors to root
-            for (int b = 0; b < treeBrushes.Count; b++)
+            for (int b = 0; b < allTreeBrushes.Count; b++)
             {
-                var brushNodeID = treeBrushes[b];
+                var brushNodeID = allTreeBrushes[b];
                 if (!CSGManager.IsValidNodeID(brushNodeID))
                     continue;
 
