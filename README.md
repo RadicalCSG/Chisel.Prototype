@@ -1,32 +1,57 @@
-# Chisel.Prototype
+# [Chisel.Prototype](https://github.com/RadicalCSG/Chisel.Prototype)
 
 Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non destructive** level editing!
 
 ![Example](Documentation/Images/chisel_example.png)
 
 ---
-**[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
-
-[Click here for information on how to get started](GettingStarted.md)
+* [Click here for information on how to get started](GettingStarted.md)
+* Want to help out? [We have some good first issues here](https://github.com/RadicalCSG/Chisel.Prototype/labels/good%20first%20issue)
+* If you have questions be sure to ask in the discord! **[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
 
 Notes:
-- Chisel requires Unity 2020.2a15 or newer
+- Chisel requires Unity 2020.2a17 or newer
 - UX is still under development
 - CSG algorithm is still under development
-- It is *not yet* ready for production, but please feel free to try it out!
+- It is *not yet* ready for production, but please feel free to try it out, or better yet, help out!
 
-Known issues:
-* Intersection vertices aren't yet merged between brushes, which can cause tiny gaps between polygons
-* There are some cases where triangulation fails, possibly related to previous vertex merging issue
-  (please collect failure cases so we can later verify we fixed them)
-* Moving a brush using the inspector will not always update it's touching brushes
-* Normal smoothing is not yet implemented
+Features (incomplete)
+* [Constructive Solid Geometry Algorithm](http://www.youtube.com/watch?v=Iqmg4gblreo) that generates geometry in real-time
+* Add and remove geometry to your level using CSG allows for fluid, interactive, non destructive workflows
+* Higher level "generators" that create more complicated geometry to perform CSG with, while retaining context of what it is you're creating (if you create stairs, these will remain stairs that you can edit and tweak)
+* Hierarchical Constructive Solid Geometry, allows for generators and brushes to be act as if they're one whole (composite), to perform CSG on other objects with
+* Works well with prefabs, drag and drop windows onto walls including their holes
+* Draw 2D shapes (possible to turn straight lines into curves) on existing CSG surfaces and extrude them
+* Precise snapping to surfaces, edges, vertices and grid lines
+* Rotatable & movable grid
+
+Planned Features (incomplete, and in random order):
+* [Node Based Generators](https://github.com/RadicalCSG/Chisel.Prototype/issues/94) for easy procedural content generation
+* [Debug Visualizations](https://github.com/RadicalCSG/Chisel.Prototype/issues/118) to see shadow only surfaces, collider surfaces etc.
+* [Double sided surfaces](https://github.com/RadicalCSG/Chisel.Prototype/issues/226)
+* [Normal smoothing](https://github.com/RadicalCSG/Chisel.Prototype/issues/184)
+* [Hotspot mapping](https://github.com/RadicalCSG/Chisel.Prototype/issues/173)
+* [Clip Tool](https://github.com/RadicalCSG/Chisel.Prototype/issues/15)
+* [Subtractive Workflow](https://github.com/RadicalCSG/Chisel.Prototype/issues/14)
+* [Extrusion from existing surface](https://github.com/RadicalCSG/Chisel.Prototype/issues/19)
+* [Sub-Models](https://github.com/RadicalCSG/Chisel.Prototype/issues/259)
+* [Trim Decals](https://github.com/RadicalCSG/Chisel.Prototype/issues/117)
+* [Grid Objects](https://github.com/RadicalCSG/Chisel.Prototype/issues/121)
+* [2D shape editor](https://github.com/RadicalCSG/Chisel.Prototype/issues/260)
+
 
 Packages overview:
 * `com.chisel.core` Low-level API and functionality (based on DOTS technology)
 * `com.chisel.editor` Unity Scene Editor functionality and API, tools and UI
 * `com.chisel.components` Unity Monobehaviour runtime API (to allow for possible ECS replacement in future)
 * `com.scene.handles.extensions` Custom scene handle extensions
+
+Known issues:
+* [Extrusion generator is glitchy due to problems with convex decomposition code](https://github.com/RadicalCSG/Chisel.Prototype/issues/255)
+* [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
+* There are some cases where overlapping surfaces create overlapping polygon
+
+If you find any failure cases, if possible please provide us with a reproducible scene so we can more easily fix it!
 
 The core technology is based on the algorithm explained in [this GDC 2020 talk](http://www.youtube.com/watch?v=Iqmg4gblreo)
 
