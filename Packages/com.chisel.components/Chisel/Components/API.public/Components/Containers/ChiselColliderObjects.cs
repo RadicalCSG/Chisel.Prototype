@@ -21,7 +21,7 @@ namespace Chisel.Components
         public static ChiselColliderObjects Create(GameObject container, int surfaceParameter)
         {
             var physicsMaterial = ChiselBrushMaterialManager.GetPhysicsMaterialByInstanceID(surfaceParameter);
-            var sharedMesh      = new Mesh { name = ChiselModelGeneratedObjects.kGeneratedMeshColliderName };
+            var sharedMesh      = new Mesh { name = ChiselGeneratedObjects.kGeneratedMeshColliderName };
             var meshCollider    = container.AddComponent<MeshCollider>();
             var colliderObjects = new ChiselColliderObjects
             {

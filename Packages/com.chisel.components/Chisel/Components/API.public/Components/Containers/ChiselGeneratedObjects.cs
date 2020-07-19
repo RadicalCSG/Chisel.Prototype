@@ -22,7 +22,7 @@ namespace Chisel.Components
     // 8. profit!
     //
     [Serializable]
-    public class ChiselModelGeneratedObjects
+    public class ChiselGeneratedObjects
     {
         public const string kGeneratedContainerName     = "‹[generated]›";
         public static readonly string[] kGeneratedMeshRendererNames = new string[]
@@ -46,9 +46,9 @@ namespace Chisel.Components
         public VisibilityState          visibilityState             = VisibilityState.Unknown;
         public bool                     needVisibilityMeshUpdate    = false;
 
-        private ChiselModelGeneratedObjects() { }
+        private ChiselGeneratedObjects() { }
 
-        public static ChiselModelGeneratedObjects Create(ChiselModel model)
+        public static ChiselGeneratedObjects Create(ChiselModel model)
         {
             // Make sure there's not a dangling container out there from a previous version
             var existingContainer = model.FindChildByName(kGeneratedContainerName);
@@ -92,7 +92,7 @@ namespace Chisel.Components
             renderables[5].invalid = false;
             renderables[7].invalid = false;
 
-            var result = new ChiselModelGeneratedObjects
+            var result = new ChiselGeneratedObjects
             {
                 generatedDataContainer  = container,
                 colliderContainer       = colliderContainer,
@@ -182,7 +182,7 @@ namespace Chisel.Components
             ChiselObjectUtility.RemoveContainerFlags(generatedDataContainer);
         }
 
-        public static bool IsValid(ChiselModelGeneratedObjects satelliteObjects)
+        public static bool IsValid(ChiselGeneratedObjects satelliteObjects)
         {
             if (satelliteObjects == null)
                 return false;

@@ -109,11 +109,11 @@ namespace Chisel.Components
                 model.OnInitialize(); 
             }
 
-            if (!ChiselModelGeneratedObjects.IsValid(model.generated))
+            if (!ChiselGeneratedObjects.IsValid(model.generated))
             {
                 if (model.generated != null)
                     model.generated.Destroy();
-                model.generated = ChiselModelGeneratedObjects.Create(model);
+                model.generated = ChiselGeneratedObjects.Create(model);
             }
 
             UpdateModelFlags(model);

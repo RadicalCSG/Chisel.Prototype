@@ -77,11 +77,11 @@ namespace Chisel.Components
             if (model == null)
                 return false;
 
-            if (!ChiselModelGeneratedObjects.IsValid(model.generated))
+            if (!ChiselGeneratedObjects.IsValid(model.generated))
             {
                 if (model.generated != null)
                     model.generated.Destroy();
-                model.generated = ChiselModelGeneratedObjects.Create(model);
+                model.generated = ChiselGeneratedObjects.Create(model);
             }
 
             model.generated.Update(model, vertexBufferContents);

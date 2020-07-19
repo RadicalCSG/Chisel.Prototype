@@ -163,7 +163,7 @@ namespace Chisel.Components
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
         public override int         NodeID                      { get { return Node.NodeID; } }
-        public override bool        CanHaveChildNodes           { get { return !SkipThisNode; } }
+        public override bool        CanHaveChildNodes           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
         public bool                 CreateRenderComponents      = true;
@@ -176,11 +176,11 @@ namespace Chisel.Components
         public SerializableUnwrapParam            uvGenerationSettings;
 
         
-        [HideInInspector] public CSGTree                    Node;
+        [HideInInspector] public CSGTree                Node;
 
-        [HideInInspector] bool                              initialized = false;
+        [HideInInspector] bool                          initialized = false;
 
-        [HideInInspector] public ChiselModelGeneratedObjects generated;
+        [HideInInspector] public ChiselGeneratedObjects generated;
 
 
         public override void OnInitialize()
@@ -190,7 +190,7 @@ namespace Chisel.Components
                 generated.Destroy();
 
             if (generated == null)
-                generated = ChiselModelGeneratedObjects.Create(this);
+                generated = ChiselGeneratedObjects.Create(this);
 
             if (colliderSettings == null)
             {

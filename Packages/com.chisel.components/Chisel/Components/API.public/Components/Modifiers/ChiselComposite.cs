@@ -64,14 +64,14 @@ namespace Chisel.Components
             return new CSGTreeNode[] { Node };
         }
 
-        internal override bool	SkipThisNode	{ get { return PassThrough || !isActiveAndEnabled; } }
+        internal override bool	IsActive	        { get { return !PassThrough && isActiveAndEnabled; } }
 
-        public override bool	CanHaveChildNodes	{ get { return !SkipThisNode; } }
+        public override bool	CanHaveChildNodes	{ get { return IsActive; } }
 
-        public override int		NodeID			{ get { return Node.NodeID; } }
+        public override int		NodeID			    { get { return Node.NodeID; } }
 
 
-        public override void	SetDirty()		{ if (Node.Valid) Node.SetDirty(); }
+        public override void	SetDirty()		    { if (Node.Valid) Node.SetDirty(); }
 
         internal override void SetChildren(List<CSGTreeNode> childNodes)
         {

@@ -301,7 +301,7 @@ namespace Chisel.Components
             var children = component.hierarchyItem.Children;
             for (int n = 0; n < children.Count; n++)
             {
-                if (!children[n].Component || children[n].Component.SkipThisNode)
+                if (!children[n].Component || !children[n].Component.IsActive)
                     continue;
                 hierarchyUpdateQueue.Add(children[n].Component);
                 updateTransformationNodes.Add(children[n].Component);
@@ -312,7 +312,7 @@ namespace Chisel.Components
 
         public static void UpdateAvailability(ChiselNode node)
         {
-            if (node.SkipThisNode)
+            if (!node.IsActive)
             {
                 ChiselNodeHierarchyManager.Unregister(node);
             } else
@@ -325,7 +325,7 @@ namespace Chisel.Components
         {
             if (!node ||
                 !node.hierarchyItem.Registered || 
-                node.SkipThisNode)
+                !node.IsActive)
                 return;
             hierarchyUpdateQueue.Add(node);
         }
@@ -455,14 +455,14 @@ namespace Chisel.Components
             }
             if (!component ||
                 !component.hierarchyItem.Registered || 
-                component.SkipThisNode)
+                !component.IsActive)
                 return;
         
             var children = component.hierarchyItem.Children;
             for (int i = 0; i < children.Count; i++)
             {
                 var childComponent = children[i].Component;
-                if (!childComponent || childComponent.SkipThisNode)
+                if (!childComponent || !childComponent.IsActive)
                 {
                     continue;
                 }
@@ -541,7 +541,7 @@ namespace Chisel.Components
                 {
                     var childTransform = transform.GetChild(i);
                     var childNode = childTransform.GetComponent<ChiselNode>();
-                    if (!childNode || childNode.SkipThisNode)
+                    if (!childNode || !childNode.IsActive)
                     {
                         __transforms.Enqueue(childTransform);
                         continue;
@@ -566,7 +566,7 @@ namespace Chisel.Components
                 {
                     var childItem = children[i];
                     var childNode = childItem.Component;
-                    if (!childNode || childNode.SkipThisNode)
+                    if (!childNode || !childNode.IsActive)
                     {
                         __hierarchyQueueLists.Enqueue(childItem.Children);
                         continue;
@@ -612,7 +612,7 @@ namespace Chisel.Components
             do
             {
                 if (parentComponent &&
-                    !parentComponent.SkipThisNode)
+                    parentComponent.IsActive)
                 {
                     if (registeredNodes.Add(parentComponent))
                     {
@@ -1031,7 +1031,7 @@ namespace Chisel.Components
                             parentHierarchyItem.SetChildBoundsDirty();
                             parentHierarchyItem.Children.Remove(hierarchyItem);
                             if (parentHierarchyItem.Component &&
-                                !parentHierarchyItem.Component.SkipThisNode)
+                                parentHierarchyItem.Component.IsActive)
                             {
                                 updateChildrenQueue.Add(parentHierarchyItem);
                                 if (parentHierarchyItem.Children.Count > 0)
@@ -1098,7 +1098,7 @@ namespace Chisel.Components
                 {
                     var node = registerQueue[i];
                     if (!node ||			// component might've been destroyed between adding it to the registerQueue and here
-                        node.SkipThisNode)	// component might be active/enabled etc.
+                        !node.IsActive)	// component might be active/enabled etc.
                     {
                         registerQueue.RemoveAt(i);
                         continue;
@@ -1184,7 +1184,7 @@ namespace Chisel.Components
                 {
                     var component = prevQueue[i];
                     if (!component ||
-                        component.SkipThisNode)
+                        !component.IsActive)
                         continue;
 
                     var hierarchyItem	= component.hierarchyItem;
@@ -1229,7 +1229,7 @@ namespace Chisel.Components
                         parentHierarchyItem.SetChildBoundsDirty();
                         parentHierarchyItem.Children.Remove(hierarchyItem);
                         if (parentHierarchyItem.Component &&
-                            !parentHierarchyItem.Component.SkipThisNode)
+                            parentHierarchyItem.Component.IsActive)
                         {
                             updateChildrenQueue.Add(parentHierarchyItem);
                             if (parentHierarchyItem.Children.Count > 0)
@@ -1264,7 +1264,7 @@ namespace Chisel.Components
                 { 
                     var hierarchyItem = addToHierarchyQueue[i];
                     if (!hierarchyItem.Component ||
-                        hierarchyItem.Component.SkipThisNode)
+                        !hierarchyItem.Component.IsActive)
                         continue;
         
                     ChiselSceneHierarchy sceneHierarchy;
