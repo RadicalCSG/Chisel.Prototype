@@ -26,18 +26,18 @@ Features (incomplete)
 * Rotatable & movable grid
 
 Planned Features (incomplete, and in random order):
-* [Node Based Generators](https://github.com/RadicalCSG/Chisel.Prototype/issues/94) for easy procedural content generation
-* [Debug Visualizations](https://github.com/RadicalCSG/Chisel.Prototype/issues/118) to see shadow only surfaces, collider surfaces etc.
+* [Debug Visualizations](https://github.com/RadicalCSG/Chisel.Prototype/issues/118) to see shadow only surfaces, collider surfaces etc.  (partially implemented)
 * [Double sided surfaces](https://github.com/RadicalCSG/Chisel.Prototype/issues/226)
-* [Normal smoothing](https://github.com/RadicalCSG/Chisel.Prototype/issues/184)
-* [Hotspot mapping](https://github.com/RadicalCSG/Chisel.Prototype/issues/173)
-* [Clip Tool](https://github.com/RadicalCSG/Chisel.Prototype/issues/15)
-* [Subtractive Workflow](https://github.com/RadicalCSG/Chisel.Prototype/issues/14)
 * [Extrusion from existing surface](https://github.com/RadicalCSG/Chisel.Prototype/issues/19)
+* [Subtractive Workflow](https://github.com/RadicalCSG/Chisel.Prototype/issues/14)
+* [Clip Tool](https://github.com/RadicalCSG/Chisel.Prototype/issues/15)
+* [Normal smoothing](https://github.com/RadicalCSG/Chisel.Prototype/issues/184)
+* [Node Based Generators](https://github.com/RadicalCSG/Chisel.Prototype/issues/94) for easy procedural content generation
+* [2D shape editor](https://github.com/RadicalCSG/Chisel.Prototype/issues/260)
+* [Hotspot mapping](https://github.com/RadicalCSG/Chisel.Prototype/issues/173)
 * [Sub-Models](https://github.com/RadicalCSG/Chisel.Prototype/issues/259)
 * [Trim Decals](https://github.com/RadicalCSG/Chisel.Prototype/issues/117)
 * [Grid Objects](https://github.com/RadicalCSG/Chisel.Prototype/issues/121)
-* [2D shape editor](https://github.com/RadicalCSG/Chisel.Prototype/issues/260)
 
 
 Packages overview:
