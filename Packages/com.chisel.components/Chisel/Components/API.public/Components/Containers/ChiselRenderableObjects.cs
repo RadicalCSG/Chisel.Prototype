@@ -37,24 +37,26 @@ namespace Chisel.Components
         public ulong            geometryHashValue;
         public ulong            surfaceHashValue;
 
+        public bool             debugHelperRenderer;
         [NonSerialized] public float uvLightmapUpdateTime;
 
         internal ChiselRenderObjects() { }
-        public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, LayerUsageFlags query)
+        public static ChiselRenderObjects Create(string name, Transform parent, GameObjectState state, LayerUsageFlags query, bool debugHelperRenderer = false)
         {
-            var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state);
+            var renderContainer = ChiselObjectUtility.CreateGameObject(name, parent, state, debugHelperRenderer: debugHelperRenderer);
             var meshFilter      = renderContainer.AddComponent<MeshFilter>();
             var meshRenderer    = renderContainer.AddComponent<MeshRenderer>();
             meshRenderer.enabled = false;
 
             var renderObjects = new ChiselRenderObjects
             {
-                invalid         = false,            
-                query           = query,
-                container       = renderContainer,
-                meshFilter      = meshFilter,
-                meshRenderer    = meshRenderer,
-                renderMaterials = new Material[0]
+                invalid             = false,            
+                query               = query,
+                container           = renderContainer,
+                meshFilter          = meshFilter,
+                meshRenderer        = meshRenderer,
+                renderMaterials     = new Material[0],
+                debugHelperRenderer = debugHelperRenderer
             };
             renderObjects.EnsureMeshesAllocated();
             renderObjects.Initialize();
@@ -139,19 +141,22 @@ namespace Chisel.Components
         void Initialize()
         {
             meshFilter.sharedMesh       = sharedMesh;
-            meshRenderer.receiveShadows	= ((query & LayerUsageFlags.ReceiveShadows) == LayerUsageFlags.ReceiveShadows);
-            switch (query & (LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows))
-            {
-                case LayerUsageFlags.None:				meshRenderer.enabled = false; break;
-                case LayerUsageFlags.Renderable:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;			break;
-                case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;	break;
-                case LayerUsageFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
-            }
+            if (!debugHelperRenderer)
+            { 
+                meshRenderer.receiveShadows	= ((query & LayerUsageFlags.ReceiveShadows) == LayerUsageFlags.ReceiveShadows);
+                switch (query & (LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows))
+                {
+                    case LayerUsageFlags.None:				meshRenderer.enabled = false; break;
+                    case LayerUsageFlags.Renderable:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;			break;
+                    case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;	break;
+                    case LayerUsageFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
+                }
 
 #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetSelectedRenderState(meshRenderer, UnityEditor.EditorSelectedRenderState.Hidden);
-            ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
+                UnityEditor.EditorUtility.SetSelectedRenderState(meshRenderer, UnityEditor.EditorSelectedRenderState.Hidden);
+                ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
 #endif
+            }
         }
 
         void UpdateSettings(ChiselModel model, GameObjectState state, bool meshIsModified)
@@ -242,7 +247,7 @@ namespace Chisel.Components
 
 
         static readonly List<Material>              __foundMaterials    = new List<Material>(); // static to avoid allocations
-        public void Update(ChiselModel model, GameObjectState state, ref VertexBufferContents vertexBufferContents, int contentsIndex)
+        public void Update(ChiselModel model, GameObjectState state, ref VertexBufferContents vertexBufferContents, int contentsIndex, Material materialOverride = null)
         {
             bool meshIsModified = false;
             // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
@@ -251,12 +256,16 @@ namespace Chisel.Components
                 Profiler.BeginSample("CopyMeshFrom");
                 meshIsModified = vertexBufferContents.CopyToMesh(contentsIndex, sharedMesh, __foundMaterials, triangleBrushes);
                 Profiler.EndSample();
-            
+
                 Profiler.BeginSample("UpdateMaterials");
-                if (renderMaterials != null && renderMaterials.Length == __foundMaterials.Count)
+                if (renderMaterials == null || renderMaterials.Length != __foundMaterials.Count)
+                    renderMaterials = new Material[__foundMaterials.Count];
+                if (materialOverride)
+                {
+                    for (int i = 0; i < renderMaterials.Length; i++)
+                        renderMaterials[i] = materialOverride;
+                } else
                     __foundMaterials.CopyTo(renderMaterials);
-                else
-                    renderMaterials = __foundMaterials.ToArray();
                 SetMaterialsIfModified(meshRenderer, renderMaterials);
                 Profiler.EndSample();
 
@@ -302,13 +311,15 @@ namespace Chisel.Components
         static readonly List<Vector2>   sUV0            = new List<Vector2>();
         static readonly List<int>       sSrcTriangles   = new List<int>();
         static readonly List<int>       sDstTriangles   = new List<int>();
-        internal void UpdateVisibilityMesh()
+        internal void UpdateVisibilityMesh(bool showMesh)
         {
             EnsureMeshesAllocated();
             var srcMesh = sharedMesh;
             var dstMesh = partialMesh;
 
             dstMesh.Clear(keepVertexLayout: true);
+            if (!showMesh)
+                return;
             srcMesh.GetVertices(sVertices);
             dstMesh.SetVertices(sVertices);
 

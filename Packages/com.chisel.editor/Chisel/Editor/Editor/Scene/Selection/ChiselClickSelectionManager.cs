@@ -296,6 +296,7 @@ namespace Chisel.Editors
         {
             model = null;
             material = null;
+
             var flagState = ChiselGeneratedComponentManager.BeginPicking();
             GameObject gameObject = null;
             bool foundGameObject = false;
@@ -310,7 +311,9 @@ namespace Chisel.Editors
                     gameObject = PickClosestGO(camera, layers, pickposition, ignore, filter, out materialIndex);
 #endif
                 } else
+                {
                     gameObject = HandleUtility.PickGameObject(pickposition, ignore, out materialIndex);
+                }
             }
             finally
             {

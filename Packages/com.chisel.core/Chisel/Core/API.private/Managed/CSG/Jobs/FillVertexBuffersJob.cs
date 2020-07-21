@@ -145,8 +145,9 @@ namespace Chisel.Core
                 var numberOfSubMeshes   = section.endIndex - section.startIndex;
                 var totalVertexCount    = section.totalVertexCount;
                 var totalIndexCount     = section.totalIndexCount;
-
-                if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+                
+                if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.None ||
+                    section.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                 { 
                     subMeshesArray   .AllocateWithCapacityForIndex(i, numberOfSubMeshes);
                     brushIndicesArray.AllocateWithCapacityForIndex(i, totalIndexCount / 3);
@@ -223,7 +224,8 @@ namespace Chisel.Core
             var endIndex            = vertexBufferInit.endIndex;
             var totalVertexCount    = vertexBufferInit.totalVertexCount;
             var totalIndexCount     = vertexBufferInit.totalVertexCount;
-            if (layerParameterIndex == LayerParameterIndex.RenderMaterial)
+            if (layerParameterIndex == LayerParameterIndex.None ||
+                layerParameterIndex == LayerParameterIndex.RenderMaterial)
             { 
                 var numberOfSubMeshes = endIndex - startIndex;
 
@@ -717,15 +719,17 @@ namespace Chisel.Core
 
             int descriptionIndex = 0;
             //var contentsIndex = 0;
-            if (subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+            if (subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.None ||
+                subMeshCounts[0].meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
             {
                 var prevQuery = subMeshCounts[0].meshQuery;
                 var startIndex = 0;
                 for (; descriptionIndex < subMeshCounts.Length; descriptionIndex++)
                 {
                     var subMeshCount = subMeshCounts[descriptionIndex];
-                    // Exit when layerParameterIndex is no longer LayerParameter1
-                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
+                    // Exit when layerParameterIndex is no longer LayerParameter1/None
+                    if (subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.None &&
+                        subMeshCount.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
                         break;
 
                     var currQuery = subMeshCount.meshQuery;

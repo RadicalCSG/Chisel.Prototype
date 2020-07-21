@@ -1,7 +1,9 @@
 using Chisel.Core;
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Chisel.Components
 {
@@ -129,18 +131,67 @@ namespace Chisel.Components
             updateVisibilityFlag = true;
             UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
             UnityEditor.EditorApplication.delayCall += OnUnityIndeterministicMessageOrderingWorkAround;
+            UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
         }
 
         static void OnUnityIndeterministicMessageOrderingWorkAround()
         {
             UnityEditor.EditorApplication.delayCall -= OnUnityIndeterministicMessageOrderingWorkAround;
             UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+            SceneView.RepaintAll();
+        }
+
+        public static DrawModeFlags UpdateHelperSurfaceState(DrawModeFlags helperStateFlags, bool ignoreBrushVisibility = true)
+        {
+            foreach (var model in models)
+            {
+                if (!model || !model.isActiveAndEnabled || model.generated == null)
+                    continue;
+                model.generated.UpdateHelperSurfaceState(helperStateFlags, ignoreBrushVisibility);
+            }
+            return helperStateFlags;
+        }
+
+        public static void InitializeOnLoad(Scene scene)
+        {
+            foreach (var go in scene.GetRootGameObjects())
+            {
+                foreach (var model in go.GetComponentsInChildren<ChiselModel>())
+                {
+                    if (!model || !model.isActiveAndEnabled || model.generated == null)
+                        continue;
+                    model.generated.RemoveHelperSurfaces();
+                }
+            }
+        }
+
+        public static void RemoveHelperSurfaces()
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            foreach(var go in scene.GetRootGameObjects())
+            {
+                foreach (var model in go.GetComponentsInChildren<ChiselModel>())
+                {
+                    if (!model || !model.isActiveAndEnabled || model.generated == null)
+                        continue;
+                    model.generated.RemoveHelperSurfaces();
+                }
+            }
+        }
+
+        public static void OnRenderModels(Camera camera, DrawModeFlags helperStateFlags)
+        {
+            foreach (var model in models)
+            {
+                model.OnRenderModel(camera, helperStateFlags);
+            }
         }
 
         public static void UpdateVisibility()
         {
             if (!updateVisibilityFlag)
                 return;
+
             updateVisibilityFlag = false;
             // TODO: 1. turn off rendering regular meshes when we have partial visibility of model contents
             //       2. find a way to render partial mesh instead
@@ -458,6 +509,8 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
             var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            s_IgnoreVisibility = true;
+            BeginDrawModeForCamera(ignoreBrushVisibility: true);
 #endif
 
             foreach (var model in models)
@@ -478,6 +531,24 @@ namespace Chisel.Components
                         {
                             state.rendererOff[renderer.meshRenderer] = true;
                             renderer.meshRenderer.forceRenderingOff = false;
+                        }
+#endif
+                    }
+                }
+
+                var debugHelpers = model.generated.debugHelpers;
+                if (debugHelpers != null)
+                {
+                    foreach (var debugHelper in debugHelpers)
+                    {
+                        if (debugHelper == null || debugHelper.invalid || !debugHelper.container)
+                            continue;
+                        state.generatedComponents[debugHelper.container] = model;
+#if UNITY_EDITOR
+                        if (debugHelper.meshRenderer.forceRenderingOff)
+                        {
+                            state.rendererOff[debugHelper.meshRenderer] = true;
+                            debugHelper.meshRenderer.forceRenderingOff = false;
                         }
 #endif
                     }
@@ -534,8 +605,9 @@ namespace Chisel.Components
             {
                 pair.Key.forceRenderingOff = pair.Value;
             }
+            s_IgnoreVisibility = false;
+            EndDrawModeForCamera();
 #endif
-
             if (object.Equals(pickedObject, null))
                 return false;
 
@@ -554,6 +626,45 @@ namespace Chisel.Components
             }
 
             return pickedGeneratedComponent;
+        }
+
+        static readonly Dictionary<Camera, DrawModeFlags>   s_CameraDrawMode    = new Dictionary<Camera, DrawModeFlags>();
+
+        static bool s_IgnoreVisibility = false;
+
+        public static void ResetCameraDrawMode(Camera camera)
+        {
+            s_CameraDrawMode.Remove(camera);
+        }
+
+        public static void SetCameraDrawMode(Camera camera, DrawModeFlags drawModeFlags)
+        {
+            s_CameraDrawMode[camera] = drawModeFlags;
+        }
+
+        public static DrawModeFlags GetCameraDrawMode(Camera camera)
+        {
+            if (!s_CameraDrawMode.TryGetValue(camera, out var drawModeFlags))
+                drawModeFlags = DrawModeFlags.Default;
+            return drawModeFlags;
+        }
+
+        public static DrawModeFlags BeginDrawModeForCamera(Camera camera = null, bool ignoreBrushVisibility = false)
+        {
+            if (camera == null)
+                camera = Camera.current;
+            var currentState = GetCameraDrawMode(camera);
+            return UpdateHelperSurfaceState(currentState, s_IgnoreVisibility || ignoreBrushVisibility);
+        }
+
+        public static DrawModeFlags EndDrawModeForCamera()
+        {
+            return UpdateHelperSurfaceState(DrawModeFlags.Default, ignoreBrushVisibility: true);
+        }
+
+        public static void Update()
+        {
+            UpdateHelperSurfaceState(DrawModeFlags.Default, ignoreBrushVisibility: true);
         }
     }
 }

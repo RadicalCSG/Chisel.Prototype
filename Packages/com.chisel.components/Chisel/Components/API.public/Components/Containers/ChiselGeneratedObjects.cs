@@ -8,9 +8,23 @@ using System.Transactions;
 using UnityEngine.Profiling;
 using Unity.Collections;
 using Unity.Jobs;
+using UnityEditor;
 
 namespace Chisel.Components
 {        
+    public enum DrawModeFlags
+    {
+        None            = 0,
+        Default         = None,
+        HideRenderables = 1,
+        ShowColliders   = 2,
+        ShowCasters     = 4,
+        ShowShadowOnly  = 8,
+        ShowReceivers   = 16,
+        ShowCulled      = 32,
+        ShowDiscarded   = 64,
+    }
+
     //
     // 1. figure out what you where trying to do here, and remove need for the dictionary
     // 2. then do the same for the rendering equiv.
@@ -25,27 +39,63 @@ namespace Chisel.Components
     public class ChiselGeneratedObjects
     {
         public const string kGeneratedContainerName     = "‹[generated]›";
+        public const int kGeneratedMeshRenderCount = 8;
+        public const int kGeneratedMeshRendererCount = 5;
         public static readonly string[] kGeneratedMeshRendererNames = new string[]
         {
             null,                                                   // 0 (invalid option)
             "‹[generated-Renderable]›",                             // 1
-            "‹[generated-CastShadows]›",                            // 2
+            "‹[generated-CastShadows]›",                            // 2 (Shadow-Only)
             "‹[generated-Renderable|CastShadows]›",                 // 3
             null,                                                   // 4 (invalid option)
             "‹[generated-Renderable|ReceiveShadows]›",              // 5
             null,                                                   // 6 (invalid option)
             "‹[generated-Renderable|CastShadows|ReceiveShadows]›"   // 7
         };
+
+        public const int kDebugHelperCount = 6;
+        public static readonly string[] kGeneratedDebugRendererNames = new string[kDebugHelperCount]
+        {
+            "‹[debug-Discarded]›",                                  // LayerUsageFlags.None
+            "‹[debug-CastShadows]›",                                // LayerUsageFlags.RenderableCastShadows
+            "‹[debug-ShadowOnly]›",                                 // LayerUsageFlags.CastShadows
+            "‹[debug-ReceiveShadows]›",                             // LayerUsageFlags.RenderableReceiveShadows
+            "‹[debug-Collidable]›",                                 // LayerUsageFlags.Collidable
+            "‹[debug-Culled]›"                                      // LayerUsageFlags.Culled
+        };
+        public static readonly (LayerUsageFlags, LayerUsageFlags)[] kGeneratedDebugRendererFlags = new (LayerUsageFlags, LayerUsageFlags)[kDebugHelperCount]
+        {
+            ( LayerUsageFlags.None                  , LayerUsageFlags.Renderable),              // is explicitly set to "not visible"
+            ( LayerUsageFlags.RenderCastShadows     , LayerUsageFlags.RenderCastShadows),       // casts Shadows and is renderered
+            ( LayerUsageFlags.CastShadows           , LayerUsageFlags.RenderCastShadows),       // casts Shadows and is NOT renderered (shadowOnly)
+            ( LayerUsageFlags.RenderReceiveShadows  , LayerUsageFlags.RenderReceiveShadows),    // any surface that receives shadows (must be rendered)
+            ( LayerUsageFlags.Collidable            , LayerUsageFlags.Collidable),              // collider surfaces
+            ( LayerUsageFlags.Culled                , LayerUsageFlags.Culled)                   // all surfaces removed by the CSG algorithm
+        };
+        public static readonly DrawModeFlags[] kGeneratedDebugShowFlags = new DrawModeFlags[kDebugHelperCount]
+        {
+            DrawModeFlags.ShowDiscarded,
+            DrawModeFlags.ShowCasters,
+            DrawModeFlags.ShowShadowOnly,
+            DrawModeFlags.ShowReceivers,
+            DrawModeFlags.ShowColliders,
+            DrawModeFlags.ShowCulled
+        };
         public const string kGeneratedMeshColliderName	= "‹[generated-Collider]›";
 
         public GameObject               generatedDataContainer;
         public GameObject               colliderContainer;
         public ChiselColliderObjects[]  colliders;
+
         public ChiselRenderObjects[]    renderables;
         public MeshRenderer[]           meshRenderers;
+
+        public ChiselRenderObjects[]    debugHelpers;
+        public MeshRenderer[]           debugMeshRenderers;
+
         public VisibilityState          visibilityState             = VisibilityState.Unknown;
         public bool                     needVisibilityMeshUpdate    = false;
-
+        
         private ChiselGeneratedObjects() { }
 
         public static ChiselGeneratedObjects Create(GameObject parentGameObject)
@@ -70,7 +120,7 @@ namespace Chisel.Components
             {
                 new ChiselRenderObjects() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[1], containerTransform, gameObjectState, LayerUsageFlags.Renderable                               ),
-                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState,                              LayerUsageFlags.CastShadows ),
+                ChiselRenderObjects.Create(kGeneratedMeshRendererNames[2], containerTransform, gameObjectState, LayerUsageFlags.CastShadows                              ),
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[3], containerTransform, gameObjectState, LayerUsageFlags.Renderable | LayerUsageFlags.CastShadows ),
                 new ChiselRenderObjects() { invalid = true },
                 ChiselRenderObjects.Create(kGeneratedMeshRendererNames[5], containerTransform, gameObjectState, LayerUsageFlags.Renderable |                               LayerUsageFlags.ReceiveShadows),
@@ -93,13 +143,24 @@ namespace Chisel.Components
             renderables[5].invalid = false;
             renderables[7].invalid = false;
 
+            var debugHelpers = new ChiselRenderObjects[kDebugHelperCount];
+            var debugMeshRenderers = new MeshRenderer[kDebugHelperCount];
+            for (int i = 0; i < kDebugHelperCount; i++)
+            {
+                debugHelpers[i] = ChiselRenderObjects.Create(kGeneratedDebugRendererNames[i], containerTransform, gameObjectState, kGeneratedDebugRendererFlags[i].Item1, debugHelperRenderer: true);
+                debugMeshRenderers[i] = debugHelpers[0].meshRenderer;
+                debugHelpers[i].invalid = false;
+            }
+
             var result = new ChiselGeneratedObjects
             {
                 generatedDataContainer  = container,
                 colliderContainer       = colliderContainer,
                 colliders               = new ChiselColliderObjects[0],
                 renderables             = renderables,
-                meshRenderers           = meshRenderers
+                meshRenderers           = meshRenderers,
+                debugHelpers            = debugHelpers,
+                debugMeshRenderers      = debugMeshRenderers
             };
 
             Debug.Assert(IsValid(result));
@@ -130,10 +191,22 @@ namespace Chisel.Components
                 }
                 renderables = null;
             }
+            if (debugHelpers != null)
+            {
+                foreach (var debugHelper in debugHelpers)
+                {
+                    if (debugHelper != null)
+                        debugHelper.Destroy();
+                }
+                debugHelpers = null;
+            }
             ChiselObjectUtility.SafeDestroy(colliderContainer, ignoreHierarchyEvents: true);
             ChiselObjectUtility.SafeDestroy(generatedDataContainer, ignoreHierarchyEvents: true);
             generatedDataContainer  = null;
             colliderContainer       = null;
+
+            meshRenderers       = null;
+            debugMeshRenderers  = null;
         }
 
         public void DestroyWithUndo()
@@ -155,6 +228,14 @@ namespace Chisel.Components
                 {
                     if (renderable != null)
                         renderable.DestroyWithUndo();
+                }
+            }
+            if (debugHelpers != null)
+            {
+                foreach (var debugHelper in debugHelpers)
+                {
+                    if (debugHelper != null)
+                        debugHelper.DestroyWithUndo();
                 }
             }
             ChiselObjectUtility.SafeDestroyWithUndo(colliderContainer, ignoreHierarchyEvents: true);
@@ -179,6 +260,14 @@ namespace Chisel.Components
                         renderable.RemoveContainerFlags();
                 }
             }
+            if (debugHelpers != null)
+            {
+                foreach (var debugHelper in debugHelpers)
+                {
+                    if (debugHelper != null)
+                        debugHelper.RemoveContainerFlags();
+                }
+            }
             ChiselObjectUtility.RemoveContainerFlags(colliderContainer);
             ChiselObjectUtility.RemoveContainerFlags(generatedDataContainer);
         }
@@ -188,13 +277,23 @@ namespace Chisel.Components
             if (satelliteObjects == null)
                 return false;
 
-            if (!satelliteObjects.generatedDataContainer ||
-                !satelliteObjects.colliderContainer ||
-                satelliteObjects.colliders == null ||   // must be an array, even if 0 length
-                satelliteObjects.renderables == null ||
-                satelliteObjects.renderables.Length != 8 ||
+            if (!satelliteObjects.generatedDataContainer)
+                return false;
+
+            if (!satelliteObjects.colliderContainer ||
+                satelliteObjects.colliders == null)   // must be an array, even if 0 length
+                return false;
+
+            if (satelliteObjects.renderables == null ||
+                satelliteObjects.renderables.Length != kGeneratedMeshRenderCount ||
                 satelliteObjects.meshRenderers == null ||
-                satelliteObjects.meshRenderers.Length != 5)
+                satelliteObjects.meshRenderers.Length != kGeneratedMeshRendererCount)
+                return false;
+
+            if (satelliteObjects.debugHelpers == null ||
+                satelliteObjects.debugHelpers.Length != kDebugHelperCount ||
+                satelliteObjects.debugMeshRenderers == null ||
+                satelliteObjects.debugMeshRenderers.Length != kDebugHelperCount)
                 return false;
 
             // These queries are valid, and should never be null (We don't care about the other queries)
@@ -205,6 +304,13 @@ namespace Chisel.Components
                 satelliteObjects.renderables[7] == null)
                 return false;
 
+            // These queries are valid, and should never be null (We don't care about the other queries)
+            for (int i=0;i< kDebugHelperCount;i++)
+            { 
+                if (satelliteObjects.debugHelpers[i] == null)
+                    return false;
+            }
+            
             satelliteObjects.renderables[0].invalid = true;
             satelliteObjects.renderables[1].invalid = false;
             satelliteObjects.renderables[2].invalid = false;
@@ -214,12 +320,23 @@ namespace Chisel.Components
             satelliteObjects.renderables[6].invalid = true;
             satelliteObjects.renderables[7].invalid = false;
 
+            for (int i = 0; i < kDebugHelperCount; i++)
+                satelliteObjects.debugHelpers[i].invalid = false;
+
             for (int i = 0; i < satelliteObjects.renderables.Length; i++)
             {
                 if (satelliteObjects.renderables[i] == null ||
                     satelliteObjects.renderables[i].invalid)
                     continue;
                 if (!ChiselRenderObjects.IsValid(satelliteObjects.renderables[i]))
+                    return false;
+            }
+
+            for (int i = 0; i < satelliteObjects.debugHelpers.Length; i++)
+            {
+                if (satelliteObjects.debugHelpers[i] == null)
+                    continue;
+                if (!ChiselRenderObjects.IsValid(satelliteObjects.debugHelpers[i]))
                     return false;
             }
 
@@ -253,6 +370,9 @@ namespace Chisel.Components
             }
         }
 
+        static bool[] meshUpdated = null;
+
+
         public void Update(ChiselModel model, GameObject parentGameObject, VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("Setup");
@@ -276,6 +396,15 @@ namespace Chisel.Components
                 ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState);
                 ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
             }
+            
+            for (int i = 0; i < debugHelpers.Length; i++)
+            {
+                if (debugHelpers[i] == null || debugHelpers[i].invalid)
+                    continue;
+                var renderableContainer = debugHelpers[i].container;
+                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, debugHelperRenderer: true);
+                ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
+            }
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateComponents");
@@ -284,9 +413,10 @@ namespace Chisel.Components
 
             Debug.Assert(LayerParameterIndex.LayerParameter1 < LayerParameterIndex.LayerParameter2);
             Debug.Assert((LayerParameterIndex.LayerParameter1 + 1) == LayerParameterIndex.LayerParameter2);
+
             Debug.Assert(!meshDescriptions.IsCreated ||
                          meshDescriptions.Length == 0 ||
-                         meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1);
+                         meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.None);
 
             // TODO: would love to use something like MeshDataArray here, but it seems to be impossible to use without stalling the pipeline
 
@@ -299,6 +429,12 @@ namespace Chisel.Components
                         renderables[renderIndex].Clear(model, gameObjectState);
                 }
 
+                for (int helperIndex = 0; helperIndex < debugHelpers.Length; helperIndex++)
+                {
+                    if (debugHelpers[helperIndex].Valid)
+                        debugHelpers[helperIndex].Clear(model, gameObjectState);
+                }
+
                 for (int j = 0; j < colliders.Length; j++)
                 {
                     if (colliders[j] != null)
@@ -306,10 +442,32 @@ namespace Chisel.Components
                 }
             } else
             {
+                if (meshUpdated == null || meshUpdated.Length < debugHelpers.Length)
+                    meshUpdated = new bool[debugHelpers.Length];
+                Array.Clear(meshUpdated, 0, meshUpdated.Length);
+
                 int colliderCount = 0;
                 for (int i = 0; i < vertexBufferContents.subMeshSections.Length; i++)
                 {
                     var subMeshSection = vertexBufferContents.subMeshSections[i];
+                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.None)
+                    {
+                        int helperIndex = Array.IndexOf(kGeneratedDebugRendererFlags, (subMeshSection.meshQuery.LayerQuery, subMeshSection.meshQuery.LayerQueryMask));
+                        //Debug.Log($"helperIndex (query: {subMeshSection.meshQuery.LayerQuery}, mask: {subMeshSection.meshQuery.LayerQueryMask})");
+
+                        if (helperIndex == -1)
+                        {
+                            Debug.Assert(false, $"Invalid helper query used (query: {subMeshSection.meshQuery.LayerQuery}, mask: {subMeshSection.meshQuery.LayerQueryMask})");
+                            continue;
+                        }
+
+                        // Group by all meshDescriptions with same query
+                        Profiler.BeginSample("Update");
+                        if (!debugHelpers[helperIndex].invalid)
+                            debugHelpers[helperIndex].Update(model, gameObjectState, ref vertexBufferContents, i, materialOverride: ChiselMaterialManager.HelperMaterials[helperIndex]);
+                        meshUpdated[helperIndex] = true;
+                        Profiler.EndSample();
+                    } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                     {
                         var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
@@ -320,6 +478,14 @@ namespace Chisel.Components
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                         colliderCount++;
+                }
+
+                for (int helperIndex = 0; helperIndex < debugHelpers.Length; helperIndex++)
+                {
+                    if (meshUpdated[helperIndex])
+                        continue;
+                    if (!debugHelpers[helperIndex].invalid)
+                        debugHelpers[helperIndex].Clear(model, gameObjectState);
                 }
 
                 var newColliders = new ChiselColliderObjects[colliderCount];
@@ -364,17 +530,44 @@ namespace Chisel.Components
             ChiselRenderObjects.UpdateProperties(model, meshRenderers);
             ChiselColliderObjects.UpdateColliders(model, colliders);
             Profiler.EndSample();
+            needVisibilityMeshUpdate = true;
         }
 
 #if UNITY_EDITOR
-        public void UpdateVisibilityMeshes()
+        public void RemoveHelperSurfaces()
         {
-            ChiselGeneratedComponentManager.UpdateVisibility();
-            if (!needVisibilityMeshUpdate)
-                return;
+            for (int i = 0; i < renderables.Length; i++)
+            {
+                var renderable = renderables[i];
+                if (renderable == null ||
+                    renderable.invalid ||
+                    !renderable.meshRenderer)
+                {
+                    if (renderable.container)
+                        UnityEngine.Object.DestroyImmediate(renderable.container);
+                    continue;
+                }
+
+                renderable.meshRenderer.forceRenderingOff = false;
+            }
+
+            for (int i = 0; i < debugHelpers.Length; i++)
+            {
+                if (debugHelpers[i].container)
+                    UnityEngine.Object.DestroyImmediate(debugHelpers[i].container);
+            }
+        }
+
+        public void UpdateHelperSurfaceState(DrawModeFlags helperStateFlags, bool ignoreBrushVisibility = false)
+        {
+            if (!ignoreBrushVisibility)
+                ChiselGeneratedComponentManager.UpdateVisibility();
             
-            var shouldHideMesh  = visibilityState != VisibilityState.AllVisible &&
+            var shouldHideMesh  = !ignoreBrushVisibility &&
+                                  visibilityState != VisibilityState.AllVisible &&
                                   visibilityState != VisibilityState.Unknown;
+                                  
+            var showRenderables = (helperStateFlags & DrawModeFlags.HideRenderables) == DrawModeFlags.None;
             for (int i = 0; i < renderables.Length; i++)
             {
                 var renderable = renderables[i];
@@ -383,8 +576,19 @@ namespace Chisel.Components
                     continue;
 
                 if (renderable.meshRenderer)
-                    renderable.meshRenderer.forceRenderingOff = shouldHideMesh;
+                {
+                    renderable.meshRenderer.forceRenderingOff = shouldHideMesh || !showRenderables;
+                }
             }
+
+            for (int i = 0; i < debugHelpers.Length; i++)
+            {
+                var showState    = (helperStateFlags & kGeneratedDebugShowFlags[i]) != DrawModeFlags.None;
+                debugHelpers[i].meshRenderer.forceRenderingOff = shouldHideMesh || !showState;
+            }
+
+            if (ignoreBrushVisibility || !needVisibilityMeshUpdate)
+                return;
 
             if (visibilityState == VisibilityState.Mixed)
             {
@@ -395,7 +599,17 @@ namespace Chisel.Components
                         renderable.invalid)
                         continue;
 
-                    renderable.UpdateVisibilityMesh();
+                    renderable.UpdateVisibilityMesh(showRenderables);
+                }
+
+                for (int i = 0; i < debugHelpers.Length; i++)
+                {
+                    var show = (helperStateFlags & kGeneratedDebugShowFlags[i]) != DrawModeFlags.None;
+                    var debugHelper = debugHelpers[i];
+                    if (debugHelper == null)
+                        continue;
+
+                    debugHelper.UpdateVisibilityMesh(show);
                 }
             }
 

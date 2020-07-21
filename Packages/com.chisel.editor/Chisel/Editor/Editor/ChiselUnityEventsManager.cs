@@ -64,6 +64,9 @@ namespace Chisel.Editors
             
             UnityEditor.Undo.willFlushUndoRecord                        -= OnWillFlushUndoRecord;
             UnityEditor.Undo.willFlushUndoRecord                        += OnWillFlushUndoRecord;
+            
+            UnityEditor.SceneView.beforeSceneGui                        -= OnBeforeSceneGUI;
+            UnityEditor.SceneView.beforeSceneGui                        += OnBeforeSceneGUI;
 
             UnityEditor.SceneView.duringSceneGui                        -= OnDuringSceneGUI;
             UnityEditor.SceneView.duringSceneGui                        += OnDuringSceneGUI;
@@ -115,8 +118,11 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.Instance.OnTransformationChanged();
         }
         
-        
-       
+
+        static void OnBeforeSceneGUI(SceneView sceneView)
+        {
+            ChiselDrawModes.HandleDrawMode(sceneView);
+        }
 
         static void OnDuringSceneGUI(SceneView sceneView)
         {

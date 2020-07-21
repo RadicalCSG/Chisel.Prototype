@@ -14,6 +14,18 @@ MonoImporter:
       type: 2}
   - defaultPhysicMaterial: {fileID: 13400000, guid: 9a131e27bee822f49bbeaa7ee131d929,
       type: 2}
+  - defaultHiddenMaterial: {fileID: 2100000, guid: c4ae20e8df278b6459449167e571e548,
+      type: 2}
+  - defaultCastMaterial: {fileID: 2100000, guid: 53340697a84d92643a339913177ceeb1,
+      type: 2}
+  - defaultShadowOnlyMaterial: {fileID: 2100000, guid: b3d3debf013a86447a08174470feb772,
+      type: 2}
+  - defaultReceiveMaterial: {fileID: 2100000, guid: d9918ebea62f9b54cb883f09f89983ac,
+      type: 2}
+  - defaultColliderMaterial: {fileID: 2100000, guid: 54a5ba1f38e1d774084736c5245bd999,
+      type: 2}
+  - defaultCulledMaterial: {fileID: 2100000, guid: bbfb3050d1c86ea4481f5cf75a27675e,
+      type: 2}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

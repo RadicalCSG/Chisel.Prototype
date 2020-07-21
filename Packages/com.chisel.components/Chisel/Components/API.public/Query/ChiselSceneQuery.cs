@@ -293,8 +293,8 @@ namespace Chisel.Components
                     (s_FilterInstanceIDs.Count > 0 && !s_FilterInstanceIDs.Contains(modelInstanceID)))
                     continue;
 
-                var query = ChiselMeshQueryManager.GetMeshQuery(model);
-                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
+                var query           = ChiselMeshQueryManager.GetMeshQuery(model);
+                var visibleQueries  = ChiselMeshQueryManager.GetVisibleQueries(query);
 
                 // We only accept RayCasts into this model if it's visible
                 if (visibleQueries == null ||

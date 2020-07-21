@@ -72,6 +72,113 @@ namespace Chisel.Core
             return $"(LayerQuery: {LayerQuery}, LayerQueryMask: {LayerQueryMask}, LayerParameterIndex: {LayerParameterIndex}, UsedVertexChannels: {UsedVertexChannels})";
         }
         #endregion
+
+        public static readonly MeshQuery[] RenderOnly =
+        {
+            // Renderables
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderReceiveCastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderCastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderReceiveShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.Renderable,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.CastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+                
+			// Helper surfaces
+			new MeshQuery(query: LayerUsageFlags.None,          mask: LayerUsageFlags.Renderable),	// hidden surfaces
+			new MeshQuery(query: LayerUsageFlags.CastShadows	),
+			new MeshQuery(query: LayerUsageFlags.ReceiveShadows	),
+			new MeshQuery(query: LayerUsageFlags.Culled			)
+        };
+
+        public static readonly MeshQuery[] CollisionOnly =
+        {
+            // Colliders
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.PhysicsMaterial,
+                query:          LayerUsageFlags.Collidable,
+                mask:           LayerUsageFlags.Collidable,
+                vertexChannels: VertexChannelFlags.Position
+            ),
+                
+			// Helper surfaces
+			new MeshQuery(query: LayerUsageFlags.None,          mask: LayerUsageFlags.Renderable),	// hidden surfaces
+            new MeshQuery(query: LayerUsageFlags.Culled         ) // removed by CSG algorithm
+        };
+
+        // TODO: do not make this hardcoded
+        public static readonly MeshQuery[] DefaultQueries =
+        {
+            // Renderables
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderReceiveCastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderCastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.RenderReceiveShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.Renderable,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.RenderMaterial,
+                query:          LayerUsageFlags.CastShadows,
+                mask:           LayerUsageFlags.RenderReceiveCastShadows,
+                vertexChannels: VertexChannelFlags.All
+            ),
+
+            // Colliders
+            new MeshQuery(
+                parameterIndex: LayerParameterIndex.PhysicsMaterial,
+                query:          LayerUsageFlags.Collidable,
+                mask:           LayerUsageFlags.Collidable,
+                vertexChannels: VertexChannelFlags.Position
+            ),
+                
+			// Helper surfaces
+			new MeshQuery(query: LayerUsageFlags.None,                  mask: LayerUsageFlags.Renderable),	        // hidden surfaces
+			new MeshQuery(query: LayerUsageFlags.RenderCastShadows,     mask: LayerUsageFlags.RenderCastShadows),
+            new MeshQuery(query: LayerUsageFlags.CastShadows,           mask: LayerUsageFlags.RenderCastShadows),
+			new MeshQuery(query: LayerUsageFlags.RenderReceiveShadows,  mask: LayerUsageFlags.RenderReceiveShadows),
+			new MeshQuery(query: LayerUsageFlags.Culled,                mask: LayerUsageFlags.Culled)               // removed by CSG algorithm
+        };
     }
 }
  

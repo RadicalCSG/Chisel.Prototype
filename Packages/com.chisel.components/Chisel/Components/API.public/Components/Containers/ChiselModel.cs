@@ -344,20 +344,10 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
         MaterialPropertyBlock materialPropertyBlock;
-        public void OnRenderModel(Camera camera)
+        // TODO: move to ChiselGeneratedComponentManager
+        static void RenderChiselRenderObjects(ChiselRenderObjects[] renderables, MaterialPropertyBlock materialPropertyBlock, Matrix4x4 matrix, int layer, Camera camera)
         {
-            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
-            // but still have the same lightmap, and keep lightmap support.
-            // We do this by setting forceRenderingOff to true on all MeshRenderers.
-            // This makes them behave like before, except that they don't render. This means they are still 
-            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
-            // render the sub-mesh with the exact same settings as the MeshRenderer.
-            if (materialPropertyBlock == null)
-                materialPropertyBlock = new MaterialPropertyBlock();
-
-            var layer   = gameObject.layer; 
-            var matrix  = transform.localToWorldMatrix;
-            foreach (var renderable in generated.renderables)
+            foreach (var renderable in renderables)
             {
                 if (renderable == null)
                     continue;
@@ -369,7 +359,7 @@ namespace Chisel.Components
                 var meshRenderer = renderable.meshRenderer;
                 if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
                     continue;
-                
+
                 meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                 var castShadows             = (ShadowCastingMode)meshRenderer.shadowCastingMode;
@@ -385,27 +375,31 @@ namespace Chisel.Components
             }
         }
 
-        public void Update()
+        // TODO: move to ChiselGeneratedComponentManager
+        public void OnRenderModel(Camera camera, DrawModeFlags helperStateFlags)
         {
-            if (generated == null || 
-                UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            if (VisibilityState != VisibilityState.Mixed)
                 return;
 
-            // Sometimes Unity 'forgets' to send some messages.
-            if (generated.visibilityState == VisibilityState.Unknown)
-                ChiselGeneratedComponentManager.OnVisibilityChanged();
+            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
+            // but still have the same lightmap, and keep lightmap support.
+            // We do this by setting forceRenderingOff to true on all MeshRenderers.
+            // This makes them behave like before, except that they don't render. This means they are still 
+            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
+            // render the sub-mesh with the exact same settings as the MeshRenderer.
+            if (materialPropertyBlock == null)
+                materialPropertyBlock = new MaterialPropertyBlock();
 
-            generated.UpdateVisibilityMeshes();
-
-            if (generated.visibilityState != VisibilityState.Mixed)
-            {
-                Camera.onPreCull -= OnRenderModel;
-                return;
-            }
-
-            Camera.onPreCull -= OnRenderModel;
-            Camera.onPreCull += OnRenderModel;
+            var layer   = gameObject.layer; 
+            var matrix  = transform.localToWorldMatrix;
+            if ((helperStateFlags & DrawModeFlags.HideRenderables) == DrawModeFlags.None)
+                RenderChiselRenderObjects(generated.renderables, materialPropertyBlock, matrix, layer, camera);
+            if ((helperStateFlags & ~DrawModeFlags.HideRenderables) != DrawModeFlags.None)
+                RenderChiselRenderObjects(generated.debugHelpers, materialPropertyBlock, matrix, layer, camera);
         }
+
+        public VisibilityState VisibilityState { get { return generated.visibilityState; } }
+
 #endif
     }
 }

@@ -19,6 +19,7 @@ namespace Chisel.Core
                 
                 _instance = ScriptableObject.CreateInstance<ChiselMaterialManager>();
                 _instance.hideFlags = HideFlags.HideAndDontSave;
+                _instance.Initialize();
                 return _instance;  
             }
         }
@@ -29,6 +30,16 @@ namespace Chisel.Core
         public Material defaultTreadMaterial;
         public Material defaultWallMaterial;
         public PhysicMaterial defaultPhysicMaterial;
+        
+        public Material defaultHiddenMaterial;
+        public Material defaultCastMaterial;
+        public Material defaultShadowOnlyMaterial;
+        public Material defaultReceiveMaterial;
+        public Material defaultColliderMaterial;
+        public Material defaultCulledMaterial;
+
+        Material[] helperMaterials;
+
 
         public static Material DefaultFloorMaterial		    { get { return Instance.defaultFloorMaterial; } }
         public static Material DefaultStepMaterial		    { get { return Instance.defaultStepMaterial; } }
@@ -36,10 +47,24 @@ namespace Chisel.Core
         public static Material DefaultWallMaterial		    { get { return Instance.defaultWallMaterial; } }
         public static Material DefaultMaterial              { get { return Instance.defaultWallMaterial; } }
         public static PhysicMaterial DefaultPhysicsMaterial { get { return Instance.defaultPhysicMaterial; } }
+        public static Material[] HelperMaterials            { get { return Instance.helperMaterials; } }
         
         static readonly Dictionary<string, Material>	editorMaterials = new Dictionary<string, Material>();
         static readonly Dictionary<Color,Material>		colorMaterials	= new Dictionary<Color, Material>();
         
+        internal void Initialize()
+        {
+            // TODO: add check to ensure this matches ChiselGeneratedObjects.kGeneratedDebugRendererNames
+            helperMaterials = new Material[6]
+            {
+                defaultHiddenMaterial,
+                defaultCastMaterial,
+                defaultShadowOnlyMaterial,
+                defaultReceiveMaterial,
+                defaultColliderMaterial,
+                defaultCulledMaterial
+            };
+        }
 
         internal static Material GenerateDebugColorMaterial(Color color)
         {

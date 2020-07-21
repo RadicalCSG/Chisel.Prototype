@@ -32,11 +32,11 @@ namespace Chisel.Core
             public NativeList<IndexOrder>           brushesThatNeedIndirectUpdate;
             public NativeHashMap<IndexOrder, Empty> brushesThatNeedIndirectUpdateHashMap;
 
-            public NativeList<BrushPair>                                        uniqueBrushPairs;
-            public NativeList<BlobAssetReference<BrushIntersectionLoop>>        outputSurfaces;
-            public NativeArray<int2>                                            outputSurfacesRange;
-            public NativeList<BlobAssetReference<BrushPairIntersection>>        intersectingBrushes;
-            public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
+            public NativeList<BrushPair>                                    uniqueBrushPairs;
+            public NativeList<BlobAssetReference<BrushIntersectionLoop>>    outputSurfaces;
+            public NativeArray<int2>                                        outputSurfacesRange;
+            public NativeList<BlobAssetReference<BrushPairIntersection>>    intersectingBrushes;
+            public NativeArray<BlobAssetReference<BrushMeshBlob>>           brushMeshLookup;
 
             public VertexBufferContents             vertexBufferContents;
 
@@ -347,43 +347,7 @@ namespace Chisel.Core
 
                 #region MeshQueries
                 // TODO: have more control over the queries
-                var meshQueries = new NativeArray<MeshQuery>(6, Allocator.TempJob);
-                meshQueries[0] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.RenderMaterial,
-                    query:          LayerUsageFlags.RenderReceiveCastShadows,
-                    mask:           LayerUsageFlags.RenderReceiveCastShadows,
-                    vertexChannels: VertexChannelFlags.All
-                );
-                meshQueries[1] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.RenderMaterial,
-                    query:          LayerUsageFlags.RenderCastShadows,
-                    mask:           LayerUsageFlags.RenderReceiveCastShadows,
-                    vertexChannels: VertexChannelFlags.All
-                );
-                meshQueries[2] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.RenderMaterial,
-                    query:          LayerUsageFlags.RenderReceiveShadows,
-                    mask:           LayerUsageFlags.RenderReceiveCastShadows,
-                    vertexChannels: VertexChannelFlags.All
-                );
-                meshQueries[3] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.RenderMaterial,
-                    query:          LayerUsageFlags.Renderable,
-                    mask:           LayerUsageFlags.RenderReceiveCastShadows,
-                    vertexChannels: VertexChannelFlags.All
-                );
-                meshQueries[4] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.RenderMaterial,
-                    query:          LayerUsageFlags.CastShadows,
-                    mask:           LayerUsageFlags.RenderReceiveCastShadows,
-                    vertexChannels: VertexChannelFlags.All
-                );
-                meshQueries[5] = new MeshQuery(
-                    parameterIndex: LayerParameterIndex.PhysicsMaterial,
-                    query:          LayerUsageFlags.Collidable,
-                    mask:           LayerUsageFlags.Collidable,
-                    vertexChannels: VertexChannelFlags.Position
-                );
+                var meshQueries = MeshQuery.DefaultQueries.ToNativeArray(Allocator.TempJob);
                 #endregion
 
                 #region All Native Allocations
