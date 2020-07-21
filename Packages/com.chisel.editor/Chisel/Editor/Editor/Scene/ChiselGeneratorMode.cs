@@ -32,7 +32,7 @@ namespace Chisel.Editors
             GUILayout.BeginVertical();
             {
                 ShowSceneSettings(settings);
-                ChiselOperationGUI.ChooseGeneratorOperation(ref forceOperation);
+                ChiselCompositeGUI.ChooseGeneratorOperation(ref forceOperation);
             }
             GUILayout.EndVertical();
         }

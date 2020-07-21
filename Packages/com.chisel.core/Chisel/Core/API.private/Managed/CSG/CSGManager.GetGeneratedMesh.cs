@@ -50,11 +50,11 @@ namespace Chisel.Core
     {
         internal sealed class BrushInfo
         {
-            public int					    brushMeshInstanceID;
-            public UInt64                   brushOutlineGeneration;
-            public bool                     brushOutlineDirty = true;
+            public int			brushMeshInstanceID;
+            public UInt64       brushOutlineGeneration;
+            public bool         brushOutlineDirty   = true;
 
-            public BrushOutline             brushOutline        = new BrushOutline();
+            public BrushOutline brushOutline        = new BrushOutline();
 
 
             public void Reset() 
@@ -74,7 +74,7 @@ namespace Chisel.Core
 
                 {
                     var flags = nodeFlags[branchNodeIndex];
-                    flags.UnSetNodeFlag(NodeStatusFlags.OperationNeedsUpdate);
+                    flags.UnSetNodeFlag(NodeStatusFlags.BranchNeedsUpdate);
                     nodeFlags[branchNodeIndex] = flags;
                 }
                 if (!nodeFlags[branchNodeIndex].IsNodeFlagSet(NodeStatusFlags.NeedPreviousSiblingsUpdate))

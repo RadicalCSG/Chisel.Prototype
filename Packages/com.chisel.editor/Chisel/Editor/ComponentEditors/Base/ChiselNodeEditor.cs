@@ -19,7 +19,7 @@ namespace Chisel.Editors
 {
     public abstract class ChiselNodeEditorBase : Editor
     {
-        const string kDefaultOperationName = "Operation";
+        const string kDefaultCompositeName = "Composite";
 
         // Ugly hack around stupid Unity issue
         static bool delayedUndoAllChanges = false;
@@ -51,11 +51,11 @@ namespace Chisel.Editors
                 Undo.RecordObject(generator, "Modified Operation");
                 generator.Operation = operationType;
             }
-            var operation = gameObject.GetComponent<ChiselOperation>();
-            if (operation && operation.Operation != operationType)
+            var composite = gameObject.GetComponent<ChiselComposite>();
+            if (composite && composite.Operation != operationType)
             {
                 Undo.RecordObject(generator, "Modified Operation");
-                operation.Operation = operationType;
+                composite.Operation = operationType;
             }
         }
 
@@ -67,7 +67,7 @@ namespace Chisel.Editors
                 return false;
 
             return gameObject.GetComponent<ChiselGeneratorComponent>() ||
-                    gameObject.GetComponent<ChiselOperation>();
+                    gameObject.GetComponent<ChiselComposite>();
         }
 
         [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Additive), false, -1)] protected static void SetAdditiveOperation(MenuCommand menuCommand) { SetMenuOperation(menuCommand, CSGOperationType.Additive); }
@@ -79,57 +79,49 @@ namespace Chisel.Editors
 
 
 
-        [MenuItem("GameObject/Group in Operation", false, -1)]
-        protected static void EncapsulateInOperation(MenuCommand menuCommand)
+        [MenuItem("GameObject/Group in Composite", false, -1)]
+        protected static void EncapsulateInComposite(MenuCommand menuCommand)
         {
+            if (!ValidateEncapsulateInComposite(menuCommand))
+                return;
+            
             var gameObjects = Selection.gameObjects;
-            if (gameObjects == null ||
-                gameObjects.Length <= 1)
-                return;
-
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
-                    gameObjects[i].GetComponent<ChiselOperation>())
-                    continue;
-                return;
-            }
 
             // TODO: sort gameObjects by their siblingIndex / hierarchy position
-            
+
             var childTransform      = gameObjects[0].transform;
             var childSiblingIndex   = childTransform.GetSiblingIndex();
             var childParent         = childTransform.parent;
 
-            var operation           = ChiselComponentFactory.Create<ChiselOperation>(kDefaultOperationName, childParent);
-            var operationGameObject = operation.gameObject;
-            var operationTransform  = operation.transform;
-            operationTransform.SetSiblingIndex(childSiblingIndex);
-            Undo.RegisterCreatedObjectUndo(operationGameObject, "Create " + operationGameObject.name);
+            var composite           = ChiselComponentFactory.Create<ChiselComposite>(kDefaultCompositeName, childParent);
+            var compositeGameObject = composite.gameObject;
+            var compositeTransform  = composite.transform;
+            compositeTransform.SetSiblingIndex(childSiblingIndex);
+            Undo.RegisterCreatedObjectUndo(compositeGameObject, "Create " + compositeGameObject.name);
             
             for (int i = 0; i < gameObjects.Length; i++)
-                Undo.SetTransformParent(gameObjects[i].transform, operationTransform, "Moved GameObject under Operation");
+                Undo.SetTransformParent(gameObjects[i].transform, compositeTransform, "Moved GameObject under Composite");
 
-            Selection.activeObject = operationGameObject;
+            Selection.activeObject = compositeGameObject;
 
-            // This forces the operation to be opened when we create it
-            EditorGUIUtility.PingObject(operationGameObject);
+            // This forces the composite to be opened when we create it
+            EditorGUIUtility.PingObject(compositeGameObject);
             for (int i = 0; i < gameObjects.Length; i++)
                 EditorGUIUtility.PingObject(gameObjects[i]);
         }
 
-        [MenuItem("GameObject/Group in Operation", true)]
-        protected static bool ValidateEncapsulateInOperation(MenuCommand menuCommand)
+        [MenuItem("GameObject/Group in Composite", true)]
+        protected static bool ValidateEncapsulateInComposite(MenuCommand menuCommand)
         {
             var gameObjects = Selection.gameObjects;
             if (gameObjects == null ||
-                gameObjects.Length == 1)
+                gameObjects.Length < 1)
                 return false;
 
             for (int i = 0; i < gameObjects.Length; i++)
             {
                 if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
-                    gameObjects[i].GetComponent<ChiselOperation>())
+                    gameObjects[i].GetComponent<ChiselComposite>())
                     continue;
                 return false;
             }
@@ -473,14 +465,14 @@ namespace Chisel.Editors
             var rect = EditorGUILayout.GetControlRect(hasLabel: false, height: EditorGUIUtility.singleLineHeight + kBottomPadding);
             rect.yMax -= kBottomPadding;
             var buttonRect = rect;
-            buttonRect.xMax -= ChiselOperationGUI.GetOperationChoicesInternalWidth(showAuto: false);
+            buttonRect.xMax -= ChiselCompositeGUI.GetOperationChoicesInternalWidth(showAuto: false);
             if (typeof(T) != typeof(ChiselBrush))
             {
                 ConvertIntoBrushesButton(buttonRect, serializedObject);
-                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);
+                ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);
             } else
             {
-                ChiselOperationGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: true);
+                ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: true);
             }
         }
 

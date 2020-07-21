@@ -38,7 +38,7 @@ namespace Chisel.Core
             where T : struct, IJobParallelFor
             where U : struct
         {
-            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ParallelForJobStruct<T>.Initialize(), dependsOn, ScheduleMode.Batched);
+            var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), ParallelForJobStruct<T>.Initialize(), dependsOn, ScheduleMode.Parallel);
             void* atomicSafetyHandlePtr = null;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             var safety = NativeListUnsafeUtility.GetAtomicSafetyHandle(ref list);

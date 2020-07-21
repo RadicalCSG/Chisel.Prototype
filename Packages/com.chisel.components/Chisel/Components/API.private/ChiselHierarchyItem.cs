@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace Chisel.Components
     public sealed class ChiselSceneHierarchy
     {
         public Scene                                Scene;
-        public ChiselModel                          DefaultModel;		// TODO: create this, but only when necessary.
+        public ChiselModel                          DefaultModel;	// TODO: create this, but only when necessary.
         public readonly List<ChiselHierarchyItem>   RootItems	    = new List<ChiselHierarchyItem>();
     }
 
@@ -32,6 +32,7 @@ namespace Chisel.Components
         public GameObject           GameObject;
         public readonly ChiselNode  Component;
         
+        // TODO: should cache this instead
         public ChiselModel Model
         {
             get

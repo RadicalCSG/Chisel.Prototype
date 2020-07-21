@@ -282,9 +282,10 @@ namespace Chisel.Core
             var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
 
             // TODO: optimize
-            for (int i = 0; i < treeInfo.treeBrushes.Count; i++)
+            var allTreeBrushes = treeInfo.allTreeBrushes.items;
+            for (int i = 0; i < allTreeBrushes.Count; i++)
             {
-                var brushNodeID = treeInfo.treeBrushes[i];
+                var brushNodeID = allTreeBrushes[i];
                 if (!CSGManager.IsValidNodeID(brushNodeID))
                     continue;
 
@@ -300,7 +301,8 @@ namespace Chisel.Core
                 if (!brushRenderBuffers.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
                     continue;
 
-                if (!CSGManager.GetBrushBounds(brushNodeID, ref bounds))
+                bounds = CSGManager.GetBrushBounds(brushNodeID);
+                if (bounds == default)
                     continue;
 
                 if (!bounds.IntersectRay(treeSpaceRay))
@@ -358,12 +360,12 @@ namespace Chisel.Core
 
 
             var foundNodes  = new List<CSGTreeNode>();
-            var bounds      = new Bounds();
             for (int i = 0; i < brushCount; i++)
             {
                 var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
                 var brushNodeIndex  = brushNodeID - 1;
-                if (!CSGManager.GetBrushBounds(brushNodeID, ref bounds))
+                var bounds          = CSGManager.GetBrushBounds(brushNodeID);
+                if (bounds == default)
                     continue;
 
                 // TODO: take transformations into account? (frustum is already in tree space)

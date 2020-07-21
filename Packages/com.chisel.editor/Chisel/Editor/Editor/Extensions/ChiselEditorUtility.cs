@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Chisel.Components;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -12,6 +13,10 @@ namespace Chisel.Editors
     internal static class ChiselEditorUtility
     {
         public static readonly ReflectedProperty<float> ContextWidth = typeof(EditorGUIUtility).GetStaticProperty<float>("contextWidth");
+
+        public delegate Texture2D GetHelpIconDelegate(MessageType type);
+
+        public static GetHelpIconDelegate GetHelpIcon = ReflectionExtensions.CreateDelegate<GetHelpIconDelegate>(typeof(EditorGUIUtility), "GetHelpIcon");
 
         public static Camera GetMainCamera()
         {

@@ -163,7 +163,7 @@ namespace Chisel.Components
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
         public override int         NodeID                      { get { return Node.NodeID; } }
-        public override bool        CanHaveChildNodes           { get { return !SkipThisNode; } }
+        public override bool        CanHaveChildNodes           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
         public bool                 CreateRenderComponents      = true;
@@ -176,11 +176,11 @@ namespace Chisel.Components
         public SerializableUnwrapParam            uvGenerationSettings;
 
         
-        [HideInInspector] public CSGTree                    Node;
+        [HideInInspector] public CSGTree                Node;
 
-        [HideInInspector] bool                              initialized = false;
+        [HideInInspector] bool                          initialized = false;
 
-        [HideInInspector] public ChiselModelGeneratedObjects generated;
+        [HideInInspector] public ChiselGeneratedObjects generated;
 
 
         public override void OnInitialize()
@@ -190,7 +190,7 @@ namespace Chisel.Components
                 generated.Destroy();
 
             if (generated == null)
-                generated = ChiselModelGeneratedObjects.Create(this);
+                generated = ChiselGeneratedObjects.Create(gameObject);
 
             if (colliderSettings == null)
             {
@@ -237,7 +237,7 @@ namespace Chisel.Components
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (Node.Valid)
-                Debug.LogWarning("ChiselModel already has a treeNode, but trying to create a new one?", this);
+                Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
             return new CSGTreeNode[] { Node };
@@ -248,7 +248,7 @@ namespace Chisel.Components
         {
             if (!Node.Valid)
             {
-                Debug.LogWarning("SetChildren called on a ChiselModel that isn't properly initialized", this);
+                Debug.LogWarning($"SetChildren called on a {nameof(ChiselModel)} that isn't properly initialized", this);
                 return;
             }
             if (childNodes.Count == 0)
@@ -269,6 +269,8 @@ namespace Chisel.Components
             if (!Node.Valid)
                 return false;
             // A model makes no sense without any children
+            if (hierarchyItem != null)
+                return (hierarchyItem.Children.Count > 0);
             return (transform.childCount > 0);
         }
 
@@ -342,20 +344,10 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
         MaterialPropertyBlock materialPropertyBlock;
-        public void OnRenderModel(Camera camera)
+        // TODO: move to ChiselGeneratedComponentManager
+        static void RenderChiselRenderObjects(ChiselRenderObjects[] renderables, MaterialPropertyBlock materialPropertyBlock, Matrix4x4 matrix, int layer, Camera camera)
         {
-            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
-            // but still have the same lightmap, and keep lightmap support.
-            // We do this by setting forceRenderingOff to true on all MeshRenderers.
-            // This makes them behave like before, except that they don't render. This means they are still 
-            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
-            // render the sub-mesh with the exact same settings as the MeshRenderer.
-            if (materialPropertyBlock == null)
-                materialPropertyBlock = new MaterialPropertyBlock();
-
-            var layer   = gameObject.layer; 
-            var matrix  = transform.localToWorldMatrix;
-            foreach (var renderable in generated.renderables)
+            foreach (var renderable in renderables)
             {
                 if (renderable == null)
                     continue;
@@ -367,7 +359,7 @@ namespace Chisel.Components
                 var meshRenderer = renderable.meshRenderer;
                 if (!meshRenderer || !meshRenderer.enabled || !meshRenderer.forceRenderingOff)
                     continue;
-                
+
                 meshRenderer.GetPropertyBlock(materialPropertyBlock);
 
                 var castShadows             = (ShadowCastingMode)meshRenderer.shadowCastingMode;
@@ -383,27 +375,31 @@ namespace Chisel.Components
             }
         }
 
-        public void Update()
+        // TODO: move to ChiselGeneratedComponentManager
+        public void OnRenderModel(Camera camera, DrawModeFlags helperStateFlags)
         {
-            if (generated == null || 
-                UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            if (VisibilityState != VisibilityState.Mixed)
                 return;
 
-            // Sometimes Unity 'forgets' to send some messages.
-            if (generated.visibilityState == VisibilityState.Unknown)
-                ChiselGeneratedComponentManager.OnVisibilityChanged();
+            // When we toggle visibility on brushes in the editor hierarchy, we want to render a different mesh
+            // but still have the same lightmap, and keep lightmap support.
+            // We do this by setting forceRenderingOff to true on all MeshRenderers.
+            // This makes them behave like before, except that they don't render. This means they are still 
+            // part of things such as lightmap generation. At the same time we use Graphics.DrawMesh to
+            // render the sub-mesh with the exact same settings as the MeshRenderer.
+            if (materialPropertyBlock == null)
+                materialPropertyBlock = new MaterialPropertyBlock();
 
-            generated.UpdateVisibilityMeshes();
-
-            if (generated.visibilityState != VisibilityState.Mixed)
-            {
-                Camera.onPreCull -= OnRenderModel;
-                return;
-            }
-
-            Camera.onPreCull -= OnRenderModel;
-            Camera.onPreCull += OnRenderModel;
+            var layer   = gameObject.layer; 
+            var matrix  = transform.localToWorldMatrix;
+            if ((helperStateFlags & DrawModeFlags.HideRenderables) == DrawModeFlags.None)
+                RenderChiselRenderObjects(generated.renderables, materialPropertyBlock, matrix, layer, camera);
+            if ((helperStateFlags & ~DrawModeFlags.HideRenderables) != DrawModeFlags.None)
+                RenderChiselRenderObjects(generated.debugHelpers, materialPropertyBlock, matrix, layer, camera);
         }
+
+        public VisibilityState VisibilityState { get { return generated.visibilityState; } }
+
 #endif
     }
 }

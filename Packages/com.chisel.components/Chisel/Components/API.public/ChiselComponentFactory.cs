@@ -67,7 +67,7 @@ namespace Chisel.Components
                 var brushTransform = newGameObject.transform;
 #if UNITY_EDITOR
                 if (parent)
-                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent operation");
+                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent composite");
                 UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
 #else
                 if (parent)

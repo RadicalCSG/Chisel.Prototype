@@ -41,12 +41,12 @@ namespace HierarchyTests
             return model;
         }
 
-        public static ChiselOperation CreateUndoableGameObjectWithOperation(string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselComposite CreateUndoableGameObjectWithComposite(string name = "composite", HideFlags flags = HideFlags.None)
         {
-            var operationGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var operation = operationGameObject.AddComponent<ChiselOperation>();
-            Undo.RegisterCreatedObjectUndo(operationGameObject, "Created " + name + " gameObject");
-            return operation;
+            var compositeGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
+            var composite = compositeGameObject.AddComponent<ChiselComposite>();
+            Undo.RegisterCreatedObjectUndo(compositeGameObject, "Created " + name + " gameObject");
+            return composite;
         }
 
         public static ChiselBrush CreateUndoableGameObjectWithBrush(string name = "brush", HideFlags flags = HideFlags.None)
@@ -65,12 +65,12 @@ namespace HierarchyTests
             return model;
         }
 
-        public static ChiselOperation CreateGameObjectWithUndoableOperationComponent(string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselComposite CreateGameObjectWithUndoableCompositeComponent(string name = "composite", HideFlags flags = HideFlags.None)
         {
-            var operationGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
-            var operation = operationGameObject.AddComponent<ChiselOperation>();
-            Undo.RegisterCreatedObjectUndo(operation, "Created " + name + " component");
-            return operation;
+            var compositeGameObject = EditorUtility.CreateGameObjectWithHideFlags(name, flags);
+            var composite = compositeGameObject.AddComponent<ChiselComposite>();
+            Undo.RegisterCreatedObjectUndo(composite, "Created " + name + " component");
+            return composite;
         }
 
         public static ChiselBrush CreateGameObjectWithUndoableBrushComponent(string name = "brush", HideFlags flags = HideFlags.None)
@@ -98,11 +98,11 @@ namespace HierarchyTests
             return model;
         }
 
-        public static ChiselOperation CreateUndoableOperationComponent(GameObject operationGameObject, string name = "operation", HideFlags flags = HideFlags.None)
+        public static ChiselComposite CreateUndoableCompositeComponent(GameObject compositeGameObject, string name = "composite", HideFlags flags = HideFlags.None)
         {
-            var operation = operationGameObject.AddComponent<ChiselOperation>();
-            Undo.RegisterCreatedObjectUndo(operation, "Created " + name + " component");
-            return operation;
+            var composite = compositeGameObject.AddComponent<ChiselComposite>();
+            Undo.RegisterCreatedObjectUndo(composite, "Created " + name + " component");
+            return composite;
         }
 
         public static ChiselBrush CreateUndoableBrushComponent(GameObject brushGameObject, string name = "brush", HideFlags flags = HideFlags.None)

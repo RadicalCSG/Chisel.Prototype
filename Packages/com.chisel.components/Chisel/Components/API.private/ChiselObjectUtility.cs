@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEditor;
 using UnityEngine;
 
 namespace Chisel.Components
@@ -9,9 +10,8 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public UnityEditor.StaticEditorFlags	staticFlags;
 #endif
-        public static GameObjectState Create(ChiselModel model)
+        public static GameObjectState Create(GameObject modelGameObject)
         {
-            var modelGameObject = model.gameObject;
             return new GameObjectState
             {
                 layer           = modelGameObject.layer,
@@ -205,7 +205,7 @@ namespace Chisel.Components
             }
         }
 
-        public static GameObject CreateGameObject(string name, Transform parent, GameObjectState state)
+        public static GameObject CreateGameObject(string name, Transform parent, GameObjectState state, bool debugHelperRenderer = false)
         {
             var parentScene = parent.gameObject.scene;
             var oldActiveScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
@@ -218,7 +218,7 @@ namespace Chisel.Components
                 newGameObject.SetActive(false);
                 try
                 {
-                    UpdateContainerFlags(newGameObject, state);
+                    UpdateContainerFlags(newGameObject, state, debugHelperRenderer: debugHelperRenderer);
                     var transform = newGameObject.GetComponent<Transform>();
                     ChiselNodeHierarchyManager.ignoreNextChildrenChanged = true;
                     transform.SetParent(parent, false);
@@ -239,21 +239,31 @@ namespace Chisel.Components
             }
         }
 
-        const HideFlags kGameObjectHideFlags    = HideFlags.NotEditable;
-        const HideFlags kTransformHideFlags     = HideFlags.NotEditable;// | HideFlags.HideInInspector;
-        const HideFlags kComponentHideFlags     = HideFlags.HideInHierarchy | HideFlags.NotEditable; // Avoids MeshCollider showing wireframe
+        const HideFlags kGameObjectHideFlags        = HideFlags.NotEditable;
+        const HideFlags kEditorGameObjectHideFlags  = kGameObjectHideFlags | HideFlags.DontSaveInBuild;
+        const HideFlags kTransformHideFlags         = HideFlags.NotEditable;// | HideFlags.HideInInspector;
+        const HideFlags kComponentHideFlags         = HideFlags.HideInHierarchy | HideFlags.NotEditable; // Avoids MeshCollider showing wireframe
 
-        internal static void UpdateContainerFlags(GameObject gameObject, GameObjectState state)
+        internal static void UpdateContainerFlags(GameObject gameObject, GameObjectState state, bool debugHelperRenderer = false)
         {
             var transform = gameObject.transform;
-            if (gameObject.layer     != state.layer         ) gameObject.layer     = state.layer;
-            if (gameObject.hideFlags != kGameObjectHideFlags) gameObject.hideFlags = kGameObjectHideFlags;
+            var desiredGameObjectFlags  = debugHelperRenderer ? kEditorGameObjectHideFlags : kGameObjectHideFlags;
+            var desiredLayer            = debugHelperRenderer ? 0 : state.layer;
+            if (gameObject.layer     != desiredLayer        ) gameObject.layer     = desiredLayer;
+            if (gameObject.hideFlags != desiredGameObjectFlags) gameObject.hideFlags = desiredGameObjectFlags;
             if (transform .hideFlags != kTransformHideFlags ) transform .hideFlags = kTransformHideFlags;
 
 #if UNITY_EDITOR
-            var prevStaticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(gameObject);
-            if (prevStaticFlags != state.staticFlags)
-                UnityEditor.GameObjectUtility.SetStaticEditorFlags(gameObject, state.staticFlags);
+            StaticEditorFlags desiredStaticFlags;
+            if (debugHelperRenderer)
+            {
+                desiredStaticFlags = (StaticEditorFlags)0;
+            } else
+            {
+                desiredStaticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(gameObject);
+            }
+            if (desiredStaticFlags != state.staticFlags)
+                UnityEditor.GameObjectUtility.SetStaticEditorFlags(gameObject, desiredStaticFlags);
 #endif
         }
 

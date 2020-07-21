@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using Unity.Mathematics;
 using Vector2 = UnityEngine.Vector2;
 
@@ -9,27 +9,24 @@ namespace Chisel.Core
     // TODO: replace with complete managed solution, clean up
     public partial class Decomposition
     {
-        public static Vector2[][] ConvexPartition(Vector2[] inputVertices2D)
-        {
-            return ConvexPartitionInternal(inputVertices2D);
-        }
-        
-        public static bool ConvexPartition(List<Vector2>	    inputVertices2D,
+        static Dictionary<Vector2, int> s_PointToIndex = new Dictionary<Vector2, int>();
+        public static bool ConvexPartition(List<Vector2>	inputVertices2D,
                                            List<int>		segmentIndices,
                                            out Vector2[][]	outputPolygonVertices2D,
                                            out int[][]		outputPolygonIndices)
         {
+            // TODO: Optimize all these useless allocations away (Note: ConvexPartition can modify the given list under some circumstances)
             var points = inputVertices2D.ToArray();
-            outputPolygonVertices2D = ConvexPartition(points);
+            outputPolygonVertices2D = BayazitDecomposer.ConvexPartition(points.ToList());
             if (outputPolygonVertices2D == null)
             {
                 outputPolygonIndices = null;
                 return false;
             }
 
-            var pointToIndex = new Dictionary<Vector2, int>();
+            s_PointToIndex.Clear();
             for (int i = 0; i < points.Length; i++)
-                pointToIndex[points[i]] = i;
+                s_PointToIndex[points[i]] = i;
 
             outputPolygonIndices = new int[outputPolygonVertices2D.Length][];
             for (int i = 0; i < outputPolygonVertices2D.Length; i++)
@@ -41,7 +38,7 @@ namespace Chisel.Core
                 {
                     var point = polygonVertices[p];
                     int index;
-                    if (!pointToIndex.TryGetValue(point, out index))
+                    if (!s_PointToIndex.TryGetValue(point, out index))
                     {
                         polygonIndices[p] = segmentIndices[0];
                     } else

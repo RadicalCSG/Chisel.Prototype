@@ -409,11 +409,11 @@ namespace Chisel.Editors
                 if (obj)
                 { 
                     var brush		= obj as ChiselBrush;
-                    var operation	= obj as ChiselOperation;
+                    var composite	= obj as ChiselComposite;
                     var model		= obj as ChiselModel;
                     int nodeID = CSGTreeNode.InvalidNode.NodeID;
                     if      (brush    ) nodeID = brush.TopNode.NodeID;
-                    else if (operation) nodeID = operation.Node.NodeID;
+                    else if (composite) nodeID = composite.Node.NodeID;
                     else if (model    ) nodeID = model.Node.NodeID;
                     else
                     {
