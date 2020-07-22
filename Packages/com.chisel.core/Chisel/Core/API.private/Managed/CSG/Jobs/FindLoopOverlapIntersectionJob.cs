@@ -138,45 +138,9 @@ namespace Chisel.Core
             var intersectionOffset = outputSurfacesRange[brushNodeOrder].x;
             var intersectionCount  = outputSurfacesRange[brushNodeOrder].y;
             
-            var uniqueBrushOrderCount = 0;
-            if (intersectionCount > 0)
-            {             
-                if (!brushIntersections.IsCreated)
-                {
-                    brushIntersections = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(intersectionCount, Allocator.Temp);
-                } else
-                {
-                    brushIntersections.Clear();
-                    if (brushIntersections.Capacity < intersectionCount)
-                        brushIntersections.Capacity = intersectionCount;
-                }
- 
-                if (!usedNodeOrders.IsCreated || usedNodeOrders.Length < maxNodeOrder)
-                {
-                    if (usedNodeOrders.IsCreated) usedNodeOrders.Dispose();
-                    usedNodeOrders = new NativeBitArray(maxNodeOrder, Allocator.Temp);
-                } else
-                    usedNodeOrders.Clear();
-
-                intersectionCount += intersectionOffset;
-                for (int i = intersectionOffset; i < intersectionCount; i++)
-                {
-                    var item            = outputSurfaces[i];
-                    var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
-                    
-                    uniqueBrushOrderCount += usedNodeOrders.IsSet(otherNodeOrder1) ? 0 : 1;
-                    usedNodeOrders.Set(otherNodeOrder1, true);
-
-                    //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
-                    //Debug.Assert(outputSurface.surfaceInfo.basePlaneIndex == pair.basePlaneIndex);
-
-                    brushIntersections.Add(item);
-                }
-            }
-            
             hashedVertices.AddUniqueVertices(ref basePolygonBlob.vertices); /*OUTPUT*/
 
-            if (uniqueBrushOrderCount == 0)
+            if (intersectionCount == 0)
             {
                 // If we don't have any intersection loops, just convert basePolygonBlob to loops and be done
                 // TODO: should do this per surface!
@@ -227,6 +191,36 @@ namespace Chisel.Core
                 output.EndForEachIndex();
             } else
             { 
+                if (!brushIntersections.IsCreated)
+                {
+                    brushIntersections = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(intersectionCount, Allocator.Temp);
+                } else
+                {
+                    brushIntersections.Clear();
+                    if (brushIntersections.Capacity < intersectionCount)
+                        brushIntersections.Capacity = intersectionCount;
+                }
+ 
+                if (!usedNodeOrders.IsCreated || usedNodeOrders.Length < maxNodeOrder)
+                {
+                    if (usedNodeOrders.IsCreated) usedNodeOrders.Dispose();
+                    usedNodeOrders = new NativeBitArray(maxNodeOrder, Allocator.Temp);
+                } else
+                    usedNodeOrders.Clear();
+
+                var lastIntersectionIndex = intersectionCount + intersectionOffset;
+                for (int i = intersectionOffset; i < lastIntersectionIndex; i++)
+                {
+                    var item            = outputSurfaces[i];
+                    var otherNodeOrder1 = item.Value.indexOrder1.nodeOrder;
+                    
+                    usedNodeOrders.Set(otherNodeOrder1, true);
+
+                    //Debug.Assert(outputSurface.surfaceInfo.brushIndex == pair.brushNodeIndex1);
+                    //Debug.Assert(outputSurface.surfaceInfo.basePlaneIndex == pair.basePlaneIndex);
+
+                    brushIntersections.AddNoResize(item);
+                }
 
                 if (!intersectionEdges.IsCreated || intersectionEdges.Capacity < brushIntersections.Length)
                 {
