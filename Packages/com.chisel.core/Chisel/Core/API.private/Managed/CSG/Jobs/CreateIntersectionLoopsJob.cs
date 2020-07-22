@@ -261,8 +261,8 @@ namespace Chisel.Core
         
         struct IntersectionPlanes
         {
-            public float4       plane0;
-            public float4       plane1;
+            //public float4       plane0;
+            //public float4       plane1;
             public float4       plane2;
             public int          planeIndex0;
             public int          planeIndex1;
@@ -310,11 +310,15 @@ namespace Chisel.Core
             {
                 for (int j = 0; j < intersectingPlanes0.Length; j++)
                 { 
+                    var plane0 = usedPlanePairs1[i].plane0;
+                    var plane1 = usedPlanePairs1[i].plane1;
+                    var plane2 = intersectingPlanes0[j];
+
                     foundIntersections[n] = new IntersectionPlanes
-                    { 
-                        plane0      = usedPlanePairs1[i].plane0,
-                        plane1      = usedPlanePairs1[i].plane1,
-                        plane2      = intersectingPlanes0[j],
+                    {
+                        //plane0    = plane0,
+                        //plane1    = plane1,
+                        plane2      = plane2,
                         planeIndex0 = usedPlanePairs1[i].planeIndex0,
                         planeIndex1 = usedPlanePairs1[i].planeIndex1,
                         planeIndex2 = intersectingPlaneIndices0[j]
@@ -325,12 +329,17 @@ namespace Chisel.Core
                         edgeVertex0 = usedPlanePairs1[i].edgeVertex0,
                         edgeVertex1 = usedPlanePairs1[i].edgeVertex1
                     };
-                    
-                    var plane0      = usedPlanePairs1[i].plane0;
-                    var plane1      = usedPlanePairs1[i].plane1;
-                    var plane2      = intersectingPlanes0[j];
 
-                    foundVertices[n] = new float4((float3)PlaneExtensions.Intersection(plane2, plane0, plane1), 1);
+                    if (math.abs(math.dot(plane2.xyz, plane0.xyz)) >= CSGConstants.kNormalDotAlignEpsilon ||
+                        math.abs(math.dot(plane2.xyz, plane1.xyz)) >= CSGConstants.kNormalDotAlignEpsilon ||
+                        math.abs(math.dot(plane0.xyz, plane1.xyz)) >= CSGConstants.kNormalDotAlignEpsilon)
+                        continue;
+
+                    var localVertex = PlaneExtensions.Intersection(plane2, plane0, plane1);
+                    if (double.IsNaN(localVertex.x))
+                        continue;
+
+                    foundVertices[n] = new float4((float3)localVertex,1);
                     n++;
                 }
             }
