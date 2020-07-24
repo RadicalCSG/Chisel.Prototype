@@ -67,6 +67,7 @@ namespace Chisel.Components
         static readonly HashSet<List<ChiselHierarchyItem>>          sortChildrenQueue           = new HashSet<List<ChiselHierarchyItem>>();
 
         static readonly HashSet<ChiselNode>                         hierarchyUpdateQueue        = new HashSet<ChiselNode>();
+        static readonly HashSet<ChiselNode>                         onHierarchyChangeCalled     = new HashSet<ChiselNode>();
 
         // Dictionaries used to keep track which brushContainerAssets are used by which nodes, which is necessary to update the right nodes when an brushContainerAsset has been changed
         static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes	= new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
@@ -453,6 +454,12 @@ namespace Chisel.Components
                 ignoreNextChildrenChanged = false;
                 return;
             }
+
+            if (onHierarchyChangeCalled.Contains(component))
+                return;
+
+            onHierarchyChangeCalled.Add(component);
+
             if (!component ||
                 !component.hierarchyItem.Registered || 
                 !component.IsActive)
@@ -467,6 +474,7 @@ namespace Chisel.Components
                     continue;
                 }
                 hierarchyUpdateQueue.Add(childComponent);
+                onHierarchyChangeCalled.Add(component);
             }
         }
 

@@ -785,9 +785,20 @@ namespace Chisel.Editors
             UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
-            ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
-            ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
+            Profiler.BeginSample("CurrentEditorName");
+            if (targets.Length > 1)
+            {
+                ChiselEditGeneratorTool.OnEditSettingsGUI = null;
+                ChiselEditGeneratorTool.CurrentEditorName = string.Empty;
+            } else
+            {
+                ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
+                ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
+            }
+            Profiler.EndSample();
+            Profiler.BeginSample("FindProperty");
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
+            Profiler.EndSample();
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateSelection");
