@@ -61,7 +61,7 @@ namespace Chisel.Core
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
-                if (intersectingNodeOrder < brushNodeOrder)
+                if (intersectingNodeOrder > brushNodeOrder)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -89,37 +89,34 @@ namespace Chisel.Core
 
         // Read Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
+        [NoAlias] public NativeListArray<float3>                                            loopVerticesLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices mergeVertices;
 
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
-            var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
-            if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
-                return;
+            var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
             var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
             if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
-            ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
-
-            if (!hashedVertices.IsCreated)
+            
+            if (!mergeVertices.IsCreated)
             {
-                hashedVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
+                mergeVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
             } else
             {
-                if (hashedVertices.Capacity < vertices.Length)
+                if (mergeVertices.Capacity < vertices.Length)
                 {
-                    hashedVertices.Dispose();
-                    hashedVertices = new HashedVertices(vertices.Length, Allocator.Temp);
+                    mergeVertices.Dispose();
+                    mergeVertices = new HashedVertices(vertices.Length, Allocator.Temp);
                 } else
-                    hashedVertices.Clear();
+                    mergeVertices.Clear();
             }
-            hashedVertices.AddUniqueVertices(ref vertices);
+            mergeVertices.AddUniqueVertices(vertices);
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
@@ -131,14 +128,14 @@ namespace Chisel.Core
 
                 // In order, goes through the previous brushes in the tree, 
                 // and snaps any vertex that is almost the same in the next brush, with that vertex
-                ref var intersectingVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
-                hashedVertices.ReplaceIfExists(ref intersectingVertices);
+                var intersectingVertices = loopVerticesLookup[intersectingNodeOrder];
+                mergeVertices.ReplaceIfExists(intersectingVertices);
             }
 
 
             for (int i = 0; i < vertices.Length; i++)
             {
-                vertices[i] = hashedVertices.GetUniqueVertex(vertices[i]);
+                vertices[i] = mergeVertices.GetUniqueVertex(vertices[i]);
             }
 
             //treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);

@@ -418,7 +418,7 @@ namespace Chisel.Core
                           ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
                           ref int                           foundIndices0Length,
-                          ref HashedVertices                hashedVertices,
+                          ref HashedVertices                hashedTreeSpaceVertices,
                           NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
@@ -525,7 +525,7 @@ namespace Chisel.Core
             // For each segment, we now sort our vertices within each segment, 
             // making the assumption that they are convex
             //var sortedStack = stackalloc int2[maxLength * 2];
-            var vertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
+            var vertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
             for (int n = planeIndexOffsetsLength - 1; n >= 0; n--)
             {
                 var planeIndexOffset    = planeIndexOffsets[n];
@@ -549,7 +549,7 @@ namespace Chisel.Core
                 totalSize += (loopLength * UnsafeUtility.SizeOf<float3>()); 
             }
 
-            var srcVertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
+            var srcVertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
             for (int j = 0; j < planeIndexOffsetsLength; j++)
             { 
                 var planeIndexLength    = planeIndexOffsets[j];

@@ -20,6 +20,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableLookup;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeListArray<float3>                                  inputVerticesLookup;
 
         [NativeDisableParallelForRestriction]
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
@@ -47,7 +48,8 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     allEdges;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionLoops;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     basePolygonEdges;
-        [NativeDisableContainerSafetyRestriction] HashedVertices            brushVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedTreeSpaceVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>       indexRemap;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionEdges;
 
         [BurstDiscard]
@@ -107,7 +109,7 @@ namespace Chisel.Core
             return -1;
         }
         
-        void IntersectLoopsJob(HashedVertices                   brushVertices,
+        void IntersectLoopsJob(in HashedVertices                hashedTreeSpaceVertices,
                                
                                NativeListArray<int>.NativeList  loopIndices, 
                                int                              surfaceLoopIndex, 
@@ -159,7 +161,7 @@ namespace Chisel.Core
             var treeSpacePlanes1        = brushTreeSpacePlanes[intersectionBrushOrder];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, brushVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, hashedTreeSpaceVertices);
                 categories2[e] = category;
                 if      (category == EdgeCategory.Inside) inside2++;
                 else if (category == EdgeCategory.Outside) outside2++;
@@ -172,7 +174,7 @@ namespace Chisel.Core
             var treeSpacePlanes2    = brushTreeSpacePlanes[currentBrushOrder];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, brushVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, hashedTreeSpaceVertices);
                 categories1[e] = category;
                 if      (category == EdgeCategory.Inside) inside1++;
                 else if (category == EdgeCategory.Outside) outside1++;
@@ -735,19 +737,31 @@ namespace Chisel.Core
             var brushIndexOrder = input.Read<IndexOrder>();
             var brushNodeOrder = brushIndexOrder.nodeOrder;
             var surfaceCount = input.Read<int>();
-            var vertexCount = input.Read<int>();
-            if (!brushVertices.IsCreated || brushVertices.Capacity < vertexCount)
-            {
-                if (brushVertices.IsCreated) brushVertices.Dispose();
-                brushVertices = new HashedVertices(vertexCount, Allocator.Temp);
-            } else
-                brushVertices.Clear();
 
-            for (int v = 0; v < vertexCount; v++)
+            var inputVertices = inputVerticesLookup[brushNodeOrder];
+            var vertexCount = inputVertices.Length;
+
+            if (!hashedTreeSpaceVertices.IsCreated || hashedTreeSpaceVertices.Capacity < vertexCount)
             {
-                var vertex = input.Read<float3>();
-                brushVertices.AddNoResize(vertex);
+                if (hashedTreeSpaceVertices.IsCreated) hashedTreeSpaceVertices.Dispose();
+                hashedTreeSpaceVertices = new HashedVertices(vertexCount, Allocator.Temp);
+            } else
+                hashedTreeSpaceVertices.Clear();
+
+            if (!indexRemap.IsCreated || indexRemap.Length < vertexCount)
+            {
+                if (indexRemap.IsCreated) indexRemap.Dispose();
+                indexRemap = new NativeArray<ushort>(vertexCount, Allocator.Temp);
             }
+            
+
+            hashedTreeSpaceVertices.Clear();
+            for (int v = 0; v < inputVertices.Length; v++)
+            {
+                var vertex = inputVertices[v];
+                indexRemap[v] = hashedTreeSpaceVertices.AddNoResize(vertex);
+            }
+            //Debug.Assert(hashedTreeSpaceVertices.Length == inputVertices.Length);
 
             var basePolygonEdgesLength = input.Read<int>();
             if (!basePolygonSurfaceInfos.IsCreated)
@@ -769,17 +783,33 @@ namespace Chisel.Core
 
             basePolygonSurfaceInfos.ResizeUninitialized(basePolygonEdgesLength);
             basePolygonEdges.ResizeExact(basePolygonEdgesLength);
+            int polygonIndex = 0;
             for (int l = 0; l < basePolygonEdgesLength; l++)
             {
-                basePolygonSurfaceInfos[l] = input.Read<IndexSurfaceInfo>();
+                var indexSurfaceInfo = input.Read<IndexSurfaceInfo>();
                 var edgesLength     = input.Read<int>();
-                var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(l, edgesLength);
+                var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(polygonIndex, edgesLength);
                 //edgesInner.ResizeUninitialized(edgesLength);
                 for (int e = 0; e < edgesLength; e++)
                 {
-                    edgesInner.AddNoResize(input.Read<Edge>());
+                    var edge = input.Read<Edge>();
+                    edge.index1 = indexRemap[edge.index1];
+                    edge.index2 = indexRemap[edge.index2];
+                    if (edge.index1 == edge.index2)
+                        continue;
+                    //Debug.Assert(edge.index1 >= 0 && edge.index1 < hashedTreeSpaceVertices.Length);
+                    //Debug.Assert(edge.index2 >= 0 && edge.index2 < hashedTreeSpaceVertices.Length);
+                    edgesInner.AddNoResize(edge);
                 }
+                if (edgesInner.Length >= 3)
+                {
+                    basePolygonSurfaceInfos[polygonIndex] = indexSurfaceInfo;
+                    polygonIndex++;
+                } else
+                    edgesInner.Clear();
             }
+            basePolygonSurfaceInfos.ResizeUninitialized(polygonIndex);
+            basePolygonEdges.ResizeExact(polygonIndex);
 
             var intersectionEdgesLength = input.Read<int>();
             if (!intersectionSurfaceInfos.IsCreated)
@@ -802,17 +832,33 @@ namespace Chisel.Core
 
             intersectionSurfaceInfos.ResizeUninitialized(intersectionEdgesLength);
             intersectionEdges.ResizeExact(intersectionEdgesLength);
+            polygonIndex = 0;
             for (int l = 0; l < intersectionEdgesLength; l++)
             {
-                intersectionSurfaceInfos[l] = input.Read<IndexSurfaceInfo>();
+                var indexSurfaceInfo = input.Read<IndexSurfaceInfo>();
                 var edgesLength = input.Read<int>();
-                var edgesInner  = intersectionEdges.AllocateWithCapacityForIndex(l, edgesLength);
+                var edgesInner  = intersectionEdges.AllocateWithCapacityForIndex(polygonIndex, edgesLength);
                 //edgesInner.ResizeUninitialized(edgesLength);
                 for (int e = 0; e < edgesLength; e++)
                 {
-                    edgesInner.AddNoResize(input.Read<Edge>());
+                    var edge = input.Read<Edge>();
+                    edge.index1 = indexRemap[edge.index1];
+                    edge.index2 = indexRemap[edge.index2];
+                    if (edge.index1 == edge.index2)
+                        continue;
+                    //Debug.Assert(edge.index1 >= 0 && edge.index1 < hashedTreeSpaceVertices.Length);
+                    //Debug.Assert(edge.index2 >= 0 && edge.index2 < hashedTreeSpaceVertices.Length);
+                    edgesInner.AddNoResize(edge);
                 }
+                if (edgesInner.Length >= 3)
+                {
+                    intersectionSurfaceInfos[polygonIndex] = indexSurfaceInfo;
+                    polygonIndex++;
+                } else
+                    edgesInner.Clear();
             }
+            intersectionSurfaceInfos.ResizeUninitialized(polygonIndex);
+            intersectionEdges.ResizeExact(polygonIndex);
             input.EndForEachIndex();
 
             //int brushNodeIndex = treeBrushNodeIndices[index];
@@ -940,7 +986,7 @@ namespace Chisel.Core
                 info.interiorCategory = CategoryGroupIndex.First; // TODO: make sure that it's always set to "First" so we don't need to do this
 
                 var maxAllocation       = 1 + (2 * (routingLookupsLength + allEdges.Length)); // TODO: find a more reliable "max"
-                var maxEdgeAllocation   = 1 + (brushVertices.Length * 2);
+                var maxEdgeAllocation   = 1 + (hashedTreeSpaceVertices.Length * 2);
 
                 var loopIndices = surfaceLoopIndices.AllocateWithCapacityForIndex(surfaceIndex, maxAllocation);
 
@@ -1003,7 +1049,7 @@ namespace Chisel.Core
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)
                                 continue;
 
-                            IntersectLoopsJob(brushVertices, loopIndices, surfaceLoopIndex,
+                            IntersectLoopsJob(hashedTreeSpaceVertices, loopIndices, surfaceLoopIndex,
                                               holeIndices, allInfos, allEdges, 
                                               intersectionLoop, 
                                               intersectionCategory, 
@@ -1011,14 +1057,14 @@ namespace Chisel.Core
                         }
                     }
                 }
-                CleanUp(allInfos, allEdges, brushVertices, loopIndices, holeIndices);
+                CleanUp(allInfos, allEdges, hashedTreeSpaceVertices, loopIndices, holeIndices);
             }
 
             output.BeginForEachIndex(index);
             output.Write(brushIndexOrder);
-            output.Write(brushVertices.Length);
-            for (int l = 0; l < brushVertices.Length; l++)
-                output.Write(brushVertices[l]);
+            output.Write(hashedTreeSpaceVertices.Length);
+            for (int l = 0; l < hashedTreeSpaceVertices.Length; l++)
+                output.Write(hashedTreeSpaceVertices[l]);
 
             output.Write(surfaceLoopIndices.Length);
             for (int o = 0; o < surfaceLoopIndices.Length; o++)

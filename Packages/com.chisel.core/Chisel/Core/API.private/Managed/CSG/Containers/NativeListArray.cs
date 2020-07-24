@@ -340,6 +340,8 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
 #endif
+            if (index < 0 || index >= m_Array->Length)
+                return false;
             var ptr = m_Array->Ptr[index];
             return (ptr != null && ptr->IsCreated);
         }

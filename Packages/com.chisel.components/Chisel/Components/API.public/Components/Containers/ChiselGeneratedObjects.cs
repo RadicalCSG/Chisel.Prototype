@@ -575,16 +575,15 @@ namespace Chisel.Components
                     renderable.invalid)
                     continue;
 
-                if (renderable.meshRenderer)
-                {
+                if (renderable.meshRenderer != null)
                     renderable.meshRenderer.forceRenderingOff = shouldHideMesh || !showRenderables;
-                }
             }
 
             for (int i = 0; i < debugHelpers.Length; i++)
             {
                 var showState    = (helperStateFlags & kGeneratedDebugShowFlags[i]) != DrawModeFlags.None;
-                debugHelpers[i].meshRenderer.forceRenderingOff = shouldHideMesh || !showState;
+                if (debugHelpers[i].meshRenderer != null)
+                    debugHelpers[i].meshRenderer.forceRenderingOff = shouldHideMesh || !showState;
             }
 
             if (ignoreBrushVisibility || !needVisibilityMeshUpdate)
