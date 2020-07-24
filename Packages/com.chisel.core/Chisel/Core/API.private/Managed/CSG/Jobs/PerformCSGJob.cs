@@ -378,6 +378,28 @@ namespace Chisel.Core
             {
                 var baseloopIndex   = loopIndices[l];
                 var baseLoopEdges   = allEdges[baseloopIndex];
+
+
+                // Remove degenerate edges that loop back on itself
+                TryNext:
+                if (baseLoopEdges.Length >= 3)
+                {
+                    for (int a = 0; a < baseLoopEdges.Length; a++)
+                    {
+                        for (int b = a + 1; b < baseLoopEdges.Length; b++)
+                        {
+                            if (baseLoopEdges[a].index1 == baseLoopEdges[b].index2 &&
+                                baseLoopEdges[a].index2 == baseLoopEdges[b].index1)
+                            {
+                                //Debug.Log($"loop [{a},{b}] ({baseLoopEdges[a].index1}, {baseLoopEdges[a].index2}) ({baseLoopEdges[b].index1}, {baseLoopEdges[b].index2})");
+                                baseLoopEdges.RemoveAtSwapBack(b);
+                                baseLoopEdges.RemoveAtSwapBack(a);
+                                goto TryNext;
+                            }
+                        }
+                    }
+                }
+
                 if (baseLoopEdges.Length < 3)
                 {
                     baseLoopEdges.Clear();
@@ -409,11 +431,33 @@ namespace Chisel.Core
                 {
                     var holeIndex   = holeIndicesList[h];
                     var holeEdges   = allEdges[holeIndex];
+                    
+                    // Remove degenerate edges that loop back on itself
+                    TryNextHole:
+                    if (holeEdges.Length >= 3)
+                    {
+                        for (int a = 0; a < holeEdges.Length; a++)
+                        {
+                            for (int b = a + 1; b < holeEdges.Length; b++)
+                            {
+                                if (holeEdges[a].index1 == holeEdges[b].index2 &&
+                                    holeEdges[a].index2 == holeEdges[b].index1)
+                                {
+                                    //Debug.Log($"hole [{a},{b}] ({holeEdges[a].index1}, {holeEdges[a].index2}) ({holeEdges[b].index1}, {holeEdges[b].index2})");
+                                    holeEdges.RemoveAtSwapBack(b);
+                                    holeEdges.RemoveAtSwapBack(a);
+                                    goto TryNextHole;
+                                }
+                            }
+                        }
+                    }
+
                     if (holeEdges.Length < 3)
                     {
                         holeIndicesList.RemoveAtSwapBack(h);
                         continue;
                     }
+
                     var holeNormal = CalculatePlaneNormal(holeEdges, brushVertices);
                     if (math.all(holeNormal == float3.zero))
                     {

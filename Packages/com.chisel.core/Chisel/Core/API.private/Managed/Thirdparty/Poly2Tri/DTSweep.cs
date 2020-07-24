@@ -53,6 +53,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace Poly2Tri
 {
@@ -124,7 +125,6 @@ namespace Poly2Tri
                 return false;
             }
 
-            //[BurstDiscard]
             public static void MarkNeighborException()
             {
                 throw new Exception("Error marking neighbors -- t doesn't contain edge p1-p2!");
@@ -538,9 +538,10 @@ namespace Poly2Tri
 
             for (int l1 = foundLoops.Count - 1; l1 >= 0; l1--)
             {
-                if (foundLoops[l1].Count == 0)
+                var subLoop = foundLoops[l1];
+                if (subLoop.Count == 0)
                     continue;
-                Triangulate(foundLoops[l1].ToList(Allocator.Temp), surfaceIndicesArray);
+                Triangulate(subLoop.ToList(Allocator.Temp), surfaceIndicesArray);
             }
         }
 
@@ -662,7 +663,6 @@ namespace Poly2Tri
             return newIndex;
         }
 
-        //[BurstDiscard]
         public static void FailedToFindNodeForGivenAfrontPointException()
         {
             throw new Exception("Failed to find Node for given afront point");
@@ -1373,14 +1373,12 @@ namespace Poly2Tri
             return true;
         }
 
-        //[BurstDiscard]
         public static void CheckValidIndex(int index)
         {
             if (index == int.MaxValue)
                 throw new Exception("invalid index (== int.MaxValue)");
         }
 
-        //[BurstDiscard]
         public static void PointOnConstrainedEdgeNotSupportedException(int epIndex, int eqIndex, int p1Index)
         {
             //throw new Exception($"PerformEdgeEvent - Point on constrained edge not supported yet {epIndex} {eqIndex} {p1Index}");
@@ -1469,14 +1467,12 @@ namespace Poly2Tri
             return triangles[triangleIndex1].PointCWFrom(triangles[triangleIndex2].PointCWFrom(p));
         }
 
-        //[BurstDiscard]
         public static void FLIPFailedDueToMissingTriangleException()
         {
             //throw new Exception("[BUG:FIXME] FLIP failed due to missing triangle");
             UnityEngine.Debug.LogError("[BUG:FIXME] FLIP failed due to missing triangle");
         }
 
-        //[BurstDiscard]
         public static void CheckSelfPointer(int triangleIndex, int otIndex)
         {
             if (triangleIndex == otIndex)
@@ -1552,7 +1548,6 @@ namespace Poly2Tri
             return true;
         }
 
-        //[BurstDiscard]
         public static void OrientationNotHandledException()
         {
             throw new NotImplementedException("Orientation not handled");
@@ -2031,7 +2026,6 @@ namespace Poly2Tri
         }
 
 
-        //[BurstDiscard]
         public static void FailedToMarkNeighborException()
         {
             throw new Exception("Failed to mark neighbor, doesn't share an edge!");

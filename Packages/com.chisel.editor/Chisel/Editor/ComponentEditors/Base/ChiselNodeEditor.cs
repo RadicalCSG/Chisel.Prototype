@@ -11,6 +11,7 @@ using ControlState = UnitySceneExtensions.ControlState;
 using HandleRendering = UnitySceneExtensions.HandleRendering;
 using UnityEditor.EditorTools;
 using Grid = UnitySceneExtensions.Grid;
+using UnityEngine.Profiling;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
@@ -772,21 +773,30 @@ namespace Chisel.Editors
         {
             if (!target)
             {
+                Profiler.BeginSample("Reset");
                 Reset();
+                Profiler.EndSample();
                 return;
             }
 
+            Profiler.BeginSample("Setup");
             ToolManager.activeToolChanged -= OnToolModeChanged;
             ToolManager.activeToolChanged += OnToolModeChanged;
+            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
 
             ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
             ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
             operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
-            UpdateSelection();
+            Profiler.EndSample();
 
-            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Profiler.BeginSample("UpdateSelection");
+            UpdateSelection();
+            Profiler.EndSample();
+
+            Profiler.BeginSample("InitInspector");
             InitInspector();
+            Profiler.EndSample();
         }
 
         void OnToolModeChanged()
