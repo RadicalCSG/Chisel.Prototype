@@ -23,7 +23,8 @@ namespace Chisel.Components
 
         [SerializeField] private ChiselBrushContainer brushContainer;
         [NonSerialized] private BrushMeshInstance[] instances;
-        
+        [SerializeField] internal ChiselNode owner;
+
         public bool					Empty			{ get { return brushContainer.Empty; } }
         public int					SubMeshCount	{ get { return brushContainer.Count; } }
         public BrushMesh[]	        BrushMeshes		{ get { return brushContainer.brushMeshes; } }
