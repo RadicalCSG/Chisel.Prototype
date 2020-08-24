@@ -4,6 +4,7 @@ using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
 using Mathf = UnityEngine.Mathf;
 using UnitySceneExtensions;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -50,7 +51,15 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            return BrushMeshFactory.GenerateRevolvedShape(ref brushContainer, ref this);
+            Profiler.BeginSample("GenerateRevolvedShape");
+            try
+            {
+                return BrushMeshFactory.GenerateRevolvedShape(ref brushContainer, ref this);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

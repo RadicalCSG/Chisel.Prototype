@@ -196,7 +196,8 @@ namespace Chisel.Components
         public ChiselGeneratedRenderSettings      renderSettings;
         public SerializableUnwrapParam            uvGenerationSettings;
 
-        
+        public bool IsDefaultModel { get; internal set; } = false;
+
         [HideInInspector] public CSGTree                Node;
 
         [HideInInspector] bool                          initialized = false;
@@ -246,6 +247,11 @@ namespace Chisel.Components
                 }
             }
 #endif
+
+            // Legacy solution
+            if (!IsDefaultModel &&
+                name == ChiselGeneratedComponentManager.kGeneratedDefaultModelName)
+                IsDefaultModel = true;
 
             initialized = true;
         }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 
 namespace Chisel.Components
@@ -243,8 +244,36 @@ namespace Chisel.Components
             return false;
         }
         
-        internal static bool IsDefaultModel(GameObject gameObject)	{ return gameObject && (gameObject.name == kGeneratedDefaultModelName) && (gameObject.GetComponent<ChiselModel>()); }
-        internal static bool IsDefaultModel(Component component)	{ return component  && (component.name  == kGeneratedDefaultModelName) && (component is ChiselModel || component.GetComponent<ChiselModel>()); }
+        internal static bool IsDefaultModel(GameObject gameObject)
+        {
+            if (!gameObject)
+                return false;
+            var model = gameObject.GetComponent<ChiselModel>();
+            if (!model)
+                return false;
+            return (model.IsDefaultModel);
+        }
+
+        internal static bool IsDefaultModel(Component component)	
+        {
+            if (!component)
+                return false;
+            ChiselModel model = component as ChiselModel;
+            if (!model)
+            {
+                model = component.GetComponent<ChiselModel>();
+                if (!model)
+                    return false;
+            }
+            return (model.IsDefaultModel);
+        }
+
+        internal static bool IsDefaultModel(ChiselModel model)
+        {
+            if (!model)
+                return false;
+            return (model.IsDefaultModel);
+        }
 
         static List<GameObject> __rootGameObjects = new List<GameObject>(); // static to avoid allocations
         internal static ChiselModel CreateDefaultModel(ChiselSceneHierarchy sceneHierarchy)
@@ -277,6 +306,7 @@ namespace Chisel.Components
             try
             {
                 var model = ChiselComponentFactory.Create<ChiselModel>(kGeneratedDefaultModelName);
+                model.IsDefaultModel = true;
                 UpdateModelFlags(model);
                 return model;
             }

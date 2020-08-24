@@ -90,6 +90,8 @@ namespace Chisel.Components
             return true;
         }
 
+        static UpdateMeshEvent s_UpdateMeshEvent = (UpdateMeshEvent)UpdateMeshEvent;
+
         public static void UpdateModels()
         {
 
@@ -97,7 +99,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush(UpdateMeshEvent))
+                if (!CSGManager.Flush(s_UpdateMeshEvent))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..

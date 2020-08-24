@@ -99,10 +99,10 @@ namespace Chisel.Core
             Profiler.EndSample();
 
             Profiler.BeginSample("SetTriangleBrushes");
-            triangleBrushes.Clear();
             if (triangleBrushes.Capacity < brushIndicesArray.Length)
                 triangleBrushes.Capacity = brushIndicesArray.Length;
-            for (int i = 0; i < triangleBrushes.Capacity; i++)
+            triangleBrushes.Clear();
+            for (int i = 0; i < brushIndicesArray.Length; i++)
                 triangleBrushes.Add(brushIndicesArray[i]);
             Profiler.EndSample();
 

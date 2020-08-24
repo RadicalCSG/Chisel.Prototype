@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -36,7 +37,15 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
+            Profiler.BeginSample("GenerateBox");
+            try
+            {
+                return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 

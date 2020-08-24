@@ -103,31 +103,47 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            if (!IsValid)
-                return false;
+            Profiler.BeginSample("GenerateBrush");
+            try
+            {
+                if (!IsValid)
+                    return false;
 
-            Profiler.BeginSample("EnsureSize");
-            brushContainer.EnsureSize(1);
-            Profiler.EndSample();
+                Profiler.BeginSample("EnsureSize");
+                brushContainer.EnsureSize(1);
+                Profiler.EndSample();
 
-            Profiler.BeginSample("new BrushMesh");
-            var brushMesh = new BrushMesh(brushOutline); 
-            brushContainer.brushMeshes[0] = brushMesh;
-            Profiler.EndSample();
+                Profiler.BeginSample("new BrushMesh");
+                BrushMesh brushMesh;
+                if (brushContainer.brushMeshes[0] == null)
+                {
+                    brushMesh = new BrushMesh(brushOutline);
+                    brushContainer.brushMeshes[0] = brushMesh;
+                } else
+                {
+                    brushContainer.brushMeshes[0].CopyFrom(brushOutline);
+                    brushMesh = brushContainer.brushMeshes[0];
+                }
+                Profiler.EndSample();
 
-            Profiler.BeginSample("Definition.Validate");
-            Validate();
-            Profiler.EndSample();
+                Profiler.BeginSample("Definition.Validate");
+                Validate();
+                Profiler.EndSample();
 
-            Profiler.BeginSample("Assign Materials");
-            for (int p = 0; p < brushMesh.polygons.Length; p++)
-                brushMesh.polygons[p].surface = surfaceDefinition.surfaces[p];
-            Profiler.EndSample();
+                Profiler.BeginSample("Assign Materials");
+                for (int p = 0; p < brushMesh.polygons.Length; p++)
+                    brushMesh.polygons[p].surface = surfaceDefinition.surfaces[p];
+                Profiler.EndSample();
 
-            Profiler.BeginSample("BrushMesh.Validate");
-            var valid = brushMesh.Validate();
-            Profiler.EndSample();
-            return valid;
+                Profiler.BeginSample("BrushMesh.Validate");
+                var valid = brushMesh.Validate();
+                Profiler.EndSample();
+                return valid;
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 } 
