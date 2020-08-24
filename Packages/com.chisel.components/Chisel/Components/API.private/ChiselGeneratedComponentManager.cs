@@ -374,32 +374,29 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
         // Hacky way to store that a mesh has lightmap UV created
+        // Note: tried storing this in name of mesh, but getting the current mesh name allocates a lot of memory 
         public static bool HasLightmapUVs(UnityEngine.Mesh sharedMesh)
         {
             if (!sharedMesh)
                 return true;
-            var name = sharedMesh.name;
-            if (!string.IsNullOrEmpty(name) &&
-                name[name.Length - 1] == '*')
-                return true;
-            return false;
+            return (sharedMesh.hideFlags & HideFlags.NotEditable) == HideFlags.NotEditable;
         }
 
         public static void SetHasLightmapUVs(UnityEngine.Mesh sharedMesh, bool haveLightmapUVs)
         {
-            var name = sharedMesh.name;
+            HideFlags hideFlags     = sharedMesh.hideFlags;
+            HideFlags newHideFlags  = hideFlags;
             if (!haveLightmapUVs)
             {
-                if (!string.IsNullOrEmpty(name) && name[name.Length - 1] == '*')
-                    return;
-                sharedMesh.name = name + "*";
+                newHideFlags &= ~HideFlags.NotEditable;
             } else
             {
-                if (string.IsNullOrEmpty(name) || name[name.Length - 1] != '*')
-                    return;
-                name = name.Remove(name.Length - 1);
-                sharedMesh.name = name;
+                newHideFlags |= HideFlags.NotEditable;
             }
+
+            if (newHideFlags == hideFlags)
+                return;
+            sharedMesh.hideFlags = newHideFlags;
         }
 
         private static void GenerateLightmapUVsForInstance(ChiselModel model, ChiselRenderObjects renderable, bool force = false)

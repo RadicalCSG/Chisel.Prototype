@@ -215,9 +215,12 @@ namespace Chisel.Editors
             serializedObject.ApplyModifiedProperties();
             foreach (var target in serializedObject.targetObjects)
             {
-                var node = target as ChiselNode;
+                var node = target as ChiselModel;
                 if (!node)
                     continue;
+#if UNITY_EDITOR
+                node.RenderSettings.SetDirty();
+#endif
                 ChiselNodeHierarchyManager.NotifyContentsModified(node);
                 node.SetDirty();
             }

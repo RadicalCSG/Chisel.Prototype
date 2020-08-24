@@ -104,15 +104,36 @@ namespace Chisel.Components
         public ReceiveGI						receiveGI						= ReceiveGI.LightProbes;
 
 #if UNITY_EDITOR
-    	public UnityEditor.LightmapParameters   lightmapParameters				= null;		// TODO: figure out how to apply this, safely, using SerializedObject
-        public bool								importantGI						= false;
-        public bool								optimizeUVs                     = false;	// "Preserve UVs"
-        public bool								ignoreNormalsForChartDetection  = false;
-        public float							scaleInLightmap                 = 1.0f;
-        public float							autoUVMaxDistance				= 0.5f;
-        public float							autoUVMaxAngle					= 89;
-        public int								minimumChartSize				= 4;
+        // SerializedObject access Only
+        [SerializeField] 
+        UnityEditor.LightmapParameters      lightmapParameters				= null;		// TODO: figure out how to apply this, safely, using SerializedObject
+        [SerializeField] 
+        bool								importantGI						= false;
+        [SerializeField] 
+        bool								optimizeUVs                     = false;	// "Preserve UVs"
+        [SerializeField] 
+        bool								ignoreNormalsForChartDetection  = false;
+        [SerializeField] 
+        float							    autoUVMaxDistance				= 0.5f;
+        [SerializeField] 
+        float							    autoUVMaxAngle					= 89;
+        [SerializeField]
+        int								    minimumChartSize				= 4;
+
+        [NonSerialized]
+        internal bool serializedObjectFieldsDirty = true;
+        public void SetDirty() { serializedObjectFieldsDirty = true; }
+        public UnityEditor.LightmapParameters   LightmapParameters				{ get { return lightmapParameters; } set { lightmapParameters = value; serializedObjectFieldsDirty = true; } }
+        public bool								ImportantGI						{ get { return importantGI; } set { importantGI = value; serializedObjectFieldsDirty = true; } }
+        public bool								OptimizeUVs                     { get { return optimizeUVs; } set { optimizeUVs = value; serializedObjectFieldsDirty = true; } }
+        public bool								IgnoreNormalsForChartDetection  {get { return ignoreNormalsForChartDetection; } set { ignoreNormalsForChartDetection = value; serializedObjectFieldsDirty = true; } }
+        public float							AutoUVMaxDistance				{get { return autoUVMaxDistance; } set { autoUVMaxDistance = value; serializedObjectFieldsDirty = true; } }
+        public float							AutoUVMaxAngle					{get { return autoUVMaxAngle; } set { autoUVMaxAngle = value; serializedObjectFieldsDirty = true; } }
+        public int								MinimumChartSize				{get { return minimumChartSize; } set { minimumChartSize = value; serializedObjectFieldsDirty = true; } }
+        // SerializedObject access Only
+
         public bool								stitchLightmapSeams				= false;
+        public float							scaleInLightmap                 = 1.0f;
 #endif
 
         public void Reset()
