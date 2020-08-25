@@ -154,8 +154,15 @@ namespace Chisel.Core
                 requiredTemporaryBullShitByDOTS = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
             requiredTemporaryBullShitByDOTS.Clear();
 
-            if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
-                foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            int lastIndex = 0;
+            for (int i=0;i< allTreeBrushIndexOrders.Length;i++)
+            {
+                lastIndex = math.max(lastIndex, allTreeBrushIndexOrders[i].nodeIndex);
+            }
+
+
+            if (!foundBrushes.IsCreated || foundBrushes.Length < lastIndex)
+                foundBrushes = new NativeBitArray(lastIndex, Allocator.Temp);
             foundBrushes.Clear();
 
             //*

@@ -123,7 +123,8 @@ namespace Chisel.Core
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
-                if (intersectingNodeOrder > brushNodeOrder)
+                if (intersectingNodeOrder > brushNodeOrder ||
+                    !loopVerticesLookup.IsIndexCreated(intersectingNodeOrder))
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
