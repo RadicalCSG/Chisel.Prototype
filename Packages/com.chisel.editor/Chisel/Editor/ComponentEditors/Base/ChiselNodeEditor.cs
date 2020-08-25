@@ -519,8 +519,10 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
+            Profiler.BeginSample("OnInspectorGUI");
             CheckForTransformationChanges(serializedObject);
             ShowDefaultModelMessage(serializedObject.targetObjects);
+            Profiler.EndSample();
         }
 
         static SceneHandles.PositionHandleIDs s_HandleIDs = new SceneHandles.PositionHandleIDs();
@@ -892,6 +894,7 @@ namespace Chisel.Editors
         {
             if (!target)
                 return;
+            Profiler.BeginSample("OnInspectorGUI");
             serializedObject.Update();
 
             base.OnInspectorGUI();
@@ -912,6 +915,7 @@ namespace Chisel.Editors
 
             if (PreviewTextureManager.Update())
                 Repaint();
+            Profiler.EndSample();
         }
 
         public override void OnSceneGUI()

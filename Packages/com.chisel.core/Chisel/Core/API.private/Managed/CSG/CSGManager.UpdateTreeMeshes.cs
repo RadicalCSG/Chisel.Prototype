@@ -323,7 +323,7 @@ namespace Chisel.Core
             }
         }
 
-        static readonly List<int> s_IndexLookup = new List<int>();
+        static int[] s_IndexLookup;
         static int2[] s_RemapOldOrderToNewOrder;
 
 
@@ -456,9 +456,17 @@ namespace Chisel.Core
                 if (previousBrushIndexLength > 0)
                 {
                     Profiler.BeginSample("init.s_IndexLookup");
-                    s_IndexLookup.Clear();
+                    if (s_IndexLookup == null ||
+                        s_IndexLookup.Length < s_NodeIndexToNodeOrderArray.Length)
+                        s_IndexLookup = new int[s_NodeIndexToNodeOrderArray.Length];
+                    else
+                        Array.Clear(s_IndexLookup, 0, s_IndexLookup.Length);
+
                     for (int n = 0; n < brushCount; n++)
-                        s_IndexLookup.Add(allTreeBrushIndexOrders[n].nodeIndex);
+                    {
+                        var offsetIndex = allTreeBrushIndexOrders[n].nodeIndex - nodeIndexToNodeOrderOffset;
+                        s_IndexLookup[offsetIndex] = (n + 1);
+                    }
                     Profiler.EndSample();
 
                     Profiler.BeginSample("init.s_RemapOldOrderToNewOrder");
@@ -474,8 +482,8 @@ namespace Chisel.Core
                     s_RemovedBrushes.Clear();
                     for (int n = 0; n < previousBrushIndexLength; n++)
                     {
-                        var sourceIndex = brushIndices[n];
-                        var destination = s_IndexLookup.IndexOf(sourceIndex);
+                        var sourceIndex = brushIndices[n] - nodeIndexToNodeOrderOffset;
+                        var destination = (sourceIndex < 0 || sourceIndex >= s_NodeIndexToNodeOrderArray.Length) ? -1 : s_IndexLookup[sourceIndex] - 1;
                         if (destination == -1)
                         {
                             s_RemovedBrushes.Add(new IndexOrder { nodeIndex = sourceIndex, nodeOrder = n });
@@ -922,8 +930,8 @@ namespace Chisel.Core
                             updateBrushIndexOrders          = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
                         
                             // Write
-                            brushBrushIntersections                 = treeUpdate.brushBrushIntersections.AsParallelWriter(),
-                            brushesThatNeedIndirectUpdateHashMap    = treeUpdate.brushesThatNeedIndirectUpdateHashMap.AsParallelWriter()
+                            brushBrushIntersections              = treeUpdate.brushBrushIntersections.AsParallelWriter(),
+                            brushesThatNeedIndirectUpdateHashMap = treeUpdate.brushesThatNeedIndirectUpdateHashMap.AsParallelWriter()
                         };
                         treeUpdate.findAllIntersectionsJobHandle = findAllIntersectionsJob.Schedule(treeUpdate.rebuildTreeBrushIndexOrders, 16, dependencies);
                     }
@@ -943,10 +951,10 @@ namespace Chisel.Core
                         var createUniqueIndicesArrayJob = new CreateUniqueIndicesArrayJob
                         {
                             // Read
-                            brushesThatNeedIndirectUpdateHashMap    = treeUpdate.brushesThatNeedIndirectUpdateHashMap,
+                            brushesThatNeedIndirectUpdateHashMap     = treeUpdate.brushesThatNeedIndirectUpdateHashMap,
                         
                             // Write
-                            brushesThatNeedIndirectUpdate           = treeUpdate.brushesThatNeedIndirectUpdate
+                            brushesThatNeedIndirectUpdate            = treeUpdate.brushesThatNeedIndirectUpdate
                         };
                         treeUpdate.createUniqueIndicesArrayJobHandle = createUniqueIndicesArrayJob.Schedule(dependencies);
                     }
@@ -1417,7 +1425,7 @@ namespace Chisel.Core
                             continue;
                         var dependencies    = JobHandle.CombineDependencies(treeUpdate.mergeTouchingBrushVertices2JobHandle,
                                               JobHandle.CombineDependencies(treeUpdate.findAllIndirectIntersectionsJobHandle,
-                                                                            treeUpdate.updateBrushCategorizationTablesJobHandle,//*
+                                                                            treeUpdate.updateBrushCategorizationTablesJobHandle,
                                                                             treeUpdate.streamDependencyHandle));
 
                         // Perform CSG

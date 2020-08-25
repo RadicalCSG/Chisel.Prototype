@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -182,8 +183,7 @@ namespace Chisel.Core
             if (!renderMaterial)
                 return null;
             var instanceID = renderMaterial.GetInstanceID();
-            RenderMaterialInstance instance;
-            if (!instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToRenderMaterialLookup.TryGetValue(instanceID, out var instance))
             {
                 instance = new RenderMaterialInstance(renderMaterial);
                 instanceIdToRenderMaterialLookup[instanceID] = instance;
@@ -195,11 +195,10 @@ namespace Chisel.Core
 
         static PhysicsMaterialInstance IncRefCount(PhysicMaterial physicsMaterial)
         {
-            if (!physicsMaterial)
+            if (physicsMaterial == null)
                 return null;
             var instanceID = physicsMaterial.GetInstanceID();
-            PhysicsMaterialInstance instance;
-            if (!instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out instance))
+            if (!instanceIdToPhysicsMaterialLookup.TryGetValue(instanceID, out var instance))
             {
                 instance = new PhysicsMaterialInstance(physicsMaterial);
                 instanceIdToPhysicsMaterialLookup[instanceID] = instance;

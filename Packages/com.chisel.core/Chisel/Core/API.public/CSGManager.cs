@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Jobs;
 
 namespace Chisel.Core
@@ -24,6 +25,12 @@ namespace Chisel.Core
         /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>s. See the log for more information.</returns>
         /// <exception cref="System.ArgumentNullException">Thrown when the <paramref name="nodes"/> is null.</exception>  
         public static bool	Destroy	(CSGTreeNode[] nodes) { if (nodes == null) throw new ArgumentNullException("nodes"); return DestroyNodes(nodes); }
+
+        /// <summary>Destroy all <see cref="Chisel.Core.CSGTreeNode"/>s contained in <paramref name="nodes"/>.</summary>
+        /// <param name="nodes">The <see cref="Chisel.Core.CSGTreeNode"/>s to destroy</param>
+        /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>s. See the log for more information.</returns>
+        /// <exception cref="System.ArgumentNullException">Thrown when the <paramref name="nodes"/> is null.</exception>  
+        public static bool Destroy(HashSet<CSGTreeNode> nodes) { if (nodes == null) throw new ArgumentNullException("nodes"); return DestroyNodes(nodes); }
 
         // TODO: add description
         public static bool	Destroy(int userID) { return DestroyAllNodesWithUserID(userID); }

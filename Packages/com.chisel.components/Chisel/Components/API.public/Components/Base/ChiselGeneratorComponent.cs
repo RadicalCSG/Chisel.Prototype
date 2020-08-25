@@ -449,9 +449,14 @@ namespace Chisel.Components
                 childNodes.Add(TopNode);
         }
 
-        public override ChiselBrushContainerAsset[] GetUsedGeneratedBrushes()
+        public override bool GetUsedGeneratedBrushes(List<ChiselBrushContainerAsset> usedBrushes)
         {
-            return new ChiselBrushContainerAsset[] { brushContainerAsset };
+            if (brushContainerAsset == null ||
+                brushContainerAsset.BrushMeshes == null ||
+                brushContainerAsset.BrushMeshes.Length == 0)
+                return false;
+            usedBrushes.Add(brushContainerAsset);
+            return true;
         }
 
         // TODO: clean this up

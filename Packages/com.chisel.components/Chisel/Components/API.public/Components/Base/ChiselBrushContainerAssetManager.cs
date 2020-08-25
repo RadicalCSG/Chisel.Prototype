@@ -82,8 +82,8 @@ namespace Chisel.Components
             sRemoveChiselBrushMaterial.Clear();
         }
 
-
-        static readonly HashSet<ChiselBrushContainerAsset> s_UsedContainers = new HashSet<ChiselBrushContainerAsset>();
+        static readonly List<ChiselBrushContainerAsset>     s_NodeBrushes       = new List<ChiselBrushContainerAsset>();
+        static readonly HashSet<ChiselBrushContainerAsset>  s_UsedContainers    = new HashSet<ChiselBrushContainerAsset>();
         public static void Reset()
         {
             Clear();
@@ -91,10 +91,10 @@ namespace Chisel.Components
             var chiselNodes     = Resources.FindObjectsOfTypeAll<ChiselNode>();
             foreach (var chiselNode in chiselNodes)
             {
-                var usedAssets = chiselNode.GetUsedGeneratedBrushes();
-                if (usedAssets == null)
+                s_NodeBrushes.Clear();
+                if (!chiselNode.GetUsedGeneratedBrushes(s_NodeBrushes))
                     continue;
-                foreach(var asset in usedAssets)
+                foreach(var asset in s_NodeBrushes)
                     s_UsedContainers.Add(asset);
             }
             var brushContainerAssets = Resources.FindObjectsOfTypeAll<ChiselBrushContainerAsset>();

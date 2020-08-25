@@ -70,12 +70,20 @@ namespace Chisel.Components
 
         internal void CreateInstances()
         {
-            DestroyInstances();
-            if (Empty) return;
+            if (Empty)
+            {
+                DestroyInstances();
+                return;
+            }
 
             if (instances == null ||
                 instances.Length != brushContainer.brushMeshes.Length)
+            {
+                DestroyInstances();
                 instances = new BrushMeshInstance[brushContainer.brushMeshes.Length];
+                for (int i = 0; i < brushContainer.brushMeshes.Length; i++)
+                    instances[i] = BrushMeshInstance.InvalidInstance;
+            }
 
             var userID = GetInstanceID();
             for (int i = 0; i < instances.Length; i++)
@@ -85,10 +93,15 @@ namespace Chisel.Components
                     !brushMesh.Validate(logErrors: true))
                 {
                     brushMesh.Clear();
-                    instances[i] = BrushMeshInstance.InvalidInstance;
                 } else
-                { 
-                    instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+                {
+                    if (instances[i] == BrushMeshInstance.InvalidInstance)
+                    {
+                        instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+                    } else
+                    {
+                        instances[i].Set(brushMesh, false);
+                    }
                 }
             }
         }

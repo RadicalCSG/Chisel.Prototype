@@ -154,15 +154,9 @@ namespace Chisel.Core
                 requiredTemporaryBullShitByDOTS = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
             requiredTemporaryBullShitByDOTS.Clear();
 
-            int lastIndex = 0;
-            for (int i=0;i< allTreeBrushIndexOrders.Length;i++)
-            {
-                lastIndex = math.max(lastIndex, allTreeBrushIndexOrders[i].nodeIndex);
-            }
 
-
-            if (!foundBrushes.IsCreated || foundBrushes.Length < lastIndex)
-                foundBrushes = new NativeBitArray(lastIndex, Allocator.Temp);
+            if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
+                foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
             foundBrushes.Clear();
 
             //*
@@ -177,7 +171,7 @@ namespace Chisel.Core
                 if (!foundBrushes.IsSet(indexOrder.nodeOrder))
                 {
                     requiredTemporaryBullShitByDOTS.AddNoResize(indexOrder);
-                    foundBrushes.Set(indexOrder.nodeIndex, true);
+                    foundBrushes.Set(indexOrder.nodeOrder, true);
                 }
             }
             requiredTemporaryBullShitByDOTS.Sort(new IntersectionUtility.IndexOrderComparer());

@@ -6,6 +6,7 @@ using System;
 using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
 using ReflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage;
 using UnityEngine.Rendering;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {

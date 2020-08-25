@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Chisel;
 using Chisel.Core;
 using Chisel.Components;
+using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
@@ -70,6 +71,7 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
+            Profiler.BeginSample("OnInspectorGUI");
             base.OnInspectorGUI();
             try
             {
@@ -118,6 +120,10 @@ namespace Chisel.Editors
             }
             catch (ExitGUIException) { }
             catch (Exception ex) { Debug.LogException(ex); }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -754,10 +756,10 @@ namespace Chisel.Core
             if (children == null)
                 return;
 
-            HashSet<Int32> passed = new HashSet<Int32>(); 
-            passed.Add(parentNodeID);
+            foundNodes.Clear();
+            foundNodes.Add(parentNodeID);
 
-            SetChildrenTree(parentNodeID, treeNodeID, passed);
+            SetChildrenTree(parentNodeID, treeNodeID, foundNodes);
         }
 
         // Note: assumes both newParentNodeID and childNodeID are VALID
@@ -973,6 +975,7 @@ namespace Chisel.Core
                 return false;
             if (IsAncestor(nodeID, childNodeID))
                 return false;
+
             var childNode		= nodeHierarchies[childNodeID - 1];
             var oldParentNodeID = childNode.parentNodeID;
             var oldTreeNodeID	= childNode.treeNodeID;
@@ -1156,7 +1159,8 @@ namespace Chisel.Core
             return true;
         }
 
-        
+        static readonly HashSet<int> foundNodes = new HashSet<int>();
+
         internal static bool SetChildNodes(Int32 nodeID, List<CSGTreeNode> children)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return false;
@@ -1167,7 +1171,7 @@ namespace Chisel.Core
             if (children.Count == 0)
                 return true;
 
-            var foundNodes = new HashSet<int>();
+            foundNodes.Clear();
             for (int i = 0; i < children.Count; i++)
             {
                 if (nodeID == children[i].NodeID)
@@ -1178,6 +1182,7 @@ namespace Chisel.Core
                     return false;
                 }
             }
+            foundNodes.Clear();
             
             for (int i = 0; i < children.Count; i++)
             {
@@ -1297,17 +1302,36 @@ namespace Chisel.Core
             return found;
         }
 
+        static readonly HashSet<int> destroyed = new HashSet<int>();
+
         internal static bool DestroyNodes(CSGTreeNode[] nodeIDs)
         {
             if (nodeIDs == null)
                 return false;
 
-            var destroyed = new HashSet<int>();
-
+            destroyed.Clear();
             bool fail = false;
             for (int i = 0; i < nodeIDs.Length; i++)
             {
                 var nodeID = nodeIDs[i].nodeID;
+                if (!destroyed.Add(nodeID))
+                    continue;
+                if (!DestroyNode(nodeID))
+                    fail = true;
+            }
+            return !fail;
+        }
+
+        internal static bool DestroyNodes(HashSet<CSGTreeNode> nodeIDs)
+        {
+            if (nodeIDs == null)
+                return false;
+
+            destroyed.Clear();
+            bool fail = false;
+            foreach(var item in nodeIDs)
+            {
+                var nodeID = item.nodeID;
                 if (!destroyed.Add(nodeID))
                     continue;
                 if (!DestroyNode(nodeID))

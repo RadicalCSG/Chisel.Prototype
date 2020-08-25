@@ -3,6 +3,7 @@ using System.Collections;
 using Chisel.Core;
 using System.Collections.Generic;
 using System;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -85,7 +86,7 @@ namespace Chisel.Components
                 Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} that isn't properly initialized", this);
                 return;
             }
-            if (!Node.SetChildren(childNodes.ToArray()))
+            if (!Node.SetChildren(childNodes))
                 Debug.LogError("Failed to assign list of children to tree node");
         }
 

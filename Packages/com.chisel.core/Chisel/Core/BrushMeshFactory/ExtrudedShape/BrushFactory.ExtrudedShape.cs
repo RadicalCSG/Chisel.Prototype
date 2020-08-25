@@ -43,11 +43,9 @@ namespace Chisel.Core
             ref readonly var shape               = ref definition.shape;
             int              curveSegments       = definition.curveSegments;
 
-            Profiler.BeginSample("GetPathVertices");
             shapeVertices       .Clear();
             shapeSegmentIndices .Clear();
             GetPathVertices(shape, curveSegments, shapeVertices, shapeSegmentIndices);
-            Profiler.EndSample();
 
             Profiler.BeginSample("ConvexPartition");
             Vector2[][]  polygonVerticesArray;
@@ -131,7 +129,6 @@ namespace Chisel.Core
 
                         if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
 
-                        Profiler.BeginSample("GetExtrudedVertices");
                         float3[] vertices;
                         BrushMesh brushMesh;
                         if (brushMeshIndex >= brushMeshCount)
@@ -147,12 +144,9 @@ namespace Chisel.Core
                             if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, ref vertices))
                                 continue;
                         }
-                        Profiler.EndSample();
 
-                        Profiler.BeginSample("CreateExtrudedSubMesh");
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, definition.surfaceDefinition);
                         brushMeshesList.Add(brushMesh);
-                        Profiler.EndSample();
                         brushMeshIndex++;
                     }
                 }
@@ -219,7 +213,7 @@ namespace Chisel.Core
             var shapeSegments = shapeVertices.Length;
             var vertexCount = shapeSegments * pathSegments;
             if (vertices == null ||
-                vertices.Length == vertexCount)
+                vertices.Length != vertexCount)
                 vertices = new float3[vertexCount];
 
             for (int s = 0; s < shapeSegments; s++)

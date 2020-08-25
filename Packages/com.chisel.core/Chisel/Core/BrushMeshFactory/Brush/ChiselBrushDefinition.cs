@@ -10,9 +10,11 @@ namespace Chisel.Core
     public class ChiselBrushDefinition : IChiselGenerator
     {
         const int kLatestVersion = 1;
+        [HideInInspector]
         [SerializeField] int version = 0;
         
         // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
+        [HideInInspector]
         public BrushMesh                brushOutline;
 
         [NamedItems(overflow = "Surface {0}")]
