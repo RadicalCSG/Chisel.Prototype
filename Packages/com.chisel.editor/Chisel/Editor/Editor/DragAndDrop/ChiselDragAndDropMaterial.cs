@@ -51,7 +51,7 @@ namespace Chisel.Editors
             prevBrushContainerAssets = null;
         }
 
-        void ApplyMaterialToSurface(ChiselBrushContainerAsset[] brushContainerAssets, ChiselBrushMaterial[] surface)
+        void ApplyMaterialToSurface(ChiselBrushContainerAsset[] destination, ChiselBrushMaterial[] surface)
         {
             if (surface == null)
                 return;
@@ -68,7 +68,7 @@ namespace Chisel.Editors
                 prevBrushMaterials[i]  = surface[i];
                 surface[i].RenderMaterial = dragMaterial;
             }
-            prevBrushContainerAssets = brushContainerAssets;
+            prevBrushContainerAssets = destination;
         }
 
         static bool Equals(ChiselBrushMaterial[] surfacesA, ChiselBrushMaterial[] surfacesB)
@@ -114,14 +114,14 @@ namespace Chisel.Editors
             return surfaceHashSet.ToArray();
         }
 
-        static List<ChiselBrushContainerAsset> brushContainerAssets = new List<ChiselBrushContainerAsset>();
+        static readonly List<ChiselBrushContainerAsset> brushContainerAssets = new List<ChiselBrushContainerAsset>();
 
         public void UpdateDrag()
         {
             var selectAllSurfaces = UnityEngine.Event.current.shift;
             ChiselBrushMaterial[]	    surfaces;
             brushContainerAssets.Clear();
-            ChiselClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, out surfaces, ref brushContainerAssets, selectAllSurfaces);
+            ChiselClickSelectionManager.FindBrushMaterials(Event.current.mousePosition, out surfaces, brushContainerAssets, selectAllSurfaces);
             if (!Equals(prevBrushMaterials, surfaces))
             {
                 UndoPrevSurface();

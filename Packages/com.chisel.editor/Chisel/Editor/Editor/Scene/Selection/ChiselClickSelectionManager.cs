@@ -379,10 +379,10 @@ namespace Chisel.Editors
             return GetPlaneIntersection(mousePosition);
         }
 
-        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, ref List<ChiselBrushContainerAsset> brushContainerAssets, bool selectAllSurfaces)
+        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, List<ChiselBrushContainerAsset> brushContainerAssets, bool selectAllSurfaces)
         {
             brushMaterials = null;
-            brushContainerAssets = null;
+            brushContainerAssets.Clear();
             try
             {
                 ChiselIntersection intersection;
