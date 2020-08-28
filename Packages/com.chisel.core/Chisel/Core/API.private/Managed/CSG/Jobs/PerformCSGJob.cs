@@ -901,7 +901,27 @@ namespace Chisel.Core
                 intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(surfaceInfoCount, Allocator.Temp);
             }
 
-            int intersectionLoopCount = intersectionSurfaceInfos.Length + (routingLookupsLength * surfaceCount);
+
+            int maxIndex = intersectionSurfaceInfos.Length + (surfaceCount * routingLookupsLength);
+            for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
+            {
+                var surfaceInfo = intersectionSurfaceInfos[i];
+                int brushNodeIndex1 = surfaceInfo.brushIndexOrder.nodeIndex;/**/
+
+                // check if brush does not exist in routing table (will not have any effect)
+                if (brushNodeIndex1 >= nodeIndexToTableIndex.Length)
+                    continue;
+
+                var routingTableIndex = nodeIndexToTableIndex[brushNodeIndex1];
+                if (routingTableIndex == -1)
+                    continue;
+
+                var surfaceIndex = surfaceInfo.basePlaneIndex;
+                maxIndex = math.max(maxIndex, routingTableIndex + (surfaceIndex * routingLookupsLength));
+            }
+
+
+            int intersectionLoopCount = maxIndex + 1;
             if (!intersectionLoops.IsCreated || intersectionLoops.Capacity < intersectionLoopCount)
             {
                 if (intersectionLoops.IsCreated) intersectionLoops.Dispose();

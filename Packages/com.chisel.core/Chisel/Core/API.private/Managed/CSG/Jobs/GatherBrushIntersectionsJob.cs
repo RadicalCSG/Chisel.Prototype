@@ -12,7 +12,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct GatherBrushIntersectionsJob : IJob
+    struct GatherBrushIntersectionPairsJob : IJob
     {
         // Read / Write (Sort)
         [NoAlias] public NativeArray<BrushPair>         brushBrushIntersections;

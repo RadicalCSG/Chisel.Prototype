@@ -88,6 +88,8 @@ namespace Chisel.Components
         {
 #if UNITY_EDITOR
             {
+                if (brushContainerAsset == null)
+                    return;
                 if (brushContainerAsset.owner == null)
                 {
                     brushContainerAsset.owner = this;

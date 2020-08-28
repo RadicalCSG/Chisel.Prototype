@@ -705,6 +705,8 @@ namespace Chisel.Components
             for (int s = 0; s < SceneManager.sceneCount; s++)
             {
                 var scene = SceneManager.GetSceneAt(s);
+                if (!scene.isLoaded)
+                    continue;
                 rootObjects.Clear();
                 scene.GetRootGameObjects(rootObjects);
                 for (int r = 0; r < rootObjects.Count; r++)

@@ -27,34 +27,34 @@ namespace Chisel.Core
         [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>        treeSpaceVerticesArray;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] HashedVertices hashedVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices mergeVertices;
 
         public void Execute(int b)
         {
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
-            var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
-            if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
-                return;
             var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
             if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
+            var treeSpaceVerticesBlob = treeSpaceVerticesArray[brushIndexOrder.nodeOrder];
+            if (treeSpaceVerticesBlob == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                return;
             ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
 
-            if (!hashedVertices.IsCreated)
+            if (!mergeVertices.IsCreated)
             {
-                hashedVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
+                mergeVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
             } else
             {
-                if (hashedVertices.Capacity < vertices.Length)
+                if (mergeVertices.Capacity < vertices.Length)
                 {
-                    hashedVertices.Dispose();
-                    hashedVertices = new HashedVertices(vertices.Length, Allocator.Temp);
+                    mergeVertices.Dispose();
+                    mergeVertices = new HashedVertices(vertices.Length, Allocator.Temp);
                 } else
-                    hashedVertices.Clear();
+                    mergeVertices.Clear();
             }
-            hashedVertices.AddUniqueVertices(ref vertices);
+            mergeVertices.AddUniqueVertices(ref vertices);
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
@@ -67,13 +67,13 @@ namespace Chisel.Core
                 // In order, goes through the previous brushes in the tree, 
                 // and snaps any vertex that is almost the same in the next brush, with that vertex
                 ref var intersectingVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
-                hashedVertices.ReplaceIfExists(ref intersectingVertices);
+                mergeVertices.ReplaceIfExists(ref intersectingVertices);
             }
 
 
             for (int i = 0; i < vertices.Length; i++)
             {
-                vertices[i] = hashedVertices.GetUniqueVertex(vertices[i]);
+                vertices[i] = mergeVertices.GetUniqueVertex(vertices[i]);
             }
 
             //treeSpaceVerticesLookup.TryAdd(brushNodeIndex, treeSpaceVerticesBlob);
@@ -81,7 +81,7 @@ namespace Chisel.Core
     }
     
     [BurstCompile(CompileSynchronously = true)]
-    struct MergeTouchingBrushVertices2Job : IJobParallelFor
+    struct MergeTouchingBrushVerticesIndirectJob : IJobParallelFor
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
@@ -99,11 +99,11 @@ namespace Chisel.Core
             var brushIndexOrder = treeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
-            var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
             var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
             if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
             
+            var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
             if (!mergeVertices.IsCreated)
             {
                 mergeVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);

@@ -508,7 +508,7 @@ namespace Chisel.Core
         }
 
         // Ensure we have at least this many extra vertices in capacity
-        public void Reserve(int extraIndices)
+        public void ReserveAdditionalVertices(int extraIndices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);

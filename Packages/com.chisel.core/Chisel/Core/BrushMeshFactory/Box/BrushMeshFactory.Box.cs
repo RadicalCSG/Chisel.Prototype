@@ -62,7 +62,8 @@ namespace Chisel.Core
             BrushMeshFactory.CreateBoxVertices(min, max, ref brushMesh.vertices);
 
             CreateBoxPolygons(in surfaceDefinition, ref brushMesh.polygons);
-            if (brushMesh.halfEdges.Length == boxHalfEdges.Length)
+            if (brushMesh.halfEdges != null &&
+                brushMesh.halfEdges.Length == boxHalfEdges.Length)
             {
                 boxHalfEdges.CopyTo(brushMesh.halfEdges, 0);
             } else
