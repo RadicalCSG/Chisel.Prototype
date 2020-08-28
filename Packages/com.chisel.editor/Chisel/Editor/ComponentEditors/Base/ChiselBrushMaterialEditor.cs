@@ -2,6 +2,7 @@
 using UnityEditor;
 using System;
 using Chisel.Core;
+using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
@@ -69,6 +70,7 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
+            Profiler.BeginSample("OnInspectorGUI");
             try
             {
                 const float spacing = 2;
@@ -136,6 +138,7 @@ namespace Chisel.Editors
             }
             catch (ExitGUIException) { }
             catch (Exception ex) { Debug.LogException(ex); }
+            Profiler.EndSample();
         }
 
 

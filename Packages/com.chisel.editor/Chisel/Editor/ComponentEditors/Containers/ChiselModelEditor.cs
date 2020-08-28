@@ -7,6 +7,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace Chisel.Editors
 {
@@ -1057,86 +1058,94 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
-            CheckForTransformationChanges(serializedObject);
+            Profiler.BeginSample("OnInspectorGUI");
+            try
+            { 
+                CheckForTransformationChanges(serializedObject);
             
-            var oldShowGenerationSettings   = showGenerationSettings;
-            var oldShowColliderSettings     = showColliderSettings;
+                var oldShowGenerationSettings   = showGenerationSettings;
+                var oldShowColliderSettings     = showColliderSettings;
 
-            if (gameObjectsSerializedObject != null) gameObjectsSerializedObject.Update();
-            if (serializedObject != null) serializedObject.Update();
+                if (gameObjectsSerializedObject != null) gameObjectsSerializedObject.Update();
+                if (serializedObject != null) serializedObject.Update();
 
-            if (IsDefaultModel())
-                EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
+                if (IsDefaultModel())
+                    EditorGUILayout.HelpBox(DefaultModelContents.text, MessageType.Warning);
 
-            bool hasNoChildren = false;
-            foreach (var target in serializedObject.targetObjects)
-            {
-                var model = target as ChiselModel;
-                if (!model)
-                    continue;
-                if (model.transform.childCount == 0)
+                bool hasNoChildren = false;
+                foreach (var target in serializedObject.targetObjects)
                 {
-                    hasNoChildren = true;
-                }
-            }
-            if (hasNoChildren)
-            {
-                EditorGUILayout.HelpBox(kModelHasNoChildren, MessageType.Warning, true);
-            }
-
-            EditorGUI.BeginChangeCheck();
-            {
-                showGenerationSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showGenerationSettings, GenerationSettingsContent);
-                if (showGenerationSettings)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(createColliderComponentsProp, CreateColliderComponentsContents);
-                    EditorGUILayout.PropertyField(createRenderComponentsProp, CreateRenderComponentsContents);
-
-                    EditorGUI.BeginDisabledGroup(!createRenderComponentsProp.boolValue);
+                    var model = target as ChiselModel;
+                    if (!model)
+                        continue;
+                    if (model.transform.childCount == 0)
                     {
-                        RenderGenerationSettingsGUI();
+                        hasNoChildren = true;
                     }
-                    EditorGUI.EndDisabledGroup();
-                    EditorGUI.indentLevel--;
                 }
-                EditorGUILayout.EndFoldoutHeaderGroup();
-
-                if (createRenderComponentsProp.boolValue)
+                if (hasNoChildren)
                 {
-                    MeshRendererLightingGUI();
+                    EditorGUILayout.HelpBox(kModelHasNoChildren, MessageType.Warning, true);
                 }
 
-                if (createColliderComponentsProp.boolValue)
+                EditorGUI.BeginChangeCheck();
                 {
-                    showColliderSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showColliderSettings, ColliderSettingsContent);
-                    if (showColliderSettings)
+                    showGenerationSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showGenerationSettings, GenerationSettingsContent);
+                    if (showGenerationSettings)
                     {
                         EditorGUI.indentLevel++;
-                        EditorGUILayout.PropertyField(convexProp, ConvextContents);
-                        using (new EditorGUI.DisabledScope(!convexProp.boolValue))
+                        EditorGUILayout.PropertyField(createColliderComponentsProp, CreateColliderComponentsContents);
+                        EditorGUILayout.PropertyField(createRenderComponentsProp, CreateRenderComponentsContents);
+
+                        EditorGUI.BeginDisabledGroup(!createRenderComponentsProp.boolValue);
                         {
-                            EditorGUILayout.PropertyField(isTriggerProp, IsTriggerContents);
+                            RenderGenerationSettingsGUI();
                         }
-                        {
-                            ChiselEditorUtility.EnumFlagsField(CookingOptionsContents, cookingOptionsProp, typeof(MeshColliderCookingOptions), EditorStyles.popup);
-                        }
+                        EditorGUI.EndDisabledGroup();
                         EditorGUI.indentLevel--;
                     }
                     EditorGUILayout.EndFoldoutHeaderGroup();
+
+                    if (createRenderComponentsProp.boolValue)
+                    {
+                        MeshRendererLightingGUI();
+                    }
+
+                    if (createColliderComponentsProp.boolValue)
+                    {
+                        showColliderSettings = EditorGUILayout.BeginFoldoutHeaderGroup(showColliderSettings, ColliderSettingsContent);
+                        if (showColliderSettings)
+                        {
+                            EditorGUI.indentLevel++;
+                            EditorGUILayout.PropertyField(convexProp, ConvextContents);
+                            using (new EditorGUI.DisabledScope(!convexProp.boolValue))
+                            {
+                                EditorGUILayout.PropertyField(isTriggerProp, IsTriggerContents);
+                            }
+                            {
+                                ChiselEditorUtility.EnumFlagsField(CookingOptionsContents, cookingOptionsProp, typeof(MeshColliderCookingOptions), EditorStyles.popup);
+                            }
+                            EditorGUI.indentLevel--;
+                        }
+                        EditorGUILayout.EndFoldoutHeaderGroup();
+                    }
                 }
-            }
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (gameObjectsSerializedObject != null)
-                    gameObjectsSerializedObject.ApplyModifiedProperties();
-                if (serializedObject != null)
-                    serializedObject.ApplyModifiedProperties();
-                ForceUpdateNodeContents(serializedObject); 
-            }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (gameObjectsSerializedObject != null)
+                        gameObjectsSerializedObject.ApplyModifiedProperties();
+                    if (serializedObject != null)
+                        serializedObject.ApplyModifiedProperties();
+                    ForceUpdateNodeContents(serializedObject); 
+                }
             
-            if (showGenerationSettings  != oldShowGenerationSettings) SessionState.SetBool(kDisplayGenerationSettingsKey, showGenerationSettings);
-            if (showColliderSettings    != oldShowColliderSettings  ) SessionState.SetBool(kDisplayColliderSettingsKey, showColliderSettings);
+                if (showGenerationSettings  != oldShowGenerationSettings) SessionState.SetBool(kDisplayGenerationSettingsKey, showGenerationSettings);
+                if (showColliderSettings    != oldShowColliderSettings  ) SessionState.SetBool(kDisplayColliderSettingsKey, showColliderSettings);
+            }
+            finally
+            { 
+                Profiler.EndSample();
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Assertions.Must;
+using UnityEngine;
 
 namespace Chisel.Core
 {
@@ -412,11 +413,12 @@ namespace Chisel.Core
         //[MethodImpl(MethodImplOptions.NoInlining)]
         void GenerateLoop(IndexOrder                        brushIndexOrder0,
                           IndexOrder                        brushIndexOrder1,
+                          bool                              invertedTransform,
                           ref BlobArray<SurfaceInfo>        surfaceInfos,
-                          ref BrushTreeSpacePlanes          brushTreeSpacePlanes,
+                          ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
                           NativeArray<PlaneVertexIndexPair> foundIndices0,
                           ref int                           foundIndices0Length,
-                          ref HashedVertices                hashedVertices,
+                          ref HashedVertices                hashedTreeSpaceVertices,
                           NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
@@ -523,16 +525,18 @@ namespace Chisel.Core
             // For each segment, we now sort our vertices within each segment, 
             // making the assumption that they are convex
             //var sortedStack = stackalloc int2[maxLength * 2];
-            var vertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
+            var vertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
             for (int n = planeIndexOffsetsLength - 1; n >= 0; n--)
             {
                 var planeIndexOffset    = planeIndexOffsets[n];
                 var length              = planeIndexOffset.length;
                 var offset              = planeIndexOffset.offset;
                 var planeIndex          = planeIndexOffset.planeIndex;
-                    
+
+                float3 normal = brushTreeSpacePlanes0.treeSpacePlanes[planeIndex].xyz * (invertedTransform ? 1 : -1);
+
                 // TODO: use plane information instead
-                SortIndices(vertices, sortedStack, uniqueIndices, offset, length, brushTreeSpacePlanes.treeSpacePlanes[planeIndex].xyz);
+                SortIndices(vertices, sortedStack, uniqueIndices, offset, length, normal);
             }
 
             
@@ -545,7 +549,7 @@ namespace Chisel.Core
                 totalSize += (loopLength * UnsafeUtility.SizeOf<float3>()); 
             }
 
-            var srcVertices = hashedVertices;//.GetUnsafeReadOnlyPtr();
+            var srcVertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
             for (int j = 0; j < planeIndexOffsetsLength; j++)
             { 
                 var planeIndexLength    = planeIndexOffsets[j];
@@ -554,20 +558,20 @@ namespace Chisel.Core
                 var basePlaneIndex      = planeIndexLength.planeIndex;
                 var surfaceInfo         = surfaceInfos[basePlaneIndex];
 
-                var builder = new BlobBuilder(Allocator.Temp, totalSize);
-                ref var root = ref builder.ConstructRoot<BrushIntersectionLoop>();
+                var blobBuilder = new BlobBuilder(Allocator.Temp, totalSize);
+                ref var root = ref blobBuilder.ConstructRoot<BrushIntersectionLoop>();
 
                 root.indexOrder0 = brushIndexOrder0;
                 root.indexOrder1 = brushIndexOrder1;
                 root.surfaceInfo = surfaceInfo;
-                var dstVertices = builder.Allocate(ref root.loopVertices, loopLength);
+                var dstVertices = blobBuilder.Allocate(ref root.loopVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
                     dstVertices[d] = srcVertices[uniqueIndices[offset + d]];
 
-                outputSurfaces.AddNoResize(builder.CreateBlobAssetReference<BrushIntersectionLoop>(Allocator.TempJob));
+                outputSurfaces.AddNoResize(blobBuilder.CreateBlobAssetReference<BrushIntersectionLoop>(Allocator.TempJob));
             }
 
-            //builder.Dispose(); // Allocated with Temp, so don't need dispose
+            //blobBuilder.Dispose(); // Allocated with Temp, so don't need dispose
         }
 
         public void Execute(int index)
@@ -711,13 +715,20 @@ namespace Chisel.Core
             }
 
 
+            ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
+            ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
+
+
             if (foundIndices0Length >= 3)
             {
                 if (brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].IsCreated)
                 {
-                    ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
+                    var brushTransformations0 = intersection.brushes[0].nodeToTreeSpace;
+                    var invertedTransform = math.determinant(brushTransformations0) < 0;
+
                     GenerateLoop(brushIndexOrder0,
                                  brushIndexOrder1,
+                                 invertedTransform,
                                  ref intersection.brushes[0].surfaceInfos,
                                  ref brushTreeSpacePlanes0,
                                  foundIndices0, ref foundIndices0Length,
@@ -733,9 +744,12 @@ namespace Chisel.Core
             {
                 if (brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].IsCreated)
                 {
-                    ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
+                    var brushTransformations1 = intersection.brushes[1].nodeToTreeSpace;
+                    var invertedTransform = math.determinant(brushTransformations1) < 0;
+
                     GenerateLoop(brushIndexOrder1,
                                  brushIndexOrder0,
+                                 invertedTransform,
                                  ref intersection.brushes[1].surfaceInfos,
                                  ref brushTreeSpacePlanes1,
                                  foundIndices1, 

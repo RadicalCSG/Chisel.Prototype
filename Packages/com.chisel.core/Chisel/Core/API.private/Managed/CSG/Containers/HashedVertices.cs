@@ -23,6 +23,53 @@ namespace Chisel.Core
             return hashIndex;
         }
 
+        
+        public unsafe static float3 SnapToExistingVertex(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
+        {
+            var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
+            var offsets = stackalloc int3[]
+            {
+                new int3(-1, -1, -1), new int3(-1, -1,  0), new int3(-1, -1, +1),
+                new int3(-1,  0, -1), new int3(-1,  0,  0), new int3(-1,  0, +1),                
+                new int3(-1, +1, -1), new int3(-1, +1,  0), new int3(-1, +1, +1),
+
+                new int3( 0, -1, -1), new int3( 0, -1,  0), new int3( 0, -1, +1),
+                new int3( 0,  0, -1), new int3( 0,  0,  0), new int3( 0,  0, +1),                
+                new int3( 0, +1, -1), new int3( 0, +1,  0), new int3( 0, +1, +1),
+
+                new int3(+1, -1, -1), new int3(+1, -1,  0), new int3(+1, -1, +1),
+                new int3(+1,  0, -1), new int3(+1,  0,  0), new int3(+1,  0, +1),                
+                new int3(+1, +1, -1), new int3(+1, +1,  0), new int3(+1, +1, +1)
+            };
+
+            float3* verticesPtr = (float3*)vertices->Ptr;
+
+            ushort closestVertexIndex = ushort.MaxValue;
+            for (int i = 0; i < 3 * 3 * 3; i++)
+            {
+                var index = centerIndex + offsets[i];
+                var chainIndex = ((int)hashTable[GetHash(index)]) - 1;
+                {
+                    float closestDistance = CSGConstants.kSqrVertexEqualEpsilon;
+                    while (chainIndex != -1)
+                    {
+                        var nextChainIndex  = ((int)((ushort*)chainedIndices->Ptr)[chainIndex]) - 1;
+                        var sqrDistance     = math.lengthsq(verticesPtr[chainIndex] - vertex);
+                        if (sqrDistance < closestDistance)
+                        {
+                            closestVertexIndex = (ushort)chainIndex;
+                            closestDistance = sqrDistance;
+                        }
+                        chainIndex = nextChainIndex;
+                    }
+                }
+            }
+            if (closestVertexIndex == ushort.MaxValue)
+                return vertex;
+            
+            return verticesPtr[closestVertexIndex];
+        }
+        
         public unsafe static void ReplaceIfExists(ushort* hashTable, UnsafeList* chainedIndices, UnsafeList* vertices, float3 vertex)
         {
             var centerIndex = new int3((int)(vertex.x / HashedVertices.kCellSize), (int)(vertex.y / HashedVertices.kCellSize), (int)(vertex.z / HashedVertices.kCellSize));
@@ -461,7 +508,7 @@ namespace Chisel.Core
         }
 
         // Ensure we have at least this many extra vertices in capacity
-        public void Reserve(int extraIndices)
+        public void ReserveAdditionalVertices(int extraIndices)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -556,7 +603,39 @@ namespace Chisel.Core
             }
         }
         
+        public unsafe void AddUniqueVertices(NativeListArray<float3>.NativeList uniqueVertices)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            // Add Unique vertex
+            for (int i = 0; i < uniqueVertices.Length; i++)
+            {
+                var vertex = uniqueVertices[i];
+                var centerIndex = new int3((int)(vertex.x / kCellSize), (int)(vertex.y / kCellSize), (int)(vertex.z / kCellSize));
+                var hashCode = HashedVerticesUtility.GetHash(centerIndex);
+                var prevChainIndex = ((ushort*)m_HashTable)[hashCode];
+                var newChainIndex = m_ChainedIndices->Length;
+                m_Vertices      ->AddNoResize(vertex);
+                m_ChainedIndices->AddNoResize((ushort)prevChainIndex);
+                ((ushort*)m_HashTable)[(int)hashCode] = (ushort)(newChainIndex + 1);
+            }
+        }
+        
         public unsafe void ReplaceIfExists(ref BlobArray<float3> uniqueVertices, float4x4 nodeToTreeSpaceMatrix)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            // Add Unique vertex
+            for (int i = 0; i < uniqueVertices.Length; i++)
+            {
+                var vertex = math.mul(nodeToTreeSpaceMatrix, new float4(uniqueVertices[i], 1)).xyz;
+                HashedVerticesUtility.ReplaceIfExists((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, vertex);
+            }
+        }
+
+        public unsafe void ReplaceIfExists(NativeListArray<float3>.NativeList uniqueVertices, float4x4 nodeToTreeSpaceMatrix)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
@@ -580,6 +659,27 @@ namespace Chisel.Core
                 var vertex = uniqueVertices[i];
                 HashedVerticesUtility.ReplaceIfExists((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, vertex);
             }
+        }
+
+        public unsafe void ReplaceIfExists(NativeListArray<float3>.NativeList uniqueVertices)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            // Add Unique vertex
+            for (int i = 0; i < uniqueVertices.Length; i++)
+            {
+                var vertex = uniqueVertices[i];
+                HashedVerticesUtility.ReplaceIfExists((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, vertex);
+            }
+        }
+
+        public unsafe float3 SnapToExistingVertex(float3 input)
+        {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+#endif
+            return HashedVerticesUtility.SnapToExistingVertex((ushort*)m_HashTable, m_ChainedIndices, m_Vertices, input);
         }
     }
 }

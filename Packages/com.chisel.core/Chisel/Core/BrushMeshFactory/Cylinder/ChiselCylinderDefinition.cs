@@ -10,6 +10,7 @@ using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -243,7 +244,15 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
+            Profiler.BeginSample("GenerateCylinder");
+            try
+            {
+                return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

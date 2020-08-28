@@ -155,17 +155,17 @@ namespace Chisel.Core
         }
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
-        public static Vector3[] GetConeFrustumVertices(ChiselCircleDefinition  definition, float topHeight, float rotation, int segments, ref Vector3[] vertices, bool inverse = false)
+        public static void GetConeFrustumVertices(ChiselCircleDefinition  definition, float topHeight, float rotation, int segments, ref float3[] vertices, bool inverse = false)
         {
             var rotate			= Quaternion.AngleAxis(rotation, Vector3.up);
-            var bottomAxisX		= rotate * Vector3.right   * definition.diameterX * 0.5f;
-            var bottomAxisZ		= rotate * Vector3.forward * definition.diameterZ * 0.5f;
-            var topY			= Vector3.up * topHeight;
-            var bottomY			= Vector3.up * definition.height;
+            var bottomAxisX		= (float3)(rotate * Vector3.right   * definition.diameterX * 0.5f);
+            var bottomAxisZ		= (float3)(rotate * Vector3.forward * definition.diameterZ * 0.5f);
+            var topY			= (float3)(Vector3.up * topHeight);
+            var bottomY			= (float3)(Vector3.up * definition.height);
 
             if (vertices == null ||
                 vertices.Length != segments + 1)
-                vertices = new Vector3[segments + 1];
+                vertices = new float3[segments + 1];
 
             float angleOffset = ((segments & 1) == 1) ? 0.0f : ((360.0f / segments) * 0.5f);
             
@@ -181,10 +181,43 @@ namespace Chisel.Core
                 var vi = inverse ? (segments - v) : (v + 1);
                 vertices[vi] = bottomVertex;
             }
-
-            return vertices;
         }
 
+        
+        public static void GetConicalFrustumVertices(ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, ref float3[] vertices)
+        {
+            if (top.height > bottom.height) { var temp = top; top = bottom; bottom = temp; }
+
+            var rotate		= Quaternion.AngleAxis(rotation, Vector3.up);
+            var topAxisX	= rotate * Vector3.right	* top.diameterX * 0.5f;
+            var topAxisZ	= rotate * Vector3.forward	* top.diameterZ * 0.5f;
+            var bottomAxisX = rotate * Vector3.right	* bottom.diameterX * 0.5f;
+            var bottomAxisZ = rotate * Vector3.forward	* bottom.diameterZ * 0.5f;
+            var topY		= Vector3.up * top.height;
+            var bottomY		= Vector3.up * bottom.height;
+
+            // TODO: handle situation where diameterX & diameterZ are 0 (only create one vertex)
+
+            if (vertices == null ||
+                vertices.Length != segments * 2)
+                vertices = new float3[segments * 2];
+
+            float angleOffset = ((segments & 1) == 1) ? 0.0f : ((360.0f / segments) * 0.5f);
+
+            for (int v = 0; v < segments; v++)
+            {
+                var r = (((v * 360.0f) / (float)segments) + angleOffset) * Mathf.Deg2Rad;
+                var s = Mathf.Sin(r);
+                var c = Mathf.Cos(r);
+
+                var topVertex = (topAxisX * c) + (topAxisZ * s);
+                var bottomVertex = (bottomAxisX * c) + (bottomAxisZ * s);
+                topVertex += topY;
+                bottomVertex += bottomY;
+                vertices[v] = topVertex;
+                vertices[v + segments] = bottomVertex;
+            }
+        }
 
         public static Vector3[] GetConicalFrustumVertices(ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, ref Vector3[] vertices)
         {
@@ -243,36 +276,32 @@ namespace Chisel.Core
 
             if (top.diameterX == 0)
             {
-                var vertices = new Vector3[segments + 1];
-                GetConeFrustumVertices(bottom, top.height, rotation, segments, ref vertices, inverse: false);
+                GetConeFrustumVertices(bottom, top.height, rotation, segments, ref brushMesh.vertices, inverse: false);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(ref brushMesh, segments, null, vertices, in surfaceDefinition);
+                CreateConeSubMesh(ref brushMesh, segments, null, brushMesh.vertices, in surfaceDefinition);
             } else
             if (bottom.diameterX == 0)
             {
-                var vertices = new Vector3[segments + 1];
-                GetConeFrustumVertices(top, bottom.height, rotation, segments, ref vertices, inverse: true);
+                GetConeFrustumVertices(top, bottom.height, rotation, segments, ref brushMesh.vertices, inverse: true);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(ref brushMesh, segments, null, vertices, in surfaceDefinition);
+                CreateConeSubMesh(ref brushMesh, segments, null, brushMesh.vertices, in surfaceDefinition);
             } else
             {
-
                 if (top.height > bottom.height)
                 { var temp = top; top = bottom; bottom = temp; }
 
-                var vertices = new Vector3[segments * 2];
-                GetConicalFrustumVertices(bottom, top, rotation, segments, ref vertices);
+                GetConicalFrustumVertices(bottom, top, rotation, segments, ref brushMesh.vertices);
             
                 // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateExtrudedSubMesh(ref brushMesh, segments, null, 0, 1, vertices, in surfaceDefinition);
+                CreateExtrudedSubMesh(ref brushMesh, segments, null, 0, 1, brushMesh.vertices, in surfaceDefinition);
             }
 
             return true;
         }
 
-        static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
+        static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, float3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
         {
             ref var chiselSurface0 = ref surfaceDefinition.surfaces[0];
 
@@ -327,9 +356,7 @@ namespace Chisel.Core
 
             brushMesh.polygons	= polygons;
             brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices = new float3[vertices.Length];
-            for (int i = 0; i < vertices.Length; i++)
-                brushMesh.vertices[i] = vertices[i];
+            brushMesh.vertices  = vertices;
             if (!brushMesh.Validate(logErrors: true))
                 brushMesh.Clear();
         }

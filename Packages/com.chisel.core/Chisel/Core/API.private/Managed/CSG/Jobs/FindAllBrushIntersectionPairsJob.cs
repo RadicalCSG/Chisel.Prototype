@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct FindAllBrushIntersectionsJob : IJobParallelFor
+    struct FindAllBrushIntersectionPairsJob : IJobParallelFor
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
@@ -107,7 +107,7 @@ namespace Chisel.Core
 
 
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateUniqueIndicesArrayJob : IJob
+    struct FindUniqueIndirectBrushIntersectionsJob : IJob
     {
         // Read
         [NoAlias, ReadOnly] public NativeHashMap<IndexOrder, Empty> brushesThatNeedIndirectUpdateHashMap;
@@ -125,7 +125,7 @@ namespace Chisel.Core
 
     // TODO: make this a parallel job somehow
     [BurstCompile(CompileSynchronously = true)]
-    struct FindAllIndirectBrushIntersectionsJob : IJob// IJobParallelFor
+    struct FindAllIndirectBrushIntersectionPairsJob : IJob// IJobParallelFor
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          allTreeBrushIndexOrders;
@@ -133,37 +133,49 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
         [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                          brushTreeSpaceBounds;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          updateBrushIndexOrders;
-        
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                          rebuildTreeBrushIndexOrders;
+
         // Read/Write
-        [NoAlias] public NativeList<IndexOrder>                             allUpdateBrushIndexOrders;
+        [NoAlias, WriteOnly] public NativeList<IndexOrder>.ParallelWriter   allUpdateBrushIndexOrders;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter    brushBrushIntersections;
 
         // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction] NativeList<IndexOrder>    requiredTemporaryBullShitByDOTS;
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes1;
 
-        [NativeDisableContainerSafetyRestriction] NativeBitArray foundBrushes;
+        [NativeDisableContainerSafetyRestriction] NativeBitArray            foundBrushes;
 
         public void Execute()
         {
+            if (!requiredTemporaryBullShitByDOTS.IsCreated)
+                requiredTemporaryBullShitByDOTS = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
+            requiredTemporaryBullShitByDOTS.Clear();
+
+
             if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
                 foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
             foundBrushes.Clear();
 
-            // TODO: figure out a way to avoid needing this
-            for (int a = 0; a < updateBrushIndexOrders.Length; a++)
-                foundBrushes.Set(updateBrushIndexOrders[a].nodeOrder, true);
-
             //*
+            for (int i = 0; i < rebuildTreeBrushIndexOrders.Length; i++)
+            {
+                foundBrushes.Set(rebuildTreeBrushIndexOrders[i].nodeOrder, true);
+                requiredTemporaryBullShitByDOTS.AddNoResize(rebuildTreeBrushIndexOrders[i]);
+            }
             for (int i = 0; i < updateBrushIndexOrders.Length; i++)
             {
                 var indexOrder = updateBrushIndexOrders[i];
-                if (!allUpdateBrushIndexOrders.Contains(indexOrder))
-                    allUpdateBrushIndexOrders.Add(indexOrder);
+                if (!foundBrushes.IsSet(indexOrder.nodeOrder))
+                {
+                    requiredTemporaryBullShitByDOTS.AddNoResize(indexOrder);
+                    foundBrushes.Set(indexOrder.nodeOrder, true);
+                }
             }
-            allUpdateBrushIndexOrders.Sort(new IntersectionUtility.IndexOrderComparer());
+            requiredTemporaryBullShitByDOTS.Sort(new IntersectionUtility.IndexOrderComparer());
+            allUpdateBrushIndexOrders.AddRangeNoResize(requiredTemporaryBullShitByDOTS);
 
             for (int index1 = 0; index1 < updateBrushIndexOrders.Length; index1++)
             {
@@ -174,7 +186,7 @@ namespace Chisel.Core
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                     int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
                     if (brush0NodeOrder == brush1NodeOrder ||
-                        ChiselNativeListExtensions.Contains(allUpdateBrushIndexOrders, brush0IndexOrder))
+                        foundBrushes.IsSet(brush0IndexOrder.nodeOrder))
                         continue;
                     if (brush0NodeOrder > brush1NodeOrder)
                     {

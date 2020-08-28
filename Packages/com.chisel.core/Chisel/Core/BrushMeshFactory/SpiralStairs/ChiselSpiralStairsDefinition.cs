@@ -5,6 +5,7 @@ using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
 using UnitySceneExtensions;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -144,7 +145,15 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
+            Profiler.BeginSample("GenerateSpiralStairs");
+            try
+            {
+                return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

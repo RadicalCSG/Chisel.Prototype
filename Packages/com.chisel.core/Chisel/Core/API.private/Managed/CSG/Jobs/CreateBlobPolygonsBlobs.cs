@@ -30,13 +30,13 @@ namespace Chisel.Core
 
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedVertices;
+        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedTreeSpaceVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         edges;
         [NativeDisableContainerSafetyRestriction] NativeArray<ValidPolygon> validPolygons;
         [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         tempEdges;
 
 
-        static bool IsDegenerate(HashedVertices hashedVertices, NativeArray<Edge> edges, int edgeCount)
+        static bool IsDegenerate(HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, int edgeCount)
         {
             if (edgeCount < 3)
                 return true;
@@ -44,7 +44,7 @@ namespace Chisel.Core
             for (int i = 0; i < edgeCount; i++)
             {
                 var vertexIndex1 = edges[i].index1;
-                var vertex1 = hashedVertices[vertexIndex1];
+                var vertex1 = hashedTreeSpaceVertices[vertexIndex1];
                 for (int j = 0; j < edgeCount; j++)
                 {
                     if (i == j)
@@ -59,8 +59,8 @@ namespace Chisel.Core
                         vertexIndexA == vertexIndexB)
                         continue;
 
-                    var vertexA = hashedVertices[vertexIndexA];
-                    var vertexB = hashedVertices[vertexIndexB];
+                    var vertexA = hashedTreeSpaceVertices[vertexIndexA];
+                    var vertexB = hashedTreeSpaceVertices[vertexIndexB];
 
                     var distance = GeometryMath.SqrDistanceFromPointToLineSegment(vertex1, vertexA, vertexB);
                     if (distance <= CSGConstants.kSqrEdgeDistanceEpsilon)
@@ -87,7 +87,7 @@ namespace Chisel.Core
             }
         }
 
-        bool CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, ref BlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedVertices, NativeArray<Edge> edges, ref int edgeCount)
+        bool CopyPolygonToIndices(BlobAssetReference<BrushMeshBlob> mesh, ref BlobArray<float3> treeSpaceVertices, int polygonIndex, HashedVertices hashedTreeSpaceVertices, NativeArray<Edge> edges, ref int edgeCount)
         {
             ref var halfEdges   = ref mesh.Value.halfEdges;
             ref var polygon     = ref mesh.Value.polygons[polygonIndex];
@@ -102,7 +102,7 @@ namespace Chisel.Core
                 var vertexIndex     = halfEdges[e].vertexIndex;
                 var treeSpaceVertex = treeSpaceVertices[vertexIndex];
 
-                var newIndex = hashedVertices.AddNoResize(treeSpaceVertex);
+                var newIndex = hashedTreeSpaceVertices.AddNoResize(treeSpaceVertex);
                 if (e > firstEdge)
                 {
                     var edge = edges[edgeCount - 1];
@@ -121,7 +121,7 @@ namespace Chisel.Core
 
             RemoveDuplicates(edges, ref edgeCount);
 
-            if ((edgeCount == 0) || IsDegenerate(hashedVertices, edges, edgeCount))
+            if ((edgeCount == 0) || IsDegenerate(hashedTreeSpaceVertices, edges, edgeCount))
             {
                 edgeCount = 0;
                 return false;
@@ -152,17 +152,17 @@ namespace Chisel.Core
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
 
-            if (!hashedVertices.IsCreated)
+            if (!hashedTreeSpaceVertices.IsCreated)
             {
-                hashedVertices = new HashedVertices(math.max(treeSpaceVertices.Length, 1000), Allocator.Temp);
+                hashedTreeSpaceVertices = new HashedVertices(math.max(treeSpaceVertices.Length, 1000), Allocator.Temp);
             } else
             {
-                if (hashedVertices.Capacity < treeSpaceVertices.Length)
+                if (hashedTreeSpaceVertices.Capacity < treeSpaceVertices.Length)
                 {
-                    hashedVertices.Dispose();
-                    hashedVertices = new HashedVertices(treeSpaceVertices.Length, Allocator.Temp);
+                    hashedTreeSpaceVertices.Dispose();
+                    hashedTreeSpaceVertices = new HashedVertices(treeSpaceVertices.Length, Allocator.Temp);
                 } else
-                    hashedVertices.Clear();
+                    hashedTreeSpaceVertices.Clear();
             }
 
 
@@ -200,7 +200,7 @@ namespace Chisel.Core
                 }
 
                 //var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
-                CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedVertices, tempEdges, ref edgeCount);
+                CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedTreeSpaceVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon
                     continue;
 
@@ -240,7 +240,7 @@ namespace Chisel.Core
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
                 ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
-                hashedVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
+                hashedTreeSpaceVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
             }
 
 
@@ -250,7 +250,7 @@ namespace Chisel.Core
             var totalEdgeSize       = 16 + (totalEdgeCount    * UnsafeUtility.SizeOf<Edge>());
             var totalPolygonSize    = 16 + (totalSurfaceCount * UnsafeUtility.SizeOf<BasePolygon>());
             var totalSurfaceSize    = 16 + (totalSurfaceCount * UnsafeUtility.SizeOf<BaseSurface>());
-            var totalVertexSize     = 16 + (hashedVertices.Length * UnsafeUtility.SizeOf<float3>());
+            var totalVertexSize     = 16 + (hashedTreeSpaceVertices.Length * UnsafeUtility.SizeOf<float3>());
             var totalSize           = totalEdgeSize + totalPolygonSize + totalSurfaceSize + totalVertexSize;
 
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
@@ -258,7 +258,7 @@ namespace Chisel.Core
             var polygonArray = builder.Allocate(ref root.polygons, totalSurfaceCount);
             root.nodeIndex = nodeIndex;
             builder.Construct(ref root.edges,    edges   , totalEdgeCount);
-            builder.Construct(ref root.vertices, hashedVertices);
+            builder.Construct(ref root.vertices, hashedTreeSpaceVertices);
             var surfaceArray = builder.Allocate(ref root.surfaces, totalSurfaceCount);
             for (int i = 0; i < totalSurfaceCount; i++)
             {
@@ -286,7 +286,7 @@ namespace Chisel.Core
             basePolygons[nodeOrder] = basePolygonsBlob;
             //builder.Dispose();
 
-            //hashedVertices.Dispose();
+            //hashedTreeSpaceVertices.Dispose();
             //edges.Dispose();
         }
     }

@@ -84,30 +84,20 @@ namespace Chisel.Components
 
         //**Temporary hack to ensure that a BrushContainerAsset remains unique when duplicated so that we can control when we share a BrushContainerAsset**//
         #region HandleDuplication
-#if UNITY_EDITOR
-        [SerializeField, HideInInspector] protected ChiselGeneratorComponent selfLink;
-        [SerializeField, HideInInspector] protected int genGuidHashCode = 0;
-#endif
         void HandleDuplication()
         {
 #if UNITY_EDITOR
             {
-                if (selfLink == null) 
+                if (brushContainerAsset == null)
+                    return;
+                if (brushContainerAsset.owner == null)
                 {
-                    selfLink = this;
-                    genGuidHashCode = Guid.NewGuid().GetHashCode(); 
-                } else 
-                if (selfLink != this)
+                    brushContainerAsset.owner = this;
+                } else
+                if (brushContainerAsset.owner != this)
                 {
-                    // if our stored reference is the same as an existing generator and has the same guid, 
-                    // we can assume we've been duplicated
-                    if (selfLink && selfLink.genGuidHashCode == genGuidHashCode)
-                    {
-                        if (selfLink.brushContainerAsset == brushContainerAsset)
-                            brushContainerAsset = Instantiate(brushContainerAsset);
-                        genGuidHashCode = Guid.NewGuid().GetHashCode();
-                    }
-                    selfLink = this;
+                    brushContainerAsset = Instantiate(brushContainerAsset);
+                    brushContainerAsset.owner = this;
                 }
             }
 #endif
@@ -461,9 +451,14 @@ namespace Chisel.Components
                 childNodes.Add(TopNode);
         }
 
-        public override ChiselBrushContainerAsset[] GetUsedGeneratedBrushes()
+        public override bool GetUsedGeneratedBrushes(List<ChiselBrushContainerAsset> usedBrushes)
         {
-            return new ChiselBrushContainerAsset[] { brushContainerAsset };
+            if (brushContainerAsset == null ||
+                brushContainerAsset.BrushMeshes == null ||
+                brushContainerAsset.BrushMeshes.Length == 0)
+                return false;
+            usedBrushes.Add(brushContainerAsset);
+            return true;
         }
 
         // TODO: clean this up

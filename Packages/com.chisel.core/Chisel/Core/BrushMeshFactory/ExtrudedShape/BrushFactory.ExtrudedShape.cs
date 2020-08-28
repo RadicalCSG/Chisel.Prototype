@@ -11,6 +11,7 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -32,6 +33,9 @@ namespace Chisel.Core
             return direction;
         }
 
+        static List<Vector2>    shapeVertices           = new List<Vector2>();
+        static List<int>        shapeSegmentIndices     = new List<int>();
+        static List<BrushMesh>  brushMeshesList         = new List<BrushMesh>();
         public static bool GenerateExtrudedShape(ref ChiselBrushContainer brushContainer, ref ChiselExtrudedShapeDefinition definition)
         {
             definition.Validate();
@@ -39,10 +43,11 @@ namespace Chisel.Core
             ref readonly var shape               = ref definition.shape;
             int              curveSegments       = definition.curveSegments;
 
-            var shapeVertices       = new List<Vector2>();
-            var shapeSegmentIndices = new List<int>();
+            shapeVertices       .Clear();
+            shapeSegmentIndices .Clear();
             GetPathVertices(shape, curveSegments, shapeVertices, shapeSegmentIndices);
 
+            Profiler.BeginSample("ConvexPartition");
             Vector2[][]  polygonVerticesArray;
             int[][]     polygonIndicesArray;
             if (shapeVertices.Count == 3)
@@ -56,6 +61,7 @@ namespace Chisel.Core
                                                     out polygonIndicesArray))
                     return false;
             }
+            Profiler.EndSample();
 
             ref readonly var path                = ref definition.path;
 
@@ -71,7 +77,13 @@ namespace Chisel.Core
             // TODO:	make this work well with twisted rotations
             // TODO: make shape/path subdivisions be configurable / automatic
 
-            var brushMeshesList = new List<BrushMesh>();
+
+            var originalBrushMeshes = brushContainer.brushMeshes;
+            int brushMeshIndex = 0;
+            int brushMeshCount = (originalBrushMeshes == null) ? 0 : originalBrushMeshes.Length;
+
+            brushMeshesList.Clear();
+            Profiler.BeginSample("CreateExtrudedSubMeshes");
             for (int p = 0; p < polygonVerticesArray.Length; p++)
             {
                 var polygonVertices = polygonVerticesArray[p];
@@ -115,17 +127,31 @@ namespace Chisel.Core
                         if (invertDot == 0.0f)
                             continue;
 
-                        Vector3[] vertices;
                         if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
-                        if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, out vertices))
-                            continue;
 
-                        var brushMesh = new BrushMesh();
+                        float3[] vertices;
+                        BrushMesh brushMesh;
+                        if (brushMeshIndex >= brushMeshCount)
+                        {
+                            vertices = null;
+                            if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, ref vertices))
+                                continue;
+                            brushMesh = new BrushMesh();
+                        } else
+                        {
+                            brushMesh = originalBrushMeshes[brushMeshIndex];
+                            vertices = brushMesh.vertices;
+                            if (!GetExtrudedVertices(polygonVertices, matrix0, matrix1, ref vertices))
+                                continue;
+                        }
+
                         BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, shapeSegments, segmentIndices, 0, 1, vertices, definition.surfaceDefinition);
                         brushMeshesList.Add(brushMesh);
+                        brushMeshIndex++;
                     }
                 }
             }
+            Profiler.EndSample();
 
             brushContainer.CopyFrom(brushMeshesList);
             return true;
@@ -181,12 +207,14 @@ namespace Chisel.Core
             }
         }
 
-        static bool GetExtrudedVertices(Vector2[] shapeVertices, Matrix4x4 matrix0, Matrix4x4 matrix1, out Vector3[] vertices)
+        static bool GetExtrudedVertices(Vector2[] shapeVertices, Matrix4x4 matrix0, Matrix4x4 matrix1, ref float3[] vertices)
         {
             var pathSegments = 2;
             var shapeSegments = shapeVertices.Length;
             var vertexCount = shapeSegments * pathSegments;
-            vertices = new Vector3[vertexCount];
+            if (vertices == null ||
+                vertices.Length != vertexCount)
+                vertices = new float3[vertexCount];
 
             for (int s = 0; s < shapeSegments; s++)
             {

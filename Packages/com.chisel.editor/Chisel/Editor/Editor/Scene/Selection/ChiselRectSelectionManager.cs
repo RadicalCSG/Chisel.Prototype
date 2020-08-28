@@ -438,6 +438,8 @@ namespace Chisel.Editors
                     for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
                     {
                         var scene = SceneManager.GetSceneAt(sceneIndex);
+                        if (!scene.isLoaded)
+                            continue;
                         foreach (var gameObject in scene.GetRootGameObjects())
                         {
                             foreach (var transform in gameObject.GetComponentsInChildren<Transform>())

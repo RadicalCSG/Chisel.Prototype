@@ -3,6 +3,7 @@ using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
+using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
@@ -79,7 +80,15 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
+            Profiler.BeginSample("GenerateTorus");
+            try
+            {
+                return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

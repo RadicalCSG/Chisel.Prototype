@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.EditorTools;
+using UnityEngine.Profiling;
 #if !UNITY_2020_2_OR_NEWER
 using ToolManager = UnityEditor.EditorTools;
 #endif
@@ -121,11 +122,14 @@ namespace Chisel.Editors
 
         static void OnBeforeSceneGUI(SceneView sceneView)
         {
+            Profiler.BeginSample("OnBeforeSceneGUI");
             ChiselDrawModes.HandleDrawMode(sceneView);
+            Profiler.EndSample();
         }
 
         static void OnDuringSceneGUI(SceneView sceneView)
         {
+            Profiler.BeginSample("OnDuringSceneGUI");
             // Workaround to Unity stop redrawing sceneview after a second, which makes hovering over edge visualization stop working
             if (Event.current.type == EventType.MouseMove)
                 sceneView.Repaint();
@@ -152,6 +156,7 @@ namespace Chisel.Editors
             {
                 GUI.skin = prevSkin;
             }
+            Profiler.EndSample();
         }
 
         private static void OnEditModeChanged()//IChiselToolMode prevEditMode, IChiselToolMode newEditMode)

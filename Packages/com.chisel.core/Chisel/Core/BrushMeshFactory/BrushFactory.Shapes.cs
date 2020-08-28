@@ -336,6 +336,35 @@ namespace Chisel.Core
             };
         }
 
+
+        public static bool CreateBoxPolygons(in ChiselSurfaceDefinition surfaceDefinition, ref BrushMesh.Polygon[] polygons)
+        {
+            if (surfaceDefinition == null)
+                return false;
+
+            var surfaces = surfaceDefinition.surfaces;
+            if (surfaces == null)
+                return false;
+
+            if (polygons == null ||
+                polygons.Length != 6)
+                polygons = new BrushMesh.Polygon[6];
+
+            // left/right
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, surface = surfaces[0] };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, surface = surfaces[1] };
+                
+                // front/back
+            polygons[2] = new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, surface = surfaces[2] };
+            polygons[3] = new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, surface = surfaces[3] };
+                
+            // top/down
+            polygons[4] = new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, surface = surfaces[4] };
+            polygons[5] = new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, surface = surfaces[5] };
+
+            return true;                 
+        }
+
         public static BrushMesh.Polygon[] CreateBoxPolygons(in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)

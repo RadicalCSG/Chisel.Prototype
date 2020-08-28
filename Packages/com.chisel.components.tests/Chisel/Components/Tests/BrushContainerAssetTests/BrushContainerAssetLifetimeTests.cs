@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 using Chisel;
 using Chisel.Core;
 using Chisel.Components;
+using System.Collections.Generic;
 
 namespace BrushContainerAssetTests
 {
@@ -319,9 +320,10 @@ namespace BrushContainerAssetTests
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();
                 ChiselNodeHierarchyManager.Update();
-            
-                Assert.IsNotNull(brush.GetUsedGeneratedBrushes());
-                Assert.AreNotEqual(0, brush.GetUsedGeneratedBrushes());
+                var usedBrushes = new List<ChiselBrushContainerAsset>();
+                
+                Assert.IsTrue(brush.GetUsedGeneratedBrushes(usedBrushes));
+                Assert.AreNotEqual(0, usedBrushes.Count);
                 yield return null;
                 UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             }
