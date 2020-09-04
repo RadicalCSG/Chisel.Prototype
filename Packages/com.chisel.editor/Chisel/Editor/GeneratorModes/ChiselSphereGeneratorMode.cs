@@ -10,7 +10,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSphereSettings : ScriptableObject
+    public sealed class ChiselSphereSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselSphereDefinition>
     {
         public int      horizontalSegments      = ChiselSphereDefinition.kDefaultHorizontalSegments;
         public int      verticalSegments        = ChiselSphereDefinition.kDefaultVerticalSegments;
@@ -23,6 +23,32 @@ namespace Chisel.Editors
         [ToggleFlags]
         public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsXZ | PlacementFlags.GenerateFromCenterXZ |
                                             (ChiselSphereDefinition.kDefaultGenerateFromCenter ? PlacementFlags.GenerateFromCenterY : (PlacementFlags)0);
+
+        
+        // TODO: this could be the placementflags ...
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
+                                                               (HeightEqualsXZ       ? ChiselGeneratorModeFlags.HeightEqualsMinXZ    : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+
+        public void OnCreate(ref ChiselSphereDefinition definition) 
+        {
+            definition.verticalSegments     = verticalSegments;
+            definition.horizontalSegments   = horizontalSegments;
+            definition.generateFromCenter   = false;
+        }
+
+        public void OnUpdate(ref ChiselSphereDefinition definition, Bounds bounds)
+        {
+            definition.diameterXYZ = bounds.size;
+        }
+
+        public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        {
+            // TODO: Make a RenderSphere method
+            renderer.RenderCylinder(bounds, horizontalSegments);
+            renderer.RenderBoxMeasurements(bounds);
+        }
     }
 
     public sealed class ChiselSphereGeneratorMode : ChiselGeneratorModeWithSettings<ChiselSphereSettings, ChiselSphereDefinition, ChiselSphere>
@@ -37,39 +63,9 @@ namespace Chisel.Editors
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSphereGeneratorMode); }
         #endregion
 
-        public override ChiselGeneratorModeFlags Flags 
-        { 
-            get
-            {
-                return (Settings.SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
-                       (Settings.HeightEqualsXZ    ? ChiselGeneratorModeFlags.HeightEqualsMinXZ    : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
-            } 
-        }
-
-        protected override void OnCreate(ChiselSphere generatedComponent)
-        {
-            generatedComponent.VerticalSegments     = Settings.verticalSegments;
-            generatedComponent.HorizontalSegments   = Settings.horizontalSegments;
-            generatedComponent.GenerateFromCenter   = false;
-        }
-
-        protected override void OnUpdate(ChiselSphere generatedComponent, Bounds bounds)
-        {
-            generatedComponent.DiameterXYZ = bounds.size;
-        }
-
-        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
-        {
-            // TODO: Make a RenderSphere method
-            HandleRendering.RenderCylinder(transformation, bounds, Settings.horizontalSegments);
-            HandleRendering.RenderBoxMeasurements(transformation, bounds);
-        }
-
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            DoBoxGenerationHandle(dragArea, ToolName);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }

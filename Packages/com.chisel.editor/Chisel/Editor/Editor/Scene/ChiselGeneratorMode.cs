@@ -14,7 +14,61 @@ using ToolManager = UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-    
+    [Flags]
+    public enum PlacementFlags
+    {
+        [ToggleFlag("SizeFromBottom",   "Extrude from the bottom",
+                    "SizeFromCenter",   "Extrude it from the center")]
+        GenerateFromCenterY     = 1,
+        [ToggleFlag("DragToHeight",     "Drag to extrude distance",
+                    "AutoHeight",       "Extrude distance is determined by base size")]
+        HeightEqualsXZ          = 2,
+        [ToggleFlag("RectangularBase",  "Base width and depth can be sized independently", 
+                    "SquareBase",       "Base width and depth are identical in size")]
+        SameLengthXZ            = 4,
+        [ToggleFlag("SizeBaseFromCorner", "Base is sized from corner",
+                    "SizeBaseFromCenter", "Base is sized from center")]
+        GenerateFromCenterXZ    = 8
+    }
+
+
+    public interface IChiselBoundsGeneratorSettings<DefinitionType> where DefinitionType : IChiselGenerator, new()
+    {
+        ChiselGeneratorModeFlags GeneratoreModeFlags { get; }
+
+        void OnCreate(ref DefinitionType definition);
+        void OnUpdate(ref DefinitionType definition, Bounds bounds);
+        void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
+    }
+
+    public interface IChiselShapeGeneratorSettings<DefinitionType> where DefinitionType : IChiselGenerator, new()
+    {
+        ChiselGeneratorModeFlags GeneratoreModeFlags { get; }
+
+        void OnCreate(ref DefinitionType definition, Curve2D shape);
+        void OnUpdate(ref DefinitionType definition, float height);
+        void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height);
+    }
+
+    public interface IGeneratorHandleRenderer
+    {
+        Matrix4x4 matrix { get; set; }
+        void RenderBox(Bounds bounds);
+        void RenderBoxMeasurements(Bounds bounds);
+        void RenderCylinder(Bounds bounds, int segments);
+        void RenderShape(Curve2D shape, float height);
+    }
+
+    public sealed class GeneratorHandleRenderer : IGeneratorHandleRenderer
+    {
+        public Matrix4x4 matrix { get; set; }
+
+        public void RenderBox(Bounds bounds)                    { HandleRendering.RenderBox(matrix, bounds); }
+        public void RenderBoxMeasurements(Bounds bounds)        { HandleRendering.RenderBoxMeasurements(matrix, bounds); }
+        public void RenderCylinder(Bounds bounds, int segments) { HandleRendering.RenderCylinder(matrix, bounds, segments); }
+        public void RenderShape(Curve2D shape, float height)    { HandleRendering.RenderShape(matrix, shape, height); }
+    }
+
 
     public abstract partial class ChiselGeneratorModeWithSettings<SettingsType, DefinitionType, Generator> : ChiselGeneratorMode
         // Settings needs to be a ScriptableObject so we can create an Editor for it

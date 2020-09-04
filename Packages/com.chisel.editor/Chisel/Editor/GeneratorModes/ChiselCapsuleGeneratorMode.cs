@@ -10,7 +10,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCapsuleSettings : ScriptableObject
+    public sealed class ChiselCapsuleSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselCapsuleDefinition>
     {
         public int      topSegments			 = ChiselCapsuleDefinition.kDefaultTopSegments;
         public int	    bottomSegments	     = ChiselCapsuleDefinition.kDefaultBottomSegments;
@@ -23,6 +23,38 @@ namespace Chisel.Editors
 
         [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterY | PlacementFlags.GenerateFromCenterXZ))]
         public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterXZ;
+        
+
+        // TODO: this could be the placementflags ...
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+
+        public void OnCreate(ref ChiselCapsuleDefinition definition) 
+        {
+            definition.sides           = sides;
+            definition.topSegments     = topSegments;
+            definition.bottomSegments  = bottomSegments;
+        }
+
+        public void OnUpdate(ref ChiselCapsuleDefinition definition, Bounds bounds)
+        {
+            var height              = bounds.size[(int)Axis.Y];
+            var hemisphereHeight    = Mathf.Min(bounds.size[(int)Axis.X], bounds.size[(int)Axis.Z]) * ChiselCapsuleDefinition.kDefaultHemisphereRatio;
+
+            definition.topHeight    = Mathf.Min(hemisphereHeight, Mathf.Abs(height) * 0.5f);
+            definition.bottomHeight = Mathf.Min(hemisphereHeight, Mathf.Abs(height) * 0.5f);
+
+            definition.diameterX    = bounds.size[(int)Axis.X];
+            definition.height       = height;
+            definition.diameterZ    = bounds.size[(int)Axis.Z];
+        }
+        public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        {
+            // TODO: render capsule here
+            renderer.RenderCylinder(bounds, sides);
+            renderer.RenderBoxMeasurements(bounds);
+        }
     }
 
     // TODO: maybe just bevel top of cylinder instead of separate capsule generator??
@@ -37,47 +69,10 @@ namespace Chisel.Editors
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CapsuleBuilderModeKey, ChiselKeyboardDefaults.CapsuleBuilderModeModifiers, displayName = kToolShotcutName)]
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCapsuleGeneratorMode); }
         #endregion
-
-        public override ChiselGeneratorModeFlags Flags 
-        { 
-            get
-            {
-                return (Settings.SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
-            } 
-        }
-
-        protected override void OnCreate(ChiselCapsule generatedComponent)
-        {
-            generatedComponent.Sides           = Settings.sides;
-            generatedComponent.TopSegments     = Settings.topSegments;
-            generatedComponent.BottomSegments  = Settings.bottomSegments;
-        }
-
-        protected override void OnUpdate(ChiselCapsule generatedComponent, Bounds bounds)
-        {
-            var height              = bounds.size[(int)Axis.Y];
-            var hemisphereHeight    = Mathf.Min(bounds.size[(int)Axis.X], bounds.size[(int)Axis.Z]) * ChiselCapsuleDefinition.kDefaultHemisphereRatio;
-
-            generatedComponent.TopHeight        = Mathf.Min(hemisphereHeight, Mathf.Abs(height) * 0.5f);
-            generatedComponent.BottomHeight     = Mathf.Min(hemisphereHeight, Mathf.Abs(height) * 0.5f);
-
-            generatedComponent.DiameterX       = bounds.size[(int)Axis.X];
-            generatedComponent.Height          = height;
-            generatedComponent.DiameterZ       = bounds.size[(int)Axis.Z];
-        }
-
-        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
-        {
-            // TODO: render capsule here
-            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.Sides : Settings.sides);
-            HandleRendering.RenderBoxMeasurements(transformation, bounds);
-        }
-
+        
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            DoBoxGenerationHandle(dragArea, ToolName);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }

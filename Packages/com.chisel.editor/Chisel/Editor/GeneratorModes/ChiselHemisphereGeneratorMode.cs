@@ -10,7 +10,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselHemisphereSettings : ScriptableObject
+    public sealed class ChiselHemisphereSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselHemisphereDefinition>
     {
         public int      horizontalSegments      = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
         public int      verticalSegments        = ChiselHemisphereDefinition.kDefaultVerticalSegments;
@@ -22,6 +22,28 @@ namespace Chisel.Editors
 
         [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsXZ | PlacementFlags.GenerateFromCenterXZ))]
         public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsXZ | PlacementFlags.GenerateFromCenterXZ;
+        
+        // TODO: this could be the placementflags ...
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ          ? ChiselGeneratorModeFlags.SameLengthXZ          : ChiselGeneratorModeFlags.None) |
+                                                               (HeightEqualsHalfXZ    ? ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterXZ  ? ChiselGeneratorModeFlags.GenerateFromCenterXZ  : ChiselGeneratorModeFlags.None);
+
+        public void OnCreate(ref ChiselHemisphereDefinition definition) 
+        {
+            definition.verticalSegments     = verticalSegments;
+            definition.horizontalSegments   = horizontalSegments;
+        }
+
+        public void OnUpdate(ref ChiselHemisphereDefinition definition, Bounds bounds)
+        {
+            definition.diameterXYZ = bounds.size;
+        }
+
+        public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        {
+            renderer.RenderCylinder(bounds, horizontalSegments);
+            renderer.RenderBoxMeasurements(bounds);
+        }
     }
 
     public sealed class ChiselHemisphereGeneratorMode : ChiselGeneratorModeWithSettings<ChiselHemisphereSettings, ChiselHemisphereDefinition, ChiselHemisphere>
@@ -36,36 +58,9 @@ namespace Chisel.Editors
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselHemisphereGeneratorMode); }
         #endregion
 
-        public override ChiselGeneratorModeFlags Flags 
-        { 
-            get
-            {
-                return (Settings.SameLengthXZ          ? ChiselGeneratorModeFlags.SameLengthXZ          : ChiselGeneratorModeFlags.None) |
-                       (Settings.HeightEqualsHalfXZ ? ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterXZ  ? ChiselGeneratorModeFlags.GenerateFromCenterXZ  : ChiselGeneratorModeFlags.None);
-            } 
-        }
-
-        protected override void OnCreate(ChiselHemisphere generatedComponent)
-        {
-            generatedComponent.VerticalSegments     = Settings.verticalSegments;
-            generatedComponent.HorizontalSegments   = Settings.horizontalSegments;
-        }
-
-        protected override void OnUpdate(ChiselHemisphere generatedComponent, Bounds bounds)
-        {
-            generatedComponent.DiameterXYZ = bounds.size;
-        }
-
-        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
-        {
-            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.HorizontalSegments : Settings.horizontalSegments);
-            HandleRendering.RenderBoxMeasurements(transformation, bounds);
-        }
-
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            DoBoxGenerationHandle(dragArea, ToolName);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }

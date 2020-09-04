@@ -10,25 +10,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    [Flags]
-    public enum PlacementFlags
-    {
-        [ToggleFlag("SizeFromBottom",   "Extrude from the bottom",
-                    "SizeFromCenter",   "Extrude it from the center")]
-        GenerateFromCenterY     = 1,
-        [ToggleFlag("DragToHeight",     "Drag to extrude distance",
-                    "AutoHeight",       "Extrude distance is determined by base size")]
-        HeightEqualsXZ          = 2,
-        [ToggleFlag("RectangularBase",  "Base width and depth can be sized independently", 
-                    "SquareBase",       "Base width and depth are identical in size")]
-        SameLengthXZ            = 4,
-        [ToggleFlag("SizeBaseFromCorner", "Base is sized from corner",
-                    "SizeBaseFromCenter", "Base is sized from center")]
-        GenerateFromCenterXZ    = 8
-    }
-
-
-    public sealed class ChiselBoxSettings : ScriptableObject
+    public sealed class ChiselBoxSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselBoxDefinition>
     {
         public bool     SameLengthXZ		    { get { return (placement & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ; } set { placement = value ? (placement | PlacementFlags.SameLengthXZ) : placement & ~PlacementFlags.SameLengthXZ; } }
         public bool     HeightEqualsXZ          { get { return (placement & PlacementFlags.HeightEqualsXZ) == PlacementFlags.HeightEqualsXZ; } set { placement = value ? (placement | PlacementFlags.HeightEqualsXZ) : placement & ~PlacementFlags.HeightEqualsXZ; } }
@@ -37,10 +19,31 @@ namespace Chisel.Editors
         
         [ToggleFlags]
         public PlacementFlags placement = (PlacementFlags)0;
+
+        // TODO: this could be the placementflags ...
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
+                                                               (HeightEqualsXZ       ? ChiselGeneratorModeFlags.HeightEqualsMinXZ    : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
+                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+
+        public void OnCreate(ref ChiselBoxDefinition definition) 
+        {
+        }
+
+        public void OnUpdate(ref ChiselBoxDefinition definition, Bounds bounds)
+        {
+            definition.bounds = bounds;
+        }
+        public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        {
+            renderer.RenderBox(bounds);
+            renderer.RenderBoxMeasurements(bounds);
+        }
     } 
 
     public sealed class ChiselBoxGeneratorMode : ChiselGeneratorModeWithSettings<ChiselBoxSettings, ChiselBoxDefinition, ChiselBox>
     {
+        // TODO: move all this to 'settings'? ...
         const string kToolName = ChiselBox.kNodeTypeName;
         public override string  ToolName => kToolName;
         public override string  Group => "Basic Primitives";
@@ -51,33 +54,10 @@ namespace Chisel.Editors
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselBoxGeneratorMode); }
         #endregion
 
-        public override ChiselGeneratorModeFlags Flags 
-        { 
-            get
-            {
-                return (Settings.SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
-                       (Settings.HeightEqualsXZ       ? ChiselGeneratorModeFlags.HeightEqualsMinXZ    : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
-                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
-            } 
-        }
-
-        protected override void OnCreate(ChiselBox generatedComponent) {}
-
-        protected override void OnUpdate(ChiselBox generatedComponent, Bounds bounds)
-        {
-            generatedComponent.Bounds = bounds;
-        }
-
-        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
-        {
-            HandleRendering.RenderBox(transformation, bounds);
-            HandleRendering.RenderBoxMeasurements(transformation, bounds);
-        }
-
+        // TODO: get rid of this somehow ...
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            DoBoxGenerationHandle(dragArea, ToolName);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }

@@ -10,8 +10,28 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeSettings : ScriptableObject
+    public sealed class ChiselExtrudedShapeSettings : ScriptableObject, IChiselShapeGeneratorSettings<ChiselExtrudedShapeDefinition>
     {
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => throw new NotImplementedException();
+
+        public void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)
+        {
+            definition.path = new ChiselPath(new[] {
+                        new ChiselPathPoint(Vector3.zero),
+                        new ChiselPathPoint(new Vector3(0,1,0))
+                    });
+            definition.shape = new Curve2D(shape);
+        }
+
+        public void OnUpdate(ref ChiselExtrudedShapeDefinition definition, float height)
+        {
+            definition.path.segments[1].position = new Vector3(0, height, 0);
+        }
+
+        public void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height)
+        {
+            renderer.RenderShape(shape, height);
+        }
     }
 
     public sealed class ChiselExtrudedShapeGeneratorMode : ChiselGeneratorModeWithSettings<ChiselExtrudedShapeSettings, ChiselExtrudedShapeDefinition, ChiselExtrudedShape>
@@ -28,49 +48,7 @@ namespace Chisel.Editors
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            // TODO: handle snapping against own points
-            // TODO: handle ability to 'commit' last point
-            switch (ShapeExtrusionHandle.Do(dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis.Y))
-            {
-                case ShapeExtrusionState.Create:
-                {
-                    var center2D = shape.Center;
-                    var center3D = new Vector3(center2D.x, 0, center2D.y);
-                    generatedComponent = ChiselComponentFactory.Create<ChiselExtrudedShape>(ChiselExtrudedShape.kNodeTypeName,
-                                                                          ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor), 
-                                                                          transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one));
-                    shape.Center = Vector2.zero;
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                    generatedComponent.Shape = new Curve2D(shape);
-                    generatedComponent.Path = new ChiselPath(new[] {
-                        new ChiselPathPoint(Vector3.zero),
-                        new ChiselPathPoint(new Vector3(0,1,0))
-                    });
-                    generatedComponent.UpdateGenerator();
-                    break;
-                }
-
-                case ShapeExtrusionState.Modified:
-                {
-                    generatedComponent.Operation = forceOperation ?? 
-                                              ((height < 0 && modelBeneathCursor) ? 
-                                                CSGOperationType.Subtractive : 
-                                                CSGOperationType.Additive);
-                    generatedComponent.Path.segments[1].position = new Vector3(0, height, 0);
-                    generatedComponent.UpdateGenerator();
-                    break;
-                }
-                
-                
-                case ShapeExtrusionState.Commit:        { Commit(generatedComponent.gameObject); break; }
-                case ShapeExtrusionState.Cancel:        { Cancel(); break; }                
-                case ShapeExtrusionState.ExtrusionMode:
-                case ShapeExtrusionState.ShapeMode:		{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-                case ShapeExtrusionState.HoverMode:		{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-            }
-
-            HandleRendering.RenderShape(transformation, shape, height);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }

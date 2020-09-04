@@ -10,7 +10,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSpiralStairsSettings : ScriptableObject
+    public sealed class ChiselSpiralStairsSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselSpiralStairsDefinition>
     {
         // TODO: add more settings
         public float    stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
@@ -20,6 +20,28 @@ namespace Chisel.Editors
 
         [ToggleFlags(includeFlags: (int)(PlacementFlags.GenerateFromCenterXZ))]
         public PlacementFlags placement = PlacementFlags.GenerateFromCenterXZ;
+        
+        // TODO: this could be the placementflags ...
+        public ChiselGeneratorModeFlags GeneratoreModeFlags => ChiselGeneratorModeFlags.AlwaysFaceUp | ChiselGeneratorModeFlags.SameLengthXZ |
+                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+
+        public void OnCreate(ref ChiselSpiralStairsDefinition definition) 
+        {
+            definition.stepHeight       = stepHeight;
+            definition.outerSegments    = outerSegments;
+        }
+
+        public void OnUpdate(ref ChiselSpiralStairsDefinition definition, Bounds bounds)
+        {
+            definition.height			= bounds.size[(int)Axis.Y];
+            definition.outerDiameter	= bounds.size[(int)Axis.X];
+        }
+
+        public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        {
+            renderer.RenderCylinder(bounds, outerSegments);
+            renderer.RenderBoxMeasurements(bounds);
+        }
     }
 
     public sealed class ChiselSpiralStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselSpiralStairsSettings, ChiselSpiralStairsDefinition, ChiselSpiralStairs>
@@ -33,38 +55,10 @@ namespace Chisel.Editors
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSpiralStairsGeneratorMode); }
         #endregion
- 
-        public override ChiselGeneratorModeFlags Flags 
-        { 
-            get
-            {
-                return ChiselGeneratorModeFlags.AlwaysFaceUp |
-                       ChiselGeneratorModeFlags.SameLengthXZ |
-                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
-            } 
-        }
-
-        protected override void OnCreate(ChiselSpiralStairs generatedComponent)
-        {
-            generatedComponent.Operation        = forceOperation ?? CSGOperationType.Additive;
-            generatedComponent.StepHeight       = Settings.stepHeight;
-            generatedComponent.OuterSegments    = Settings.outerSegments;
-        }
-
-        protected override void OnUpdate(ChiselSpiralStairs generatedComponent, Bounds bounds)
-        {
-            generatedComponent.Height			= bounds.size[(int)Axis.Y];
-            generatedComponent.OuterDiameter	= bounds.size[(int)Axis.X];
-        }
-
-        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
-        {
-            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.OuterSegments : Settings.outerSegments);
-        }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            DoBoxGenerationHandle(dragArea, ToolName);
+            DoGenerationHandle(dragArea, Settings);
         }
     }
 }
