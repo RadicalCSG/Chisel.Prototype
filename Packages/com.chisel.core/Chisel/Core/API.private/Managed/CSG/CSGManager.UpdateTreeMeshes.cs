@@ -1787,8 +1787,8 @@ namespace Chisel.Core
 
                         updateMeshEvent.Invoke(tree, ref treeUpdate.vertexBufferContents);
                     }
+                    Profiler.EndSample();
                 }
-                Profiler.EndSample();
 
 
                 #region Store cached values back into cache (by node Index)

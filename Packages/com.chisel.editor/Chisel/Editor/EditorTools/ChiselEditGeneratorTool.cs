@@ -56,7 +56,7 @@ namespace Chisel.Editors
             {
                 case EventType.KeyDown:
                 {
-                    if (evt.keyCode == KeyCode.Escape)
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         if (GUIUtility.hotControl == 0)
                         {
@@ -68,7 +68,7 @@ namespace Chisel.Editors
                 }
                 case EventType.KeyUp:
                 {
-                    if (evt.keyCode == KeyCode.Escape)
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         if (GUIUtility.hotControl == 0) 
                         {

@@ -31,16 +31,20 @@ namespace Chisel.Components
         public CSGOperationType[]	Operations		{ get { return brushContainer.operations; } }
         public BrushMeshInstance[]	Instances		{ get { if (HasInstances) return instances; return null; } }
         
-        public void Generate(IChiselGenerator generator)
+        public bool Generate(IChiselGenerator generator)
         {
             Profiler.BeginSample("Generate");
-            if (!generator.Generate(ref brushContainer))
+            try
             {
-                Profiler.BeginSample("Reset");
-                brushContainer.Reset();
-                Profiler.EndSample();
+                if (!generator.Generate(ref brushContainer))
+                {
+                    Profiler.BeginSample("Reset");
+                    brushContainer.Reset();
+                    Profiler.EndSample();
+                    return false;
+                }
             }
-            Profiler.EndSample();
+            finally { Profiler.EndSample(); }
             Profiler.BeginSample("CalculatePlanes");
             CalculatePlanes();
             Profiler.EndSample();
@@ -48,6 +52,7 @@ namespace Chisel.Components
             Profiler.BeginSample("NotifyContentsModified");
             ChiselBrushContainerAssetManager.NotifyContentsModified(this);
             Profiler.EndSample();
+            return true;
         }
 
         public bool SetSubMeshes(BrushMesh[] brushMeshes)

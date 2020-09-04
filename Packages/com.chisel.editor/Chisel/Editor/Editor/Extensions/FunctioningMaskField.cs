@@ -119,7 +119,7 @@ namespace Chisel.Editors
                 Event.current.Use();
 
             // Escape closes the window
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == ChiselKeyboardDefaults.kCancelKey)
             {
                 editorWindow.Close();
                 GUIUtility.ExitGUI();

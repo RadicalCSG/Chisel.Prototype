@@ -29,7 +29,7 @@ namespace Chisel.Core
 
         public void Clear()
         {
-            if (brushMeshes == null && brushMeshes.Length == 0)
+            if (brushMeshes == null || brushMeshes.Length == 0)
                 return;
             foreach (var brushMesh in brushMeshes)
                 brushMesh.Clear();

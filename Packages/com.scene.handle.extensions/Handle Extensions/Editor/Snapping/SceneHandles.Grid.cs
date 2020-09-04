@@ -491,7 +491,7 @@ namespace UnitySceneExtensions
                 absSnappedOffset.z == 0)
                 return worldStartPosition;
 
-            var snappedOffsetInWorldSpace	=_gridToWorldSpace.MultiplyVector(offsetInGridSpace - snappedOffset);
+            var snappedOffsetInWorldSpace	= _gridToWorldSpace.MultiplyVector(offsetInGridSpace - snappedOffset);
             var snappedPositionInWorldSpace	= (worldStartPosition + snappedOffsetInWorldSpace);
 
             //Debug.Log($"{(float3)snappedOffsetInWorldSpace} {(float3)snappedOffset} {(float3)snappedPositionInWorldSpace}");

@@ -16,34 +16,94 @@ namespace Chisel.Editors
 {
     
 
-    public abstract class ChiselGeneratorModeWithSettings<Settings, Generator> : ChiselGeneratorMode 
-        where Settings : class, new()
-        where Generator : ChiselGeneratorComponent
+    public abstract partial class ChiselGeneratorModeWithSettings<SettingsType, DefinitionType, Generator> : ChiselGeneratorMode
+        // Settings needs to be a ScriptableObject so we can create an Editor for it
+        where SettingsType      : ScriptableObject 
+        // We need the DefinitionType to be able to strongly type the Generator
+        where DefinitionType    : IChiselGenerator, new()
+        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
     {
-        public override void OnActivate() { Reset(); generatedComponent = null; forceOperation = null; LoadSettings(settings); }
-        public override void OnDeactivate() { Reset(); generatedComponent = null; }
+        public override void OnActivate()   { EnsureInitialized(); base.OnActivate(); generatedComponent = null; forceOperation = null; LoadSettings(Settings); }
+        public override void OnDeactivate() { base.OnActivate(); generatedComponent = null; }
 
-        protected Settings          settings        = new Settings();
+
+        SerializedObject    serializedObject;
+        SettingsType        settingsInternal;
+        void EnsureInitialized()
+        {
+            // We can't just new the SettingsType, we need to use CreateInstance because it's a ScriptableObject
+            if (settingsInternal == null)
+            {
+                settingsInternal = ScriptableObject.CreateInstance<SettingsType>();
+                settingsInternal.hideFlags = HideFlags.DontSave;
+            }
+            // We need a serializedObject pointing to our Settings (ScriptableObject) so we can let Unity show 
+            // the contents of the settings, the same way we show things in the inspector
+            if (serializedObject == null)
+                serializedObject = new SerializedObject(settingsInternal);
+        }
+        
+
+        protected SettingsType      Settings
+        {
+            get
+            {
+                EnsureInitialized();
+                return settingsInternal;
+            }
+        }
         protected CSGOperationType? forceOperation  = null;
         protected Generator         generatedComponent;
+
+        static readonly string[] excludeProperties = new[] { "m_Script" };
+
+        // Sadly the DrawPropertiesExcluding method is protected, so we need to use reflection to be able to render the
+        // settings properties, without a "Settings" foldout, and a "script" property.
+        delegate void DrawPropertiesExcludingDelegate(SerializedObject obj, params string[] propertyToExclude);
+        static DrawPropertiesExcludingDelegate DrawPropertiesExcluding = ReflectionExtensions.CreateDelegate<DrawPropertiesExcludingDelegate>(typeof(Editor), "DrawPropertiesExcluding");
 
         public override void OnSceneSettingsGUI()
         {
             GUILayout.BeginVertical();
             {
-                ShowSceneSettings(settings);
+                EnsureInitialized();
+                if (serializedObject != null)
+                {
+                    var prevGUIChanged = GUI.changed;
+                    GUI.changed = false;
+                    serializedObject.Update();
+                    var prevLabelWidth = EditorGUIUtility.labelWidth;
+                    try
+                    {
+                        EditorGUIUtility.labelWidth = 115;
+                        // This renders our settings like in the inspector, but excludes the properties named in excludeProperties
+                        DrawPropertiesExcluding(serializedObject, excludeProperties);
+                    } catch (Exception ex) 
+                    { 
+                        Debug.LogException(ex); }
+                    if (GUI.changed)
+                    {
+                        EditorGUIUtility.labelWidth = prevLabelWidth;
+                        serializedObject.ApplyModifiedProperties();
+                        prevGUIChanged = true;
+                    }
+                    GUI.changed = prevGUIChanged;
+                }
                 ChiselCompositeGUI.ChooseGeneratorOperation(ref forceOperation);
             }
             GUILayout.EndVertical();
         }
     }
 
-    public abstract class ChiselGeneratorMode
+    public abstract class ChiselGeneratorMode 
     {
         public abstract string  ToolName        { get; }
         public virtual string   Group           { get; }
 
         public GUIContent       Content         { get { return ChiselEditorResources.GetIconContent(ToolName, ToolName)[0]; } }
+
+
+        public bool             IsGenerating    { get; private set; }
 
         public bool             InToolBox 
         {
@@ -51,11 +111,15 @@ namespace Chisel.Editors
             set { ChiselEditorSettings.SetInToolBox(ToolName, value);  }
         }
 
-        public virtual void     OnActivate()    { Reset(); }
+        public virtual void     OnActivate()    { IsGenerating = false; Reset(); }
 
-        public virtual void     OnDeactivate()  { Reset(); }
+        public virtual void     OnDeactivate()  { IsGenerating = false; Reset(); }
 
-        public virtual void     Reset() { }
+        public virtual void     Reset()
+        {
+            RectangleExtrusionHandle.Reset();
+            ShapeExtrusionHandle.Reset();
+        }
 
         public void Commit(GameObject newGameObject)
         {
@@ -64,9 +128,11 @@ namespace Chisel.Editors
                 Cancel();
                 return;
             }
+            IsGenerating = false;
             UnityEditor.Selection.selectionChanged -= OnDelayedSelectionChanged;
             UnityEditor.Selection.selectionChanged += OnDelayedSelectionChanged;
             UnityEditor.Selection.activeGameObject = newGameObject;
+            Undo.IncrementCurrentGroup();
             Reset();
         }
 
@@ -79,7 +145,8 @@ namespace Chisel.Editors
         }
 
         public void Cancel()
-        { 
+        {
+            IsGenerating = false;
             Reset();
             Undo.RevertAllInCurrentGroup();
             EditorGUIUtility.ExitGUI();
@@ -92,6 +159,9 @@ namespace Chisel.Editors
 
         public virtual void ShowSceneGUI(SceneView sceneView, Rect dragArea)
         {
+            if (Event.current.type == EventType.MouseDown)
+                IsGenerating = true;
+
             var evt = Event.current;
             switch (evt.type)
             {
@@ -103,7 +173,7 @@ namespace Chisel.Editors
                         GUIUtility.hotControl != 0)
                         break;
 
-                    if (evt.keyCode == KeyCode.Escape)
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         evt.Use();
                         break;
@@ -117,7 +187,7 @@ namespace Chisel.Editors
                         GUIUtility.hotControl != 0)
                         break;
 
-                    if (evt.keyCode == KeyCode.Escape)
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         evt.Use();
                         GUIUtility.ExitGUI();
@@ -125,13 +195,17 @@ namespace Chisel.Editors
                     break;
                 }
             }
+
+            var prevColor = Handles.color;
+            Handles.color = SceneHandles.handleColor;
             OnSceneGUI(sceneView, dragArea);
+            Handles.color = prevColor;
         }
 
 
         #region Settings
 
-        protected void LoadSettings<T>(T settings) where T : class, new()
+        protected void LoadSettings<T>(T settings) where T : ScriptableObject
         {
             var reflectedSettings = GetReflectedSettings<T>();
             foreach(var field in reflectedSettings.reflectedFields)
@@ -161,7 +235,7 @@ namespace Chisel.Editors
             }
         }
 
-        protected void SaveSettings<T>(T settings) where T : class, new()
+        protected void SaveSettings<T>(T settings) where T : ScriptableObject
         {
             var reflectedSettings = GetReflectedSettings<T>();
             foreach (var field in reflectedSettings.reflectedFields)
@@ -180,33 +254,6 @@ namespace Chisel.Editors
                     }
                 }
             }
-        }
-
-        protected void ShowSceneSettings<T>(T settings) where T : class, new()
-        {
-            var reflectedSettings = GetReflectedSettings<T>();
-            EditorGUI.BeginChangeCheck();
-            {
-                foreach (var field in reflectedSettings.reflectedFields)
-                {
-                    var value = field.fieldInfo.GetValue(settings);
-                    EditorGUI.BeginChangeCheck();
-                    switch (value)
-                    {
-                        case Int32 castValue:   value = EditorGUILayout.IntField(field.niceName, castValue); break;
-                        case float castValue:   value = EditorGUILayout.FloatField(field.niceName, castValue); break;
-                        case bool castValue:    value = EditorGUILayout.Toggle(field.niceName, castValue); break;
-                        case string castValue:  value = EditorGUILayout.TextField(field.niceName, castValue); break;
-                        case Enum castValue:    value = EditorGUILayout.EnumPopup(field.niceName, castValue); break;
-                    }
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        field.fieldInfo.SetValue(settings, value);
-                    }
-                }
-            }
-            if (EditorGUI.EndChangeCheck())
-                SaveSettings(settings);
         }
 
         class SettingsFieldReflection
@@ -228,42 +275,50 @@ namespace Chisel.Editors
 
         static Dictionary<Type, SettingsReflection> SettingsReflectionLookup = new Dictionary<Type, SettingsReflection>();
 
-        static SettingsReflection GetReflectedSettings<T>() where T : class, new()
+        static SettingsReflection GetReflectedSettings<T>() where T : ScriptableObject
         {
             var settingsType = typeof(T);
             if (!SettingsReflectionLookup.TryGetValue(settingsType, out SettingsReflection settings))
             {
-                var fieldList = new List<SettingsFieldReflection>();
-                var settingsTypeName = settingsType.FullName;
-                var defaultSettings = new T();
-                var fields = settingsType.GetFields();
-                foreach (var field in fields)
-                {
-                    var name = field.Name;
-                    var niceName = EditorGUIUtility.TrTextContent(ObjectNames.NicifyVariableName(name));
-                    var settingsName = $"{settingsTypeName}.{name}";
-
-                    var defaultValue = field.GetValue(defaultSettings);
-                    if (defaultValue == null)
+                var fieldList           = new List<SettingsFieldReflection>();
+                var settingsTypeName    = settingsType.FullName;
+                var defaultSettings     = ScriptableObject.CreateInstance<T>();
+                defaultSettings.hideFlags = HideFlags.DontSaveInEditor;
+                try
+                { 
+                    var fields = settingsType.GetFields();
+                    foreach (var field in fields)
                     {
-                        if (field.FieldType.IsValueType)
-                            defaultValue = Activator.CreateInstance(field.FieldType);
+                        var name = field.Name;
+                        var niceName = EditorGUIUtility.TrTextContent(ObjectNames.NicifyVariableName(name));
+                        var settingsName = $"{settingsTypeName}.{name}";
+                        var defaultValue = field.GetValue(defaultSettings);
+                        if (defaultValue == null)
+                        {
+                            if (field.FieldType.IsValueType)
+                                defaultValue = Activator.CreateInstance(field.FieldType);
+                        }
+
+                        fieldList.Add(new SettingsFieldReflection()
+                        {
+                            name         = name,
+                            niceName     = niceName,
+                            settingsName = settingsName,
+                            defaultValue = defaultValue,
+                            fieldInfo        = field
+                        });
                     }
-
-                    fieldList.Add(new SettingsFieldReflection()
-                    {
-                        name         = name,
-                        niceName     = niceName,
-                        settingsName = settingsName,
-                        defaultValue = defaultValue,
-                        fieldInfo        = field
-                    });
+                }
+                finally
+                {
+                    defaultSettings.hideFlags = HideFlags.None;
+                    UnityEngine.Object.DestroyImmediate(defaultSettings);
                 }
                 settings = new SettingsReflection()
                 {
-                    settingsType = settingsType,
-                    settingsTypeName = settingsTypeName,
-                    reflectedFields = fieldList.ToArray()
+                    settingsType        = settingsType,
+                    settingsTypeName    = settingsTypeName,
+                    reflectedFields     = fieldList.ToArray()
                 };
                 SettingsReflectionLookup[settingsType] = settings;
             }

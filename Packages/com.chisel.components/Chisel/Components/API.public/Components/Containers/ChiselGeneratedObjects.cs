@@ -305,7 +305,7 @@ namespace Chisel.Components
                 return false;
 
             // These queries are valid, and should never be null (We don't care about the other queries)
-            for (int i=0;i< kDebugHelperCount;i++)
+            for (int i = 0; i < kDebugHelperCount;i++)
             { 
                 if (satelliteObjects.debugHelpers[i] == null)
                     return false;

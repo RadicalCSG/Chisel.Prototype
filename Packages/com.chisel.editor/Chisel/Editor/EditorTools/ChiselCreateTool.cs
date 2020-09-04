@@ -1,4 +1,4 @@
-﻿using Chisel.Core;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,8 +88,21 @@ namespace Chisel.Editors
 
         public virtual void Cancel()
         {
-            DeactivateTool();
-            GUIUtility.ExitGUI();
+            var generatorMode = ChiselGeneratorManager.GeneratorMode;
+            if (generatorMode == null)
+                return;
+            
+            if (!generatorMode.IsGenerating)
+            {
+                DeactivateTool();
+                GUIUtility.ExitGUI();
+            } else
+            {
+                if (generatorMode != null)
+                    generatorMode.Reset();
+                Undo.RevertAllInCurrentGroup();
+                GUIUtility.ExitGUI();
+            }
         }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
@@ -102,7 +115,7 @@ namespace Chisel.Editors
             {
                 case EventType.KeyDown:
                 {
-                    if (Event.current.keyCode == KeyCode.Escape)
+                    if (Event.current.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         Event.current.Use();
                     }
@@ -110,7 +123,7 @@ namespace Chisel.Editors
                 }
                 case EventType.KeyUp:
                 {
-                    if (Event.current.keyCode == KeyCode.Escape)
+                    if (Event.current.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         Cancel();
                         Event.current.Use();
@@ -123,8 +136,6 @@ namespace Chisel.Editors
 
             ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
             generatorMode.ShowSceneGUI(sceneView, dragArea);
-
-            /// TODO: pressing escape when not in the middle of creation something, should cancel this edit mode instead
         }
     }
 }

@@ -43,6 +43,42 @@ namespace Chisel.Components
             }
         }
 
+        public static void SetTransform<T>(T component, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : ChiselNode
+        {
+            if (!component)
+                return;
+            SetTransform(component.transform, parent, trsMatrix);
+        }
+
+        public static void SetTransform<T>(T component, Matrix4x4 trsMatrix) where T : ChiselNode
+        {
+            if (!component)
+                return;
+            SetTransform(component.transform, trsMatrix);
+        }
+
+        public static void SetTransform(UnityEngine.Transform transform, Matrix4x4 trsMatrix)
+        {
+            if (!transform)
+                return;
+            SetTransform(transform, (transform == null) ? null : transform.parent, trsMatrix);
+        }
+
+        public static void SetTransform(UnityEngine.Transform transform, UnityEngine.Transform parent, Matrix4x4 trsMatrix)
+        {
+            if (!transform)
+                return;
+
+#if UNITY_EDITOR
+            UnityEditor.Undo.RecordObject(transform, "Move child node to given position");
+#endif
+            if (parent)
+                transform.Set(parent.worldToLocalMatrix * trsMatrix);
+            else
+                transform.Set(trsMatrix);
+        }
+
+
         public static T Create<T>(string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix) where T : ChiselNode
         {
             // TODO: ensure we're creating this in the active scene

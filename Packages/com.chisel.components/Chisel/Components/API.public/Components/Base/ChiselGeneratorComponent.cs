@@ -17,7 +17,7 @@ namespace Chisel.Components
 
         protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
         protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }
-        protected override void UpdateGeneratorInternal()   { brushContainerAsset.Generate(definition); }
+        protected override bool UpdateGeneratorInternal()   { return brushContainerAsset.Generate(definition); }
     }
 
     public abstract class ChiselGeneratorComponent : ChiselNode
@@ -283,6 +283,8 @@ namespace Chisel.Components
 
         int RequiredNodeLength(BrushMeshInstance[] instances)
         {
+            if (!brushContainerAsset || brushContainerAsset.SubMeshCount == 0)
+                return 0;
             return (instances == null || instances.Length == 0) ? 0 : ((instances.Length == 1) ? 1 : instances.Length + 1);
         }
 
@@ -301,9 +303,19 @@ namespace Chisel.Components
             }
 
             if (instances == null)
+            {
+                if (Nodes != null && Nodes.Length > 0)
+                    ChiselNodeHierarchyManager.RebuildTreeNodes(this);
                 return false;
+            }
 
             var requiredNodeLength	= RequiredNodeLength(instances);
+            if (requiredNodeLength == 0 &&
+                Nodes != null && Nodes.Length > 0)
+            {
+                ChiselNodeHierarchyManager.RebuildTreeNodes(this);
+                return false;
+            }
             
             if (Nodes != null && Nodes.Length == requiredNodeLength)
             {
@@ -537,6 +549,9 @@ namespace Chisel.Components
         
         public override int GetAllTreeBrushCount()
         {
+            if (brushContainerAsset == null ||
+                brushContainerAsset.SubMeshCount == 0)
+                return 0;
             if (Nodes.Length > 1)
                 return Nodes.Length - 1;
             return Nodes.Length;
@@ -545,6 +560,8 @@ namespace Chisel.Components
         // Get all brushes directly contained by this CSGNode (not its children)
         public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
         {
+            if (brushContainerAsset.SubMeshCount == 0)
+                return;
             if (Nodes.Length > 1)
             {
 #if UNITY_EDITOR
@@ -840,23 +857,26 @@ namespace Chisel.Components
         {
             // BrushMeshes of generators must always be unique
             Profiler.BeginSample("ChiselBrushContainerAsset.Create");
-            if (!brushContainerAsset ||
-                !ChiselBrushContainerAssetManager.IsBrushMeshUnique(brushContainerAsset))
-                brushContainerAsset = ChiselBrushContainerAsset.Create("Generated " + NodeTypeName);
-            Profiler.EndSample();
+            try
+            {
+                if (!brushContainerAsset ||
+                    !ChiselBrushContainerAssetManager.IsBrushMeshUnique(brushContainerAsset))
+                    brushContainerAsset = ChiselBrushContainerAsset.Create("Generated " + NodeTypeName);
+            }
+            finally { Profiler.EndSample(); }
 
             Profiler.BeginSample("UpdateGeneratorInternal");
-            UpdateGeneratorInternal();
-            Profiler.EndSample();
+            try { UpdateGeneratorInternal(); }
+            finally { Profiler.EndSample(); }
 
             brushContainerAsset.SetDirty();
 
             Profiler.BeginSample("UpdateBrushMeshInstances");
-            UpdateBrushMeshInstances();
-            Profiler.EndSample();
+            try { UpdateBrushMeshInstances(); }
+            finally { Profiler.EndSample(); }
         }
 
-        protected abstract void UpdateGeneratorInternal();
+        protected abstract bool UpdateGeneratorInternal();
 
 #if UNITY_EDITOR
         public override bool ConvertToBrushes()

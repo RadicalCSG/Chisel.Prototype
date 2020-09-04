@@ -409,7 +409,7 @@ namespace Chisel.Editors
                 case EventType.KeyUp:
                 {
                     if (hotControl == 0 &&
-                        Event.current.keyCode == UnityEngine.KeyCode.Escape)
+                        Event.current.keyCode == ChiselKeyboardDefaults.kCancelKey)
                     {
                         if (GUIUtility.hotControl == 0 && // make sure we're not actively doing anything
                             Tools.current != Tool.Custom)

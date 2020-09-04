@@ -140,10 +140,25 @@ namespace Chisel.Editors
             return iconImages;
         }
 
+        public static Texture2D[] LoadIconImages(string onName, string offName)
+        {
+            var nameID = $"{onName.ToLowerInvariant()}_{offName.ToLowerInvariant()}";
+            if (iconImagesLookup.TryGetValue(nameID, out Texture2D[] iconImages))
+                return iconImages;
+
+            iconImages = new[] { LoadIconImage(onName, false), LoadIconImage(offName, true) };
+
+            if (iconImages[0] == null || iconImages[1] == null)
+                iconImages = null;
+
+            iconImagesLookup[nameID] = iconImages;
+            return iconImages;
+        }
+
         public static GUIContent[] GetIconContent(string name, string tooltip = "")
         {
-            var nameID = name.ToLowerInvariant();
-            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
+            var nameID  = name.ToLowerInvariant();
+            var id      = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
             if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
                 return contents;
 
@@ -153,6 +168,26 @@ namespace Chisel.Editors
             var images = LoadIconImages(nameID);
             if (images == null)
                 contents = new GUIContent[] { new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)), new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)) };
+            else
+                contents = new GUIContent[] { new GUIContent(images[0], L10n.Tr(tooltip)), new GUIContent(images[1], L10n.Tr(tooltip)) };
+
+            iconContentLookup[id] = contents;
+            return contents;
+        }
+
+        public static GUIContent[] GetIconContentOnOff(string onName, string offName, string tooltip = "")
+        {
+            var nameID = $"{onName.ToLowerInvariant()}_{offName.ToLowerInvariant()}";
+            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
+            if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
+                return contents;
+
+            if (tooltip == null)
+                tooltip = string.Empty;
+
+            var images = LoadIconImages(onName, offName);
+            if (images == null)
+                contents = new GUIContent[] { new GUIContent(L10n.Tr(onName), L10n.Tr(tooltip)), new GUIContent(L10n.Tr(offName), L10n.Tr(tooltip)) };
             else
                 contents = new GUIContent[] { new GUIContent(images[0], L10n.Tr(tooltip)), new GUIContent(images[1], L10n.Tr(tooltip)) };
 

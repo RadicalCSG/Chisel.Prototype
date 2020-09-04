@@ -290,7 +290,9 @@ namespace UnitySceneExtensions
                     {
                         SceneHandles.color = color;
                         var normal = rotation * Vector3.forward;
-                        DrawAAPolyLine(3.5f, position, position + (normal * size * 10));
+                        linePoints[0] = position;
+                        linePoints[1] = position + (normal * size * 10);
+                        DrawAAPolyLine(3.5f, linePoints);
 
                         SceneHandles.color = prevColor;
                     }

@@ -52,9 +52,9 @@ namespace Chisel.Editors
                     SceneHandles.SetCursor(id, from, to);
 
                     if (EditorGUIUtility.keyboardControl == id)
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, from, to);
+                        SceneHandles.DrawAAPolyLine(3.0f, from, to);
                     else
-                        UnityEditor.Handles.DrawAAPolyLine(2.5f, from, to);
+                        SceneHandles.DrawAAPolyLine(2.5f, from, to);
                     break;
                 }
             }
@@ -98,7 +98,6 @@ namespace Chisel.Editors
         Vector3[] innerVertices;
         Vector3[] outerVertices;
 
-        
         protected override void OnScene(SceneView sceneView, ChiselSpiralStairs generator)
         {
             var normal					= Vector3.up;
@@ -174,9 +173,9 @@ namespace Chisel.Editors
                         var b0 = outerVertices[i + sides];
                         var b1 = outerVertices[j + sides];
 
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, t0, b0);
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, t0, t1);
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, b0, b1);
+                        SceneHandles.DrawAAPolyLine(3.0f, t0, b0);
+                        SceneHandles.DrawAAPolyLine(3.0f, t0, t1);
+                        SceneHandles.DrawAAPolyLine(3.0f, b0, b1);
                     }
                 }
                 {
@@ -188,9 +187,9 @@ namespace Chisel.Editors
                         var b0 = innerVertices[i + sides];
                         var b1 = innerVertices[j + sides];
 
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, t0, b0);
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, t0, t1);
-                        UnityEditor.Handles.DrawAAPolyLine(3.0f, b0, b1);
+                        SceneHandles.DrawAAPolyLine(3.0f, t0, b0);
+                        SceneHandles.DrawAAPolyLine(3.0f, t0, t1);
+                        SceneHandles.DrawAAPolyLine(3.0f, b0, b1);
                     }
                 }
 
@@ -204,9 +203,9 @@ namespace Chisel.Editors
                         var b0 = outerVertices[i + sides];
                         var b1 = outerVertices[j + sides];
 
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, t0, b0);
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, t0, t1);
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, b0, b1);
+                        SceneHandles.DrawAAPolyLine(2.0f, t0, b0);
+                        SceneHandles.DrawAAPolyLine(2.0f, t0, t1);
+                        SceneHandles.DrawAAPolyLine(2.0f, b0, b1);
                     }
                 }
                 {
@@ -218,13 +217,13 @@ namespace Chisel.Editors
                         var b0 = innerVertices[i + sides];
                         var b1 = innerVertices[j + sides];
 
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, t0, b0);
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, t0, t1);
-                        UnityEditor.Handles.DrawAAPolyLine(2.0f, b0, b1);
+                        SceneHandles.DrawAAPolyLine(2.0f, t0, b0);
+                        SceneHandles.DrawAAPolyLine(2.0f, t0, t1);
+                        SceneHandles.DrawAAPolyLine(2.0f, b0, b1);
 
                         var m0 = (t0 + b0) * 0.5f;
                         var m1 = (t1 + b1) * 0.5f;
-                        UnityEditor.Handles.DrawDottedLine(m0, m1, 4.0f);
+                        SceneHandles.DrawDottedLine(m0, m1, 4.0f);
                     }
                 }
             }

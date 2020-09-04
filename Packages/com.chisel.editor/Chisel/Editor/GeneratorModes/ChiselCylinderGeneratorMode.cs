@@ -10,16 +10,20 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCylinderSettings
+    public sealed class ChiselCylinderSettings : ScriptableObject
     {
         public CylinderShapeType    cylinderType		 = CylinderShapeType.Cylinder;
         public int				    sides			     = 16;
-        public bool                 isSymmetrical		 = true;
-        public bool                 generateFromCenterY  = false;
-        public bool                 generateFromCenterXZ = true;
+        
+        public bool     SameLengthXZ		    { get { return (placement & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ; } set { placement = value ? (placement | PlacementFlags.SameLengthXZ) : placement & ~PlacementFlags.SameLengthXZ; } }
+        public bool     GenerateFromCenterY     { get { return (placement & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterY) : placement & ~PlacementFlags.GenerateFromCenterY; } }
+        public bool     GenerateFromCenterXZ    { get { return (placement & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterXZ) : placement & ~PlacementFlags.GenerateFromCenterXZ; } }
+        
+        [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterY | PlacementFlags.GenerateFromCenterXZ))]
+        public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterXZ;
     }
 
-    public sealed class ChiselCylinderGeneratorMode : ChiselGeneratorModeWithSettings<ChiselCylinderSettings, ChiselCylinder>
+    public sealed class ChiselCylinderGeneratorMode : ChiselGeneratorModeWithSettings<ChiselCylinderSettings, ChiselCylinderDefinition, ChiselCylinder>
     {
         const string kToolName = ChiselCylinder.kNodeTypeName;
         public override string ToolName => kToolName;
@@ -31,58 +35,40 @@ namespace Chisel.Editors
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCylinderGeneratorMode); }
         #endregion
 
-        public override void Reset()
-        {
-            BoxExtrusionHandle.Reset();
+        public override ChiselGeneratorModeFlags Flags 
+        { 
+            get
+            {
+                return (Settings.SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
+                       (Settings.GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
+                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+            } 
         }
-        
+
+        protected override void OnCreate(ChiselCylinder generatedComponent)
+        {
+            generatedComponent.IsEllipsoid		= !Settings.SameLengthXZ;
+            generatedComponent.Type				= Settings.cylinderType;
+            generatedComponent.Sides			= Settings.sides;
+        }
+
+        protected override void OnUpdate(ChiselCylinder generatedComponent, Bounds bounds)
+        {
+            var height = bounds.size[(int)Axis.Y];
+            generatedComponent.BottomDiameterX    = bounds.size[(int)Axis.X];
+            generatedComponent.Height             = height;
+            generatedComponent.BottomDiameterZ    = bounds.size[(int)Axis.Z];
+        }
+
+        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
+        {
+            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.Sides : Settings.sides);
+            HandleRendering.RenderBoxMeasurements(transformation, bounds);
+        }
+
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            var flags = (settings.isSymmetrical          ? BoxExtrusionFlags.IsSymmetricalXZ      : BoxExtrusionFlags.None) |
-                        (settings.generateFromCenterY    ? BoxExtrusionFlags.GenerateFromCenterY  : BoxExtrusionFlags.None) |
-                        (settings.generateFromCenterXZ   ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
-
-            switch (BoxExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, flags, Axis.Y))
-            {
-                case BoxExtrusionState.Create:
-                {
-                    generatedComponent = ChiselComponentFactory.Create<ChiselCylinder>(ChiselCylinder.kNodeTypeName,
-                                                                ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
-                                                                transformation);
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation		= forceOperation ?? CSGOperationType.Additive;
-                    generatedComponent.IsEllipsoid		= !settings.isSymmetrical;
-                    generatedComponent.Type				= settings.cylinderType;
-                    generatedComponent.Height			= height;
-                    generatedComponent.Sides			= settings.sides;
-                    generatedComponent.BottomDiameterX	= bounds.size[(int)Axis.X];
-                    generatedComponent.Height           = height;
-                    generatedComponent.BottomDiameterZ	= bounds.size[(int)Axis.Z];
-                    generatedComponent.UpdateGenerator();
-                    break;
-                }
-
-                case BoxExtrusionState.Modified:
-                {
-                    generatedComponent.Operation  = forceOperation ?? 
-                                              ((height < 0 && modelBeneathCursor) ? 
-                                                CSGOperationType.Subtractive : 
-                                                CSGOperationType.Additive);
-
-                    generatedComponent.BottomDiameterX    = bounds.size[(int)Axis.X];
-                    generatedComponent.Height             = height;
-                    generatedComponent.BottomDiameterZ    = bounds.size[(int)Axis.Z];
-                    break;
-                }
-                
-                case BoxExtrusionState.Commit:      { Commit(generatedComponent.gameObject); break; }
-                case BoxExtrusionState.Cancel:      { Cancel(); break; }                
-                case BoxExtrusionState.BoxMode:
-                case BoxExtrusionState.SquareMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-                case BoxExtrusionState.HoverMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-            }
-            
-            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.Sides : settings.sides);
+            DoBoxGenerationHandle(dragArea, ToolName);
         }
     }
 }

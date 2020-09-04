@@ -52,6 +52,6 @@ namespace Chisel.Components
             get { return definition.generateFromCenter; }
             set { if (value == definition.generateFromCenter) return; definition.generateFromCenter = value; OnValidateInternal(); }
         }
-        #endregion
+        #endregion 
     }
 }

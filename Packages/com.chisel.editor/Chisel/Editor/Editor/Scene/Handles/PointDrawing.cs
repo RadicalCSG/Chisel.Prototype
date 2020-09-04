@@ -47,7 +47,6 @@ namespace Chisel.Editors
         public const KeyCode    kCancelKey			= KeyCode.Escape;
         public const KeyCode    kCommitKey			= KeyCode.Return;
         public const string		kSoftDeleteCommand	= "SoftDelete";
-        const float             kPointScale			= 0.05f;
 
         static Vector3? GetPointAtPosition(Vector2 mousePosition, Rect dragArea)
         {
@@ -95,8 +94,9 @@ namespace Chisel.Editors
                     }
 
                     // TODO: try to snap the new surface grid point in other directions on the active-grid? (do we need to?)
-                    
-                    s_Transform = Matrix4x4.TRS(surfaceGridCenter - activeGridCenter, activeGridToSurfaceGridRotation, Vector3.one) * 
+
+                    var center = surfaceGridCenter - activeGridCenter;
+                    s_Transform = Matrix4x4.TRS(center, activeGridToSurfaceGridRotation, Vector3.one) * 
                                                 UnitySceneExtensions.Grid.ActiveGrid.GridToWorldSpace;
                     s_InvTransform = s_Transform.inverse;
                     s_Snapping2D.Initialize(new UnitySceneExtensions.Grid(s_Transform), mousePosition, s_StartIntersection.point, UnityEditor.Handles.matrix);
@@ -230,7 +230,7 @@ namespace Chisel.Editors
                             using (new UnityEditor.Handles.DrawingScope(s_Transform))
                             {
                                 for (int i = 0; i < points.Count; i++)
-                                    capFunction(id, points[i], orientation, UnityEditor.HandleUtility.GetHandleSize(points[i]) * kPointScale, type);
+                                    capFunction(id, points[i], orientation, UnityEditor.HandleUtility.GetHandleSize(points[i]) * HandleRendering.kPointScale, type);
                             }
                         }
 
@@ -249,7 +249,7 @@ namespace Chisel.Editors
                                     {
                                         if (i > 0)
                                             UnityEditor.Handles.color = Color.red;
-                                        capFunction(-1, points[count], orientation, UnityEditor.HandleUtility.GetHandleSize(points[count]) * (kPointScale * 2.0f), type);
+                                        capFunction(-1, points[count], orientation, UnityEditor.HandleUtility.GetHandleSize(points[count]) * (HandleRendering.kPointScale * 2.0f), type);
                                     }
                                 }
                             }

@@ -26,57 +26,57 @@ using UnityEngine.SceneManagement;
             - default TreeNode per scene
 */
 namespace Chisel.Components
-{ 
+{
     public static class ChiselNodeHierarchyManager
     {
-        public static readonly Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies         = new Dictionary<Scene, ChiselSceneHierarchy>();
+        public static readonly Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies = new Dictionary<Scene, ChiselSceneHierarchy>();
 
-        static readonly HashSet<ChiselNode>                         registeredNodes             = new HashSet<ChiselNode>();
-        static readonly Dictionary<int, ChiselNode>                 instanceIDToNodeLookup      = new Dictionary<int, ChiselNode>();
-        static readonly Dictionary<ChiselNode, int>                 nodeToinstanceIDLookup      = new Dictionary<ChiselNode, int>();
-        
+        static readonly HashSet<ChiselNode> registeredNodes = new HashSet<ChiselNode>();
+        static readonly Dictionary<int, ChiselNode> instanceIDToNodeLookup = new Dictionary<int, ChiselNode>();
+        static readonly Dictionary<ChiselNode, int> nodeToinstanceIDLookup = new Dictionary<ChiselNode, int>();
+
         // Note: keep in mind that these work even when components have already been destroyed
-        static readonly Dictionary<Transform, ChiselNode>           componentLookup             = new Dictionary<Transform, ChiselNode>();
-        static readonly Dictionary<ChiselNode, ChiselHierarchyItem> hierarchyItemLookup         = new Dictionary<ChiselNode, ChiselHierarchyItem>();
-        static readonly Dictionary<ChiselNode, CSGTreeNode[]>       treeNodeLookup              = new Dictionary<ChiselNode, CSGTreeNode[]>();
+        static readonly Dictionary<Transform, ChiselNode> componentLookup = new Dictionary<Transform, ChiselNode>();
+        static readonly Dictionary<ChiselNode, ChiselHierarchyItem> hierarchyItemLookup = new Dictionary<ChiselNode, ChiselHierarchyItem>();
+        static readonly Dictionary<ChiselNode, CSGTreeNode[]> treeNodeLookup = new Dictionary<ChiselNode, CSGTreeNode[]>();
 
-        static readonly HashSet<ChiselNode>                         registerQueueLookup         = new HashSet<ChiselNode>();
-        static readonly List<ChiselNode>                            registerQueue               = new List<ChiselNode>();
-        static readonly HashSet<ChiselNode>                         unregisterQueueLookup       = new HashSet<ChiselNode>();
-        static readonly List<ChiselNode>                            unregisterQueue             = new List<ChiselNode>();
-        
-        static readonly HashSet<ChiselSceneHierarchy>			    createDefaultModels			= new HashSet<ChiselSceneHierarchy>();
-        
+        static readonly HashSet<ChiselNode> registerQueueLookup = new HashSet<ChiselNode>();
+        static readonly List<ChiselNode> registerQueue = new List<ChiselNode>();
+        static readonly HashSet<ChiselNode> unregisterQueueLookup = new HashSet<ChiselNode>();
+        static readonly List<ChiselNode> unregisterQueue = new List<ChiselNode>();
+
+        static readonly HashSet<ChiselSceneHierarchy> createDefaultModels = new HashSet<ChiselSceneHierarchy>();
+
         // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
         // so we remember them, and re-register at the end.
-        static readonly List<ChiselModel>						    reregisterModelQueue		= new List<ChiselModel>();
+        static readonly List<ChiselModel> reregisterModelQueue = new List<ChiselModel>();
 
-        static readonly List<ChiselHierarchyItem>                   findChildrenQueue           = new List<ChiselHierarchyItem>();
+        static readonly List<ChiselHierarchyItem> findChildrenQueue = new List<ChiselHierarchyItem>();
 
-        static readonly HashSet<CSGTreeNode>                        destroyNodesList            = new HashSet<CSGTreeNode>();
+        static readonly HashSet<CSGTreeNode> destroyNodesList = new HashSet<CSGTreeNode>();
 
-        static readonly Dictionary<ChiselNode, ChiselHierarchyItem> addToHierarchyLookup        = new Dictionary<ChiselNode, ChiselHierarchyItem>();
-        static readonly List<ChiselHierarchyItem>                   addToHierarchyQueue         = new List<ChiselHierarchyItem>(5000);
-        static readonly List<ChiselHierarchyItem>                   deferAddToHierarchyQueue    = new List<ChiselHierarchyItem>(5000);
+        static readonly Dictionary<ChiselNode, ChiselHierarchyItem> addToHierarchyLookup = new Dictionary<ChiselNode, ChiselHierarchyItem>();
+        static readonly List<ChiselHierarchyItem> addToHierarchyQueue = new List<ChiselHierarchyItem>(5000);
+        static readonly List<ChiselHierarchyItem> deferAddToHierarchyQueue = new List<ChiselHierarchyItem>(5000);
 
-        static readonly HashSet<ChiselNode>                         rebuildTreeNodes            = new HashSet<ChiselNode>();
+        static readonly HashSet<ChiselNode> rebuildTreeNodes = new HashSet<ChiselNode>();
 
-        static readonly HashSet<ChiselNode>						    updateTransformationNodes   = new HashSet<ChiselNode>();
+        static readonly HashSet<ChiselNode> updateTransformationNodes = new HashSet<ChiselNode>();
 
-        static readonly HashSet<ChiselHierarchyItem>                updateChildrenQueue         = new HashSet<ChiselHierarchyItem>();
-        static readonly HashSet<List<ChiselHierarchyItem>>          sortChildrenQueue           = new HashSet<List<ChiselHierarchyItem>>();
+        static readonly HashSet<ChiselHierarchyItem> updateChildrenQueue = new HashSet<ChiselHierarchyItem>();
+        static readonly HashSet<List<ChiselHierarchyItem>> sortChildrenQueue = new HashSet<List<ChiselHierarchyItem>>();
 
-        static readonly HashSet<ChiselNode>                         hierarchyUpdateQueue        = new HashSet<ChiselNode>();
-        static readonly HashSet<ChiselNode>                         onHierarchyChangeCalled     = new HashSet<ChiselNode>();
+        static readonly HashSet<ChiselNode> hierarchyUpdateQueue = new HashSet<ChiselNode>();
+        static readonly HashSet<ChiselNode> onHierarchyChangeCalled = new HashSet<ChiselNode>();
 
         // Dictionaries used to keep track which brushContainerAssets are used by which nodes, which is necessary to update the right nodes when an brushContainerAsset has been changed
-        static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes	= new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
-        static readonly Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>> nodegeneratedBrush	= new Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>>();
+        static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes = new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
+        static readonly Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>> nodegeneratedBrush = new Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>>();
 
 
-        public static bool  ignoreNextChildrenChanged	= false;
-        public static bool  firstStart                  = false;
-        public static bool  prefabInstanceUpdatedEvent  = false;
+        public static bool ignoreNextChildrenChanged = false;
+        public static bool firstStart = false;
+        public static bool prefabInstanceUpdatedEvent = false;
 
         public static event Action NodeHierarchyModified;
         public static event Action NodeHierarchyReset;
@@ -96,7 +96,7 @@ namespace Chisel.Components
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed -= OnBrushMeshInstanceDestroyed;
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed += OnBrushMeshInstanceDestroyed;
         }
-        
+
         // TODO: Clean up API
         public static void Rebuild()
         {
@@ -106,7 +106,7 @@ namespace Chisel.Components
             Profiler.BeginSample("CSGManager.Clear");
             CSGManager.Clear();
             Profiler.EndSample();
-            
+
             Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
             ChiselBrushContainerAssetManager.Reset();
             Profiler.EndSample();
@@ -152,29 +152,29 @@ namespace Chisel.Components
         // TODO: Probably needs to be internal?
         public static void Reset()
         {
-            sceneHierarchies	.Clear();
-        
-            registeredNodes		.Clear();
+            sceneHierarchies.Clear();
+
+            registeredNodes.Clear();
             instanceIDToNodeLookup.Clear();
             nodeToinstanceIDLookup.Clear();
 
-            componentLookup		.Clear();
-            hierarchyItemLookup	.Clear();
-            treeNodeLookup		.Clear();
-    
+            componentLookup.Clear();
+            hierarchyItemLookup.Clear();
+            treeNodeLookup.Clear();
+
             reregisterModelQueue.Clear();
-        
+
             CSGManager.Destroy(destroyNodesList);
-            
-            generatedBrushNodes	.Clear();
-            nodegeneratedBrush	.Clear();
+
+            generatedBrushNodes.Clear();
+            nodegeneratedBrush.Clear();
 
             reregisterModelQueue.Clear();
             ClearQueues();
             ClearTemporaries();
 
             ChiselGeneratedModelMeshManager.Reset();
-            
+
             if (NodeHierarchyReset != null)
                 NodeHierarchyReset();
         }
@@ -214,7 +214,7 @@ namespace Chisel.Components
             __unregisterNodes.Clear();
             __childNodes.Clear();
         }
-        
+
         // *Workaround*
         // Unfortunately prefabs do not always send out all the necessary events
         // so we need to go through all the nodes and assume they've changed
@@ -241,7 +241,7 @@ namespace Chisel.Components
                 return 0;
             return hierarchy.RootItems.Count;
         }
-        
+
         public static bool IsNodeDirty(ChiselNode component)
         {
             if (!component)
@@ -250,7 +250,7 @@ namespace Chisel.Components
             if (!registerQueueLookup.Add(component))
                 return false;
 
-            return	registerQueue.Contains(component) ||
+            return registerQueue.Contains(component) ||
                     hierarchyUpdateQueue.Contains(component);
         }
 
@@ -258,12 +258,12 @@ namespace Chisel.Components
         {
             if (!component)
                 return;
-            
+
             // NOTE: this method is called from constructor and cannot use Debug.Log, get Transforms etc.
 
             if (unregisterQueueLookup.Remove(component))
                 unregisterQueue.Remove(component);
-                
+
             if (registerQueueLookup.Add(component))
             {
                 if (addToHierarchyLookup.Remove(component))
@@ -285,17 +285,17 @@ namespace Chisel.Components
 
             if (unregisterQueueLookup.Add(component))
             {
-                ChiselHierarchyItem hierarchyItem; 
+                ChiselHierarchyItem hierarchyItem;
                 // we can't get the hierarchyItem from our component since it might've already been destroyed
                 if (addToHierarchyLookup.TryGetValue(component, out hierarchyItem))
                 {
                     addToHierarchyLookup.Remove(component);
                     addToHierarchyQueue.Remove(component.hierarchyItem);
                 }
-                
+
                 unregisterQueue.Add(component);
             }
-        
+
             if (ReferenceEquals(component, null))
                 return;
 
@@ -325,7 +325,7 @@ namespace Chisel.Components
         public static void OnTransformParentChanged(ChiselNode node)
         {
             if (!node ||
-                !node.hierarchyItem.Registered || 
+                !node.hierarchyItem.Registered ||
                 !node.IsActive)
                 return;
             hierarchyUpdateQueue.Add(node);
@@ -346,29 +346,27 @@ namespace Chisel.Components
             node.hierarchyItem.SetBoundsDirty();
             UpdateGeneratedBrushes(node);
         }
-        
+
 
         private static void OnBrushMeshInstanceChanged(ChiselBrushContainerAsset brushContainerAsset)
         {
-            HashSet<ChiselNode> nodes;
-            if (generatedBrushNodes.TryGetValue(brushContainerAsset, out nodes))
+            if (!generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
+                return;
+            
+            foreach (var node in nodes)
             {
-                foreach(var node in nodes)
+                if (node)
                 {
-                    if (node)
-                    {
-                        node.UpdateBrushMeshInstances();
-                        hierarchyUpdateQueue.Add(node);
-                        updateTransformationNodes.Add(node);
-                    }
+                    node.UpdateBrushMeshInstances();
+                    hierarchyUpdateQueue.Add(node);
+                    updateTransformationNodes.Add(node);
                 }
             }
         }
 
         private static void OnBrushMeshInstanceDestroyed(ChiselBrushContainerAsset brushContainerAsset)
         {
-            HashSet<ChiselNode> nodes;
-            if (generatedBrushNodes.TryGetValue(brushContainerAsset, out nodes))
+            if (generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
             {
                 foreach (var node in nodes)
                 {
@@ -385,7 +383,8 @@ namespace Chisel.Components
 
         static List<ChiselBrushContainerAsset> nodeGeneratedBrushes = new List<ChiselBrushContainerAsset>();
 
-        static void UpdateGeneratedBrushes(ChiselNode node)
+
+        static HashSet<ChiselBrushContainerAsset> RemoveBrushReference(ChiselNode node)
         {
             if (nodegeneratedBrush.TryGetValue(node, out var uniqueGeneratedBrushes))
             {
@@ -398,27 +397,33 @@ namespace Chisel.Components
                 uniqueGeneratedBrushes.Clear();
             } else
                 uniqueGeneratedBrushes = new HashSet<ChiselBrushContainerAsset>();
+            return uniqueGeneratedBrushes;
+        }
 
+        static void UpdateGeneratedBrushes(ChiselNode node)
+        {
             if (!node)
+            {
+                RemoveBrushReference(node);
                 return;
+            }
 
             nodeGeneratedBrushes.Clear();
             if (!node.GetUsedGeneratedBrushes(nodeGeneratedBrushes))
                 return;
 
+            var uniqueGeneratedBrushes = RemoveBrushReference(node);
             for (int i = 0; i < nodeGeneratedBrushes.Count; i++)
             {
                 var brushContainerAsset = nodeGeneratedBrushes[i];
-                if (object.Equals(brushContainerAsset, null)) 
+                if (object.Equals(brushContainerAsset, null))
                     continue;
-                    
+
                 // Add current brushMesh of this node
                 if (uniqueGeneratedBrushes.Add(brushContainerAsset))
                 {
                     if (!generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-                    {
                         generatedBrushNodes[brushContainerAsset] = nodes = new HashSet<ChiselNode>();
-                    }
                     nodes.Add(node);
                 }
             }
@@ -436,8 +441,7 @@ namespace Chisel.Components
                 // Remove previously set brushMeshes for this node
                 foreach (var brushContainerAsset in nodeGeneratedBrushes)
                 {
-                    HashSet<ChiselNode> nodes;
-                    if (generatedBrushNodes.TryGetValue(brushContainerAsset, out nodes))
+                    if (generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
                         nodes.Remove(node);
                 }
                 nodeGeneratedBrushes.Clear();
@@ -459,10 +463,10 @@ namespace Chisel.Components
             onHierarchyChangeCalled.Add(component);
 
             if (!component ||
-                !component.hierarchyItem.Registered || 
+                !component.hierarchyItem.Registered ||
                 !component.IsActive)
                 return;
-        
+
             var children = component.hierarchyItem.Children;
             for (int i = 0; i < children.Count; i++)
             {
@@ -479,11 +483,11 @@ namespace Chisel.Components
         // Find parent node & update siblingIndices for each level
         static ChiselNode UpdateSiblingIndices(ChiselHierarchyItem hierarchyItem)
         {
-            var transform	= hierarchyItem.Transform;
+            var transform = hierarchyItem.Transform;
             if (!transform)
                 return null;
 
-            var parent		= transform.parent;
+            var parent = transform.parent;
 
             hierarchyItem.SiblingIndices.Clear();
             hierarchyItem.SiblingIndices.Add(transform.GetSiblingIndex());
@@ -492,7 +496,7 @@ namespace Chisel.Components
                 return null;
 
             // Find siblingIndexs up the parents, until we find a ChiselNode
-            if (componentLookup.TryGetValue(parent, out ChiselNode parentComponent) 
+            if (componentLookup.TryGetValue(parent, out ChiselNode parentComponent)
                 && !parentComponent.CanHaveChildNodes)
                 parentComponent = null;
             while (ReferenceEquals(parentComponent, null))
@@ -509,7 +513,7 @@ namespace Chisel.Components
 
             return parentComponent;
         }
-        
+
         static List<GameObject> __rootGameObjects = new List<GameObject>(); // static to avoid allocations
         static Queue<Transform> __transforms = new Queue<Transform>(); // static to avoid allocations
         static void UpdateChildren(Transform rootTransform)
@@ -526,15 +530,15 @@ namespace Chisel.Components
                 scene.GetRootGameObjects(__rootGameObjects);
                 for (int i = 0; i < __rootGameObjects.Count; i++)
                 {
-                    var childTransform	= __rootGameObjects[i].transform;
-                    var childNode		= childTransform.GetComponentInChildren<ChiselNode>();
+                    var childTransform = __rootGameObjects[i].transform;
+                    var childNode = childTransform.GetComponentInChildren<ChiselNode>();
                     if (!childNode)
                         continue;
                     if (childNode is ChiselModel)
                         continue;
                     __transforms.Enqueue(childTransform);
                     hierarchyUpdateQueue.Add(childNode);
-                }				
+                }
             } else
                 __transforms.Enqueue(rootTransform);
 
@@ -588,7 +592,7 @@ namespace Chisel.Components
         static void AddChildNodesToHashSet(HashSet<ChiselNode> allFoundChildren)
         {
             __hierarchyQueueLists.Clear();
-            foreach(var node in allFoundChildren)
+            foreach (var node in allFoundChildren)
                 __hierarchyQueueLists.Enqueue(node.hierarchyItem.Children);
             while (__hierarchyQueueLists.Count > 0)
             {
@@ -609,10 +613,10 @@ namespace Chisel.Components
         {
             if (!component)
                 return;
-        
-            int index			= addToHierarchyQueue.Count;
-            var parent			= component.hierarchyItem.Transform ? component.hierarchyItem.Transform : component.transform;
-            var	parentComponent = component;
+
+            int index = addToHierarchyQueue.Count;
+            var parent = component.hierarchyItem.Transform ? component.hierarchyItem.Transform : component.transform;
+            var parentComponent = component;
             do
             {
                 if (parentComponent &&
@@ -637,7 +641,7 @@ namespace Chisel.Components
                 parentComponent = parent.GetComponent<ChiselNode>();
             } while (true);
         }
-        
+
         static bool RemoveFromHierarchy(List<ChiselHierarchyItem> rootItems, ChiselNode component)
         {
             __hierarchyQueueLists.Clear();
@@ -684,8 +688,8 @@ namespace Chisel.Components
             var sceneHierarchy = component.hierarchyItem.sceneHierarchy;
             if (sceneHierarchy == null)
                 return;
-        
-            var rootItems	= sceneHierarchy.RootItems;
+
+            var rootItems = sceneHierarchy.RootItems;
             RemoveFromHierarchy(rootItems, component);
 
             if (rootItems.Count == 0)
@@ -711,7 +715,7 @@ namespace Chisel.Components
                 scene.GetRootGameObjects(rootObjects);
                 for (int r = 0; r < rootObjects.Count; r++)
                 {
-                    var rootObject	= rootObjects[r];
+                    var rootObject = rootObjects[r];
                     children.Clear();
                     rootObject.GetComponentsInChildren<ChiselNode>(includeInactive: false, children);
                     for (int n = 0; n < children.Count; n++)
@@ -729,7 +733,7 @@ namespace Chisel.Components
         public static void Update()
         {
             int loops = 0;
-            UpdateAgain:
+UpdateAgain:
             reregisterModelQueue.Clear();
 
             // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
@@ -755,16 +759,16 @@ namespace Chisel.Components
                 if (haveCreatedTreeNodes)
                 {
                     Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                    ChiselBrushContainerAssetManager.Update();
-                    Profiler.EndSample();
+                    try { ChiselBrushContainerAssetManager.Update(); }
+                    finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("ChiselBrushMaterialManager.Update");
-                    ChiselBrushMaterialManager.Update();
-                    Profiler.EndSample();
+                    try { ChiselBrushMaterialManager.Update(); }
+                    finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("UpdateTrampoline");
-                    UpdateTrampoline();
-                    Profiler.EndSample();
+                    try { UpdateTrampoline(); }
+                    finally { Profiler.EndSample(); }
                 }
             }
             // If we get an exception we don't want to end up infinitely spawning this exception ..
@@ -779,7 +783,7 @@ namespace Chisel.Components
                 for (int i = 0; i < reregisterModelQueue.Count; i++)
                 {
                     reregisterModelQueue[i].hierarchyItem.Registered = false;
-                    Register(reregisterModelQueue[i]); 
+                    Register(reregisterModelQueue[i]);
                 }
                 tryAgain = true;
             }
@@ -799,8 +803,14 @@ namespace Chisel.Components
             }
         }
 
-        static void CreateTreeNodes(ChiselNode node)
+        // Returns true when the number of brushes has been changed
+        static bool CreateOrDestroyTreeNodes(ChiselNode node)
         {
+            if (!node.CreatesTreeNode)
+                return false;
+
+            Profiler.BeginSample("CreateOrDestroyTreeNodes");
+
             // Create the treeNodes for this node
             Profiler.BeginSample("ClearTreeNodes");
             node.ClearTreeNodes(clearCaches: false);
@@ -812,10 +822,12 @@ namespace Chisel.Components
                 treeNodeLookup[node] = createdTreeNodes;
             else
                 treeNodeLookup.Remove(node);
+            Profiler.EndSample();
+            return true;
         }
 
         public static ChiselSceneHierarchy GetSceneHierarchyForScene(Scene scene)
-        { 
+        {
             if (sceneHierarchies.TryGetValue(scene, out ChiselSceneHierarchy sceneHierarchy))
                 return sceneHierarchy;
 
@@ -836,17 +848,17 @@ namespace Chisel.Components
         }
 
 
-        static readonly HashSet<ChiselNode>	        __registerNodes		    = new HashSet<ChiselNode>();	// static to avoid allocations
-        static readonly HashSet<ChiselNode>	        __unregisterNodes	    = new HashSet<ChiselNode>();	// static to avoid allocations
-        static readonly List<CSGTreeNode>	        __childNodes		    = new List<CSGTreeNode>(5000);  // static to avoid allocations
-        static readonly List<ChiselNode>            __prevUpdateQueue       = new List<ChiselNode>();
-        static readonly List<KeyValuePair<Scene,ChiselSceneHierarchy>> __prevSceneHierarchy = new List<KeyValuePair<Scene, ChiselSceneHierarchy>>();
+        static readonly HashSet<ChiselNode> __registerNodes = new HashSet<ChiselNode>();	// static to avoid allocations
+        static readonly HashSet<ChiselNode> __unregisterNodes = new HashSet<ChiselNode>();	// static to avoid allocations
+        static readonly List<CSGTreeNode> __childNodes = new List<CSGTreeNode>(5000);  // static to avoid allocations
+        static readonly List<ChiselNode> __prevUpdateQueue = new List<ChiselNode>();
+        static readonly List<KeyValuePair<Scene, ChiselSceneHierarchy>> __prevSceneHierarchy = new List<KeyValuePair<Scene, ChiselSceneHierarchy>>();
 
         internal static bool prevPlaying = false;
         internal static bool UpdateTrampoline()
         {
             Profiler.BeginSample("UpdateTrampoline.Setup");
-            bool haveCreatedTreeNodes = false;
+            bool haveModifiedTreeNodeCount = false;
             if (createDefaultModels.Count > 0)
             {
                 foreach (var sceneHierarchy in createDefaultModels)
@@ -871,7 +883,7 @@ namespace Chisel.Components
 #if UNITY_EDITOR
             // *Workaround*
             // Events are not properly called, and can be even duplicated, on entering and exiting playmode
-            var currentPlaying	= UnityEditor.EditorApplication.isPlaying;
+            var currentPlaying = UnityEditor.EditorApplication.isPlaying;
             if (currentPlaying != prevPlaying)
             {
                 prevPlaying = currentPlaying;
@@ -908,7 +920,7 @@ namespace Chisel.Components
                 if (defaultModel)
                 {
                     var defaultChildren = defaultModel.hierarchyItem.Children;
-                    var expectedScene	= pair.Key;
+                    var expectedScene = pair.Key;
                     for (int n = defaultChildren.Count - 1; n >= 0; n--)
                     {
                         if (!defaultChildren[n].GameObject)
@@ -965,7 +977,7 @@ namespace Chisel.Components
                     {
 #if UNITY_EDITOR
 
-                        if( UnityEditor.PrefabUtility.GetPrefabAssetType( component ) != UnityEditor.PrefabAssetType.Regular )
+                        if (UnityEditor.PrefabUtility.GetPrefabAssetType(component) != UnityEditor.PrefabAssetType.Regular)
 
 #endif
                             continue;
@@ -995,7 +1007,7 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
-            
+
             if (registerQueue.Count == 0 &&
                 unregisterQueue.Count == 0 &&
                 sortChildrenQueue.Count == 0 &&
@@ -1007,15 +1019,23 @@ namespace Chisel.Components
                 destroyNodesList.Count == 0 &&
                 rebuildTreeNodes.Count == 0)
                 return false;
-            
 
             __registerNodes   .Clear();
             __unregisterNodes .Clear();
 
             if (rebuildTreeNodes.Count > 0)
             {
-                unregisterQueue.AddRange(rebuildTreeNodes);
-                registerQueue.AddRange(rebuildTreeNodes);
+                foreach (var component in rebuildTreeNodes)
+                {
+                    if (!unregisterQueueLookup.Contains(component))
+                    {
+                        unregisterQueue.Add(component);
+                    }
+                    if (!registerQueueLookup.Contains(component))
+                    {
+                        registerQueue.Add(component);
+                    }
+                }
             }
 
             Profiler.BeginSample("UpdateTrampoline.unregisterQueue");
@@ -1139,7 +1159,7 @@ namespace Chisel.Components
                         registerQueue.RemoveAt(i);
                         continue;
                     }
-                    
+
                     { 
                         var hierarchyItem	= node.hierarchyItem;
                         var transform		= hierarchyItem.Transform;
@@ -1163,13 +1183,7 @@ namespace Chisel.Components
                             __registerNodes.Add(node); 
                     }
 
-                    if (node.CreatesTreeNode)
-                    {
-                        Profiler.BeginSample("UpdateTrampoline.registerQueue.B.CreateTreeNodes");
-                        CreateTreeNodes(node);
-                        Profiler.EndSample();
-                        haveCreatedTreeNodes = true;
-                    }
+                    haveModifiedTreeNodeCount = CreateOrDestroyTreeNodes(node) || haveModifiedTreeNodeCount;
                 }
                 Profiler.EndSample();
                  
@@ -1525,7 +1539,7 @@ namespace Chisel.Components
             // Used to redraw windows etc.
             NodeHierarchyModified?.Invoke();
             Profiler.EndSample();
-            return haveCreatedTreeNodes;
+            return haveModifiedTreeNodeCount;
         }
 
         static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)

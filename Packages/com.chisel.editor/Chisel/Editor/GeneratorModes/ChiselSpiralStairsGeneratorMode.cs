@@ -10,15 +10,19 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSpiralStairsSettings
+    public sealed class ChiselSpiralStairsSettings : ScriptableObject
     {
         // TODO: add more settings
         public float    stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
         public int      outerSegments           = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
-        public bool     generateFromCenterXZ    = true;
+        
+        public bool     GenerateFromCenterXZ    { get { return (placement & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterXZ) : placement & ~PlacementFlags.GenerateFromCenterXZ; } }
+
+        [ToggleFlags(includeFlags: (int)(PlacementFlags.GenerateFromCenterXZ))]
+        public PlacementFlags placement = PlacementFlags.GenerateFromCenterXZ;
     }
 
-    public sealed class ChiselSpiralStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselSpiralStairsSettings, ChiselSpiralStairs>
+    public sealed class ChiselSpiralStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselSpiralStairsSettings, ChiselSpiralStairsDefinition, ChiselSpiralStairs>
     {
         const string kToolName = ChiselSpiralStairs.kNodeTypeName;
         public override string ToolName => kToolName;
@@ -29,54 +33,38 @@ namespace Chisel.Editors
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSpiralStairsGeneratorMode); }
         #endregion
-
-        public override void Reset()
-        {
-            BoxExtrusionHandle.Reset();
+ 
+        public override ChiselGeneratorModeFlags Flags 
+        { 
+            get
+            {
+                return ChiselGeneratorModeFlags.AlwaysFaceUp |
+                       ChiselGeneratorModeFlags.SameLengthXZ |
+                       (Settings.GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+            } 
         }
-        
+
+        protected override void OnCreate(ChiselSpiralStairs generatedComponent)
+        {
+            generatedComponent.Operation        = forceOperation ?? CSGOperationType.Additive;
+            generatedComponent.StepHeight       = Settings.stepHeight;
+            generatedComponent.OuterSegments    = Settings.outerSegments;
+        }
+
+        protected override void OnUpdate(ChiselSpiralStairs generatedComponent, Bounds bounds)
+        {
+            generatedComponent.Height			= bounds.size[(int)Axis.Y];
+            generatedComponent.OuterDiameter	= bounds.size[(int)Axis.X];
+        }
+
+        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
+        {
+            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.OuterSegments : Settings.outerSegments);
+        }
+
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            var flags = BoxExtrusionFlags.AlwaysFaceUp |
-                        BoxExtrusionFlags.IsSymmetricalXZ |
-                        (settings.generateFromCenterXZ ? BoxExtrusionFlags.GenerateFromCenterXZ : BoxExtrusionFlags.None);
-
-            switch (BoxExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, flags, Axis.Y, snappingSteps: settings.stepHeight))
-            {
-                case BoxExtrusionState.Create:
-                {
-                    generatedComponent = ChiselComponentFactory.Create<ChiselSpiralStairs>(ChiselSpiralStairs.kNodeTypeName,
-                                                                        ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
-                                                                        transformation);
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation	  = forceOperation ?? CSGOperationType.Additive;
-                    generatedComponent.StepHeight     = settings.stepHeight;
-                    generatedComponent.Height         = height;
-                    generatedComponent.OuterDiameter  = bounds.size[(int)Axis.X];
-                    generatedComponent.OuterSegments  = settings.outerSegments;
-                    generatedComponent.UpdateGenerator();
-                    break;
-                }
-
-                case BoxExtrusionState.Modified:
-                {
-                    generatedComponent.Operation      = forceOperation ?? 
-                                                          ((height < 0 && modelBeneathCursor) ? 
-                                                            CSGOperationType.Subtractive : 
-                                                            CSGOperationType.Additive);
-                    generatedComponent.Height			= bounds.size.y;
-                    generatedComponent.OuterDiameter	= bounds.size[(int)Axis.X];
-                    break;
-                }
-                
-                case BoxExtrusionState.Commit:      { Commit(generatedComponent.gameObject); break; }
-                case BoxExtrusionState.Cancel:      { Cancel(); break; }
-                case BoxExtrusionState.BoxMode:
-                case BoxExtrusionState.SquareMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-                case BoxExtrusionState.HoverMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-            }
-
-            HandleRendering.RenderCylinder(transformation, bounds, (generatedComponent) ? generatedComponent.OuterSegments : settings.outerSegments);
+            DoBoxGenerationHandle(dragArea, ToolName);
         }
     }
 }

@@ -10,11 +10,11 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeSettings
+    public sealed class ChiselExtrudedShapeSettings : ScriptableObject
     {
     }
 
-    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselGeneratorModeWithSettings<ChiselExtrudedShapeSettings, ChiselExtrudedShape>
+    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselGeneratorModeWithSettings<ChiselExtrudedShapeSettings, ChiselExtrudedShapeDefinition, ChiselExtrudedShape>
     {
         const string kToolName = "Free Draw";
         public override string ToolName => kToolName;
@@ -25,11 +25,6 @@ namespace Chisel.Editors
         [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselExtrudedShapeGeneratorMode); }
         #endregion
-
-        public override void Reset()
-        {
-            ShapeExtrusionHandle.Reset();
-        }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {

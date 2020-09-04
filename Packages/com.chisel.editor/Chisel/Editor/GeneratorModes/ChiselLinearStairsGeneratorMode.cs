@@ -10,11 +10,11 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselLinearStairsSettings
+    public sealed class ChiselLinearStairsSettings : ScriptableObject
     {
     }
 
-    public sealed class ChiselLinearStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselLinearStairsSettings, ChiselLinearStairs>
+    public sealed class ChiselLinearStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselLinearStairsSettings, ChiselLinearStairsDefinition, ChiselLinearStairs>
     {
         const string kToolName = ChiselLinearStairs.kNodeTypeName;
         public override string ToolName => kToolName;
@@ -26,48 +26,32 @@ namespace Chisel.Editors
         public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselLinearStairsGeneratorMode); }
         #endregion
 
-        public override void Reset()
+        public override ChiselGeneratorModeFlags Flags 
+        { 
+            get
+            {
+                return ChiselGeneratorModeFlags.AlwaysFaceUp | ChiselGeneratorModeFlags.AlwaysFaceCameraXZ;
+            } 
+        }
+
+        protected override void OnCreate(ChiselLinearStairs generatedComponent)
         {
-            BoxExtrusionHandle.Reset();
+            generatedComponent.Operation  = forceOperation ?? CSGOperationType.Additive;
+        }
+
+        protected override void OnUpdate(ChiselLinearStairs generatedComponent, Bounds bounds)
+        {
+            generatedComponent.Bounds = bounds;
+        }
+
+        protected override void OnPaint(Matrix4x4 transformation, Bounds bounds)
+        {
+            HandleRendering.RenderBox(transformation, bounds);
         }
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            var flags = BoxExtrusionFlags.AlwaysFaceUp | BoxExtrusionFlags.AlwaysFaceCameraXZ;
-
-            switch (BoxExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, flags, Axis.Y))
-            {
-                case BoxExtrusionState.Create:
-                {
-                    generatedComponent = ChiselComponentFactory.Create<ChiselLinearStairs>(ChiselLinearStairs.kNodeTypeName,
-                                                                        ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
-                                                                        transformation);
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation  = forceOperation ?? CSGOperationType.Additive;
-                    generatedComponent.Bounds     = bounds;
-                    generatedComponent.UpdateGenerator();
-                    break;
-                }
-
-                case BoxExtrusionState.Modified:
-                {
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation  = forceOperation ?? 
-                                              ((height < 0 && modelBeneathCursor) ? 
-                                                CSGOperationType.Subtractive : 
-                                                CSGOperationType.Additive);
-                    generatedComponent.Bounds     = bounds;
-                    break;
-                }
-                
-                case BoxExtrusionState.Commit:      { Commit(generatedComponent.gameObject); break; }
-                case BoxExtrusionState.Cancel:      { Cancel(); break; }
-                case BoxExtrusionState.BoxMode:
-                case BoxExtrusionState.SquareMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline; break; }
-                case BoxExtrusionState.HoverMode:	{ ChiselOutlineRenderer.VisualizationMode = VisualizationMode.Outline; break; }
-            }
-
-            HandleRendering.RenderBox(transformation, bounds);
+            DoBoxGenerationHandle(dragArea, ToolName);
         }
     }
 }

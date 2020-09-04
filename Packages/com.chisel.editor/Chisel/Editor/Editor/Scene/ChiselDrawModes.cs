@@ -73,6 +73,7 @@ namespace Chisel.Editors
 			ChiselGeneratedModelMeshManager.PostUpdateModels -= OnPostUpdateModels;
 			ChiselGeneratedModelMeshManager.PostUpdateModels += OnPostUpdateModels;
 		}
+
 		private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			ChiselGeneratedComponentManager.InitializeOnLoad(scene); // <- ensures selection works (rendering partial meshes hides regular meshes)

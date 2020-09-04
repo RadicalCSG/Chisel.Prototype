@@ -701,6 +701,9 @@ namespace Chisel.Editors
             InSceneSettingsContext = true;
             try
             {
+                if (serializedObject == null ||
+                    !serializedObject.targetObject)
+                    return;
                 serializedObject.Update();
                 EditorGUI.BeginChangeCheck();
                 {
@@ -961,7 +964,10 @@ namespace Chisel.Editors
                 {
                     EditorGUI.BeginChangeCheck();
                     {
+                        var prevColor = Handles.color;
+                        Handles.color = SceneHandles.handleColor;
                         OnScene(sceneView, generator);
+                        Handles.color = prevColor;
                     }
                     if (EditorGUI.EndChangeCheck())
                     {

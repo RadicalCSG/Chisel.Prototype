@@ -49,6 +49,7 @@ namespace UnitySceneExtensions
             SetArrowCursor(SceneHandleUtility.GetCursorForEdge(from, to));
         }
 
+        static readonly Vector3[] linePoints = new Vector3[2];
         public static void DrawEdgeHandle(int id, Vector3 from, Vector3 to, bool setCursor, bool renderEdge = true, bool setControl = true, MouseCursor? cursor = null)
         {
             var evt = Event.current;
@@ -77,10 +78,12 @@ namespace UnitySceneExtensions
 
                     if (renderEdge)
                     {
+                        linePoints[0] = from;
+                        linePoints[1] = to;
                         if (EditorGUIUtility.keyboardControl == id)
-                            SceneHandles.DrawAAPolyLine(3.5f, from, to);
+                            SceneHandles.DrawAAPolyLine(3.5f, linePoints);
                         else
-                            SceneHandles.DrawAAPolyLine(2.5f, from, to);
+                            SceneHandles.DrawAAPolyLine(2.5f, linePoints);
                     }
                     break;
                 }

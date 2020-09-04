@@ -95,9 +95,7 @@ namespace Chisel.Editors
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
             if (currentTool == Instance.data.currentGenerator)
-            {
                 return;
-            }
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
 
