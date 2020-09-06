@@ -126,7 +126,54 @@ namespace Chisel.Components
             }
         }
          
+        
+        public static UnityEngine.Component Create(Type type, string name, UnityEngine.Transform parent, Matrix4x4 trsMatrix)
+        {
+            // TODO: ensure we're creating this in the active scene
+            // TODO: handle scene being locked by version control
 
+            if (string.IsNullOrEmpty(name))
+            {
+#if UNITY_EDITOR
+                name = UnityEditor.GameObjectUtility.GetUniqueNameForSibling(parent, type.Name);
+#else
+                name = type.Name;
+#endif
+            }
+
+            var newGameObject = new UnityEngine.GameObject(name);
+#if UNITY_EDITOR
+            UnityEditor.Undo.RegisterCreatedObjectUndo(newGameObject, "Created " + name);
+#endif
+            newGameObject.SetActive(false);
+            try
+            {
+                var brushTransform = newGameObject.transform;
+#if UNITY_EDITOR
+                if (parent)
+                    UnityEditor.Undo.SetTransformParent(brushTransform, parent, "Move child node underneath parent composite");
+                UnityEditor.Undo.RecordObject(brushTransform, "Move child node to given position");
+#else
+                if (parent)
+                    brushTransform.SetParent(parent, false);
+#endif
+                if (parent)
+                    brushTransform.Set(parent.worldToLocalMatrix * trsMatrix);
+                else
+                    brushTransform.Set(trsMatrix);
+
+#if UNITY_EDITOR
+                return UnityEditor.Undo.AddComponent(newGameObject, type);
+#else
+                return newGameObject.AddComponent(type);
+#endif
+            }
+            finally
+            {
+                newGameObject.SetActive(true);
+            }
+        }
+         
         public static T Create<T>(string name, UnityEngine.Transform parent, Vector3 position, Quaternion rotation, Vector3 scale) where T : ChiselNode
         {
             return Create<T>(name, parent, Matrix4x4.TRS(position, rotation, scale));

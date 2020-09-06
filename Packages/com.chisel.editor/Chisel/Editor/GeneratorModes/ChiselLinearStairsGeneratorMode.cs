@@ -10,17 +10,21 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselLinearStairsSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselLinearStairsDefinition>
+    public sealed class ChiselLinearStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselLinearStairsDefinition>
     {
-        public bool     SameLengthXZ		    { get { return (placement & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ; } set { placement = value ? (placement | PlacementFlags.SameLengthXZ) : placement & ~PlacementFlags.SameLengthXZ; } }
-        
-        [ToggleFlags(includeFlags: (int)PlacementFlags.SameLengthXZ)]
-        public PlacementFlags placement = (PlacementFlags)0;
+        const string    kToolName   = ChiselLinearStairs.kNodeTypeName;
+        public string   ToolName    => kToolName;
+        public string   Group       => "Stairs";
 
-        
-        // TODO: this could be the placementflags ...
-        public ChiselGeneratorModeFlags GeneratoreModeFlags => ChiselGeneratorModeFlags.AlwaysFaceUp | ChiselGeneratorModeFlags.AlwaysFaceCameraXZ |
-                                                               (SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None);
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.LinearStairsBuilderModeKey, ChiselKeyboardDefaults.LinearStairsBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselLinearStairsGeneratorMode); }
+        #endregion
+
+        [ToggleFlags(includeFlags: (int)Editors.PlacementFlags.SameLengthXZ)]
+        public PlacementFlags placement = Editors.PlacementFlags.AlwaysFaceUp | Editors.PlacementFlags.AlwaysFaceCameraXZ;        
+        public PlacementFlags PlacementFlags => placement;
 
         public void OnCreate(ref ChiselLinearStairsDefinition definition) {}
 
@@ -35,21 +39,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselLinearStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselLinearStairsSettings, ChiselLinearStairsDefinition, ChiselLinearStairs>
+    public sealed class ChiselLinearStairsGeneratorMode : ChiselBoundsPlacementTool<ChiselLinearStairsSettings, ChiselLinearStairsDefinition, ChiselLinearStairs>
     {
-        const string kToolName = ChiselLinearStairs.kNodeTypeName;
-        public override string ToolName => kToolName;
-        public override string Group => "Stairs";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.LinearStairsBuilderModeKey, ChiselKeyboardDefaults.LinearStairsBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselLinearStairsGeneratorMode); }
-        #endregion
-
-        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-            DoGenerationHandle(dragArea, Settings);
-        }
     }
 }

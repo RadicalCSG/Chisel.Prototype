@@ -20,36 +20,20 @@ namespace Chisel.Editors
         Update
     }
 
-    [Flags]
-    public enum ChiselGeneratorModeFlags
-    {
-        None                    = 0,
-        
-        SameLengthXZ            = 1,
-        HeightEqualsMinXZ       = SameLengthXZ | 2,
-        HeightEqualsHalfMinXZ   = SameLengthXZ | 4,
-
-        // TODO: Generate position => Pivot
-        GenerateFromCenterXZ    = 8,
-        GenerateFromCenterY     = 16,
-        
-        AlwaysFaceUp            = 32,
-        AlwaysFaceCameraXZ      = 64,
-        
-        UseLastHeight           = 128,
-    }
-
-    public abstract partial class ChiselGeneratorModeWithSettings<SettingsType, DefinitionType, Generator> : ChiselGeneratorMode
-        where SettingsType      : ScriptableObject
+    // TODO: Ensure generated position == Pivot
+    public abstract partial class ChiselShapePlacementTool<SettingsType, DefinitionType, Generator> : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
+        // Settings needs to be a ScriptableObject so we can create an Editor for it
+        where SettingsType      : ScriptableObject, IChiselShapePlacementSettings<DefinitionType>
+        // We need the DefinitionType to be able to strongly type the Generator
         where DefinitionType    : IChiselGenerator, new()
         where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
     {
-        Vector3 componentPosition   = Vector3.zero;
-        Vector3 upAxis              = Vector3.zero;
+        public override string ToolName => Settings.ToolName;
+        public override string Group    => Settings.Group;
 
         protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
 
-        protected void DoGenerationHandle(Rect dragArea, IChiselShapeGeneratorSettings<DefinitionType> settings)
+        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             // TODO: handle snapping against own points
             // TODO: handle ability to 'commit' last point
@@ -59,13 +43,16 @@ namespace Chisel.Editors
                 {
                     var center2D = shape.Center;
                     var center3D = new Vector3(center2D.x, 0, center2D.y);
-                    generatedComponent = ChiselComponentFactory.Create<Generator>(ToolName,
-                                                                          ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor), 
-                                                                          transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one));
+                    Transform parentTransform = null;
+                    var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
+                    if (model != null) parentTransform = model.transform;
+                    generatedComponent = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform, 
+                                                                          transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
+                                        as ChiselDefinedGeneratorComponent<DefinitionType>;
                     shape.Center = Vector2.zero;
                     generatedComponent.definition.Reset();
                     generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                    settings.OnCreate(ref generatedComponent.definition, shape);
+                    Settings.OnCreate(ref generatedComponent.definition, shape);
                     generatedComponent.UpdateGenerator();
                     break;
                 }
@@ -76,8 +63,8 @@ namespace Chisel.Editors
                                               ((height < 0 && modelBeneathCursor) ? 
                                                 CSGOperationType.Subtractive : 
                                                 CSGOperationType.Additive);
-                    settings.OnUpdate(ref generatedComponent.definition, height);
-                    generatedComponent.UpdateGenerator();
+                    Settings.OnUpdate(ref generatedComponent.definition, height);
+                    generatedComponent.OnValidate();
                     break;
                 }
                 
@@ -90,14 +77,35 @@ namespace Chisel.Editors
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
 
             renderer.matrix = transformation;
-            settings.OnPaint(renderer, shape, height);
+            Settings.OnPaint(renderer, shape, height);
         }
+    }
+    
+    public abstract partial class ChiselBoundsPlacementTool<SettingsType, DefinitionType, Generator> 
+        : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
+        // Settings needs to be a ScriptableObject so we can create an Editor for it
+        where SettingsType      : ScriptableObject, IChiselBoundsPlacementSettings<DefinitionType>
+        // We need the DefinitionType to be able to strongly type the Generator
+        where DefinitionType    : IChiselGenerator, new()
+        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
+    { 
+        Vector3 componentPosition   = Vector3.zero;
+        Vector3 upAxis              = Vector3.zero;
 
-        protected void DoGenerationHandle(Rect dragArea, IChiselBoundsGeneratorSettings<DefinitionType> settings)
+        public override string ToolName => Settings.ToolName;
+        public override string Group    => Settings.Group;
+
+        protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
+
+        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            var generatoreModeFlags = settings.GeneratoreModeFlags;            
+            var generatoreModeFlags = Settings.PlacementFlags;
+
+            if ((generatoreModeFlags & (PlacementFlags.HeightEqualsHalfXZ | PlacementFlags.HeightEqualsXZ)) != 0)
+                generatoreModeFlags |= PlacementFlags.SameLengthXZ;
+
             if (Event.current.shift)
-                generatoreModeFlags |= ChiselGeneratorModeFlags.UseLastHeight;
+                generatoreModeFlags |= PlacementFlags.UseLastHeight;
 
             switch (RectangleExtrusionHandle.Do(dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, generatoreModeFlags, Axis.Y))
             {
@@ -107,35 +115,39 @@ namespace Chisel.Editors
                     {
                         if (height != 0)
                         {
-                            generatedComponent = ChiselComponentFactory.Create<Generator>(ToolName,
-                                                                        ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor),
-                                                                        transformation);
+                            // Create the generator GameObject
+                            Transform parentTransform = null;
+                            var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
+                            if (model != null) parentTransform = model.transform;
+                            generatedComponent  = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform, transformation) 
+                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
                             componentPosition   = generatedComponent.transform.localPosition;
                             upAxis              = generatedComponent.transform.up;
 
                             generatedComponent.definition.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                            settings.OnCreate(ref generatedComponent.definition);
-                            settings.OnUpdate(ref generatedComponent.definition, bounds);
+                            Settings.OnCreate(ref generatedComponent.definition);
+                            Settings.OnUpdate(ref generatedComponent.definition, bounds);
                             generatedComponent.OnValidate();
 
-                            if ((generatoreModeFlags & ChiselGeneratorModeFlags.GenerateFromCenterY) == ChiselGeneratorModeFlags.GenerateFromCenterY)
+                            if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                                 generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
                             generatedComponent.UpdateGenerator();
                         }
                     } else
                     {
+                        // Update the generator GameObject
                         ChiselComponentFactory.SetTransform(generatedComponent, transformation);
-                        if ((generatoreModeFlags & ChiselGeneratorModeFlags.AlwaysFaceUp) == ChiselGeneratorModeFlags.AlwaysFaceCameraXZ)
+                        if ((generatoreModeFlags & PlacementFlags.AlwaysFaceUp) == PlacementFlags.AlwaysFaceCameraXZ)
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
                         else
                             generatedComponent.Operation = forceOperation ??
                                                     ((height < 0 && modelBeneathCursor) ?
                                                     CSGOperationType.Subtractive :
                                                     CSGOperationType.Additive);
-                        settings.OnUpdate(ref generatedComponent.definition, bounds);
+                        Settings.OnUpdate(ref generatedComponent.definition, bounds);
                         generatedComponent.OnValidate();
-                        if ((generatoreModeFlags & ChiselGeneratorModeFlags.GenerateFromCenterY) == ChiselGeneratorModeFlags.GenerateFromCenterY)
+                        if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                             generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
                     }
                     break;
@@ -148,7 +160,7 @@ namespace Chisel.Editors
             if (ChiselOutlineRenderer.VisualizationMode != VisualizationMode.SimpleOutline)
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
             renderer.matrix = transformation;
-            settings.OnPaint(renderer, bounds);
+            Settings.OnPaint(renderer, bounds);
         }
     }
 }

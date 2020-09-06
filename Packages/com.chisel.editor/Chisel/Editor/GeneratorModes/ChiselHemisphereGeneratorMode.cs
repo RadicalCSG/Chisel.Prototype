@@ -10,23 +10,25 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselHemisphereSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselHemisphereDefinition>
+    public sealed class ChiselHemisphereSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselHemisphereDefinition>
     {
+        const string    kToolName   = ChiselHemisphere.kNodeTypeName;
+        public string   ToolName    => kToolName;
+        public string   Group       => "Basic Primitives";
+
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.HemisphereBuilderModeKey, ChiselKeyboardDefaults.HemisphereBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselHemisphereGeneratorMode); }
+        #endregion
+
         public int      horizontalSegments      = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
         public int      verticalSegments        = ChiselHemisphereDefinition.kDefaultVerticalSegments;
         
-        public bool     SameLengthXZ		    { get { return (placement & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ; } set { placement = value ? (placement | PlacementFlags.SameLengthXZ) : placement & ~PlacementFlags.SameLengthXZ; } }
-        public bool     HeightEqualsHalfXZ      { get { return (placement & PlacementFlags.HeightEqualsXZ) == PlacementFlags.HeightEqualsXZ; } set { placement = value ? (placement | PlacementFlags.HeightEqualsXZ) : placement & ~PlacementFlags.HeightEqualsXZ; } }
-        public bool     GenerateFromCenterXZ    { get { return (placement & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterXZ) : placement & ~PlacementFlags.GenerateFromCenterXZ; } }
-        
 
-        [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsXZ | PlacementFlags.GenerateFromCenterXZ))]
-        public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsXZ | PlacementFlags.GenerateFromCenterXZ;
-        
-        // TODO: this could be the placementflags ...
-        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ          ? ChiselGeneratorModeFlags.SameLengthXZ          : ChiselGeneratorModeFlags.None) |
-                                                               (HeightEqualsHalfXZ    ? ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ : ChiselGeneratorModeFlags.None) |
-                                                               (GenerateFromCenterXZ  ? ChiselGeneratorModeFlags.GenerateFromCenterXZ  : ChiselGeneratorModeFlags.None);
+        [ToggleFlags(includeFlags: (int)(Editors.PlacementFlags.SameLengthXZ | Editors.PlacementFlags.HeightEqualsHalfXZ | Editors.PlacementFlags.GenerateFromCenterXZ))]
+        public PlacementFlags placement = Editors.PlacementFlags.SameLengthXZ | Editors.PlacementFlags.HeightEqualsHalfXZ | Editors.PlacementFlags.GenerateFromCenterXZ;
+        public PlacementFlags PlacementFlags => placement;
 
         public void OnCreate(ref ChiselHemisphereDefinition definition) 
         {
@@ -46,21 +48,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselHemisphereGeneratorMode : ChiselGeneratorModeWithSettings<ChiselHemisphereSettings, ChiselHemisphereDefinition, ChiselHemisphere>
+    public sealed class ChiselHemisphereGeneratorMode : ChiselBoundsPlacementTool<ChiselHemisphereSettings, ChiselHemisphereDefinition, ChiselHemisphere>
     {
-        const string kToolName = ChiselHemisphere.kNodeTypeName;
-        public override string ToolName => kToolName;
-        public override string Group => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.HemisphereBuilderModeKey, ChiselKeyboardDefaults.HemisphereBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselHemisphereGeneratorMode); }
-        #endregion
-
-        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-            DoGenerationHandle(dragArea, Settings);
-        }
     }
 }

@@ -36,14 +36,14 @@ namespace Chisel.Editors
             PointDrawing.Reset();
         }
 
-        static Bounds GetBounds(ChiselGeneratorModeFlags flags, Axis upAxis)
+        static Bounds GetBounds(PlacementFlags flags, Axis upAxis)
         {
             if (s_Points.Count == 0) return new Bounds();
             
             var bounds = new Bounds( s_Points[0], Vector3.zero);
             if (s_Points.Count == 1) return bounds;
 
-            if ((flags & ChiselGeneratorModeFlags.SameLengthXZ) == ChiselGeneratorModeFlags.SameLengthXZ)
+            if ((flags & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ)
             {
                 var pt0 = s_Points[0];
                 var pt1 = s_Points[1];
@@ -65,7 +65,7 @@ namespace Chisel.Editors
                     s_Points[1] = pt1;
                 }
             }
-            if ((flags & ChiselGeneratorModeFlags.GenerateFromCenterXZ) == ChiselGeneratorModeFlags.GenerateFromCenterXZ)
+            if ((flags & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ)
             {
                 var radius = s_Points[1] - s_Points[0];
                 bounds.Encapsulate(s_Points[0] - radius);
@@ -81,7 +81,7 @@ namespace Chisel.Editors
             size[(int)upAxis] = height;
             bounds.size = size;
             
-            if ((flags & ChiselGeneratorModeFlags.GenerateFromCenterY) != ChiselGeneratorModeFlags.GenerateFromCenterY)
+            if ((flags & PlacementFlags.GenerateFromCenterY) != PlacementFlags.GenerateFromCenterY)
             {
                 var center = bounds.center;
                 center[(int)upAxis] += height * 0.5f;
@@ -90,20 +90,20 @@ namespace Chisel.Editors
             return bounds;
         }
 
-        static float GetHeight(ChiselGeneratorModeFlags flags, Axis upAxis)
+        static float GetHeight(PlacementFlags flags, Axis upAxis)
         {
             if (s_Points.Count <= 1) 
                 return 0;
 
-            if ((flags & ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ) == ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ ||
-                (flags & ChiselGeneratorModeFlags.HeightEqualsMinXZ    ) == ChiselGeneratorModeFlags.HeightEqualsMinXZ)
+            if ((flags & PlacementFlags.HeightEqualsHalfXZ) == PlacementFlags.HeightEqualsHalfXZ ||
+                (flags & PlacementFlags.HeightEqualsXZ    ) == PlacementFlags.HeightEqualsXZ)
             {
-                var heightMultiplier = ((flags & ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ) == ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ) ? 0.5f : 1.0f;
+                var heightMultiplier = ((flags & PlacementFlags.HeightEqualsHalfXZ) == PlacementFlags.HeightEqualsHalfXZ) ? 0.5f : 1.0f;
 
                 var axis1 = (((int)upAxis) + 1) % 3;
                 var axis2 = (((int)upAxis) + 2) % 3;
 
-                if ((flags & ChiselGeneratorModeFlags.GenerateFromCenterXZ) == ChiselGeneratorModeFlags.GenerateFromCenterXZ)
+                if ((flags & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ)
                     heightMultiplier *= 2;
 
                 var length1 = Mathf.Abs((s_Points[0] - s_Points[1])[(int)axis1]);
@@ -115,12 +115,12 @@ namespace Chisel.Editors
 
             if (s_Points.Count <= 2)
             {
-                if ((flags & ChiselGeneratorModeFlags.UseLastHeight) == ChiselGeneratorModeFlags.UseLastHeight)
+                if ((flags & PlacementFlags.UseLastHeight) == PlacementFlags.UseLastHeight)
                     s_DefaultHeight = s_NextHeight = s_LastHeight;
                 return s_DefaultHeight;
             }
 
-            if ((flags & ChiselGeneratorModeFlags.UseLastHeight) == ChiselGeneratorModeFlags.UseLastHeight)
+            if ((flags & PlacementFlags.UseLastHeight) == PlacementFlags.UseLastHeight)
             {
                 s_DefaultHeight = s_NextHeight = s_LastHeight;
             } else
@@ -128,7 +128,7 @@ namespace Chisel.Editors
             return s_DefaultHeight;
         }
 
-        public static GeneratorModeState Do(Rect dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, ChiselGeneratorModeFlags flags, Axis upAxis, float? snappingSteps = null)
+        public static GeneratorModeState Do(Rect dragArea, out Bounds bounds, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, PlacementFlags flags, Axis upAxis, float? snappingSteps = null)
         {
             // TODO: shift should do SameLengthXZ, shift control includes Y
             // TODO: fixed height should be possible to change sign
@@ -154,9 +154,9 @@ namespace Chisel.Editors
                     if (!s_ModifyMode)
                     {
                         PointDrawing.Release();
-                        if ((flags & ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ) == ChiselGeneratorModeFlags.HeightEqualsHalfMinXZ ||
-                            (flags & ChiselGeneratorModeFlags.HeightEqualsMinXZ) == ChiselGeneratorModeFlags.HeightEqualsMinXZ ||
-                            (flags & ChiselGeneratorModeFlags.UseLastHeight) == ChiselGeneratorModeFlags.UseLastHeight)
+                        if ((flags & PlacementFlags.HeightEqualsHalfXZ) == PlacementFlags.HeightEqualsHalfXZ ||
+                            (flags & PlacementFlags.HeightEqualsXZ) == PlacementFlags.HeightEqualsXZ ||
+                            (flags & PlacementFlags.UseLastHeight) == PlacementFlags.UseLastHeight)
                         {
                             if (height > 0)
                             {
@@ -200,14 +200,14 @@ namespace Chisel.Editors
                 height			    = bounds.size[(int)upAxis];
 
                 var center          = bounds.center;
-                if ((flags & ChiselGeneratorModeFlags.GenerateFromCenterY) != ChiselGeneratorModeFlags.GenerateFromCenterY)
+                if ((flags & PlacementFlags.GenerateFromCenterY) != PlacementFlags.GenerateFromCenterY)
                     center[(int)upAxis] -= height * 0.5f;
 
                 transformation      = s_Transformation * Matrix4x4.TRS(center, Quaternion.identity, Vector3.one);
 #if true
                 //if (height > 0)
                 {
-                    if ((flags & ChiselGeneratorModeFlags.AlwaysFaceUp) == ChiselGeneratorModeFlags.AlwaysFaceUp)
+                    if ((flags & PlacementFlags.AlwaysFaceUp) == PlacementFlags.AlwaysFaceUp)
                     {
                         var currentUp       = transformation.MultiplyVector(Vector3.up);
                         var currentForward  = transformation.MultiplyVector(Vector3.forward);
@@ -262,7 +262,7 @@ namespace Chisel.Editors
                     }
 
                     if (!s_ModelBeneathCursor &&
-                        (flags & ChiselGeneratorModeFlags.AlwaysFaceCameraXZ) == ChiselGeneratorModeFlags.AlwaysFaceCameraXZ)
+                        (flags & PlacementFlags.AlwaysFaceCameraXZ) == PlacementFlags.AlwaysFaceCameraXZ)
                     {
                         // TODO: take grid orientation into account to decide what is "X" and what is "Z"
                         var currentForward  = transformation.MultiplyVector(Vector3.forward);
@@ -301,7 +301,7 @@ namespace Chisel.Editors
 #endif
 
                 center = Vector3.zero;
-                if ((flags & ChiselGeneratorModeFlags.GenerateFromCenterY) != ChiselGeneratorModeFlags.GenerateFromCenterY)
+                if ((flags & PlacementFlags.GenerateFromCenterY) != PlacementFlags.GenerateFromCenterY)
                     center[(int)upAxis] = height * 0.5f;
                 else
                     center[(int)upAxis] = 0;

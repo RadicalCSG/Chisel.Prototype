@@ -10,25 +10,26 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCapsuleSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselCapsuleDefinition>
+    public sealed class ChiselCapsuleSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselCapsuleDefinition>
     {
+        const string    kToolName   = ChiselCapsule.kNodeTypeName;
+        public string   ToolName    => kToolName;
+        public string   Group       => "Basic Primitives";
+
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CapsuleBuilderModeKey, ChiselKeyboardDefaults.CapsuleBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCapsuleGeneratorMode); }
+        #endregion
+
         public int      topSegments			 = ChiselCapsuleDefinition.kDefaultTopSegments;
         public int	    bottomSegments	     = ChiselCapsuleDefinition.kDefaultBottomSegments;
         public int      sides				 = ChiselCapsuleDefinition.kDefaultSides;
         
-        public bool     SameLengthXZ		    { get { return (placement & PlacementFlags.SameLengthXZ) == PlacementFlags.SameLengthXZ; } set { placement = value ? (placement | PlacementFlags.SameLengthXZ) : placement & ~PlacementFlags.SameLengthXZ; } }
-        public bool     GenerateFromCenterY     { get { return (placement & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterY) : placement & ~PlacementFlags.GenerateFromCenterY; } }
-        public bool     GenerateFromCenterXZ    { get { return (placement & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterXZ) : placement & ~PlacementFlags.GenerateFromCenterXZ; } }
 
-
-        [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterY | PlacementFlags.GenerateFromCenterXZ))]
-        public PlacementFlags placement = PlacementFlags.SameLengthXZ | PlacementFlags.GenerateFromCenterXZ;
-        
-
-        // TODO: this could be the placementflags ...
-        public ChiselGeneratorModeFlags GeneratoreModeFlags => (SameLengthXZ         ? ChiselGeneratorModeFlags.SameLengthXZ         : ChiselGeneratorModeFlags.None) |
-                                                               (GenerateFromCenterY  ? ChiselGeneratorModeFlags.GenerateFromCenterY  : ChiselGeneratorModeFlags.None) |
-                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+        [ToggleFlags(includeFlags: (int)(Editors.PlacementFlags.SameLengthXZ | Editors.PlacementFlags.GenerateFromCenterY | Editors.PlacementFlags.GenerateFromCenterXZ))]
+        public PlacementFlags placement = Editors.PlacementFlags.SameLengthXZ | Editors.PlacementFlags.GenerateFromCenterXZ;        
+        public PlacementFlags PlacementFlags => placement;
 
         public void OnCreate(ref ChiselCapsuleDefinition definition) 
         {
@@ -49,6 +50,7 @@ namespace Chisel.Editors
             definition.height       = height;
             definition.diameterZ    = bounds.size[(int)Axis.Z];
         }
+
         public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
         {
             // TODO: render capsule here
@@ -58,21 +60,7 @@ namespace Chisel.Editors
     }
 
     // TODO: maybe just bevel top of cylinder instead of separate capsule generator??
-    public sealed class ChiselCapsuleGeneratorMode : ChiselGeneratorModeWithSettings<ChiselCapsuleSettings, ChiselCapsuleDefinition, ChiselCapsule>
+    public sealed class ChiselCapsuleGeneratorMode : ChiselBoundsPlacementTool<ChiselCapsuleSettings, ChiselCapsuleDefinition, ChiselCapsule>
     {
-        const string kToolName = ChiselCapsule.kNodeTypeName;
-        public override string ToolName => kToolName;
-        public override string Group => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CapsuleBuilderModeKey, ChiselKeyboardDefaults.CapsuleBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCapsuleGeneratorMode); }
-        #endregion
-        
-        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-            DoGenerationHandle(dragArea, Settings);
-        }
     }
 }

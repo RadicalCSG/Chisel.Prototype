@@ -10,9 +10,17 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeSettings : ScriptableObject, IChiselShapeGeneratorSettings<ChiselExtrudedShapeDefinition>
+    public sealed class ChiselExtrudedShapeSettings : ScriptableObject, IChiselShapePlacementSettings<ChiselExtrudedShapeDefinition>
     {
-        public ChiselGeneratorModeFlags GeneratoreModeFlags => throw new NotImplementedException();
+        const string    kToolName   = "Free Draw";
+        public string   ToolName    => kToolName;
+        public string   Group       => "Freeform";
+
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + "Free Drawn Shape";
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselExtrudedShapeGeneratorMode); }
+        #endregion
 
         public void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)
         {
@@ -34,21 +42,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselGeneratorModeWithSettings<ChiselExtrudedShapeSettings, ChiselExtrudedShapeDefinition, ChiselExtrudedShape>
+    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselShapePlacementTool<ChiselExtrudedShapeSettings, ChiselExtrudedShapeDefinition, ChiselExtrudedShape>
     {
-        const string kToolName = "Free Draw";
-        public override string ToolName => kToolName;
-        public override string Group => "Freeform";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + "Free Drawn Shape";
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselExtrudedShapeGeneratorMode); }
-        #endregion
-
-        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-            DoGenerationHandle(dragArea, Settings);
-        }
     }
 }

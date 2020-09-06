@@ -10,20 +10,25 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSpiralStairsSettings : ScriptableObject, IChiselBoundsGeneratorSettings<ChiselSpiralStairsDefinition>
+    public sealed class ChiselSpiralStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselSpiralStairsDefinition>
     {
+        const string    kToolName   = ChiselSpiralStairs.kNodeTypeName;
+        public string   ToolName    => kToolName;
+        public string   Group       => "Stairs";
+
+        #region Keyboard Shortcut
+        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
+        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
+        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSpiralStairsGeneratorMode); }
+        #endregion
+
         // TODO: add more settings
         public float    stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
         public int      outerSegments           = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
         
-        public bool     GenerateFromCenterXZ    { get { return (placement & PlacementFlags.GenerateFromCenterXZ) == PlacementFlags.GenerateFromCenterXZ; } set { placement = value ? (placement | PlacementFlags.GenerateFromCenterXZ) : placement & ~PlacementFlags.GenerateFromCenterXZ; } }
-
-        [ToggleFlags(includeFlags: (int)(PlacementFlags.GenerateFromCenterXZ))]
-        public PlacementFlags placement = PlacementFlags.GenerateFromCenterXZ;
-        
-        // TODO: this could be the placementflags ...
-        public ChiselGeneratorModeFlags GeneratoreModeFlags => ChiselGeneratorModeFlags.AlwaysFaceUp | ChiselGeneratorModeFlags.SameLengthXZ |
-                                                               (GenerateFromCenterXZ ? ChiselGeneratorModeFlags.GenerateFromCenterXZ : ChiselGeneratorModeFlags.None);
+        [ToggleFlags(includeFlags: (int)(Editors.PlacementFlags.GenerateFromCenterXZ))]
+        public PlacementFlags placement = Editors.PlacementFlags.GenerateFromCenterXZ | Editors.PlacementFlags.AlwaysFaceUp | Editors.PlacementFlags.SameLengthXZ;
+        public PlacementFlags PlacementFlags => placement;
 
         public void OnCreate(ref ChiselSpiralStairsDefinition definition) 
         {
@@ -44,21 +49,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselSpiralStairsGeneratorMode : ChiselGeneratorModeWithSettings<ChiselSpiralStairsSettings, ChiselSpiralStairsDefinition, ChiselSpiralStairs>
+    public sealed class ChiselSpiralStairsGeneratorMode : ChiselBoundsPlacementTool<ChiselSpiralStairsSettings, ChiselSpiralStairsDefinition, ChiselSpiralStairs>
     {
-        const string kToolName = ChiselSpiralStairs.kNodeTypeName;
-        public override string ToolName => kToolName;
-        public override string Group => "Stairs";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSpiralStairsGeneratorMode); }
-        #endregion
-
-        public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
-        {
-            DoGenerationHandle(dragArea, Settings);
-        }
     }
 }

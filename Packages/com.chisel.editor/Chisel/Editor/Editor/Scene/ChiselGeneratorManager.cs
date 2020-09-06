@@ -13,7 +13,7 @@ namespace Chisel.Editors
     [Serializable]
     public class ChiselEditModeData : ISingletonData
     {
-        public ChiselGeneratorMode currentGenerator;
+        public ChiselPlacementTool currentGenerator;
 
         public void OnAfterDeserialize() {}
         public void OnBeforeSerialize() {}
@@ -21,13 +21,13 @@ namespace Chisel.Editors
 
     public class ChiselGeneratorManager : SingletonManager<ChiselEditModeData, ChiselGeneratorManager>
     {
-        internal static ChiselGeneratorMode[] generatorModes;
+        internal static ChiselPlacementTool[] generatorModes;
 
 
         [InitializeOnLoadMethod]
         static void InitializeEditModes()
         {
-            var generatorModeList = new List<ChiselGeneratorMode>();
+            var generatorModeList = new List<ChiselPlacementTool>();
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)
             {
                 var baseType = type.BaseType;
@@ -35,7 +35,7 @@ namespace Chisel.Editors
                 int count = 0;
                 while (count < 4 && baseType != null)
                 {
-                    if (baseType == typeof(ChiselGeneratorMode))
+                    if (baseType == typeof(ChiselPlacementTool))
                     {
                         found = true;
                         break;
@@ -46,10 +46,10 @@ namespace Chisel.Editors
                 if (!found)
                     continue;
 
-                var instance = (ChiselGeneratorMode)Activator.CreateInstance(type); 
+                var instance = (ChiselPlacementTool)Activator.CreateInstance(type); 
                 generatorModeList.Add(instance);
             }
-            generatorModeList.Sort(delegate (ChiselGeneratorMode x, ChiselGeneratorMode y)
+            generatorModeList.Sort(delegate (ChiselPlacementTool x, ChiselPlacementTool y)
             {
                 int difference = x.Group.CompareTo(y.Group);
                 if (difference != 0)
@@ -61,10 +61,10 @@ namespace Chisel.Editors
 
 
         // TODO: create proper delegate for this, with named parameters for clarity
-        public static event Action<ChiselGeneratorMode, ChiselGeneratorMode> GeneratorSelectionChanged;
+        public static event Action<ChiselPlacementTool, ChiselPlacementTool> GeneratorSelectionChanged;
 
 
-        public static ChiselGeneratorMode GeneratorMode
+        public static ChiselPlacementTool GeneratorMode
         {
             get
             {
@@ -90,7 +90,7 @@ namespace Chisel.Editors
             }
         }
 
-        internal static void ActivateTool(ChiselGeneratorMode currentTool)
+        internal static void ActivateTool(ChiselPlacementTool currentTool)
         {
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;

@@ -17,37 +17,33 @@ namespace Chisel.Editors
     [Flags]
     public enum PlacementFlags
     {
+        [ToggleFlag(ignore: true)]
+        None = 0,
+
         [ToggleFlag("SizeFromBottom",   "Extrude from the bottom",
                     "SizeFromCenter",   "Extrude it from the center")]
         GenerateFromCenterY     = 1,
         [ToggleFlag("DragToHeight",     "Drag to extrude distance",
                     "AutoHeight",       "Extrude distance is determined by base size")]
         HeightEqualsXZ          = 2,
+        [ToggleFlag("DragToHeight",     "Drag to extrude distance",
+                    "AutoHeight",       "Extrude distance is determined by base size")]
+        HeightEqualsHalfXZ      = 4,
         [ToggleFlag("RectangularBase",  "Base width and depth can be sized independently", 
                     "SquareBase",       "Base width and depth are identical in size")]
-        SameLengthXZ            = 4,
+        SameLengthXZ            = 8,
         [ToggleFlag("SizeBaseFromCorner", "Base is sized from corner",
                     "SizeBaseFromCenter", "Base is sized from center")]
-        GenerateFromCenterXZ    = 8
-    }
+        GenerateFromCenterXZ    = 16,
 
+        [ToggleFlag(ignore: true)]
+        AlwaysFaceUp = 32,
 
-    public interface IChiselBoundsGeneratorSettings<DefinitionType> where DefinitionType : IChiselGenerator, new()
-    {
-        ChiselGeneratorModeFlags GeneratoreModeFlags { get; }
+        [ToggleFlag(ignore: true)]
+        AlwaysFaceCameraXZ = 64,
 
-        void OnCreate(ref DefinitionType definition);
-        void OnUpdate(ref DefinitionType definition, Bounds bounds);
-        void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
-    }
-
-    public interface IChiselShapeGeneratorSettings<DefinitionType> where DefinitionType : IChiselGenerator, new()
-    {
-        ChiselGeneratorModeFlags GeneratoreModeFlags { get; }
-
-        void OnCreate(ref DefinitionType definition, Curve2D shape);
-        void OnUpdate(ref DefinitionType definition, float height);
-        void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height);
+        [ToggleFlag(ignore: true)]
+        UseLastHeight = 128,
     }
 
     public interface IGeneratorHandleRenderer
@@ -69,8 +65,32 @@ namespace Chisel.Editors
         public void RenderShape(Curve2D shape, float height)    { HandleRendering.RenderShape(matrix, shape, height); }
     }
 
+    public interface IChiselBoundsPlacementSettings<DefinitionType> 
+        where DefinitionType : IChiselGenerator, new()
+    {
+        string ToolName { get; }
+        string Group    { get; }
 
-    public abstract partial class ChiselGeneratorModeWithSettings<SettingsType, DefinitionType, Generator> : ChiselGeneratorMode
+        PlacementFlags PlacementFlags { get; }
+
+        void OnCreate(ref DefinitionType definition);
+        void OnUpdate(ref DefinitionType definition, Bounds bounds);
+        void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
+    }
+
+    public interface IChiselShapePlacementSettings<DefinitionType> 
+        where DefinitionType : IChiselGenerator, new()
+    {
+        string ToolName { get; }
+        string Group    { get; }
+
+        void OnCreate(ref DefinitionType definition, Curve2D shape);
+        void OnUpdate(ref DefinitionType definition, float height);
+        void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height);
+    }
+
+    public abstract partial class ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator> 
+        : ChiselPlacementTool
         // Settings needs to be a ScriptableObject so we can create an Editor for it
         where SettingsType      : ScriptableObject 
         // We need the DefinitionType to be able to strongly type the Generator
@@ -106,8 +126,9 @@ namespace Chisel.Editors
                 return settingsInternal;
             }
         }
-        protected CSGOperationType? forceOperation  = null;
-        protected Generator         generatedComponent;
+        protected CSGOperationType?                                 forceOperation  = null;
+        protected Type                                              generatorType   = typeof(Generator);
+        protected ChiselDefinedGeneratorComponent<DefinitionType>   generatedComponent;
 
         static readonly string[] excludeProperties = new[] { "m_Script" };
 
@@ -149,7 +170,7 @@ namespace Chisel.Editors
         }
     }
 
-    public abstract class ChiselGeneratorMode 
+    public abstract class ChiselPlacementTool 
     {
         public abstract string  ToolName        { get; }
         public virtual string   Group           { get; }

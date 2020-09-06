@@ -121,6 +121,8 @@ namespace Chisel.Editors
             foreach (var member in members)
             {
                 var attribute   = member.GetCustomAttribute<ToggleFlagAttribute>();
+                if (attribute.Ignore)
+                    continue;
                 var value       = (int)Enum.Parse(type, member.Name);
 
                 GUIContent[] iconsOn, iconsOff;
