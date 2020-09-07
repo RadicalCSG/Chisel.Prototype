@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselCylinderSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselCylinderDefinition>
     {
-        const string    kToolName   = ChiselCylinder.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselCylinder.kNodeTypeName;
         public string   Group       => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CylinderBuilderModeKey, ChiselKeyboardDefaults.CylinderBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCylinderGeneratorMode); }
-        #endregion
 
         public CylinderShapeType    cylinderType		 = CylinderShapeType.Cylinder;
         public int				    sides			     = 16;
@@ -50,9 +43,5 @@ namespace Chisel.Editors
             renderer.RenderCylinder(bounds, sides);
             renderer.RenderBoxMeasurements(bounds);
         }
-    }
-
-    public sealed class ChiselCylinderGeneratorMode : ChiselBoundsPlacementTool<ChiselCylinderSettings, ChiselCylinderDefinition, ChiselCylinder>
-    {
     }
 }

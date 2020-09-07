@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselSpiralStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselSpiralStairsDefinition>
     {
-        const string    kToolName   = ChiselSpiralStairs.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselSpiralStairs.kNodeTypeName;
         public string   Group       => "Stairs";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SpiralStairsBuilderModeKey, ChiselKeyboardDefaults.SpiralStairsBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSpiralStairsGeneratorMode); }
-        #endregion
 
         // TODO: add more settings
         public float    stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
@@ -47,9 +40,5 @@ namespace Chisel.Editors
             renderer.RenderCylinder(bounds, outerSegments);
             renderer.RenderBoxMeasurements(bounds);
         }
-    }
-
-    public sealed class ChiselSpiralStairsGeneratorMode : ChiselBoundsPlacementTool<ChiselSpiralStairsSettings, ChiselSpiralStairsDefinition, ChiselSpiralStairs>
-    {
     }
 }

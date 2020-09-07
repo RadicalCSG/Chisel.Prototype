@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselLinearStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselLinearStairsDefinition>
     {
-        const string    kToolName   = ChiselLinearStairs.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselLinearStairs.kNodeTypeName;
         public string   Group       => "Stairs";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.LinearStairsBuilderModeKey, ChiselKeyboardDefaults.LinearStairsBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselLinearStairsGeneratorMode); }
-        #endregion
 
         [ToggleFlags(includeFlags: (int)Editors.PlacementFlags.SameLengthXZ)]
         public PlacementFlags placement = Editors.PlacementFlags.AlwaysFaceUp | Editors.PlacementFlags.AlwaysFaceCameraXZ;        
@@ -39,9 +32,5 @@ namespace Chisel.Editors
             renderer.RenderBox(bounds);
             renderer.RenderBoxMeasurements(bounds);
         }
-    }
-
-    public sealed class ChiselLinearStairsGeneratorMode : ChiselBoundsPlacementTool<ChiselLinearStairsSettings, ChiselLinearStairsDefinition, ChiselLinearStairs>
-    {
     }
 }

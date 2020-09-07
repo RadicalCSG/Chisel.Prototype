@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselCapsuleSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselCapsuleDefinition>
     {
-        const string    kToolName   = ChiselCapsule.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselCapsule.kNodeTypeName;
         public string   Group       => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.CapsuleBuilderModeKey, ChiselKeyboardDefaults.CapsuleBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselCapsuleGeneratorMode); }
-        #endregion
 
         public int      topSegments			 = ChiselCapsuleDefinition.kDefaultTopSegments;
         public int	    bottomSegments	     = ChiselCapsuleDefinition.kDefaultBottomSegments;
@@ -57,10 +50,5 @@ namespace Chisel.Editors
             renderer.RenderCylinder(bounds, sides);
             renderer.RenderBoxMeasurements(bounds);
         }
-    }
-
-    // TODO: maybe just bevel top of cylinder instead of separate capsule generator??
-    public sealed class ChiselCapsuleGeneratorMode : ChiselBoundsPlacementTool<ChiselCapsuleSettings, ChiselCapsuleDefinition, ChiselCapsule>
-    {
     }
 }

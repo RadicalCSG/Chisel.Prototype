@@ -10,17 +10,11 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
+    // TODO: add attribute to set toolname/group
     public sealed class ChiselBoxSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselBoxDefinition>
     {
-        const string    kToolName   = ChiselBox.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselBox.kNodeTypeName;
         public string   Group       => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.BoxBuilderModeKey, ChiselKeyboardDefaults.BoxBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselBoxGeneratorMode); }
-        #endregion
 
         [ToggleFlags]
         public PlacementFlags placement = PlacementFlags.None;
@@ -33,12 +27,5 @@ namespace Chisel.Editors
             renderer.RenderBox(bounds);
             renderer.RenderBoxMeasurements(bounds);
         }
-    } 
-
-    // TODO: get rid of this, make the code find the definitions, *REGISTER* it, and create a generic GeneratorMode for that definition
-    //       make it all data driven so we can support custom generators
-    //       *Find* type of component that uses our definition
-    public sealed class ChiselBoxGeneratorMode : ChiselBoundsPlacementTool<ChiselBoxSettings, ChiselBoxDefinition, ChiselBox>
-    {
     }
 }

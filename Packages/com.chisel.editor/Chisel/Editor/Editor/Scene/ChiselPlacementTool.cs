@@ -17,33 +17,34 @@ namespace Chisel.Editors
     [Flags]
     public enum PlacementFlags
     {
-        [ToggleFlag(ignore: true)]
-        None = 0,
-
         [ToggleFlag("SizeFromBottom",   "Extrude from the bottom",
                     "SizeFromCenter",   "Extrude it from the center")]
         GenerateFromCenterY     = 1,
+
+        
         [ToggleFlag("DragToHeight",     "Drag to extrude distance",
                     "AutoHeight",       "Extrude distance is determined by base size")]
         HeightEqualsXZ          = 2,
+
+        
         [ToggleFlag("DragToHeight",     "Drag to extrude distance",
                     "AutoHeight",       "Extrude distance is determined by base size")]
         HeightEqualsHalfXZ      = 4,
+
+        
         [ToggleFlag("RectangularBase",  "Base width and depth can be sized independently", 
                     "SquareBase",       "Base width and depth are identical in size")]
         SameLengthXZ            = 8,
+
+
         [ToggleFlag("SizeBaseFromCorner", "Base is sized from corner",
                     "SizeBaseFromCenter", "Base is sized from center")]
         GenerateFromCenterXZ    = 16,
 
-        [ToggleFlag(ignore: true)]
-        AlwaysFaceUp = 32,
-
-        [ToggleFlag(ignore: true)]
-        AlwaysFaceCameraXZ = 64,
-
-        [ToggleFlag(ignore: true)]
-        UseLastHeight = 128,
+        [ToggleFlag(ignore: true)] None = 0,
+        [ToggleFlag(ignore: true)] AlwaysFaceUp         = 32,
+        [ToggleFlag(ignore: true)] AlwaysFaceCameraXZ   = 64,
+        [ToggleFlag(ignore: true)] UseLastHeight        = 128,
     }
 
     public interface IGeneratorHandleRenderer
@@ -55,16 +56,17 @@ namespace Chisel.Editors
         void RenderShape(Curve2D shape, float height);
     }
 
+    // TODO: separate interface from implementation, interface + definitions can be moved to Chisel.Core
     public sealed class GeneratorHandleRenderer : IGeneratorHandleRenderer
     {
         public Matrix4x4 matrix { get; set; }
-
         public void RenderBox(Bounds bounds)                    { HandleRendering.RenderBox(matrix, bounds); }
         public void RenderBoxMeasurements(Bounds bounds)        { HandleRendering.RenderBoxMeasurements(matrix, bounds); }
         public void RenderCylinder(Bounds bounds, int segments) { HandleRendering.RenderCylinder(matrix, bounds, segments); }
         public void RenderShape(Curve2D shape, float height)    { HandleRendering.RenderShape(matrix, shape, height); }
     }
 
+    // TODO: make abstract class, make it inherit from ScriptableObject
     public interface IChiselBoundsPlacementSettings<DefinitionType> 
         where DefinitionType : IChiselGenerator, new()
     {
@@ -72,13 +74,12 @@ namespace Chisel.Editors
         string Group    { get; }
 
         PlacementFlags PlacementFlags { get; }
-
         void OnCreate(ref DefinitionType definition);
         void OnUpdate(ref DefinitionType definition, Bounds bounds);
         void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
     }
 
-    public interface IChiselShapePlacementSettings<DefinitionType> 
+    public interface IChiselShapePlacementSettings<DefinitionType>
         where DefinitionType : IChiselGenerator, new()
     {
         string ToolName { get; }

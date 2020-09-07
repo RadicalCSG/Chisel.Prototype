@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselExtrudedShapeSettings : ScriptableObject, IChiselShapePlacementSettings<ChiselExtrudedShapeDefinition>
     {
-        const string    kToolName   = "Free Draw";
-        public string   ToolName    => kToolName;
+        public string   ToolName    => "Free Draw";
         public string   Group       => "Freeform";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + "Free Drawn Shape";
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.FreeBuilderModeKey, ChiselKeyboardDefaults.FreeBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselExtrudedShapeGeneratorMode); }
-        #endregion
 
         public void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)
         {
@@ -37,9 +30,5 @@ namespace Chisel.Editors
         {
             renderer.RenderShape(shape, height);
         }
-    }
-
-    public sealed class ChiselExtrudedShapeGeneratorMode : ChiselShapePlacementTool<ChiselExtrudedShapeSettings, ChiselExtrudedShapeDefinition, ChiselExtrudedShape>
-    {
     }
 }

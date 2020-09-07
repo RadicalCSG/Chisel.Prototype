@@ -20,8 +20,7 @@ namespace Chisel.Editors
         Update
     }
 
-    // TODO: Ensure generated position == Pivot
-    public abstract partial class ChiselShapePlacementTool<SettingsType, DefinitionType, Generator> : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
+    public class ChiselShapePlacementTool<SettingsType, DefinitionType, Generator> : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
         // Settings needs to be a ScriptableObject so we can create an Editor for it
         where SettingsType      : ScriptableObject, IChiselShapePlacementSettings<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
@@ -85,7 +84,7 @@ namespace Chisel.Editors
         }
     }
     
-    public abstract partial class ChiselBoundsPlacementTool<SettingsType, DefinitionType, Generator> 
+    public class ChiselBoundsPlacementTool<SettingsType, DefinitionType, Generator> 
         : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
         // Settings needs to be a ScriptableObject so we can create an Editor for it
         where SettingsType      : ScriptableObject, IChiselBoundsPlacementSettings<DefinitionType>

@@ -12,15 +12,8 @@ namespace Chisel.Editors
 {
     public sealed class ChiselSphereSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselSphereDefinition>
     {
-        const string    kToolName   = ChiselSphere.kNodeTypeName;
-        public string   ToolName    => kToolName;
+        public string   ToolName    => ChiselSphere.kNodeTypeName;
         public string   Group       => "Basic Primitives";
-
-        #region Keyboard Shortcut
-        const string kToolShotcutName = ChiselKeyboardDefaults.ShortCutCreateBase + kToolName;
-        [Shortcut(kToolShotcutName, ChiselKeyboardDefaults.SphereBuilderModeKey, ChiselKeyboardDefaults.SphereBuilderModeModifiers, displayName = kToolShotcutName)]
-        public static void StartGeneratorMode() { ChiselGeneratorManager.GeneratorType = typeof(ChiselSphereGeneratorMode); }
-        #endregion
 
         public int      horizontalSegments      = ChiselSphereDefinition.kDefaultHorizontalSegments;
         public int      verticalSegments        = ChiselSphereDefinition.kDefaultVerticalSegments;
@@ -48,9 +41,5 @@ namespace Chisel.Editors
             renderer.RenderCylinder(bounds, horizontalSegments);
             renderer.RenderBoxMeasurements(bounds);
         }
-    }
-
-    public sealed class ChiselSphereGeneratorMode : ChiselBoundsPlacementTool<ChiselSphereSettings, ChiselSphereDefinition, ChiselSphere>
-    {
     }
 }
