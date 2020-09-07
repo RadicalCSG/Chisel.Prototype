@@ -97,7 +97,6 @@ namespace Chisel.Core
                     Array.Reverse(polygonVertices);
                 }
 
-
                 for (int s = 0; s < path.segments.Length - 1; s++)
                 {
                     var pathPointA = path.segments[s];

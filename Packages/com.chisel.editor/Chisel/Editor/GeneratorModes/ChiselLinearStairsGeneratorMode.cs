@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -30,8 +30,10 @@ namespace Chisel.Editors
 
         public void OnUpdate(ref ChiselLinearStairsDefinition definition, Bounds bounds)
         {
+            definition.Reset();
             definition.bounds = bounds;
         }
+
         public void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderBox(bounds);

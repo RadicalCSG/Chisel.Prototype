@@ -37,16 +37,14 @@ namespace Chisel.Core
                 for (int p = 0; p < polygonVertices.Length; p++)
                 {
                     var point = polygonVertices[p];
-                    int index;
-                    if (!s_PointToIndex.TryGetValue(point, out index))
-                    {
+                    if (!s_PointToIndex.TryGetValue(point, out var index))
                         polygonIndices[p] = segmentIndices[0];
-                    } else
+                    else
                         polygonIndices[p] = segmentIndices[index];
                 }
 
                 outputPolygonIndices[i] = polygonIndices;
-            }			
+            }
             return true;
         }
     }

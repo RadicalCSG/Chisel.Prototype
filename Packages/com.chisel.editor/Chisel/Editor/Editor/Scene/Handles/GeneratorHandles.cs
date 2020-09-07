@@ -39,35 +39,39 @@ namespace Chisel.Editors
             // TODO: handle ability to 'commit' last point
             switch (ShapeExtrusionHandle.Do(dragArea, out Curve2D shape, out float height, out ChiselModel modelBeneathCursor, out Matrix4x4 transformation, Axis.Y))
             {
+                case ShapeExtrusionState.Modified:
                 case ShapeExtrusionState.Create:
                 {
-                    var center2D = shape.Center;
-                    var center3D = new Vector3(center2D.x, 0, center2D.y);
-                    Transform parentTransform = null;
-                    var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
-                    if (model != null) parentTransform = model.transform;
-                    generatedComponent = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform, 
-                                                                          transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
-                                        as ChiselDefinedGeneratorComponent<DefinitionType>;
-                    shape.Center = Vector2.zero;
-                    generatedComponent.definition.Reset();
-                    generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                    Settings.OnCreate(ref generatedComponent.definition, shape);
-                    generatedComponent.UpdateGenerator();
+                    if (!generatedComponent)
+                    {
+                        if (height != 0)
+                        {
+                            var center2D = shape.Center;
+                            var center3D = new Vector3(center2D.x, 0, center2D.y);
+                            Transform parentTransform = null;
+                            var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
+                            if (model != null) parentTransform = model.transform;
+                            generatedComponent = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform,
+                                                                                  transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
+                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
+                            shape.Center = Vector2.zero;
+                            generatedComponent.definition.Reset();
+                            generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
+                            Settings.OnCreate(ref generatedComponent.definition, shape);
+                            Settings.OnUpdate(ref generatedComponent.definition, height);
+                            generatedComponent.UpdateGenerator();
+                        }
+                    } else
+                    {
+                        generatedComponent.Operation = forceOperation ??
+                                                  ((height < 0 && modelBeneathCursor) ?
+                                                    CSGOperationType.Subtractive :
+                                                    CSGOperationType.Additive);
+                        Settings.OnUpdate(ref generatedComponent.definition, height);
+                        generatedComponent.OnValidate();
+                    }
                     break;
                 }
-
-                case ShapeExtrusionState.Modified:
-                {
-                    generatedComponent.Operation = forceOperation ?? 
-                                              ((height < 0 && modelBeneathCursor) ? 
-                                                CSGOperationType.Subtractive : 
-                                                CSGOperationType.Additive);
-                    Settings.OnUpdate(ref generatedComponent.definition, height);
-                    generatedComponent.OnValidate();
-                    break;
-                }
-                
                 
                 case ShapeExtrusionState.Commit:        { Commit(generatedComponent.gameObject); break; }
                 case ShapeExtrusionState.Cancel:        { Cancel(); break; }
@@ -97,6 +101,8 @@ namespace Chisel.Editors
 
         protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
 
+        const float kMinimumAxisLength = 0.0001f;
+
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
             var generatoreModeFlags = Settings.PlacementFlags;
@@ -113,7 +119,10 @@ namespace Chisel.Editors
                 {
                     if (!generatedComponent)
                     {
-                        if (height != 0)
+                        var size = bounds.size;
+                        if (Mathf.Abs(size.x) >= kMinimumAxisLength &&
+                            Mathf.Abs(size.y) >= kMinimumAxisLength &&
+                            Mathf.Abs(size.z) >= kMinimumAxisLength)
                         {
                             // Create the generator GameObject
                             Transform parentTransform = null;
@@ -136,6 +145,15 @@ namespace Chisel.Editors
                         }
                     } else
                     {
+                        var size = bounds.size;
+                        if (Mathf.Abs(size.x) < kMinimumAxisLength &&
+                            Mathf.Abs(size.y) < kMinimumAxisLength &&
+                            Mathf.Abs(size.z) < kMinimumAxisLength)
+                        {
+                            UnityEngine.Object.DestroyImmediate(generatedComponent);
+                            return;
+                        }
+
                         // Update the generator GameObject
                         ChiselComponentFactory.SetTransform(generatedComponent, transformation);
                         if ((generatoreModeFlags & PlacementFlags.AlwaysFaceUp) == PlacementFlags.AlwaysFaceCameraXZ)

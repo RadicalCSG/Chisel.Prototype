@@ -48,7 +48,7 @@ namespace Chisel.Core
         
         static Matrix4x4 ToMatrix(Vector3 position, Quaternion rotation, Vector2 scale)
         {
-            return	Matrix4x4.TRS(position, Quaternion.Inverse(rotation), new Vector3(scale.x,scale.y,-1)); 
+            return Matrix4x4.TRS(position, Quaternion.Inverse(rotation), new Vector3(scale.x,scale.y,-1)); 
         }
 
         public Matrix4x4 ToMatrix()
