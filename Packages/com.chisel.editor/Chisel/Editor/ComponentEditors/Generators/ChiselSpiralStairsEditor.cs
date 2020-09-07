@@ -145,8 +145,9 @@ namespace Chisel.Editors
                 float maxInnerDiameter = outerDiameter - ChiselSpiralStairsDefinition.kMinStairsDepth;
                 innerDiameter		= Mathf.Min(maxInnerDiameter, UnitySceneExtensions.SceneHandles.RadiusHandle(Vector3.up, midPoint, innerDiameter * 0.5f, renderDisc: false) * 2.0f);
 
-                startAngle = RotatedEdge2DHandle(startRotateEdgeID, startAngle           , lowPoint, outerDiameter * 0.5f, normal, lowDirection, Vector3.Cross(normal, lowDirection));
-                rotation   = RotatedEdge2DHandle(endRotateEdgeID,   startAngle + rotation, topPoint, outerDiameter * 0.5f, normal, topDirection, Vector3.Cross(normal, topDirection)) - startAngle;
+                var currRotation = startAngle + rotation;
+                startAngle = RotatedEdge2DHandle(startRotateEdgeID, startAngle  , lowPoint, outerDiameter * 0.5f, normal, lowDirection, Vector3.Cross(normal, lowDirection));
+                rotation   = RotatedEdge2DHandle(endRotateEdgeID,   currRotation, topPoint, outerDiameter * 0.5f, normal, topDirection, Vector3.Cross(normal, topDirection)) - startAngle;
 
 
 
