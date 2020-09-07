@@ -10,11 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselHemisphereSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselHemisphereDefinition>
+    [ChiselPlacementTool(name: ChiselHemisphere.kNodeTypeName, group: "Basic Primitives")]
+    public sealed class ChiselHemispherePlacementTool : ScriptableObject, IChiselBoundsPlacementTool<ChiselHemisphereDefinition>
     {
-        public string   ToolName    => ChiselHemisphere.kNodeTypeName;
-        public string   Group       => "Basic Primitives";
-
         public int      horizontalSegments      = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
         public int      verticalSegments        = ChiselHemisphereDefinition.kDefaultVerticalSegments;
         

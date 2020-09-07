@@ -10,12 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    // TODO: add attribute to set toolname/group
-    public sealed class ChiselBoxSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselBoxDefinition>
+    [ChiselPlacementTool(name: ChiselBox.kNodeTypeName, group: "Basic Primitives")]
+    public sealed class ChiselBoxPlacementTool : ScriptableObject, IChiselBoundsPlacementTool<ChiselBoxDefinition>
     {
-        public string   ToolName    => ChiselBox.kNodeTypeName;
-        public string   Group       => "Basic Primitives";
-
         [ToggleFlags]
         public PlacementFlags placement = PlacementFlags.None;
         public PlacementFlags PlacementFlags => placement;

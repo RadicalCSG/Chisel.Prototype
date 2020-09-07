@@ -10,11 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselExtrudedShapeSettings : ScriptableObject, IChiselShapePlacementSettings<ChiselExtrudedShapeDefinition>
+    [ChiselPlacementTool(name: "Free Draw", group: "Freeform")]
+    public sealed class ChiselExtrudedShapePlacementTool : ScriptableObject, IChiselShapePlacementTool<ChiselExtrudedShapeDefinition>
     {
-        public string   ToolName    => "Free Draw";
-        public string   Group       => "Freeform";
-
         public void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)
         {
             definition.path     = new ChiselPath(ChiselPath.Default);

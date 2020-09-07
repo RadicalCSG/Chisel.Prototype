@@ -66,65 +66,71 @@ namespace Chisel.Editors
         public void RenderShape(Curve2D shape, float height)    { HandleRendering.RenderShape(matrix, shape, height); }
     }
 
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ChiselPlacementToolAttribute : Attribute
+    {
+        public ChiselPlacementToolAttribute(string name, string group)
+        {
+            this.ToolName = name;
+            this.Group = group;
+        }
+        public readonly string ToolName;
+        public readonly string Group;
+    }
+
     // TODO: make abstract class, make it inherit from ScriptableObject
-    public interface IChiselBoundsPlacementSettings<DefinitionType> 
+    public interface IChiselBoundsPlacementTool<DefinitionType> 
         where DefinitionType : IChiselGenerator, new()
     {
-        string ToolName { get; }
-        string Group    { get; }
-
         PlacementFlags PlacementFlags { get; }
         void OnCreate(ref DefinitionType definition);
         void OnUpdate(ref DefinitionType definition, Bounds bounds);
         void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
     }
 
-    public interface IChiselShapePlacementSettings<DefinitionType>
+    public interface IChiselShapePlacementTool<DefinitionType>
         where DefinitionType : IChiselGenerator, new()
     {
-        string ToolName { get; }
-        string Group    { get; }
-
         void OnCreate(ref DefinitionType definition, Curve2D shape);
         void OnUpdate(ref DefinitionType definition, float height);
         void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height);
     }
 
-    public abstract partial class ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator> 
-        : ChiselPlacementTool
-        // Settings needs to be a ScriptableObject so we can create an Editor for it
-        where SettingsType      : ScriptableObject 
+    public abstract partial class ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator> 
+        : ChiselPlacementToolInstance
+        // Placement tool definition needs to be a ScriptableObject so we can create an Editor for it
+        where PlacementToolDefinitionType : ScriptableObject 
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType    : IChiselGenerator, new()
-        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType              : IChiselGenerator, new()
+        where Generator                   : ChiselDefinedGeneratorComponent<DefinitionType>
     {
-        public override void OnActivate()   { EnsureInitialized(); base.OnActivate(); generatedComponent = null; forceOperation = null; LoadSettings(Settings); }
+        public override void OnActivate()   { EnsureInitialized(); base.OnActivate(); generatedComponent = null; forceOperation = null; LoadValues(PlacementToolDefinition); }
         public override void OnDeactivate() { base.OnActivate(); generatedComponent = null; }
 
 
-        SerializedObject    serializedObject;
-        SettingsType        settingsInternal;
+        SerializedObject            serializedObject;
+        PlacementToolDefinitionType placementToolDefinitionInternal;
         void EnsureInitialized()
         {
-            // We can't just new the SettingsType, we need to use CreateInstance because it's a ScriptableObject
-            if (settingsInternal == null)
+            // We can't just new the PlacementToolDefinitionType, we need to use CreateInstance because it's a ScriptableObject
+            if (placementToolDefinitionInternal == null)
             {
-                settingsInternal = ScriptableObject.CreateInstance<SettingsType>();
-                settingsInternal.hideFlags = HideFlags.DontSave;
+                placementToolDefinitionInternal = ScriptableObject.CreateInstance<PlacementToolDefinitionType>();
+                placementToolDefinitionInternal.hideFlags = HideFlags.DontSave;
             }
-            // We need a serializedObject pointing to our Settings (ScriptableObject) so we can let Unity show 
-            // the contents of the settings, the same way we show things in the inspector
+            // We need a serializedObject pointing to our PlacementToolDefinition (ScriptableObject) so we can let Unity show 
+            // the contents of the placementToolDefinition, the same way we show things in the inspector
             if (serializedObject == null)
-                serializedObject = new SerializedObject(settingsInternal);
+                serializedObject = new SerializedObject(placementToolDefinitionInternal);
         }
         
 
-        protected SettingsType      Settings
+        protected PlacementToolDefinitionType      PlacementToolDefinition
         {
             get
             {
                 EnsureInitialized();
-                return settingsInternal;
+                return placementToolDefinitionInternal;
             }
         }
         protected CSGOperationType?                                 forceOperation  = null;
@@ -134,7 +140,7 @@ namespace Chisel.Editors
         static readonly string[] excludeProperties = new[] { "m_Script" };
 
         // Sadly the DrawPropertiesExcluding method is protected, so we need to use reflection to be able to render the
-        // settings properties, without a "Settings" foldout, and a "script" property.
+        // placementToolDefinition properties, without a "PlacementToolDefinition" foldout, and a "script" property.
         delegate void DrawPropertiesExcludingDelegate(SerializedObject obj, params string[] propertyToExclude);
         static DrawPropertiesExcludingDelegate DrawPropertiesExcluding = ReflectionExtensions.CreateDelegate<DrawPropertiesExcludingDelegate>(typeof(Editor), "DrawPropertiesExcluding");
 
@@ -152,7 +158,7 @@ namespace Chisel.Editors
                     try
                     {
                         EditorGUIUtility.labelWidth = 115;
-                        // This renders our settings like in the inspector, but excludes the properties named in excludeProperties
+                        // This renders our placementToolDefinition like in the inspector, but excludes the properties named in excludeProperties
                         DrawPropertiesExcluding(serializedObject, excludeProperties);
                     } catch (Exception ex) 
                     { 
@@ -171,7 +177,7 @@ namespace Chisel.Editors
         }
     }
 
-    public abstract class ChiselPlacementTool 
+    public abstract class ChiselPlacementToolInstance 
     {
         public abstract string  ToolName        { get; }
         public virtual string   Group           { get; }
@@ -281,10 +287,10 @@ namespace Chisel.Editors
 
         #region Settings
 
-        protected void LoadSettings<T>(T settings) where T : ScriptableObject
+        protected void LoadValues<T>(T definition) where T : ScriptableObject
         {
-            var reflectedSettings = GetReflectedSettings<T>();
-            foreach(var field in reflectedSettings.reflectedFields)
+            var reflectedValues = GetReflectedValues<T>();
+            foreach(var field in reflectedValues.reflectedFields)
             {
                 object value;
                 switch (field.defaultValue)
@@ -307,16 +313,16 @@ namespace Chisel.Editors
                         break;
                     }
                 }
-                field.fieldInfo.SetValue(settings, value);
+                field.fieldInfo.SetValue(definition, value);
             }
         }
 
-        protected void SaveSettings<T>(T settings) where T : ScriptableObject
+        protected void SaveValues<T>(T definition) where T : ScriptableObject
         {
-            var reflectedSettings = GetReflectedSettings<T>();
-            foreach (var field in reflectedSettings.reflectedFields)
+            var reflectedValues = GetReflectedValues<T>();
+            foreach (var field in reflectedValues.reflectedFields)
             {
-                var value = field.fieldInfo.GetValue(settings);
+                var value = field.fieldInfo.GetValue(definition);
                 switch (value)
                 {
                     case Int32  castValue: EditorPrefs.SetInt(field.settingsName, castValue); break;
@@ -332,7 +338,7 @@ namespace Chisel.Editors
             }
         }
 
-        class SettingsFieldReflection
+        class DefinitionFieldReflection
         {
             public string name;
             public string settingsName;
@@ -342,21 +348,21 @@ namespace Chisel.Editors
             public System.Reflection.FieldInfo fieldInfo;
         }
 
-        class SettingsReflection
+        class DefinitionReflection
         {
             public Type settingsType;
             public string settingsTypeName;
-            public SettingsFieldReflection[] reflectedFields;
+            public DefinitionFieldReflection[] reflectedFields;
         }
 
-        static Dictionary<Type, SettingsReflection> SettingsReflectionLookup = new Dictionary<Type, SettingsReflection>();
+        static Dictionary<Type, DefinitionReflection> DefinitionReflectionLookup = new Dictionary<Type, DefinitionReflection>();
 
-        static SettingsReflection GetReflectedSettings<T>() where T : ScriptableObject
+        static DefinitionReflection GetReflectedValues<T>() where T : ScriptableObject
         {
             var settingsType = typeof(T);
-            if (!SettingsReflectionLookup.TryGetValue(settingsType, out SettingsReflection settings))
+            if (!DefinitionReflectionLookup.TryGetValue(settingsType, out DefinitionReflection settings))
             {
-                var fieldList           = new List<SettingsFieldReflection>();
+                var fieldList           = new List<DefinitionFieldReflection>();
                 var settingsTypeName    = settingsType.FullName;
                 var defaultSettings     = ScriptableObject.CreateInstance<T>();
                 defaultSettings.hideFlags = HideFlags.DontSaveInEditor;
@@ -375,7 +381,7 @@ namespace Chisel.Editors
                                 defaultValue = Activator.CreateInstance(field.FieldType);
                         }
 
-                        fieldList.Add(new SettingsFieldReflection()
+                        fieldList.Add(new DefinitionFieldReflection()
                         {
                             name         = name,
                             niceName     = niceName,
@@ -390,13 +396,13 @@ namespace Chisel.Editors
                     defaultSettings.hideFlags = HideFlags.None;
                     UnityEngine.Object.DestroyImmediate(defaultSettings);
                 }
-                settings = new SettingsReflection()
+                settings = new DefinitionReflection()
                 {
                     settingsType        = settingsType,
                     settingsTypeName    = settingsTypeName,
                     reflectedFields     = fieldList.ToArray()
                 };
-                SettingsReflectionLookup[settingsType] = settings;
+                DefinitionReflectionLookup[settingsType] = settings;
             }
             return settings;
         }

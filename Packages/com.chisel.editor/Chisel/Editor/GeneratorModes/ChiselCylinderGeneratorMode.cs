@@ -10,11 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselCylinderSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselCylinderDefinition>
+    [ChiselPlacementTool(name: ChiselCylinder.kNodeTypeName, group: "Basic Primitives")]
+    public sealed class ChiselCylinderPlacementTool : ScriptableObject, IChiselBoundsPlacementTool<ChiselCylinderDefinition>
     {
-        public string   ToolName    => ChiselCylinder.kNodeTypeName;
-        public string   Group       => "Basic Primitives";
-
         public CylinderShapeType    cylinderType		 = CylinderShapeType.Cylinder;
         public int				    sides			     = 16;
         

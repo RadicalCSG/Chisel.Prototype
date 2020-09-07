@@ -10,11 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselLinearStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselLinearStairsDefinition>
+    [ChiselPlacementTool(name: ChiselLinearStairs.kNodeTypeName, group: "Stairs")]
+    public sealed class ChiselLinearStairsPlacementTool : ScriptableObject, IChiselBoundsPlacementTool<ChiselLinearStairsDefinition>
     {
-        public string   ToolName    => ChiselLinearStairs.kNodeTypeName;
-        public string   Group       => "Stairs";
-
         [ToggleFlags(includeFlags: (int)Editors.PlacementFlags.SameLengthXZ)]
         public PlacementFlags placement = Editors.PlacementFlags.AlwaysFaceUp | Editors.PlacementFlags.AlwaysFaceCameraXZ;        
         public PlacementFlags PlacementFlags => placement;

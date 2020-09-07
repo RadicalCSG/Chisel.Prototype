@@ -55,7 +55,7 @@ namespace Chisel.Editors
             Repaint();
         }
 
-        public void GeneratorSelectionChanged(ChiselPlacementTool prevGenerator, ChiselPlacementTool nextGenerator)
+        public void GeneratorSelectionChanged(ChiselPlacementToolInstance prevGenerator, ChiselPlacementToolInstance nextGenerator)
         {
             Repaint();
         }
@@ -75,7 +75,7 @@ namespace Chisel.Editors
         }
                 
 
-        static void NamedGeneratorButton(ChiselPlacementTool generator, Rect togglePosition, GUIStyle style, bool isActive)
+        static void NamedGeneratorButton(ChiselPlacementToolInstance generator, Rect togglePosition, GUIStyle style, bool isActive)
         {
             var temp = togglePosition;
             temp.xMin += 5;
@@ -108,7 +108,7 @@ namespace Chisel.Editors
         }
 
         // TODO: move somewhere else
-        public static void SetInToolBox(ChiselPlacementTool generator, bool value)
+        public static void SetInToolBox(ChiselPlacementToolInstance generator, bool value)
         {
             // TODO: make undoable
             generator.InToolBox = value;
@@ -155,7 +155,7 @@ namespace Chisel.Editors
             return true;
         }
 
-        static void GeneratorButton(Rect position, ChiselPlacementTool generator, GUIStyle style, bool isActive)
+        static void GeneratorButton(Rect position, ChiselPlacementToolInstance generator, GUIStyle style, bool isActive)
         {
             EditorGUI.BeginChangeCheck();
             var content     = generator.Content;

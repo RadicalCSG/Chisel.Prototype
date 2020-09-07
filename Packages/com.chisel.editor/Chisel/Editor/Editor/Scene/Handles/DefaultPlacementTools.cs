@@ -20,15 +20,24 @@ namespace Chisel.Editors
         Update
     }
 
-    public class ChiselShapePlacementTool<SettingsType, DefinitionType, Generator> : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
-        // Settings needs to be a ScriptableObject so we can create an Editor for it
-        where SettingsType      : ScriptableObject, IChiselShapePlacementSettings<DefinitionType>
+    public class ChiselShapePlacementToolInstance<PlacementToolDefinitionType, DefinitionType, Generator> : ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator>
+        // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
+        where PlacementToolDefinitionType : ScriptableObject, IChiselShapePlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
         where DefinitionType    : IChiselGenerator, new()
         where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
     {
-        public override string ToolName => Settings.ToolName;
-        public override string Group    => Settings.Group;
+        public ChiselShapePlacementToolInstance(string toolName, string group)
+        {
+            internalToolName = toolName;
+            internalGroup = group;
+        }
+
+        readonly string internalToolName;
+        readonly string internalGroup;
+
+        public override string ToolName => internalToolName;
+        public override string Group    => internalGroup;
 
         protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
 
@@ -56,8 +65,8 @@ namespace Chisel.Editors
                             shape.Center = Vector2.zero;
                             generatedComponent.definition.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                            Settings.OnCreate(ref generatedComponent.definition, shape);
-                            Settings.OnUpdate(ref generatedComponent.definition, height);
+                            PlacementToolDefinition.OnCreate(ref generatedComponent.definition, shape);
+                            PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);
                             generatedComponent.UpdateGenerator();
                         }
                     } else
@@ -66,7 +75,7 @@ namespace Chisel.Editors
                                                   ((height < 0 && modelBeneathCursor) ?
                                                     CSGOperationType.Subtractive :
                                                     CSGOperationType.Additive);
-                        Settings.OnUpdate(ref generatedComponent.definition, height);
+                        PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);
                         generatedComponent.OnValidate();
                     }
                     break;
@@ -80,23 +89,32 @@ namespace Chisel.Editors
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
 
             renderer.matrix = transformation;
-            Settings.OnPaint(renderer, shape, height);
+            PlacementToolDefinition.OnPaint(renderer, shape, height);
         }
     }
     
-    public class ChiselBoundsPlacementTool<SettingsType, DefinitionType, Generator> 
-        : ChiselPlacementToolWithSettings<SettingsType, DefinitionType, Generator>
-        // Settings needs to be a ScriptableObject so we can create an Editor for it
-        where SettingsType      : ScriptableObject, IChiselBoundsPlacementSettings<DefinitionType>
+    public class ChiselBoundsPlacementToolInstance<PlacementToolDefinitionType, DefinitionType, Generator> 
+        : ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator>
+        // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
+        where PlacementToolDefinitionType : ScriptableObject, IChiselBoundsPlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
         where DefinitionType    : IChiselGenerator, new()
         where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
-    { 
+    {
+        public ChiselBoundsPlacementToolInstance(string toolName, string group)
+        {
+            internalToolName = toolName;
+            internalGroup = group;
+        }
+
+        readonly string internalToolName;
+        readonly string internalGroup;
+
+        public override string ToolName => internalToolName;
+        public override string Group => internalGroup;
+
         Vector3 componentPosition   = Vector3.zero;
         Vector3 upAxis              = Vector3.zero;
-
-        public override string ToolName => Settings.ToolName;
-        public override string Group    => Settings.Group;
 
         protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
 
@@ -104,7 +122,7 @@ namespace Chisel.Editors
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
-            var generatoreModeFlags = Settings.PlacementFlags;
+            var generatoreModeFlags = PlacementToolDefinition.PlacementFlags;
 
             if ((generatoreModeFlags & (PlacementFlags.HeightEqualsHalfXZ | PlacementFlags.HeightEqualsXZ)) != 0)
                 generatoreModeFlags |= PlacementFlags.SameLengthXZ;
@@ -134,8 +152,8 @@ namespace Chisel.Editors
 
                             generatedComponent.definition.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
-                            Settings.OnCreate(ref generatedComponent.definition);
-                            Settings.OnUpdate(ref generatedComponent.definition, bounds);
+                            PlacementToolDefinition.OnCreate(ref generatedComponent.definition);
+                            PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
                             generatedComponent.OnValidate();
 
                             if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
@@ -162,7 +180,7 @@ namespace Chisel.Editors
                                                     ((height < 0 && modelBeneathCursor) ?
                                                     CSGOperationType.Subtractive :
                                                     CSGOperationType.Additive);
-                        Settings.OnUpdate(ref generatedComponent.definition, bounds);
+                        PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
                         generatedComponent.OnValidate();
                         if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                             generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
@@ -177,7 +195,7 @@ namespace Chisel.Editors
             if (ChiselOutlineRenderer.VisualizationMode != VisualizationMode.SimpleOutline)
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
             renderer.matrix = transformation;
-            Settings.OnPaint(renderer, bounds);
+            PlacementToolDefinition.OnPaint(renderer, bounds);
         }
     }
 }

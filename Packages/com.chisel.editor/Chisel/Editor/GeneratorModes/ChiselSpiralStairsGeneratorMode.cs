@@ -10,11 +10,9 @@ using UnityEditor.ShortcutManagement;
 
 namespace Chisel.Editors
 {
-    public sealed class ChiselSpiralStairsSettings : ScriptableObject, IChiselBoundsPlacementSettings<ChiselSpiralStairsDefinition>
+    [ChiselPlacementTool(name: ChiselSpiralStairs.kNodeTypeName, group: "Stairs")]
+    public sealed class ChiselSpiralStairsPlacementTool : ScriptableObject, IChiselBoundsPlacementTool<ChiselSpiralStairsDefinition>
     {
-        public string   ToolName    => ChiselSpiralStairs.kNodeTypeName;
-        public string   Group       => "Stairs";
-
         // TODO: add more settings
         public float    stepHeight              = ChiselSpiralStairsDefinition.kDefaultStepHeight;
         public int      outerSegments           = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
