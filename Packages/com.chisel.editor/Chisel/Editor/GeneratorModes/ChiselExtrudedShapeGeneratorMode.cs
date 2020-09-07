@@ -24,16 +24,13 @@ namespace Chisel.Editors
 
         public void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)
         {
-            definition.path = new ChiselPath(new[] {
-                        new ChiselPathPoint(Vector3.zero),
-                        new ChiselPathPoint(new Vector3(0,1,0))
-                    });
-            definition.shape = new Curve2D(shape);
+            definition.path     = new ChiselPath(ChiselPath.Default);
+            definition.shape    = new Curve2D(shape);
         }
 
         public void OnUpdate(ref ChiselExtrudedShapeDefinition definition, float height)
         {
-            definition.path.segments[1].position = new Vector3(0, height, 0);
+            definition.path.segments[1].position = ChiselPathPoint.kDefaultDirection * height;
         }
 
         public void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height)

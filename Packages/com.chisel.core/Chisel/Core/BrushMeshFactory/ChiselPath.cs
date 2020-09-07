@@ -10,11 +10,17 @@ namespace Chisel.Core
     [Serializable]
     public class ChiselPath
     {
+        const int kLatestVersion = 1;
+        [UnityEngine.SerializeField] int version = 0;
+
+
         public ChiselPath() { }
+
         public ChiselPath(ChiselPath other)
         {
             this.segments = other.segments.ToArray();
         }
+
         public ChiselPath(ChiselPathPoint[] points)
         {
             this.segments = points.ToArray();
@@ -24,8 +30,22 @@ namespace Chisel.Core
 
         public static readonly ChiselPath Default = new ChiselPath( new[]
         {
-            new ChiselPathPoint() { position = new Vector3(0,0,0), rotation = Quaternion.identity, scale = Vector2.one },
-            new ChiselPathPoint() { position = new Vector3(0,1,0), rotation = Quaternion.identity, scale = Vector2.one }
+            new ChiselPathPoint(Vector3.zero),
+            new ChiselPathPoint(ChiselPathPoint.kDefaultDirection)
         });
+
+        public void UpgradeIfNecessary()
+        {
+            if (version == kLatestVersion)
+                return;
+
+            version = kLatestVersion;
+            if (this.segments == null ||
+                this.segments.Length == 0)
+                return;
+
+            for (int i = 0; i < this.segments.Length; i++)
+                this.segments[i].rotation = ChiselPathPoint.kDefaultRotation;
+        }
     }
 }

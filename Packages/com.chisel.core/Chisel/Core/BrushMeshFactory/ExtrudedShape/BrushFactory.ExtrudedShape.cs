@@ -64,6 +64,7 @@ namespace Chisel.Core
             Profiler.EndSample();
 
             ref readonly var path                = ref definition.path;
+            path.UpgradeIfNecessary();
 
             // TODO: make each extruded quad split into two triangles when it's not a perfect plane,
             //			split it to make sure it's convex
@@ -167,10 +168,10 @@ namespace Chisel.Core
             var points = shape.controlPoints;
             var length = points.Length;
 
-            for (int i = 0; i < points.Length; i++)
+            for (int i = 0; i < length; i++)
             {
                 var index1 = i;
-                var index2 = (i + 1) % points.Length;
+                var index2 = (i + 1) % length;
                 var p1 = points[index1];
                 var p2 = points[index2];
                 var v1 = p1.position;
@@ -196,7 +197,6 @@ namespace Chisel.Core
                 else
                     v3 = v2;
 
-                int first_index = shapeVertices.Count;
                 shapeSegmentIndices.Add(i);
                 shapeVertices.Add(v1);
                 for (int n = 1; n < shapeCurveSegments; n++)

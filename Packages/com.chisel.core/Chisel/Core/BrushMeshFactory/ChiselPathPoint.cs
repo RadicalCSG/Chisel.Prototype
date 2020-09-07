@@ -11,6 +11,9 @@ namespace Chisel.Core
     [Serializable]
     public struct ChiselPathPoint
     {
+        public static readonly Vector3      kDefaultDirection = Vector3.up;
+        public static readonly Quaternion   kDefaultRotation  = Quaternion.LookRotation(kDefaultDirection);
+
         static readonly Vector4		unitX		= new Vector4(1,0,0,0);
         static readonly Vector4		unitY		= new Vector4(0,1,0,0);
         static readonly Vector4		unitZ		= new Vector4(0,0,1,0);
@@ -35,7 +38,7 @@ namespace Chisel.Core
         public ChiselPathPoint(Vector3 position)
         {
             this.position	= position;
-            this.rotation	= Quaternion.identity;
+            this.rotation	= ChiselPathPoint.kDefaultRotation;
             this.scale		= Vector3.one;
         }
 
@@ -45,9 +48,7 @@ namespace Chisel.Core
         
         static Matrix4x4 ToMatrix(Vector3 position, Quaternion rotation, Vector2 scale)
         {
-            return	Matrix4x4.TRS(position, rotation, Vector3.one) *
-                    swizzleYZ *
-                    Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale.x,scale.y,1)); 
+            return	Matrix4x4.TRS(position, Quaternion.Inverse(rotation), new Vector3(scale.x,scale.y,-1)); 
         }
 
         public Matrix4x4 ToMatrix()

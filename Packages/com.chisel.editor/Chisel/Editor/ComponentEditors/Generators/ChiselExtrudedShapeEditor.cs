@@ -21,11 +21,13 @@ namespace Chisel.Editors
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;
-        const float kCapLineThickness			= 2.0f;
+        const float kCapLineThickness			= 1.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
 
-        internal static int s_Curve2DDHash = "Curve2DHash".GetHashCode();
+        internal static int s_Curve2DHash   = "Curve2DHash".GetHashCode();
+        internal static int kFirstPathPoint = "FirstPathPoint".GetHashCode();
+        internal static int kLastPathPoint  = "LastPathPoint".GetHashCode();
         protected override void OnScene(SceneView sceneView, ChiselExtrudedShape generator)
         {
             var baseColor		= UnityEditor.Handles.yAxisColor;
@@ -35,7 +37,10 @@ namespace Chisel.Editors
             
             var noZTestcolor	= ChiselCylinderEditor.GetColorForState(baseColor, false, true,  isDisabled);
             var zTestcolor		= ChiselCylinderEditor.GetColorForState(baseColor, false, false, isDisabled);
-            
+
+            var firstPathPointID    = GUIUtility.GetControlID(kFirstPathPoint, FocusType.Passive);
+            var lastPathPointID     = GUIUtility.GetControlID(kLastPathPoint, FocusType.Passive);
+
             /*
             var shapeVertices2D		= new List<Vector2>();
             var shapeSegmentIndices = new List<int>();
@@ -45,8 +50,10 @@ namespace Chisel.Editors
             for (int v = 0; v < shapeVertices2D.Count; v++)
                 shapeVertices3D[v] = new Vector3(shapeVertices2D[v].x, shapeVertices2D[v].y, 0);
             */
-            var shape		= generator.Shape;
-            var	path		= generator.Path;
+            var shape	= generator.Shape;
+            var	path	= generator.Path;
+            path.UpgradeIfNecessary();
+
             var prevMatrix	= UnityEditor.Handles.matrix;
             for (int i = 0; i < path.segments.Length; i++)
             {
@@ -69,6 +76,29 @@ namespace Chisel.Editors
 
                 //UnityEditor.Handles.color = zTestcolor;
                 //ChiselOutlineRenderer.DrawLineLoop(prevMatrix * currMatrix, shapeVertices3D, 0, shapeVertices3D.Length, lineMode: LineMode.ZTest,   thickness: kCapLineThickness);
+
+                if (i == 0)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    pathPoint.position = SceneHandles.DirectionHandle(pathPoint.position, -(pathPoint.rotation * Vector3.forward));
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(target, "Modified " + generator.NodeTypeName);
+                        path.segments[i] = pathPoint;
+                        generator.Path = new ChiselPath(path);
+                    }
+                } else
+                if (i == path.segments.Length - 1)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    pathPoint.position = SceneHandles.DirectionHandle(pathPoint.position, pathPoint.rotation * Vector3.forward);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(target, "Modified " + generator.NodeTypeName);
+                        path.segments[i] = pathPoint;
+                        generator.Path = new ChiselPath(path);
+                    }
+                }
 
 
                 // Draw lines between different segments
