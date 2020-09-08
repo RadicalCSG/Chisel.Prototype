@@ -49,12 +49,18 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
+        public bool EnsurePlanarPolygons()
+        {
+            if (!IsValid)
+                return false;
+
+            // Split non planar polygons into convex pieces
+            return brushOutline.SplitNonPlanarPolygons();
+        }
+
         public void Validate()
         {
             if (!IsValid)
-                return;
-
-            if (brushOutline.polygons == null)
                 return;
 
             if (version != kLatestVersion)
@@ -81,6 +87,7 @@ namespace Chisel.Core
             // Temporary fix for misformed brushes
             for (int i = 0; i < brushOutline.polygons.Length; i++)
                 brushOutline.polygons[i].surfaceID = i;
+
             brushOutline.CalculatePlanes();
             
             // If the brush is concave, we set the generator to not be valid, so that when we commit, it will be reverted
@@ -98,8 +105,6 @@ namespace Chisel.Core
                     isInsideOut = false;
                 }
 
-                // Split non planar polygons into convex pieces
-                brushOutline.SplitNonPlanarPolygons();
             }
         }
 

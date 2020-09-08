@@ -328,6 +328,9 @@ namespace Chisel.Core
 
             bool modified = false;
 
+            if (planes == null || polygons.Length != planes.Length)
+                planes = null;
+
             // Remove empty polygons
             var newLength = polygons.Length;
             for (int p = polygons.Length - 1; p >= 0; p--)
@@ -337,10 +340,19 @@ namespace Chisel.Core
                     newLength--;
                     if (p < newLength)
                     {
-                        for (int p2 = p + 1; p2 < polygons.Length; p2++)
+                        if (planes != null)
                         {
-                            polygons[p2 - 1] = polygons[p2];
-                            planes[p2 - 1] = planes[p2];
+                            for (int p2 = p + 1; p2 < polygons.Length; p2++)
+                            {
+                                polygons[p2 - 1] = polygons[p2];
+                                planes[p2 - 1] = planes[p2];
+                            }
+                        } else
+                        {
+                            for (int p2 = p + 1; p2 < polygons.Length; p2++)
+                            {
+                                polygons[p2 - 1] = polygons[p2];
+                            }
                         }
                     }
                     continue;
@@ -350,7 +362,8 @@ namespace Chisel.Core
             if (polygons.Length != newLength)
             {
                 Array.Resize(ref polygons, newLength);
-                Array.Resize(ref planes, newLength);
+                if (planes != null)
+                    Array.Resize(ref planes, newLength);
                 modified = true;
             }
 
@@ -790,7 +803,8 @@ namespace Chisel.Core
             }
 
             CompactHalfEdges();
-            CalculatePlanes();
+            if (planes == null || planes.Length != polygons.Length)
+                CalculatePlanes();
             Validate(logErrors: true);
         }
 
@@ -1070,7 +1084,8 @@ namespace Chisel.Core
             halfEdges   = newHalfEdges;
 
             CompactHalfEdges();
-            CalculatePlanes();
+            if (planes == null || planes.Length != polygons.Length)
+                CalculatePlanes();
             UpdateHalfEdgePolygonIndices();
 
             Validate(logErrors: true);
