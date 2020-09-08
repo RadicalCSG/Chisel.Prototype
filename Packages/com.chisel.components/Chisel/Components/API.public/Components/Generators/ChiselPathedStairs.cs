@@ -9,7 +9,7 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselPathedStairs : ChiselDefinedGeneratorComponent<ChiselPathedStairsDefinition>
     {
-        public const string kNodeTypeName = "Pathed Stairs";
+        public const string kNodeTypeName = ChiselPathedStairsDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties

@@ -22,7 +22,7 @@ namespace Chisel.Editors
 
     public class ChiselShapePlacementToolInstance<PlacementToolDefinitionType, DefinitionType, Generator> : ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator>
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
-        where PlacementToolDefinitionType : ScriptableObject, IChiselShapePlacementTool<DefinitionType>
+        where PlacementToolDefinitionType : ChiselShapePlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
         where DefinitionType    : IChiselGenerator, new()
         where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
@@ -96,7 +96,7 @@ namespace Chisel.Editors
     public class ChiselBoundsPlacementToolInstance<PlacementToolDefinitionType, DefinitionType, Generator> 
         : ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator>
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
-        where PlacementToolDefinitionType : ScriptableObject, IChiselBoundsPlacementTool<DefinitionType>
+        where PlacementToolDefinitionType : ChiselBoundsPlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
         where DefinitionType    : IChiselGenerator, new()
         where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>

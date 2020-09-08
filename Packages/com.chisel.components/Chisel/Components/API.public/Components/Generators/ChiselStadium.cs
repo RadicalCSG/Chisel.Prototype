@@ -8,7 +8,7 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselStadium : ChiselDefinedGeneratorComponent<ChiselStadiumDefinition>
     {
-        public const string kNodeTypeName = "Stadium";
+        public const string kNodeTypeName = ChiselStadiumDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: add all properties of ChiselStadiumDefinition

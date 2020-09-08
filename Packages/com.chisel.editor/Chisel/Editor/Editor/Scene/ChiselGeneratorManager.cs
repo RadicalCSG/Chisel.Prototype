@@ -54,7 +54,7 @@ namespace Chisel.Editors
             // Now, we find all BOUNDS placement tools, create a generic class for it, instantiate it, and register it
             foreach (var placementToolType in ReflectionExtensions.AllNonAbstractClasses)
             {
-                var baseType = placementToolType.GetGenericBaseInterface(typeof(IChiselBoundsPlacementTool<>));
+                var baseType = placementToolType.GetGenericBaseClass(typeof(ChiselBoundsPlacementTool<>));
                 if (baseType == null)
                     continue;
 
@@ -92,7 +92,7 @@ namespace Chisel.Editors
             // Now, we find all SHAPE placement tools, create a generic class for it, instantiate it, and register it
             foreach (var placementToolType in ReflectionExtensions.AllNonAbstractClasses)
             {
-                var baseType = placementToolType.GetGenericBaseInterface(typeof(IChiselShapePlacementTool<>));
+                var baseType = placementToolType.GetGenericBaseClass(typeof(ChiselShapePlacementTool<>));
                 if (baseType == null)
                     continue;
 

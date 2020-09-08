@@ -8,7 +8,7 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselCapsule : ChiselDefinedGeneratorComponent<ChiselCapsuleDefinition>
     {
-        public const string kNodeTypeName = "Capsule";
+        public const string kNodeTypeName = ChiselCapsuleDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
         
         #region Properties
