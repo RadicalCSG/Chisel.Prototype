@@ -699,7 +699,7 @@ namespace Chisel.Core
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s]);
+                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s] + 2);
                 var firstEdge = edgeIndices[(s * 2) + 0] - 1;
                 switch (segmentTopology[s])
                 {
