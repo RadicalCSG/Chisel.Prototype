@@ -791,9 +791,9 @@ namespace UnitySceneExtensions
             var deltaToOrigin		= currentPosition - this.slideOrigin;
             var distanceToOrigin	= SnappingUtility.WorldPointToDistance(deltaToOrigin, this.slideDirection);
 
-            var quantized_min_extents     = float.PositiveInfinity;
-            var quantized_max_extents     = float.PositiveInfinity;
-            var snappedExtents      = Extents1D.empty;
+            var quantized_min_extents   = float.PositiveInfinity;
+            var quantized_max_extents   = float.PositiveInfinity;
+            var snappedExtents          = Extents1D.empty;
             if (boundsActive)
             {
                 (float abs_distance, float snappedOffset, float quantized_min, float quantized_max) = Snapping.SnapBounds(this.slideExtents + distanceToOrigin, this.snappingStep);
@@ -938,7 +938,7 @@ namespace UnitySceneExtensions
             this.gridSlideExtents.max	= gridSlideOrigin;
             this.worldSlideOrigin		= worldSlideOrigin;
             this.worldSnappedPosition	= worldSlideOrigin;
-            
+
             this.worldSlidePlane		= this.worldSlideGrid.PlaneXZ;
             this.vectorX		        = this.worldSlideGrid.Right;
             this.vectorZ		        = this.worldSlideGrid.Forward;
@@ -1062,6 +1062,7 @@ namespace UnitySceneExtensions
             if (worldSlideGrid == null)
             {
                 this.worldSnappedPosition = this.worldSlideOrigin;
+                Debug.Log($"({(Decimal)worldSnappedPosition.x}, {(Decimal)worldSnappedPosition.y}, {(Decimal)worldSnappedPosition.z})");
                 return false;
             }
 

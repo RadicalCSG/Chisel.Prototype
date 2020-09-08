@@ -834,7 +834,6 @@ namespace Chisel.Editors
             return true;
         }
 
-        const KeyCode           kCancelKey          = KeyCode.Escape;
         const EventModifiers    kKeyModifiers       = EventModifiers.Shift | EventModifiers.Control | EventModifiers.Alt | EventModifiers.Command;
         
         const string    kSelectAllCommand       = "SelectAll";
@@ -920,14 +919,14 @@ namespace Chisel.Editors
 
                 case EventType.KeyDown:
                 {
-                    if (evt.keyCode == kCancelKey && ((evt.modifiers & kKeyModifiers) == EventModifiers.None))
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey && ((evt.modifiers & kKeyModifiers) == EventModifiers.None))
                         evt.Use();
                     break;
                 }
 
                 case EventType.KeyUp:
                 {
-                    if (evt.keyCode == kCancelKey && ((evt.modifiers & kKeyModifiers) == EventModifiers.None))
+                    if (evt.keyCode == ChiselKeyboardDefaults.kCancelKey && ((evt.modifiers & kKeyModifiers) == EventModifiers.None))
                     {
                         evt.Use();
                         return ClickState.DeselectAll;
@@ -1535,10 +1534,10 @@ namespace Chisel.Editors
 
             // TODO: highlight what we're snapping with (grid, vertex, edges)
 
-            SceneHandles.RenderBorderedCircle(prevNewVertex, HandleUtility.GetHandleSize(prevNewVertex) * SceneHandles.kPointScale);
+            SceneHandles.RenderBorderedCircle(prevNewVertex, HandleUtility.GetHandleSize(prevNewVertex) * HandleRendering.kPointScale);
             if (secondVertex)
             {
-                SceneHandles.RenderBorderedCircle(firstNewVertex, HandleUtility.GetHandleSize(firstNewVertex) * SceneHandles.kPointScale);
+                SceneHandles.RenderBorderedCircle(firstNewVertex, HandleUtility.GetHandleSize(firstNewVertex) * HandleRendering.kPointScale);
                 SceneHandles.DrawLine(firstNewVertex, prevNewVertex);
             }
         }
@@ -1631,7 +1630,7 @@ namespace Chisel.Editors
                     continue;
 
                 var position    = vertices[v];
-                var handleSize  = UnityEditor.HandleUtility.GetHandleSize(position) * SceneHandles.kPointScale;
+                var handleSize  = UnityEditor.HandleUtility.GetHandleSize(position) * HandleRendering.kPointScale;
 
                 SceneHandles.color = vertexColors[v];
                 SceneHandles.OutlinedDotHandleCap(id, position, Quaternion.identity, handleSize, evt.type);
@@ -1670,7 +1669,7 @@ namespace Chisel.Editors
                 var id = s_TempPolygonsIDs[p];
                 var polygonCenter   = polygonCenters[p];
                 var handleSize      = UnityEditor.HandleUtility.GetHandleSize(polygonCenter);
-                var pointSize       = handleSize * SceneHandles.kPointScale;
+                var pointSize       = handleSize * HandleRendering.kPointScale;
                 var normal          = isOutlineInsideOut ? -planes[p].xyz : planes[p].xyz;
 
                 SceneHandles.color = polygonColors[p];
@@ -2042,7 +2041,7 @@ namespace Chisel.Editors
             {
                 var id          = s_TempVerticesIDs[v];
                 var position    = vertices[v];
-                var handleSize  = UnityEditor.HandleUtility.GetHandleSize(position) * SceneHandles.kPointScale;
+                var handleSize  = UnityEditor.HandleUtility.GetHandleSize(position) * HandleRendering.kPointScale;
 
                 var offset = Vector3.zero;
                 EditorGUI.BeginChangeCheck();   { offset = SceneHandles.Slider2DHandleOffset(id, position, cameraDirection, capFunction: null); }

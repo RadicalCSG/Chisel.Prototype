@@ -27,7 +27,8 @@ namespace Chisel.Editors
 
             var newBounds = generator.Bounds;
             newBounds = UnitySceneExtensions.SceneHandles.BoundsHandle(newBounds, Quaternion.identity);
-            
+            HandleRendering.RenderBoxMeasurements(newBounds);
+
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, "Modified " + generator.NodeTypeName);

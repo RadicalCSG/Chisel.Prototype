@@ -15,6 +15,12 @@ namespace UnitySceneExtensions
 
         public static void DrawDottedLine(Vector3 p1, Vector3 p2, float screenSpaceSize) { UnityEditor.Handles.DrawDottedLine(p1, p2, screenSpaceSize); }		
         public static void DrawDottedLines(Vector3[] lineSegments, float screenSpaceSize) { UnityEditor.Handles.DrawDottedLines(lineSegments, screenSpaceSize); }
+        public static void DrawAAPolyLine(Vector3 pointA, Vector3 pointB) 
+        {
+            linePoints[0] = pointA;
+            linePoints[1] = pointB;
+            UnityEditor.Handles.DrawAAPolyLine(linePoints); 
+        }
         public static void DrawAAPolyLine(params Vector3[] points) { UnityEditor.Handles.DrawAAPolyLine(points); }		
         public static void DrawAAPolyLine(float width, params Vector3[] points) { UnityEditor.Handles.DrawAAPolyLine(width, points); }
         public static void DrawAAPolyLine(float width, int actualNumberOfPoints, params Vector3[] points) { UnityEditor.Handles.DrawAAPolyLine(width, actualNumberOfPoints, points); }
@@ -28,7 +34,12 @@ namespace UnitySceneExtensions
         public static void BeginGUI() { UnityEditor.Handles.BeginGUI(); }
         public static void EndGUI() { UnityEditor.Handles.EndGUI(); }
 
-        public static void DrawLine(Vector3 p1, Vector3 p2) { UnityEditor.Handles.DrawAAPolyLine(2.0f, p1, p2); }
+        public static void DrawLine(Vector3 p1, Vector3 p2)
+        {
+            linePoints[0] = p1;
+            linePoints[1] = p2;
+            UnityEditor.Handles.DrawAAPolyLine(2.0f, linePoints); 
+        }
         
         public struct DrawingScope : IDisposable
         {

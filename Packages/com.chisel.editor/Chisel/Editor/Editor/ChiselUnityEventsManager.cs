@@ -238,17 +238,22 @@ namespace Chisel.Editors
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)
         {
-            var obj =  UnityEditor.EditorUtility.InstanceIDToObject(instanceID);
-            if (!obj)
-                return;
-            var gameObject = (GameObject)obj;
+            Profiler.BeginSample("OnHierarchyWindowItemOnGUI");
+            try
+            {
+                var obj = UnityEditor.EditorUtility.InstanceIDToObject(instanceID);
+                if (!obj)
+                    return;
+                var gameObject = (GameObject)obj;
 
-            // TODO: implement material drag & drop support for meshes
+                // TODO: implement material drag & drop support for meshes
 
-            var component = gameObject.GetComponent<ChiselNode>();
-            if (!component)
-                return;
-            Editors.ChiselHierarchyWindowManager.OnHierarchyWindowItemGUI(instanceID, component, selectionRect);
+                var component = gameObject.GetComponent<ChiselNode>();
+                if (!component)
+                    return;
+                Editors.ChiselHierarchyWindowManager.OnHierarchyWindowItemGUI(instanceID, component, selectionRect);
+            }
+            finally { Profiler.EndSample(); }
         }
 
         private static void OnPlayModeStateChanged(PlayModeStateChange state)

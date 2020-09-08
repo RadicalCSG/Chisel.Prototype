@@ -4,6 +4,8 @@ namespace UnitySceneExtensions
 {
     public static class HandleRendering
     {
+        public const float kPointScale = 0.05f;
+
         #region Pivot rendering
 
         static Vector2[] circlePoints = null;
@@ -21,6 +23,8 @@ namespace UnitySceneExtensions
             }
         }
 
+        static readonly Vector3[] linePoints = new Vector3[2];
+
         public static void DrawCameraAlignedCircle(Vector3 position, float size, Color innerColor, Color outerColor)
         {
             var camera = Camera.current;
@@ -37,7 +41,7 @@ namespace UnitySceneExtensions
                 points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
             }
 
-            position = UnityEditor.Handles.matrix.MultiplyPoint(position);
+            //position = UnityEditor.Handles.matrix.MultiplyPoint(position);
 
             {
                 Color c = outerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
@@ -45,7 +49,9 @@ namespace UnitySceneExtensions
                 UnityEditor.Handles.color = c;
                 for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
                 {
-                    UnityEditor.Handles.DrawAAPolyLine(6.0f, points[i], points[j]);
+                    linePoints[0] = points[i];
+                    linePoints[1] = points[j];
+                    UnityEditor.Handles.DrawAAPolyLine(6.0f, linePoints);
                 }
             }
 
@@ -55,7 +61,9 @@ namespace UnitySceneExtensions
                 UnityEditor.Handles.color = c;
                 for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
                 {
-                    UnityEditor.Handles.DrawAAPolyLine(2.0f, points[i], points[j]);
+                    linePoints[0] = points[i];
+                    linePoints[1] = points[j];
+                    UnityEditor.Handles.DrawAAPolyLine(2.0f, linePoints);
                 }
             }
         }
@@ -263,7 +271,39 @@ namespace UnitySceneExtensions
             new Vector3( +1, +1, +1), // 6
             new Vector3( +1, -1, +1)  // 7
         };
-        
+
+
+        public static void RenderBoxMeasurements(Bounds bounds)
+        {
+            using (var drawingScope = new UnityEditor.Handles.DrawingScope(SceneHandles.measureColor))
+            {
+                if (bounds.size.y != 0)
+                    Measurements.DrawLengths(bounds);
+                else
+                {
+                    var rect = new Rect { min = new Vector2(bounds.min[0], bounds.min[2]), max = new Vector2(bounds.max[0], bounds.max[2]) };
+                    if (rect.width != 0 ||
+                        rect.height != 0)
+                        Measurements.DrawLengthsXZ(rect);
+                }
+            }
+        }
+
+        public static void RenderBoxMeasurements(Matrix4x4 transformation, Bounds bounds)
+        {
+            using (var drawingScope = new UnityEditor.Handles.DrawingScope(SceneHandles.measureColor, transformation))
+            {
+                if (bounds.size.y != 0)
+                    Measurements.DrawLengths(bounds);
+                else
+                {
+                    var rect = new Rect { min = new Vector2(bounds.min[0], bounds.min[2]), max = new Vector2(bounds.max[0], bounds.max[2]) };
+                    if (rect.width != 0 ||
+                        rect.height != 0)
+                        Measurements.DrawLengthsXZ(rect);
+                }
+            }
+        }
         
         public static void RenderBox(Matrix4x4 transformation, Bounds bounds)
         {
@@ -362,6 +402,21 @@ namespace UnitySceneExtensions
                     SceneHandles.DrawDottedLine(cylinderVertices[segments + n0], cylinderVertices[segments + n1], 1.0f);
                     SceneHandles.DrawDottedLine(cylinderVertices[           n1], cylinderVertices[segments + n1], 1.0f);
                 }
+            }
+        }
+
+
+        public static void RenderDistance(Matrix4x4 transformation, Vector3 from, Vector3 to)
+        {
+            var distance = from - to;
+            if (distance.sqrMagnitude == 0)
+                return;
+
+            using (new SceneHandles.DrawingScope(transformation))
+            {
+                SceneHandles.DrawLine(from, to);
+                SceneHandles.RenderBorderedDot(from, UnityEditor.HandleUtility.GetHandleSize(from) * HandleRendering.kPointScale);
+                SceneHandles.RenderBorderedDot(to, UnityEditor.HandleUtility.GetHandleSize(to) * HandleRendering.kPointScale);
             }
         }
 

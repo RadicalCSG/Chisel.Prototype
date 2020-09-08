@@ -269,8 +269,10 @@ namespace Chisel.Editors
                 BrushMeshFactory.GetConicalFrustumVertices(tempBottom, tempTop, generator.Rotation, sides, ref vertices);
 
                 if (generator.TopHeight < generator.BottomHeight)
-                    normal = -normal;
-                    
+                    normal = -Vector3.up;
+                else
+                    normal = Vector3.up;
+
                 var isTopBackfaced	= IsSufaceBackFaced(topPoint, normal);
                 var topHasFocus		= (focusControl == topId);
                 var topThickness	= topHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
@@ -338,7 +340,6 @@ namespace Chisel.Editors
 
         static CylinderHandle cylinderHandle = new CylinderHandle();
 
-        // TODO: prevent "outer" outlines from being rendered
         protected override void OnGeneratorSelected(ChiselCylinder generator)
         {
             cylinderHandle.Init(generator);

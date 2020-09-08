@@ -56,8 +56,6 @@ namespace UnitySceneExtensions
         static readonly bool[]      s_BoundsAxisHot			= new bool[6];
         static readonly int[]		s_BoundsControlIds		= new int[6];
 
-        public const float kPointScale			= 0.05f;
-        
         const float kShowPointThreshold = 0.00001f;
 
         public static Bounds BoundsHandle(Bounds bounds, Quaternion rotation, Vector3? snappingSteps = null)
@@ -133,7 +131,7 @@ namespace UnitySceneExtensions
                 var isCameraOrthographic	= camera.orthographic;
             
 
-                var boundsColor			= SceneHandles.yAxisColor;
+                var boundsColor			= SceneHandles.handleColor;
                 var backfacedColor		= new Color(boundsColor.r, boundsColor.g, boundsColor.b, boundsColor.a * SceneHandles.backfaceAlphaMultiplier);
             
 
@@ -153,7 +151,7 @@ namespace UnitySceneExtensions
                     GUI.changed = false;
                     var localPoint	= s_BoundsSidePoint[i];
                     var handleSize	= UnityEditor.HandleUtility.GetHandleSize(localPoint);
-                    var pointSize	= handleSize * kPointScale;
+                    var pointSize	= handleSize * HandleRendering.kPointScale;
                     var direction	= s_BoundsSlideDirs[i % 3];
                     var normal		= (i < 3) ? -direction : direction;
                     normal.x *= (bounds.size.x < 0) ? -1 : 1;
@@ -237,7 +235,7 @@ namespace UnitySceneExtensions
                     Vector3 offset;
                     if (showSidePoint)
                     { 
-                        pointSize	= UnityEditor.HandleUtility.GetHandleSize(midPoint) * kPointScale;
+                        pointSize	= UnityEditor.HandleUtility.GetHandleSize(midPoint) * HandleRendering.kPointScale;
                         offset		= Edge2DHandleOffset(id, point1, point2, midPoint, s_BoundsSlideDirs[offset3], 
                                                                                        s_BoundsSlideDirs[offset1_dir], 
                                                                                        s_BoundsSlideDirs[offset2_dir], pointSize, pointCapFunction, s_EdgeAxes[i], snappingSteps: snappingSteps);

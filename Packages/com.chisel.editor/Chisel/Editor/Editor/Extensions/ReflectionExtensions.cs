@@ -132,6 +132,28 @@ namespace Chisel.Editors
             }
         }
 
+        public static bool HasBaseClass<T>(this Type self)
+        {
+            while (self != null && self != typeof(object))
+            {
+                if (self.BaseType == typeof(T))
+                    return true;
+                self = self.BaseType;
+            }
+            return false;
+        }
+
+        public static bool HasBaseClass(this Type self, Type baseClass)
+        {
+            while (self != null && self != typeof(object))
+            {
+                if (self.BaseType == baseClass)
+                    return true;
+                self = self.BaseType;
+            }
+            return false;
+        }
+
         public static Type GetGenericBaseClass(this Type self, Type genericBaseClass)
         {
             while (self != null && self != typeof(object))
@@ -140,6 +162,21 @@ namespace Chisel.Editors
                 if (genericBaseClass == foundBaseClass)
                     return self;
                 self = self.BaseType;
+            }
+            return null;
+        }
+
+        public static Type GetGenericBaseInterface(this Type self, Type genericBaseClass)
+        {
+            var interfaces = self.GetInterfaces();
+            if (interfaces == null ||
+                interfaces.Length == 0)
+                return null;
+            for (int i = 0; i < interfaces.Length; i++)
+            {
+                var foundBaseClass = interfaces[i].IsGenericType ? interfaces[i].GetGenericTypeDefinition() : null;
+                if (foundBaseClass == genericBaseClass)
+                    return interfaces[i];
             }
             return null;
         }

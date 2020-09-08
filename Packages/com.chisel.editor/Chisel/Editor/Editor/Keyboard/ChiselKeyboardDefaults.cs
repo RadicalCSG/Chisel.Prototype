@@ -11,6 +11,8 @@ namespace Chisel.Editors
 {
     public class ChiselKeyboardDefaults
     {
+        public const KeyCode kCancelKey = KeyCode.Escape;
+
         public const string     ShortCutCreateBase      = "Chisel/Create/";
         public const string     ShortCutEditModeBase    = "Chisel/Edit Mode/";
         

@@ -11,8 +11,8 @@ namespace Chisel.Components
  
     public static class ChiselBrushContainerAssetManager
     {
-        public static event OnBrushContainerAssetDelegate OnBrushMeshInstanceChanged;
-        public static event OnBrushContainerAssetDelegate OnBrushMeshInstanceDestroyed;
+        public static event OnBrushContainerAssetDelegate   OnBrushMeshInstanceChanged;
+        public static event OnBrushContainerAssetDelegate   OnBrushMeshInstanceDestroyed;
 
         static readonly HashSet<ChiselBrushContainerAsset>  registeredLookup        = new HashSet<ChiselBrushContainerAsset>();
 

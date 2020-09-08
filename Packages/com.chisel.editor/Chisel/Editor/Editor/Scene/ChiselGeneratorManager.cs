@@ -1,4 +1,5 @@
-﻿using Chisel.Core;
+﻿using Chisel.Components;
+using Chisel.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ namespace Chisel.Editors
     [Serializable]
     public class ChiselEditModeData : ISingletonData
     {
-        public ChiselGeneratorMode currentGenerator;
+        public ChiselPlacementToolInstance currentGenerator;
 
         public void OnAfterDeserialize() {}
         public void OnBeforeSerialize() {}
@@ -21,50 +22,127 @@ namespace Chisel.Editors
 
     public class ChiselGeneratorManager : SingletonManager<ChiselEditModeData, ChiselGeneratorManager>
     {
-        internal static ChiselGeneratorMode[] generatorModes;
+        const string kDefaultGroupName = "Default";
 
+        internal static ChiselPlacementToolInstance[] generatorModes;
+        internal static Dictionary<Type, Type> generatorComponentLookup;
 
         [InitializeOnLoadMethod]
         static void InitializeEditModes()
         {
-            var generatorModeList = new List<ChiselGeneratorMode>();
+            // First, for every generator definition we find the component type
+            generatorComponentLookup = new Dictionary<Type, Type>();
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)
             {
-                var baseType = type.BaseType;
-                bool found = false;
-                int count = 0;
-                while (count < 4 && baseType != null)
-                {
-                    if (baseType == typeof(ChiselGeneratorMode))
-                    {
-                        found = true;
-                        break;
-                    }
-                    baseType = baseType.BaseType;
-                    count++;
-                }
-                if (!found)
+                if (!ReflectionExtensions.HasBaseClass<ChiselGeneratorComponent>(type))
                     continue;
 
-                var instance = (ChiselGeneratorMode)Activator.CreateInstance(type); 
-                generatorModeList.Add(instance);
+                // Our generator component needs to inherit from ChiselDefinedGeneratorComponent<DefinitionType>
+                //  in the type definition we pass along the definition type we belong to
+                var baseType = type.GetGenericBaseClass(typeof(ChiselDefinedGeneratorComponent<>));
+                if (baseType == null)
+                    continue;
+
+                // We get the generic parameters from our type, and get our definition type.
+                // we store both in a dictionary so we can find the component type back based on the definition
+                var typeParameters = baseType.GetGenericArguments();
+                var definitionType = typeParameters[0];
+                generatorComponentLookup[definitionType] = type;
             }
-            generatorModeList.Sort(delegate (ChiselGeneratorMode x, ChiselGeneratorMode y)
+
+            var generatorModeList = new List<ChiselPlacementToolInstance>();
+            // Now, we find all BOUNDS placement tools, create a generic class for it, instantiate it, and register it
+            foreach (var placementToolType in ReflectionExtensions.AllNonAbstractClasses)
+            {
+                var baseType = placementToolType.GetGenericBaseClass(typeof(ChiselBoundsPlacementTool<>));
+                if (baseType == null)
+                    continue;
+
+                // Our definitionType is part of the generic type definition, so we retrieve it
+                var typeParameters = baseType.GetGenericArguments();
+                var definitionType = typeParameters[0];
+
+                // Using the definition type, we can find the generator Component it belongs to
+                if (!generatorComponentLookup.TryGetValue(definitionType, out var componentType))
+                    continue;
+
+                string group, toolName;
+                var attributes = placementToolType.GetCustomAttributes(typeof(ChiselPlacementToolAttribute), true);
+                if (attributes != null &&
+                    attributes.Length > 0)
+                {
+                    var attribute = attributes[0] as ChiselPlacementToolAttribute;
+                    group       = attribute.Group;
+                    toolName    = attribute.ToolName;
+                } else
+                {
+                    group       = kDefaultGroupName;
+                    toolName    = definitionType.Name;
+                }
+
+                // Now that we have our placement tool Type, our definition type and our generator component type, we can create a tool instance
+                var placementTool = typeof(ChiselBoundsPlacementToolInstance<,,>).MakeGenericType(placementToolType, definitionType, componentType);
+                var placementToolInstance = (ChiselPlacementToolInstance)Activator.CreateInstance(placementTool, toolName, group);
+                if (placementToolInstance == null)
+                    continue;
+
+                generatorModeList.Add(placementToolInstance);
+            }
+
+            // Now, we find all SHAPE placement tools, create a generic class for it, instantiate it, and register it
+            foreach (var placementToolType in ReflectionExtensions.AllNonAbstractClasses)
+            {
+                var baseType = placementToolType.GetGenericBaseClass(typeof(ChiselShapePlacementTool<>));
+                if (baseType == null)
+                    continue;
+
+                // Our definitionType is part of the generic type definition, so we retrieve it
+                var typeParameters = baseType.GetGenericArguments();
+                var definitionType = typeParameters[0];
+
+                // Using the definition type, we can find the generator Component it belongs to
+                if (!generatorComponentLookup.TryGetValue(definitionType, out var componentType))
+                    continue;
+
+                string group, toolName;
+                var attributes = placementToolType.GetCustomAttributes(typeof(ChiselPlacementToolAttribute), true);
+                if (attributes != null &&
+                    attributes.Length > 0)
+                {
+                    var attribute = attributes[0] as ChiselPlacementToolAttribute;
+                    group       = attribute.Group;
+                    toolName    = attribute.ToolName;
+                } else
+                {
+                    group       = kDefaultGroupName;
+                    toolName    = definitionType.Name;
+                }
+
+                // Now that we have our placement tool Type, our definition type and our generator component type, we can create a tool instance
+                var placementTool = typeof(ChiselShapePlacementToolInstance<,,>).MakeGenericType(placementToolType, definitionType, componentType);
+                var placementToolInstance = (ChiselPlacementToolInstance)Activator.CreateInstance(placementTool, toolName, group);
+                if (placementToolInstance == null)
+                    continue;
+
+                generatorModeList.Add(placementToolInstance);
+            }
+
+            generatorModeList.Sort(delegate (ChiselPlacementToolInstance x, ChiselPlacementToolInstance y)
             {
                 int difference = x.Group.CompareTo(y.Group);
                 if (difference != 0)
                     return difference;
                 return x.ToolName.CompareTo(y.ToolName);
-            });
-            generatorModes  = generatorModeList.ToArray();
+            }); 
+            generatorModes = generatorModeList.ToArray();
         }
 
 
         // TODO: create proper delegate for this, with named parameters for clarity
-        public static event Action<ChiselGeneratorMode, ChiselGeneratorMode> GeneratorSelectionChanged;
+        public static event Action<ChiselPlacementToolInstance, ChiselPlacementToolInstance> GeneratorSelectionChanged;
 
 
-        public static ChiselGeneratorMode GeneratorMode
+        public static ChiselPlacementToolInstance GeneratorMode
         {
             get
             {
@@ -90,14 +168,12 @@ namespace Chisel.Editors
             }
         }
 
-        internal static void ActivateTool(ChiselGeneratorMode currentTool)
+        internal static void ActivateTool(ChiselPlacementToolInstance currentTool)
         {
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
             if (currentTool == Instance.data.currentGenerator)
-            {
                 return;
-            }
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
 

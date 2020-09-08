@@ -61,6 +61,19 @@ namespace Chisel.Core
                    System.Math.Abs(self.z - other.z) <= epsilon;
         }
 
+        public static Matrix4x4 ScaleFromPoint(Vector3 center, Vector3 scale)
+        {
+            return Matrix4x4.TRS(center, Quaternion.identity, Vector3.one) *
+                   Matrix4x4.TRS(Vector3.zero, Quaternion.identity, scale) *
+                   Matrix4x4.TRS(-center, Quaternion.identity, Vector3.one);
+        }
+
+        public static Matrix4x4 ScaleFromPoint(Vector3 center, Vector3 normal, float scale)
+        {
+            // TODO: take normal into account
+            return MathExtensions.ScaleFromPoint(center, new Vector3(scale, scale, scale));
+        }
+
         public static Matrix4x4 RotateAroundAxis(Vector3 center, Vector3 normal, float angle)
         {
             var rotation = Quaternion.AngleAxis(angle, normal);

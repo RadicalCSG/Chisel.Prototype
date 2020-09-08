@@ -112,8 +112,9 @@ namespace UnitySceneExtensions
                 case EventType.Repaint:
                 {
                     SetCursor(id, from, to);
-
-                    SceneHandles.DrawAAPolyLine(3.0f, from, to);
+                    linePoints[0] = from;
+                    linePoints[1] = to;
+                    SceneHandles.DrawAAPolyLine(3.0f, linePoints);
                     break;
                 }
             }

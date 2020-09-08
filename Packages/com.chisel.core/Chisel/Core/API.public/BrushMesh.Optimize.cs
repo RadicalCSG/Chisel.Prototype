@@ -813,10 +813,10 @@ namespace Chisel.Core
             return -1;
         }
 
-        public void SplitNonPlanarPolygons()
+        public bool SplitNonPlanarPolygons()
         {
             if (this.polygons == null)
-                return;
+                return false;
 
             var orgPolygons               = this.polygons;
             var orgVertices               = this.vertices;
@@ -983,8 +983,7 @@ namespace Chisel.Core
                 haveSplitPolygons = true;
             }
 
-            if (!haveSplitPolygons)
-                return;
+            return haveSplitPolygons;
         }
         
         public void RemoveDegenerateTopology(out int[] edgeRemap, out int[] polygonRemap)

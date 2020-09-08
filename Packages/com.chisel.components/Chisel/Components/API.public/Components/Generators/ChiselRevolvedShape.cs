@@ -9,7 +9,7 @@ namespace Chisel.Components
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselRevolvedShape : ChiselDefinedGeneratorComponent<ChiselRevolvedShapeDefinition>
     {
-        public const string kNodeTypeName = "Revolved Shape";
+        public const string kNodeTypeName = ChiselRevolvedShapeDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
