@@ -751,7 +751,7 @@ namespace Chisel.Editors
 
         protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
         protected virtual void OnTargetModifiedInScene() { OnShapeChanged(); }
-        protected virtual bool OnGeneratorValidate(T generator) { return generator.isActiveAndEnabled && generator.HasValidState(); }
+        protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
         protected abstract void OnScene(SceneView sceneView, T generator);
@@ -857,7 +857,7 @@ namespace Chisel.Editors
                     continue;
                 
                 var generator = target as T;
-                if (!OnGeneratorValidate(generator))
+                if (!OnGeneratorActive(generator))
                     continue;
                 
                 OnGeneratorSelected(target as T);
@@ -935,7 +935,7 @@ namespace Chisel.Editors
             var generator = target as T;
             if (GUIUtility.hotControl == 0)
             {
-                if (!OnGeneratorValidate(generator))
+                if (!OnGeneratorActive(generator))
                 {
                     if (validTargets.Contains(generator))
                     {
@@ -952,12 +952,11 @@ namespace Chisel.Editors
             }
 
             var sceneView   = SceneView.currentDrawingSceneView;
-
-            var modelMatrix     = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            var generatorNode   = generator.TopNode;
-            if (!generatorNode.Valid)
-                return;
+            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             
+
+            // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
+
             // NOTE: could loop over multiple instances from here, once we support that
             {
                 using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generator.LocalTransformationWithPivot))
