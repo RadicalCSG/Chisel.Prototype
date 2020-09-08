@@ -92,7 +92,38 @@ namespace Chisel.Editors
         }
         #endregion
 
+
+        static bool     haveScaleStartLength = false;
+        static float    compareDistance = 0;
+        const float     kMinScaleDiameter = 2.0f;
+
         #region Surface Scale Tool
+        static void ScaleSurfacesInWorldSpace(Vector3 center, Vector3 normal, float scale)
+        {
+            if (float.IsNaN(scale) ||
+                float.IsInfinity(scale) ||
+                scale == 0.0f)
+                return;
+
+            // Get the rotation on that plane, around 'worldStartPosition'
+            var worldspaceRotation = MathExtensions.ScaleFromPoint(center, normal, scale);
+
+            Undo.RecordObjects(ChiselUVToolCommon.selectedBrushContainerAsset, "Scale UV coordinates");
+            for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
+            {
+                var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(in worldspaceRotation);
+
+                // TODO: Finish this. If we have multiple surfaces selected, we want other non-aligned surfaces to move/rotate in a nice way
+                //		 last thing we want is that these surfaces are rotated in such a way that the uvs are rotated into infinity.
+                //		 ideally the rotation would change into a translation on 90 angles, think selecting all surfaces on a cylinder 
+                //	     and rotating the cylinder cap. You would want the sides to move with the rotation and not actually rotate themselves.
+                var rotateToPlane = Quaternion.FromToRotation(rotationInPlaneSpace.GetColumn(2), Vector3.forward);
+                var fixedRotation = Matrix4x4.TRS(Vector3.zero, rotateToPlane, Vector3.one) * rotationInPlaneSpace;
+
+                ChiselUVToolCommon.selectedSurfaceReferences[i].PlaneSpaceTransformUV(in fixedRotation, in ChiselUVToolCommon.selectedUVMatrices[i]);
+            }
+        }
+
         private static bool SurfaceScaleTool(SelectionType selectionType, Rect dragArea)
         {
             var id = GUIUtility.GetControlID(kSurfaceScaleHash, FocusType.Keyboard, dragArea);
@@ -105,16 +136,59 @@ namespace Chisel.Editors
                 // TODO: support scaling texture using keyboard
                 case EventType.Repaint:
                 {
-                    // TODO: show scaling of uv
+                    if (haveScaleStartLength)
+                    {
+                        var toWorldVector   = ChiselUVToolCommon.worldDragDeltaVector;
+                        var magnitude       = toWorldVector.magnitude;
+                        toWorldVector /= magnitude;
+                        if (haveScaleStartLength)
+                        {
+                            Handles.DrawDottedLine(ChiselUVToolCommon.worldStartPosition, ChiselUVToolCommon.worldStartPosition + (toWorldVector * compareDistance), 4.0f);
+                            Handles.DrawDottedLine(ChiselUVToolCommon.worldStartPosition, ChiselUVToolCommon.worldStartPosition + (toWorldVector * magnitude), 4.0f);
+                        } else
+                            Handles.DrawDottedLine(ChiselUVToolCommon.worldStartPosition, ChiselUVToolCommon.worldStartPosition + (toWorldVector * magnitude), 4.0f);
+                    }
+                    if (ChiselUVToolCommon.IsToolEnabled(id))
+                    {
+                        if (haveScaleStartLength &&
+                            ChiselUVToolCommon.pointHasSnapped)
+                        {
+                            ChiselUVToolCommon.RenderIntersectionPoint();
+                            ChiselUVToolCommon.RenderSnapEvent();
+                        }
+                    } 
                     break;
                 }
                 case EventType.MouseDrag:
                 {
                     if (!ChiselUVToolCommon.IsToolEnabled(id))
                         break;
+                    
+                    if (ChiselUVToolCommon.StartToolDragging())
+                    {
+                        haveScaleStartLength = false;
+                        ChiselUVToolCommon.pointHasSnapped = false;
+                    }
 
-                    ChiselUVToolCommon.StartToolDragging();
-                    // TODO: implement
+                    var toWorldVector = ChiselUVToolCommon.worldDragDeltaVector;
+                    if (!haveScaleStartLength)
+                    {
+                        var handleSize		= HandleUtility.GetHandleSize(ChiselUVToolCommon.worldStartPosition);	
+                        var minDiameterSqr	= handleSize * kMinScaleDiameter;
+                        // Only start scaling when we've moved the cursor far away enough from the center of scale
+                        if (toWorldVector.sqrMagnitude > minDiameterSqr)
+                        {
+                            // Switch to scaling mode, we have a center and a start distance to compare with, 
+                            // from now on, when we move the mouse we change the scale relative to this first distance.
+                            haveScaleStartLength = true;
+                            ChiselUVToolCommon.pointHasSnapped = false;
+                            compareDistance = toWorldVector.sqrMagnitude;
+                        }
+                    } else
+                    {
+                        // TODO: drag from one position to another -> texture should fit in between and tile accordingly, taking rotation into account
+                        ScaleSurfacesInWorldSpace(ChiselUVToolCommon.worldStartPosition, ChiselUVToolCommon.worldDragPlane.normal, compareDistance / toWorldVector.sqrMagnitude);
+                    }
                     break;
                 }
             }
