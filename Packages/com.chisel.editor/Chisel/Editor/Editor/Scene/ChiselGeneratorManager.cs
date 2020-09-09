@@ -1,4 +1,4 @@
-﻿using Chisel.Components;
+using Chisel.Components;
 using Chisel.Core;
 using System;
 using System.Collections.Generic;
@@ -170,6 +170,9 @@ namespace Chisel.Editors
 
         internal static void ActivateTool(ChiselPlacementToolInstance currentTool)
         {
+            if (currentTool == null)
+                return;
+
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
             if (currentTool == Instance.data.currentGenerator)
