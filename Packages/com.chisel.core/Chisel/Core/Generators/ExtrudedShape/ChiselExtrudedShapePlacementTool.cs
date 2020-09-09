@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: "Free Draw", group: ChiselGroups.kFreeForm)]
+    [ChiselPlacementTool(name: "Free Draw", group: ChiselToolGroups.kFreeForm)]
     public sealed class ChiselExtrudedShapePlacementTool : ChiselShapePlacementTool<ChiselExtrudedShapeDefinition>
     {
         public override void OnCreate(ref ChiselExtrudedShapeDefinition definition, Curve2D shape)

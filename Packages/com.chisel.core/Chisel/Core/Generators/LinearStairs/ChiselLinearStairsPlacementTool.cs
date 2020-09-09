@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselLinearStairsDefinition.kNodeTypeName, group: ChiselGroups.kStairs)]
+    [ChiselPlacementTool(name: ChiselLinearStairsDefinition.kNodeTypeName, group: ChiselToolGroups.kStairs)]
     public sealed class ChiselLinearStairsPlacementTool : ChiselBoundsPlacementTool<ChiselLinearStairsDefinition>
     {
         [ToggleFlags(includeFlags: (int)PlacementFlags.SameLengthXZ)]

@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselCylinderDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselCylinderDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselCylinderPlacementTool : ChiselBoundsPlacementTool<ChiselCylinderDefinition>
     {
         public CylinderShapeType    cylinderType		 = CylinderShapeType.Cylinder;

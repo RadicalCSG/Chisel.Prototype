@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselCapsuleDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselCapsuleDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselCapsulePlacementTool : ChiselBoundsPlacementTool<ChiselCapsuleDefinition>
     {
         public int topSegments		= ChiselCapsuleDefinition.kDefaultTopSegments;

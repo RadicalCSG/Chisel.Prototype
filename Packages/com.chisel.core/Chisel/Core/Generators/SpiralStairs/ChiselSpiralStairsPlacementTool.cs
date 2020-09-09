@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselSpiralStairsDefinition.kNodeTypeName, group: ChiselGroups.kStairs)]
+    [ChiselPlacementTool(name: ChiselSpiralStairsDefinition.kNodeTypeName, group: ChiselToolGroups.kStairs)]
     public sealed class ChiselSpiralStairsPlacementTool : ChiselBoundsPlacementTool<ChiselSpiralStairsDefinition>
     {
         // TODO: add more settings

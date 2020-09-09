@@ -2,7 +2,7 @@
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselBoxDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselBoxDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselBoxPlacementTool : ChiselBoundsPlacementTool<ChiselBoxDefinition>
     {
         [ToggleFlags]

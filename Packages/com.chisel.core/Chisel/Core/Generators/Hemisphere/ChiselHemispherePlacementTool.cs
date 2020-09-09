@@ -2,7 +2,7 @@
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselHemispherePlacementTool : ChiselBoundsPlacementTool<ChiselHemisphereDefinition>
     {
         public int horizontalSegments   = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
