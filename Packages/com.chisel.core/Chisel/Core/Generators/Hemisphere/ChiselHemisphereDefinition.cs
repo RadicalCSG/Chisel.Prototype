@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using Bounds = UnityEngine.Bounds;
+using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
@@ -53,15 +54,107 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateHemisphere");
-            try
+            return BrushMeshFactory.GenerateHemisphere(ref brushContainer, ref this);
+        }
+
+
+        //
+        // TODO: code below needs to be cleaned up & simplified 
+        //
+
+        
+        const float kLineDash					= 2.0f;
+        const float kVertLineThickness			= 0.75f;
+        const float kHorzLineThickness			= 1.0f;
+        const float kCapLineThickness			= 2.0f;
+        const float kCapLineThicknessSelected   = 2.5f;
+
+        static void DrawOutline(IChiselHandleRenderer renderer, ChiselHemisphereDefinition definition, Vector3[] vertices, LineMode lineMode)
+        {
+            var sides			= definition.horizontalSegments;
+
+            var topSegments		= Mathf.Max(definition.verticalSegments,    0);
+            var bottomCap		= false;
+            var topCap			= (topSegments    != 0);
+            var extraVertices	= ((topCap) ? 1 : 0) + ((bottomCap) ? 1 : 0);
+            var bottomVertex	= 0;
+            //var topVertex		= (bottomCap) ? 1 : 0;
+            
+            var rings			= (vertices.Length - extraVertices) / sides;
+            var bottomRing		= 0;
+
+            var prevColor = renderer.color;
+            var color = prevColor;
+            color.a *= 0.6f;
+
+            for (int i = 0, j = extraVertices; i < rings; i++, j += sides)
             {
-                return BrushMeshFactory.GenerateHemisphere(ref brushContainer, ref this);
+                renderer.color = ((i == bottomRing) ? prevColor : color);
+                renderer.DrawLineLoop(vertices, j, sides, lineMode: lineMode, thickness: ((i == bottomRing) ? kCapLineThickness : kHorzLineThickness), dashSize: ((i == bottomRing) ? 0 : kLineDash));
             }
-            finally
+
+            renderer.color = color;
+            for (int k = 0; k < sides; k++)
             {
-                Profiler.EndSample();
+                for (int i = 0, j = extraVertices; i < rings - 1; i++, j += sides)
+                    renderer.DrawLine(vertices[j + k], vertices[j + k + sides], lineMode: lineMode, thickness: kVertLineThickness);
+                if (topCap)
+                    renderer.DrawLine(vertices[bottomVertex], vertices[extraVertices + k + ((rings - 1) * sides)], lineMode: lineMode, thickness: kVertLineThickness);
             }
+            renderer.color = prevColor;
+        }
+        
+
+        static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            var baseColor		= handles.color;
+            var normal			= Vector3.up;
+
+            if (BrushMeshFactory.GenerateHemisphereVertices(ref this, ref vertices))
+            {
+                handles.color = handles.GetStateColor(baseColor, false, false);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
+
+                handles.color = handles.GetStateColor(baseColor, false, true);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.NoZTest);
+                handles.color = baseColor;
+            }
+            
+
+            var topPoint	= normal * this.diameterXYZ.y;
+            var radius2D	= new Vector2(this.diameterXYZ.x, this.diameterXYZ.z) * 0.5f;
+
+            if (this.diameterXYZ.y < 0)
+                normal = -normal;
+            bool previousModified;
+            previousModified = handles.modified;
+            {
+                handles.color = baseColor;
+                // TODO: make it possible to (optionally) size differently in x & z
+                handles.DoRadiusHandle(ref radius2D.x, normal, Vector3.zero);
+
+                {
+                    var isTopBackfaced		= false; // TODO: how to do this?
+                    
+                    handles.backfaced = isTopBackfaced;
+                    handles.DoDirectionHandle(ref topPoint, normal);
+                    handles.backfaced = false;
+                }
+            }
+            if (previousModified != handles.modified)
+            {
+                var diameter = this.diameterXYZ;
+                diameter.y = topPoint.y;
+                diameter.x = radius2D.x * 2.0f;
+                diameter.z = radius2D.x * 2.0f;
+                this.diameterXYZ = diameter;
+            }
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

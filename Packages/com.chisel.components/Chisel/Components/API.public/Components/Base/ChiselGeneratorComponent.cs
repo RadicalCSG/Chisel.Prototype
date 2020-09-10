@@ -911,7 +911,7 @@ namespace Chisel.Components
                     // TODO: create surfacedefinition
                 } else
                 {
-                    groupName = "Converted " + NodeTypeName + " to Multiple Brushes";
+                    groupName = $"Converted {NodeTypeName} to Multiple Brushes";
                     var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(topGameObject);
                     compositeComponent.Operation = topOperation;
                     var parentTransform = topGameObject.transform;

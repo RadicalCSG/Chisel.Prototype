@@ -221,15 +221,89 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateLinearStairs");
-            try
+            return BrushMeshFactory.GenerateLinearStairs(ref brushContainer, ref this);
+        }
+
+
+        //
+        // TODO: code below needs to be cleaned up & simplified 
+        //
+
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            var newDefinition = this;
+
             {
-                return BrushMeshFactory.GenerateLinearStairs(ref brushContainer, ref this);
+                var stepDepthOffset = this.StepDepthOffset;
+                var stepHeight      = this.stepHeight;
+                var stepCount       = this.StepCount;
+                var bounds          = this.bounds;
+
+                var steps		    = handles.moveSnappingSteps;
+                steps.y			    = stepHeight;
+
+                if (handles.DoBoundsHandle(ref bounds, snappingSteps: steps))
+                    newDefinition.bounds = bounds;
+
+                var min			= new Vector3(Mathf.Min(bounds.min.x, bounds.max.x), Mathf.Min(bounds.min.y, bounds.max.y), Mathf.Min(bounds.min.z, bounds.max.z));
+                var max			= new Vector3(Mathf.Max(bounds.min.x, bounds.max.x), Mathf.Max(bounds.min.y, bounds.max.y), Mathf.Max(bounds.min.z, bounds.max.z));
+
+                var size        = (max - min);
+
+                var heightStart = bounds.max.y + (bounds.size.y < 0 ? size.y : 0);
+
+                var edgeHeight  = heightStart - stepHeight * stepCount;
+                var pHeight0	= new Vector3(min.x, edgeHeight, max.z);
+                var pHeight1	= new Vector3(max.x, edgeHeight, max.z);
+
+                var depthStart = bounds.min.z - (bounds.size.z < 0 ? size.z : 0);
+
+                var pDepth0		= new Vector3(min.x, max.y, depthStart + stepDepthOffset);
+                var pDepth1		= new Vector3(max.x, max.y, depthStart + stepDepthOffset);
+
+                if (handles.DoTurnHandle(ref bounds))
+                    newDefinition.bounds = bounds;
+
+                if (handles.DoEdgeHandle1D(out edgeHeight, Axis.Y, pHeight0, pHeight1, snappingStep: stepHeight))
+                {
+                    var totalStepHeight = Mathf.Clamp((heightStart - edgeHeight), size.y % stepHeight, size.y);
+                    const float kSmudgeValue = 0.0001f;
+                    var oldStepCount = newDefinition.StepCount;
+                    var newStepCount = Mathf.Max(1, Mathf.FloorToInt((Mathf.Abs(totalStepHeight) + kSmudgeValue) / stepHeight));
+
+                    newDefinition.stepDepth     = (oldStepCount * newDefinition.stepDepth) / newStepCount;
+                    newDefinition.plateauHeight = size.y - (stepHeight * newStepCount);
+                }
+
+                if (handles.DoEdgeHandle1D(out stepDepthOffset, Axis.Z, pDepth0, pDepth1, snappingStep: ChiselLinearStairsDefinition.kMinStepDepth))
+                {
+                    stepDepthOffset -= depthStart;
+                    stepDepthOffset = Mathf.Clamp(stepDepthOffset, 0, this.absDepth - ChiselLinearStairsDefinition.kMinStepDepth);
+                    newDefinition.stepDepth = ((this.absDepth - stepDepthOffset) / this.StepCount);
+                }
+
+                float heightOffset;
+                var prevModified = handles.modified;
+                {
+                    var direction = Vector3.Cross(Vector3.forward, pHeight0 - pDepth0).normalized;
+                    handles.DoEdgeHandle1DOffset(out var height0vec, Axis.Y, pHeight0, pDepth0, direction, snappingStep: stepHeight);
+                    handles.DoEdgeHandle1DOffset(out var height1vec, Axis.Y, pHeight1, pDepth1, direction, snappingStep: stepHeight);
+                    var height0 = Vector3.Dot(direction, height0vec);
+                    var height1 = Vector3.Dot(direction, height1vec);
+                    if (Mathf.Abs(height0) > Mathf.Abs(height1)) heightOffset = height0; else heightOffset = height1;
+                }
+                if (prevModified != handles.modified)
+                {
+                    newDefinition.plateauHeight += heightOffset;
+                }
             }
-            finally
-            {
-                Profiler.EndSample();
-            }
+            if (handles.modified)
+                this = newDefinition;
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
@@ -37,15 +37,16 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GeneratePathedStairs");
-            try
-            {
-                return BrushMeshFactory.GeneratePathedStairs(ref brushContainer, ref this);
-            }
-            finally
-            {
-                Profiler.EndSample();
-            }
+            return BrushMeshFactory.GeneratePathedStairs(ref brushContainer, ref this);
+        }
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            handles.DoShapeHandle(ref shape);
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

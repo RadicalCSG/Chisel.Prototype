@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using Bounds = UnityEngine.Bounds;
+using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
@@ -58,15 +59,122 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateSphere");
-            try
+            return BrushMeshFactory.GenerateSphere(ref brushContainer, ref this);
+        }
+
+
+        //
+        // TODO: code below needs to be cleaned up & simplified 
+        //
+
+
+        const float kLineDash					= 2.0f;
+        const float kVertLineThickness			= 0.75f;
+        const float kHorzLineThickness			= 1.0f;
+        const float kCapLineThickness			= 2.0f;
+        const float kCapLineThicknessSelected   = 2.5f;
+
+        static void DrawOutline(IChiselHandleRenderer renderer, ChiselSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
+        {
+            var sides			= definition.horizontalSegments;
+            
+            var extraVertices	= 2;
+            var bottomVertex	= 1;
+            var topVertex		= 0;
+            
+            var rings			= (vertices.Length - extraVertices) / sides;
+
+            var prevColor = renderer.color;
+            var color = prevColor;
+            color.a *= 0.6f;
+
+            renderer.color = color;
+            for (int i = 0, j = extraVertices; i < rings; i++, j += sides)
             {
-                return BrushMeshFactory.GenerateSphere(ref brushContainer, ref this);
+                renderer.DrawLineLoop(vertices, j, sides, lineMode: lineMode, thickness: kHorzLineThickness, dashSize: kLineDash);
             }
-            finally
+
+            for (int k = 0; k < sides; k++)
             {
-                Profiler.EndSample();
+                renderer.DrawLine(vertices[topVertex], vertices[extraVertices + k], lineMode: lineMode, thickness: kVertLineThickness);
+                for (int i = 0, j = extraVertices; i < rings - 1; i++, j += sides)
+                    renderer.DrawLine(vertices[j + k], vertices[j + k + sides], lineMode: lineMode, thickness: kVertLineThickness);
+                renderer.DrawLine(vertices[bottomVertex], vertices[extraVertices + k + ((rings - 1) * sides)], lineMode: lineMode, thickness: kVertLineThickness);
             }
+            renderer.color = prevColor;
+        }
+
+        static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            var baseColor		= handles.color;
+            var normal			= Vector3.up;
+
+            if (BrushMeshFactory.GenerateSphereVertices(this, ref vertices))
+            {
+                handles.color = handles.GetStateColor(baseColor, false, false);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
+
+                handles.color = handles.GetStateColor(baseColor, false, true);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.NoZTest);
+                handles.color = baseColor;
+            }
+
+            Vector3 center, topPoint, bottomPoint;
+            if (!this.generateFromCenter)
+            {
+                center      = normal * (this.offsetY + (this.diameterXYZ.y * 0.5f));
+                topPoint    = normal * (this.offsetY + this.diameterXYZ.y);
+                bottomPoint = normal * (this.offsetY);
+            } else
+            {
+                center      = normal * (this.offsetY);
+                topPoint    = normal * (this.offsetY + (this.diameterXYZ.y *  0.5f));
+                bottomPoint = normal * (this.offsetY + (this.diameterXYZ.y * -0.5f));
+            }
+
+            if (this.diameterXYZ.y < 0)
+                normal = -normal;
+
+            var radius2D = new Vector2(this.diameterXYZ.x, this.diameterXYZ.z) * 0.5f;
+
+            {
+                // TODO: make it possible to (optionally) size differently in x & z
+                var radiusX = radius2D.x;
+                handles.DoRadiusHandle(ref radiusX, normal, center);
+                radius2D.x = radiusX;
+
+                {
+                    var isBottomBackfaced	= false; // TODO: how to do this?
+                    
+                    handles.backfaced = isBottomBackfaced;
+                    handles.DoDirectionHandle(ref bottomPoint, -normal);
+                    handles.backfaced = false;
+                }
+
+                {
+                    var isTopBackfaced		= false; // TODO: how to do this?
+                    
+                    handles.backfaced = isTopBackfaced;
+                    handles.DoDirectionHandle(ref topPoint, normal);
+                    handles.backfaced = false;
+                }
+            }
+            if (handles.modified)
+            {
+                var diameter = this.diameterXYZ;
+                diameter.y = topPoint.y - bottomPoint.y;
+                diameter.x = radius2D.x * 2.0f;
+                diameter.z = radius2D.x * 2.0f;
+                this.offsetY    = bottomPoint.y;
+                this.diameterXYZ = diameter;
+                // TODO: handle sizing down (needs to modify transformation?)
+            }
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

@@ -69,7 +69,7 @@ namespace UnitySceneExtensions
             }
             return radius;
         }
-
+        
         public static Vector3 Radius2DHandle(Vector3 center, Vector3 up, Vector3 radius, float minRadius = 0, float maxRadius = float.PositiveInfinity, bool renderDisc = true)
         {
             minRadius = Mathf.Abs(minRadius);
@@ -186,9 +186,7 @@ namespace UnitySceneExtensions
             var prevChanged		= GUI.changed;
 
             float size;
-            Vector3 forward;
-            Vector3 right;
-            GeometryUtility.CalculateTangents(up, out right, out forward);
+            GeometryUtility.CalculateTangents(up, out var right, out var forward);
 
             var plane = new Plane(up, Vector3.zero);
 

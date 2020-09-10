@@ -17,7 +17,7 @@ namespace Chisel.Core
             definition.path.segments[1].position = ChiselPathPoint.kDefaultDirection * height;
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height)
+        public override void OnPaint(IChiselHandleRenderer renderer, Curve2D shape, float height)
         {
             renderer.RenderShape(shape, height);
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
@@ -10,5 +10,7 @@ namespace Chisel.Core
         void Reset();
         void Validate();
         bool Generate(ref ChiselBrushContainer brushContainer);
+        void OnEdit(IChiselHandles handles);
+        void OnMessages(IChiselMessages messages);
     }
 }

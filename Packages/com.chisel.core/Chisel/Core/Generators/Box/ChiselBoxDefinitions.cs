@@ -12,7 +12,7 @@ namespace Chisel.Core
     {
         public const string kNodeTypeName = "Box";
 
-        public static readonly Bounds   kDefaultBounds = new UnityEngine.Bounds(Vector3.zero, Vector3.one);
+        public static readonly Bounds   kDefaultBounds = new Bounds(Vector3.zero, Vector3.one);
 
         public UnityEngine.Bounds       bounds;
 
@@ -39,15 +39,21 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateBox");
-            try
-            {
-                return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
-            }
-            finally
-            {
-                Profiler.EndSample();
-            }
+            return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
+        }
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            handles.DoBoundsHandle(ref bounds);
+            handles.RenderBoxMeasurements(bounds);
+        }
+
+        const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";
+
+        public void OnMessages(IChiselMessages messages)
+        {
+            if (bounds.size.x == 0 || bounds.size.y == 0 || bounds.size.z == 0)
+                messages.Warning(kDimensionCannotBeZero);
         }
     }
 

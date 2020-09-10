@@ -2182,12 +2182,6 @@ namespace Chisel.Editors
 
         bool InAlternateEditMode    { get { return Event.current.shift; } }
 
-        bool IsSceneViewIn2DMode(SceneView sceneView)
-        {
-            return  sceneView.isRotationLocked &&
-                    sceneView.camera.orthographic;
-        } 
-
         // TODO: have a more scalable way to handle brush "edit modes"
         bool InCreateEdgeEditMode   { get { return InAlternateEditMode; } }
 
@@ -2195,15 +2189,15 @@ namespace Chisel.Editors
 
 
         // This method returns true when the brushMesh has changed
-        public bool DoHandles(SceneView sceneView, bool isOutlineInsideOut)
+        public bool DoHandles(IChiselHandles handles, bool isOutlineInsideOut)
         {
-            var camera = sceneView.camera;
+            var camera = Camera.current;
             if (!UpdateColors(camera))
                 return false;
 
             var isCameraOrtho       = camera.orthographic;
             var cameraDirection     = camera.transform.forward;
-            var in2DMode            = IsSceneViewIn2DMode(sceneView);
+            var in2DMode            = handles.IsIn2DMode;
 
             // Ortho mode
             //      TODO: handle being able to move brushes when dragging from the selected brush itself 

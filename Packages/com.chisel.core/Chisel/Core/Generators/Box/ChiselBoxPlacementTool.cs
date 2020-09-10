@@ -14,7 +14,7 @@ namespace Chisel.Core
             definition.bounds = bounds; 
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderBox(bounds);
             renderer.RenderBoxMeasurements(bounds);

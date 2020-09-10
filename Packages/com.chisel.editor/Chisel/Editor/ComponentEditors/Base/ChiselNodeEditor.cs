@@ -747,14 +747,22 @@ namespace Chisel.Editors
             ShowInspectorHeader(operationProp);
         }
 
-        protected virtual void OnInspector() { OnDefaultInspector(); }
+        static readonly ChiselEditorMessages warnings = new ChiselEditorMessages();
+        protected virtual void OnMessages(IChiselMessages warnings) { }
+
+
+        protected virtual void OnInspector() 
+        { 
+            OnDefaultInspector(); 
+            OnMessages(warnings); 
+        }
 
         protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
         protected virtual void OnTargetModifiedInScene() { OnShapeChanged(); }
         protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
-        protected abstract void OnScene(SceneView sceneView, T generator);
+        protected abstract void OnScene(IChiselHandles handles, T generator);
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
@@ -921,6 +929,8 @@ namespace Chisel.Editors
             Profiler.EndSample();
         }
 
+        static readonly ChiselEditorHandles handles = new ChiselEditorHandles();
+
         public override void OnSceneGUI()
         {
             if (!target)
@@ -965,7 +975,12 @@ namespace Chisel.Editors
                     {
                         var prevColor = Handles.color;
                         Handles.color = SceneHandles.handleColor;
-                        OnScene(sceneView, generator);
+                        handles.Start(generator, sceneView, Handles.matrix);
+                        EditorGUI.BeginChangeCheck();
+                        OnScene(handles, generator);
+                        if (EditorGUI.EndChangeCheck())
+                            generator.OnValidate();
+                        handles.End();
                         Handles.color = prevColor;
                     }
                     if (EditorGUI.EndChangeCheck())

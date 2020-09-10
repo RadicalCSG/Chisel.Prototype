@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnitySceneExtensions;
 
 namespace Chisel.Core
@@ -24,7 +24,7 @@ namespace Chisel.Core
         public abstract PlacementFlags PlacementFlags { get; }
         public virtual void OnCreate(ref PlacementToolType definition) { }
         public abstract void OnUpdate(ref PlacementToolType definition, Bounds bounds);
-        public abstract void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds);
+        public abstract void OnPaint(IChiselHandleRenderer renderer, Bounds bounds);
     }
 
 
@@ -35,6 +35,6 @@ namespace Chisel.Core
     {
         public virtual void OnCreate(ref PlacementToolType definition, Curve2D shape) { }
         public abstract void OnUpdate(ref PlacementToolType definition, float height);
-        public abstract void OnPaint(IGeneratorHandleRenderer renderer, Curve2D shape, float height);
+        public abstract void OnPaint(IChiselHandleRenderer renderer, Curve2D shape, float height);
     }
 }

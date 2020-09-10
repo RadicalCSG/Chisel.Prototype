@@ -14,17 +14,6 @@ using ToolManager = UnityEditor.EditorTools;
 
 namespace Chisel.Editors
 {
-
-    // TODO: separate interface from implementation, interface + definitions can be moved to Chisel.Core
-    public sealed class GeneratorHandleRenderer : IGeneratorHandleRenderer
-    {
-        public Matrix4x4 matrix { get; set; }
-        public void RenderBox(Bounds bounds)                    { HandleRendering.RenderBox(matrix, bounds); }
-        public void RenderBoxMeasurements(Bounds bounds)        { HandleRendering.RenderBoxMeasurements(matrix, bounds); }
-        public void RenderCylinder(Bounds bounds, int segments) { HandleRendering.RenderCylinder(matrix, bounds, segments); }
-        public void RenderShape(Curve2D shape, float height)    { HandleRendering.RenderShape(matrix, shape, height); }
-    }
-
     public abstract partial class ChiselPlacementToolInstanceWithDefinition<PlacementToolDefinitionType, DefinitionType, Generator> 
         : ChiselPlacementToolInstance
         // Placement tool definition needs to be a ScriptableObject so we can create an Editor for it

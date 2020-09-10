@@ -36,7 +36,7 @@ namespace Chisel.Core
             definition.diameterZ    = bounds.size[(int)Axis.Z];
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             // TODO: render capsule here
             renderer.RenderCylinder(bounds, sides);

@@ -24,7 +24,7 @@ namespace Chisel.Core
             definition.diameterXYZ = bounds.size;
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderCylinder(bounds, horizontalSegments);
             renderer.RenderBoxMeasurements(bounds);

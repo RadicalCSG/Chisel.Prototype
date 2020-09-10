@@ -857,7 +857,6 @@ namespace Chisel.Editors
             EditorGUI.showMixedValue = renderingLayerMaskProp.hasMultipleDifferentValues;
 
             var model		= (ChiselModel)target;
-            var renderer	= target;
             var mask		= (int)model.RenderSettings.renderingLayerMask;
 
             EditorGUI.BeginChangeCheck();
