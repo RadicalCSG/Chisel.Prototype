@@ -1,19 +1,13 @@
 using System;
-using System.Linq;
-using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
 using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
-using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
-using System.Collections.Generic;
-using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
+    // TODO: maybe just have different generators + support converting between generators
     [Serializable]
     public enum CylinderShapeType : byte
     {
@@ -22,186 +16,205 @@ namespace Chisel.Core
         ConicalFrustum
     }
 
-    [Serializable]
-    public struct ChiselCircleDefinition
-    {
-        public ChiselCircleDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
-        public ChiselCircleDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
-
-        [DistanceValue] public float diameterX;
-        [DistanceValue] public float diameterZ;
-        [DistanceValue] public float height;
-
-        public void Reset()
-        {
-            height = 0.0f;
-            diameterX = 1.0f;
-            diameterZ = 1.0f;
-        }
-
-        public void Validate()
-        {
-        }
-    }
-
+    // TODO: in circle mode use max(radiusx,radiusz) instead of just radiusx => toggling from ellipsoid to circle will make more sense
+    // TODO: make handles snappable so we can snap circles to the grid
+    // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
+    //          the quad triangulation needs to be reversed (figure out how to detect this)
     [Serializable]
     public struct ChiselCylinderDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Cylinder";
 
-        public ChiselCircleDefinition  top;
-        public ChiselCircleDefinition  bottom;
-        public bool                 isEllipsoid;
-        public CylinderShapeType    type;
-        public uint                 smoothingGroup;
-        public int                  sides;
+        public CylinderShapeType type;
+        public bool     isEllipsoid;
+        public bool     fitToBounds;
+        public int      sides;
 
-        [AngleValue]
-        public float rotation;
+        // Show the name for the top Diameter X as "Top Diameter X" or "Top Diameter" depending on isEllipsoid being true or false
+        [ConditionalNamePart("{ellipsoid}", " X", "", nameof(isEllipsoid)),
+         ConditionalName("Top Diameter{ellipsoid}"),
+         // Show this field depending on the type being a ConicalFrustum
+         ConditionalHide(nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder), DistanceValue] 
+        public float    topDiameterX;
 
+        // Only show this field if it's a ConicalFrustum and isEllipsoid is true
+        [ConditionalHide(nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
+         ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
+        public float    topDiameterZ;
+
+        // Show the name for the bottom Diameter X as "Bottom Diameter X", "Bottom Diameter" or "Diameter" depending on isEllipsoid being true or false 
+        // and if the type is a ConicalFrustum or not
+        [ConditionalNamePart("{bottom}", "Bottom ", "", nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
+         ConditionalNamePart("{ellipsoid}", " X", "", nameof(isEllipsoid)),
+         ConditionalName("{bottom}Diameter{ellipsoid}"), DistanceValue] 
+        public float    bottomDiameterX;
+
+        // Show the name for the bottom Diameter Z as "Bottom Diameter X" or "Diameter Z" depending on if the type is a ConicalFrustum or not
+        [ConditionalNamePart("{bottom}", "Bottom ", "", nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
+         ConditionalName("{bottom}Diameter Z"),
+         // Only show this field if isEllipsoid is true
+         ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
+        public float    bottomDiameterZ;
+
+        [DistanceValue] public float height;
+        [DistanceValue] public float bottomOffset;
+
+        // TODO: show this in scene somehow
         [NamedItems("Top", "Bottom", overflow = "Side {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
+        public ChiselSurfaceDefinition surfaceDefinition;
+
+
+        [UnityEngine.HideInInspector]
+        public uint smoothingGroup; // TODO: show when we actually have normal smoothing + have custom property drawer for this
+
+        [UnityEngine.HideInInspector, AngleValue]
+        public float rotation;      // TODO: just get rid of this
+
 
         public float TopDiameterX
         {
-            get { return top.diameterX; }
+            get { return topDiameterX; }
             set
             {
-                if (value == top.diameterX)
+                if (value == topDiameterX)
                     return;
 
-                top.diameterX = value;
+                topDiameterX = value;
                 if (!isEllipsoid)
-                    top.diameterZ = value;
+                    topDiameterZ = value;
                 if (type == CylinderShapeType.Cylinder)
                 {
-                    bottom.diameterX = value;
+                    bottomDiameterX = value;
                     if (!isEllipsoid)
-                        bottom.diameterZ = value;
+                        bottomDiameterZ = value;
                 }
             }
         }
 
         public float TopDiameterZ
         {
-            get { return top.diameterZ; }
+            get { return topDiameterZ; }
             set
             {
-                if (value == top.diameterZ)
+                if (value == topDiameterZ)
                     return;
 
-                top.diameterZ = value;
+                topDiameterZ = value;
                 if (!isEllipsoid)
-                    top.diameterX = value;
+                    topDiameterX = value;
                 if (type == CylinderShapeType.Cylinder)
                 {
-                    bottom.diameterZ = value;
+                    bottomDiameterZ = value;
                     if (!isEllipsoid)
-                        bottom.diameterX = value;
+                        bottomDiameterX = value;
                 }
             }
         }
 
         public float Diameter
         {
-            get { return bottom.diameterX; }
+            get { return bottomDiameterX; }
             set
             {
-                if (value == bottom.diameterX)
+                if (value == bottomDiameterX)
                     return;
 
-                bottom.diameterX = value;
-                top.diameterX = value;
-                bottom.diameterZ = value;
-                top.diameterZ = value;
+                bottomDiameterX = value;
+                topDiameterX = value;
+                bottomDiameterZ = value;
+                topDiameterZ = value;
             }
         }
 
         public float DiameterX
         {
-            get { return bottom.diameterX; }
+            get { return bottomDiameterX; }
             set
             {
-                if (value == bottom.diameterX)
+                if (value == bottomDiameterX)
                     return;
 
-                bottom.diameterX = value;
-                top.diameterX = value;
+                bottomDiameterX = value;
+                topDiameterX = value;
                 if (!isEllipsoid)
                 {
-                    bottom.diameterZ = value;
-                    top.diameterZ = value;
+                    bottomDiameterZ = value;
+                    topDiameterZ = value;
                 }
             }
         }
 
         public float DiameterZ
         {
-            get { return bottom.diameterZ; }
+            get { return bottomDiameterZ; }
             set
             {
-                if (value == bottom.diameterZ)
+                if (value == bottomDiameterZ)
                     return;
 
-                bottom.diameterZ = value;
-                top.diameterZ = value;
+                bottomDiameterZ = value;
+                topDiameterZ = value;
                 if (!isEllipsoid)
                 {
-                    bottom.diameterX = value;
-                    top.diameterX = value;
+                    bottomDiameterX = value;
+                    topDiameterX = value;
                 }
             }
         }
 
         public float BottomDiameterX
         {
-            get { return bottom.diameterX; }
+            get { return bottomDiameterX; }
             set
             {
-                if (value == bottom.diameterX)
+                if (value == bottomDiameterX)
                     return;
 
-                bottom.diameterX = value;
+                bottomDiameterX = value;
                 if (!isEllipsoid)
-                    bottom.diameterZ = value;
+                    bottomDiameterZ = value;
                 if (type == CylinderShapeType.Cylinder)
                 {
-                    top.diameterX = value;
+                    topDiameterX = value;
                     if (!isEllipsoid)
-                        top.diameterZ = value;
+                        topDiameterZ = value;
                 }
             }
         }
 
         public float BottomDiameterZ
         {
-            get { return bottom.diameterZ; }
+            get { return bottomDiameterZ; }
             set
             {
-                if (value == bottom.diameterZ)
+                if (value == bottomDiameterZ)
                     return;
 
-                bottom.diameterZ = value;
+                bottomDiameterZ = value;
                 if (!isEllipsoid)
-                    bottom.diameterX = value;
+                    bottomDiameterX = value;
                 if (type == CylinderShapeType.Cylinder)
                 {
-                    top.diameterZ = value;
+                    topDiameterZ = value;
                     if (!isEllipsoid)
-                        top.diameterX = value;
+                        topDiameterX = value;
                 }
             }
         }
 
         public void Reset()
         {
-            top.Reset();
-            bottom.Reset();
+            topDiameterX = 1.0f;
+            topDiameterZ = 1.0f;
+            height = 1.0f;
 
-            top.height = 1.0f;
-            bottom.height = 0.0f;
+            bottomDiameterX = 1.0f;
+            bottomDiameterZ = 1.0f;
+            bottomOffset = 0.0f;
+
             rotation = 0.0f;
             isEllipsoid = false;
+            fitToBounds = true;
             sides = 16;
             smoothingGroup = 1;
             type = CylinderShapeType.Cylinder;
@@ -214,8 +227,10 @@ namespace Chisel.Core
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
 
-            top.Validate();
-            bottom.Validate();
+            topDiameterX = Mathf.Abs(topDiameterX);
+            topDiameterZ = Mathf.Abs(topDiameterZ);
+            bottomDiameterX = Mathf.Abs(bottomDiameterX);
+            bottomDiameterZ = Mathf.Abs(bottomDiameterZ);
 
             sides = Mathf.Max(3, sides);
 
@@ -227,7 +242,7 @@ namespace Chisel.Core
                 // Bottom plane
                 surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
                 
-                float radius = top.diameterX * 0.5f;
+                float radius = topDiameterX * 0.5f;
                 float angle = (360.0f / sides);
                 float sideLength = (2 * Mathf.Sin((angle / 2.0f) * Mathf.Deg2Rad)) * radius;
 
@@ -254,300 +269,447 @@ namespace Chisel.Core
         // TODO: code below needs to be cleaned up & simplified 
         //
 
-
-        void Init(ref CylinderHandle handle)
+        static void DraggableRadius(IChiselHandles handles, ref float diameterX, ref float diameterZ, Vector3 center, Vector3 up, Vector3 xVector, Vector3 zVector, IChiselHandle[] radiusHandles, bool isEllipsoid)
         {
-            handle.bottomDiameterX	= this.BottomDiameterX;
-            handle.bottomDiameterZ	= this.isEllipsoid ? this.BottomDiameterZ : this.BottomDiameterX;
-
-            handle.topDiameterX		= this.TopDiameterX;
-            handle.topDiameterZ		= this.isEllipsoid ? this.TopDiameterZ : this.TopDiameterX;
-
-            handle.rotate			= Quaternion.AngleAxis(this.rotation, Vector3.up);
-            handle.topXVector		= handle.rotate * Vector3.right   * handle.topDiameterX * 0.5f;
-            handle.topZVector		= handle.rotate * Vector3.forward * handle.topDiameterZ * 0.5f;
-            handle.bottomXVector	= handle.rotate * Vector3.right   * handle.bottomDiameterX * 0.5f;
-            handle.bottomZVector	= handle.rotate * Vector3.forward * handle.bottomDiameterZ * 0.5f;
-            handle.topHeight		= Vector3.up * this.top.height;
-            handle.bottomHeight		= Vector3.up * this.bottom.height;
-            handle.normal			= Vector3.up;
-
-            if (!this.isEllipsoid)
+            if (isEllipsoid)
             {
-                handle.bottomZVector	= handle.bottomZVector.normalized * handle.bottomXVector.magnitude;
-                handle.topZVector		= handle.topZVector.normalized    * handle.topXVector.magnitude;
+                Debug.Assert(radiusHandles.Length == 4);
+                diameterX = -diameterX; handles.DoSlider1DHandle(ref diameterX, center, xVector, radiusHandles[1]); // right
+                if (handles.lastHandleHadFocus)
+                {
+                    var radiusX = diameterX * 0.5f;
+                    var radiusZ = diameterZ * 0.5f;
+                    var vecX = (xVector.normalized * radiusX);
+                    var vecZ = (zVector.normalized * radiusZ);
+                    handles.RenderDistanceMeasurement(center, center + vecX, radiusX);
+                    handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
+                }
+                diameterX = -diameterX; handles.DoSlider1DHandle(ref diameterX, center, xVector, radiusHandles[0]); // left
+                if (handles.lastHandleHadFocus)
+                {
+                    var radiusX = diameterX * 0.5f;
+                    var radiusZ = diameterZ * 0.5f;
+                    var vecX = (xVector.normalized * radiusX);
+                    var vecZ = (zVector.normalized * radiusZ);
+                    handles.RenderDistanceMeasurement(center, center + vecX, radiusX);
+                    handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
+                }
+                diameterZ = -diameterZ; handles.DoSlider1DHandle(ref diameterZ, center, zVector, radiusHandles[3]); // back
+                if (handles.lastHandleHadFocus)
+                {
+                    var radiusX = diameterX * 0.5f;
+                    var radiusZ = diameterZ * 0.5f;
+                    var vecX = (xVector.normalized * radiusX);
+                    var vecZ = (zVector.normalized * radiusZ);
+                    handles.RenderDistanceMeasurement(center, center + vecX, radiusX);
+                    handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
+                }
+                diameterZ = -diameterZ; handles.DoSlider1DHandle(ref diameterZ, center, zVector, radiusHandles[2]); // forward
+                if (handles.lastHandleHadFocus)
+                {
+                    var radiusX = diameterX * 0.5f;
+                    var radiusZ = diameterZ * 0.5f;
+                    var vecX = (xVector.normalized * radiusX);
+                    var vecZ = (zVector.normalized * radiusZ);
+                    handles.RenderDistanceMeasurement(center, center + vecX, radiusX);
+                    handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
+                }
+
+                diameterX = Mathf.Abs(diameterX);
+                diameterZ = Mathf.Abs(diameterZ);
+            } else
+            {
+                Debug.Assert(radiusHandles.Length == 1);
+
+                handles.DoDistanceHandle(ref diameterX, center, up, radiusHandles[0]); // left
+                diameterX       = Mathf.Abs(diameterX);
+                var radiusX     = diameterX * 0.5f;
+
+                if (handles.lastHandleHadFocus)
+                {
+                    if (handles.TryGetClosestPoint(radiusHandles, out var closestPoint, interpolate: false))
+                    {
+                        var vec = (closestPoint - center);
+                        handles.RenderDistanceMeasurement(center, center + vec, radiusX);
+                    }
+                }
             }
-
-            handle.prevBottomXVector	= handle.bottomXVector;
-            handle.prevBottomZVector	= handle.bottomZVector;
-            handle.prevTopXVector		= handle.topXVector;
-            handle.prevTopZVector		= handle.topZVector;
-
-            handle.topPoint	   = handle.topHeight;
-            handle.bottomPoint = handle.bottomHeight;
-
-            handle.vertices = new Vector3[this.sides * 2];
         }
 
-        struct CylinderHandle
+        class CylinderHandles
         {
-            public float bottomDiameterX;
-            public float bottomDiameterZ;
+            public Vector3 normal = Vector3.up;
+            public IChiselEllipsoidHandle  fullBottomCircleHandle;
+            public IChiselEllipsoidHandle fullTopCircleHandle;
+            public IChiselLineHandle verticalHandle1;
+            public IChiselLineHandle verticalHandle2;
+            public IChiselNormalHandle topHandle;
+            public IChiselNormalHandle bottomHandle;
 
-            public float topDiameterX;
-            public float topDiameterZ;
+            public IChiselHandle[] topHandles;
+            public IChiselHandle[] bottomHandles;
+            public IChiselEllipsoidHandle[] topRadiusHandles;
+            public IChiselEllipsoidHandle[] bottomRadiusHandles;
 
-            public Quaternion rotate;
+            public float topY;
+            public float bottomY;
+            public Vector3 topPoint;
+            public Vector3 bottomPoint;
             public Vector3 topXVector;
             public Vector3 topZVector;
             public Vector3 bottomXVector;
             public Vector3 bottomZVector;
-            public Vector3 topHeight;
-            public Vector3 bottomHeight;
-            public Vector3 normal;
 
-            public Vector3 prevBottomXVector;
-            public Vector3 prevTopXVector;
-            public Vector3 prevBottomZVector;
-            public Vector3 prevTopZVector;
+            public void Init(IChiselHandleAllocation handles, ChiselCylinderDefinition definition)
+            {   
+                fullBottomCircleHandle  = handles.CreateEllipsoidHandle(Vector3.zero, Vector3.zero, 0, 0);
+                fullTopCircleHandle     = handles.CreateEllipsoidHandle(Vector3.zero, Vector3.zero, 0, 0);
 
-            public Vector3 topPoint;
-            public Vector3 bottomPoint;
+                verticalHandle1          = handles.CreateLineHandle(Vector3.zero, Vector3.zero, highlightOnly: true);
+                verticalHandle2          = handles.CreateLineHandle(Vector3.zero, Vector3.zero, highlightOnly: true);
 
-            public Vector3[] vertices;
-            public Vector3[] dottedVertices;
-        }
-
-        void ShowInstance(IChiselHandles handles, ref CylinderHandle temp)
-        {
-            ref var top		= ref this.top;
-            ref var bottom	= ref this.bottom;
-            ref var sides	= ref this.sides;
-
-            if (!this.isEllipsoid)
-            { 
-                top.diameterZ = top.diameterX; 
-                bottom.diameterZ = bottom.diameterX; 
+                topHandle               = handles.CreateNormalHandle(Vector3.zero, Vector3.zero);
+                bottomHandle            = handles.CreateNormalHandle(Vector3.zero, Vector3.zero);
             }
-
-            bool prevModified = handles.modified;
+        
+            public void Update(IChiselHandles handles, ChiselCylinderDefinition definition)
             {
-                switch (this.type)
+                var tempBottomDiameterX	= definition.BottomDiameterX;
+                var tempBottomDiameterZ = definition.isEllipsoid ? definition.BottomDiameterZ : definition.BottomDiameterX;
+
+                float tempTopDiameterX, tempTopDiameterZ;
+                if (definition.type == CylinderShapeType.Cone)
                 {
-                    case CylinderShapeType.Cylinder:
-                    {
-                        if (this.isEllipsoid)
-                        {
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, ref temp.bottomZVector, temp.topPoint,     temp.normal, renderDisc: false);
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, ref temp.bottomZVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-                        } else
-                        {
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, temp.topPoint,     temp.normal, renderDisc: false);
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-
-                            temp.bottomZVector = temp.bottomXVector;
-                        }
-                        temp.topXVector = temp.bottomXVector;
-                        temp.topZVector = temp.bottomZVector;
-
-                        temp.bottomDiameterX = temp.bottomXVector.magnitude * 2.0f;
-                        temp.bottomDiameterZ = temp.bottomZVector.magnitude * 2.0f;
-                        
-                        bottom.diameterX = temp.bottomDiameterX;
-                        bottom.diameterZ = temp.bottomDiameterZ;
-
-                        top.diameterX = bottom.diameterX;
-                        top.diameterZ = bottom.diameterZ;
-                        break;
-                    }
-                    case CylinderShapeType.ConicalFrustum:
-                    {
-                        if (this.isEllipsoid)
-                        {
-                            handles.DoRadius2DHandle(ref temp.topXVector,    ref temp.topZVector,    temp.topPoint,     temp.normal, renderDisc: false);
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, ref temp.bottomZVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-                        } else
-                        {
-                            handles.DoRadius2DHandle(ref temp.topXVector,    temp.topPoint,     temp.normal, renderDisc: false);
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-
-                            temp.bottomZVector = temp.bottomXVector;
-                        }
-                        break;
-                    }
-                    case CylinderShapeType.Cone:
-                    {
-                        if (this.isEllipsoid)
-                        {
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, ref temp.bottomZVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-                        } else
-                        {
-                            handles.DoRadius2DHandle(ref temp.bottomXVector, temp.bottomPoint, -temp.normal, renderDisc: false);
-                            temp.bottomZVector = temp.bottomXVector;
-                        }
-                        temp.topXVector = temp.bottomXVector;
-                        temp.topZVector = temp.bottomZVector;
-                        top.diameterX = 0;
-                        top.diameterZ = 0;
-                        break;
-                    }
-                }
-
-
-                // TODO: add cylinder horizon "side-lines"
-            }
-            if (prevModified != handles.modified)
-            {
-                temp.topZVector.y = 0;
-                temp.topXVector.y = 0;
-
-                temp.bottomZVector.y = 0;
-                temp.bottomXVector.y = 0;
-
-                if (!this.isEllipsoid)
-                {
-                    if (temp.prevBottomXVector != temp.bottomXVector)
-                    {
-                        temp.bottomZVector = Vector3.Cross(temp.normal, temp.bottomXVector.normalized) * temp.bottomXVector.magnitude;
-                    }
-                    if (temp.prevTopXVector != temp.topXVector)
-                    {
-                        temp.topZVector = Vector3.Cross(temp.normal, temp.topXVector.normalized) * temp.topXVector.magnitude;
-                    }
-                }
-
-                if (temp.prevTopXVector != temp.topXVector)
-                {
-                    this.rotation = GeometryMath.SignedAngle(Vector3.right, temp.topXVector.normalized, Vector3.up);
-                }
-                else if (temp.prevBottomXVector != temp.bottomXVector)
-                {
-                    this.rotation = GeometryMath.SignedAngle(Vector3.right, temp.bottomXVector.normalized, Vector3.up);
-                }
-
-                if (this.isEllipsoid)
-                {
-                    temp.bottomDiameterX = temp.bottomXVector.magnitude * 2.0f;
-                    temp.bottomDiameterZ = temp.bottomZVector.magnitude * 2.0f;
-
-                    temp.topDiameterX = temp.topXVector.magnitude * 2.0f;
-                    temp.topDiameterZ = temp.topZVector.magnitude * 2.0f;
+                    tempTopDiameterX     = 0;
+                    tempTopDiameterZ     = 0;
+                } else
+                if (definition.type == CylinderShapeType.Cylinder)
+                { 
+                    tempTopDiameterX	= tempBottomDiameterX;
+                    tempTopDiameterZ	= tempBottomDiameterZ;
                 } else
                 {
-                    if (temp.prevBottomZVector != temp.bottomZVector)
+                    tempTopDiameterX	= definition.TopDiameterX;
+                    tempTopDiameterZ	= definition.isEllipsoid ? definition.TopDiameterZ : definition.TopDiameterX;
+                }
+            
+                topY            = (definition.height + definition.bottomOffset);
+                bottomY         = definition.bottomOffset;
+                var rotate		= Quaternion.AngleAxis(definition.rotation, Vector3.up);
+                topXVector		= rotate * Vector3.right   * tempTopDiameterX * 0.5f;
+                topZVector      = rotate * Vector3.forward * tempTopDiameterZ * 0.5f;
+                bottomXVector   = rotate * Vector3.right   * tempBottomDiameterX * 0.5f;
+                bottomZVector   = rotate * Vector3.forward * tempBottomDiameterZ * 0.5f;
+                normal = Vector3.up;
+                if (topY < bottomY) normal = -Vector3.up; else normal = Vector3.up;
+                topPoint        = normal * topY;
+                bottomPoint     = normal * bottomY;
+            
+            
+                // Render vertical horizon of cylinder
+                // TODO: make this work with math instead of "finding" it
+                Vector3 bottomPointA, topPointA;
+                Vector3 bottomPointB, topPointB;
+                var camera = UnityEngine.Camera.current;
+                var cameraTransform = camera.transform;
+                var cameraPosition = handles.inverseMatrix.MultiplyPoint(cameraTransform.position);
+                const float degreeStep = 5;
+                var pointA      = fullTopCircleHandle.GetPointAtDegree(360 - degreeStep);
+                var pointB      = fullBottomCircleHandle.GetPointAtDegree(360 - degreeStep);
+                var camOrtho    = camera.orthographic;
+                var camForward  = handles.inverseMatrix.MultiplyVector(cameraTransform.forward).normalized;
+                var camDir      = camOrtho ? camForward : (pointA - cameraPosition).normalized;
+
+            
+                var delta       = (pointA - pointB).normalized;
+                var normal3     = -Vector3.Cross(delta, Vector3.Cross((pointB - bottomPoint).normalized, delta)).normalized;
+                var prevDot     = Vector3.Dot(normal3, camDir) < 0;
+
+                bool renderHorizon = false;
+                //*
+                bottomPointA    = Vector3.zero;
+                topPointA       = Vector3.zero;
+                bottomPointB    = Vector3.zero;
+                topPointB       = Vector3.zero;
+                var lineCount = 0;
+                for (float degree = 0; degree < 360; degree += degreeStep)
+                {
+                    pointA = fullTopCircleHandle.GetPointAtDegree(degree);
+                    pointB = fullBottomCircleHandle.GetPointAtDegree(degree);
+
+                    delta   = (pointA - pointB).normalized;
+                    normal3 = -Vector3.Cross(delta, Vector3.Cross((pointB - bottomPoint).normalized, delta)).normalized;
+
+                    camDir = camOrtho ? camForward : (pointB - cameraPosition).normalized;
+                    var currDot = Vector3.Dot(normal3, camDir) < 0;
+
+                    if (prevDot != currDot)
                     {
-                        temp.bottomDiameterX = temp.bottomZVector.magnitude * 2.0f;
-                        temp.bottomDiameterZ = temp.bottomZVector.magnitude * 2.0f;
-                    } else
+                        lineCount++;
+                        if (lineCount == 1)
+                        {
+                            topPointA = pointA;
+                            bottomPointA = pointB;
+                        } else
+                        //if (lineCount == 2)
+                        {
+                            topPointB = pointA;
+                            bottomPointB = pointB;
+                            renderHorizon = true;
+                            break;
+                        }
+                    }
+                    prevDot = currDot;
+                }
+
+    #if false
+                {
+                    var pointC      = (Vector3.right * (definition.topDiameterX * 0.5f)) + (Vector3.up * (definition.height + definition.bottomOffset));
+                    var pointD      = (Vector3.right * (definition.bottomDiameterX * 0.5f)) + (Vector3.up * definition.bottomOffset);
+                    //var deltar      = (pointC - pointD).normalized;
+                    //var normala     = -Vector3.Cross(Vector3.forward, deltar).normalized;
+
+
+                    var DT = (cameraPosition - topPoint);
+                    var DB = (cameraPosition - bottomPoint);
+                    var DmT = DT.magnitude;
+                    var DmB = DB.magnitude;
+                    //var Dv = D / Dm;
+
+                    var RmT = definition.topDiameterX * 0.5f;
+                    var RmB = definition.bottomDiameterX * 0.5f;
+
+                    var cosAT = RmT / DmT;
+                    var cosAB = RmB / DmB;
+                    var AT = Mathf.Acos(cosAT) * Mathf.Rad2Deg;
+                    var AB = Mathf.Acos(cosAB) * Mathf.Rad2Deg;
+                    var RvT = (Quaternion.AngleAxis(AT, Vector3.up) * DT).normalized;
+                    var RvB = (Quaternion.AngleAxis(AB, Vector3.up) * DB).normalized;
+                    //var R = Rv * Rm;
+
+                    var angleT = Vector3.SignedAngle(Vector3.right, RvT, Vector3.up);
+                    var angleB = Vector3.SignedAngle(Vector3.right, RvB, Vector3.up);
+
+                    var arotationT  = Quaternion.AngleAxis(angleT, Vector3.up);
+                    var arotationB  = Quaternion.AngleAxis(angleB, Vector3.up);
+                    var ptA = arotationT * pointC;
+                    var ptB = arotationB * pointD;
+                    var prevCol = handles.color;
+                    handles.color = UnityEngine.Color.red;
+                    handles.DrawLine(bottomPoint, bottomPoint + Vector3.right);
+                    //handles.DrawLine(bottomPoint, bottomPoint + Vector3.forward);
+                    //handles.DrawLine(bottomPoint, bottomPoint + normala);
+                    //handles.DrawLine(bottomPoint, bottomPoint + deltar);
+                    //handles.DrawLine(bottomPoint, bottomPoint + R);
+                    handles.DrawLine(bottomPoint, bottomPoint + RvT);
+                    handles.DrawLine(bottomPoint, bottomPoint + RvB);
+                    //handles.DrawLine(bottomPoint, bottomPoint + desired);
+                    handles.DrawLine(ptA, ptB);
+                    handles.color = prevCol;
+                }
+    #endif
+
+
+                /*/
+                if (camera.orthographic)
+                {
                     {
-                        temp.bottomDiameterX = temp.bottomXVector.magnitude * 2.0f;
-                        temp.bottomDiameterZ = temp.bottomXVector.magnitude * 2.0f;
+                        var radius = definition.bottomDiameterX * 0.5f;
+                        var center = bottomPoint;
+                        bottomPointA = center + (cameraTransform.right * radius);
+                        bottomPointB = center - (cameraTransform.right * radius);
+                    }
+                    {
+                        var radius = definition.topDiameterX * 0.5f;
+                        var center = topPoint;
+                        topPointA = center + (cameraTransform.right * radius);
+                        topPointB = center - (cameraTransform.right * radius);
+                    }
+                } else
+                {
+                    var handleMatrix = handles.matrix;
+                    renderHorizon = GeometryMath.FindCircleHorizon(handleMatrix, definition.bottomDiameterX, bottomPoint, -normal, out bottomPointB, out bottomPointA);
+                    renderHorizon = GeometryMath.FindCircleHorizon(handleMatrix, definition.topDiameterX,    topPoint,     normal, out topPointA,    out topPointB) && renderHorizon;
+
+                    if (renderHorizon && definition.bottomDiameterX != definition.topDiameterX)
+                    {
+                        renderHorizon = !(GeometryMath.PointInCameraCircle(handleMatrix, bottomPointA, definition.topDiameterX,    topPoint,     normal) ||
+                                          GeometryMath.PointInCameraCircle(handleMatrix, topPointA,    definition.bottomDiameterX, bottomPoint, -normal) ||
+                                          GeometryMath.PointInCameraCircle(handleMatrix, bottomPointB, definition.topDiameterX,    topPoint,     normal) ||
+                                          GeometryMath.PointInCameraCircle(handleMatrix, topPointB,    definition.bottomDiameterX, bottomPoint, -normal));
+                    }
+                }
+                //*/
+
+                if (!renderHorizon)
+                {
+                    bottomPointA = Vector3.zero;
+                    topPointA = Vector3.zero;
+                    bottomPointB = Vector3.zero;
+                    topPointB = Vector3.zero;
+                }
+
+                verticalHandle1.From = bottomPointA;
+                verticalHandle1.To   = topPointA;
+                verticalHandle2.From = bottomPointB;
+                verticalHandle2.To   = topPointB;
+                
+                fullTopCircleHandle.Center       = topPoint;
+                fullBottomCircleHandle.Center    = bottomPoint;
+                
+                fullTopCircleHandle.DiameterX    = tempTopDiameterX;
+                fullTopCircleHandle.DiameterZ    = tempTopDiameterZ;
+                fullBottomCircleHandle.DiameterX = tempBottomDiameterX;
+                fullBottomCircleHandle.DiameterZ = tempBottomDiameterZ;
+
+                topHandle   .Origin = topPoint;
+                bottomHandle.Origin = bottomPoint;
+
+
+                fullTopCircleHandle.Normal = normal;
+                fullBottomCircleHandle.Normal = -normal;
+
+                topHandle.Normal = normal;
+                bottomHandle.Normal = -normal;
+
+                
+                if (definition.isEllipsoid)
+                {
+                    if (bottomRadiusHandles == null || bottomRadiusHandles.Length != 4)
+                    {
+                        bottomRadiusHandles = new IChiselEllipsoidHandle[]
+                        {
+                            handles.CreateEllipsoidHandle(Vector3.zero, -normal, 0, 0, startAngle: +45f, angles: 90),        // left
+                            handles.CreateEllipsoidHandle(Vector3.zero, -normal, 0, 0, startAngle: +45f + 180f, angles: 90), // right
+                            handles.CreateEllipsoidHandle(Vector3.zero, -normal, 0, 0, startAngle: -45f, angles: 90),        // forward
+                            handles.CreateEllipsoidHandle(Vector3.zero, -normal, 0, 0, startAngle: -45f + 180f, angles: 90), // back
+                        };
                     }
 
-                    if (temp.prevTopZVector != temp.topZVector)
+                    if (topRadiusHandles == null || topRadiusHandles.Length != 4)
                     {
-                        temp.topDiameterX = temp.topZVector.magnitude * 2.0f;
-                        temp.topDiameterZ = temp.topZVector.magnitude * 2.0f;
+                        topRadiusHandles = new IChiselEllipsoidHandle[]
+                        {
+                            handles.CreateEllipsoidHandle(Vector3.zero, normal, 0, 0, startAngle: +45f, angles: 90),          // left
+                            handles.CreateEllipsoidHandle(Vector3.zero, normal, 0, 0, startAngle: +45f + 180f, angles: 90),   // right
+                            handles.CreateEllipsoidHandle(Vector3.zero, normal, 0, 0, startAngle: -45f, angles: 90),          // forward
+                            handles.CreateEllipsoidHandle(Vector3.zero, normal, 0, 0, startAngle: -45f + 180f, angles: 90),   // back
+                        };
+                    }
+
+                    for (int i = 0; i < bottomRadiusHandles.Length; i++)
+                    {
+                        bottomRadiusHandles[i].Center = bottomPoint;
+                        bottomRadiusHandles[i].Normal = -normal;
+                        bottomRadiusHandles[i].DiameterX = tempBottomDiameterX;
+                        bottomRadiusHandles[i].DiameterZ = tempBottomDiameterZ;
+                        bottomRadiusHandles[i].Rotation = definition.rotation;
+                    }
+
+                    for (int i = 0; i < topRadiusHandles.Length; i++)
+                    {
+                        topRadiusHandles[i].Center = topPoint;
+                        topRadiusHandles[i].Normal = normal;
+                        topRadiusHandles[i].DiameterX = tempTopDiameterX;
+                        topRadiusHandles[i].DiameterZ = tempTopDiameterZ;
+                        topRadiusHandles[i].Rotation = definition.rotation;
+                    }
+
+                    if (bottomHandles == null || bottomHandles.Length != 4)
+                        bottomHandles   = new IChiselHandle[] { bottomHandle, bottomRadiusHandles[0], bottomRadiusHandles[1], bottomRadiusHandles[2], bottomRadiusHandles[3] };
+                    if (definition.type != CylinderShapeType.Cone)
+                    {
+                        if (topHandles == null || topHandles.Length != 5)
+                            topHandles = new IChiselHandle[] { topHandle, topRadiusHandles[0], topRadiusHandles[1], topRadiusHandles[2], topRadiusHandles[3] };
                     } else
                     {
-                        temp.topDiameterX = temp.topXVector.magnitude * 2.0f;
-                        temp.topDiameterZ = temp.topXVector.magnitude * 2.0f;
+                        if (topHandles == null || topHandles.Length != 1)
+                            topHandles = new IChiselHandle[] { topHandle };
+                    }
+                } else
+                {
+                    if (bottomRadiusHandles == null || bottomRadiusHandles.Length != 1) bottomRadiusHandles = new IChiselEllipsoidHandle[] { fullBottomCircleHandle };
+                    if (topRadiusHandles == null || topRadiusHandles.Length    != 1) topRadiusHandles = new IChiselEllipsoidHandle[] { fullTopCircleHandle };
+
+                    if (bottomHandles == null || bottomHandles.Length != 2) bottomHandles   = new IChiselHandle[] { bottomHandle, bottomRadiusHandles[0] };
+                    if (definition.type != CylinderShapeType.Cone)
+                    {
+                        if (topHandles == null || topHandles.Length != 2)
+                            topHandles = new IChiselHandle[] { topHandle, topRadiusHandles[0] };
+                    } else
+                    {
+                        if (topHandles == null || topHandles.Length != 1)
+                            topHandles = new IChiselHandle[] { topHandle };
                     }
                 }
             }
-                
-            const float kLineDash					= 2.0f;
-            const float kLineThickness				= 1.0f;
-            const float kCircleThickness			= 1.5f;
-            const float kCapLineThickness			= 2.0f;
-            const float kCapLineThicknessSelected	= 2.5f;
-                 
-            const int kMaxOutlineSides	= 32;
-            const int kMinimumSides		= 8;
-                
-            var baseColor				= handles.color;
-                
-            BrushMeshFactory.GetConicalFrustumVertices(bottom, top, this.rotation, sides, ref temp.vertices);
+        }
 
-            if (this.top.height < this.bottom.height)
-                temp.normal = -Vector3.up;
-            else
-                temp.normal = Vector3.up;
-
-            var isTopBackfaced      = handles.IsSufaceBackFaced(temp.topPoint,     temp.normal);
-            var isBottomBackfaced   = handles.IsSufaceBackFaced(temp.bottomPoint, -temp.normal);
-
-            bool topHasFocus, bottomHasFocus;
-            prevModified = handles.modified;
+        public void OnEdit(IChiselHandles handles)
+        {
+            // Store our allocated handles in generatorState to avoid reallocating them every frame
+            var cylinderHandles = handles.generatorState as CylinderHandles;
+            if (cylinderHandles == null)
             {
-                handles.backfaced = isBottomBackfaced;
-                handles.DoDirectionHandle(ref temp.bottomPoint, -temp.normal);
-                bottomHasFocus = handles.lastHandleHadFocus;
+                cylinderHandles = new CylinderHandles();
+                cylinderHandles.Init(handles, this);
+                handles.generatorState = cylinderHandles;
+            }
+            cylinderHandles.Update(handles, this);
 
-                handles.backfaced = isTopBackfaced;
-                handles.DoDirectionHandle(ref temp.topPoint, temp.normal);
-                topHasFocus = handles.lastHandleHadFocus;
-                handles.backfaced = false;
+
+            // Render vertical lines at the horizon of the cylinder
+            handles.DoRenderHandles(new[] { cylinderHandles.verticalHandle1, cylinderHandles.verticalHandle2 });
+
+
+            // Move the cylinder top/bottom up/down
+            var prevModified = handles.modified;
+            {
+                handles.DoSlider1DHandle(ref cylinderHandles.bottomPoint, -cylinderHandles.normal, cylinderHandles.bottomHandles);
+                var haveFocus = handles.lastHandleHadFocus;
+                handles.DoSlider1DHandle(ref cylinderHandles.topPoint,     cylinderHandles.normal, cylinderHandles.topHandles);
+                haveFocus = haveFocus || handles.lastHandleHadFocus;
+                if (haveFocus)
+                    handles.RenderDistanceMeasurement(cylinderHandles.topPoint, cylinderHandles.bottomPoint, Mathf.Abs(height));
             }
             if (prevModified != handles.modified)
             {
-                this.top.height     = Vector3.Dot(Vector3.up, temp.topPoint);
-                this.bottom.height  = Vector3.Dot(Vector3.up, temp.bottomPoint);
+                cylinderHandles.topY    = Vector3.Dot(Vector3.up, cylinderHandles.topPoint);
+                cylinderHandles.bottomY = Vector3.Dot(Vector3.up, cylinderHandles.bottomPoint);
+
+                height = cylinderHandles.topY - cylinderHandles.bottomY;
+                bottomOffset = cylinderHandles.bottomY;
             }
 
 
-            var topThickness	= topHasFocus ? kCapLineThicknessSelected : kCapLineThickness;                    
-            var bottomThickness	= bottomHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
-
-            handles.color = handles.GetStateColor(baseColor, bottomHasFocus, isBottomBackfaced);
-            handles.DrawLineLoop(temp.vertices, 0, sides, thickness: bottomThickness);
-
-            handles.color = handles.GetStateColor(baseColor, topHasFocus, isTopBackfaced);
-            handles.DrawLineLoop(temp.vertices, sides, sides, thickness: topThickness);
-
-            handles.color = handles.GetStateColor(baseColor, false, false);
-            for (int i = 0; i < sides; i++)
-                handles.DrawLine(temp.vertices[i], temp.vertices[i + sides], lineMode: LineMode.ZTest, thickness: kLineThickness);
-
-            handles.color = handles.GetStateColor(baseColor, false, true);
-            for (int i = 0; i < sides; i++)
-                handles.DrawLine(temp.vertices[i], temp.vertices[i + sides], lineMode: LineMode.NoZTest, thickness: kLineThickness);
-
-            /*
-            var point0    = camera.WorldToScreenPoint(topPoint);
-            var direction = camera.ScreenToWorldPoint(point0 - Vector3.right);
-            var point1	  = camera.WorldToScreenPoint(point0 - (direction * tempTop.diameterX));
-            var size	  = Mathf.Max(point1.x - point0.x, point1.y - point0.y);
-            */
-            // TODO: figure out how to reduce the sides of the circle depending on radius & distance
-            int outlineSides =  kMaxOutlineSides;
-            if (sides <= kMinimumSides)
+            // Resize the top/bottom circle by grabbing and dragging it
+            prevModified = handles.modified;
             {
-                BrushMeshFactory.GetConicalFrustumVertices(bottom, top, this.rotation, outlineSides, ref temp.dottedVertices);
-
-                handles.color = handles.GetStateColor(baseColor, topHasFocus, false);
-                handles.DrawLineLoop(temp.dottedVertices, outlineSides, outlineSides, lineMode: LineMode.ZTest,   thickness: kCircleThickness, dashSize: kLineDash);
-
-                handles.color = handles.GetStateColor(baseColor, topHasFocus, true);
-                handles.DrawLineLoop(temp.dottedVertices, outlineSides, outlineSides, lineMode: LineMode.NoZTest, thickness: kCircleThickness, dashSize: kLineDash);
-
-                handles.color = handles.GetStateColor(baseColor, bottomHasFocus, false);
-                handles.DrawLineLoop(temp.dottedVertices, 0, outlineSides, lineMode: LineMode.ZTest, thickness: kCircleThickness, dashSize: kLineDash);
-
-                handles.color = handles.GetStateColor(baseColor, bottomHasFocus, true);
-                handles.DrawLineLoop(temp.dottedVertices, 0, outlineSides, lineMode: LineMode.NoZTest, thickness: kCircleThickness, dashSize: kLineDash);
+                // Make the bottom circle draggable
+                DraggableRadius(handles, ref bottomDiameterX, ref bottomDiameterZ, cylinderHandles.bottomPoint, -cylinderHandles.normal, cylinderHandles.bottomXVector, cylinderHandles.bottomZVector, cylinderHandles.bottomRadiusHandles, this.isEllipsoid);
+                // If we're a Cylinder, the top circle actually changes the bottom circle too
+                if (type == CylinderShapeType.Cylinder)
+                    DraggableRadius(handles, ref bottomDiameterX, ref bottomDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, this.isEllipsoid);
+                else
+                // If we're a Conical Frustum, the top circle can be resized independently from the bottom circle
+                if (type == CylinderShapeType.ConicalFrustum)
+                    DraggableRadius(handles, ref topDiameterX, ref topDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, this.isEllipsoid);
+                // else; If we're a Cone, we ignore the top circle
             }
-        }
-        
-        public void OnEdit(IChiselHandles handles)
-        {
-            var temp = new CylinderHandle();
-            Init(ref temp);
-            ShowInstance(handles, ref temp);
+            if (prevModified != handles.modified)
+            {
+                // Ensure that when our shape is circular and we modify it, that when we convert back to an ellipsoid, it'll still be circular
+                if (!this.isEllipsoid)
+                {
+                    topDiameterZ    = topDiameterX;
+                    bottomDiameterZ = bottomDiameterX;
+                }
+            }
         }
 
         public void OnMessages(IChiselMessages messages)
         {
+            // TODO: show a message when height = 0 or when shape is a line or flat b/c diameters are 0
         }
     }
 }

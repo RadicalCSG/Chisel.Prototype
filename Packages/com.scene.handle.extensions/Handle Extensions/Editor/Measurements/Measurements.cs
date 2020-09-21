@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -219,6 +219,33 @@ namespace UnitySceneExtensions
 		//	SceneHandles.DrawLine(to   - right, to   + right);
 			
 			DrawUnitLabel(center, right, 2, length);
+			SceneHandles.color = prevColor;
+		}
+
+		public static void DrawLength(UnityEngine.Vector3 from, UnityEngine.Vector3 to, float forceValue)
+		{
+			var prevColor = SceneHandles.color;
+			SceneHandles.color = SceneHandles.StateColor(SceneHandles.measureColor);
+			var invMatrix	= SceneHandles.inverseMatrix;
+
+			var camera		= UnityEngine.Camera.current;
+			var camPos		= invMatrix.MultiplyPoint(camera.transform.position);
+			var camDir		= (SceneHandleUtility.ProjectPointLine(camPos, from, to) - camPos).normalized;
+			var delta		= (to - from);
+			var length		= delta.magnitude;
+			var forward		= delta / length;
+			var right		= Vector3.Cross(forward, camDir);
+			var fromSize	= UnityEditor.HandleUtility.GetHandleSize(from);
+			var toSize		= UnityEditor.HandleUtility.GetHandleSize(to);
+			var center		= (to + from) * 0.5f;
+
+			SceneHandles.DrawLine(from, to);
+			DrawFlatArrow(from,  forward, camDir, fromSize * 0.2f);
+			DrawFlatArrow(to,   -forward, camDir, toSize   * 0.2f);
+			//	SceneHandles.DrawLine(from - right, from + right);
+			//	SceneHandles.DrawLine(to   - right, to   + right);
+
+			DrawUnitLabel(center, right, 2, forceValue);
 			SceneHandles.color = prevColor;
 		}
 

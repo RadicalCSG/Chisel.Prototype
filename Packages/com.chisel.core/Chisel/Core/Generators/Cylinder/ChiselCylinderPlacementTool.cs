@@ -25,7 +25,7 @@ namespace Chisel.Core
         {
             var height = bounds.size[(int)Axis.Y];
             definition.BottomDiameterX  = bounds.size[(int)Axis.X];
-            definition.top.height       = height;
+            definition.height        = height;
             definition.BottomDiameterZ  = bounds.size[(int)Axis.Z];
         }
 

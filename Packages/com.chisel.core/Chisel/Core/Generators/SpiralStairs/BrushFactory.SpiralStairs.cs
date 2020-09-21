@@ -29,6 +29,7 @@ namespace Chisel.Core
                 surfaceDefinition.surfaces.Length < 8)
                 return false;
             
+            const bool fitToBounds = false;
             const float kEpsilon = 0.001f;
 
             var nosingDepth		= definition.nosingDepth;
@@ -388,7 +389,7 @@ namespace Chisel.Core
                 {
                     var subMeshIndex = treadStart - cylinderSubMeshCount;
                     
-                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, outerCylinderSurfaceDefinition);
+                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], outerDiameter, origin.y, origin.y + height, 0, outerSides, fitToBounds: fitToBounds, outerCylinderSurfaceDefinition);
                     brushContainer.operations[subMeshIndex] = CSGOperationType.Intersecting;
                 }
 
@@ -396,7 +397,7 @@ namespace Chisel.Core
                 {
                     var subMeshIndex = treadStart - 1;
 
-                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, innerCylinderSurfaceDefinition);
+                    BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], innerDiameter, origin.y, origin.y + height, 0, innerSides, fitToBounds: fitToBounds, innerCylinderSurfaceDefinition);
                     brushContainer.operations[subMeshIndex] = CSGOperationType.Subtractive;
                 }
 
@@ -458,14 +459,14 @@ namespace Chisel.Core
             {
                 var subMeshIndex = subMeshCount - cylinderSubMeshCount;
 
-                BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, outerCylinderSurfaceDefinition);
+                BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], outerDiameter + nosingWidth, origin.y, origin.y + height, 0, outerSides, fitToBounds: fitToBounds, outerCylinderSurfaceDefinition);
                 brushContainer.operations[subMeshIndex] = CSGOperationType.Intersecting;
             }
 
             if (haveInnerCyl)
             {
                 var subMeshIndex = subMeshCount - 1;
-                BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, innerCylinderSurfaceDefinition);
+                BrushMeshFactory.GenerateCylinderSubMesh(ref brushContainer.brushMeshes[subMeshIndex], innerDiameter - nosingWidth, origin.y, origin.y + height, 0, innerSides, fitToBounds: fitToBounds, innerCylinderSurfaceDefinition);
                 brushContainer.operations[subMeshIndex] = CSGOperationType.Subtractive;
             }
             return true;

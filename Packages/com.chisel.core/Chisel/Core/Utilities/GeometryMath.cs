@@ -251,5 +251,136 @@ namespace Chisel.Core
 
             return true;
         }
+
+        public static bool ContainsPoint(Vector2[] polyPoints, Vector2 p)
+        {
+            var j = polyPoints.Length - 1;
+            var inside = false;
+            for (int i = 0; i < polyPoints.Length; j = i++)
+            {
+                var pi = polyPoints[i];
+                var pj = polyPoints[j];
+                if (((pi.y <= p.y && p.y < pj.y) || (pj.y <= p.y && p.y < pi.y)) &&
+                    (p.x < (pj.x - pi.x) * (p.y - pi.y) / (pj.y - pi.y) + pi.x))
+                    inside = !inside;
+            }
+            return inside;
+        }
+        public static Plane CalculatePlane(Vector3[] vertices)
+        {        
+            // Newell's algorithm to create a plane for concave polygons.
+            // NOTE: doesn't work well for self-intersecting polygons
+            var normal		= Vector3.zero;
+            var prevVertex	= vertices[vertices.Length - 1];
+            for (int n = 0; n < vertices.Length; n++)
+            {
+                var currVertex = vertices[n];
+                normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
+                normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
+                normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
+                prevVertex = currVertex;
+            }
+            normal.Normalize();
+
+            var d = 0.0f;
+            for (int n = 0; n < vertices.Length; n++)
+                d -= Vector3.Dot(normal, vertices[n]);
+            d /= vertices.Length;
+
+            return new Plane(normal, d);
+        }
+
+        public static bool FindCircleHorizon(Matrix4x4 matrix, float diameter, Vector3 center, Vector3 normal, out Vector3 pointA, out Vector3 pointB)
+        {
+            pointA = Vector3.zero;
+            pointB = Vector3.zero;
+            /*
+            var radius = diameter * 0.5f;
+
+            // Since the geometry is transfromed by Handles.matrix during rendering, we transform the camera position
+            // by the inverse matrix so that the two-shaded wireframe will have the proper orientation.
+            var invMatrix = matrix.inverse;
+
+            var planeNormal = center - invMatrix.MultiplyPoint(Camera.current.transform.position); // vector from camera to center
+            float sqrDist = planeNormal.sqrMagnitude; // squared distance from camera to center
+            float sqrRadius = radius * radius; // squared radius
+            float sqrOffset = sqrRadius * sqrRadius / sqrDist; // squared distance from actual center to drawn disc center
+            float insideAmount = sqrOffset / sqrRadius;
+
+            if (insideAmount >= 1)
+                return false;
+
+            float Q = Vector3.Angle(planeNormal, Vector3.up);
+            Q = 90 - Mathf.Min(Q, 180 - Q);
+            float f = Mathf.Tan(Q * Mathf.Deg2Rad);
+            float g = Mathf.Sqrt(sqrOffset + f * f * sqrOffset) / radius;
+            if (g >= 1)
+                return false;
+        
+            float e = Mathf.Asin(g) * Mathf.Rad2Deg;
+            var from = Vector3.Cross(Vector3.up, planeNormal).normalized;
+            from = Quaternion.AngleAxis(e, Vector3.up) * from;
+
+            var rotation = Quaternion.AngleAxis((90 - e) * 2, Vector3.up);
+            var to = rotation * from;
+            pointA = center + from * radius; //((rotation * from) * radius);
+            pointB = center + to   * radius;// ((Quaternion.Inverse(rotation) * from) * radius);
+            return true;
+
+            //DrawTwoShadedWireDisc(position, dirs[i], from, (90 - e) * 2, radius);
+
+
+            /*/
+            var camera              = UnityEngine.Camera.current;
+            var cameraTransform     = camera.transform;
+            var cameraPosition      = (matrix.inverse).MultiplyPoint(cameraTransform.position);
+            
+            var radius              = diameter * 0.5f;
+            var plane               = new Plane(normal, center);
+            var closestPointOnPlane = plane.ClosestPointOnPlane(cameraPosition);
+            var vectorToCenter      = closestPointOnPlane - center;
+            var distanceToCenter    = vectorToCenter.sqrMagnitude;
+            if (distanceToCenter < (radius * radius))
+                return false;
+
+            distanceToCenter = Mathf.Sqrt(distanceToCenter);
+            var forwardVector   = vectorToCenter / distanceToCenter;
+
+            var OB              = distanceToCenter - radius;
+            var OA              = OB + diameter;
+            var OC              = Mathf.Sqrt(OA * OB);
+
+            var c            = distanceToCenter;
+            var a            = OC;
+            var b            = radius;
+            var cos_angle    = ((b * b) + (c * c) - (a * a)) / (2 * b * c);
+            var angle_offset = Mathf.Acos(cos_angle) * Mathf.Rad2Deg;
+
+
+            var rotation    = Quaternion.AngleAxis(angle_offset, normal);
+            pointA = center + ((rotation * forwardVector) * radius);
+            pointB = center + ((Quaternion.Inverse(rotation) * forwardVector) * radius);
+            return true;
+            //*/
+        }
+        
+        public static bool PointInCameraCircle(Matrix4x4 transform, Vector3 point, float diameter, Vector3 center, Vector3 normal)
+        {
+            var camera          = UnityEngine.Camera.current;
+            var cameraTransform = camera.transform;
+            var cameraPosition  = transform.inverse.MultiplyPoint(cameraTransform.position);
+
+            var plane           = new Plane(normal, center);
+            var ray             = new Ray(cameraPosition, point - cameraPosition);
+
+            if (!plane.Raycast(ray, out var intersectionDist))
+                return false;
+
+            var intersectionPoint = ray.GetPoint(intersectionDist);
+
+            var radius = diameter * 0.5f;
+            var dist = (intersectionPoint - center).sqrMagnitude;
+            return (dist < (radius * radius));
+        }
     }
 }

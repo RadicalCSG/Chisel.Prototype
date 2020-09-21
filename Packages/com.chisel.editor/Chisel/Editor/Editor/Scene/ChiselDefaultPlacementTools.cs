@@ -88,9 +88,12 @@ namespace Chisel.Editors
             if (ChiselOutlineRenderer.VisualizationMode != VisualizationMode.SimpleOutline)
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
 
-            handles.Start(null, sceneView, transformation);
+            var temp = Handles.matrix;
+            Handles.matrix *= transformation;
+            handles.Start(null, sceneView);
             PlacementToolDefinition.OnPaint(handles, shape, height);
             handles.End();
+            Handles.matrix = temp;
         }
     }
     

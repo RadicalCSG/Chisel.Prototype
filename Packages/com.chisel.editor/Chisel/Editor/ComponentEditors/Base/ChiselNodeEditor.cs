@@ -863,15 +863,15 @@ namespace Chisel.Editors
 
                 if (!knownTargets.Add(target))
                     continue;
-                
+
                 var generator = target as T;
                 if (!OnGeneratorActive(generator))
                     continue;
-                
+
                 OnGeneratorSelected(target as T);
                 validTargets.Add(generator);
             }
-            
+
             foreach (var knownTarget in knownTargets)
             {
                 if (!targets.Contains(knownTarget))
@@ -879,6 +879,7 @@ namespace Chisel.Editors
                     var removeTarget = target as T;
                     if (validTargets.Contains(removeTarget))
                     {
+                        handles.generatorStateLookup.Remove(removeTarget);
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
                     }
@@ -889,6 +890,7 @@ namespace Chisel.Editors
                     if (removeTarget == null ||
                         !selectedGameObject.Contains(removeTarget.gameObject))
                     {
+                        handles.generatorStateLookup.Remove(removeTarget);
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
                         removeTargets.Add(removeTarget);
@@ -942,50 +944,52 @@ namespace Chisel.Editors
                 return;
             }
 
-            var generator = target as T;
-            if (GUIUtility.hotControl == 0)
-            {
-                if (!OnGeneratorActive(generator))
-                {
-                    if (validTargets.Contains(generator))
-                    {
-                        OnGeneratorDeselected(generator);
-                        validTargets.Remove(generator);
-                    }
-                    return;
-                }
-                if (!validTargets.Contains(generator))
-                {
-                    OnGeneratorSelected(generator);
-                    validTargets.Add(generator);
-                }
-            }
-
+            var generator   = target as T;
             var sceneView   = SceneView.currentDrawingSceneView;
             var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             
-
             // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
 
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generator.LocalTransformationWithPivot))
+                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, modelMatrix * generator.LocalTransformationWithPivot))
                 {
-                    EditorGUI.BeginChangeCheck();
+                    handles.Start(generator, sceneView);
                     {
-                        var prevColor = Handles.color;
-                        Handles.color = SceneHandles.handleColor;
-                        handles.Start(generator, sceneView, Handles.matrix);
+                        if (GUIUtility.hotControl == 0)
+                        {
+                            if (!OnGeneratorActive(generator))
+                            {
+                                if (validTargets.Contains(generator))
+                                {
+                                    handles.generatorStateLookup.Remove(generator);
+                                    OnGeneratorDeselected(generator);
+                                    validTargets.Remove(generator);
+                                }
+                                return;
+                            }
+                            if (!validTargets.Contains(generator))
+                            {
+                                handles.generatorStateLookup.Remove(generator);
+                                OnGeneratorDeselected(generator);
+                                validTargets.Add(generator);
+                            }
+                        }
+
                         EditorGUI.BeginChangeCheck();
-                        OnScene(handles, generator);
-                        if (EditorGUI.EndChangeCheck())
-                            generator.OnValidate();
-                        handles.End();
-                        Handles.color = prevColor;
-                    }
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        OnTargetModifiedInScene();
+                        try
+                        {
+                            OnScene(handles, generator);
+                        }
+                        finally
+                        {
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                generator.OnValidate();
+                                OnTargetModifiedInScene();
+                            }
+                            handles.End();
+                        }
                     }
                 }
             }

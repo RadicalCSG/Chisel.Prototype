@@ -250,6 +250,11 @@ namespace UnitySceneExtensions
             }
         }
 
+        public readonly static CapFunction NullCap = NullCapFunction;
+        public static void NullCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        {
+        }
+
         public readonly static CapFunction NormalHandleCap = NormalHandleCapFunction;
         public static void NormalHandleCapFunction(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {

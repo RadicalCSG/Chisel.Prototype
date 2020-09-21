@@ -129,7 +129,6 @@ namespace Chisel.Core
             renderer.color = prevColor;
         }
 
-
         public void OnEdit(IChiselHandles handles)
         {
             var normal			= Vector3.up;

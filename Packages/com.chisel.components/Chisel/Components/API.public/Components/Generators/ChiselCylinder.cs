@@ -15,9 +15,6 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
-        public ChiselCircleDefinition Top      { get { return definition.top; } }
-        public ChiselCircleDefinition Bottom   { get { return definition.bottom; } }
-        
         public CylinderShapeType Type
         {
             get { return definition.type; }
@@ -26,20 +23,20 @@ namespace Chisel.Components
 
         public float Height
         {
-            get { return definition.top.height; }
-            set { if (value == definition.top.height) return; definition.top.height = definition.bottom.height + value; OnValidateInternal(); }
+            get { return definition.height; }
+            set { if (value == definition.height) return; definition.height = value; OnValidateInternal(); }
         }
 
         public float TopHeight
         {
-            get { return definition.top.height; }
-            set { if (value == definition.top.height) return; definition.top.height = value; OnValidateInternal(); }
+            get { return definition.height + definition.bottomOffset; }
+            set { if (value == definition.height - definition.bottomOffset) return; definition.height = value - definition.bottomOffset; OnValidateInternal(); }
         }
 
         public float BottomHeight
         {
-            get { return definition.bottom.height; }
-            set { if (value == definition.bottom.height) return; definition.bottom.height = value; OnValidateInternal(); }
+            get { return definition.bottomOffset; }
+            set { if (value == definition.bottomOffset) return; definition.bottomOffset = value; OnValidateInternal(); }
         }
 
         public float TopDiameterX

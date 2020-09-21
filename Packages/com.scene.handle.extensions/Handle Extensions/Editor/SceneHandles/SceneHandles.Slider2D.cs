@@ -16,15 +16,15 @@ namespace UnitySceneExtensions
             return Slider2D.Do(id, s_Slider2DPointArray, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
         }
 
-        public static Vector3[] Slider2DHandle(int id, Vector3[] points, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
+        public static Vector3[] Slider2DHandle(int id, Vector3[] points, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null, bool noSnapping = false)
         {
-            return Slider2D.Do(id, points, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps);
+            return Slider2D.Do(id, points, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, noSnapping, snappingSteps);
         }
 
-        public static Vector3 Slider2DHandle(int id, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)
+        public static Vector3 Slider2DHandle(int id, Vector3 handlePos, Vector3 offset, Vector3 handleDir, Vector3 slideDir1, Vector3 slideDir2, float handleSize, CapFunction capFunction, Axes axes = Axes.None, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null, bool noSnapping = false)
         {
             s_Slider2DPointArray[0] = handlePos;
-            return Slider2D.Do(id, s_Slider2DPointArray, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, false, snappingSteps)[0];
+            return Slider2D.Do(id, s_Slider2DPointArray, handlePos, offset, handleDir, slideDir1, slideDir2, handleSize, capFunction, axes, selectLockingAxisOnClick, noSnapping, snappingSteps)[0];
         }
 
         public static Vector3 Slider2DHandleOffset(int id, Vector3 handlePos, Vector3 handleDir, float handleSize = 0, CapFunction capFunction = null, bool selectLockingAxisOnClick = false, Vector3? snappingSteps = null)

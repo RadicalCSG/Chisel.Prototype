@@ -115,6 +115,38 @@ namespace UnitySceneExtensions
             return GetCursorForDirection(delta, 90);
         }
 
+        public static MouseCursor GetCursorForCircleTangent(Vector3 center, Vector3 up)
+        {
+            var camera = SceneView.currentDrawingSceneView.camera;
+            if (!camera)
+                return MouseCursor.Arrow;
+
+            var matrix = SceneHandles.matrix;
+            SceneHandles.matrix = Matrix4x4.identity;
+            var mouseRay = UnityEditor.HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+            SceneHandles.matrix = matrix;
+            mouseRay.origin = matrix.MultiplyPoint(mouseRay.origin);
+            mouseRay.direction = matrix.MultiplyVector(mouseRay.direction);
+            var plane = new Plane(center, up);
+            if (!plane.Raycast(mouseRay, out var intersectionDist))
+                return MouseCursor.Arrow;
+
+            var intersectionPoint   = mouseRay.GetPoint(intersectionDist);
+            var deltaCenter         = (intersectionPoint - center).normalized;
+            if (deltaCenter.sqrMagnitude > float.Epsilon) // Note: do not invert logic, this is still false when NaN
+            {
+                var tangent = Vector3.Cross(deltaCenter, up);
+                var worldCenterPoint1 = SceneHandles.matrix.MultiplyPoint(center);
+                var worldCenterPoint2 = SceneHandles.matrix.MultiplyPoint(center + (tangent * 10));
+                var guiPoint1 = (Vector2)camera.WorldToScreenPoint(worldCenterPoint1);
+                var guiPoint2 = (Vector2)camera.WorldToScreenPoint(worldCenterPoint2);
+                var delta = (guiPoint2 - guiPoint1).normalized;
+
+                return GetCursorForDirection(delta);
+            }
+            return MouseCursor.Arrow;
+        }
+
         public static MouseCursor GetCursorForDirection(Vector3 position, Vector3 direction)
         {
             var camera = SceneView.currentDrawingSceneView.camera;
@@ -130,7 +162,8 @@ namespace UnitySceneExtensions
             return GetCursorForDirection(delta);
         }
 
-        static GUIStyle selectionRect = "SelectionRect";
+        static GUIStyle selectionRect;
+        static GUIStyle m_SelectionRect => (selectionRect != null ? selectionRect : selectionRect = "SelectionRect");
 
         public static void DrawSelectionRectangle(Rect rect)
         {
@@ -139,7 +172,7 @@ namespace UnitySceneExtensions
             if (rect.width >= 0 || rect.height >= 0)
             {
                 SceneHandles.BeginGUI();
-                selectionRect.Draw(rect, GUIContent.none, false, false, false, false);
+                m_SelectionRect.Draw(rect, GUIContent.none, false, false, false, false);
                 SceneHandles.EndGUI();
             }
             SceneHandles.matrix = origMatrix;
