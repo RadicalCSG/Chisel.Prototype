@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselCylinderDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselCylinderDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselCylinderPlacementTool : ChiselBoundsPlacementTool<ChiselCylinderDefinition>
     {
         public CylinderShapeType    cylinderType		 = CylinderShapeType.Cylinder;
@@ -25,11 +25,11 @@ namespace Chisel.Core
         {
             var height = bounds.size[(int)Axis.Y];
             definition.BottomDiameterX  = bounds.size[(int)Axis.X];
-            definition.top.height       = height;
+            definition.height        = height;
             definition.BottomDiameterZ  = bounds.size[(int)Axis.Z];
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderCylinder(bounds, sides);
             renderer.RenderBoxMeasurements(bounds);

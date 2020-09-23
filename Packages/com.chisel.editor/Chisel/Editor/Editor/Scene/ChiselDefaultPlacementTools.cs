@@ -39,7 +39,7 @@ namespace Chisel.Editors
         public override string ToolName => internalToolName;
         public override string Group    => internalGroup;
 
-        protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
+        protected ChiselEditorHandles handles = new ChiselEditorHandles();
 
         public override void OnSceneGUI(SceneView sceneView, Rect dragArea)
         {
@@ -88,8 +88,12 @@ namespace Chisel.Editors
             if (ChiselOutlineRenderer.VisualizationMode != VisualizationMode.SimpleOutline)
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
 
-            renderer.matrix = transformation;
-            PlacementToolDefinition.OnPaint(renderer, shape, height);
+            var temp = Handles.matrix;
+            Handles.matrix *= transformation;
+            handles.Start(null, sceneView);
+            PlacementToolDefinition.OnPaint(handles, shape, height);
+            handles.End();
+            Handles.matrix = temp;
         }
     }
     
@@ -116,7 +120,7 @@ namespace Chisel.Editors
         Vector3 componentPosition   = Vector3.zero;
         Vector3 upAxis              = Vector3.zero;
 
-        protected IGeneratorHandleRenderer renderer = new GeneratorHandleRenderer();
+        protected IChiselHandles handles = new ChiselEditorHandles();
 
         const float kMinimumAxisLength = 0.0001f;
 
@@ -194,8 +198,33 @@ namespace Chisel.Editors
 
             if (ChiselOutlineRenderer.VisualizationMode != VisualizationMode.SimpleOutline)
                 ChiselOutlineRenderer.VisualizationMode = VisualizationMode.SimpleOutline;
-            renderer.matrix = transformation;
-            PlacementToolDefinition.OnPaint(renderer, bounds);
+            handles.matrix = transformation;
+            PlacementToolDefinition.OnPaint(handles, bounds);
+        }
+    }
+
+
+
+    [CanEditMultipleObjects]
+    public abstract class ChiselGeneratorDefinitionEditor<ComponentType, DefinitionType> 
+        : ChiselGeneratorEditor<ComponentType>
+        where ComponentType  : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType : IChiselGenerator, new()
+    {
+        protected override void OnScene(IChiselHandles handles, ComponentType generator)
+        {
+            generator.definition.OnEdit(handles);
+        }
+
+        protected override void OnMessages(IChiselMessages messages)
+        {
+            foreach (var target in targets)
+            {
+                var generator = target as ComponentType;
+                if (!generator)
+                    continue;
+                generator.definition.OnMessages(messages);
+            }
         }
     }
 }

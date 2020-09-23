@@ -102,9 +102,11 @@ namespace UnitySceneExtensions
             return Slider1D.Do(id, axis, snapPoints, from, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0] - from;
         }
 
+        static readonly Vector3[] pointArray = new Vector3[1];
         public static Vector3 Slider1DHandle(int id, Axis axis, Vector3 handleOrigin, Vector3 handleDirection, float snappingStep, float handleSize, CapFunction capFunction, bool selectLockingAxisOnClick = false) 
         {
-            return Slider1D.Do(id, axis, new Vector3[] { handleOrigin }, handleOrigin, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0];
+            pointArray[0] = handleOrigin;
+            return Slider1D.Do(id, axis, pointArray, handleOrigin, handleDirection, snappingStep, handleSize, capFunction, selectLockingAxisOnClick)[0];
         }
 
 

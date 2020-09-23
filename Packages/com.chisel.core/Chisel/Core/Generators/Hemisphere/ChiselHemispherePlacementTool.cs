@@ -2,7 +2,7 @@
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselGroups.kBasePrimitives)]
+    [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselHemispherePlacementTool : ChiselBoundsPlacementTool<ChiselHemisphereDefinition>
     {
         public int horizontalSegments   = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
@@ -24,7 +24,7 @@ namespace Chisel.Core
             definition.diameterXYZ = bounds.size;
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderCylinder(bounds, horizontalSegments);
             renderer.RenderBoxMeasurements(bounds);

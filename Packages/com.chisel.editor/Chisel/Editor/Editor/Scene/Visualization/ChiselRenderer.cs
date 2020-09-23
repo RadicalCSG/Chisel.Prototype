@@ -22,12 +22,6 @@ namespace Chisel.Editors
         public const float occludedFactor			= 0.80f;
     }
 
-    public enum LineMode
-    {
-        ZTest,
-        NoZTest,
-    }
-
     public sealed class ChiselRenderer
     {
         UnitySceneExtensions.LineMeshManager	zTestLinesManager		= new UnitySceneExtensions.LineMeshManager();

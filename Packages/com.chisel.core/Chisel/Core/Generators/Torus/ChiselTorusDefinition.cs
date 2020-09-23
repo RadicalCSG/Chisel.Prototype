@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
@@ -82,15 +82,88 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateTorus");
-            try
+            return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
+        }
+
+
+        //
+        // TODO: code below needs to be cleaned up & simplified 
+        //
+
+
+        const float kLineDash					= 2.0f;
+        const float kVertLineThickness			= 0.75f;
+        const float kHorzLineThickness			= 1.0f;
+        const float kCapLineThickness			= 2.0f;
+        const float kCapLineThicknessSelected   = 2.5f;
+
+        static void DrawOutline(IChiselHandleRenderer renderer, ChiselTorusDefinition definition, Vector3[] vertices, LineMode lineMode)
+        {
+            var horzSegments	= definition.horizontalSegments;
+            var vertSegments	= definition.verticalSegments;
+            
+            if (definition.totalAngle != 360)
+                horzSegments++;
+            
+            var prevColor		= renderer.color;
+            prevColor.a *= 0.8f;
+            var color			= prevColor;
+            color.a *= 0.6f;
+
+            renderer.color = color;
+            for (int i = 0, j = 0; i < horzSegments; i++, j += vertSegments)
+                renderer.DrawLineLoop(vertices, j, vertSegments, lineMode: lineMode, thickness: kVertLineThickness);
+
+            for (int k = 0; k < vertSegments; k++)
             {
-                return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
+                for (int i = 0, j = 0; i < horzSegments - 1; i++, j += vertSegments)
+                    renderer.DrawLine(vertices[j + k], vertices[j + k + vertSegments], lineMode: lineMode, thickness: kHorzLineThickness);
             }
-            finally
+            if (definition.totalAngle == 360)
             {
-                Profiler.EndSample();
+                for (int k = 0; k < vertSegments; k++)
+                {
+                    renderer.DrawLine(vertices[k], vertices[k + ((horzSegments - 1) * vertSegments)], lineMode: lineMode, thickness: kHorzLineThickness);
+                }
             }
+            renderer.color = prevColor;
+        }
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            var normal			= Vector3.up;
+
+            Vector3[] vertices = null;
+            if (BrushMeshFactory.GenerateTorusVertices(this, ref vertices))
+            {
+                var baseColor = handles.color;
+                handles.color = handles.GetStateColor(baseColor, false, false);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
+                handles.color = handles.GetStateColor(baseColor, false, true);
+                DrawOutline(handles, this, vertices, lineMode: LineMode.NoZTest);
+                handles.color = baseColor;
+            }
+
+            var outerRadius = this.outerDiameter * 0.5f;
+            var innerRadius = this.innerDiameter * 0.5f;
+            var topPoint	= normal * (this.tubeHeight * 0.5f);
+            var bottomPoint	= normal * (-this.tubeHeight * 0.5f);
+
+            handles.DoRadiusHandle(ref outerRadius, normal, Vector3.zero);
+            handles.DoRadiusHandle(ref innerRadius, normal, Vector3.zero);
+            handles.DoDirectionHandle(ref bottomPoint, -normal);
+            handles.DoDirectionHandle(ref topPoint, normal);
+            if (handles.modified)
+            {
+                this.outerDiameter	= outerRadius * 2.0f;
+                this.innerDiameter	= innerRadius * 2.0f;
+                this.tubeHeight		= (topPoint.y - bottomPoint.y);
+                // TODO: handle sizing down
+            }
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

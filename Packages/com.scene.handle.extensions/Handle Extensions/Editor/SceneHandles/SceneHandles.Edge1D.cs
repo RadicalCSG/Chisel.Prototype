@@ -86,6 +86,13 @@ namespace UnitySceneExtensions
             return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, UnitySceneExtensions.SceneHandles.OutlinedDotHandleCap);
         }
 
+        public static Vector3 Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, Vector3 direction, float snappingStep, float handleSize, CapFunction capFunction)
+        {
+            var position = (from + to) * 0.5f;
+            var id = GUIUtility.GetControlID(s_Edge1DHash, FocusType.Keyboard);
+            return Edge1DHandleOffset(id, axis, from, to, position, direction, snappingStep, handleSize, capFunction);
+        }
+
         public static Vector3 Edge1DHandleOffset(Axis axis, Vector3 from, Vector3 to, Vector3 position, Vector3 direction, float snappingStep, float handleSize, CapFunction capFunction)
         {
             var id = GUIUtility.GetControlID(s_Edge1DHash, FocusType.Keyboard);

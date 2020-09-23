@@ -154,5 +154,12 @@ namespace Chisel.Core
                 Profiler.EndSample();
             }
         }
+
+        public void OnEdit(IChiselHandles handles)
+        {
+        }
+        public void OnMessages(IChiselMessages messages)
+        {
+        }
     }
 } 

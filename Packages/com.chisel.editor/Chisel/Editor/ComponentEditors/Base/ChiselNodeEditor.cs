@@ -747,14 +747,22 @@ namespace Chisel.Editors
             ShowInspectorHeader(operationProp);
         }
 
-        protected virtual void OnInspector() { OnDefaultInspector(); }
+        static readonly ChiselEditorMessages warnings = new ChiselEditorMessages();
+        protected virtual void OnMessages(IChiselMessages warnings) { }
+
+
+        protected virtual void OnInspector() 
+        { 
+            OnDefaultInspector(); 
+            OnMessages(warnings); 
+        }
 
         protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
         protected virtual void OnTargetModifiedInScene() { OnShapeChanged(); }
         protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
-        protected abstract void OnScene(SceneView sceneView, T generator);
+        protected abstract void OnScene(IChiselHandles handles, T generator);
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
@@ -855,15 +863,15 @@ namespace Chisel.Editors
 
                 if (!knownTargets.Add(target))
                     continue;
-                
+
                 var generator = target as T;
                 if (!OnGeneratorActive(generator))
                     continue;
-                
+
                 OnGeneratorSelected(target as T);
                 validTargets.Add(generator);
             }
-            
+
             foreach (var knownTarget in knownTargets)
             {
                 if (!targets.Contains(knownTarget))
@@ -871,6 +879,7 @@ namespace Chisel.Editors
                     var removeTarget = target as T;
                     if (validTargets.Contains(removeTarget))
                     {
+                        handles.generatorStateLookup.Remove(removeTarget);
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
                     }
@@ -881,6 +890,7 @@ namespace Chisel.Editors
                     if (removeTarget == null ||
                         !selectedGameObject.Contains(removeTarget.gameObject))
                     {
+                        handles.generatorStateLookup.Remove(removeTarget);
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
                         removeTargets.Add(removeTarget);
@@ -921,6 +931,8 @@ namespace Chisel.Editors
             Profiler.EndSample();
         }
 
+        static readonly ChiselEditorHandles handles = new ChiselEditorHandles();
+
         public override void OnSceneGUI()
         {
             if (!target)
@@ -932,45 +944,52 @@ namespace Chisel.Editors
                 return;
             }
 
-            var generator = target as T;
-            if (GUIUtility.hotControl == 0)
-            {
-                if (!OnGeneratorActive(generator))
-                {
-                    if (validTargets.Contains(generator))
-                    {
-                        OnGeneratorDeselected(generator);
-                        validTargets.Remove(generator);
-                    }
-                    return;
-                }
-                if (!validTargets.Contains(generator))
-                {
-                    OnGeneratorSelected(generator);
-                    validTargets.Add(generator);
-                }
-            }
-
+            var generator   = target as T;
             var sceneView   = SceneView.currentDrawingSceneView;
             var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             
-
             // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
 
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(UnityEditor.Handles.yAxisColor, modelMatrix * generator.LocalTransformationWithPivot))
+                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, modelMatrix * generator.LocalTransformationWithPivot))
                 {
-                    EditorGUI.BeginChangeCheck();
+                    handles.Start(generator, sceneView);
                     {
-                        var prevColor = Handles.color;
-                        Handles.color = SceneHandles.handleColor;
-                        OnScene(sceneView, generator);
-                        Handles.color = prevColor;
-                    }
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        OnTargetModifiedInScene();
+                        if (GUIUtility.hotControl == 0)
+                        {
+                            if (!OnGeneratorActive(generator))
+                            {
+                                if (validTargets.Contains(generator))
+                                {
+                                    handles.generatorStateLookup.Remove(generator);
+                                    OnGeneratorDeselected(generator);
+                                    validTargets.Remove(generator);
+                                }
+                                return;
+                            }
+                            if (!validTargets.Contains(generator))
+                            {
+                                handles.generatorStateLookup.Remove(generator);
+                                OnGeneratorDeselected(generator);
+                                validTargets.Add(generator);
+                            }
+                        }
+
+                        EditorGUI.BeginChangeCheck();
+                        try
+                        {
+                            OnScene(handles, generator);
+                        }
+                        finally
+                        {
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                generator.OnValidate();
+                                OnTargetModifiedInScene();
+                            }
+                            handles.End();
+                        }
                     }
                 }
             }

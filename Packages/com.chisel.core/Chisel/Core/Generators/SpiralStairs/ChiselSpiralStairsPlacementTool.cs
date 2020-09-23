@@ -3,7 +3,7 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselSpiralStairsDefinition.kNodeTypeName, group: ChiselGroups.kStairs)]
+    [ChiselPlacementTool(name: ChiselSpiralStairsDefinition.kNodeTypeName, group: ChiselToolGroups.kStairs)]
     public sealed class ChiselSpiralStairsPlacementTool : ChiselBoundsPlacementTool<ChiselSpiralStairsDefinition>
     {
         // TODO: add more settings
@@ -26,7 +26,7 @@ namespace Chisel.Core
             definition.outerDiameter	= bounds.size[(int)Axis.X];
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderCylinder(bounds, outerSegments);
             renderer.RenderBoxMeasurements(bounds);

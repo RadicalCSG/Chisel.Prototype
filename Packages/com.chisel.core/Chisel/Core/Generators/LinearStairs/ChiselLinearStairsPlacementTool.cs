@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-    [ChiselPlacementTool(name: ChiselLinearStairsDefinition.kNodeTypeName, group: ChiselGroups.kStairs)]
+    [ChiselPlacementTool(name: ChiselLinearStairsDefinition.kNodeTypeName, group: ChiselToolGroups.kStairs)]
     public sealed class ChiselLinearStairsPlacementTool : ChiselBoundsPlacementTool<ChiselLinearStairsDefinition>
     {
         [ToggleFlags(includeFlags: (int)PlacementFlags.SameLengthXZ)]
@@ -15,7 +15,7 @@ namespace Chisel.Core
             definition.bounds = bounds;
         }
 
-        public override void OnPaint(IGeneratorHandleRenderer renderer, Bounds bounds)
+        public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)
         {
             renderer.RenderBox(bounds);
             renderer.RenderBoxMeasurements(bounds);

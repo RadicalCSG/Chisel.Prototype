@@ -208,11 +208,11 @@ namespace UnitySceneExtensions
             if (float.IsNaN(value) || float.IsInfinity(value))
                 return (double)value;
 
-            double result = (double)value;
+            double result = (double)(Decimal)value;
             switch (unit)
             {
                 // values are in meters by default in unity
-                case DistanceUnit.Meters:		break;
+                case DistanceUnit.Meters:       return result;
                 case DistanceUnit.Centimeters:	result *= meter_to_centimeter; break;
                 case DistanceUnit.Millimeters:	result *= meter_to_millimeter; break;
                 case DistanceUnit.Inches:		result *= meter_to_inches; result = Math.Round(result * emperial_rounding) / emperial_rounding; break;
@@ -223,7 +223,7 @@ namespace UnitySceneExtensions
                     return value;
                 }
             }
-            
+
             return (double)result;
         }
         

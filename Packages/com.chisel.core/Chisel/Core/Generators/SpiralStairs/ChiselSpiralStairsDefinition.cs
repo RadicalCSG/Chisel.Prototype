@@ -1,9 +1,8 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
 using Bounds  = UnityEngine.Bounds;
 using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
+using Color   = UnityEngine.Color;
 using UnitySceneExtensions;
 using UnityEngine.Profiling;
 
@@ -147,15 +146,177 @@ namespace Chisel.Core
 
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
-            Profiler.BeginSample("GenerateSpiralStairs");
-            try
+            return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
+        }
+
+
+        //
+        // TODO: code below needs to be cleaned up & simplified 
+        //
+
+
+        Vector3[] innerVertices;
+        Vector3[] outerVertices;
+
+        public void OnEdit(IChiselHandles handles)
+        {
+            var normal					= Vector3.up;
+            var topDirection			= Vector3.forward;
+            var lowDirection			= Vector3.forward;
+
+            var originalOuterDiameter	= this.outerDiameter;
+            var originalInnerDiameter	= this.innerDiameter;
+            var originalStartAngle		= this.startAngle;
+            var originalStepHeight		= this.stepHeight;
+            var originalRotation		= this.rotation;
+            var originalHeight			= this.height;
+            var originalOrigin			= this.origin;
+            var cylinderTop				= new BrushMeshFactory.ChiselCircleDefinition(1, originalOrigin.y + originalHeight);
+            var cylinderLow				= new BrushMeshFactory.ChiselCircleDefinition (1, originalOrigin.y);
+            var originalTopPoint		= normal * cylinderTop.height;
+            var originalLowPoint		= normal * cylinderLow.height;
+            var originalMidPoint		= (originalTopPoint + originalLowPoint) * 0.5f;
+                    
+            var outerDiameter		= originalOuterDiameter;
+            var innerDiameter		= originalInnerDiameter;
+            var topPoint			= originalTopPoint;
+            var lowPoint			= originalLowPoint;
+            var midPoint			= originalMidPoint;
+            var startAngle			= originalStartAngle;
+            var rotation			= originalRotation;
+
             {
-                return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
+                var currRotation = startAngle + rotation;
+                handles.DoRotatableLineHandle(ref startAngle  , lowPoint, outerDiameter * 0.5f, normal, lowDirection, Vector3.Cross(normal, lowDirection));
+                handles.DoRotatableLineHandle(ref currRotation, topPoint, outerDiameter * 0.5f, normal, topDirection, Vector3.Cross(normal, topDirection));
+                if (handles.modified)
+                    rotation = currRotation - startAngle;
+
+
+                // TODO: properly show things as backfaced
+                // TODO: temporarily show inner or outer diameter as disabled when resizing one or the other
+                // TODO: FIXME: why aren't there any arrows?
+                handles.DoDirectionHandle(ref topPoint, normal, snappingStep: originalStepHeight);
+                topPoint.y		= Mathf.Max(lowPoint.y + originalStepHeight, topPoint.y);
+                handles.DoDirectionHandle(ref lowPoint, -normal, snappingStep: originalStepHeight);
+                lowPoint.y		= Mathf.Min(topPoint.y - originalStepHeight, lowPoint.y);
+
+                float minOuterDiameter = innerDiameter + ChiselSpiralStairsDefinition.kMinStairsDepth;
+                { 
+                    var outerRadius = outerDiameter * 0.5f;
+                    handles.DoRadiusHandle(ref outerRadius, Vector3.up, topPoint, renderDisc: false);
+                    handles.DoRadiusHandle(ref outerRadius, Vector3.up, lowPoint, renderDisc: false);
+                    outerDiameter = Mathf.Max(minOuterDiameter, outerRadius * 2.0f);
+                }
+                        
+                float maxInnerDiameter = outerDiameter - ChiselSpiralStairsDefinition.kMinStairsDepth;
+                { 
+                    var innerRadius = innerDiameter * 0.5f;
+                    handles.DoRadiusHandle(ref innerRadius, Vector3.up, midPoint, renderDisc: false);
+                    innerDiameter = Mathf.Min(maxInnerDiameter, innerRadius * 2.0f);
+                }
+
+
+
+                // TODO: somehow put this into a separate renderer
+                cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalInnerDiameter;
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.innerSegments, ref innerVertices);
+
+                cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalOuterDiameter;
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.outerSegments, ref outerVertices);
+                
+                var originalColor	= handles.color;
+                var color			= handles.color;
+                var outlineColor	= Color.black;
+                outlineColor.a = color.a;
+
+                handles.color = outlineColor;
+                {
+                    var sides = this.outerSegments;
+                    for (int i = 0, j = sides - 1; i < sides; j = i, i++)
+                    {
+                        var t0 = outerVertices[i];
+                        var t1 = outerVertices[j];
+                        var b0 = outerVertices[i + sides];
+                        var b1 = outerVertices[j + sides];
+
+                        handles.DrawLine(t0, b0, thickness: 1.0f);
+                        handles.DrawLine(t0, t1, thickness: 1.0f);
+                        handles.DrawLine(b0, b1, thickness: 1.0f);
+                    }
+                }
+                {
+                    var sides = this.innerSegments;
+                    for (int i = 0, j = sides - 1; i < sides; j = i, i++)
+                    {
+                        var t0 = innerVertices[i];
+                        var t1 = innerVertices[j];
+                        var b0 = innerVertices[i + sides];
+                        var b1 = innerVertices[j + sides];
+
+                        handles.DrawLine(t0, b0, thickness: 1.0f);
+                        handles.DrawLine(t0, t1, thickness: 1.0f);
+                        handles.DrawLine(b0, b1, thickness: 1.0f);
+                    }
+                }
+
+                handles.color = originalColor;
+                {
+                    var sides = this.outerSegments;
+                    for (int i = 0, j = sides - 1; i < sides; j = i, i++)
+                    {
+                        var t0 = outerVertices[i];
+                        var t1 = outerVertices[j];
+                        var b0 = outerVertices[i + sides];
+                        var b1 = outerVertices[j + sides];
+
+                        handles.DrawLine(t0, b0, thickness: 1.0f);
+                        handles.DrawLine(t0, t1, thickness: 1.0f);
+                        handles.DrawLine(b0, b1, thickness: 1.0f);
+                    }
+                }
+                {
+                    var sides = this.innerSegments;
+                    for (int i = 0, j = sides - 1; i < sides; j = i, i++)
+                    {
+                        var t0 = innerVertices[i];
+                        var t1 = innerVertices[j];
+                        var b0 = innerVertices[i + sides];
+                        var b1 = innerVertices[j + sides];
+
+
+                        handles.DrawLine(t0, b0, thickness: 1.0f);
+                        handles.DrawLine(t0, t1, thickness: 1.0f);
+                        handles.DrawLine(b0, b1, thickness: 1.0f);
+
+                        var m0 = (t0 + b0) * 0.5f;
+                        var m1 = (t1 + b1) * 0.5f;
+                        handles.DrawLine(m0, m1, thickness: 2.0f);
+                    }
+                }
             }
-            finally
+            if (handles.modified)
             {
-                Profiler.EndSample();
+                this.outerDiameter = outerDiameter;
+                this.innerDiameter = innerDiameter;
+                this.startAngle    = startAngle;
+                this.rotation	   = rotation;
+
+                if (topPoint != originalTopPoint)
+                    this.height = topPoint.y - lowPoint.y;
+
+                if (lowPoint != originalLowPoint)
+                {
+                    this.height	= topPoint.y - lowPoint.y;
+                    var newOrigin = originalOrigin;
+                    newOrigin.y += lowPoint.y - originalLowPoint.y;
+                    this.origin = newOrigin;
+                }
             }
+        }
+
+        public void OnMessages(IChiselMessages messages)
+        {
         }
     }
 }

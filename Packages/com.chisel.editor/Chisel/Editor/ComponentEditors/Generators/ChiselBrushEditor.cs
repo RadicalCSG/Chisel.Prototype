@@ -1,14 +1,11 @@
-using UnityEngine;
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using System;
 using System.Linq;
 using System.Collections.Generic;
-using Chisel;
 using Chisel.Core;
 using Chisel.Components;
-using UnitySceneExtensions;
-using Unity.Mathematics;
+using CanEditMultipleObjects = UnityEditor.CanEditMultipleObjects;
+using CustomEditor           = UnityEditor.CustomEditor;
+using Undo                   = UnityEditor.Undo;
+using GUIUtility             = UnityEngine.GUIUtility;
 
 namespace Chisel.Editors
 {
@@ -54,8 +51,7 @@ namespace Chisel.Editors
                 generator.OnValidate();
         }
 
-
-        protected override void OnScene(SceneView sceneView, ChiselBrush generator)
+        protected override void OnScene(IChiselHandles handles, ChiselBrush generator)
         {
             if (!activeOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
                 editableOutline == null)
@@ -63,7 +59,7 @@ namespace Chisel.Editors
 
             var previousHotControl  = GUIUtility.hotControl;
 
-            if (editableOutline.DoHandles(sceneView, generator.definition.IsInsideOut))
+            if (editableOutline.DoHandles(handles, generator.definition.IsInsideOut))
                 UpdateEditableOutline(generator);
 
             var currentHotControl = GUIUtility.hotControl;

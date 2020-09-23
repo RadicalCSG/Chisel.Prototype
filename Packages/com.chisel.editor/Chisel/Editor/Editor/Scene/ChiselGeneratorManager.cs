@@ -22,8 +22,6 @@ namespace Chisel.Editors
 
     public class ChiselGeneratorManager : SingletonManager<ChiselEditModeData, ChiselGeneratorManager>
     {
-        const string kDefaultGroupName = "Default";
-
         internal static ChiselPlacementToolInstance[] generatorModes;
         internal static Dictionary<Type, Type> generatorComponentLookup;
 
@@ -76,7 +74,7 @@ namespace Chisel.Editors
                     toolName    = attribute.ToolName;
                 } else
                 {
-                    group       = kDefaultGroupName;
+                    group       = ChiselToolGroups.kDefault;
                     toolName    = definitionType.Name;
                 }
 
@@ -114,7 +112,7 @@ namespace Chisel.Editors
                     toolName    = attribute.ToolName;
                 } else
                 {
-                    group       = kDefaultGroupName;
+                    group       = ChiselToolGroups.kDefault;
                     toolName    = definitionType.Name;
                 }
 
@@ -170,6 +168,9 @@ namespace Chisel.Editors
 
         internal static void ActivateTool(ChiselPlacementToolInstance currentTool)
         {
+            if (currentTool == null)
+                return;
+
             if (currentTool != null && Tools.hidden)
                 Tools.hidden = false;
             if (currentTool == Instance.data.currentGenerator)
