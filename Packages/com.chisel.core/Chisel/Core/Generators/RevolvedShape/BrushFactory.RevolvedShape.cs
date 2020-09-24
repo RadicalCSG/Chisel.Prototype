@@ -44,7 +44,7 @@ namespace Chisel.Core
             var horzSegments			= definition.revolveSegments;//horizontalSegments;
             var horzDegreePerSegment	= definition.totalAngle / horzSegments;
 
-            
+
             // TODO: make this work when intersecting rotation axis
             //			1. split polygons along rotation axis
             //			2. if edge lies on rotation axis, make sure we don't create infinitely thin quad
@@ -54,7 +54,7 @@ namespace Chisel.Core
             {
                 var polygonVertices		= polygonVerticesList[p];
 //				var segmentIndices		= polygonIndicesArray[p];
-                var shapeSegments		= polygonVertices.Length;
+//              var shapeSegments		= polygonVertices.Length;
                 
                 var vertSegments		= polygonVertices.Length;
                 var descriptionIndex	= new int[2 + vertSegments];
@@ -70,8 +70,8 @@ namespace Chisel.Core
                 var horzOffset		= definition.startAngle;
                 for (int h = 1, pr = 0; h < horzSegments + 1; pr = h, h++)
                 {
-                    var hDegree0 = (pr * horzDegreePerSegment) + horzOffset;
-                    var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
+                    var hDegree0 = math.radians((pr * horzDegreePerSegment) + horzOffset);
+                    var hDegree1 = math.radians((h  * horzDegreePerSegment) + horzOffset);
                     var rotation0 = quaternion.AxisAngle(Vector3.forward, hDegree0);
                     var rotation1 = quaternion.AxisAngle(Vector3.forward, hDegree1);
                     var subMeshVertices = new Vector3[vertSegments * 2];

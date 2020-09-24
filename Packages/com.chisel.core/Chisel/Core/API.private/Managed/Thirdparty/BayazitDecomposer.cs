@@ -98,7 +98,7 @@ namespace Chisel.Core
 	        List<List<Vector2>> srcList = new List<List<Vector2>>();
 	        srcList.Add(srcVertices);
 
-            var originalVertexCount = srcVertices.Count;
+            var originalVertexCount = srcVertices.Count * 2;
 
 
             int counter = 0;

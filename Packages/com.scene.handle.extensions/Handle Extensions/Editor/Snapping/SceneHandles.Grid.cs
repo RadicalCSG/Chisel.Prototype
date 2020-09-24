@@ -81,6 +81,19 @@ namespace UnitySceneExtensions
             }
         }
 
+
+        public Grid GridYZ
+        {
+            get { return new Grid(_gridToWorldSpace * YZPlane, new Vector3(_spacing.y, _spacing.x, _spacing.z)); }
+        }
+
+        public Grid GridXY
+        {
+            get { return new Grid(_gridToWorldSpace * XYPlane, new Vector3(_spacing.x, _spacing.z, _spacing.y)); }
+        }
+
+
+
         public static Grid HoverGrid { get; set; }
 
         public static Grid debugGrid;
