@@ -19,11 +19,11 @@ namespace Chisel.Core
         public const int                kDefaultRevolveSegments = 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
-        public Curve2D				shape;
-        public int					curveSegments;
-        public int					revolveSegments;
-        public float				startAngle;
-        public float				totalAngle;
+        public Curve2D  shape;
+        public int	    curveSegments;
+        public int	    revolveSegments;
+        public float    startAngle;
+        public float    totalAngle;
 
         [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
@@ -75,7 +75,6 @@ namespace Chisel.Core
             var baseColor		= handles.color;
             var normal			= Vector3.forward;
 
-            var shape			= this.shape;
             var controlPoints	= shape.controlPoints;
             
             var shapeVertices		= new List<Vector2>();

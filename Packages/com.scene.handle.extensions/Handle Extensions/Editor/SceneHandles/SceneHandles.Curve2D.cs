@@ -235,8 +235,7 @@ namespace UnitySceneExtensions
                 newLocalControlPoints[pointIndex].SetTangentPosition(tangentIndex, newLocalControlPoints[pointIndex].GetTangentPosition(tangentIndex) + localDelta);
 
                 newCurve.controlPoints = newLocalControlPoints;
-                curve = newCurve;
-                return curve;
+                return newCurve;
             }
 
             public static Curve2D MoveCurvePoint(Curve2D curve, Curve2DSelection curveSelection, CurveControlPoint2D[] localControlPoints, int pointIndex, Vector2 localDelta)
@@ -259,8 +258,7 @@ namespace UnitySceneExtensions
                     newLocalControlPoints[pointIndex].position += localDelta;
 
                 newCurve.controlPoints = newLocalControlPoints;
-                curve = newCurve;
-                return curve;
+                return newCurve;
             }
 
             public static Curve2D MoveCurveEdge(Curve2D curve, Curve2DSelection curveSelection, CurveControlPoint2D[] localControlPoints, int edgeIndex, Vector2 localDelta)
@@ -286,8 +284,7 @@ namespace UnitySceneExtensions
                 }
 
                 newCurve.controlPoints = newLocalControlPoints;
-                curve = newCurve;
-                return curve;
+                return newCurve;
             }
 
             internal static void PaintConstraintHandles(Curve2D curve, bool haveFocus, int hoverOverPointID, int hoverOverTangentID)
@@ -836,9 +833,17 @@ namespace UnitySceneExtensions
                             EditorGUIUtility.SetWantsMouseJumping(1); 
                                 
                             state.s_CurrentMousePosition = evt.mousePosition;
-
-                            var activeGrid			= Grid.ActiveGrid;
+                            
                             var localToWorldMatrix	= SceneHandles.matrix;
+                            var forward             = localToWorldMatrix.MultiplyVector(Vector3.forward);
+                            var activeGrid			= Grid.ActiveGrid;
+
+                            switch (activeGrid.GetClosestAxis(forward))
+                            {
+                                case Axis.X: activeGrid = activeGrid.GridYZ; break;
+                                case Axis.Z: activeGrid = activeGrid.GridXY; break;
+                            }
+
                             state.s_Snapping2D.Initialize(activeGrid, state.s_CurrentMousePosition, state.s_LocalStartPosition, localToWorldMatrix);
                             state.s_Snapping2D.CalculateExtents(localExtentsPoints);
                         }
