@@ -1173,7 +1173,7 @@ namespace Chisel.Core
                             // Write
                             routingTableLookup      = chiselLookupValues.routingTableCache.AsDeferredJobArray()
                         };
-                        treeUpdate.updateBrushCategorizationTablesJobHandle = createRoutingTableJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 16, dependencies);
+                        treeUpdate.updateBrushCategorizationTablesJobHandle = createRoutingTableJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
                     }
                 } finally { Profiler.EndSample(); }
                                 
@@ -1465,7 +1465,7 @@ namespace Chisel.Core
                             // Write
                             output                      = treeUpdate.dataStream2.AsWriter(),
                         };
-                        treeUpdate.allPerformAllCSGJobHandle = performCSGJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 8, dependencies);
+                        treeUpdate.allPerformAllCSGJobHandle = performCSGJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
                         treeUpdate.allPerformAllCSGJobHandle = treeUpdate.dataStream1.Dispose(treeUpdate.allPerformAllCSGJobHandle);
                         treeUpdate.dataStream1 = default;
                     }
@@ -1497,7 +1497,7 @@ namespace Chisel.Core
                             // Write
                             brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsDeferredJobArray()
                         };
-                        treeUpdate.allGenerateSurfaceTrianglesJobHandle = generateSurfaceRenderBuffers.Schedule(treeUpdate.allUpdateBrushIndexOrders, 64, dependencies);
+                        treeUpdate.allGenerateSurfaceTrianglesJobHandle = generateSurfaceRenderBuffers.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
                         treeUpdate.allGenerateSurfaceTrianglesJobHandle = treeUpdate.dataStream2.Dispose(treeUpdate.allGenerateSurfaceTrianglesJobHandle);
                         treeUpdate.dataStream2 = default;
                     }

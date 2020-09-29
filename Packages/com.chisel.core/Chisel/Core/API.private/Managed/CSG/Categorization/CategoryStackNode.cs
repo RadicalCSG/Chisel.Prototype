@@ -17,9 +17,9 @@ namespace Chisel.Core
 {
     internal struct CategoryStackNode
     { 
-        public CategoryRoutingRow   routingRow;
         public int                  nodeIndex;
-        public CSGOperationType     operation;
         public CategoryGroupIndex   input;
+        public CSGOperationType     operation;
+        public CategoryRoutingRow   routingRow;
     }
 }

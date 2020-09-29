@@ -894,13 +894,6 @@ namespace Chisel.Core
             ref var routingLookups          = ref routingTableRef.Value.routingLookups;
             var routingLookupsLength        = routingLookups.Length;
 
-            var surfaceInfoCount = routingLookupsLength * surfaceCount;
-            if (!intersectionSurfaceInfo.IsCreated || intersectionSurfaceInfo.Length < surfaceInfoCount)
-            {
-                if (intersectionSurfaceInfo.IsCreated) intersectionSurfaceInfo.Dispose();
-                intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(surfaceInfoCount, Allocator.Temp);
-            }
-
 
             int maxIndex = intersectionSurfaceInfos.Length + (surfaceCount * routingLookupsLength);
             for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
@@ -929,6 +922,13 @@ namespace Chisel.Core
             } else
                 intersectionLoops.ClearChildren();
             intersectionLoops.ResizeExact(intersectionLoopCount);
+
+
+            if (!intersectionSurfaceInfo.IsCreated || intersectionSurfaceInfo.Length < intersectionLoopCount)
+            {
+                if (intersectionSurfaceInfo.IsCreated) intersectionSurfaceInfo.Dispose();
+                intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(intersectionLoopCount, Allocator.Temp);
+            }
 
             {
                 // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIndexToTableIndex[surfaceInfo.brushNodeID], 

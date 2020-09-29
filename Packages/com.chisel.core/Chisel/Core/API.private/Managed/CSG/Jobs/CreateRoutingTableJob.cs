@@ -10,6 +10,7 @@ using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
+using System.Runtime.InteropServices;
 
 namespace Chisel.Core
 {
@@ -130,6 +131,7 @@ namespace Chisel.Core
 
 
         enum EventType : int { GetStackNode, Combine, Cleanup, ListItem }
+        [StructLayout(LayoutKind.Explicit)]
         struct QueuedEvent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,9 +139,20 @@ namespace Chisel.Core
             {
                 return new QueuedEvent
                 {
-                    type                    = EventType.GetStackNode,
-                    currIndex               = currIndex,
-                    outputStartIndex        = outputStartIndex
+                    type                = EventType.GetStackNode,
+                    currIndex           = currIndex,
+                    outputStartIndex    = outputStartIndex
+                };
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent CleanUp(int firstIndex, int outputStartIndex)
+            {
+                return new QueuedEvent
+                {
+                    type                = EventType.Cleanup,
+                    currIndex           = firstIndex,
+                    outputStartIndex    = outputStartIndex
                 };
             }
 
@@ -166,24 +179,13 @@ namespace Chisel.Core
                     leftStackStartIndex     = leftStackStartIndex
                 };
             }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static QueuedEvent CleanUp(int firstIndex, int outputStartIndex)
-            {
-                return new QueuedEvent
-                {
-                    type                = EventType.Cleanup,
-                    currIndex           = firstIndex,
-                    outputStartIndex    = outputStartIndex
-                };
-            }
 
-            public EventType type;
-            public int currIndex;
-            public int outputStartIndex;
-            public int leftHaveGoneBeyondSelf;
-            public int leftStackStartIndex;
-            public int rightStackStartIndex;
+            [FieldOffset(0)] public EventType type;
+            [FieldOffset(4)] public int currIndex;
+            [FieldOffset(8)] public int leftHaveGoneBeyondSelf;
+            [FieldOffset(12)] public int outputStartIndex;
+            [FieldOffset(12)] public int leftStackStartIndex;
+            [FieldOffset(16)] public int rightStackStartIndex;
         }
 
         public int GetStackNodes(int processedNodeIndex, ref BrushesTouchedByBrush brushesTouchedByBrush, NativeArray<CategoryStackNode> output)
