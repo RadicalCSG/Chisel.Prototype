@@ -7,6 +7,7 @@ Author: Daniel Cornelius
 $TODO: Optimize away all the GUILayout logic
 $TODO: Implement culling for tiles not visible (hide them if they arent within the viewable window area)
 $TODO: Do we want to filter by label, too? it would allow user-ignored materials.
+$TODO: Implement preview caching
 $TODO: Optimize optimize optimize
 
 * * * * * * * * * * * * * * * * * * * * * */
@@ -117,7 +118,7 @@ namespace Chisel.Editors
                     {
                         m_PreviewsScrollPosition = svScope.scrollPosition;
 
-                        int idx = 0;
+                        int idx        = 0;
                         int numColumns = (int) ( ( rect.width - 130 ) / m_PreviewSize );
 
                         foreach( var entry in m_Materials )
@@ -129,9 +130,9 @@ namespace Chisel.Editors
                             {
                                 if( idx == m_Materials.Count ) break;
 
-                                if( m_Materials[idx].preview != null && m_Materials[idx].material != null )
+                                if( m_Materials[idx].Preview != null )
                                 {
-                                    GUIContent previewContent = new GUIContent( m_Materials[idx].preview, $"{m_Materials[idx].material.name}\nIn: [{m_Materials[idx].path}]" );
+                                    GUIContent previewContent = new GUIContent( m_Materials[idx].Preview, $"{m_Materials[idx].materialName}\nIn: [{m_Materials[idx].path}]" );
 
                                     if( GUILayout.Button( previewContent, GUILayout.Height( m_PreviewSize ), GUILayout.Width( m_PreviewSize ) ) ) {}
                                 }
@@ -155,12 +156,15 @@ namespace Chisel.Editors
                 GUILayout.FlexibleSpace();
 
                 int lastSize;
-                m_PreviewSize = EditorGUILayout.IntSlider( new GUIContent( "", "Preview Size" ), lastSize = m_PreviewSize, 32, 128, GUILayout.Width( 200 ) );
-                m_PreviewSize = GetPow2( m_PreviewSize );
+                m_PreviewSize = EditorGUILayout.IntSlider( new GUIContent( "", "Preview Size" ), lastSize = m_PreviewSize, 64, 128, GUILayout.Width( 200 ) );
+                //m_PreviewSize = GetPow2( m_PreviewSize );
 
                 if( m_PreviewSize != lastSize )
                     EditorPrefs.SetInt( PREVIEW_SIZE_PREF_NAME, m_PreviewSize );
             }
+
+            if( focusedWindow == this )
+                Repaint();
         }
 
         // gets all materials and the labels on them in the project, compares them against a filter,
@@ -168,6 +172,7 @@ namespace Chisel.Editors
         private static void GetMaterials( bool usingLabel = false )
         {
             m_Materials.Clear();
+            m_Labels.Clear();
 
             // exclude the label search tag if we arent searching for a specific label right now
             string search = usingLabel ? $"l:{m_LabelSearchText} {m_SearchFieldText}" : $"{m_SearchFieldText}";
@@ -177,11 +182,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( var id in guids )
             {
-                MaterialBrowserTile browserTile = new MaterialBrowserTile();
-                browserTile.path     = AssetDatabase.GUIDToAssetPath( id );
-                browserTile.material = AssetDatabase.LoadAssetAtPath<Material>( browserTile.path );
-                browserTile.preview  = AssetPreview.GetAssetPreview( browserTile.material );
-                browserTile.labels   = AssetDatabase.GetLabels( browserTile.material );
+                MaterialBrowserTile browserTile = new MaterialBrowserTile( id );
 
                 // add any used labels we arent currently storing
                 foreach( string label in browserTile.labels )
@@ -213,7 +214,7 @@ namespace Chisel.Editors
             // checks for any shaders we want to exclude
             bool HasInvalidShader()
             {
-                string shader = tile.material.shader.name.ToLower();
+                string shader = tile.shaderName.ToLower();
 
                 string[] excludedShaders = new string[]
                 {
