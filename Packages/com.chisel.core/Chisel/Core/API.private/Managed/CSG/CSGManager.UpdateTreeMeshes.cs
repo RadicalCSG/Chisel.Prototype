@@ -9,8 +9,6 @@ using Unity.Mathematics;
 
 namespace Chisel.Core
 {
-    public struct Empty { }
-
     static partial class CSGManager
     {
         internal struct TreeUpdate
@@ -31,7 +29,7 @@ namespace Chisel.Core
             public NativeList<BrushPair>            brushBrushIntersections;
             public NativeArray<int2>                brushBrushIntersectionRange;
             public NativeList<IndexOrder>           brushesThatNeedIndirectUpdate;
-            public NativeHashMap<IndexOrder, Empty> brushesThatNeedIndirectUpdateHashMap;
+            public NativeHashSet<IndexOrder>        brushesThatNeedIndirectUpdateHashMap;
 
             public NativeList<BrushPair>                                    uniqueBrushPairs;
             public NativeList<BlobAssetReference<BrushIntersectionLoop>>    outputSurfaces;
@@ -118,7 +116,7 @@ namespace Chisel.Core
                 this.brushCount                 = newBrushCount;
                 var triangleArraySize           = GeometryMath.GetTriangleArraySize(newBrushCount);
                 var intersectionCount           = math.max(1, triangleArraySize);
-                brushesThatNeedIndirectUpdateHashMap = new NativeHashMap<IndexOrder, Empty>(newBrushCount, Allocator.Persistent);
+                brushesThatNeedIndirectUpdateHashMap = new NativeHashSet<IndexOrder>(newBrushCount, Allocator.Persistent);
                 brushesThatNeedIndirectUpdate   = new NativeList<IndexOrder>(newBrushCount, Allocator.Persistent);
                 outputSurfaces                  = new NativeList<BlobAssetReference<BrushIntersectionLoop>>(newBrushCount * 16, Allocator.Persistent);
                 brushBrushIntersections         = new NativeList<BrushPair>(intersectionCount * 2, Allocator.Persistent);
@@ -307,6 +305,7 @@ namespace Chisel.Core
         }
 
 
+        static HashSet<int>                 s_TempHashSet                   = new HashSet<int>();
         static readonly List<IndexOrder>    s_RemovedBrushes                = new List<IndexOrder>();
         static readonly List<IndexOrder>    s_TransformTreeBrushIndicesList = new List<IndexOrder>();
         static int[]            s_NodeIndexToNodeOrderArray;
@@ -525,7 +524,7 @@ namespace Chisel.Core
 
                                 var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
                                 var otherIndexOrder = new IndexOrder { nodeIndex = otherBrushIndex, nodeOrder = otherBrushOrder };
-                                brushesThatNeedIndirectUpdateHashMap.TryAdd(otherIndexOrder, new Empty());
+                                brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
                             }
                         }
                         Profiler.EndSample();
@@ -707,6 +706,7 @@ namespace Chisel.Core
                 rebuildTreeBrushIndexOrders.Clear();
                 if (rebuildTreeBrushIndexOrders.Capacity < brushCount)
                     rebuildTreeBrushIndexOrders.Capacity = brushCount;
+                s_TempHashSet.Clear();
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
                     int nodeID     = allTreeBrushes[nodeOrder];
@@ -716,7 +716,7 @@ namespace Chisel.Core
                     if (nodeFlags.status != NodeStatusFlags.None)
                     {
                         var indexOrder = allTreeBrushIndexOrders[nodeOrder];
-                        if (!rebuildTreeBrushIndexOrders.Contains(indexOrder))
+                        if (!s_TempHashSet.Contains(indexOrder.nodeIndex))
                             rebuildTreeBrushIndexOrders.AddNoResize(indexOrder);
                         
                         // Fix up all flags
@@ -744,6 +744,7 @@ namespace Chisel.Core
                         CSGManager.nodeFlags[nodeIndex] = nodeFlags;
                     }
                 }
+                s_TempHashSet.Clear();
                 Profiler.EndSample();
                 #endregion
 
@@ -782,7 +783,7 @@ namespace Chisel.Core
 
                             var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
                             var otherIndexOrder = new IndexOrder { nodeIndex = otherBrushIndex, nodeOrder = otherBrushOrder };
-                            brushesThatNeedIndirectUpdateHashMap.TryAdd(otherIndexOrder, new Empty());
+                            brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
                         }
                     }
                     Profiler.EndSample();

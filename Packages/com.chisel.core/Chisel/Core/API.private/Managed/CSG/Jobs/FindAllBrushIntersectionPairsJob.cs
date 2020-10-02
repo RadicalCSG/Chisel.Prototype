@@ -24,7 +24,7 @@ namespace Chisel.Core
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BrushPair>.ParallelWriter            brushBrushIntersections;
-        [NoAlias, WriteOnly] public NativeHashMap<IndexOrder, Empty>.ParallelWriter brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, WriteOnly] public NativeHashSet<IndexOrder>.ParallelWriter        brushesThatNeedIndirectUpdateHashMap;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;
@@ -92,7 +92,7 @@ namespace Chisel.Core
                         if (!usedBrushes.IsSet(brush0IndexOrder.nodeOrder))
                         {
                             usedBrushes.Set(brush0IndexOrder.nodeOrder, true);
-                            brushesThatNeedIndirectUpdateHashMap.TryAdd(brush0IndexOrder, new Empty { });
+                            brushesThatNeedIndirectUpdateHashMap.Add(brush0IndexOrder);
                             IntersectionUtility.StoreIntersection(ref brushBrushIntersections, brush0IndexOrder, brush1IndexOrder, result);
                         }
                     } else
@@ -110,14 +110,14 @@ namespace Chisel.Core
     struct FindUniqueIndirectBrushIntersectionsJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeHashMap<IndexOrder, Empty> brushesThatNeedIndirectUpdateHashMap;
+        [NoAlias, ReadOnly] public NativeHashSet<IndexOrder> brushesThatNeedIndirectUpdateHashMap;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<IndexOrder> brushesThatNeedIndirectUpdate;
 
         public unsafe void Execute()
         {
-            var keys = brushesThatNeedIndirectUpdateHashMap.GetKeyArray(Allocator.Temp);
+            var keys = brushesThatNeedIndirectUpdateHashMap.ToNativeArray(Allocator.Temp);
             brushesThatNeedIndirectUpdate.AddRangeNoResize(keys.GetUnsafePtr(), keys.Length);
             keys.Dispose();
         }
