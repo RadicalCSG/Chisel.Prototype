@@ -59,3 +59,7 @@ UserSettings/EditorUserSettings.asset
 /Assets/Experiments.meta
 
 Packages/packages-lock.json
+
+# temporary (remove me before merging material browser PR)
+/Assets/Real Materials/
+/Assets/Real Materials.meta

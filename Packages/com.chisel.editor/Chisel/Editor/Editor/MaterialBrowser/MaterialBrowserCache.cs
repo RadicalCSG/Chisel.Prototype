@@ -17,13 +17,13 @@ namespace Chisel.Editors
     internal class MaterialBrowserCache : ScriptableObject
     {
         [Serializable]
-        public struct StoredEntry
+        public struct CachedThumbnail
         {
             public int    instanceID;
             public string name;
             public string data;
 
-            public StoredEntry( string name, int instanceID, Texture2D data )
+            public CachedThumbnail( string name, int instanceID, Texture2D data )
             {
                 this.name       = name;
                 this.instanceID = instanceID;
@@ -44,16 +44,15 @@ namespace Chisel.Editors
             }
         }
 
-        // Key = material name, Value = struct containing data + texture information
-        private List<StoredEntry> storedPreviewTextures = new List<StoredEntry>();
+        private List<CachedThumbnail> storedPreviewTextures = new List<CachedThumbnail>();
 
 
-        public void AddEntry( StoredEntry entry )
+        public void AddEntry( CachedThumbnail entry )
         {
-            if( !TryGetEntry( entry.name, out StoredEntry e ) ) storedPreviewTextures.Add( entry );
+            if( !TryGetEntry( entry.name, out CachedThumbnail e ) ) storedPreviewTextures.Add( entry );
         }
 
-        public bool TryGetEntry( string materialName, out StoredEntry entry )
+        public bool TryGetEntry( string materialName, out CachedThumbnail entry )
         {
             entry = storedPreviewTextures.Find( e => e.name == materialName );
 
@@ -62,7 +61,7 @@ namespace Chisel.Editors
 
         public Texture2D GetThumbnail( string materialName )
         {
-            return TryGetEntry( materialName, out StoredEntry entry ) ? entry.GetThumbnail() : EmbeddedTextures.TemporaryTexture;
+            return TryGetEntry( materialName, out CachedThumbnail entry ) ? entry.GetThumbnail() : EmbeddedTextures.TemporaryTexture;
         }
     }
 }
