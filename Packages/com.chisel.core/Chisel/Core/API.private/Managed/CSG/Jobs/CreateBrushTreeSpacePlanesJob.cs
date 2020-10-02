@@ -18,9 +18,9 @@ namespace Chisel.Core
     struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                           rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>    brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                  transformations;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformations;
 
         // Write
         [NativeDisableParallelForRestriction]

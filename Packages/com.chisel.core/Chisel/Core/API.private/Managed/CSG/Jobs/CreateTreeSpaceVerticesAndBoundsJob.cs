@@ -19,9 +19,9 @@ namespace Chisel.Core
     struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                             transformations;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformations;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
 
         // Write
         [NativeDisableParallelForRestriction]

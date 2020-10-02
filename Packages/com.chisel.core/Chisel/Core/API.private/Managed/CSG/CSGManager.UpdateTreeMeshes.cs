@@ -134,7 +134,7 @@ namespace Chisel.Core
                 nodeIndexToNodeOrderArray       = new NativeList<int>(newBrushCount, Allocator.Persistent);
                 brushMeshLookup                 = new NativeArray<BlobAssetReference<BrushMeshBlob>>(newBrushCount, Allocator.Persistent);
 
-                loopVerticesLookup                  = new NativeListArray<float3>(brushCount, Allocator.Persistent);
+                loopVerticesLookup              = new NativeListArray<float3>(brushCount, Allocator.Persistent);
                 loopVerticesLookup.ResizeExact(brushCount);
                 
                 if (!vertexBufferContents.subMeshes       .IsCreated) vertexBufferContents.subMeshes        = new NativeListArray<GeneratedSubMesh>(Allocator.Persistent);
@@ -867,7 +867,7 @@ namespace Chisel.Core
                         var invalidateBrushCacheJob = new InvalidateBrushCacheJob
                         {
                             // Read
-                            invalidatedBrushes          = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
+                            invalidatedBrushes          = treeUpdate.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
 
                             // Read Write
                             basePolygonCache            = chiselLookupValues.basePolygonCache.AsDeferredJobArray(),
@@ -897,8 +897,8 @@ namespace Chisel.Core
                         {
                             // Read
                             rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
-                            brushMeshLookup             = treeUpdate.brushMeshLookup,
                             transformations             = chiselLookupValues.transformationCache.AsDeferredJobArray(),
+                            brushMeshLookup             = treeUpdate.brushMeshLookup.AsReadOnly(),
 
                             // Write
                             brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
@@ -919,16 +919,16 @@ namespace Chisel.Core
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         if (treeUpdate.updateCount == 0)
                             continue;
-                        var dependencies    = treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle;
-                        var chiselLookupValues = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
+                        var dependencies            = treeUpdate.generateTreeSpaceVerticesAndBoundsJobHandle;
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
                         var findAllIntersectionsJob = new FindAllBrushIntersectionPairsJob
                         {
                             // Read
-                            allTreeBrushIndexOrders         = treeUpdate.allTreeBrushIndexOrders.AsArray(),
+                            allTreeBrushIndexOrders         = treeUpdate.allTreeBrushIndexOrders.AsArray().AsReadOnly(),
                             transformations                 = chiselLookupValues.transformationCache.AsDeferredJobArray(),
-                            brushMeshLookup                 = treeUpdate.brushMeshLookup,
+                            brushMeshLookup                 = treeUpdate.brushMeshLookup.AsReadOnly(),
                             brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
-                            updateBrushIndexOrders          = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
+                            updateBrushIndexOrders          = treeUpdate.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
                         
                             // Write
                             brushBrushIntersections              = treeUpdate.brushBrushIntersections.AsParallelWriter(),
@@ -1004,8 +1004,8 @@ namespace Chisel.Core
                         var fixupBrushCacheIndicesJob = new FixupBrushCacheIndicesJob
                         {
                             // Read
-                            allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsArray(),
-                            nodeIndexToNodeOrderArray   = treeUpdate.nodeIndexToNodeOrderArray.AsArray(),
+                            allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsArray().AsReadOnly(),
+                            nodeIndexToNodeOrderArray   = treeUpdate.nodeIndexToNodeOrderArray.AsArray().AsReadOnly(),
                             nodeIndexToNodeOrderOffset  = treeUpdate.nodeIndexToNodeOrderOffset,
 
                             // Read Write
@@ -1031,8 +1031,8 @@ namespace Chisel.Core
                         {
                             // Read
                             rebuildTreeBrushIndexOrders = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
-                            brushMeshLookup             = treeUpdate.brushMeshLookup,
                             transformations             = chiselLookupValues.transformationCache.AsDeferredJobArray(),
+                            brushMeshLookup             = treeUpdate.brushMeshLookup.AsReadOnly(),
 
                             // Write
                             brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
@@ -1058,12 +1058,12 @@ namespace Chisel.Core
                         var findAllIntersectionsJob = new FindAllIndirectBrushIntersectionPairsJob
                         {
                             // Read
-                            allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsArray(),
+                            allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsArray().AsReadOnly(),
                             transformations             = chiselLookupValues.transformationCache.AsDeferredJobArray(),
-                            brushMeshLookup             = treeUpdate.brushMeshLookup,
+                            brushMeshLookup             = treeUpdate.brushMeshLookup.AsReadOnly(),
                             brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
                             updateBrushIndexOrders      = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
-                            rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders.AsArray(),
+                            rebuildTreeBrushIndexOrders = treeUpdate.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
 
                             // Write
                             allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsParallelWriter(),
@@ -1114,7 +1114,7 @@ namespace Chisel.Core
                             treeNodeIndex               = treeUpdate.treeNodeIndex,
                             treeBrushIndexOrders        = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
                             compactTree                 = treeUpdate.compactTree,
-                            brushBrushIntersectionRange = treeUpdate.brushBrushIntersectionRange,
+                            brushBrushIntersectionRange = treeUpdate.brushBrushIntersectionRange.AsReadOnly(),
                             brushBrushIntersections     = treeUpdate.brushBrushIntersections.AsDeferredJobArray(),
 
                             // Write
@@ -1140,7 +1140,7 @@ namespace Chisel.Core
                         {
                             // Read
                             rebuildTreeBrushIndexOrders     = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
-                            brushMeshLookup                 = treeUpdate.brushMeshLookup,
+                            brushMeshLookup                 = treeUpdate.brushMeshLookup.AsReadOnly(),
                             transformations                 = chiselLookupValues.transformationCache.AsDeferredJobArray(),
 
                             // Write
@@ -1237,7 +1237,7 @@ namespace Chisel.Core
                             // Read
                             uniqueBrushPairs        = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
                             transformations         = chiselLookupValues.transformationCache.AsDeferredJobArray(),
-                            brushMeshLookup         = treeUpdate.brushMeshLookup,
+                            brushMeshLookup         = treeUpdate.brushMeshLookup.AsReadOnly(),
 
                             // Write
                             intersectingBrushes     = treeUpdate.intersectingBrushes.AsParallelWriter()
@@ -1309,7 +1309,7 @@ namespace Chisel.Core
                             // Read
                             treeBrushIndexOrders    = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
                             brushesTouchedByBrushes = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
-                            brushMeshLookup         = treeUpdate.brushMeshLookup,
+                            brushMeshLookup         = treeUpdate.brushMeshLookup.AsReadOnly(),
                             treeSpaceVerticesArray  = chiselLookupValues.treeSpaceVerticesCache.AsDeferredJobArray(),
 
                             // Write
@@ -1393,7 +1393,7 @@ namespace Chisel.Core
                             // Read
                             treeBrushIndexOrders        = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
                             outputSurfaces              = treeUpdate.outputSurfaces.AsDeferredJobArray(),
-                            outputSurfacesRange         = treeUpdate.outputSurfacesRange,
+                            outputSurfacesRange         = treeUpdate.outputSurfacesRange.AsReadOnly(),
                             maxNodeOrder                = treeUpdate.maxNodeOrder,
                             brushTreeSpacePlanes        = chiselLookupValues.brushTreeSpacePlaneCache.AsDeferredJobArray(),
                             basePolygons                = chiselLookupValues.basePolygonCache.AsDeferredJobArray(),
@@ -1550,7 +1550,7 @@ namespace Chisel.Core
                         var prepareJob = new PrepareSubSectionsJob
                         {
                             // Read
-                            meshQueries         = treeUpdate.meshQueries,
+                            meshQueries         = treeUpdate.meshQueries.AsReadOnly(),
                             brushRenderData     = treeUpdate.brushRenderData.AsDeferredJobArray(),
 
                             // Write
