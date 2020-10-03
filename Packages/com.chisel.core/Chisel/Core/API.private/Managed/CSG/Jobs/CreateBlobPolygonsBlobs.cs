@@ -266,11 +266,11 @@ namespace Chisel.Core
                 polygonArray[i] = new BasePolygon()
                 {
                     nodeIndexOrder      = indexOrder,
-                    surfaceInfo     = new SurfaceInfo()
+                    surfaceInfo     = new SurfaceInfo
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
-                        nodeIndex           = nodeIndex,
+                        //nodeIndex           = nodeIndex,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex

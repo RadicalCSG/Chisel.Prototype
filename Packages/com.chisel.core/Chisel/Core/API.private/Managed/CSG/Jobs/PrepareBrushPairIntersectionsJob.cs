@@ -12,12 +12,12 @@ namespace Chisel.Core
 {
     public struct PlanePair
     {
-        public float4 plane0;
-        public float4 plane1;
-        public float4 edgeVertex0;
-        public float4 edgeVertex1;
-        public int planeIndex0;
-        public int planeIndex1;
+        public float4   plane0;
+        public float4   plane1;
+        public float4   edgeVertex0;
+        public float4   edgeVertex1;
+        public int      planeIndex0;
+        public int      planeIndex1;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -28,7 +28,7 @@ namespace Chisel.Core
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BrushPair>                                   uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<BrushPair2>                                  uniqueBrushPairs;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
 
@@ -227,15 +227,15 @@ namespace Chisel.Core
             var brushIntersections = builder.Allocate(ref root.brushes, 2);
             brushIntersections[0] = new BrushIntersectionInfo
             {
-                brushIndexOrder = brushIndexOrder0,
-                nodeToTreeSpace = transformations0.nodeToTree,
-                toOtherBrushSpace = node0ToNode1
+                brushIndexOrder     = brushIndexOrder0,
+                nodeToTreeSpace     = transformations0.nodeToTree,
+                toOtherBrushSpace   = node0ToNode1
             };
             brushIntersections[1] = new BrushIntersectionInfo
             {
-                brushIndexOrder = brushIndexOrder1,
-                nodeToTreeSpace = transformations1.nodeToTree,
-                toOtherBrushSpace = node1ToNode0
+                brushIndexOrder     = brushIndexOrder1,
+                nodeToTreeSpace     = transformations1.nodeToTree,
+                toOtherBrushSpace   = node1ToNode0
             };
 
             BlobBuilderArray<int> intersectingPlaneIndices0, intersectingPlaneIndices1;
@@ -287,7 +287,7 @@ namespace Chisel.Core
                 {
                     basePlaneIndex = (ushort)i,
                     interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside,
-                    nodeIndex = brushIndexOrder0.nodeIndex
+                    //nodeIndex = brushIndexOrder0.nodeIndex
                 };
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
@@ -296,7 +296,7 @@ namespace Chisel.Core
                 {
                     basePlaneIndex = (ushort)i,
                     interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside,
-                    nodeIndex = brushIndexOrder1.nodeIndex
+                    //nodeIndex = brushIndexOrder1.nodeIndex
                 };
             }
 

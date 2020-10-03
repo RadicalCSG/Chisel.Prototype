@@ -265,9 +265,9 @@ namespace Chisel.Core
                             ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
                             basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
                             {
-                                brushIndexOrder = nodeIndexOrder,
-                                interiorCategory = surfaceInfo.interiorCategory,
-                                basePlaneIndex = surfaceInfo.basePlaneIndex
+                                brushIndexOrder     = nodeIndexOrder,
+                                interiorCategory    = surfaceInfo.interiorCategory,
+                                basePlaneIndex  = surfaceInfo.basePlaneIndex
                             };
                         }
 
@@ -279,7 +279,7 @@ namespace Chisel.Core
                                 ref var brushIntersectionLoop   = ref brushIntersections[l].Value;
                                 ref var surfaceInfo             = ref brushIntersectionLoop.surfaceInfo;
                                 UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.nodeIndex == brushIndexOrder.nodeIndex);
-                                UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
+                                //UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
 
                                 var basePlaneIndex = surfaceInfo.basePlaneIndex;
                                 if (prevBasePlaneIndex != basePlaneIndex)

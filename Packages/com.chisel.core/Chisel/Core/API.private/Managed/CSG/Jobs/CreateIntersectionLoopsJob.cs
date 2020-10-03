@@ -18,15 +18,15 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Needed for count (forced & unused)
-        [NoAlias, ReadOnly] public NativeList<BrushPair> uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                    brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>              treeSpaceVerticesArray;
-        [NoAlias, ReadOnly] public NativeStream.Reader                                                      intersectingBrushesStream;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
         
         // Write
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter    outputSurfaces;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;

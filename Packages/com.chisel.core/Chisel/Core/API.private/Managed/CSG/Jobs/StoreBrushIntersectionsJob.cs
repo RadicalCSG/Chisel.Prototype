@@ -16,10 +16,11 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public int                              treeNodeIndex;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>          allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>  compactTree;
-        [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly       brushBrushIntersectionRange;
-        [NoAlias, ReadOnly] public NativeArray<BrushPair>           brushBrushIntersections;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>          allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>          allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BrushIntersectWith>  brushIntersectionsWith;
+        [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly       brushIntersectionsWithRange;
 
         // Write
         [NativeDisableParallelForRestriction]
@@ -28,7 +29,7 @@ namespace Chisel.Core
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeList<BrushIntersection> brushIntersections;
 
-        static void SetUsedNodesBits(BlobAssetReference<CompactTree> compactTree, NativeList<BrushIntersection> brushIntersections, int brushNodeIndex, int rootNodeIndex, BrushIntersectionLookup bitset)
+        static void SetUsedNodesBits([NoAlias] BlobAssetReference<CompactTree> compactTree, [NoAlias] NativeList<BrushIntersection> brushIntersections, int brushNodeIndex, int rootNodeIndex, [NoAlias] BrushIntersectionLookup bitset)
         {
             bitset.Clear();
             bitset.Set(brushNodeIndex, IntersectionType.Intersection);
@@ -71,8 +72,9 @@ namespace Chisel.Core
             }
         }
 
-        static BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] BlobAssetReference<CompactTree> compactTree, IndexOrder brushIndexOrder, int rootNodeIndex,
-                                                                                       [NoAlias, ReadOnly] NativeArray<BrushPair> brushBrushIntersections, int intersectionOffset, int intersectionCount, 
+        static BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] BlobAssetReference<CompactTree> compactTree, 
+                                                                                       [NoAlias, ReadOnly] NativeArray<IndexOrder> allTreeBrushIndexOrders, IndexOrder brushIndexOrder, int rootNodeIndex,
+                                                                                       [NoAlias, ReadOnly] NativeArray<BrushIntersectWith> brushIntersectionsWith, int intersectionOffset, int intersectionCount, 
                                                                                        [NoAlias] ref NativeList<BrushIntersection> brushIntersections)
         {
             if (!compactTree.IsCreated)
@@ -103,18 +105,18 @@ namespace Chisel.Core
             { 
                 for (int i = 0; i < intersectionCount; i++)
                 {
-                    var touchingBrush = brushBrushIntersections[intersectionOffset + i];
+                    var touchingBrush = brushIntersectionsWith[intersectionOffset + i];
                     //Debug.Assert(touchingBrush.brushIndexOrder0.nodeOrder == brushNodeOrder);
 
-                    var otherIndexOrder = touchingBrush.brushIndexOrder1;
-                    int otherBrushIndex = otherIndexOrder.nodeIndex;
+                    var otherIndexOrder = touchingBrush.brushNodeOrder1;
+                    var otherBrushIndex = allTreeBrushIndexOrders[otherIndexOrder].nodeIndex;
                     if ((otherBrushIndex < indexOffset || (otherBrushIndex-indexOffset) >= brushIndexToBottomUpIndex.Length))
                         continue;
 
                     var otherBottomUpIndex = brushIndexToBottomUpIndex[otherBrushIndex - indexOffset];
                     brushIntersections.AddNoResize(new BrushIntersection
                     {
-                        nodeIndexOrder  = otherIndexOrder,
+                        nodeIndexOrder  = new IndexOrder { nodeOrder = otherIndexOrder, nodeIndex = otherBrushIndex },
                         type            = touchingBrush.type,
                         bottomUpStart   = bottomUpNodeIndices[otherBottomUpIndex].bottomUpStart, 
                         bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].bottomUpEnd
@@ -147,8 +149,11 @@ namespace Chisel.Core
             var brushIndexOrder     = allUpdateBrushIndexOrders[index];
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
             {
-                var result = GenerateBrushesTouchedByBrush(compactTree, brushIndexOrder, treeNodeIndex, brushBrushIntersections, 
-                                                           intersectionOffset: brushBrushIntersectionRange[brushNodeOrder].x, intersectionCount: brushBrushIntersectionRange[brushNodeOrder].y, ref brushIntersections);
+                var result = GenerateBrushesTouchedByBrush(compactTree, 
+                                                           allTreeBrushIndexOrders, brushIndexOrder, treeNodeIndex,
+                                                           brushIntersectionsWith, 
+                                                           intersectionOffset: brushIntersectionsWithRange[brushNodeOrder].x, 
+                                                           intersectionCount:  brushIntersectionsWithRange[brushNodeOrder].y, ref brushIntersections);
                 if (result.IsCreated)
                     brushesTouchedByBrushCache[brushNodeOrder] = result;
             }
