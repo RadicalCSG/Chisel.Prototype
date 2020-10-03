@@ -116,19 +116,19 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>        subMeshSections;
 
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<GeneratedSubMesh>   subMeshesArray;
+        [NoAlias] public NativeListArray<GeneratedSubMesh>  subMeshesArray;
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeListArray<int> 	            indicesArray;
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeListArray<int> 	            brushIndicesArray;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float3>             positionsArray;
+        [NoAlias] public NativeListArray<float3>            positionsArray;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float4>             tangentsArray;
+        [NoAlias] public NativeListArray<float4>            tangentsArray;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float3>             normalsArray;
+        [NoAlias] public NativeListArray<float3>            normalsArray;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float2>             uv0Array;
+        [NoAlias] public NativeListArray<float2>            uv0Array;
 
         public void Execute()
         {

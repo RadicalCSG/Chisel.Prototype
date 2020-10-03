@@ -15,12 +15,12 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushNodeIndexOrders;        
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;        
 
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableLookup;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
-        [NoAlias, ReadOnly] public NativeListArray<float3>                                  inputVerticesLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeListArray<float3>                                  loopVerticesLookup;
 
         [NativeDisableParallelForRestriction]
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
@@ -158,7 +158,7 @@ namespace Chisel.Core
             int inside2 = 0, outside2 = 0;
             //var categories2           = stackalloc EdgeCategory[currentLoopEdges.Length];
             int intersectionBrushOrder  = intersectionInfo.brushIndexOrder.nodeOrder;
-            var treeSpacePlanes1        = brushTreeSpacePlanes[intersectionBrushOrder];
+            var treeSpacePlanes1        = brushTreeSpacePlaneCache[intersectionBrushOrder];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
                 var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, hashedTreeSpaceVertices);
@@ -171,7 +171,7 @@ namespace Chisel.Core
             int inside1 = 0, outside1 = 0;
             //var categories1       = stackalloc EdgeCategory[intersectionLoop.Length];
             int currentBrushOrder   = currentInfo.brushIndexOrder.nodeOrder;
-            var treeSpacePlanes2    = brushTreeSpacePlanes[currentBrushOrder];
+            var treeSpacePlanes2    = brushTreeSpacePlaneCache[currentBrushOrder];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
                 var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, hashedTreeSpaceVertices);
@@ -255,7 +255,7 @@ namespace Chisel.Core
             intersectionInfo.interiorCategory = intersectionCategory;
 
 
-            var brushesTouchedByBrush = brushesTouchedByBrushes[currentBrushOrder];
+            var brushesTouchedByBrush = brushesTouchedByBrushCache[currentBrushOrder];
             if (currentHoleIndices.Length > 0 &&
                 // TODO: fix touching not being updated properly
                 brushesTouchedByBrush != BlobAssetReference<BrushesTouchedByBrush>.Null)
@@ -474,7 +474,7 @@ namespace Chisel.Core
                 int totalEdgeCount = baseLoopEdges.Length;
                 {
                     int brushNodeOrder  = allInfos[baseloopIndex].brushIndexOrder.nodeOrder;
-                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlaneCache[brushNodeOrder].Value.treeSpacePlanes;
                     totalPlaneCount += treeSpacePlanes.Length;
                 }
                 for (int h = 0; h < holeIndicesList.Length; h++)
@@ -484,7 +484,7 @@ namespace Chisel.Core
                     totalEdgeCount += holeEdges.Length;
                     
                     int brushNodeOrder  = allInfos[holeIndex].brushIndexOrder.nodeOrder;
-                    ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
+                    ref var treeSpacePlanes = ref brushTreeSpacePlaneCache[brushNodeOrder].Value.treeSpacePlanes;
 
                     totalPlaneCount += treeSpacePlanes.Length;
                 }
@@ -544,7 +544,7 @@ namespace Chisel.Core
                         }
 
                         int brushNodeOrder = allInfos[holeIndex].brushIndexOrder.nodeOrder;
-                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlaneCache[brushNodeOrder].Value.treeSpacePlanes;
                         
                         var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = holeEdges.Length;
@@ -568,7 +568,7 @@ namespace Chisel.Core
                     if (baseLoopEdges.Length > 0)
                     {
                         int brushNodeOrder = allInfos[baseloopIndex].brushIndexOrder.nodeOrder;
-                        ref var treeSpacePlanes = ref brushTreeSpacePlanes[brushNodeOrder].Value.treeSpacePlanes;
+                        ref var treeSpacePlanes = ref brushTreeSpacePlaneCache[brushNodeOrder].Value.treeSpacePlanes;
 
                         var planesLength    = treeSpacePlanes.Length;
                         var edgesLength     = baseLoopEdges.Length;
@@ -738,7 +738,7 @@ namespace Chisel.Core
             var brushNodeOrder = brushIndexOrder.nodeOrder;
             var surfaceCount = input.Read<int>();
 
-            var inputVertices = inputVerticesLookup[brushNodeOrder];
+            var inputVertices = loopVerticesLookup[brushNodeOrder];
             var vertexCount = inputVertices.Length;
 
             if (!hashedTreeSpaceVertices.IsCreated || hashedTreeSpaceVertices.Capacity < vertexCount)
@@ -1099,7 +1099,8 @@ namespace Chisel.Core
             for (int l = 0; l < allEdges.Length; l++)
             {
                 var surfaceInfo = allInfos[l];
-                output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory, nodeIndex = surfaceInfo.brushIndexOrder.nodeIndex });
+                output.Write(new SurfaceInfo { basePlaneIndex = surfaceInfo.basePlaneIndex, interiorCategory = surfaceInfo.interiorCategory//, nodeIndex = surfaceInfo.brushIndexOrder.nodeIndex 
+                                });
                 var edges = allEdges[l].AsArray();
                 output.Write(edges.Length);
                 for (int e = 0; e < edges.Length; e++)

@@ -130,10 +130,9 @@ namespace Chisel.Editors
         static void OnDuringSceneGUI(SceneView sceneView)
         {
             Profiler.BeginSample("OnDuringSceneGUI");
-            // Workaround to Unity stop redrawing sceneview after a second, which makes hovering over edge visualization stop working
-            // Seems to be fixed in 2020.0b4?
-            //if (Event.current.type == EventType.MouseMove)
-                //sceneView.Repaint();
+            // Workaround where Unity stops redrawing sceneview after a second, which makes hovering over edge visualization stop working
+            if (Event.current.type == EventType.MouseMove)
+                sceneView.Repaint();
 
             var prevSkin = GUI.skin;
             GUI.skin = ChiselSceneGUIStyle.GetSceneSkin();

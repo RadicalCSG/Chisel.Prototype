@@ -19,7 +19,7 @@ namespace Chisel.Core
     struct CreateBlobPolygonsBlobs : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly      brushMeshLookup;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
@@ -139,7 +139,7 @@ namespace Chisel.Core
 
         public void Execute(int b)
         {
-            var indexOrder = treeBrushIndexOrders[b];
+            var indexOrder = allUpdateBrushIndexOrders[b];
             int nodeOrder  = indexOrder.nodeOrder;
             int nodeIndex = indexOrder.nodeIndex;
 
@@ -266,11 +266,11 @@ namespace Chisel.Core
                 polygonArray[i] = new BasePolygon()
                 {
                     nodeIndexOrder      = indexOrder,
-                    surfaceInfo     = new SurfaceInfo()
+                    surfaceInfo     = new SurfaceInfo
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
-                        nodeIndex           = nodeIndex,
+                        //nodeIndex           = nodeIndex,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
