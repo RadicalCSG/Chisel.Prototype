@@ -21,16 +21,16 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public int                                                      maxNodeOrder;
         [NoAlias, ReadOnly] public NativeArray<int2>.ReadOnly                               outputSurfacesRange;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushIntersectionLoop>>   outputSurfaces;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygons;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>        basePolygonCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
 
         // Read Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeListArray<float3>                            outputVertices;
+        [NoAlias] public NativeListArray<float3>                            loopVerticesLookup;
 
         // Write
         [NativeDisableParallelForRestriction]
@@ -90,15 +90,15 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            var brushIndexOrder     = treeBrushIndexOrders[index];
+            var brushIndexOrder     = allUpdateBrushIndexOrders[index];
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
 
             // Can happen when BrushMeshes are not initialized correctly
-            if (basePolygons[brushNodeOrder] == BlobAssetReference<BasePolygonsBlob>.Null)
+            if (basePolygonCache[brushNodeOrder] == BlobAssetReference<BasePolygonsBlob>.Null)
             {
-                if (!outputVertices.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    outputVertices.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
-                outputVertices[brushIndexOrder.nodeOrder].Clear();
+                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
+                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
+                loopVerticesLookup[brushIndexOrder.nodeOrder].Clear();
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);
                 output.Write(0);
@@ -108,13 +108,13 @@ namespace Chisel.Core
                 return;
             }
 
-            ref var basePolygonBlob = ref basePolygons[brushNodeOrder].Value;
+            ref var basePolygonBlob = ref basePolygonCache[brushNodeOrder].Value;
             var surfaceCount        = basePolygonBlob.polygons.Length;
             if (surfaceCount == 0)
             {
-                if (!outputVertices.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    outputVertices.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
-                outputVertices[brushIndexOrder.nodeOrder].Clear();
+                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
+                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, 16);
+                loopVerticesLookup[brushIndexOrder.nodeOrder].Clear();
                 output.BeginForEachIndex(index);
                 output.Write(brushIndexOrder);
                 output.Write(0);
@@ -179,9 +179,9 @@ namespace Chisel.Core
                     intersectionSurfaceInfos.Clear();
                 
 
-                if (!outputVertices.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    outputVertices.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
-                var writeVertices = outputVertices[brushIndexOrder.nodeOrder];
+                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
+                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
+                var writeVertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
                 writeVertices.Resize(hashedTreeSpaceVertices.Length, NativeArrayOptions.UninitializedMemory);
                 for (int l = 0; l < hashedTreeSpaceVertices.Length; l++)
                     writeVertices[l] = hashedTreeSpaceVertices[l];
@@ -316,7 +316,7 @@ namespace Chisel.Core
                             
                                 int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].Value.indexOrder1.nodeOrder;// intersectionIndex1.w;
 
-                                FindLoopPlaneIntersections(brushTreeSpacePlanes, intersectionBrushOrder1, intersectionBrushOrder0, hashedTreeSpaceVertices, edges);
+                                FindLoopPlaneIntersections(brushTreeSpacePlaneCache, intersectionBrushOrder1, intersectionBrushOrder0, hashedTreeSpaceVertices, edges);
 
                                 // TODO: merge these so that intersections will be identical on both loops (without using math, use logic)
                                 // TODO: make sure that intersections between loops will be identical on OTHER brushes (without using math, use logic)
@@ -324,7 +324,7 @@ namespace Chisel.Core
                         }
                     }
 
-                    ref var selfPlanes = ref brushTreeSpacePlanes[brushIndexOrder.nodeOrder].Value.treeSpacePlanes;
+                    ref var selfPlanes = ref brushTreeSpacePlaneCache[brushIndexOrder.nodeOrder].Value.treeSpacePlanes;
 
                     // TODO: should only intersect with all brushes that each particular basepolygon intersects with
                     //       but also need adjency information between basePolygons to ensure that intersections exist on 
@@ -339,7 +339,7 @@ namespace Chisel.Core
                             var selfEdges = basePolygonEdges[b];
                             //var before = selfEdges.Length;
 
-                            ref var otherPlanes   = ref brushTreeSpacePlanes[otherBrushNodeOrder].Value.treeSpacePlanes;
+                            ref var otherPlanes   = ref brushTreeSpacePlaneCache[otherBrushNodeOrder].Value.treeSpacePlanes;
                             FindBasePolygonPlaneIntersections(ref otherPlanes, ref selfPlanes, selfEdges, hashedTreeSpaceVertices);
                         }
                     }
@@ -357,7 +357,7 @@ namespace Chisel.Core
                             int intersectionBrushOrder  = brushIntersections[intersectionSurfaceOffset + l0].Value.indexOrder1.nodeOrder;// intersectionIndex.w;
                             var in_edges                = intersectionEdges[intersectionSurfaceOffset + l0];
                             
-                            ref var otherPlanes = ref brushTreeSpacePlanes[intersectionBrushOrder].Value.treeSpacePlanes;
+                            ref var otherPlanes = ref brushTreeSpacePlaneCache[intersectionBrushOrder].Value.treeSpacePlanes;
 
                             FindLoopVertexOverlaps(ref selfPlanes, in_edges, bp_edges, hashedTreeSpaceVertices);
 
@@ -411,9 +411,9 @@ namespace Chisel.Core
                         }); //OUTPUT
                 }
 
-                if (!outputVertices.IsIndexCreated(brushIndexOrder.nodeOrder))
-                    outputVertices.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
-                var writeVertices = outputVertices[brushIndexOrder.nodeOrder];
+                if (!loopVerticesLookup.IsIndexCreated(brushIndexOrder.nodeOrder))
+                    loopVerticesLookup.AllocateWithCapacityForIndex(brushIndexOrder.nodeOrder, hashedTreeSpaceVertices.Length);
+                var writeVertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
                 writeVertices.Resize(hashedTreeSpaceVertices.Length, NativeArrayOptions.UninitializedMemory);
                 for (int l = 0; l < hashedTreeSpaceVertices.Length; l++)
                     writeVertices[l] = hashedTreeSpaceVertices[l];

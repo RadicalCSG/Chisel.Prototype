@@ -18,7 +18,7 @@ namespace Chisel.Core
     struct CreateRoutingTableJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
@@ -40,10 +40,10 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            if (index >= treeBrushIndexOrders.Length)
+            if (index >= allUpdateBrushIndexOrders.Length)
                 return;
 
-            var processedIndexOrder = treeBrushIndexOrders[index];
+            var processedIndexOrder = allUpdateBrushIndexOrders[index];
             int processedNodeIndex  = processedIndexOrder.nodeIndex;
             int processedNodeOrder  = processedIndexOrder.nodeOrder;
 

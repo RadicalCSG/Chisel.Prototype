@@ -25,10 +25,10 @@ namespace Chisel.Core
     {
         // Read
         // 'Required' for scheduling with index count
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allUpdateBrushIndexOrders;
         
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygons;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformations;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformationCache;
         [NoAlias, ReadOnly] public NativeStream.Reader input;
 
         // Write
@@ -163,7 +163,7 @@ namespace Chisel.Core
 
 
             ref var baseSurfaces                = ref basePolygons[brushNodeOrder].Value.surfaces;
-            var brushTransformations            = transformations[brushNodeOrder];
+            var brushTransformations            = transformationCache[brushNodeOrder];
             var treeToNode                      = brushTransformations.treeToNode;
             var nodeToTreeInverseTransposed     = math.transpose(treeToNode);
                 

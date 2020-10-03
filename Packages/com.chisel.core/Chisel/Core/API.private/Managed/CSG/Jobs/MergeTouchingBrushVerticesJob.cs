@@ -84,7 +84,7 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Read Write
@@ -96,7 +96,7 @@ namespace Chisel.Core
 
         public void Execute(int b)
         {
-            var brushIndexOrder = treeBrushIndexOrders[b];
+            var brushIndexOrder = allUpdateBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
             var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
