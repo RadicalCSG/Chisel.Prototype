@@ -1050,12 +1050,12 @@ namespace Chisel.Core
                         if (overlap)
                         {
                             // If we overlap don't bother with creating a new polygon & hole and just reuse existing polygon + replace category
-                            surfaceLoopInfo.interiorCategory = routingRow[intersectionInfo.interiorCategory];
+                            surfaceLoopInfo.interiorCategory = routingRow[(int)intersectionInfo.interiorCategory];
                             allInfos[surfaceLoopIndex] = surfaceLoopInfo;
                             continue;
                         } else
                         {
-                            surfaceLoopInfo.interiorCategory = routingRow[CategoryIndex.Outside];
+                            surfaceLoopInfo.interiorCategory = routingRow[(int)CategoryIndex.Outside];
                             allInfos[surfaceLoopIndex] = surfaceLoopInfo;
                         }
 
@@ -1063,7 +1063,7 @@ namespace Chisel.Core
                         if (intersectionLoop.Length != 0)
                         {
                             // Categorize between original surface & intersection
-                            var intersectionCategory = routingRow[intersectionInfo.interiorCategory];
+                            var intersectionCategory = routingRow[(int)intersectionInfo.interiorCategory];
 
                             // If the intersection polygon would get the same category, we don't need to do a pointless intersection
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)

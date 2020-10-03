@@ -559,8 +559,8 @@ namespace Chisel.Core
     struct PrepareSubSectionsJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<MeshQuery>   meshQueries;
-        [NoAlias, ReadOnly] public NativeArray<BrushData>   brushRenderData;
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
+        [NoAlias, ReadOnly] public NativeArray<BrushData>           brushRenderData;
 
         // Read, Write
         [NoAlias] public NativeList<SectionData>            sections;

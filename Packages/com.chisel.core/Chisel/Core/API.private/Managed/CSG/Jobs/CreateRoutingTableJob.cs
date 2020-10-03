@@ -188,7 +188,7 @@ namespace Chisel.Core
             [FieldOffset(16)] public int rightStackStartIndex;
         }
 
-        public int GetStackNodes(int processedNodeIndex, ref BrushesTouchedByBrush brushesTouchedByBrush, NativeArray<CategoryStackNode> output)
+        public int GetStackNodes(int processedNodeIndex, [NoAlias] ref BrushesTouchedByBrush brushesTouchedByBrush, [NoAlias] NativeArray<CategoryStackNode> output)
         {
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
@@ -389,8 +389,8 @@ namespace Chisel.Core
 
 
         // We combine and store the right branch with the left branch, using an operation to tie them together
-        void Combine(NativeArray<CategoryStackNode> leftStack,  int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd, 
-                     NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
+        void Combine([NoAlias] NativeArray<CategoryStackNode> leftStack,  int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd,
+                     [NoAlias] NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
                      CSGOperationType operation)
         {
             //Debug.Assert(rightStackLength > 0);
@@ -583,9 +583,8 @@ namespace Chisel.Core
             Debug.LogError("Unity Burst Compiler is broken");
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]        
-        int AddRowToOutput(NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
-                           ref int input, in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
+        int AddRowToOutput([NoAlias] NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
+                           ref int input, [NoAlias] in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
         {
 #if USE_OPTIMIZATIONS
             for (int n = startSearchRowIndex; n < outputLength; n++)
@@ -611,8 +610,7 @@ namespace Chisel.Core
         }
 
         // Remap indices to new destinations, used when destination rows have been merged
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void RemapIndices(NativeArray<CategoryStackNode> stack, NativeArray<int> remap, int start, int last)
+        static void RemapIndices([NoAlias] NativeArray<CategoryStackNode> stack, [NoAlias] NativeArray<int> remap, int start, int last)
         {
 #if USE_OPTIMIZATIONS
             for (int i = start; i < last; i++)
