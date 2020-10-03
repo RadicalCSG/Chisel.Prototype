@@ -185,8 +185,10 @@ namespace Chisel.Core
                 {
                     var brush0IndexOrder    = allTreeBrushIndexOrders[index0];
                     int brush0NodeOrder     = brush0IndexOrder.nodeOrder;
-                    if (brush0NodeOrder == brush1NodeOrder ||
-                        foundBrushes.IsSet(brush0IndexOrder.nodeOrder))
+                    if (brush0NodeOrder == brush1NodeOrder 
+                        // TODO: figure out why this optimization causes iterative updates to fail
+                        //|| foundBrushes.IsSet(brush0IndexOrder.nodeOrder)
+                        )
                         continue;
                     if (brush0NodeOrder > brush1NodeOrder)
                     {
