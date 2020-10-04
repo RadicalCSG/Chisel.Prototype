@@ -10,6 +10,7 @@ using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
+using System.Runtime.InteropServices;
 
 namespace Chisel.Core
 {
@@ -17,7 +18,7 @@ namespace Chisel.Core
     struct CreateRoutingTableJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  treeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
 
@@ -39,10 +40,10 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            if (index >= treeBrushIndexOrders.Length)
+            if (index >= allUpdateBrushIndexOrders.Length)
                 return;
 
-            var processedIndexOrder = treeBrushIndexOrders[index];
+            var processedIndexOrder = allUpdateBrushIndexOrders[index];
             int processedNodeIndex  = processedIndexOrder.nodeIndex;
             int processedNodeOrder  = processedIndexOrder.nodeOrder;
 
@@ -130,6 +131,7 @@ namespace Chisel.Core
 
 
         enum EventType : int { GetStackNode, Combine, Cleanup, ListItem }
+        [StructLayout(LayoutKind.Explicit)]
         struct QueuedEvent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -137,9 +139,20 @@ namespace Chisel.Core
             {
                 return new QueuedEvent
                 {
-                    type                    = EventType.GetStackNode,
-                    currIndex               = currIndex,
-                    outputStartIndex        = outputStartIndex
+                    type                = EventType.GetStackNode,
+                    currIndex           = currIndex,
+                    outputStartIndex    = outputStartIndex
+                };
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent CleanUp(int firstIndex, int outputStartIndex)
+            {
+                return new QueuedEvent
+                {
+                    type                = EventType.Cleanup,
+                    currIndex           = firstIndex,
+                    outputStartIndex    = outputStartIndex
                 };
             }
 
@@ -166,27 +179,16 @@ namespace Chisel.Core
                     leftStackStartIndex     = leftStackStartIndex
                 };
             }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static QueuedEvent CleanUp(int firstIndex, int outputStartIndex)
-            {
-                return new QueuedEvent
-                {
-                    type                = EventType.Cleanup,
-                    currIndex           = firstIndex,
-                    outputStartIndex    = outputStartIndex
-                };
-            }
 
-            public EventType type;
-            public int currIndex;
-            public int outputStartIndex;
-            public int leftHaveGoneBeyondSelf;
-            public int leftStackStartIndex;
-            public int rightStackStartIndex;
+            [FieldOffset(0)] public EventType type;
+            [FieldOffset(4)] public int currIndex;
+            [FieldOffset(8)] public int leftHaveGoneBeyondSelf;
+            [FieldOffset(12)] public int outputStartIndex;
+            [FieldOffset(12)] public int leftStackStartIndex;
+            [FieldOffset(16)] public int rightStackStartIndex;
         }
 
-        public int GetStackNodes(int processedNodeIndex, ref BrushesTouchedByBrush brushesTouchedByBrush, NativeArray<CategoryStackNode> output)
+        public int GetStackNodes(int processedNodeIndex, [NoAlias] ref BrushesTouchedByBrush brushesTouchedByBrush, [NoAlias] NativeArray<CategoryStackNode> output)
         {
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
@@ -387,8 +389,8 @@ namespace Chisel.Core
 
 
         // We combine and store the right branch with the left branch, using an operation to tie them together
-        void Combine(NativeArray<CategoryStackNode> leftStack,  int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd, 
-                     NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
+        void Combine([NoAlias] NativeArray<CategoryStackNode> leftStack,  int leftHaveGoneBeyondSelf, int leftStackStart, ref int leftStackEnd,
+                     [NoAlias] NativeArray<CategoryStackNode> rightStack, int rightHaveGoneBeyondSelf, int rightStackLength,
                      CSGOperationType operation)
         {
             //Debug.Assert(rightStackLength > 0);
@@ -581,9 +583,8 @@ namespace Chisel.Core
             Debug.LogError("Unity Burst Compiler is broken");
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]        
-        int AddRowToOutput(NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
-                           ref int input, in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
+        int AddRowToOutput([NoAlias] NativeArray<CategoryStackNode> outputStack, ref int outputLength, int startSearchRowIndex,
+                           ref int input, [NoAlias] in CategoryRoutingRow routingRow, int nodeIndex, CSGOperationType operation)
         {
 #if USE_OPTIMIZATIONS
             for (int n = startSearchRowIndex; n < outputLength; n++)
@@ -609,8 +610,7 @@ namespace Chisel.Core
         }
 
         // Remap indices to new destinations, used when destination rows have been merged
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void RemapIndices(NativeArray<CategoryStackNode> stack, NativeArray<int> remap, int start, int last)
+        static void RemapIndices([NoAlias] NativeArray<CategoryStackNode> stack, [NoAlias] NativeArray<int> remap, int start, int last)
         {
 #if USE_OPTIMIZATIONS
             for (int i = start; i < last; i++)

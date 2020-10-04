@@ -11,12 +11,17 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct FindBrushPairsJob : IJob
+    unsafe struct FindBrushPairsJob : IJob
     {
+        // Read
         [NoAlias, ReadOnly] public int maxOrder;
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
-        [NoAlias, WriteOnly] public NativeList<BrushPair>                                   uniqueBrushPairs;
+
+        // Read (Re-allocate) / Write
+        [NativeDisableUnsafePtrRestriction]
+        [NoAlias, WriteOnly] public UnsafeList* uniqueBrushPairs;
+
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeBitArray usedLookup;
@@ -32,9 +37,9 @@ namespace Chisel.Core
             } else
                 usedLookup.Clear();
 
-            for (int b0 = 0; b0 < rebuildTreeBrushIndexOrders.Length; b0++)
+            for (int b0 = 0; b0 < allUpdateBrushIndexOrders.Length; b0++)
             {
-                var brushIndexOrder0        = rebuildTreeBrushIndexOrders[b0];
+                var brushIndexOrder0        = allUpdateBrushIndexOrders[b0];
                 int brushNodeOrder0         = brushIndexOrder0.nodeOrder;
 
                 var brushesTouchedByBrush   = brushesTouchedByBrushes[brushNodeOrder0];
@@ -45,6 +50,9 @@ namespace Chisel.Core
                 if (intersections.Length == 0)
                     continue;
 
+                if (uniqueBrushPairs->Capacity < intersections.Length)
+                    uniqueBrushPairs->Capacity = intersections.Length;
+
                 // Find all intersections between brushes
                 for (int i = 0; i < intersections.Length; i++)
                 {
@@ -52,7 +60,7 @@ namespace Chisel.Core
                     var brushIndexOrder1    = intersection.nodeIndexOrder;
                     int brushNodeOrder1     = brushIndexOrder1.nodeOrder;
 
-                    var brushPair       = new BrushPair
+                    var brushPair       = new BrushPair2
                     {
                         type             = intersection.type,
                         brushIndexOrder0 = brushIndexOrder0,
@@ -67,7 +75,7 @@ namespace Chisel.Core
                     if (!usedLookup.IsSet(testIndex))
                     {
                         usedLookup.Set(testIndex, true);
-                        uniqueBrushPairs.AddNoResize(brushPair);
+                        uniqueBrushPairs->AddNoResize(brushPair);
                     }
                 }
             }

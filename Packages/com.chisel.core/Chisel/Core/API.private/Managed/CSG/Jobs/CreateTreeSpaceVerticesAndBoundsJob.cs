@@ -19,15 +19,15 @@ namespace Chisel.Core
     struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      rebuildTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                             transformations;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>               brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
 
         // Write
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesArray;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
         
         unsafe static BlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref BlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
@@ -46,7 +46,7 @@ namespace Chisel.Core
         {
             var brushIndexOrder = rebuildTreeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
-            var transform       = transformations[brushNodeOrder];
+            var transform       = transformationCache[brushNodeOrder];
 
             var mesh            = brushMeshLookup[brushNodeOrder];
             if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
@@ -69,7 +69,7 @@ namespace Chisel.Core
 
             var bounds = new MinMaxAABB() { Min = min, Max = max };
             brushTreeSpaceBounds[brushNodeOrder] = bounds;
-            treeSpaceVerticesArray[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
+            treeSpaceVerticesCache[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
         }
     }
 }

@@ -296,7 +296,7 @@ namespace Chisel.Core
     {
         public const ushort     kMaxVertexCount = 65000;
         internal const uint     kHashTableSize  = 509u;
-        internal const float    kCellSize       = CSGConstants.kVertexEqualEpsilon * 2;
+        internal const float    kCellSize       = CSGConstants.kVertexEqualEpsilon * 2.5f;
 
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         internal AtomicSafetyHandle m_Safety;

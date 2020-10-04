@@ -12,12 +12,12 @@ namespace Chisel.Core
 {
     public struct PlanePair
     {
-        public float4 plane0;
-        public float4 plane1;
-        public float4 edgeVertex0;
-        public float4 edgeVertex1;
-        public int planeIndex0;
-        public int planeIndex1;
+        public float4   plane0;
+        public float4   plane1;
+        public float4   edgeVertex0;
+        public float4   edgeVertex1;
+        public int      planeIndex0;
+        public int      planeIndex1;
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -28,12 +28,12 @@ namespace Chisel.Core
         const float kNormalDotAlignEpsilon      = CSGConstants.kNormalDotAlignEpsilon;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BrushPair>                           uniqueBrushPairs;
-        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                 transformations;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>   brushMeshLookup;
+        [NoAlias, ReadOnly] public NativeArray<BrushPair2>                                  uniqueBrushPairs;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushPairIntersection>>.ParallelWriter intersectingBrushes;
+        [NoAlias, WriteOnly] public NativeStream.Writer                                     intersectingBrushesStream;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<int>       intersectingPlanes;
@@ -183,12 +183,16 @@ namespace Chisel.Core
             }
         }
 
-        public void Execute(int index)
+        BlobAssetReference<BrushPairIntersection> Create(int index)
         {
             if (index >= uniqueBrushPairs.Length)
-                return;
+                return BlobAssetReference<BrushPairIntersection>.Null;
 
             var brushPair           = uniqueBrushPairs[index];
+
+            if (brushPair.type == IntersectionType.InvalidValue)
+                return BlobAssetReference<BrushPairIntersection>.Null;
+
             var brushIndexOrder0    = brushPair.brushIndexOrder0;
             var brushIndexOrder1    = brushPair.brushIndexOrder1;
             int brushNodeOrder0     = brushIndexOrder0.nodeOrder;
@@ -202,20 +206,20 @@ namespace Chisel.Core
             if (type != IntersectionType.Intersection &&
                 type != IntersectionType.AInsideB &&
                 type != IntersectionType.BInsideA)
-                return;
+                return BlobAssetReference<BrushPairIntersection>.Null;
 
 
-            var transformations0 = transformations[brushNodeOrder0];
-            var transformations1 = transformations[brushNodeOrder1];
+            var transformations0 = transformationCache[brushNodeOrder0];
+            var transformations1 = transformationCache[brushNodeOrder1];
 
-            var node1ToNode0            = math.mul(transformations0.treeToNode, transformations1.nodeToTree);
-            var node0ToNode1            = math.mul(transformations1.treeToNode, transformations0.nodeToTree);
-            var inversedNode1ToNode0    = math.transpose(node0ToNode1);
-            var inversedNode0ToNode1    = math.transpose(node1ToNode0);
+            var node1ToNode0 = math.mul(transformations0.treeToNode, transformations1.nodeToTree);
+            var node0ToNode1 = math.mul(transformations1.treeToNode, transformations0.nodeToTree);
+            var inversedNode1ToNode0 = math.transpose(node0ToNode1);
+            var inversedNode0ToNode1 = math.transpose(node1ToNode0);
 
             ref var mesh0 = ref blobMesh0.Value;
             ref var mesh1 = ref blobMesh1.Value;
-            
+
             var builder = new BlobBuilder(Allocator.Temp, 2048);
             ref var root = ref builder.ConstructRoot<BrushPairIntersection>();
             root.type = type;
@@ -245,7 +249,7 @@ namespace Chisel.Core
                     }
                     //var intersectingPlanes = stackalloc int[mesh0.localPlanes.Length];
                     GetIntersectingPlanes(ref mesh0.localPlanes, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, intersectingPlanes, out int intersectingPlanesLength);
-                    if (intersectingPlanesLength == 0) { builder.Dispose(); return; }
+                    if (intersectingPlanesLength == 0) { builder.Dispose(); return BlobAssetReference<BrushPairIntersection>.Null; }
                     intersectingPlaneIndices0 = builder.Construct(ref brushIntersections[0].localSpacePlaneIndices0, intersectingPlanes, intersectingPlanesLength);
                 }
 
@@ -257,7 +261,7 @@ namespace Chisel.Core
                     }
                     //var intersectingPlanes = stackalloc int[mesh1.localPlanes.Length];
                     GetIntersectingPlanes(ref mesh1.localPlanes, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, intersectingPlanes, out int intersectingPlanesLength);
-                    if (intersectingPlanesLength == 0) { builder.Dispose(); return; }
+                    if (intersectingPlanesLength == 0) { builder.Dispose(); return BlobAssetReference<BrushPairIntersection>.Null; }
                     intersectingPlaneIndices1 = builder.Construct(ref brushIntersections[1].localSpacePlaneIndices0, intersectingPlanes, intersectingPlanesLength);
                 }
             } else
@@ -281,18 +285,18 @@ namespace Chisel.Core
             {
                 surfaceInfos0[i] = new SurfaceInfo
                 {
-                    basePlaneIndex      = (ushort)i,
-                    interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    nodeIndex           = brushIndexOrder0.nodeIndex
+                    basePlaneIndex = (ushort)i,
+                    interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside,
+                    //nodeIndex = brushIndexOrder0.nodeIndex
                 };
             }
             for (int i = 0; i < surfaceInfos1.Length; i++)
             {
                 surfaceInfos1[i] = new SurfaceInfo
                 {
-                    basePlaneIndex      = (ushort)i,
-                    interiorCategory    = (CategoryGroupIndex)CategoryIndex.Inside,
-                    nodeIndex           = brushIndexOrder1.nodeIndex
+                    basePlaneIndex = (ushort)i,
+                    interiorCategory = (CategoryGroupIndex)CategoryIndex.Inside,
+                    //nodeIndex = brushIndexOrder1.nodeIndex
                 };
             }
 
@@ -425,11 +429,11 @@ namespace Chisel.Core
 
                 for (int i1 = 0; i1 < intersectingPlaneIndices0.Length; i1++)
                 {
-                    var p1          = intersectingPlaneIndices0[i1];
+                    var p1 = intersectingPlaneIndices0[i1];
                     var localPlane1 = localSpacePlanes0[p1];
                     for (int i2 = 0; i2 < intersectingPlaneIndices1.Length; i2++)
                     {
-                        var p2          = intersectingPlaneIndices1[i2];
+                        var p2 = intersectingPlaneIndices1[i2];
                         var localPlane2 = localSpacePlanes1[p2];
                         if (math.abs(localPlane1.w - localPlane2.w) >= kPlaneWAlignEpsilon ||
                             math.dot(localPlane1.xyz, localPlane2.xyz) < kNormalDotAlignEpsilon)
@@ -474,7 +478,7 @@ namespace Chisel.Core
 
                 //var vertexIntersectionPlanes0       = stackalloc ushort[vertexIntersectionPlaneCount];
                 //var vertexIntersectionSegments0     = stackalloc int2[usedVertices0.Length];
-                var vertexIntersectionPlaneCount    = 0;
+                var vertexIntersectionPlaneCount = 0;
 
                 for (int i = 0; i < usedVertices0.Length; i++)
                 {
@@ -501,7 +505,7 @@ namespace Chisel.Core
                     var vertexIntersectionPlanes = builder.Allocate(ref brushIntersections[0].vertexIntersectionPlanes, 1);
                     vertexIntersectionPlanes[0] = 0;
                     var vertexIntersectionSegments = builder.Allocate(ref brushIntersections[0].vertexIntersectionSegments, usedVertices0.Length);
-                    for (int i = 0; i < vertexIntersectionSegments.Length;i++)
+                    for (int i = 0; i < vertexIntersectionSegments.Length; i++)
                         vertexIntersectionSegments[i] = int2.zero;
                 }
             }
@@ -522,7 +526,7 @@ namespace Chisel.Core
 
                 //var vertexIntersectionPlanes1       = stackalloc ushort[usedVertices1.Length * localSpacePlanes1Length];
                 //var vertexIntersectionSegments1     = stackalloc int2[usedVertices1.Length];
-                var vertexIntersectionPlaneCount    = 0;
+                var vertexIntersectionPlaneCount = 0;
 
                 for (int i = 0; i < usedVertices1.Length; i++)
                 {
@@ -557,8 +561,18 @@ namespace Chisel.Core
 
             var result = builder.CreateBlobAssetReference<BrushPairIntersection>(Allocator.TempJob);
             builder.Dispose();
+            return result;
+        }
 
-            intersectingBrushes.AddNoResize(result);
+        public void Execute(int index)
+        {
+            var finalBrushPairIntersection = Create(index);
+            //if (!finalBrushPairIntersection.IsCreated)
+            //    return;
+
+            intersectingBrushesStream.BeginForEachIndex(index);
+            intersectingBrushesStream.Write(finalBrushPairIntersection);
+            intersectingBrushesStream.EndForEachIndex();
         }
     }
 }

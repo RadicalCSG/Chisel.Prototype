@@ -508,7 +508,7 @@ namespace Chisel.Editors
         private void OnNodeHierarchyModified()
         {
             ResetGridBounds();
-            Repaint();
+            //Repaint();
         }
 
         private void OnGridModified()

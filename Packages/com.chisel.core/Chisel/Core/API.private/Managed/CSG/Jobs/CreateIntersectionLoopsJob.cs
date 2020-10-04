@@ -17,15 +17,16 @@ namespace Chisel.Core
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
-        // Read
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>                    brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>              treeSpaceVerticesArray;
-        
-        // Read Write
-        [NoAlias] public NativeArray<BlobAssetReference<BrushPairIntersection>>                             intersectingBrushes;
+        // Needed for count (forced & unused)
+        [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlanes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
+        
         // Write
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter    outputSurfaces;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;
@@ -576,13 +577,15 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            if (index >= intersectingBrushes.Length)
-                return;
-
+            intersectingBrushesStream.BeginForEachIndex(index);
             // Note: although is a BlobAssetReference, it only exists during a single frame and 
             //       its IndexOrder's are always correct
-            var intersectionAsset               = intersectingBrushes[index];
-            intersectingBrushes[index] = default;
+            var intersectionAsset = intersectingBrushesStream.Read<BlobAssetReference<BrushPairIntersection>>();
+            intersectingBrushesStream.EndForEachIndex();
+            if (!intersectionAsset.IsCreated)
+                return;
+
+
             ref var intersection                = ref intersectionAsset.Value;
             ref var brushPairIntersection0      = ref intersection.brushes[0];
             ref var brushPairIntersection1      = ref intersection.brushes[1];

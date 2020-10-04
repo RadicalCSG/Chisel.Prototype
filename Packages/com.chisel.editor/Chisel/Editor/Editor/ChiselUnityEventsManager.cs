@@ -130,7 +130,7 @@ namespace Chisel.Editors
         static void OnDuringSceneGUI(SceneView sceneView)
         {
             Profiler.BeginSample("OnDuringSceneGUI");
-            // Workaround to Unity stop redrawing sceneview after a second, which makes hovering over edge visualization stop working
+            // Workaround where Unity stops redrawing sceneview after a second, which makes hovering over edge visualization stop working
             if (Event.current.type == EventType.MouseMove)
                 sceneView.Repaint();
 
@@ -208,8 +208,9 @@ namespace Chisel.Editors
 
             Editors.ChiselManagedHierarchyView.RepaintAll();
             Editors.ChiselInternalHierarchyView.RepaintAll();
-            //SceneView.RepaintAll();
-            UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            
+            // THIS IS SLOW! DON'T DO THIS
+            //UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
         }
 
         private static void OnHierarchyReset()

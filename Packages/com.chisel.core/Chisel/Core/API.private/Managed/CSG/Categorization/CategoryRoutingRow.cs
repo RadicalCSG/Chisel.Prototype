@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Chisel.Core
 {
-    public enum CategoryGroupIndex : short
+    public enum CategoryGroupIndex : byte
     {
         First = 0,
         Invalid = 255
@@ -62,29 +62,29 @@ namespace Chisel.Core
 #endif
 
 #if HAVE_SELF_CATEGORIES
-        const short Invalid            = (short)CategoryGroupIndex.Invalid;
-        const short Inside             = (short)(CategoryGroupIndex)CategoryIndex.Inside;
-        const short Aligned            = (short)(CategoryGroupIndex)CategoryIndex.Aligned;
-        const short SelfAligned        = (short)(CategoryGroupIndex)CategoryIndex.SelfAligned;
-        const short SelfReverseAligned = (short)(CategoryGroupIndex)CategoryIndex.SelfReverseAligned;
-        const short ReverseAligned     = (short)(CategoryGroupIndex)CategoryIndex.ReverseAligned;
-        const short Outside            = (short)(CategoryGroupIndex)CategoryIndex.Outside;
+        const byte Invalid            = (byte)CategoryGroupIndex.Invalid;
+        const byte Inside             = (byte)(CategoryGroupIndex)CategoryIndex.Inside;
+        const byte Aligned            = (byte)(CategoryGroupIndex)CategoryIndex.Aligned;
+        const byte SelfAligned        = (byte)(CategoryGroupIndex)CategoryIndex.SelfAligned;
+        const byte SelfReverseAligned = (byte)(CategoryGroupIndex)CategoryIndex.SelfReverseAligned;
+        const byte ReverseAligned     = (byte)(CategoryGroupIndex)CategoryIndex.ReverseAligned;
+        const byte Outside            = (byte)(CategoryGroupIndex)CategoryIndex.Outside;
 
-        public static readonly CategoryRoutingRow invalid               = new CategoryRoutingRow(Invalid, Invalid, Invalid, Invalid, Invalid, Invalid);
-        public static readonly CategoryRoutingRow identity              = new CategoryRoutingRow(Inside, Aligned, SelfAligned, SelfReverseAligned, ReverseAligned, Outside);
+        public readonly static CategoryRoutingRow invalid               = new CategoryRoutingRow(Invalid, Invalid, Invalid, Invalid, Invalid, Invalid);
+        public readonly static CategoryRoutingRow identity              = new CategoryRoutingRow(Inside, Aligned, SelfAligned, SelfReverseAligned, ReverseAligned, Outside);
         public readonly static CategoryRoutingRow selfAligned           = new CategoryRoutingRow(SelfAligned, SelfAligned, SelfAligned, SelfAligned, SelfAligned, SelfAligned);
         public readonly static CategoryRoutingRow selfReverseAligned    = new CategoryRoutingRow(SelfReverseAligned, SelfReverseAligned, SelfReverseAligned, SelfReverseAligned, SelfReverseAligned, SelfReverseAligned);
         public readonly static CategoryRoutingRow outside               = new CategoryRoutingRow(Outside, Outside, Outside, Outside, Outside, Outside);
         public readonly static CategoryRoutingRow inside                = new CategoryRoutingRow(Inside, Inside, Inside, Inside, Inside, Inside);
 #else
-        const short Invalid            = (short)CategoryGroupIndex.Invalid;
-        const short Inside             = (short)(CategoryGroupIndex)CategoryIndex.Inside;
-        const short Aligned            = (short)(CategoryGroupIndex)CategoryIndex.Aligned;
-        const short ReverseAligned     = (short)(CategoryGroupIndex)CategoryIndex.ReverseAligned;
-        const short Outside            = (short)(CategoryGroupIndex)CategoryIndex.Outside;
+        const byte Invalid            = (byte)CategoryGroupIndex.Invalid;
+        const byte Inside             = (byte)(CategoryGroupIndex)CategoryIndex.Inside;
+        const byte Aligned            = (byte)(CategoryGroupIndex)CategoryIndex.Aligned;
+        const byte ReverseAligned     = (byte)(CategoryGroupIndex)CategoryIndex.ReverseAligned;
+        const byte Outside            = (byte)(CategoryGroupIndex)CategoryIndex.Outside;
 
-        public static readonly CategoryRoutingRow invalid               = new CategoryRoutingRow(Invalid, Invalid, Invalid, Invalid);
-        public static readonly CategoryRoutingRow identity              = new CategoryRoutingRow(Inside, Aligned, ReverseAligned, Outside);
+        public readonly static CategoryRoutingRow invalid               = new CategoryRoutingRow(Invalid, Invalid, Invalid, Invalid);
+        public readonly static CategoryRoutingRow identity              = new CategoryRoutingRow(Inside, Aligned, ReverseAligned, Outside);
         public readonly static CategoryRoutingRow selfAligned           = new CategoryRoutingRow(Aligned, Aligned, Aligned, Aligned);
         public readonly static CategoryRoutingRow selfReverseAligned    = new CategoryRoutingRow(ReverseAligned, ReverseAligned, ReverseAligned, ReverseAligned);
         public readonly static CategoryRoutingRow outside               = new CategoryRoutingRow(Outside, Outside, Outside, Outside);
@@ -124,12 +124,12 @@ namespace Chisel.Core
         IntArray   destination;
 #endif
 #else
-        fixed short destination[Length];
+        fixed byte destination[Length];
 #endif
 
         #region Operation tables            
 #if HAVE_SELF_CATEGORIES
-            public static readonly short[] kOperationTables = // NOTE: burst supports static readonly tables like this
+            public static readonly byte[] kOperationTables = // NOTE: burst supports static readonly tables like this
             {
                 // Additive set operation on polygons: output = (left-node || right-node)
                 // Defines final output from combination of categorization of left and right node
@@ -198,7 +198,7 @@ namespace Chisel.Core
             public const int OperationStride    = 6 * 6;
             public const int RowStride          = 6;
 #else
-        public readonly static short[] kOperationTables = // NOTE: burst supports static readonly tables like this
+        public readonly static byte[] kOperationTables = // NOTE: burst supports static readonly tables like this
             {
                 // Regular Operation Tables
                 // Additive set operation on polygons: output = (left-node || right-node)
@@ -296,7 +296,7 @@ namespace Chisel.Core
 #endregion
 
         
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CategoryRoutingRow(int operationIndex, CategoryIndex left, in CategoryRoutingRow right)
         {
 #if HAVE_SELF_CATEGORIES
@@ -311,14 +311,12 @@ namespace Chisel.Core
                 destination[(int)i] = kOperationTables[operationOffset + (row * RowStride) + column];
             }
 #else
-            unchecked
-            {
-                var operationOffset = operationIndex * OperationStride + ((int)left * RowStride);
-                destination[0] = kOperationTables[(int)(operationOffset + (int)right.destination[0])];
-                destination[1] = kOperationTables[(int)(operationOffset + (int)right.destination[1])];
-                destination[2] = kOperationTables[(int)(operationOffset + (int)right.destination[2])];
-                destination[3] = kOperationTables[(int)(operationOffset + (int)right.destination[3])];
-            }
+            
+            var operationOffset = operationIndex * OperationStride + ((int)left * RowStride);
+            destination[0] = kOperationTables[(int)(operationOffset + (int)right.destination[0])];
+            destination[1] = kOperationTables[(int)(operationOffset + (int)right.destination[1])];
+            destination[2] = kOperationTables[(int)(operationOffset + (int)right.destination[2])];
+            destination[3] = kOperationTables[(int)(operationOffset + (int)right.destination[3])];
 #endif
         }
 
@@ -334,49 +332,46 @@ namespace Chisel.Core
                 newRow.destination[(int)i] = (int)a[i] + offset;
             return newRow;
 #else
-            unchecked
-            {
-                var newRow = new CategoryRoutingRow();
-                newRow.destination[0] = (short)(a.destination[0] + offset);
-                newRow.destination[1] = (short)(a.destination[1] + offset);
-                newRow.destination[2] = (short)(a.destination[2] + offset);
-                newRow.destination[3] = (short)(a.destination[3] + offset);
-                return newRow;
-            }
+            var newRow = new CategoryRoutingRow();
+            newRow.destination[0] = (byte)(a.destination[0] + offset);
+            newRow.destination[1] = (byte)(a.destination[1] + offset);
+            newRow.destination[2] = (byte)(a.destination[2] + offset);
+            newRow.destination[3] = (byte)(a.destination[3] + offset);
+            return newRow;
 #endif
         }
 
 #if HAVE_SELF_CATEGORIES
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CategoryRoutingRow(CategoryGroupIndex inside, CategoryGroupIndex aligned, CategoryGroupIndex selfAligned, CategoryGroupIndex selfReverseAligned, CategoryGroupIndex reverseAligned, CategoryGroupIndex outside)
         {
 #if DEBUG_CATEGORIES
             destination = new IntArray();
 #endif
-            destination[(int)CategoryIndex.Inside]              = (short)inside;
-            destination[(int)CategoryIndex.Aligned]             = (short)aligned;
-            destination[(int)CategoryIndex.SelfAligned]         = (short)selfAligned;
-            destination[(int)CategoryIndex.SelfReverseAligned]  = (short)selfReverseAligned;
-            destination[(int)CategoryIndex.ReverseAligned]      = (short)reverseAligned;
-            destination[(int)CategoryIndex.Outside]             = (short)outside;
+            destination[(int)CategoryIndex.Inside]              = (byte)inside;
+            destination[(int)CategoryIndex.Aligned]             = (byte)aligned;
+            destination[(int)CategoryIndex.SelfAligned]         = (byte)selfAligned;
+            destination[(int)CategoryIndex.SelfReverseAligned]  = (byte)selfReverseAligned;
+            destination[(int)CategoryIndex.ReverseAligned]      = (byte)reverseAligned;
+            destination[(int)CategoryIndex.Outside]             = (byte)outside;
         }
         
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CategoryRoutingRow(CategoryGroupIndex value)
         {
 #if DEBUG_CATEGORIES
             destination = new IntArray();
 #endif
-            destination[(int)CategoryIndex.Inside]              = (short)value;
-            destination[(int)CategoryIndex.Aligned]             = (short)value;
-            destination[(int)CategoryIndex.SelfAligned]         = (short)value;
-            destination[(int)CategoryIndex.SelfReverseAligned]  = (short)value;
-            destination[(int)CategoryIndex.ReverseAligned]      = (short)value;
-            destination[(int)CategoryIndex.Outside]             = (short)value;
+            destination[(int)CategoryIndex.Inside]              = (byte)value;
+            destination[(int)CategoryIndex.Aligned]             = (byte)value;
+            destination[(int)CategoryIndex.SelfAligned]         = (byte)value;
+            destination[(int)CategoryIndex.SelfReverseAligned]  = (byte)value;
+            destination[(int)CategoryIndex.ReverseAligned]      = (byte)value;
+            destination[(int)CategoryIndex.Outside]             = (byte)value;
         }
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        CategoryRoutingRow(short inside, short aligned, short reverseAligned, short outside)
+        CategoryRoutingRow(byte inside, byte aligned, byte reverseAligned, byte outside)
         {
 #if HAVE_SELF_CATEGORIES
 #if DEBUG_CATEGORIES
@@ -387,13 +382,10 @@ namespace Chisel.Core
             destination[(int)CategoryIndex.ReverseAligned]      = reverseAligned;
             destination[(int)CategoryIndex.Outside]             = outside;
 #else
-            unchecked
-            {
-                destination[0] = inside;
-                destination[1] = aligned;
-                destination[2] = reverseAligned;
-                destination[3] = outside;
-            }
+            destination[0] = inside;
+            destination[1] = aligned;
+            destination[2] = reverseAligned;
+            destination[3] = outside;
 #endif
         }
 
@@ -404,18 +396,15 @@ namespace Chisel.Core
 #if DEBUG_CATEGORIES
             destination = new IntArray();
 #endif
-            destination[(int)CategoryIndex.Inside]              = (short)inside;
-            destination[(int)CategoryIndex.Aligned]             = (short)aligned;
-            destination[(int)CategoryIndex.ReverseAligned]      = (short)reverseAligned;
-            destination[(int)CategoryIndex.Outside]             = (short)outside;
+            destination[(int)CategoryIndex.Inside]              = (byte)inside;
+            destination[(int)CategoryIndex.Aligned]             = (byte)aligned;
+            destination[(int)CategoryIndex.ReverseAligned]      = (byte)reverseAligned;
+            destination[(int)CategoryIndex.Outside]             = (byte)outside;
 #else
-            unchecked
-            {
-                destination[0] = (short)inside;
-                destination[1] = (short)aligned;
-                destination[2] = (short)reverseAligned;
-                destination[3] = (short)outside;
-            }
+            destination[0] = (byte)inside;
+            destination[1] = (byte)aligned;
+            destination[2] = (byte)reverseAligned;
+            destination[3] = (byte)outside;
 #endif
         }
 
@@ -426,18 +415,15 @@ namespace Chisel.Core
 #if DEBUG_CATEGORIES
             destination = new IntArray();
 #endif
-            destination[(int)CategoryIndex.Inside]              = (short)value;
-            destination[(int)CategoryIndex.Aligned]             = (short)value;
-            destination[(int)CategoryIndex.ReverseAligned]      = (short)value;
-            destination[(int)CategoryIndex.Outside]             = (short)value;
+            destination[(int)CategoryIndex.Inside]              = (byte)value;
+            destination[(int)CategoryIndex.Aligned]             = (byte)value;
+            destination[(int)CategoryIndex.ReverseAligned]      = (byte)value;
+            destination[(int)CategoryIndex.Outside]             = (byte)value;
 #else
-            unchecked
-            {
-                destination[0] = (short)value;
-                destination[1] = (short)value;
-                destination[2] = (short)value;
-                destination[3] = (short)value;
-            }
+            destination[0] = (byte)value;
+            destination[1] = (byte)value;
+            destination[2] = (byte)value;
+            destination[3] = (byte)value;
 #endif
         }
 #endif
@@ -482,29 +468,30 @@ namespace Chisel.Core
                     destination[3] == other.destination[3]);
 #endif
         }
-
+        /*
+        // Can't use this b/c Burst bug w/ using an indexer with an enum as index
         public CategoryGroupIndex this[CategoryIndex index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { unchecked { return (CategoryGroupIndex)destination[(int)index]; } }
+            get { return (CategoryGroupIndex)destination[(int)index]; } 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { unchecked { destination[(int)index] = (short)value; } }
+            set { destination[(int)index] = (byte)value; } 
         }
 
         public CategoryGroupIndex this[CategoryGroupIndex index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { unchecked { return (CategoryGroupIndex)destination[(int)index]; } }
+            get { return (CategoryGroupIndex)destination[(int)index]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { unchecked { destination[(int)index] = (short)value; } }
-        }
+            set { destination[(int)index] = (byte)value; } 
+        }*/
 
         public CategoryGroupIndex this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { unchecked { return (CategoryGroupIndex)destination[index]; } }
+            get { return (CategoryGroupIndex)destination[index]; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { unchecked { destination[index] = (short)value; } }
+            set { destination[index] = (byte)value; }
         }
     }
 }
