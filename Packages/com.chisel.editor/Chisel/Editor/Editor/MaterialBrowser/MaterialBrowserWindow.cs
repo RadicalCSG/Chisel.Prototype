@@ -20,6 +20,38 @@ namespace Chisel.Editors
 {
     internal class MaterialBrowserWindow : EditorWindow
     {
+        public static MaterialBrowserCache CachedTiles
+        {
+            get
+            {
+                if( m_CachedTiles == null )
+                {
+                    Debug.Log( $"No thumbnail cache loaded, finding one." );
+                    string[] foundCaches = AssetDatabase.FindAssets( "t:MaterialBrowserCache" );
+
+                    if( foundCaches.Length > 0 ) { m_CachedTiles = AssetDatabase.LoadAssetAtPath<MaterialBrowserCache>( AssetDatabase.GUIDToAssetPath( foundCaches[0] ) ); }
+
+                    if( m_CachedTiles != null )
+                        Debug.Log( $"Loaded thumbnail cache [{m_CachedTiles.name}]" );
+                    else
+                    {
+                        Debug.Log( $"Could not find thumbnail cache, creating one." );
+
+                        MaterialBrowserCache temp = ScriptableObject.CreateInstance<MaterialBrowserCache>();
+                        AssetDatabase.CreateAsset( temp, $"Assets/MaterialBrowserCache.asset" );
+                        EditorUtility.SetDirty( temp );
+
+                        AssetDatabase.SaveAssets();
+                        AssetDatabase.Refresh();
+
+                        m_CachedTiles = temp;
+                    }
+                }
+
+                return m_CachedTiles;
+            }
+        }
+
         private Vector2 m_PreviewsScrollPosition = Vector2.zero;
         private Vector2 m_LabelsScrollPosition   = Vector2.zero;
 
@@ -30,11 +62,15 @@ namespace Chisel.Editors
         private static List<MaterialBrowserTile> m_Materials = new List<MaterialBrowserTile>();
         private static List<string>              m_Labels    = new List<string>();
 
+        private static MaterialBrowserCache m_CachedTiles = null;
+
         private const string PREVIEW_SIZE_PREF_NAME = "chisel_matbrowser_pviewSize";
 
         [MenuItem( "Window/Chisel/Material Browser" )]
         private static void Init()
         {
+            Debug.Log( $"Thumbnail cache: {CachedTiles.name}" );
+
             MaterialBrowserWindow window = EditorWindow.GetWindow<MaterialBrowserWindow>( false, "Material Browser" );
             window.maxSize = new Vector2( 1920, 2000 );
             window.minSize = new Vector2( 200,  100 );
@@ -98,13 +134,14 @@ namespace Chisel.Editors
                     m_LabelsScrollPosition = lScope.scrollPosition;
                     GUILayout.BeginVertical( GUILayout.ExpandHeight( true ), GUILayout.ExpandWidth( true ) );
                     {
-                        foreach( string label in m_Labels )
+                        for( int i = 0; i < m_Labels.Count; i++ )
                         {
-                            if( GUILayout.Button( label ) )
-                            {
-                                m_LabelSearchText = label;
-                                GetMaterials( true );
-                            }
+                            if( m_Labels != null )
+                                if( GUILayout.Button( m_Labels[i] ) )
+                                {
+                                    m_LabelSearchText = m_Labels[i];
+                                    GetMaterials( true );
+                                }
                         }
                     }
                     GUILayout.EndVertical();
@@ -151,7 +188,9 @@ namespace Chisel.Editors
             // bottom toolbar
             using( GUILayout.HorizontalScope toolbarScope = new GUILayout.HorizontalScope( EditorStyles.toolbar, GUILayout.ExpandWidth( true ) ) )
             {
+                int count = ( m_Labels.Count > 0 ) ? m_Labels.Count : 0;
                 GUILayout.Label( $"Materials: {m_Materials.Count}" );
+                GUILayout.Label( $"Labels: {count}" );
 
                 GUILayout.FlexibleSpace();
 

@@ -37,6 +37,8 @@ namespace Chisel.Editors
                 if( data.Length > 0 )
                 {
                     temp.LoadImage( Convert.FromBase64String( data ) );
+                    temp.Apply();
+
                     return temp;
                 }
 
