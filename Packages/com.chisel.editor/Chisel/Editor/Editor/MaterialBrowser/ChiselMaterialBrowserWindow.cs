@@ -29,7 +29,7 @@ namespace Chisel.Editors
         private static string m_LabelSearchText = string.Empty;
 
         private static List<ChiselMaterialBrowserTile> m_Materials = new List<ChiselMaterialBrowserTile>();
-        private static List<string>              m_Labels    = new List<string>();
+        private static List<string>                    m_Labels    = new List<string>();
 
         private static ChiselMaterialBrowserCache m_CachedTiles = null;
 
@@ -99,31 +99,12 @@ namespace Chisel.Editors
 
             // header bar
             GUILayout.BeginHorizontal();
-            GUILayout.Label( "Asset Labels (used)", EditorStyles.toolbarButton, GUILayout.Width( 120 ) );
             GUILayout.Label( "",                    EditorStyles.toolbarButton, GUILayout.ExpandWidth( true ) );
+            GUILayout.Label( "Asset Labels (used)", EditorStyles.toolbarButton, GUILayout.Width( 120 ) );
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             {
-                // tag bar
-                using( GUILayout.ScrollViewScope lScope = new GUILayout.ScrollViewScope( m_LabelsScrollPosition, false, false, GUILayout.ExpandHeight( true ), GUILayout.Width( 120 ) ) )
-                {
-                    m_LabelsScrollPosition = lScope.scrollPosition;
-                    GUILayout.BeginVertical( GUILayout.ExpandHeight( true ), GUILayout.ExpandWidth( true ) );
-                    {
-                        for( int i = 0; i < m_Labels.Count; i++ )
-                        {
-                            if( m_Labels != null )
-                                if( GUILayout.Button( m_Labels[i] ) )
-                                {
-                                    m_LabelSearchText = m_Labels[i];
-                                    GetMaterials( true );
-                                }
-                        }
-                    }
-                    GUILayout.EndVertical();
-                }
-
                 // previews area
                 GUILayout.BeginVertical( "GameViewBackground" );
                 {
@@ -154,6 +135,25 @@ namespace Chisel.Editors
                     }
                 }
                 GUILayout.EndVertical(); // previews area
+
+                // tag bar
+                using( GUILayout.ScrollViewScope lScope = new GUILayout.ScrollViewScope( m_LabelsScrollPosition, false, false, GUILayout.ExpandHeight( true ), GUILayout.Width( 120 ) ) )
+                {
+                    m_LabelsScrollPosition = lScope.scrollPosition;
+                    GUILayout.BeginVertical( GUILayout.ExpandHeight( true ), GUILayout.ExpandWidth( true ) );
+                    {
+                        for( int i = 0; i < m_Labels.Count; i++ )
+                        {
+                            if( m_Labels != null )
+                                if( GUILayout.Button( m_Labels[i] ) )
+                                {
+                                    m_LabelSearchText = m_Labels[i];
+                                    GetMaterials( true );
+                                }
+                        }
+                    }
+                    GUILayout.EndVertical();
+                }
             }
             GUILayout.EndHorizontal(); // tag & previews area
 
