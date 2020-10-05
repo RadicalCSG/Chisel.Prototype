@@ -1,3 +1,12 @@
+/* * * * * * * * * * * * * * * * * * * * * *
+Chisel.Editors.ChiselMaterialBrowserCache.cs
+
+License: MIT (https://tldrlegal.com/license/mit-license)
+Author: Daniel Cornelius
+
+$TODO: Do we want to filter by label, too? it would allow user-ignored materials.
+* * * * * * * * * * * * * * * * * * * * * */
+
 namespace Chisel.Editors
 {
     internal static class ChiselMaterialBrowserUtilities

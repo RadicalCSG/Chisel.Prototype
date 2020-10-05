@@ -6,7 +6,6 @@ Author: Daniel Cornelius
 
 $TODO: Optimize away all the GUILayout logic
 $TODO: Implement culling for tiles not visible (hide them if they arent within the viewable window area)
-$TODO: Do we want to filter by label, too? it would allow user-ignored materials.
 $TODO: Optimize optimize optimize
 
 * * * * * * * * * * * * * * * * * * * * * */
