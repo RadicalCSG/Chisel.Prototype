@@ -372,7 +372,8 @@ namespace Chisel.Components
 
         static bool[] meshUpdated = null;
 
-        static List<ChiselColliderObjects> sColliderObjects = new List<ChiselColliderObjects>();
+        static readonly List<ChiselColliderObjects> s_ColliderObjects = new List<ChiselColliderObjects>();
+        static readonly List<ChiselRenderObjectUpdate> s_RenderUpdates = new List<ChiselRenderObjectUpdate>();
 
         public void Update(ChiselModel model, GameObject parentGameObject, VertexBufferContents vertexBufferContents)
         {
@@ -450,6 +451,8 @@ namespace Chisel.Components
                 Array.Clear(meshUpdated, 0, meshUpdated.Length);
                 Profiler.EndSample();
 
+                s_RenderUpdates.Clear();
+
                 int colliderCount = 0;
                 for (int i = 0; i < vertexBufferContents.subMeshSections.Length; i++)
                 {
@@ -457,8 +460,6 @@ namespace Chisel.Components
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.None)
                     {
                         int helperIndex = Array.IndexOf(kGeneratedDebugRendererFlags, (subMeshSection.meshQuery.LayerQuery, subMeshSection.meshQuery.LayerQueryMask));
-                        //Debug.Log($"helperIndex (query: {subMeshSection.meshQuery.LayerQuery}, mask: {subMeshSection.meshQuery.LayerQueryMask})");
-
                         if (helperIndex == -1)
                         {
                             Debug.Assert(false, $"Invalid helper query used (query: {subMeshSection.meshQuery.LayerQuery}, mask: {subMeshSection.meshQuery.LayerQueryMask})");
@@ -466,23 +467,47 @@ namespace Chisel.Components
                         }
 
                         // Group by all meshDescriptions with same query
-                        Profiler.BeginSample("Update");
                         if (!debugHelpers[helperIndex].invalid)
-                            debugHelpers[helperIndex].Update(model, gameObjectState, ref vertexBufferContents, i, materialOverride: ChiselMaterialManager.HelperMaterials[helperIndex]);
-                        meshUpdated[helperIndex] = true;
-                        Profiler.EndSample();
+                        {
+                            if (vertexBufferContents.IsEmpty(i))
+                            {
+                                debugHelpers[helperIndex].Clear(model, gameObjectState);
+                            } else
+                            {
+                                s_RenderUpdates.Add(new ChiselRenderObjectUpdate
+                                {
+                                    contentsIndex = i,
+                                    materialOverride = ChiselMaterialManager.HelperMaterials[helperIndex],
+                                    instance = debugHelpers[helperIndex]
+                                });
+                            }
+                            meshUpdated[helperIndex] = true;
+                        }
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                     {
                         var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
-                        // Group by all meshDescriptions with same query
-                        Profiler.BeginSample("Update");
-                        renderables[renderIndex].Update(model, gameObjectState, ref vertexBufferContents, i);
-                        Profiler.EndSample();
+                        if (vertexBufferContents.IsEmpty(i))
+                        {
+                            renderables[renderIndex].Clear(model, gameObjectState);
+                        } else
+                        {
+                            // Group by all meshDescriptions with same query
+                            s_RenderUpdates.Add(new ChiselRenderObjectUpdate
+                            {
+                                contentsIndex = i,
+                                materialOverride = null,
+                                instance = renderables[renderIndex]
+                            });
+                        }
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                         colliderCount++;
                 }
+
+                Profiler.BeginSample("Update");
+                ChiselRenderObjects.Update(model, gameObjectState, s_RenderUpdates, ref vertexBufferContents);
+                Profiler.EndSample();
 
                 Profiler.BeginSample("debugHelpers.Clear");
                 for (int helperIndex = 0; helperIndex < debugHelpers.Length; helperIndex++)
@@ -495,11 +520,11 @@ namespace Chisel.Components
                 Profiler.EndSample();
 
                 Profiler.BeginSample("sColliderObjects.Clear");
-                sColliderObjects.Clear();
-                if (sColliderObjects.Capacity < colliderCount)
-                    sColliderObjects.Capacity = colliderCount;
+                s_ColliderObjects.Clear();
+                if (s_ColliderObjects.Capacity < colliderCount)
+                    s_ColliderObjects.Capacity = colliderCount;
                 for (int i = 0; i < colliderCount; i++)
-                    sColliderObjects.Add(null);
+                    s_ColliderObjects.Add(null);
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Update.Colliders");
@@ -520,18 +545,18 @@ namespace Chisel.Components
                         if (colliders[j].surfaceParameter != surfaceParameter)
                             continue;
 
-                        sColliderObjects[colliderIndex] = colliders[j];
+                        s_ColliderObjects[colliderIndex] = colliders[j];
                         colliders[j] = null;
                         break;
                     }
 
                     Profiler.BeginSample("Create.Colliders");
-                    if (sColliderObjects[colliderIndex] == null)
-                        sColliderObjects[colliderIndex] = ChiselColliderObjects.Create(colliderContainer, surfaceParameter);
+                    if (s_ColliderObjects[colliderIndex] == null)
+                        s_ColliderObjects[colliderIndex] = ChiselColliderObjects.Create(colliderContainer, surfaceParameter);
                     Profiler.EndSample();
 
                     Profiler.BeginSample("DoUpdate.Colliders");
-                    sColliderObjects[colliderIndex].Update(model, ref vertexBufferContents, i);
+                    s_ColliderObjects[colliderIndex].Update(model, ref vertexBufferContents, i);
                     Profiler.EndSample();
                     colliderIndex++;
                 }
@@ -543,10 +568,10 @@ namespace Chisel.Components
                 }
                 Profiler.EndSample();
                 Profiler.BeginSample("Assign.Colliders");
-                if (colliders.Length != sColliderObjects.Count)
-                    colliders = new ChiselColliderObjects[sColliderObjects.Count];
-                for (int i = 0; i < sColliderObjects.Count; i++)
-                    colliders[i] = sColliderObjects[i];
+                if (colliders.Length != s_ColliderObjects.Count)
+                    colliders = new ChiselColliderObjects[s_ColliderObjects.Count];
+                for (int i = 0; i < s_ColliderObjects.Count; i++)
+                    colliders[i] = s_ColliderObjects[i];
                 Profiler.EndSample();
                 Profiler.EndSample();
             }

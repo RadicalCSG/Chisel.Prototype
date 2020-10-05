@@ -77,9 +77,11 @@ namespace Chisel.Core
                     intersections.Add(pair);
                 }
             }
-            intersections.Sort(new ListComparer());
-            
             brushIntersectionsWith->Clear();
+            if (intersections.Length == 0)
+                return;
+
+            intersections.Sort(new ListComparer());           
 
             var currentPair = intersections[0];
             int previousOrder = currentPair.brushNodeOrder0;
