@@ -57,7 +57,7 @@ namespace Chisel.Editors
         }
 
         // $TODO: Use GUI instead of GUILayout
-        public void Draw( RectOffset offset )
+        public void Draw( Rect offset )
         {
             //if(m_Preview == null) Debug.LogError( $"Preview thumbnail [{materialName}] null" );
 
@@ -65,7 +65,7 @@ namespace Chisel.Editors
             {
                 GUIContent previewContent = new GUIContent( Preview, $"{materialName}\nIn: [{path}]" );
 
-                GUILayout.Box( previewContent, GUILayout.Height( offset.top ), GUILayout.Width( offset.bottom ) );
+                GUILayout.Box( previewContent, GUILayout.Height( offset.height ), GUILayout.Width( offset.width ) );
             }
         }
     }

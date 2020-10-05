@@ -125,7 +125,7 @@ namespace Chisel.Editors
                             {
                                 if( idx == m_Materials.Count ) break;
 
-                                m_Materials[idx].Draw( new RectOffset( 0, 0, m_PreviewSize, m_PreviewSize ) );
+                                m_Materials[idx].Draw( new Rect( 0, 0, m_PreviewSize, m_PreviewSize ) );
 
                                 idx++;
                             }
