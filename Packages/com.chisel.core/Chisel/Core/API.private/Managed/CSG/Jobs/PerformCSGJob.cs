@@ -30,27 +30,26 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<EdgeCategory> categories1;
-        [NativeDisableContainerSafetyRestriction] NativeArray<EdgeCategory> categories2;
-        [NativeDisableContainerSafetyRestriction] NativeArray<Edge>         outEdges;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>          intersectedHoleIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<IndexSurfaceInfo> intersectionSurfaceInfo;
-        [NativeDisableContainerSafetyRestriction] NativeBitArray            destroyedEdges;
-        
-        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  allInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  intersectionSurfaceInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<IndexSurfaceInfo>  basePolygonSurfaceInfos;
-        [NativeDisableContainerSafetyRestriction] NativeList<float4>        alltreeSpacePlanes;
-        [NativeDisableContainerSafetyRestriction] NativeList<LoopSegment>   allSegments;
-        [NativeDisableContainerSafetyRestriction] NativeList<Edge>          allCombinedEdges;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>      holeIndices;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<int>      surfaceLoopIndices;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     allEdges;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionLoops;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     basePolygonEdges;
-        [NativeDisableContainerSafetyRestriction] HashedVertices            hashedTreeSpaceVertices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<ushort>       indexRemap;
-        [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     intersectionEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<EdgeCategory>     categories1;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<EdgeCategory>     categories2;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<Edge>             outEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<int>              intersectedHoleIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<IndexSurfaceInfo> intersectionSurfaceInfo;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeBitArray                destroyedEdges;        
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<IndexSurfaceInfo>  allInfos;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<IndexSurfaceInfo>  intersectionSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<IndexSurfaceInfo>  basePolygonSurfaceInfos;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<float4>            alltreeSpacePlanes;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<LoopSegment>       allSegments;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<Edge>              allCombinedEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<int>          holeIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<int>          surfaceLoopIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         allEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionLoops;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         basePolygonEdges;
+        [NativeDisableContainerSafetyRestriction, NoAlias] HashedVertices                hashedTreeSpaceVertices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<ushort>           indexRemap;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeListArray<Edge>         intersectionEdges;
 
         [BurstDiscard]
         private static void NotUniqueEdgeException() 

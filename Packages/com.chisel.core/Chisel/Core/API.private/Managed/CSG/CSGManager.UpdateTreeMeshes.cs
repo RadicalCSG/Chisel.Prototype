@@ -378,10 +378,25 @@ namespace Chisel.Core
         static int2[] s_RemapOldOrderToNewOrder;
 
 
-        static JobHandle CombineDependencies(params JobHandle[] handles)
+        static JobHandle CombineDependencies(JobHandle handle0) { return handle0; }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1) { return JobHandle.CombineDependencies(handle0, handle1); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2) { return JobHandle.CombineDependencies(handle0, handle1, handle2); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3) { return JobHandle.CombineDependencies(JobHandle.CombineDependencies(handle0, handle1, handle2), handle3 ); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3, JobHandle handle4) { return JobHandle.CombineDependencies(JobHandle.CombineDependencies(handle0, handle1, handle2), JobHandle.CombineDependencies(handle3, handle4)); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3, JobHandle handle4, JobHandle handle5) { return JobHandle.CombineDependencies(JobHandle.CombineDependencies(handle0, handle1, handle2), JobHandle.CombineDependencies(handle3, handle4, handle5)); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3, JobHandle handle4, JobHandle handle5, JobHandle handle6) { return JobHandle.CombineDependencies(JobHandle.CombineDependencies(handle0, handle1, handle2), JobHandle.CombineDependencies(handle3, handle4, handle5), handle6); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3, JobHandle handle4, JobHandle handle5, JobHandle handle6, JobHandle handle7) { return JobHandle.CombineDependencies(JobHandle.CombineDependencies(handle0, handle1, handle2), JobHandle.CombineDependencies(handle3, handle4, handle5), JobHandle.CombineDependencies(handle6, handle7)); }
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3, JobHandle handle4, JobHandle handle5, JobHandle handle6, JobHandle handle7, JobHandle handle8) { return JobHandle.CombineDependencies( JobHandle.CombineDependencies(handle0, handle1, handle2), JobHandle.CombineDependencies(handle3, handle4, handle5), JobHandle.CombineDependencies(handle6, handle7, handle8)); }
+        
+        static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2, JobHandle handle3,
+                                             JobHandle handle4, JobHandle handle5, JobHandle handle6, JobHandle handle7, JobHandle handle8, params JobHandle[] handles)
         {
-            JobHandle handle = handles[0];
-            for (int i = 1; i < handles.Length; i++)
+            JobHandle handle = JobHandle.CombineDependencies(
+                                    JobHandle.CombineDependencies(handle0, handle1, handle2),
+                                    JobHandle.CombineDependencies(handle3, handle4, handle5),
+                                    JobHandle.CombineDependencies(handle6, handle7, handle8)
+                                );
+            for (int i = 0; i < handles.Length; i++)
                 handle = JobHandle.CombineDependencies(handle, handles[i]);
             return handle;
         }
@@ -2165,7 +2180,7 @@ namespace Chisel.Core
                             uv0Array            = treeUpdate.vertexBufferContents.uv0,
                             positionsArray      = treeUpdate.vertexBufferContents.positions,
                             indicesArray        = treeUpdate.vertexBufferContents.indices,
-                            brushIndicesArray   = treeUpdate.vertexBufferContents.brushIndices,
+                            brushIndicesArray   = treeUpdate.vertexBufferContents.brushIndices
                         };
                         treeUpdate.fillVertexBuffersJobHandle = generateVertexBuffersJob.Schedule(treeUpdate.vertexBufferContents.subMeshSections, 1, dependencies);
                         //treeUpdate.fillVertexBuffersJobHandle.Complete();

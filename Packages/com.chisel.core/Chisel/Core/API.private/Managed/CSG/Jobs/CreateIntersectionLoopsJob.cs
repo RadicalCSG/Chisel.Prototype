@@ -13,7 +13,7 @@ using UnityEngine;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateIntersectionLoopsJob : IJobParallelFor
+    unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
@@ -412,15 +412,15 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void GenerateLoop(IndexOrder                        brushIndexOrder0,
-                          IndexOrder                        brushIndexOrder1,
-                          bool                              invertedTransform,
-                          ref BlobArray<SurfaceInfo>        surfaceInfos,
-                          ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
-                          NativeArray<PlaneVertexIndexPair> foundIndices0,
-                          ref int                           foundIndices0Length,
-                          ref HashedVertices                hashedTreeSpaceVertices,
-                          NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
+        void GenerateLoop(IndexOrder brushIndexOrder0,
+                          IndexOrder brushIndexOrder1,
+                          bool       invertedTransform,
+                          [NoAlias] ref BlobArray<SurfaceInfo>        surfaceInfos,
+                          [NoAlias] ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
+                          [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
+                          [NoAlias] ref int                           foundIndices0Length,
+                          [NoAlias] ref HashedVertices                hashedTreeSpaceVertices,
+                          [NoAlias] NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
             for (int i = 0; i < foundIndices0Length - 1; i++)

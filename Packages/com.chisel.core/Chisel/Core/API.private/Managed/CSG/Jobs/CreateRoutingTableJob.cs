@@ -27,13 +27,13 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeBitArray                    combineUsedIndices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  combineIndexRemap;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>                   routingSteps;
-        [NativeDisableContainerSafetyRestriction] NativeArray<RoutingLookup>        routingLookups;
-        [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    routingTable;
-        [NativeDisableContainerSafetyRestriction] NativeArray<CategoryStackNode>    tempStackArray;
-        [NativeDisableContainerSafetyRestriction] NativeList<QueuedEvent>           queuedEvents;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeBitArray                    combineUsedIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<int>                  combineIndexRemap;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<int>                   routingSteps;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<RoutingLookup>        routingLookups;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>    routingTable;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>    tempStackArray;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<QueuedEvent>           queuedEvents;
         
 
         const int kMaxRoutesPerNode = 16; // TODO: figure out the actual possible theoretical maximum
