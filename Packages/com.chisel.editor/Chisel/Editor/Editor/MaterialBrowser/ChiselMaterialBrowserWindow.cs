@@ -1,5 +1,5 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-Chisel.Editors.MaterialBrowserWindow.cs
+Chisel.Editors.ChiselMaterialBrowserWindow.cs
 
 License: MIT (https://tldrlegal.com/license/mit-license)
 Author: Daniel Cornelius
@@ -7,50 +7,20 @@ Author: Daniel Cornelius
 $TODO: Optimize away all the GUILayout logic
 $TODO: Implement culling for tiles not visible (hide them if they arent within the viewable window area)
 $TODO: Do we want to filter by label, too? it would allow user-ignored materials.
-$TODO: Implement preview caching
 $TODO: Optimize optimize optimize
 
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 namespace Chisel.Editors
 {
-    internal class MaterialBrowserWindow : EditorWindow
+    internal class ChiselMaterialBrowserWindow : EditorWindow
     {
-        public static MaterialBrowserCache CachedTiles
-        {
-            get
-            {
-                if( m_CachedTiles == null )
-                {
-                    Debug.Log( $"No thumbnail cache loaded, finding one." );
-                    string[] foundCaches = AssetDatabase.FindAssets( "t:MaterialBrowserCache" );
-
-                    if( foundCaches.Length > 0 ) { m_CachedTiles = AssetDatabase.LoadAssetAtPath<MaterialBrowserCache>( AssetDatabase.GUIDToAssetPath( foundCaches[0] ) ); }
-
-                    if( m_CachedTiles != null )
-                        Debug.Log( $"Loaded thumbnail cache [{m_CachedTiles.name}]" );
-                    else
-                    {
-                        Debug.Log( $"Could not find thumbnail cache, creating one." );
-
-                        MaterialBrowserCache temp = ScriptableObject.CreateInstance<MaterialBrowserCache>();
-                        AssetDatabase.CreateAsset( temp, $"Assets/MaterialBrowserCache.asset" );
-                        EditorUtility.SetDirty( temp );
-
-                        AssetDatabase.SaveAssets();
-                        AssetDatabase.Refresh();
-
-                        m_CachedTiles = temp;
-                    }
-                }
-
-                return m_CachedTiles;
-            }
-        }
+        public static ChiselMaterialBrowserCache CachedTiles => m_CachedTiles;
 
         private Vector2 m_PreviewsScrollPosition = Vector2.zero;
         private Vector2 m_LabelsScrollPosition   = Vector2.zero;
@@ -59,25 +29,33 @@ namespace Chisel.Editors
         private static string m_SearchFieldText = string.Empty;
         private static string m_LabelSearchText = string.Empty;
 
-        private static List<MaterialBrowserTile> m_Materials = new List<MaterialBrowserTile>();
+        private static List<ChiselMaterialBrowserTile> m_Materials = new List<ChiselMaterialBrowserTile>();
         private static List<string>              m_Labels    = new List<string>();
 
-        private static MaterialBrowserCache m_CachedTiles = null;
+        private static ChiselMaterialBrowserCache m_CachedTiles = null;
 
         private const string PREVIEW_SIZE_PREF_NAME = "chisel_matbrowser_pviewSize";
 
         [MenuItem( "Window/Chisel/Material Browser" )]
         private static void Init()
         {
-            Debug.Log( $"Thumbnail cache: {CachedTiles.name}" );
+            InitCache();
+            GetMaterials();
 
-            MaterialBrowserWindow window = EditorWindow.GetWindow<MaterialBrowserWindow>( false, "Material Browser" );
+            ChiselMaterialBrowserWindow window = EditorWindow.GetWindow<ChiselMaterialBrowserWindow>( false, "Material Browser" );
             window.maxSize = new Vector2( 1920, 2000 );
             window.minSize = new Vector2( 200,  100 );
 
             m_PreviewSize = EditorPrefs.GetInt( PREVIEW_SIZE_PREF_NAME, 128 );
 
-            GetMaterials();
+            //Debug.Log( $"Thumbnail cache: [{CachedTiles.name}], Number of entries: [{CachedTiles.NumEntries}]" );
+        }
+
+        private static void InitCache()
+        {
+            m_CachedTiles ??= ChiselMaterialBrowserCache.Load();
+
+            Debug.Log( $"Thumbnail cache: [{CachedTiles.Name}], Number of entries: [{CachedTiles.NumEntries}]" );
         }
 
         private void OnEnable()
@@ -167,12 +145,7 @@ namespace Chisel.Editors
                             {
                                 if( idx == m_Materials.Count ) break;
 
-                                if( m_Materials[idx].Preview != null )
-                                {
-                                    GUIContent previewContent = new GUIContent( m_Materials[idx].Preview, $"{m_Materials[idx].materialName}\nIn: [{m_Materials[idx].path}]" );
-
-                                    if( GUILayout.Button( previewContent, GUILayout.Height( m_PreviewSize ), GUILayout.Width( m_PreviewSize ) ) ) {}
-                                }
+                                m_Materials[idx].Draw( new RectOffset( 0, 0, m_PreviewSize, m_PreviewSize ) );
 
                                 idx++;
                             }
@@ -210,8 +183,14 @@ namespace Chisel.Editors
         // and then adds them to the list of materials to be used in this window
         private static void GetMaterials( bool usingLabel = false )
         {
+            if( m_CachedTiles == null )
+                InitCache();
+
+            ChiselMaterialThumbnailRenderer.CancelAll();
+            AssetPreview.SetPreviewTextureCacheSize( 2000 );
+
             m_Materials.Clear();
-            m_Labels.Clear();
+            //m_Labels.Clear();
 
             // exclude the label search tag if we arent searching for a specific label right now
             string search = usingLabel ? $"l:{m_LabelSearchText} {m_SearchFieldText}" : $"{m_SearchFieldText}";
@@ -221,7 +200,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( var id in guids )
             {
-                MaterialBrowserTile browserTile = new MaterialBrowserTile( id );
+                ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id );
 
                 // add any used labels we arent currently storing
                 foreach( string label in browserTile.labels )
@@ -231,68 +210,14 @@ namespace Chisel.Editors
                 }
 
                 // check each entry against a filter to exclude certain entries
-                if( IsValidEntry( browserTile ) )
+                if( ChiselMaterialBrowserUtilities.IsValidEntry( browserTile ) )
                 {
                     // if we have the material already, skip, else add it
-                    if( m_Materials.Contains( browserTile ) ) break;
-                    else m_Materials.Add( browserTile );
+                    m_Materials.Add( browserTile );
                 }
             }
-        }
 
-        // checks a path and returns true/false if a material is ignored or not
-        private static bool IsValidEntry( MaterialBrowserTile tile )
-        {
-            // these are here to clean things up a little bit and make it easier to read
-
-            bool PathContains( string path )
-            {
-                return tile.path.ToLower().Contains( path );
-            }
-
-            // checks for any shaders we want to exclude
-            bool HasInvalidShader()
-            {
-                string shader = tile.shaderName.ToLower();
-
-                string[] excludedShaders = new string[]
-                {
-                        "skybox/"
-                };
-
-                return shader.Contains( excludedShaders[0] );
-            }
-
-            string chiselPath = "packages/com.chisel.components/package resources/";
-
-            string[] ignoredEntries = new string[]
-            {
-                    "packages/com.unity.searcher/",    // 0, we ignore this to get rid of the built-in font materials
-                    "packages/com.unity.entities/",    // 1, we ignore this to get rid of the entities materials
-                    $"{chiselPath}preview materials/", // 2, these are tool textures, so we are ignoring them
-            };
-
-            // if the path contains any of the ignored paths, then this will return false
-            bool valid = !PathContains( ignoredEntries[0] )
-                         && !PathContains( ignoredEntries[1] )
-                         && !PathContains( ignoredEntries[2] )
-                         && !HasInvalidShader(); // also check the shader
-
-            return valid;
-        }
-
-        // used by the preview size slider to step the preview size by powers of two
-        private static int GetPow2( int val )
-        {
-            val--;
-            val |= val >> 1;
-            val |= val >> 2;
-            val |= val >> 4;
-            val |= val >> 8;
-            val |= val >> 16;
-            val++;
-
-            return val;
+            CachedTiles.Save();
         }
     }
 }
