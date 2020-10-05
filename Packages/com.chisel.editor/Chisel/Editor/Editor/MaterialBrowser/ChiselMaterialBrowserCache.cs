@@ -77,7 +77,7 @@ namespace Chisel.Editors
 
         public void AddEntry( CachedThumbnail entry )
         {
-            if( storedPreviewTextures.All( e => e.name != entry.name ) )
+            if( storedPreviewTextures.All( e => e.instanceID != entry.instanceID ) )
             {
                 storedPreviewTextures.Add( entry );
 
@@ -86,10 +86,10 @@ namespace Chisel.Editors
             }
         }
 
-        public Texture2D GetThumbnail( string materialName )
+        public Texture2D GetThumbnail( int instanceID )
         {
             // if the name exists in the list, return its thumbnail
-            return storedPreviewTextures.FirstOrDefault( e => e.name == materialName ).GetThumbnail();
+            return storedPreviewTextures.FirstOrDefault( e => e.instanceID == instanceID ).GetThumbnail();
         }
 
         public static string ConstructPath()

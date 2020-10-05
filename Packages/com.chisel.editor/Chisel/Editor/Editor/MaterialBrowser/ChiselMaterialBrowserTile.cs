@@ -46,7 +46,7 @@ namespace Chisel.Editors
 
             if( m_Preview == null )
             {
-                m_Preview = ChiselMaterialBrowserWindow.CachedTiles.GetThumbnail( materialName );
+                m_Preview = ChiselMaterialBrowserWindow.CachedTiles.GetThumbnail( m_InstanceID );
 
                 if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
                     ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreviews(), () => { m_Preview = AssetPreview.GetAssetPreview( m ); } );
