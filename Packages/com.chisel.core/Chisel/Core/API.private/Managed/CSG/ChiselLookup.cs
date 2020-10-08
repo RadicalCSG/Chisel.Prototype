@@ -200,8 +200,10 @@ namespace Chisel.Core
         public BlobArray<BrushAncestorLegend>       brushAncestorLegend;
         public BlobArray<int>                       brushAncestors;
 
-        public int                                  indexOffset;
+        public int                                  minBrushIndex;
         public BlobArray<int>                       brushIndexToAncestorLegend;
+        public int                                  minNodeIndex;
+        public int                                  maxNodeIndex;
 
         struct CompactTopDownBuilderNode
         {
@@ -226,6 +228,22 @@ namespace Chisel.Core
             s_BrushAncestorLegend.Clear();
             s_BrushAncestors.Clear();
             
+            var nodes = treeInfo.nodes;
+            var minNodeIndex = int.MaxValue;
+            var maxNodeIndex = 0;
+            for (int b = 0; b < nodes.Count; b++)
+            {
+                var nodeID = nodes[b];
+                if (nodeID == 0)
+                    continue;
+
+                minNodeIndex = math.min(nodeID - 1, minNodeIndex);
+                maxNodeIndex = math.max(nodeID - 1, maxNodeIndex);
+            }
+
+            if (minNodeIndex == int.MaxValue)
+                minNodeIndex = 0;
+
             var minBrushIndex   = int.MaxValue;
             var maxBrushIndex   = 0;
             for (int b = 0; b < brushes.Count; b++)
@@ -354,7 +372,9 @@ namespace Chisel.Core
             builder.Construct(ref root.compactHierarchy, s_HierarchyNodes);
             builder.Construct(ref root.brushAncestorLegend, s_BrushAncestorLegend);
             builder.Construct(ref root.brushAncestors,      s_BrushAncestors);
-            root.indexOffset = minBrushIndex;
+            root.minBrushIndex = minBrushIndex;
+            root.minNodeIndex = minNodeIndex;
+            root.maxNodeIndex = maxNodeIndex;
             builder.Construct(ref root.brushIndexToAncestorLegend, s_BrushIndexToAncestorLegend, desiredBrushIndexToBottomUpLength);
             var compactTree = builder.CreateBlobAssetReference<CompactTree>(Allocator.Persistent);
             builder.Dispose();
@@ -405,31 +425,20 @@ namespace Chisel.Core
         {
             index -= Offset;
             if (index < 0 || index >= Length)
+            {
+                //Debug.Assert(false);
                 return IntersectionType.InvalidValue;
+            }
 
             index <<= 1;
-            var int32Index = index >> 5;	// divide by 32
-            var bitIndex = index & 31;	    // remainder
-            var twoBit = ((UInt32)3) << bitIndex;
+            var int32Index  = index >> 5;	// divide by 32
+            var bitIndex    = index & 31;	// remainder
+            var twoBit      = ((uint)3) << bitIndex;
 
-            return (IntersectionType)((intersectionBits[int32Index] & twoBit) >> bitIndex);
-        }
-
-        public void Set(int index, IntersectionType value)
-        {
-            index -= Offset;
-            if (index < 0 || index >= Length)
-                return;
-
-            index <<= 1;
-            var int32Index = index >> 5;	// divide by 32
-            var bitIndex = index & 31;	    // remainder
-            var twoBit = (UInt32)3 << bitIndex;
-            var twoBitValue = ((UInt32)value) << bitIndex;
-
-            var originalInt32 = intersectionBits[int32Index];
-
-            intersectionBits[int32Index] = (originalInt32 & ~twoBit) | twoBitValue;
+            var bitShifted  = (uint)intersectionBits[int32Index] & (uint)twoBit;
+            var value       = (IntersectionType)((uint)bitShifted >> (int)bitIndex);
+            Debug.Assert(value != IntersectionType.InvalidValue);
+            return value;
         }
     }
         

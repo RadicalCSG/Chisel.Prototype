@@ -65,7 +65,7 @@ namespace Chisel.Core
         {
             public bool dirty = true;
             public readonly List<int> brushes   = new List<int>();
-            //public readonly List<int> nodes     = new List<int>();
+            public readonly List<int> nodes     = new List<int>();
         }
 
         struct NodeTransform
@@ -167,7 +167,7 @@ namespace Chisel.Core
 
         internal static void ClearAllNodes()
         {
-            nodeUserIDs		.Clear();	
+            nodeUserIDs		.Clear();
             nodeFlags		.Clear();	nodeTransforms		.Clear();
             nodeHierarchies	.Clear();	nodeLocalTransforms	.Clear();
             brushInfos      .Clear();   treeInfos           .Clear();
@@ -623,16 +623,16 @@ namespace Chisel.Core
             
             treeInfos[treeNodeIndex].dirty = false;
             var nodeHierarchy = nodeHierarchies[treeNodeIndex];
-            //treeInfos[treeNodeIndex].nodes.Clear();
+            treeInfos[treeNodeIndex].nodes.Clear();
             treeInfos[treeNodeIndex].brushes.Clear();
             if (nodeHierarchy.children != null)
                 RecursiveAddTreeChildren(in nodeHierarchy, 
-                                         //treeInfos[treeNodeIndex].nodes, 
+                                         treeInfos[treeNodeIndex].nodes, 
                                          treeInfos[treeNodeIndex].brushes);
         }
 
         static void RecursiveAddTreeChildren(in NodeHierarchy parent, 
-                                             //List<int> nodes, 
+                                             List<int> nodes, 
                                              List<int> brushes)
         {
             var children = parent.children;
@@ -642,13 +642,13 @@ namespace Chisel.Core
                 if (!IsValidNodeID(childID))
                     continue;
                 var childIndex  = childID - 1;
-                //nodes.Add(childID);
+                nodes.Add(childID);
                 if (nodeFlags[childIndex].nodeType == CSGNodeType.Brush)
                     brushes.Add(childID);
                 var childHierarchy = nodeHierarchies[childIndex];
                 if (childHierarchy.children != null)
                     RecursiveAddTreeChildren(in childHierarchy, 
-                                             //nodes, 
+                                             nodes, 
                                              brushes);
             }
         }
