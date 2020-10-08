@@ -490,22 +490,6 @@ namespace Chisel.Core
             var treeNodeFlags = nodeFlags[nodeID - 1];
             treeNodeFlags.SetNodeFlag(NodeStatusFlags.TreeNeedsUpdate);
             nodeFlags[nodeID - 1] = treeNodeFlags;
-            /*
-            CSGTree* tree = (CSGTree*)(node);
-            auto const brushNodeIDs = tree->treeBrushNodeIDs;
-            for (int i = 0, iCount = (int)brushNodeIDs.Count; i < iCount; i++)
-            {
-                const auto treeBrushNodeID = brushNodeIDs[i];
-                CSGNode *const __restrict childNode = manager->GetNodeByIndex(treeBrushNodeID);
-                if (childNode == nullptr)
-                    continue;
-                CSGNodeType const childNodeType   = manager->GetNodeTypeUnsafe(treeBrushNodeID);
-                if (childNodeType != CSGNodeType.Brush)
-                    continue;
-                CSGBrush *const __restrict brush = (CSGBrush*)childNode;
-                brush->ClearRenderBuffers();
-            }
-            */
             return true;
         }
 

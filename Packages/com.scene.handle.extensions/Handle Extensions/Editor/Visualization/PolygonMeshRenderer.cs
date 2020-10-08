@@ -299,26 +299,9 @@ namespace UnitySceneExtensions
                     mesh.MarkDynamic();
                 }
                 
-                Vector3[]	newVertices;
-                Color[]		newColors;
-                int[]		newIndices;
-
-                if (vertexCount == MaxVertexCount)
-                {
-                    newVertices	= vertices;
-                    newColors	= colors;
-                } else
-                { 
-                    newVertices = vertices.Take(vertexCount).ToArray();
-                    newColors   = colors  .Take(vertexCount).ToArray();
-                }
-
-                if (indexCount == MaxIndexCount) newIndices = indices;
-                else							 newIndices = indices.Take(indexCount).ToArray();
-                
-                mesh.vertices = newVertices;
-                mesh.colors = newColors;
-                mesh.SetIndices(newIndices, MeshTopology.Triangles, 0, calculateBounds: false);
+                mesh.SetVertices(vertices, 0, vertexCount);
+                mesh.SetColors(colors, 0, vertexCount);
+                mesh.SetIndices(indices, 0, indexCount, MeshTopology.Triangles, 0, calculateBounds: false);
                 mesh.RecalculateBounds();
                 mesh.UploadMeshData(false);
             }

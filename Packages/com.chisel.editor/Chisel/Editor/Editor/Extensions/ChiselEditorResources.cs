@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using Unity.Mathematics;
 
 namespace Chisel.Editors
 {
@@ -26,10 +27,10 @@ namespace Chisel.Editors
 
         // Should be safe since when these parameters change, Unity will do a domain reload, 
         // which will call the constructor in which these are set.
-        static float    editorPixelsPerPoint;
-        public static bool     isProSkin;
+        static float editorPixelsPerPoint;
+        public static bool  isProSkin;
 
-        public static float    ImageScale
+        public static float ImageScale
         {
             get
             {
@@ -54,7 +55,7 @@ namespace Chisel.Editors
             return null;
         }
 
-        static Texture2D LoadScaledTexture(string name)
+        static Texture2D LoadScaledTextureInternal(string name)
         {
             Texture2D image = null;
             var imagePixelsPerPoint = 1.0f;
@@ -65,7 +66,7 @@ namespace Chisel.Editors
                     imagePixelsPerPoint = 2.0f;
             }
 
-            if (image == null)
+            if (image == null) 
                 image = LoadImageFromResourcePaths(name);
 
             if (image == null)
@@ -77,142 +78,152 @@ namespace Chisel.Editors
             return image;
         }
 
-        // TODO: add a AssetPostProcessor to detect if images changed/added/removed and remove those from the lookup
-        static Dictionary<string, Texture2D>    imagesLookup                = new Dictionary<string, Texture2D>();
-        static Dictionary<string, Texture2D[]>  iconImagesLookup            = new Dictionary<string, Texture2D[]>();
-        static Dictionary<int, GUIContent[]>    iconContentLookup           = new Dictionary<int, GUIContent[]>();
-        static Dictionary<int, GUIContent[]>    iconContentWithNameLookup   = new Dictionary<int, GUIContent[]>();
+        public static Texture2D[] LoadIconImages(string name)
+        {
+            var nameID = HashLowerInvariant(name);
+            if (!iconImagesLookup.TryGetValue(nameID, out var iconImages))
+            {
+                iconImages = LoadIconImagesInternal(name);
+                iconImagesLookup[nameID] = iconImages;
+            }
+            return iconImages;
+        }
 
-        public static Texture2D LoadImage(string name)
+        public static GUIContent[] GetIconContent(string name, string tooltip = null)
+        {
+            var nameID = HashLowerInvariant(name);
+            var id = (nameID * 33) + (tooltip?.GetHashCode() ?? 0);
+            if (!iconContentLookup.TryGetValue(id, out var contents))
+            {
+                contents = GetIconContentInternal(name, tooltip ?? string.Empty);
+                iconContentLookup[id] = contents;
+            }
+            return contents;
+        }
+
+        public static GUIContent[] GetIconContentWithName(string name, string tooltip = null)
+        {
+            var nameID = HashLowerInvariant(name); 
+            var id = (nameID * 33) + (tooltip?.GetHashCode() ?? 0);
+            if (!iconContentWithNameLookup.TryGetValue(id, out var contents))
+            {
+                contents = GetIconContentWithNameInternal(name, tooltip ?? string.Empty);
+                iconContentWithNameLookup[id] = contents;
+            }
+            return contents;
+        }
+
+        // TODO: add a AssetPostProcessor to detect if images changed/added/removed and remove those from the lookup
+        static readonly Dictionary<string, Texture2D>    imagesLookup                = new Dictionary<string, Texture2D>();
+        static readonly Dictionary<int, Texture2D[]>     iconImagesLookup            = new Dictionary<int, Texture2D[]>();
+        static readonly Dictionary<int, GUIContent[]>    iconContentLookup           = new Dictionary<int, GUIContent[]>();
+        static readonly Dictionary<int, GUIContent[]>    iconContentWithNameLookup   = new Dictionary<int, GUIContent[]>();
+
+        static Texture2D LoadImageInternal(string name)
         {
             name = FixSlashes(name);
-            if (debug) Debug.Log($"try {name}");
             if (imagesLookup.TryGetValue(name, out Texture2D image))
-            {
-                if (debug) Debug.Log($"cached {name}");
                 return image;
-            }
-            image = LoadScaledTexture(name);
+            image = LoadScaledTextureInternal(name);
             if (!image)
-            {
-                if (debug) Debug.Log($"not loaded {name}");
                 return image;
-            }
-            if (debug) Debug.Log($"loaded {name}");
             imagesLookup[name] = image;
             return image;
         }
 
-        public static bool debug = false;
 
-        public static Texture2D LoadIconImage(string name, bool active)
+        static int HashLowerInvariant(string name)
+        {
+            var length = name.Length;
+            if (length == 0)
+                return 0;
+            if (length == 1)
+                return (int)char.ToLowerInvariant(name[0]);
+
+            int4 v = int4.zero;
+            int i = 0;
+            int h = 0;
+            int4 h4 = int4.zero;
+            for (int n=0; i + 4 < length; i += 4)
+            {
+                v[0] = char.ToLowerInvariant(name[i + 0]);
+                v[1] = char.ToLowerInvariant(name[i + 1]);
+                v[2] = char.ToLowerInvariant(name[i + 2]);
+                v[3] = char.ToLowerInvariant(name[i + 3]);
+                h4[n] = (int)math.hash(v); n++;
+                if (n == 3)
+                {
+                    h4[n] = h;
+                    h = (int)math.hash(h4);
+                    h4 = int4.zero;
+                    n = 0;
+                }
+            }
+            h = (int)math.hash(h4);
+            h4 = int4.zero;
+            if (i < length)
+            {
+                int n = 0;
+                for (; i < length; i++)
+                    v[n] = char.ToLowerInvariant(name[i]); n++;
+                h4[n] = h;
+                h = (int)math.hash(h4);
+            }
+            return h;
+        }
+
+
+        static Texture2D LoadIconImageInternal(string name, bool active)
         {
             Texture2D result = null;
-            var nameID = name.ToLowerInvariant().Replace(' ', '_');
+            var nameID = name.Replace(' ', '_').ToLowerInvariant();
             if (isProSkin)
             {
-                if (debug) Debug.Log("isProSkin");
-                if (active        ) result = LoadImage($@"{kIconPath}{kDarkIconID}{nameID}{kActiveIconID}");
-                if (result == null) result = LoadImage($@"{kIconPath}{kDarkIconID}{nameID}");
+                if (active        ) result = LoadImageInternal($@"{kIconPath}{kDarkIconID}{nameID}{kActiveIconID}");
+                if (result == null) result = LoadImageInternal($@"{kIconPath}{kDarkIconID}{nameID}");
             }
             if (result == null)
             {
-                if (debug) Debug.Log("result == null");
-                if (active        ) result = LoadImage($@"{kIconPath}{nameID}{kActiveIconID}");
-                if (result == null) result = LoadImage($@"{kIconPath}{nameID}");
+                if (active        ) result = LoadImageInternal($@"{kIconPath}{nameID}{kActiveIconID}");
+                if (result == null) result = LoadImageInternal($@"{kIconPath}{nameID}");
             }
-            if (debug) Debug.Log($"{name} = {result}");
             return result;
         } 
 
-        public static Texture2D[] LoadIconImages(string name)
+        static Texture2D[] LoadIconImagesInternal(string name)
         {
-            var nameID = name.ToLowerInvariant();
-            if (iconImagesLookup.TryGetValue(nameID, out Texture2D[] iconImages))
-                return iconImages;
-
-            iconImages = new[] { LoadIconImage(nameID, false), LoadIconImage(nameID, true ) };
-
+            var iconImages = new[] { LoadIconImageInternal(name, false), LoadIconImageInternal(name, true) };
             if (iconImages[0] == null || iconImages[1] == null)
                 iconImages = null;
-
-            iconImagesLookup[nameID] = iconImages;
             return iconImages;
         }
 
-        public static Texture2D[] LoadIconImages(string onName, string offName)
+        static GUIContent[] GetIconContentInternal(string name, string tooltip)
         {
-            var nameID = $"{onName.ToLowerInvariant()}_{offName.ToLowerInvariant()}";
-            if (iconImagesLookup.TryGetValue(nameID, out Texture2D[] iconImages))
-                return iconImages;
-
-            iconImages = new[] { LoadIconImage(onName, false), LoadIconImage(offName, true) };
-
-            if (iconImages[0] == null || iconImages[1] == null)
-                iconImages = null;
-
-            iconImagesLookup[nameID] = iconImages;
-            return iconImages;
-        }
-
-        public static GUIContent[] GetIconContent(string name, string tooltip = "")
-        {
-            var nameID  = name.ToLowerInvariant();
-            var id      = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
-            if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
-                return contents;
-
             if (tooltip == null)
                 tooltip = string.Empty;
 
-            var images = LoadIconImages(nameID);
+            GUIContent[] contents;
+            var images = LoadIconImagesInternal(name);
             if (images == null)
                 contents = new GUIContent[] { new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)), new GUIContent(L10n.Tr(name), L10n.Tr(tooltip)) };
             else
                 contents = new GUIContent[] { new GUIContent(images[0], L10n.Tr(tooltip)), new GUIContent(images[1], L10n.Tr(tooltip)) };
-
-            iconContentLookup[id] = contents;
             return contents;
         }
 
-        public static GUIContent[] GetIconContentOnOff(string onName, string offName, string tooltip = "")
-        {
-            var nameID = $"{onName.ToLowerInvariant()}_{offName.ToLowerInvariant()}";
-            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
-            if (iconContentLookup.TryGetValue(id, out GUIContent[] contents))
-                return contents;
 
+        static GUIContent[] GetIconContentWithNameInternal(string name, string tooltip = "")
+        {
             if (tooltip == null)
                 tooltip = string.Empty;
 
-            var images = LoadIconImages(onName, offName);
-            if (images == null)
-                contents = new GUIContent[] { new GUIContent(L10n.Tr(onName), L10n.Tr(tooltip)), new GUIContent(L10n.Tr(offName), L10n.Tr(tooltip)) };
-            else
-                contents = new GUIContent[] { new GUIContent(images[0], L10n.Tr(tooltip)), new GUIContent(images[1], L10n.Tr(tooltip)) };
-
-            iconContentLookup[id] = contents;
-            return contents;
-        }
-
-        public static GUIContent[] GetIconContentWithName(string name, string tooltip = "")
-        {
             GUIContent[] contents;
-            var nameID = name.ToLowerInvariant();
-            var id = (nameID.GetHashCode() * 33) + tooltip.GetHashCode();
-            if (iconContentWithNameLookup.TryGetValue(id, out contents))
-                return contents;
-
-            if (tooltip == null)
-                tooltip = string.Empty;
-
-            var images = LoadIconImages(nameID);
+            var images = LoadIconImagesInternal(name);
             if (images == null)
                 contents = new GUIContent[] { new GUIContent(name, tooltip), new GUIContent(name, tooltip) };
             else
                 contents = new GUIContent[] { new GUIContent(name, images[0], tooltip), new GUIContent(name, images[1], tooltip) };
-
-            iconContentWithNameLookup[id] = contents;
             return contents;
         }
 
