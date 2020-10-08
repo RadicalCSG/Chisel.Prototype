@@ -153,13 +153,26 @@ namespace Chisel.Core
         struct QueuedEvent
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static QueuedEvent GetStackNode(int currIndex, int outputStartIndex)
+            public static QueuedEvent GetStackNode(int currIndex, int outputStartIndex, IntersectionType intersectionType)
             {
                 return new QueuedEvent
                 {
                     type                = EventType.GetStackNode,
                     currIndex           = currIndex,
+                    intersectionType    = intersectionType,
                     outputStartIndex    = outputStartIndex
+                };
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static QueuedEvent ListItem(int currIndex, int leftStackStartIndex, IntersectionType intersectionType)
+            {
+                return new QueuedEvent 
+                {
+                    type                = EventType.ListItem,
+                    currIndex           = currIndex,
+                    intersectionType    = intersectionType,
+                    leftStackStartIndex = leftStackStartIndex
                 };
             }
             
@@ -187,20 +200,10 @@ namespace Chisel.Core
                 };
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static QueuedEvent ListItem(int currIndex, int leftStackStartIndex)
-            {
-                return new QueuedEvent 
-                {
-                    type                    = EventType.ListItem,
-                    currIndex               = currIndex,
-                    leftStackStartIndex     = leftStackStartIndex
-                };
-            }
-
             [FieldOffset(0)] public EventType type;
             [FieldOffset(4)] public int currIndex;
             [FieldOffset(8)] public int leftHaveGoneBeyondSelf;
+            [FieldOffset(8)] public IntersectionType intersectionType;
             [FieldOffset(12)] public int outputStartIndex;
             [FieldOffset(12)] public int leftStackStartIndex;
             [FieldOffset(16)] public int rightStackStartIndex;
@@ -218,7 +221,7 @@ namespace Chisel.Core
         {
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
-            queuedEvents.Add(QueuedEvent.GetStackNode(0, 0));
+            queuedEvents.Add(QueuedEvent.GetStackNode(0, 0, brushesTouchedByBrush.Get(compactHierarchy[0].nodeIndex)));
             //ref var compactHierarchy = ref compactTree.Value.compactHierarchy;
             while (queuedEvents.Length > 0)
             {
@@ -229,13 +232,13 @@ namespace Chisel.Core
                 {
                     case EventType.GetStackNode:
                     {
-                        ref var currentNode  = ref compactHierarchy[currEvent.currIndex];
-                        var currentNodeIndex = currentNode.nodeIndex;
-                        var intersectionType = brushesTouchedByBrush.Get(currentNodeIndex);
+                        var intersectionType = currEvent.intersectionType;
                         if (intersectionType == IntersectionType.NoIntersection ||
                             intersectionType == IntersectionType.InvalidValue)
                             break;
-                        
+
+                        ref var currentNode = ref compactHierarchy[currEvent.currIndex];
+                        var currentNodeIndex = currentNode.nodeIndex;
                         if (currentNode.Type == CSGNodeType.Brush)
                         {
                             if (intersectionType == IntersectionType.AInsideB) 
@@ -295,11 +298,21 @@ namespace Chisel.Core
                             // This needs to be it's own event since we need to use intermediate data to create the next event
 
                             // 2. Combine the left stack (previous output stack) with the right stack
-                            queuedEvents.Add(QueuedEvent.ListItem(i, leftStackStartIndex));
+                            ref var childNode   = ref compactHierarchy[i];
+                            var childNodeIndex  = childNode.nodeIndex;
+                            var childIntersectionType = brushesTouchedByBrush.Get(childNodeIndex);
+                            if (childIntersectionType != IntersectionType.NoIntersection &&
+                                childIntersectionType != IntersectionType.InvalidValue)
+                                queuedEvents.Add(QueuedEvent.ListItem(i, leftStackStartIndex, childIntersectionType));
                         }
 
                         // 1. Get the first stack, which gets stored in output
-                        queuedEvents.Add(QueuedEvent.GetStackNode(firstIndex, leftStackStartIndex));
+                        ref var firstChildNode = ref compactHierarchy[firstIndex];
+                        var firstChildNodeIndex = firstChildNode.nodeIndex;
+                        var firstChildIntersectionType = brushesTouchedByBrush.Get(firstChildNodeIndex);
+                        if (firstChildIntersectionType != IntersectionType.NoIntersection &&
+                            firstChildIntersectionType != IntersectionType.InvalidValue)
+                            queuedEvents.Add(QueuedEvent.GetStackNode(firstIndex, leftStackStartIndex, firstChildIntersectionType));
                         break;
                     }
 
@@ -313,7 +326,7 @@ namespace Chisel.Core
                         queuedEvents.Add(QueuedEvent.Combine(currEvent.currIndex, leftHaveGoneBeyondSelf, currEvent.leftStackStartIndex, rightStackStartIndex));
 
                         // 1. Add the right stack to the output stack
-                        queuedEvents.Add(QueuedEvent.GetStackNode(currEvent.currIndex, rightStackStartIndex));
+                        queuedEvents.Add(QueuedEvent.GetStackNode(currEvent.currIndex, rightStackStartIndex, currEvent.intersectionType));
                         break;
                     }
 
