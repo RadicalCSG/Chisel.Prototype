@@ -476,9 +476,9 @@ namespace Chisel.Components
                             {
                                 s_RenderUpdates.Add(new ChiselRenderObjectUpdate
                                 {
-                                    contentsIndex = i,
-                                    materialOverride = ChiselMaterialManager.HelperMaterials[helperIndex],
-                                    instance = debugHelpers[helperIndex]
+                                    contentsIndex       = i,
+                                    materialOverride    = ChiselMaterialManager.HelperMaterials[helperIndex],
+                                    instance            = debugHelpers[helperIndex]
                                 });
                             }
                             meshUpdated[helperIndex] = true;
@@ -495,9 +495,9 @@ namespace Chisel.Components
                             // Group by all meshDescriptions with same query
                             s_RenderUpdates.Add(new ChiselRenderObjectUpdate
                             {
-                                contentsIndex = i,
-                                materialOverride = null,
-                                instance = renderables[renderIndex]
+                                contentsIndex       = i,
+                                materialOverride    = null,
+                                instance            = renderables[renderIndex]
                             });
                         }
                     } else

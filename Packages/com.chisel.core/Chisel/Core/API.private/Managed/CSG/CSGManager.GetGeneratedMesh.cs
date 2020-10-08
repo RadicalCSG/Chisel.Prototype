@@ -63,6 +63,12 @@ namespace Chisel.Core
                 brushOutlineGeneration  = 0;
                 brushOutline.Reset();
             }
+
+            public void DirtyOutline()
+            {
+                brushOutlineGeneration++;
+                brushOutlineDirty = true;
+            }
         }
         
         private static void UpdateDelayedHierarchyModifications()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Burst;
 using Unity.Entities;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ namespace Chisel.Core
 {
     public struct RoutingLookup
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RoutingLookup(int startIndex, int endIndex)
         {
             this.startIndex = startIndex;
@@ -19,7 +21,8 @@ namespace Chisel.Core
 
         //public const int kRoutingOffset = 1 + (int)CategoryIndex.LastCategory;
 
-        public bool TryGetRoute(ref RoutingTable table, CategoryGroupIndex inputIndex, out CategoryRoutingRow routingRow)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryGetRoute([NoAlias] ref RoutingTable table, CategoryGroupIndex inputIndex, out CategoryRoutingRow routingRow)
         {
             var tableIndex = startIndex + (int)inputIndex;// (inputIndex == CategoryGroupIndex.First) ? (int)CategoryGroupIndex.First : ((int)inputIndex - kRoutingOffset);
 

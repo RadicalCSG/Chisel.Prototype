@@ -108,18 +108,18 @@ namespace Chisel.Core
             return -1;
         }
         
-        void IntersectLoopsJob(in HashedVertices                hashedTreeSpaceVertices,
-                               
-                               NativeListArray<int>.NativeList  loopIndices, 
-                               int                              surfaceLoopIndex, 
-                               
-                               NativeListArray<int>             holeIndices,
-                               NativeList<IndexSurfaceInfo>     allInfos,
-                               NativeListArray<Edge>            allEdges, 
+        void IntersectLoopsJob([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
 
-                               NativeListArray<Edge>.NativeList intersectionLoop, 
-                               CategoryGroupIndex               intersectionCategory,
-                               IndexSurfaceInfo                 intersectionInfo)
+                               [NoAlias] ref NativeListArray<int>.NativeList loopIndices, 
+                               int                                           surfaceLoopIndex,
+
+                               [NoAlias] ref NativeListArray<int>            holeIndices,
+                               [NoAlias] ref NativeList<IndexSurfaceInfo>    allInfos,
+                               [NoAlias] ref NativeListArray<Edge>           allEdges,
+
+                               [NoAlias] in NativeListArray<Edge>.NativeList intersectionLoop, 
+                               CategoryGroupIndex                            intersectionCategory,
+                               IndexSurfaceInfo                              intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
                 return;
@@ -160,7 +160,7 @@ namespace Chisel.Core
             var treeSpacePlanes1        = brushTreeSpacePlaneCache[intersectionBrushOrder];
             for (int e = 0; e < currentLoopEdges.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, intersectionLoop, hashedTreeSpaceVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, in intersectionLoop, in hashedTreeSpaceVertices);
                 categories2[e] = category;
                 if      (category == EdgeCategory.Inside) inside2++;
                 else if (category == EdgeCategory.Outside) outside2++;
@@ -173,7 +173,7 @@ namespace Chisel.Core
             var treeSpacePlanes2    = brushTreeSpacePlaneCache[currentBrushOrder];
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, currentLoopEdges, hashedTreeSpaceVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, in currentLoopEdges, in hashedTreeSpaceVertices);
                 categories1[e] = category;
                 if      (category == EdgeCategory.Inside) inside1++;
                 else if (category == EdgeCategory.Outside) outside1++;
@@ -353,7 +353,7 @@ namespace Chisel.Core
             }
         }
 
-        internal static float3 CalculatePlaneNormal(NativeListArray<Edge>.NativeList edges, HashedVertices hashedVertices)
+        internal static float3 CalculatePlaneNormal(in NativeListArray<Edge>.NativeList edges, in HashedVertices hashedVertices)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
@@ -373,7 +373,7 @@ namespace Chisel.Core
             return normal;
         }
 
-        void CleanUp(NativeList<IndexSurfaceInfo> allInfos, NativeListArray<Edge> allEdges, HashedVertices brushVertices, NativeListArray<int>.NativeList loopIndices, NativeListArray<int> holeIndices)
+        void CleanUp(in NativeList<IndexSurfaceInfo> allInfos, in NativeListArray<Edge> allEdges, in HashedVertices brushVertices, ref NativeListArray<int>.NativeList loopIndices, in NativeListArray<int> holeIndices)
         {
             for (int l = loopIndices.Length - 1; l >= 0; l--)
             {
@@ -416,7 +416,7 @@ namespace Chisel.Core
                     continue;
                 }
 
-                var baseLoopNormal = CalculatePlaneNormal(baseLoopEdges, brushVertices);
+                var baseLoopNormal = CalculatePlaneNormal(in baseLoopEdges, in brushVertices);
                 if (math.all(baseLoopNormal == float3.zero))
                 {
                     baseLoopEdges.Clear();
@@ -459,7 +459,7 @@ namespace Chisel.Core
                         continue;
                     }
 
-                    var holeNormal = CalculatePlaneNormal(holeEdges, brushVertices);
+                    var holeNormal = CalculatePlaneNormal(in holeEdges, in brushVertices);
                     if (math.all(holeNormal == float3.zero))
                     {
                         holeIndicesList.RemoveAtSwapBack(h);
@@ -528,7 +528,7 @@ namespace Chisel.Core
                         var holeEdges   = allEdges[holeIndex];
 
                         // TODO: figure out why sometimes polygons are flipped around, and try to fix this at the source
-                        var holeNormal  = CalculatePlaneNormal(holeEdges, brushVertices);
+                        var holeNormal  = CalculatePlaneNormal(in holeEdges, in brushVertices);
                         if (math.dot(holeNormal, baseLoopNormal) > 0)
                         {
                             for (int n = 0; n < holeEdges.Length; n++)
@@ -600,6 +600,9 @@ namespace Chisel.Core
                     var destroyedEdges = stackalloc byte[edgeOffset];
                     UnsafeUtility.MemSet(destroyedEdges, 0, edgeOffset);
                     //*/
+
+                    var allCombinedEdgesArray = allCombinedEdges.AsArray();
+
                     {
                         {
                             var segment1 = allSegments[holeIndicesList.Length];
@@ -613,7 +616,7 @@ namespace Chisel.Core
 
                                 for (int e = 0; e < segment1.edgeLength; e++)
                                 {
-                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment2, brushVertices);
+                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdgesArray[segment1.edgeOffset + e], in alltreeSpacePlanes, in allCombinedEdgesArray, segment2, in brushVertices);
                                     if (category == EdgeCategory.Outside || category == EdgeCategory.Aligned)
                                         continue;
                                     destroyedEdges.Set(segment1.edgeOffset + e, true);
@@ -621,7 +624,7 @@ namespace Chisel.Core
 
                                 for (int e = 0; e < segment2.edgeLength; e++)
                                 {
-                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
+                                    var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdgesArray[segment2.edgeOffset + e], in alltreeSpacePlanes, in allCombinedEdgesArray, segment1, in brushVertices);
                                     if (category == EdgeCategory.Inside)
                                         continue;
                                     destroyedEdges.Set(segment2.edgeOffset + e, true);
@@ -643,7 +646,7 @@ namespace Chisel.Core
                                 {
                                     for (int e = 0; e < segment1.edgeLength; e++)
                                     {
-                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment1.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment2, brushVertices);
+                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdgesArray[segment1.edgeOffset + e], in alltreeSpacePlanes, in allCombinedEdgesArray, segment2, in brushVertices);
                                         if (category == EdgeCategory.Outside ||
                                             category == EdgeCategory.Aligned)
                                             continue;
@@ -652,7 +655,7 @@ namespace Chisel.Core
 
                                     for (int e = 0; e < segment2.edgeLength; e++)
                                     {
-                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdges[segment2.edgeOffset + e], alltreeSpacePlanes, allCombinedEdges, segment1, brushVertices);
+                                        var category = BooleanEdgesUtility.CategorizeEdge(allCombinedEdgesArray[segment2.edgeOffset + e], in alltreeSpacePlanes, in allCombinedEdgesArray, segment1, in brushVertices);
                                         if (category == EdgeCategory.Outside)
                                             continue;
                                         destroyedEdges.Set(segment2.edgeOffset + e, true);
@@ -890,6 +893,7 @@ namespace Chisel.Core
             
 
             ref var nodeIndexToTableIndex   = ref routingTableRef.Value.nodeIndexToTableIndex;
+            ref var nodeIndexOffset         = ref routingTableRef.Value.nodeIndexOffset;
             ref var routingLookups          = ref routingTableRef.Value.routingLookups;
             var routingLookupsLength        = routingLookups.Length;
 
@@ -901,10 +905,11 @@ namespace Chisel.Core
                 int brushNodeIndex1 = surfaceInfo.brushIndexOrder.nodeIndex;/**/
 
                 // check if brush does not exist in routing table (will not have any effect)
-                if (brushNodeIndex1 >= nodeIndexToTableIndex.Length)
+                var indexWithOffset = brushNodeIndex1 - nodeIndexOffset;
+                if (indexWithOffset < 0 || indexWithOffset >= nodeIndexToTableIndex.Length)
                     continue;
 
-                var routingTableIndex = nodeIndexToTableIndex[brushNodeIndex1];
+                var routingTableIndex = nodeIndexToTableIndex[indexWithOffset];
                 if (routingTableIndex == -1)
                     continue;
 
@@ -941,10 +946,11 @@ namespace Chisel.Core
                     int brushNodeIndex1     = surfaceInfo.brushIndexOrder.nodeIndex;/**/
 
                     // check if brush does not exist in routing table (will not have any effect)
-                    if (brushNodeIndex1 >= nodeIndexToTableIndex.Length)
+                    var indexWithOffset = brushNodeIndex1 - nodeIndexOffset;
+                    if (indexWithOffset < 0 || indexWithOffset >= nodeIndexToTableIndex.Length)
                         continue;
 
-                    var routingTableIndex = nodeIndexToTableIndex[brushNodeIndex1];
+                    var routingTableIndex = nodeIndexToTableIndex[indexWithOffset];
                     if (routingTableIndex == -1)
                         continue;
 
@@ -1038,13 +1044,13 @@ namespace Chisel.Core
 
                         // Lookup categorization between original surface & other surface ...
                         if (!routingLookup.TryGetRoute(ref routingTable, surfaceLoopInfo.interiorCategory, out CategoryRoutingRow routingRow))
-                        {
+                        { 
                             Debug.Assert(false, "Could not find route");
                             continue;
                         }
 
                         bool overlap = intersectionLoop.Length != 0 &&
-                                        BooleanEdgesUtility.AreLoopsOverlapping(surfaceLoopEdges, intersectionLoop);
+                                        BooleanEdgesUtility.AreLoopsOverlapping(in surfaceLoopEdges, in intersectionLoop);
 
                         if (overlap)
                         {
@@ -1068,15 +1074,15 @@ namespace Chisel.Core
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)
                                 continue;
 
-                            IntersectLoopsJob(hashedTreeSpaceVertices, loopIndices, surfaceLoopIndex,
-                                              holeIndices, allInfos, allEdges, 
-                                              intersectionLoop, 
+                            IntersectLoopsJob(in hashedTreeSpaceVertices, ref loopIndices, surfaceLoopIndex,
+                                              ref holeIndices, ref allInfos, ref allEdges,
+                                              in intersectionLoop, 
                                               intersectionCategory, 
                                               intersectionInfo);
                         }
                     }
                 }
-                CleanUp(allInfos, allEdges, hashedTreeSpaceVertices, loopIndices, holeIndices);
+                CleanUp(in allInfos, in allEdges, in hashedTreeSpaceVertices, ref loopIndices, in holeIndices);
             }
 
             output.BeginForEachIndex(index);

@@ -443,6 +443,22 @@ namespace Chisel.Core
                         ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
                         nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
                     }
+                    for (int b0 = 0; b0 < brushIntersections.Length; b0++)
+                    {
+                        ref var brushIntersection0 = ref brushIntersections[b0];
+                        ref var nodeIndexOrder0 = ref brushIntersection0.nodeIndexOrder;
+                        for (int b1 = b0+1; b1 < brushIntersections.Length; b1++)
+                        {
+                            ref var brushIntersection1 = ref brushIntersections[b1];
+                            ref var nodeIndexOrder1 = ref brushIntersection1.nodeIndexOrder;
+                            if (nodeIndexOrder0.nodeOrder > nodeIndexOrder1.nodeOrder)
+                            {
+                                var t = nodeIndexOrder0;
+                                nodeIndexOrder0 = nodeIndexOrder1;
+                                nodeIndexOrder1 = t;
+                            }
+                        }
+                    }
                     brushesTouchedByBrushCache[nodeOrder] = item;
                 }
             }

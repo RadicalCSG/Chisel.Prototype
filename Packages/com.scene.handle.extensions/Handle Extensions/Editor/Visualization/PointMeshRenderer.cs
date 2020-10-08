@@ -54,43 +54,20 @@ namespace UnitySceneExtensions
                 if (pointMesh != null) pointMesh.Clear(true); else { pointMesh = new Mesh(); pointMesh.MarkDynamic(); }
                 if (lineMesh  != null) lineMesh .Clear(true); else { lineMesh  = new Mesh(); lineMesh.MarkDynamic(); }
                 
-                
-                Vector3[]	newVertices;
-                Color[]		newPointColors;
-                Color[]		newLineColors;
-                int[]		newPointIndices;
-                int[]		newLineIndices;
-
-                if (vertexCount == MaxVertexCount)
-                {
-                    newVertices		= vertices;
-                    newPointColors	= pointColors;
-                    newLineColors	= lineColors;
-                    newPointIndices	= pointIndices;
-                    newLineIndices	= lineIndices;
-                } else
-                { 
-                    newVertices		= vertices	   .Take(vertexCount).ToArray();
-                    newPointColors	= pointColors  .Take(vertexCount).ToArray();
-                    newLineColors	= lineColors   .Take(vertexCount).ToArray();
-                    newPointIndices	= pointIndices .Take(pointIndexCount).ToArray();
-                    newLineIndices	= lineIndices  .Take(lineIndexCount).ToArray();
-                }
-                
                 if (pointIndexCount > 0)
                 { 
-                    pointMesh.vertices = newVertices;
-                    pointMesh.colors   = newPointColors;
-                    pointMesh.SetIndices(newPointIndices, MeshTopology.Triangles, 0, calculateBounds: false);
+                    pointMesh.SetVertices(vertices, 0, vertexCount);
+                    pointMesh.SetColors(pointColors, 0, vertexCount);
+                    pointMesh.SetIndices(pointIndices, 0, pointIndexCount, MeshTopology.Triangles, 0, calculateBounds: false);
                     pointMesh.RecalculateBounds();
                     pointMesh.UploadMeshData(false);
                 }
                 
                 if (lineIndexCount > 0)
                 { 
-                    lineMesh.vertices = newVertices;
-                    lineMesh.colors   = newLineColors;
-                    lineMesh.SetIndices(newLineIndices, MeshTopology.Lines, 0, calculateBounds: false);
+                    lineMesh.SetVertices(vertices, 0, vertexCount);
+                    lineMesh.SetColors(lineColors, 0, vertexCount);
+                    lineMesh.SetIndices(lineIndices, 0, lineIndexCount, MeshTopology.Lines, 0, calculateBounds: false);
                     lineMesh.RecalculateBounds();
                     lineMesh.UploadMeshData(false);
                 }

@@ -47,7 +47,7 @@ namespace Chisel.Core
 
 
         // TODO: turn into job
-        static void GetIntersectingPlanes(ref BlobArray<float4> localPlanes, ref BlobArray<float3> vertices, Bounds selfBounds, float4x4 treeToNodeSpaceInverseTransposed, NativeArray<int> intersectingPlanes, out int intersectingPlaneLength)
+        static void GetIntersectingPlanes(ref BlobArray<float4> localPlanes, ref BlobArray<float3> vertices, Bounds selfBounds, float4x4 treeToNodeSpaceInverseTransposed, ref NativeArray<int> intersectingPlanes, out int intersectingPlaneLength)
         {
             var min = (float3)selfBounds.min;
             var max = (float3)selfBounds.max;
@@ -248,7 +248,7 @@ namespace Chisel.Core
                         intersectingPlanes = new NativeArray<int>(mesh0.localPlanes.Length, Allocator.Temp);
                     }
                     //var intersectingPlanes = stackalloc int[mesh0.localPlanes.Length];
-                    GetIntersectingPlanes(ref mesh0.localPlanes, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, intersectingPlanes, out int intersectingPlanesLength);
+                    GetIntersectingPlanes(ref mesh0.localPlanes, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, ref intersectingPlanes, out int intersectingPlanesLength);
                     if (intersectingPlanesLength == 0) { builder.Dispose(); return BlobAssetReference<BrushPairIntersection>.Null; }
                     intersectingPlaneIndices0 = builder.Construct(ref brushIntersections[0].localSpacePlaneIndices0, intersectingPlanes, intersectingPlanesLength);
                 }
@@ -260,7 +260,7 @@ namespace Chisel.Core
                         intersectingPlanes = new NativeArray<int>(mesh1.localPlanes.Length, Allocator.Temp);
                     }
                     //var intersectingPlanes = stackalloc int[mesh1.localPlanes.Length];
-                    GetIntersectingPlanes(ref mesh1.localPlanes, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, intersectingPlanes, out int intersectingPlanesLength);
+                    GetIntersectingPlanes(ref mesh1.localPlanes, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, ref intersectingPlanes, out int intersectingPlanesLength);
                     if (intersectingPlanesLength == 0) { builder.Dispose(); return BlobAssetReference<BrushPairIntersection>.Null; }
                     intersectingPlaneIndices1 = builder.Construct(ref brushIntersections[1].localSpacePlaneIndices0, intersectingPlanes, intersectingPlanesLength);
                 }

@@ -96,6 +96,13 @@ namespace Chisel.Core
             return (subMeshesArray.Length == 0 || indexCount == 0 || vertexCount == 0);
         }
 
+        readonly static VertexAttributeDescriptor[] s_Descriptors = new[] 
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 1),
+            new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 2),
+            new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 3) 
+        };
         public bool CopyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, ref JobHandle allJobs)
         {
             /*
@@ -128,21 +135,17 @@ namespace Chisel.Core
             
             */
             
-            var subMeshesArray      = this.subMeshes[contentsIndex].AsArray();
+            //var subMeshesArray      = this.subMeshes[contentsIndex].AsArray();
             var positionsArray      = this.positions[contentsIndex].AsArray();
             var indicesArray        = this.indices[contentsIndex].AsArray();
 
-            var vertexCount = positionsArray.Length;
+            //var vertexCount = positionsArray.Length;
             var indexCount  = indicesArray.Length;
              
 
             Profiler.BeginSample("Init");
             var data = dataArray[contentsIndex];
-            data.SetVertexBufferParams(positionsArray.Length, 
-                                        new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
-                                        new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 1),
-                                        new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 2),
-                                        new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 3));
+            data.SetVertexBufferParams(positionsArray.Length, s_Descriptors);
             data.SetIndexBufferParams(indexCount, IndexFormat.UInt32);
             Profiler.EndSample();
 
