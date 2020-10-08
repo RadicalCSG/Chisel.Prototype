@@ -37,9 +37,9 @@ namespace Chisel.Core
 
             ref var compactTreeRef = ref compactTree.Value;
             var indexOffset                     = compactTreeRef.indexOffset;
-            ref var bottomUpNodes               = ref compactTreeRef.bottomUpNodes;
-            ref var bottomUpNodeIndices         = ref compactTreeRef.bottomUpNodeIndices;
-            ref var brushIndexToBottomUpIndex   = ref compactTreeRef.brushIndexToBottomUpIndex;
+            ref var bottomUpNodes               = ref compactTreeRef.brushAncestors;
+            ref var bottomUpNodeIndices         = ref compactTreeRef.brushAncestorLegend;
+            ref var brushIndexToBottomUpIndex   = ref compactTreeRef.brushIndexToAncestorLegend;
 
             if (brushNodeIndex < indexOffset || (brushNodeIndex - indexOffset) >= brushIndexToBottomUpIndex.Length)
             {
@@ -49,7 +49,7 @@ namespace Chisel.Core
 
             var intersectionIndex   = brushIndexToBottomUpIndex[brushNodeIndex - indexOffset];
             var intersectionInfo    = bottomUpNodeIndices[intersectionIndex];
-            for (int b = intersectionInfo.bottomUpStart; b < intersectionInfo.bottomUpEnd; b++)
+            for (int b = intersectionInfo.ancestorStartIndex; b < intersectionInfo.ancestorEndIndex; b++)
                 bitset.Set(bottomUpNodes[b], IntersectionType.Intersection);
 
             for (int i = 0; i < brushIntersections.Length; i++)
@@ -84,8 +84,8 @@ namespace Chisel.Core
             //int brushNodeOrder = brushIndexOrder.nodeOrder;
 
             var indexOffset = compactTree.Value.indexOffset;
-            ref var bottomUpNodeIndices         = ref compactTree.Value.bottomUpNodeIndices;
-            ref var brushIndexToBottomUpIndex   = ref compactTree.Value.brushIndexToBottomUpIndex;
+            ref var bottomUpNodeIndices         = ref compactTree.Value.brushAncestorLegend;
+            ref var brushIndexToBottomUpIndex   = ref compactTree.Value.brushIndexToAncestorLegend;
 
             // Intersections
 
@@ -115,8 +115,8 @@ namespace Chisel.Core
                     {
                         nodeIndexOrder  = new IndexOrder { nodeOrder = otherIndexOrder, nodeIndex = otherBrushIndex },
                         type            = touchingBrush.type,
-                        bottomUpStart   = bottomUpNodeIndices[otherBottomUpIndex].bottomUpStart, 
-                        bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].bottomUpEnd
+                        bottomUpStart   = bottomUpNodeIndices[otherBottomUpIndex].ancestorStartIndex, 
+                        bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].ancestorEndIndex
                     });
                 }
                 for (int b0 = 0; b0 < brushIntersections.Length; b0++)

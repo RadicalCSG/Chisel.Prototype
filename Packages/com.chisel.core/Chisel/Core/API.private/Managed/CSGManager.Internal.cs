@@ -15,7 +15,6 @@ namespace Chisel.Core
     {
         internal const int kDefaultUserID = 0;
 
-
         // TODO: review flags, might not make sense any more
         enum NodeStatusFlags : UInt16
         {
@@ -62,14 +61,11 @@ namespace Chisel.Core
             }
         };
 
-        internal sealed class BrushSet
-        {
-            public readonly List<int> items = new List<int>();
-        }
-
         internal sealed class TreeInfo
         {
-            public readonly BrushSet        allTreeBrushes      = new BrushSet();
+            public bool dirty = true;
+            public readonly List<int> brushes   = new List<int>();
+            //public readonly List<int> nodes     = new List<int>();
         }
 
         struct NodeTransform
@@ -112,8 +108,6 @@ namespace Chisel.Core
             public List<int>	children;
             public int			treeNodeID;
             public int			parentNodeID;
-            public TreeInfo		treeInfo;
-            public BrushInfo	brushInfo;
 
             internal bool RemoveChild(int childNodeID)
             {
@@ -133,35 +127,12 @@ namespace Chisel.Core
                 return true;
             }
 
-            internal bool RemoveBrush(int brushNodeID)
-            {
-                if (treeInfo == null)
-                    return false;
-
-                var brushIndex = treeInfo.allTreeBrushes.items.IndexOf(brushNodeID);
-                if (brushIndex == -1)
-                    return false;
-                treeInfo.allTreeBrushes.items.RemoveAt(brushIndex);
-                return true;
-            }
-
-            internal bool AddBrush(int brushNodeID)
-            {
-                if (treeInfo == null)
-                    return false;
-                if (treeInfo.allTreeBrushes.items.Contains(brushNodeID))
-                    return false;
-                treeInfo.allTreeBrushes.items.Add(brushNodeID);
-                return true;
-            }
 
             internal static void Reset(ref NodeHierarchy data)
             {
                 data.children       = null;
                 data.treeNodeID     = CSGTreeNode.InvalidNodeID;
                 data.parentNodeID   = CSGTreeNode.InvalidNodeID;
-                data.treeInfo       = null;
-                data.brushInfo      = null;
             }
 
             internal void SetAncestors(int parentNodeID, int treeNodeID)
@@ -181,13 +152,13 @@ namespace Chisel.Core
         private static readonly List<NodeTransform>			nodeTransforms		= new List<NodeTransform>();
         private static readonly List<NodeLocalTransform>	nodeLocalTransforms	= new List<NodeLocalTransform>();
         private static readonly List<NodeHierarchy>			nodeHierarchies		= new List<NodeHierarchy>();
+        private static readonly List<BrushInfo>			    brushInfos		    = new List<BrushInfo>();
+        private static readonly List<TreeInfo>			    treeInfos		    = new List<TreeInfo>();
 
         private static readonly List<int>	freeNodeIDs		= new List<int>();
         private static readonly List<int>	trees			= new List<int>();// TODO: could be CSGTrees
         private static readonly List<int>	branches		= new List<int>();// TODO: could be CSGTreeBranches
-        internal static readonly List<int>	brushes			= new List<int>();// TODO: could be CSGTreeBrushes
-
-        internal static int GetMaxNodeIndex() { return nodeHierarchies.Count; }
+        private static readonly List<int>	brushes			= new List<int>();// TODO: could be CSGTreeBrushes
 
         internal static int GetNodeCount()		{ return Mathf.Max(0, nodeHierarchies.Count - freeNodeIDs.Count); }
         internal static int GetBrushCount()		{ return brushes.Count; }
@@ -198,58 +169,11 @@ namespace Chisel.Core
         {
             nodeUserIDs		.Clear();	
             nodeFlags		.Clear();	nodeTransforms		.Clear();
-            nodeHierarchies	.Clear();	nodeLocalTransforms	.Clear();	
+            nodeHierarchies	.Clear();	nodeLocalTransforms	.Clear();
+            brushInfos      .Clear();   treeInfos           .Clear();
 
             freeNodeIDs		.Clear();	trees	.Clear();
             branches		.Clear();	brushes	.Clear();
-        }
-
-        private static int GenerateValidNodeIndex(Int32 userID, CSGNodeType type)
-        {
-            if (freeNodeIDs.Count > 0)
-            {
-                if (freeNodeIDs.Count == 1)
-                {
-                    var nodeID = freeNodeIDs[0];
-                    freeNodeIDs.Clear();
-                    nodeUserIDs[nodeID - 1] = userID;
-                    return nodeID;
-                } else
-                { 
-                    freeNodeIDs.Sort(); // I'm sorry!
-                    var nodeID = freeNodeIDs[0];
-                    freeNodeIDs.RemoveAt(0);// I'm sorry again!
-                    nodeUserIDs[nodeID - 1] = userID;
-                    return nodeID;
-                }
-            } else
-            {
-                var nodeIndex = nodeHierarchies.Count; // NOTE: Index, not ID
-
-                nodeUserIDs			.Add(userID); // <- setting userID here
-                nodeFlags			.Add(new NodeFlags());
-                nodeTransforms		.Add(new NodeTransform());
-                nodeLocalTransforms	.Add(new NodeLocalTransform());
-                nodeHierarchies		.Add(new NodeHierarchy());
-
-                var nodeTransform = nodeTransforms[nodeIndex];
-                NodeTransform.Reset(ref nodeTransform);
-                nodeTransforms[nodeIndex] = nodeTransform;
-
-                var nodeLocalTransform = nodeLocalTransforms[nodeIndex];
-                NodeLocalTransform.Reset(ref nodeLocalTransform);
-                nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
-
-                var nodeHierarchy = nodeHierarchies[nodeIndex];
-                NodeHierarchy.Reset(ref nodeHierarchy);
-                nodeHierarchies[nodeIndex] = nodeHierarchy;
-
-                var flags = nodeFlags[nodeIndex];
-                NodeFlags.Reset(ref flags);
-                nodeFlags[nodeIndex] = flags;
-
-                return nodeIndex + 1; // NOTE: converting index to ID
-            }
         }
 
         internal static bool DestroyNode(Int32 nodeID)
@@ -289,12 +213,7 @@ namespace Chisel.Core
                         treeNodeHierarchy.RemoveChild(nodeID);
                         nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
                     }
-                    if (nodeType == CSGNodeType.Brush)
-                    {
-                        var treeNodeHierarchy = nodeHierarchies[oldTreeNodeID - 1];
-                        treeNodeHierarchy.RemoveBrush(nodeID);
-                        nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
-                    }
+                    treeInfos[oldTreeNodeID - 1].dirty = true;
                     SetTreeDirtyWithFlag(oldTreeNodeID);
                 }
             }
@@ -314,6 +233,9 @@ namespace Chisel.Core
             var nodeLocalTransform = nodeLocalTransforms[nodeIndex];
             NodeLocalTransform.Reset(ref nodeLocalTransform);
             nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
+
+            brushInfos[nodeIndex] = null;
+            treeInfos[nodeIndex] = null;
 
             var nodeHierarchy = nodeHierarchies[nodeIndex];
             NodeHierarchy.Reset(ref nodeHierarchy);
@@ -341,6 +263,8 @@ namespace Chisel.Core
                     nodeFlags			.RemoveAt(nodeIndex);
                     nodeTransforms		.RemoveAt(nodeIndex);
                     nodeLocalTransforms	.RemoveAt(nodeIndex);
+                    brushInfos          .RemoveAt(nodeIndex);
+                    treeInfos           .RemoveAt(nodeIndex);
                     nodeHierarchies		.RemoveAt(nodeIndex);
                     nodeID--;
                 }
@@ -348,6 +272,56 @@ namespace Chisel.Core
             return true;
         }
 
+        #region Generate
+        static int GenerateValidNodeIndex(Int32 userID, CSGNodeType type)
+        {
+            if (freeNodeIDs.Count > 0)
+            {
+                if (freeNodeIDs.Count == 1)
+                {
+                    var nodeID = freeNodeIDs[0];
+                    freeNodeIDs.Clear();
+                    nodeUserIDs[nodeID - 1] = userID;
+                    return nodeID;
+                } else
+                { 
+                    freeNodeIDs.Sort(); // I'm sorry!
+                    var nodeID = freeNodeIDs[0];
+                    freeNodeIDs.RemoveAt(0);// I'm sorry again!
+                    nodeUserIDs[nodeID - 1] = userID;
+                    return nodeID;
+                }
+            } else
+            {
+                var nodeIndex = nodeHierarchies.Count; // NOTE: Index, not ID
+
+                nodeUserIDs			.Add(userID); // <- setting userID here
+                nodeFlags			.Add(new NodeFlags());
+                nodeTransforms		.Add(new NodeTransform());
+                nodeLocalTransforms	.Add(new NodeLocalTransform());
+                brushInfos          .Add(null);
+                treeInfos           .Add(null);
+                nodeHierarchies		.Add(new NodeHierarchy());
+
+                var nodeTransform = nodeTransforms[nodeIndex];
+                NodeTransform.Reset(ref nodeTransform);
+                nodeTransforms[nodeIndex] = nodeTransform;
+
+                var nodeLocalTransform = nodeLocalTransforms[nodeIndex];
+                NodeLocalTransform.Reset(ref nodeLocalTransform);
+                nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
+
+                var nodeHierarchy = nodeHierarchies[nodeIndex];
+                NodeHierarchy.Reset(ref nodeHierarchy);
+                nodeHierarchies[nodeIndex] = nodeHierarchy;
+
+                var flags = nodeFlags[nodeIndex];
+                NodeFlags.Reset(ref flags);
+                nodeFlags[nodeIndex] = flags;
+
+                return nodeIndex + 1; // NOTE: converting index to ID
+            }
+        }
 
         internal static bool		GenerateBrush	(Int32 userID, out Int32 generatedNodeID)
         {
@@ -359,10 +333,8 @@ namespace Chisel.Core
             flags.operationType = CSGOperationType.Additive;
             flags.nodeType = CSGNodeType.Brush;
             nodeFlags[nodeIndex] = flags;
-            
-            var nodeHierarchy = nodeHierarchies[nodeIndex];
-            nodeHierarchy.brushInfo = new BrushInfo();
-            nodeHierarchies[nodeIndex]	= nodeHierarchy;
+
+            brushInfos[nodeIndex] = new BrushInfo();
 
             brushes.Add(generatedNodeID);
 
@@ -401,8 +373,9 @@ namespace Chisel.Core
             flags.nodeType = CSGNodeType.Tree;
             nodeFlags[nodeIndex] = flags;
 
+            treeInfos[nodeIndex] = new TreeInfo();
+
             var nodeHierarchy = nodeHierarchies[nodeIndex];
-            nodeHierarchy.treeInfo		= new TreeInfo();
             nodeHierarchy.children		= new List<int>();
             nodeHierarchies[nodeIndex]	= nodeHierarchy;
             
@@ -411,7 +384,9 @@ namespace Chisel.Core
             SetDirty(generatedTreeNodeID);
             return true;
         }
+        #endregion
 
+        #region Validation
         internal static bool		IsValidNodeID					(Int32 nodeID)	{ return (nodeID > 0 && nodeID <= nodeHierarchies.Count) && nodeFlags[nodeID - 1].nodeType != CSGNodeType.None; }
 
         internal static bool	    AssertNodeIDValid				(Int32 nodeID)
@@ -437,52 +412,9 @@ namespace Chisel.Core
         private static bool			AssertNodeTypeHasParent			(Int32 nodeID) { return nodeFlags[nodeID-1].nodeType == CSGNodeType.Branch || nodeFlags[nodeID - 1].nodeType == CSGNodeType.Brush; }
         private static bool			AssertNodeTypeHasOperation		(Int32 nodeID) { return nodeFlags[nodeID-1].nodeType == CSGNodeType.Branch || nodeFlags[nodeID - 1].nodeType == CSGNodeType.Brush; }
         private static bool			AssertNodeTypeHasTransformation	(Int32 nodeID) { return nodeFlags[nodeID-1].nodeType != CSGNodeType.None; }
+        #endregion
 
-
-        internal static CSGNodeType GetTypeOfNode(Int32 nodeID)
-        {
-            if (!IsValidNodeID(nodeID))
-                return CSGNodeType.None;
-            else
-                return nodeFlags[nodeID - 1].nodeType;
-        }
-
-
-        internal static Int32		GetUserIDOfNode	(Int32 nodeID)	{ if (!IsValidNodeID(nodeID)) return kDefaultUserID; return nodeUserIDs[nodeID - 1]; }
-
-        internal static Bounds      GetBrushBounds	(Int32 brushNodeID)
-        {
-            if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) 
-                return default;
-            var brushNodeIndex  = brushNodeID - 1;
-            var treeNodeID      = nodeHierarchies[brushNodeIndex].treeNodeID;
-            var treeNodeIndex   = treeNodeID - 1;
-            var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
-
-            if (!chiselLookupValues.brushTreeSpaceBoundLookup.TryGetValue(brushNodeIndex, out MinMaxAABB result))
-                return default;
-
-            if (float.IsInfinity(result.Min.x))
-                return default;
-
-            var bounds = new Bounds();
-            bounds.SetMinMax(result.Min, result.Max);
-            return bounds;
-        }
-
-
-        internal static bool		IsNodeDirty(Int32 nodeID)
-        {
-            if (!IsValidNodeID(nodeID)) return false;
-            switch (nodeFlags[nodeID - 1].nodeType)
-            {
-                case CSGNodeType.Brush:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.NeedCSGUpdate);
-                case CSGNodeType.Branch:	return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.BranchNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate);
-                case CSGNodeType.Tree:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate);
-            }
-            return false;
-        }
-
+        #region Set Dirty
         static bool SetTreeDirtyWithFlag(Int32 nodeID)
         {
             if (!IsValidNodeID(nodeID))
@@ -553,12 +485,12 @@ namespace Chisel.Core
             return false;
         }
 
-        private static void DirtySelf(Int32 nodeID)
+        static void DirtySelf(Int32 nodeID)
         {
             SetDirtyWithFlag(nodeID);
         }
 
-        private static void DirtySelfAndChildren(Int32 nodeID, NodeStatusFlags brushNodeFlags = NodeStatusFlags.NeedFullUpdate)
+        static void DirtySelfAndChildren(Int32 nodeID, NodeStatusFlags brushNodeFlags = NodeStatusFlags.NeedFullUpdate)
         {
             SetDirtyWithFlag(nodeID, brushNodeFlags);
             var children = nodeHierarchies[nodeID - 1].children;
@@ -569,8 +501,51 @@ namespace Chisel.Core
             for (int i = 0; i < children.Count; i++)
                 DirtySelfAndChildren(children[i], brushNodeFlags);
         }
+        #endregion
+        
+        internal static bool		IsNodeDirty(Int32 nodeID)
+        {
+            if (!IsValidNodeID(nodeID)) return false;
+            switch (nodeFlags[nodeID - 1].nodeType)
+            {
+                case CSGNodeType.Brush:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.NeedCSGUpdate);
+                case CSGNodeType.Branch:	return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.BranchNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate);
+                case CSGNodeType.Tree:		return nodeFlags[nodeID - 1].IsAnyNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate);
+            }
+            return false;
+        }
 
+        internal static CSGNodeType GetTypeOfNode(Int32 nodeID)
+        {
+            if (!IsValidNodeID(nodeID))
+                return CSGNodeType.None;
+            else
+                return nodeFlags[nodeID - 1].nodeType;
+        }
 
+        internal static Int32		GetUserIDOfNode	(Int32 nodeID)	{ if (!IsValidNodeID(nodeID)) return kDefaultUserID; return nodeUserIDs[nodeID - 1]; }
+
+        internal static Bounds      GetBrushBounds	(Int32 brushNodeID)
+        {
+            if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) 
+                return default;
+            var brushNodeIndex  = brushNodeID - 1;
+            var treeNodeID      = nodeHierarchies[brushNodeIndex].treeNodeID;
+            var treeNodeIndex   = treeNodeID - 1;
+            var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
+
+            if (!chiselLookupValues.brushTreeSpaceBoundLookup.TryGetValue(brushNodeIndex, out MinMaxAABB result))
+                return default;
+
+            if (float.IsInfinity(result.Min.x))
+                return default;
+
+            var bounds = new Bounds();
+            bounds.SetMinMax(result.Min, result.Max);
+            return bounds;
+        }
+
+        #region Matrices
         internal static bool		GetNodeLocalTransformation(Int32 nodeID, out Matrix4x4 localTransformation)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID))
@@ -604,8 +579,9 @@ namespace Chisel.Core
         internal static bool		GetTreeToNodeSpaceMatrix(Int32 nodeID, out Matrix4x4 treeToNodeMatrix)			{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) { treeToNodeMatrix = Matrix4x4.identity; return false; } treeToNodeMatrix = nodeTransforms[nodeID - 1].treeToNode; return true; }
 
         internal static bool		GetNodeToTreeSpaceMatrix(Int32 nodeID, out Matrix4x4 nodeToTreeMatrix)			{ if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasTransformation(nodeID)) { nodeToTreeMatrix = Matrix4x4.identity; return false; } nodeToTreeMatrix = nodeTransforms[nodeID - 1].nodeToTree; return true; }
+        #endregion
 
-
+        #region Operations
         internal static CSGOperationType GetNodeOperationType(Int32 nodeID) { if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasOperation(nodeID)) return CSGOperationType.Invalid; return nodeFlags[nodeID - 1].operationType; }
 
         internal static bool		SetNodeOperationType(Int32 nodeID, CSGOperationType operation)
@@ -622,19 +598,68 @@ namespace Chisel.Core
             DirtySelfAndChildren(nodeID, NodeStatusFlags.TransformationModified | NodeStatusFlags.HierarchyModified);
             return true;
         }
+        #endregion
 
 
-        internal static BrushInfo	GetBrushInfo(Int32 brushNodeID)										{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return null; return nodeHierarchies[brushNodeID - 1].brushInfo; }
+        internal static BrushInfo	GetBrushInfo(Int32 brushNodeID)										{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return null; return brushInfos[brushNodeID - 1]; }
         
-
-        internal static BrushInfo	GetBrushInfoUnsafe(Int32 brushNodeID)								{ return nodeHierarchies[brushNodeID - 1].brushInfo; }
-
-
-        internal static Int32		GetBrushMeshID(Int32 brushNodeID)									{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return BrushMeshInstance.InvalidInstanceID; return nodeHierarchies[brushNodeID-1].brushInfo.brushMeshInstanceID; }
-        internal static bool		SetBrushMeshID(Int32 brushNodeID, Int32 brushMeshID)				{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false; nodeHierarchies[brushNodeID - 1].brushInfo.brushMeshInstanceID = brushMeshID; DirtySelf(brushNodeID); return true; }
+        internal static Int32		GetBrushMeshID(Int32 brushNodeID)									{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return BrushMeshInstance.InvalidInstanceID; return brushInfos[brushNodeID-1].brushMeshInstanceID; }
+        internal static bool		SetBrushMeshID(Int32 brushNodeID, Int32 brushMeshID)				{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false; brushInfos[brushNodeID - 1].brushMeshInstanceID = brushMeshID; DirtySelf(brushNodeID); return true; }
 
 
-        internal static Int32		GetNumberOfBrushesInTree(Int32 treeNodeID)							{ if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) return 0; if (nodeHierarchies[treeNodeID - 1].treeInfo == null) return 0; return nodeHierarchies[treeNodeID - 1].treeInfo.allTreeBrushes.items.Count; }
+        static void                 UpdateTreeNodeList(Int32 treeNodeIndex)
+        {
+            var treeNodeID = treeNodeIndex + 1;
+            if (!IsValidNodeID(treeNodeID))
+                return;
+
+            if (treeInfos[treeNodeIndex] == null ||
+                !treeInfos[treeNodeIndex].dirty)
+                return;
+            
+            treeInfos[treeNodeIndex].dirty = false;
+            var nodeHierarchy = nodeHierarchies[treeNodeIndex];
+            //treeInfos[treeNodeIndex].nodes.Clear();
+            treeInfos[treeNodeIndex].brushes.Clear();
+            if (nodeHierarchy.children != null)
+                RecursiveAddTreeChildren(in nodeHierarchy, 
+                                         //treeInfos[treeNodeIndex].nodes, 
+                                         treeInfos[treeNodeIndex].brushes);
+        }
+
+        static void RecursiveAddTreeChildren(in NodeHierarchy parent, 
+                                             //List<int> nodes, 
+                                             List<int> brushes)
+        {
+            var children = parent.children;
+            for (int i = 0; i < children.Count; i++)
+            {
+                var childID     = children[i];
+                if (!IsValidNodeID(childID))
+                    continue;
+                var childIndex  = childID - 1;
+                //nodes.Add(childID);
+                if (nodeFlags[childIndex].nodeType == CSGNodeType.Brush)
+                    brushes.Add(childID);
+                var childHierarchy = nodeHierarchies[childIndex];
+                if (childHierarchy.children != null)
+                    RecursiveAddTreeChildren(in childHierarchy, 
+                                             //nodes, 
+                                             brushes);
+            }
+        }
+
+        internal static Int32		GetNumberOfBrushesInTree(Int32 treeNodeID)
+        { 
+            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
+                return 0;
+            var treeNodeIndex = treeNodeID - 1;
+            if (treeInfos[treeNodeIndex] == null) 
+                return 0;
+            CSGManager.UpdateTreeNodeList(treeNodeIndex); 
+            return treeInfos[treeNodeIndex].brushes.Count; 
+        }
+
         internal static bool	    DoesTreeContainBrush(Int32 treeNodeID, Int32 brushNodeID)
         {
             if (!AssertNodeIDValid(treeNodeID) || 
@@ -642,20 +667,24 @@ namespace Chisel.Core
                 !AssertNodeType(treeNodeID, CSGNodeType.Tree) || 
                 !AssertNodeType(brushNodeID, CSGNodeType.Brush))
                 return false;
-            if (nodeHierarchies[treeNodeID - 1].treeInfo == null)
+            var treeNodeIndex = treeNodeID - 1;
+            if (treeInfos[treeNodeIndex] == null)
                 return false;
-            return nodeHierarchies[treeNodeID - 1].treeInfo.allTreeBrushes.items.Contains(brushNodeID);
+            CSGManager.UpdateTreeNodeList(treeNodeIndex);
+            return treeInfos[treeNodeIndex].brushes.Contains(brushNodeID);
         }
         
         internal static Int32		GetChildBrushNodeIDAtIndex(Int32 treeNodeID, Int32 index)			
         { 
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
                 return 0; 
-            if (nodeHierarchies[treeNodeID - 1].treeInfo == null) 
+            if (treeInfos[treeNodeID - 1] == null) 
                 return 0;
-            if (index < 0 || index > nodeHierarchies[treeNodeID - 1].treeInfo.allTreeBrushes.items.Count)
+            var treeNodeIndex = treeNodeID - 1;
+            if (index < 0 || index > treeInfos[treeNodeIndex].brushes.Count)
                 return 0;
-            return nodeHierarchies[treeNodeID - 1].treeInfo.allTreeBrushes.items[index];
+            CSGManager.UpdateTreeNodeList(treeNodeIndex);
+            return treeInfos[treeNodeIndex].brushes[index];
         }
 
         internal static Int32		FindTreeByUserID(Int32 userID)
@@ -672,7 +701,7 @@ namespace Chisel.Core
         }
 
 
-        internal static Int32 GetParentOfNode(Int32 nodeID)
+        internal static Int32       GetParentOfNode(Int32 nodeID)
         {
             if (!IsValidNodeID(nodeID) || 
                 !AssertNodeTypeHasParent(nodeID))
@@ -680,7 +709,7 @@ namespace Chisel.Core
             return nodeHierarchies[nodeID - 1].parentNodeID;
         }
 
-        internal static Int32 GetTreeOfNode(Int32 nodeID)
+        internal static Int32       GetTreeOfNode(Int32 nodeID)
         {
             if (!IsValidNodeID(nodeID) || 
                 !AssertNodeTypeHasParent(nodeID))
@@ -688,7 +717,7 @@ namespace Chisel.Core
             return nodeHierarchies[nodeID - 1].treeNodeID;
         }
 
-        internal static Int32	GetChildNodeCount(Int32 nodeID)
+        internal static Int32	    GetChildNodeCount(Int32 nodeID)
         {
             if (!IsValidNodeID(nodeID) ||
                 !AssertNodeTypeHasChildren(nodeID))
@@ -696,14 +725,14 @@ namespace Chisel.Core
             return (nodeHierarchies[nodeID - 1].children == null) ? 0 : nodeHierarchies[nodeID - 1].children.Count;
         }
 
-        internal static Int32 GetChildNodeAtIndex(Int32 nodeID, Int32 index)
+        internal static Int32       GetChildNodeAtIndex(Int32 nodeID, Int32 index)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID) || nodeHierarchies[nodeID - 1].children == null || index < 0 || index >= nodeHierarchies[nodeID - 1].children.Count)
                 return 0;
             return nodeHierarchies[nodeID - 1].children[index];
         }
 
-        static bool SetChildrenTree(Int32 parentNodeID, Int32 treeNodeID, HashSet<Int32> passed)
+        static bool                 SetChildrenTree(Int32 parentNodeID, Int32 treeNodeID, HashSet<Int32> passed)
         {
             var parentNodeIndex = parentNodeID - 1;
             var children = nodeHierarchies[parentNodeIndex].children;
@@ -715,15 +744,16 @@ namespace Chisel.Core
             for (int i = 0; i < children.Count; i++)
             {
                 var childNodeID     = children[i];
+                var childNodeIndex  = childNodeID - 1;
 
-                var isBrush			= nodeFlags[childNodeID - 1].nodeType == CSGNodeType.Brush;
-                var nodeHierarchy	= nodeHierarchies[childNodeID - 1]; 
-                if (isBrush && IsValidNodeID(nodeHierarchy.treeNodeID))
-                    nodeHierarchies[nodeHierarchy.treeNodeID - 1].RemoveBrush(childNodeID);
+                var nodeHierarchy	= nodeHierarchies[childNodeIndex]; 
                 nodeHierarchy.SetTreeNodeID(treeNodeID);
-                nodeHierarchies[childNodeID - 1] = nodeHierarchy;
-                if (isBrush && IsValidNodeID(treeNodeID))
-                    nodeHierarchies[treeNodeID - 1].AddBrush(childNodeID);
+                nodeHierarchies[childNodeIndex] = nodeHierarchy;
+
+                if (IsValidNodeID(nodeHierarchy.treeNodeID))
+                    treeInfos[nodeHierarchy.treeNodeID - 1].dirty = true;
+                if (IsValidNodeID(treeNodeID))
+                    treeInfos[treeNodeID - 1].dirty = true;
                 if (!AssertNodeTypeHasChildren(childNodeID))
                     continue;
                 if (!passed.Add(childNodeID))
@@ -733,21 +763,21 @@ namespace Chisel.Core
             return true;
         }
 
-        private static void SetChildrenTree(Int32 parentNodeID, Int32 treeNodeID)
+        private static void         SetChildrenTree(Int32 parentNodeID, Int32 treeNodeID)
         {
             var parentNodeIndex = parentNodeID - 1;
             var children		= nodeHierarchies[parentNodeIndex].children;
             if (children == null)
                 return;
 
-            foundNodes.Clear();
-            foundNodes.Add(parentNodeID);
+            s_FoundNodes.Clear();
+            s_FoundNodes.Add(parentNodeID);
 
-            SetChildrenTree(parentNodeID, treeNodeID, foundNodes);
+            SetChildrenTree(parentNodeID, treeNodeID, s_FoundNodes);
         }
 
         // Note: assumes both newParentNodeID and childNodeID are VALID
-        private static void AddToParent(Int32 newParentNodeID, Int32 childNodeID)
+        private static void         AddToParent(Int32 newParentNodeID, Int32 childNodeID)
         {
             int newTreeNodeID;
             var nodeParentType = nodeFlags[newParentNodeID - 1].nodeType;
@@ -772,25 +802,18 @@ namespace Chisel.Core
             if (oldTreeNodeID != newTreeNodeID)
             {
                 var nodeType = nodeFlags[childNodeID - 1].nodeType;
-                if (nodeType == CSGNodeType.Brush)
-                {
-                    if (IsValidNodeID(oldTreeNodeID))
-                    {
-                        var treeNodeHierarchy = nodeHierarchies[oldTreeNodeID - 1];
-                        treeNodeHierarchy.RemoveBrush(childNodeID);
-                        nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
-                        SetTreeDirtyWithFlag(oldTreeNodeID);
-                    }
-                    if (IsValidNodeID(newTreeNodeID))
-                    {
-                        var treeNodeHierarchy = nodeHierarchies[newTreeNodeID - 1];
-                        treeNodeHierarchy.AddBrush(childNodeID);
-                        nodeHierarchies[newTreeNodeID - 1] = treeNodeHierarchy;
-                        SetTreeDirtyWithFlag(newTreeNodeID);
-                    }
-                } else
                 if (nodeType == CSGNodeType.Branch)
                     SetChildrenTree(childNodeID, newTreeNodeID);
+                if (IsValidNodeID(oldTreeNodeID))
+                {
+                    treeInfos[oldTreeNodeID - 1].dirty = true;
+                    SetTreeDirtyWithFlag(oldTreeNodeID);
+                }
+                if (IsValidNodeID(newTreeNodeID))
+                {
+                    treeInfos[newTreeNodeID - 1].dirty = true;
+                    SetTreeDirtyWithFlag(newTreeNodeID);
+                }
             }
 
             if (oldParentNodeID != newParentNodeID)
@@ -812,24 +835,19 @@ namespace Chisel.Core
         }
 
         // Note: assumes childNodeID is VALID
-        private static void RemoveFromParent(Int32 childNodeID)
+        private static void         RemoveFromParent(Int32 childNodeID)
         {
             var oldTreeNodeID	= nodeHierarchies[childNodeID - 1].treeNodeID;
             var oldParentNodeID	= nodeHierarchies[childNodeID - 1].parentNodeID;
 
             var nodeType = nodeFlags[childNodeID - 1].nodeType;
-            if (nodeType == CSGNodeType.Brush)
-            {
-                if (IsValidNodeID(oldTreeNodeID))
-                {
-                    var treeNodeHierarchy = nodeHierarchies[oldTreeNodeID - 1];
-                    treeNodeHierarchy.RemoveBrush(childNodeID);
-                    nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
-                    SetTreeDirtyWithFlag(oldTreeNodeID);
-                }
-            } else
             if (nodeType == CSGNodeType.Branch)
                 SetChildrenTree(childNodeID, CSGTreeNode.InvalidNodeID);
+            if (IsValidNodeID(oldTreeNodeID))
+            {
+                treeInfos[oldTreeNodeID - 1].dirty = true;
+                SetTreeDirtyWithFlag(oldTreeNodeID);
+            }
 
             if (IsValidNodeID(oldParentNodeID))
             {
@@ -854,7 +872,7 @@ namespace Chisel.Core
             SetDirtyWithFlag(childNodeID, NodeStatusFlags.HierarchyModified);
         }
 
-        internal static Int32 IndexOfChildNode(Int32 nodeID, Int32 childNodeID)
+        internal static Int32       IndexOfChildNode(Int32 nodeID, Int32 childNodeID)
         {
             if (!AssertNodeIDValid(nodeID) ||
                 !AssertNodeTypeHasChildren(nodeID) ||
@@ -863,7 +881,7 @@ namespace Chisel.Core
             return nodeHierarchies[nodeID - 1].children.IndexOf(childNodeID);
         }
 
-        internal static bool	ClearChildNodes(Int32 nodeID)
+        internal static bool	    ClearChildNodes(Int32 nodeID)
         {
             if (!AssertNodeIDValid(nodeID) || 
                 !AssertNodeTypeHasChildren(nodeID))
@@ -876,7 +894,7 @@ namespace Chisel.Core
             return RemoveChildNodeRange(nodeID, 0, children.Count);
         }
 
-        internal static bool	RemoveChildNode(Int32 nodeID, Int32 childNodeID)
+        internal static bool	    RemoveChildNode(Int32 nodeID, Int32 childNodeID)
         {
             if (!AssertNodeIDValid(nodeID) || 
                 !AssertNodeTypeHasChildren(nodeID) || 
@@ -890,7 +908,7 @@ namespace Chisel.Core
             return RemoveChildNodeAt(nodeID, childIndex);
         }
 
-        internal static bool	RemoveChildNodeAt(Int32 nodeID, Int32 index)
+        internal static bool	    RemoveChildNodeAt(Int32 nodeID, Int32 index)
         {
             if (!AssertNodeIDValid(nodeID) || 
                 !AssertNodeTypeHasChildren(nodeID))
@@ -907,7 +925,7 @@ namespace Chisel.Core
             return true;
         }
 
-        internal static bool RemoveChildNodeRange(Int32 nodeID, Int32 index, Int32 count)
+        internal static bool        RemoveChildNodeRange(Int32 nodeID, Int32 index, Int32 count)
         {
             if (!AssertNodeIDValid(nodeID) ||
                 !AssertNodeTypeHasChildren(nodeID))
@@ -932,7 +950,7 @@ namespace Chisel.Core
             return true;
         }
 
-        static bool IsAncestor(Int32 nodeID, Int32 ancestorNodeID)
+        static bool                 IsAncestor(Int32 nodeID, Int32 ancestorNodeID)
         {
             if (nodeID == ancestorNodeID)
                 return true;
@@ -947,7 +965,7 @@ namespace Chisel.Core
             return false;
         }
 
-        internal static bool	AddChildNode(Int32 nodeID, Int32 childNodeID)
+        internal static bool	    AddChildNode(Int32 nodeID, Int32 childNodeID)
         {
             if (nodeID == CSGTreeNode.InvalidNodeID ||
                 childNodeID == CSGTreeNode.InvalidNodeID)
@@ -992,12 +1010,7 @@ namespace Chisel.Core
                 }
                 if (oldTreeNodeID != newTreeNodeID)
                 {
-                    if (nodeFlags[oldTreeNodeID - 1].nodeType == CSGNodeType.Brush)
-                    {
-                        var treeNodeHierarchy = nodeHierarchies[oldTreeNodeID - 1];
-                        treeNodeHierarchy.RemoveBrush(childNodeID);
-                        nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
-                    }
+                    treeInfos[oldTreeNodeID - 1].dirty = true;
                 }
                 SetTreeDirtyWithFlag(oldTreeNodeID);
             }
@@ -1011,7 +1024,7 @@ namespace Chisel.Core
             return true;
         }
 
-        internal static bool	InsertChildNode(Int32 nodeID, Int32 index, Int32 childNodeID)
+        internal static bool	    InsertChildNode(Int32 nodeID, Int32 index, Int32 childNodeID)
         {
             if (nodeID == CSGTreeNode.InvalidNodeID ||
                 childNodeID == CSGTreeNode.InvalidNodeID)
@@ -1056,12 +1069,7 @@ namespace Chisel.Core
                 }
                 if (oldTreeNodeID != newTreeNodeID)
                 {
-                    if (nodeFlags[oldTreeNodeID - 1].nodeType == CSGNodeType.Brush)
-                    {
-                        var treeNodeHierarchy = nodeHierarchies[oldTreeNodeID - 1];
-                        treeNodeHierarchy.RemoveBrush(childNodeID);
-                        nodeHierarchies[oldTreeNodeID - 1] = treeNodeHierarchy;
-                    }
+                    treeInfos[oldTreeNodeID - 1].dirty = true;
                 }
                 SetTreeDirtyWithFlag(oldTreeNodeID);
             }
@@ -1094,7 +1102,7 @@ namespace Chisel.Core
             return true;
         }
 
-        internal static bool InsertChildNodeRange(Int32 nodeID, Int32 index, CSGTreeNode[] srcChildren)
+        internal static bool        InsertChildNodeRange(Int32 nodeID, Int32 index, CSGTreeNode[] srcChildren)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID) ||
                 srcChildren == null)
@@ -1143,9 +1151,9 @@ namespace Chisel.Core
             return true;
         }
 
-        static readonly HashSet<int> foundNodes = new HashSet<int>();
+        static readonly HashSet<int> s_FoundNodes = new HashSet<int>();
 
-        internal static bool SetChildNodes(Int32 nodeID, List<CSGTreeNode> children)
+        internal static bool        SetChildNodes(Int32 nodeID, List<CSGTreeNode> children)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return false;
             if (children == null)
@@ -1155,18 +1163,18 @@ namespace Chisel.Core
             if (children.Count == 0)
                 return true;
 
-            foundNodes.Clear();
+            s_FoundNodes.Clear();
             for (int i = 0; i < children.Count; i++)
             {
                 if (nodeID == children[i].NodeID)
                     return false;
-                if (!foundNodes.Add(children[i].NodeID))
+                if (!s_FoundNodes.Add(children[i].NodeID))
                 {
                     Debug.LogError("Have duplicate child");
                     return false;
                 }
             }
-            foundNodes.Clear();
+            s_FoundNodes.Clear();
             
             for (int i = 0; i < children.Count; i++)
             {
@@ -1190,7 +1198,7 @@ namespace Chisel.Core
             return true;
         }
 
-        internal static bool SetChildNodes(Int32 nodeID, CSGTreeNode[] children)
+        internal static bool        SetChildNodes(Int32 nodeID, CSGTreeNode[] children)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return false;
             if (children == null)
@@ -1248,7 +1256,7 @@ namespace Chisel.Core
             return dstChildren;
         }
 
-        internal static int CopyToUnsafe(Int32 nodeID, int childCount, CSGTreeNode[] children, int arrayIndex)
+        internal static int         CopyToUnsafe(Int32 nodeID, int childCount, CSGTreeNode[] children, int arrayIndex)
         {
             if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return 0;
 
@@ -1270,7 +1278,7 @@ namespace Chisel.Core
             return childCount;
         }
 
-        internal static bool DestroyAllNodesWithUserID(Int32 userID)
+        internal static bool        DestroyAllNodesWithUserID(Int32 userID)
         {
             bool found = false;
             for (int i = 0; i < nodeUserIDs.Count; i++)
@@ -1286,19 +1294,19 @@ namespace Chisel.Core
             return found;
         }
 
-        static readonly HashSet<int> destroyed = new HashSet<int>();
+        static readonly HashSet<int> s_DestroyedNodes = new HashSet<int>();
 
-        internal static bool DestroyNodes(CSGTreeNode[] nodeIDs)
+        internal static bool        DestroyNodes(CSGTreeNode[] nodeIDs)
         {
             if (nodeIDs == null)
                 return false;
 
-            destroyed.Clear();
+            s_DestroyedNodes.Clear();
             bool fail = false;
             for (int i = 0; i < nodeIDs.Length; i++)
             {
                 var nodeID = nodeIDs[i].nodeID;
-                if (!destroyed.Add(nodeID))
+                if (!s_DestroyedNodes.Add(nodeID))
                     continue;
                 if (!DestroyNode(nodeID))
                     fail = true;
@@ -1306,17 +1314,17 @@ namespace Chisel.Core
             return !fail;
         }
 
-        internal static bool DestroyNodes(HashSet<CSGTreeNode> nodeIDs)
+        internal static bool        DestroyNodes(HashSet<CSGTreeNode> nodeIDs)
         {
             if (nodeIDs == null)
                 return false;
 
-            destroyed.Clear();
+            s_DestroyedNodes.Clear();
             bool fail = false;
             foreach(var item in nodeIDs)
             {
                 var nodeID = item.nodeID;
-                if (!destroyed.Add(nodeID))
+                if (!s_DestroyedNodes.Add(nodeID))
                     continue;
                 if (!DestroyNode(nodeID))
                     fail = true;
@@ -1325,7 +1333,7 @@ namespace Chisel.Core
         }
 
 
-        private static CSGTreeNode[] GetAllTreeNodes()
+        static CSGTreeNode[] GetAllTreeNodes()
         {
             var nodeCount = GetNodeCount();
             var allTreeNodeIDs = new CSGTreeNode[nodeCount];
@@ -1351,7 +1359,7 @@ namespace Chisel.Core
             return allTreeNodeIDs;
         }
 
-        private static CSGTree[] GetAllTrees()
+        static CSGTree[] GetAllTrees()
         {
             var nodeCount = GetTreeCount();
             var allTrees = new CSGTree[nodeCount];
@@ -1369,16 +1377,20 @@ namespace Chisel.Core
             // TODO: have some way to lookup this directly instead of going through list
             for (int i = 0; i < nodeHierarchies.Count; i++)
             {
-                var nodeHierarchy = nodeHierarchies[i];
-                if (nodeHierarchy.brushInfo == null ||
-                    nodeHierarchy.treeNodeID == CSGTreeNode.InvalidNodeID)
+                var brushInfo       = brushInfos[i];
+                if (brushInfo == null)
                     continue;
 
-                if (nodeHierarchy.brushInfo.brushMeshInstanceID != brushMeshID)
+                var nodeHierarchy   = nodeHierarchies[i];
+                var treeNodeID      = nodeHierarchy.treeNodeID;
+                if (treeNodeID == CSGTreeNode.InvalidNodeID)
                     continue;
 
-                if (CSGTreeNode.IsNodeIDValid(nodeHierarchy.treeNodeID))
-                    CSGManager.SetBrushMeshID(nodeHierarchy.treeNodeID, BrushMeshInstance.InvalidInstance.BrushMeshID);
+                if (brushInfo.brushMeshInstanceID != brushMeshID)
+                    continue;
+
+                if (CSGTreeNode.IsNodeIDValid(treeNodeID))
+                    CSGManager.SetBrushMeshID(treeNodeID, BrushMeshInstance.InvalidInstance.BrushMeshID);
             }
         }
 
@@ -1387,16 +1399,19 @@ namespace Chisel.Core
             // TODO: have some way to lookup this directly instead of going through list
             for (int i = 0; i < nodeHierarchies.Count; i++)
             {
-                var nodeHierarchy = nodeHierarchies[i];
-                if (nodeHierarchy.brushInfo == null ||
-                    nodeHierarchy.treeNodeID == CSGTreeNode.InvalidNodeID)
+                var brushInfo = brushInfos[i];
+                if (brushInfo == null)
                     continue;
 
-                if (nodeHierarchy.brushInfo.brushMeshInstanceID != brushMeshID)
+                var treeNodeID = nodeHierarchies[i].treeNodeID;
+                if (treeNodeID == CSGTreeNode.InvalidNodeID)
                     continue;
 
-                if (CSGTreeNode.IsNodeIDValid(nodeHierarchy.treeNodeID))
-                    CSGTreeNode.SetDirty(nodeHierarchy.treeNodeID);
+                if (brushInfo.brushMeshInstanceID != brushMeshID)
+                    continue;
+
+                if (CSGTreeNode.IsNodeIDValid(treeNodeID))
+                    CSGTreeNode.SetDirty(treeNodeID);
             }
         }
         public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)
@@ -1404,16 +1419,19 @@ namespace Chisel.Core
             // TODO: have some way to lookup this directly instead of going through list
             for (int i = 0; i < nodeHierarchies.Count; i++)
             {
-                var nodeHierarchy = nodeHierarchies[i];
-                if (nodeHierarchy.brushInfo == null ||
-                    nodeHierarchy.treeNodeID == CSGTreeNode.InvalidNodeID)
+                var brushInfo = brushInfos[i];
+                if (brushInfo == null)
                     continue;
 
-                if (!modifiedBrushMeshes.Contains(nodeHierarchy.brushInfo.brushMeshInstanceID))
+                var treeNodeID = nodeHierarchies[i].treeNodeID;
+                if (treeNodeID == CSGTreeNode.InvalidNodeID)
                     continue;
 
-                if (CSGTreeNode.IsNodeIDValid(nodeHierarchy.treeNodeID))
-                    CSGTreeNode.SetDirty(nodeHierarchy.treeNodeID);
+                if (!modifiedBrushMeshes.Contains(brushInfo.brushMeshInstanceID))
+                    continue;
+
+                if (CSGTreeNode.IsNodeIDValid(treeNodeID))
+                    CSGTreeNode.SetDirty(treeNodeID);
             }
         }
 

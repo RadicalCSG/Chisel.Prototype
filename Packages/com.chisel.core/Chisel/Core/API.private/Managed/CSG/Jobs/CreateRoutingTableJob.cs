@@ -52,7 +52,7 @@ namespace Chisel.Core
                 return;
 
 
-            ref var topDownNodes = ref compactTree.Value.topDownNodes;
+            ref var topDownNodes = ref compactTree.Value.compactHierarchy;
             var maxNodes    = topDownNodes.Length;
             var maxRoutes   = maxNodes * kMaxRoutesPerNode;
 
@@ -199,7 +199,7 @@ namespace Chisel.Core
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
             queuedEvents.Add(QueuedEvent.GetStackNode(0, 0));
-            ref var topDownNodes = ref compactTree.Value.topDownNodes;
+            ref var topDownNodes = ref compactTree.Value.compactHierarchy;
             while (queuedEvents.Length > 0)
             {
                 var currEvent = queuedEvents[queuedEvents.Length - 1];
@@ -402,7 +402,7 @@ namespace Chisel.Core
         {
             //Debug.Assert(rightStackLength > 0);
 
-            ref var topDownNodes = ref compactTree.Value.topDownNodes;
+            ref var topDownNodes = ref compactTree.Value.compactHierarchy;
             
             var leftStackCount  = leftStackEnd - leftStackStart;
             var firstNode       = rightStack[0].nodeIndex;

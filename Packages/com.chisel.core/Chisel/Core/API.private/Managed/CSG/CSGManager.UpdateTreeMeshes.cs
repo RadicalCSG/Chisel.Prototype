@@ -376,7 +376,7 @@ namespace Chisel.Core
         static int[] s_IndexLookup;
         static int2[] s_RemapOldOrderToNewOrder;
 
-
+        #region CombineDependencies
         static JobHandle CombineDependencies(JobHandle handle0) { return handle0; }
         static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1) { return JobHandle.CombineDependencies(handle0, handle1); }
         static JobHandle CombineDependencies(JobHandle handle0, JobHandle handle1, JobHandle handle2) { return JobHandle.CombineDependencies(handle0, handle1, handle2); }
@@ -402,6 +402,7 @@ namespace Chisel.Core
                 handle = JobHandle.CombineDependencies(handle, handles[i]);
             return handle;
         }
+        #endregion
 
 
         internal unsafe static JobHandle UpdateTreeMeshes(UpdateMeshEvent updateMeshEvent, List<int> treeNodeIDs)
@@ -430,8 +431,9 @@ namespace Chisel.Core
             for (int t = 0; t < treeNodeIDs.Count; t++)
             {
                 var treeNodeIndex   = treeNodeIDs[t] - 1;
-                var treeInfo        = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;                
-                var allTreeBrushes  = treeInfo.allTreeBrushes.items;
+                CSGManager.UpdateTreeNodeList(treeNodeIndex);
+                var treeInfo        = CSGManager.treeInfos[treeNodeIndex];
+                var allTreeBrushes  = treeInfo.brushes;
                 ref var currentTree = ref s_TreeUpdates[treeUpdateLength];
 
                 currentTree.lastJobHandle.Complete();
@@ -762,7 +764,7 @@ namespace Chisel.Core
                     int brushMeshID = 0;
                     if (!IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
-                        (brushMeshID = CSGManager.nodeHierarchies[nodeIndex].brushInfo.brushMeshInstanceID) == 0)
+                        (brushMeshID = CSGManager.brushInfos[nodeIndex].brushMeshInstanceID) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
                         Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");
@@ -909,7 +911,8 @@ namespace Chisel.Core
 
                     // TODO: jobify?
                     Profiler.BeginSample("CSG_CompactTree.Create");
-                    compactTree = CompactTree.Create(CSGManager.nodeHierarchies, treeNodeIndex);
+                    CSGManager.UpdateTreeNodeList(treeNodeIndex);
+                    compactTree = CompactTree.Create(CSGManager.treeInfos[treeNodeIndex], treeNodeIndex);
 
                     chiselLookupValues.compactTree = compactTree;
                     Profiler.EndSample();
@@ -2326,11 +2329,7 @@ namespace Chisel.Core
                         {
                             var brushIndexOrder = treeUpdate.allUpdateBrushIndexOrders[b];
                             int brushNodeIndex  = brushIndexOrder.nodeIndex;
-                            var brushInfo       = CSGManager.nodeHierarchies[brushNodeIndex].brushInfo;
-                            if (brushInfo == null)
-                                continue;
-                            brushInfo.brushOutlineGeneration++;
-                            brushInfo.brushOutlineDirty = true;
+                            CSGManager.brushInfos[brushNodeIndex]?.DirtyOutline();
                         }
                     }
                 }
