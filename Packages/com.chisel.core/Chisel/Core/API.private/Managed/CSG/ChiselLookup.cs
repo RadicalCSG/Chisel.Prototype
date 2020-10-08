@@ -188,9 +188,9 @@ namespace Chisel.Core
 
     struct BottomUpNodeIndex
     {
-        public int  nodeIndex;      // TODO: might not be needed
-        public int  bottomUpStart;
-        public int  bottomUpEnd;
+        public int      nodeIndex;      // TODO: might not be needed
+        public int      bottomUpStart;
+        public int      bottomUpEnd;
 
         public override string ToString() { return $"({nameof(nodeIndex)}: {nodeIndex}, {nameof(bottomUpStart)}: {bottomUpStart}, {nameof(bottomUpEnd)}: {bottomUpEnd})"; }
     }
@@ -216,6 +216,7 @@ namespace Chisel.Core
         static readonly Queue<CompactTopDownBuilderNode>    s_NodeQueue             = new Queue<CompactTopDownBuilderNode>();
         static readonly List<CompactTopDownNode>            s_TopDownNodes          = new List<CompactTopDownNode>();
         static int[]    s_BrushIndexToBottomUpIndex;
+        static int[]    s_BrushIndexToOrder;
 
         internal static BlobAssetReference<CompactTree> Create(List<CSGManager.NodeHierarchy> nodeHierarchies, int treeNodeIndex)
         {
@@ -246,7 +247,10 @@ namespace Chisel.Core
             var desiredBrushIndexToBottomUpLength = (maxBrushIndex + 1) - minBrushIndex;
             if (s_BrushIndexToBottomUpIndex == null ||
                 s_BrushIndexToBottomUpIndex.Length < desiredBrushIndexToBottomUpLength)
+            {
                 s_BrushIndexToBottomUpIndex = new int[desiredBrushIndexToBottomUpLength];
+                s_BrushIndexToOrder = new int[desiredBrushIndexToBottomUpLength];
+            }
 
             // Bottom-up -> per brush list of all ancestors to root
             for (int b = 0; b < allTreeBrushes.Count; b++)
@@ -272,9 +276,10 @@ namespace Chisel.Core
 
                 var brushNodeIndex  = brushNodeID - 1;
                 s_BrushIndexToBottomUpIndex[brushNodeIndex - minBrushIndex] = s_BottomUpNodeIndices.Count;
+                s_BrushIndexToOrder[brushNodeIndex - minBrushIndex] = b;
                 s_BottomUpNodeIndices.Add(new BottomUpNodeIndex()
                 {
-                    nodeIndex  = brushNodeIndex,
+                    nodeIndex       = brushNodeIndex,
                     bottomUpEnd     = s_BottomUpNodes.Count,
                     bottomUpStart   = parentStart
                 });
@@ -331,11 +336,12 @@ namespace Chisel.Core
                             node = child,
                             index = s_TopDownNodes.Count
                         });
+                    var nodeIndex = child.NodeID - 1;
                     s_TopDownNodes.Add(new CompactTopDownNode()
                     {
                         Type        = childType,
                         Operation   = child.Operation,
-                        nodeIndex   = child.NodeID - 1
+                        nodeIndex   = nodeIndex
                     });
                 }
 

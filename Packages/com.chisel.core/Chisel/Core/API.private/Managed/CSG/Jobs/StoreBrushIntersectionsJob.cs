@@ -89,9 +89,6 @@ namespace Chisel.Core
 
             // Intersections
 
-            // TODO: replace with NativeBitArray
-            var bitset              = new BrushIntersectionLookup(indexOffset, bottomUpNodeIndices.Length, Allocator.Temp);
-            
             if (!brushIntersections.IsCreated)
             {
                 brushIntersections  = new NativeList<BrushIntersection>(intersectionCount, Allocator.Temp);
@@ -102,7 +99,7 @@ namespace Chisel.Core
                     brushIntersections.Capacity = intersectionCount;
             }
 
-            { 
+            {
                 for (int i = 0; i < intersectionCount; i++)
                 {
                     var touchingBrush = brushIntersectionsWith[intersectionOffset + i];
@@ -110,7 +107,7 @@ namespace Chisel.Core
 
                     var otherIndexOrder = touchingBrush.brushNodeOrder1;
                     var otherBrushIndex = allTreeBrushIndexOrders[otherIndexOrder].nodeIndex;
-                    if ((otherBrushIndex < indexOffset || (otherBrushIndex-indexOffset) >= brushIndexToBottomUpIndex.Length))
+                    if ((otherBrushIndex < indexOffset || (otherBrushIndex - indexOffset) >= brushIndexToBottomUpIndex.Length))
                         continue;
 
                     var otherBottomUpIndex = brushIndexToBottomUpIndex[otherBrushIndex - indexOffset];
@@ -122,9 +119,30 @@ namespace Chisel.Core
                         bottomUpEnd     = bottomUpNodeIndices[otherBottomUpIndex].bottomUpEnd
                     });
                 }
-
-                SetUsedNodesBits(compactTree, brushIntersections, brushNodeIndex, rootNodeIndex, bitset);
+                for (int b0 = 0; b0 < brushIntersections.Length; b0++)
+                {
+                    var brushIntersection0 = brushIntersections[b0];
+                    ref var nodeIndexOrder0 = ref brushIntersection0.nodeIndexOrder;
+                    for (int b1 = b0 + 1; b1 < brushIntersections.Length; b1++)
+                    {
+                        var brushIntersection1 = brushIntersections[b1];
+                        ref var nodeIndexOrder1 = ref brushIntersection1.nodeIndexOrder;
+                        if (nodeIndexOrder0.nodeOrder > nodeIndexOrder1.nodeOrder)
+                        {
+                            var t = nodeIndexOrder0;
+                            nodeIndexOrder0 = nodeIndexOrder1;
+                            nodeIndexOrder1 = t;
+                        }
+                        brushIntersections[b1] = brushIntersection1;
+                    }
+                    brushIntersections[b0] = brushIntersection0;
+                }
             }
+
+            // TODO: replace with NativeBitArray
+            var bitset = new BrushIntersectionLookup(indexOffset, bottomUpNodeIndices.Length, Allocator.Temp);
+
+            SetUsedNodesBits(compactTree, brushIntersections, brushNodeIndex, rootNodeIndex, bitset);
             
             var totalBrushIntersectionsSize = 16 + (brushIntersections.Length * UnsafeUtility.SizeOf<BrushIntersection>());
             var totalIntersectionBitsSize   = 16 + (bitset.twoBits.Length * UnsafeUtility.SizeOf<uint>());

@@ -574,7 +574,7 @@ namespace Chisel.Core
                 inorderSurfaceInstances = new NativeArray<SurfaceInstance>(requiredSurfaceCount, Allocator.Temp);
             }
 
-
+            //Debug.Log($"{brushRenderData.Length}");//5657
             requiredSurfaceCount = 0;
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
             {
@@ -584,6 +584,7 @@ namespace Chisel.Core
                 ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
                 ref var surfaces             = ref brushRenderBufferRef.surfaces;
 
+                //Debug.Log($"    x {surfaces.Length}");//~6
                 for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
                 {
                     inorderSurfaceInstances[requiredSurfaceCount] = new SurfaceInstance
@@ -607,6 +608,7 @@ namespace Chisel.Core
 
             var surfacesLength = 0;
             var sectionCount = 0;
+            //Debug.Log($"{meshQueries.Length} x {requiredSurfaceCount}");//11 x 33761
             for (int t = 0; t < meshQueries.Length; t++)
             {
                 var surfacesOffset  = surfacesLength;

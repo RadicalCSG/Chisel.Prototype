@@ -27,12 +27,12 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeBitArray                    combineUsedIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<int>                  combineIndexRemap;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<int>                   routingSteps;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<RoutingLookup>        routingLookups;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>    routingTable;
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>    tempStackArray;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeBitArray                   combineUsedIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<int>                 combineIndexRemap;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<int>                  routingSteps;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<RoutingLookup>       routingLookups;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>   routingTable;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<CategoryStackNode>   tempStackArray;
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<QueuedEvent>           queuedEvents;
         
 
@@ -53,18 +53,18 @@ namespace Chisel.Core
 
 
             ref var topDownNodes = ref compactTree.Value.topDownNodes;
-            var maxNodes        = topDownNodes.Length;
-            var maxRoutes       = maxNodes * kMaxRoutesPerNode;
+            var maxNodes    = topDownNodes.Length;
+            var maxRoutes   = maxNodes * kMaxRoutesPerNode;
 
-            if (!routingTable.IsCreated || routingTable.Length < maxRoutes * 2)
+            if (!routingTable.IsCreated || routingTable.Length < maxRoutes)
             {
                 if (routingTable.IsCreated) routingTable.Dispose();
-                routingTable = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
+                routingTable = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
             }
-            if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes * 2)
+            if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes)
             {
                 if (tempStackArray.IsCreated) tempStackArray.Dispose();
-                tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes * 2, Allocator.Temp);
+                tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
             }
             if (!queuedEvents.IsCreated)
                 queuedEvents = new NativeList<QueuedEvent>(1000, Allocator.Temp);
@@ -113,15 +113,21 @@ namespace Chisel.Core
                 builder.Construct(ref root.routingLookups, routingLookups, nodeCounter);
                 
                 int maxNodeIndex = 0;
+                int minNodeIndex = 0;
                 for (int i = 0; i < nodeCounter; i++)
-                    maxNodeIndex = math.max(maxNodeIndex, routingTable[routingLookups[i].startIndex].nodeIndex);
-                
-                var indexToTableIndexCount = maxNodeIndex + 1;
+                {
+                    var nodeIndex = routingTable[routingLookups[i].startIndex].nodeIndex;
+                    minNodeIndex = math.min(minNodeIndex, nodeIndex);
+                    maxNodeIndex = math.max(maxNodeIndex, nodeIndex);
+                }
+                root.nodeIndexOffset = minNodeIndex;
+
+                var indexToTableIndexCount = (maxNodeIndex + 1) - minNodeIndex;
                 var nodeIndexToTableIndex = builder.Allocate(ref root.nodeIndexToTableIndex, indexToTableIndexCount);
                 for (int i = 0; i < indexToTableIndexCount; i++)
                     nodeIndexToTableIndex[i] = -1;
                 for (int i = 0; i < nodeCounter; i++)
-                    nodeIndexToTableIndex[routingTable[routingLookups[i].startIndex].nodeIndex] = i;
+                    nodeIndexToTableIndex[routingTable[routingLookups[i].startIndex].nodeIndex - minNodeIndex] = i;
                         
                 var routingTableBlob = builder.CreateBlobAssetReference<RoutingTable>(Allocator.Persistent);
                 routingTableLookup[processedNodeOrder] = routingTableBlob;
@@ -204,7 +210,8 @@ namespace Chisel.Core
                     case EventType.GetStackNode:
                     {
                         ref var currentNode  = ref topDownNodes[currEvent.currIndex];
-                        var intersectionType = brushesTouchedByBrush.Get(currentNode.nodeIndex);
+                        var currentNodeIndex = currentNode.nodeIndex;
+                        var intersectionType = brushesTouchedByBrush.Get(currentNodeIndex);
                         if (intersectionType == IntersectionType.NoIntersection)
                             break;
 
@@ -212,13 +219,13 @@ namespace Chisel.Core
                         {
                             if (intersectionType == IntersectionType.AInsideB) 
                             { 
-                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.inside }; 
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.inside }; 
                                 outputLength++;
                                 break; 
                             }
                             if (intersectionType == IntersectionType.BInsideA) 
                             { 
-                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.outside };
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.outside };
                                 outputLength++;
                                 break; 
                             }
@@ -227,7 +234,7 @@ namespace Chisel.Core
                             if (processedNodeIndex == currentNode.nodeIndex)
                             {
                                 haveGoneBeyondSelf = 1; // We're currently "ON" our brush
-                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.selfAligned };
+                                output[outputLength] = new CategoryStackNode { nodeIndex = currentNodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.selfAligned };
                                 outputLength++;
                                 break;
                             }
@@ -236,7 +243,7 @@ namespace Chisel.Core
                                 haveGoneBeyondSelf = 2; // We're now definitely beyond our brush
 
                             // Otherwise return identity categories (input == output)
-                            output[outputLength] = new CategoryStackNode { nodeIndex = currentNode.nodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.identity };
+                            output[outputLength] = new CategoryStackNode { nodeIndex = currentNodeIndex, operation = currentNode.Operation, routingRow = CategoryRoutingRow.identity };
                             outputLength++;
                             break;
                         }
