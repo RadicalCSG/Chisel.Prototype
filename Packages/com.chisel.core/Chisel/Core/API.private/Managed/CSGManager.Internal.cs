@@ -174,11 +174,13 @@ namespace Chisel.Core
 
             freeNodeIDs		.Clear();	trees	.Clear();
             branches		.Clear();	brushes	.Clear();
+
+            ChiselTreeLookup.Value.Clear(); 
         }
 
         internal static bool DestroyNode(Int32 nodeID)
         {
-            if (!IsValidNodeID(nodeID)) return false;
+            if (!IsValidNodeID(nodeID)) return false; 
 
             var nodeIndex = nodeID - 1; // NOTE: converting ID to index
 
@@ -218,6 +220,8 @@ namespace Chisel.Core
                 }
             }
 
+            if (nodeType == CSGNodeType.Tree)
+                ChiselTreeLookup.Value.Remove(nodeIndex);
             
 
             nodeUserIDs		[nodeIndex] = kDefaultUserID;
@@ -234,7 +238,7 @@ namespace Chisel.Core
             NodeLocalTransform.Reset(ref nodeLocalTransform);
             nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
 
-            brushInfos[nodeIndex] = null;
+            brushInfos[nodeIndex] = null; 
             treeInfos[nodeIndex] = null;
 
             var nodeHierarchy = nodeHierarchies[nodeIndex];

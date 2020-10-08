@@ -692,16 +692,15 @@ namespace Chisel.Core
                     brushRenderBufferCache.Dispose();
                 }
                 brushRenderBufferCache = default;
-                if (compactTree.IsCreated)
-                    compactTree.Dispose();
-                compactTree = default;
-
                 if (brushTreeSpaceBoundLookup.IsCreated)
                     brushTreeSpaceBoundLookup.Dispose();
                 brushTreeSpaceBoundLookup = default;
                 if (brushRenderBufferLookup.IsCreated)
                     brushRenderBufferLookup.Dispose();
                 brushRenderBufferLookup = default;
+                if (compactTree.IsCreated)
+                    compactTree.Dispose();
+                compactTree = default;
             }
         }
 
@@ -744,14 +743,44 @@ namespace Chisel.Core
         readonly Dictionary<int, int>   chiselTreeLookup    = new Dictionary<int, int>();
         readonly List<Data>             chiselTreeData      = new List<Data>();
 
-        
+        public void Remove(int index)
+        {
+            if (!chiselTreeLookup.TryGetValue(index, out int dataIndex))
+                return;
+
+            var data = chiselTreeData[dataIndex];
+            data.Dispose();
+            // TODO: remove null entry and fix up indices
+            chiselTreeData[dataIndex] = default;
+            chiselTreeLookup.Remove(index);
+        }
+
+        public void Clear()
+        {
+            if (_singleton == null)
+                return;
+            foreach (var data in chiselTreeData)
+            {
+                if (data != null)
+                    data.Dispose();
+            }
+            chiselTreeData.Clear();
+            chiselTreeLookup.Clear();
+            DestroyImmediate(_singleton);
+            _singleton = null;
+        }
+
         internal void OnDisable()
         {
             foreach (var data in chiselTreeData)
-                data.Dispose();
+            {
+                if (data != null)
+                    data.Dispose();
+            }
             chiselTreeData.Clear();
             chiselTreeLookup.Clear();
-            _singleton = null;
+            if (_singleton == this)
+                _singleton = null;
         }
     }
     

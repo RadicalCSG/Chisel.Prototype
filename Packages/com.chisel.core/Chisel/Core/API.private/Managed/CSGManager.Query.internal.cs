@@ -334,7 +334,7 @@ namespace Chisel.Core
 
             return foundIntersections.ToArray();
         }
-
+         
         public static CSGTreeNode[] GetNodesInFrustum(CSGTree       tree,
                                                       MeshQuery[]   meshQueries, // TODO: add meshquery support here
                                                       Plane[]       planes)
