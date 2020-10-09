@@ -56,7 +56,7 @@ namespace Chisel.Editors
             // $TODO: Convert to UI Toolkit
             this.GetRootElement();
 
-            m_TopToolbar = Root.AddBox( new Rect( position.width, 0, TOOLBAR_HEIGHT, position.height ), new Color( 0.15f, 0.15f, 0.15f, 1f ), -1 );
+            m_TopToolbar = Root.AddBox( new Rect( position.width, TOOLBAR_HEIGHT, TOOLBAR_HEIGHT, position.height ), new Color( 0.15f, 0.15f, 0.15f, 1f ), -1 );
 
             m_TabBar = m_TopToolbar.AddToolbar( new Rect( 0, 0, position.width, TOOLBAR_HEIGHT ) );
             m_TopToolbar.SetRotation( 90 );
@@ -85,7 +85,7 @@ namespace Chisel.Editors
                 {
                     float xCoord = 0 + x / THUMB_SIZE;
                     float yCoord = 0 + y / THUMB_SIZE;
-                    float sample = Mathf.Clamp01( 1 - Mathf.PerlinNoise( xCoord, yCoord ) * Random.value );
+                    float sample = Mathf.Clamp01( 1 - Mathf.PerlinNoise( xCoord, yCoord ) * Random.value ) * 0.5f;
                     pix[y * THUMB_SIZE + x] = new Color( sample, sample, sample );
                 }
             }
@@ -99,14 +99,15 @@ namespace Chisel.Editors
 
         private void OnGUI()
         {
-            m_TopToolbar?.SetPosition( new Vector2( position.width,                                       0 ) );
-            m_TopToolbar?.SetSize( new Vector2( position.height,                                          TOOLBAR_HEIGHT ) );
-            m_TabBar.SetSize( new Vector2( ( position.height > ( 100 * 4 ) ) ? 100 * 4 : position.height, TOOLBAR_HEIGHT) );
+            m_TopToolbar?.SetPosition( new Vector2( position.width, TOOLBAR_HEIGHT ) );
+            m_TopToolbar?.SetSize( new Vector2( position.height,    TOOLBAR_HEIGHT ) );
+
+            m_TabBar.SetSize( new Vector2( ( position.height > ( 100 * 4 ) ) ? 100 * 4 : position.height, TOOLBAR_HEIGHT ) );
 
             Rect rect = this.position;
 
             //DrawTabBar( rect );
-            //DrawLabelAndTileArea( rect );
+            DrawLabelAndTileArea( rect );
             //DrawToolbar( rect );
             //DrawFooter( rect );
         }
