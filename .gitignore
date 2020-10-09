@@ -61,6 +61,7 @@ UserSettings/EditorUserSettings.asset
 Packages/packages-lock.json
 
 material_browser_cache.json
+UIElementsSchema/
 
 # temporary (remove me before merging material browser PR)
 /Assets/Surfaces Beta 0.4/

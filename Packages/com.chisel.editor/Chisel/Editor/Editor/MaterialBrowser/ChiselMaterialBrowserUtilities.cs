@@ -7,6 +7,10 @@ Author: Daniel Cornelius
 $TODO: Do we want to filter by label, too? it would allow user-ignored materials.
 * * * * * * * * * * * * * * * * * * * * * */
 
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+
 namespace Chisel.Editors
 {
     internal static class ChiselMaterialBrowserUtilities
@@ -64,6 +68,22 @@ namespace Chisel.Editors
             val++;
 
             return val;
+        }
+    }
+
+    internal static class ChiselUIElementUtility
+    {
+        private static VisualElement m_BaseUXML;
+        private static StyleSheet    m_BaseUSS;
+
+        public static VisualElement GetRootElement( this EditorWindow window )
+        {
+            if( m_BaseUXML == null ) m_BaseUXML = Resources.Load<VisualTreeAsset>( "Editor/Chisel/EditorWindow" ).CloneTree();
+            if( m_BaseUSS  == null ) m_BaseUSS  = Resources.Load<StyleSheet>( "Editor/Chisel/EditorWindow" );
+
+            m_BaseUXML.styleSheets.Add( m_BaseUSS );
+
+            return m_BaseUXML;
         }
     }
 }

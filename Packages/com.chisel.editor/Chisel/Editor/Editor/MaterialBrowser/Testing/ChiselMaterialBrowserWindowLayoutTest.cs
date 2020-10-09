@@ -10,10 +10,11 @@ $TODO: DELETE ME WHEN DONE
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace Chisel.Editors
 {
@@ -29,6 +30,11 @@ namespace Chisel.Editors
         private static List<Texture2D> tiles = new List<Texture2D>();
 
         private static bool isRenderingNoise = false;
+
+        private VisualElement Root => rootVisualElement;
+
+        private Box     m_TopToolbar;
+        private Toolbar m_TabBar;
 
         [MenuItem( "Window/Chisel/Material Browser Test" )]
         private static void Init()
@@ -47,6 +53,16 @@ namespace Chisel.Editors
 
         private void OnEnable()
         {
+            // $TODO: Convert to UI Toolkit
+            this.GetRootElement();
+
+            m_TopToolbar = Root.AddBox( new Rect( position.width, 0, TOOLBAR_HEIGHT, position.height ), new Color( 0.15f, 0.15f, 0.15f, 1f ), -1 );
+
+            m_TabBar = m_TopToolbar.AddToolbar( new Rect( 0, 0, position.width, TOOLBAR_HEIGHT ) );
+            m_TopToolbar.SetRotation( 90 );
+
+            for( int i = 0; i < 4; i++ ) { m_TabBar.AddButton( $"Tab {i}", new Vector2Int( 100, 22 ), 0 ); }
+
             if( tiles.Count < 1 )
             {
                 for( int i = 0; i < NUM_TILES; i++ )
@@ -83,39 +99,16 @@ namespace Chisel.Editors
 
         private void OnGUI()
         {
+            m_TopToolbar?.SetPosition( new Vector2( position.width,                                       0 ) );
+            m_TopToolbar?.SetSize( new Vector2( position.height,                                          TOOLBAR_HEIGHT ) );
+            m_TabBar.SetSize( new Vector2( ( position.height > ( 100 * 4 ) ) ? 100 * 4 : position.height, TOOLBAR_HEIGHT) );
+
             Rect rect = this.position;
-            DrawTabBar( rect );
 
+            //DrawTabBar( rect );
             //DrawLabelAndTileArea( rect );
-            DrawToolbar( rect );
-            DrawFooter( rect );
-        }
-
-        private Vector2 pivot;
-
-        private void DrawTabBar( Rect rect )
-        {
-            pivot = new Vector2( rect.width, rect.height - TOOLBAR_HEIGHT );
-
-            Matrix4x4 guiMatrix = GUI.matrix;
-
-            GUI.Box( new Rect( rect.width - TOOLBAR_HEIGHT, 0, TOOLBAR_HEIGHT, rect.height ), "", "DockHeader" );
-            GUI.EndClip();
-
-            GUIUtility.RotateAroundPivot( 90, pivot );
-            //GUI.matrix = Matrix4x4.identity;
-            //GUI.matrix = new Matrix4x4( new Vector4( 0, 1, 0, 0 ), new Vector4( -1, 0, 0, 0 ), new Vector4( 0, 0, 1, 0 ), new Vector4( 0, 0, 0, 1 ) );
-
-            int offset = TOOLBAR_HEIGHT;
-            for( int i = 0; i < 4; i++ ) { GUI.Button( new Rect( offset + ( 100 * ( 1 + i ) ), rect.height - TOOLBAR_HEIGHT, 100, TOOLBAR_HEIGHT ), $"BUTTON {i}" ); }
-
-            GUI.matrix = guiMatrix;
-            GUI.BeginClip( rect );
-        }
-
-        private void DrawFooter( Rect rect )
-        {
-            GUI.Label( new Rect( 0, rect.height - TOOLBAR_HEIGHT, rect.width, TOOLBAR_HEIGHT ), $"xMax: {rect.xMax} | yMax: {rect.yMax} | xMin: {rect.xMin} | yMin: {rect.yMin}" );
+            //DrawToolbar( rect );
+            //DrawFooter( rect );
         }
 
         private float scrollViewHeight;
@@ -167,9 +160,44 @@ namespace Chisel.Editors
         }
 
 
+        private int tabSel = 0;
+
+        private void DrawTabBar( Rect rect )
+        {
+            Matrix4x4 guiMatrix = GUI.matrix;
+
+            GUI.Box( new Rect( rect.width - TOOLBAR_HEIGHT, 0, TOOLBAR_HEIGHT, rect.height ), "", "DockHeader" );
+            //GUI.EndClip();
+
+            RotateAroundPivot( 90, rect.center, rect );
+            //GUIUtility.RotateAroundPivot( 90, new Vector2( rect.width, rect.height -TOOLBAR_HEIGHT ) );
+            //GUI.matrix = Matrix4x4.identity;
+            //GUI.matrix = new Matrix4x4( new Vector4( 0, 1, 0, 0 ), new Vector4( -1, 0, 0, 0 ), new Vector4( 0, 0, 1, 0 ), new Vector4( 0, 0, 0, 1 ) );
+
+            int offset = TOOLBAR_HEIGHT;
+            for( int i = 0; i < 4; i++ ) { GUI.Button( new Rect( TOOLBAR_HEIGHT, 0, TOOLBAR_HEIGHT, rect.height ), $"BUTTON {i}" ); }
+
+            GUI.matrix = guiMatrix;
+            //GUI.BeginClip( rect );
+        }
+
+        private void DrawFooter( Rect rect )
+        {
+            GUI.Label( new Rect( 0, rect.height - TOOLBAR_HEIGHT, rect.width, TOOLBAR_HEIGHT ), $"xMax: {rect.xMax} | yMax: {rect.yMax} | xMin: {rect.xMin} | yMin: {rect.yMin}" );
+        }
+
         private void DrawToolbar( Rect rect )
         {
             GUI.Label( new Rect( 0, 0, rect.width, TOOLBAR_HEIGHT ), $"WindowSize: {position}" );
+        }
+
+        private void RotateAroundPivot( float angle, Vector2 pivot, Rect windowRect )
+        {
+            Matrix4x4 matrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.identity;
+            Vector2 vector = (Vector2) GUI.matrix.MultiplyPoint3x4( pivot ) + windowRect.position;
+
+            GUI.matrix = ( Matrix4x4.TRS( vector, Quaternion.Euler( 0, 0, angle ), Vector3.one ) * Matrix4x4.TRS( -vector, Quaternion.identity, Vector3.one ) ) * matrix;
         }
     }
 }
