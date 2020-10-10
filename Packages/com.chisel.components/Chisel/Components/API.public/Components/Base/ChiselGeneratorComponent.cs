@@ -477,6 +477,8 @@ namespace Chisel.Components
         public delegate IEnumerable<CSGTreeBrush> GetSelectedVariantsOfBrushOrSelfDelegate(CSGTreeBrush brush);
         public static GetSelectedVariantsOfBrushOrSelfDelegate GetSelectedVariantsOfBrushOrSelf;
 
+        static readonly HashSet<CSGTreeBrush> s_FoundBrushes = new HashSet<CSGTreeBrush>();
+
         public override Bounds CalculateBounds()
         {
             if (!brushContainerAsset)
@@ -485,9 +487,9 @@ namespace Chisel.Components
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
             var bounds			= ChiselHierarchyItem.EmptyBounds;
 
-            var foundBrushes    = new HashSet<CSGTreeBrush>();
-            GetAllTreeBrushes(foundBrushes, false);
-            foreach (var brush in foundBrushes)
+            s_FoundBrushes.Clear();
+            GetAllTreeBrushes(s_FoundBrushes, false);
+            foreach (var brush in s_FoundBrushes)
             {
                 if (!brush.Valid)
                     continue;

@@ -607,15 +607,41 @@ namespace Chisel.Editors
             return GetIconContent(operation, name)[0];
         }
 
+        static readonly string[] s_OperationIcons =
+            {
+                kAdditiveIconName,
+                kSubtractiveIconName,
+                kIntersectingIconName
+            };
+
+        static readonly string[] s_OperationStrings =
+            {
+                nameof(CSGOperationType.Additive),
+                nameof(CSGOperationType.Subtractive),
+                nameof(CSGOperationType.Intersecting)
+            };
+
+        static readonly Dictionary<string, string>[] s_NamesWithOperations =
+            {
+                new Dictionary<string, string>(),// additive
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>()
+            };
+
+        static string GetOperationName(int typeIndex, string name)
+        {
+            var namesWithOperation = s_NamesWithOperations[typeIndex];
+            if (!namesWithOperation.TryGetValue(name, out var value))
+                return $"{s_OperationStrings[typeIndex]} {name}";
+            return value;
+        }
+
         public static GUIContent[] GetIconContent(CSGOperationType operation, string name)
         {
-            switch (operation)
-            {
-                default:
-                case CSGOperationType.Additive:     return ChiselEditorResources.GetIconContent(kAdditiveIconName,      $"{nameof(CSGOperationType.Additive)} {name}");
-                case CSGOperationType.Subtractive:  return ChiselEditorResources.GetIconContent(kSubtractiveIconName,   $"{nameof(CSGOperationType.Subtractive)} {name}");
-                case CSGOperationType.Intersecting: return ChiselEditorResources.GetIconContent(kIntersectingIconName,  $"{nameof(CSGOperationType.Intersecting)} {name}");
-            }
+            int typeIndex = (int)operation;
+            if (typeIndex < 0 || typeIndex > s_NamesWithOperations.Length)
+                typeIndex = 0;
+            return ChiselEditorResources.GetIconContent(s_OperationIcons[typeIndex], GetOperationName(typeIndex, name));
         }
         
         public GUIContent GetHierarchyIconForGenericNode(ChiselNode node)

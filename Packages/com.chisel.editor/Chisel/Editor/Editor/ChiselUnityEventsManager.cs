@@ -277,6 +277,8 @@ namespace Chisel.Editors
             ChiselModelManager.OnWillFlushUndoRecord();
         }
 
+        static readonly List<ChiselNode> s_ChildNodes = new List<ChiselNode>();
+
         private static UnityEditor.UndoPropertyModification[] OnPostprocessModifications(UnityEditor.UndoPropertyModification[] modifications)
         {
             // Note: this is not always properly called 
@@ -299,13 +301,14 @@ namespace Chisel.Editors
 
                 processedTransforms.Add(transform);
 
-                var nodes = transform.GetComponentsInChildren<ChiselNode>();
-                if (nodes.Length == 0)
+                s_ChildNodes.Clear();
+                transform.GetComponentsInChildren<ChiselNode>(false, s_ChildNodes);
+                if (s_ChildNodes.Count == 0)
                     continue;
-                if (nodes[0] is ChiselModel)
+                if (s_ChildNodes[0] is ChiselModel)
                     continue;
-                for (int n = 0; n < nodes.Length; n++)
-                    modifiedNodes.Add(nodes[n]);
+                for (int n = 0; n < s_ChildNodes.Count; n++)
+                    modifiedNodes.Add(s_ChildNodes[n]);
             }
             if (modifiedNodes.Count > 0)
             {

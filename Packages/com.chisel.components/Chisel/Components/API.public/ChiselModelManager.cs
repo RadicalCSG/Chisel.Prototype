@@ -174,34 +174,46 @@ namespace Chisel.Components
             return null;
         }
 
+        static List<Scene>                      s_RemoveScenes      = new List<Scene>();
+        static Dictionary<Scene, ChiselModel>   s_SetSceneModels    = new Dictionary<Scene, ChiselModel>();
         public static void CheckActiveModels()
         {
             // Go through all activeModels, which we store per scene, and make sure they still make sense
-            var allScenes = Instance.activeModels.Keys.ToArray();
-            foreach (var scene in allScenes)
+            s_RemoveScenes.Clear();
+            s_SetSceneModels.Clear();
+            foreach (var pair in Instance.activeModels)
             {
                 // If the scene is no longer loaded, remove it from our list
-                if (!scene.isLoaded || !scene.IsValid())
+                if (!pair.Key.isLoaded || !pair.Key.IsValid())
                 {
-                    Instance.activeModels.Remove(scene);
+                    s_RemoveScenes.Add(pair.Key);
                 }
                 
                 // Check if a current activeModel still exists
-                var sceneActiveModel = Instance.activeModels[scene];
+                var sceneActiveModel = pair.Value;
                 if (!sceneActiveModel)
                 {
-                    Instance.activeModels[scene] = FindModelInScene(scene);
+                    s_SetSceneModels[pair.Key] = FindModelInScene(pair.Key);
+                    //Instance.activeModels[pair.Key] = FindModelInScene(pair.Key);
                     continue;
                 } 
                 
                 // Check if a model has been moved to another scene, and correct this if it has
                 var gameObjectScene = sceneActiveModel.gameObject.scene;
-                if (gameObjectScene != scene)
+                if (gameObjectScene != pair.Key)
                 {
-                    Instance.activeModels[scene] = FindModelInScene(scene);
-                    Instance.activeModels[gameObjectScene] = sceneActiveModel;
+                    s_SetSceneModels[pair.Key] = FindModelInScene(pair.Key);
+                    s_SetSceneModels[gameObjectScene] = FindModelInScene(pair.Key);
                 }
             }
+
+
+            foreach(var scene in s_RemoveScenes)
+                Instance.activeModels.Remove(scene);
+
+
+            foreach (var pair in s_SetSceneModels)
+                Instance.activeModels[pair.Key] = pair.Value;
         }
 
 #if UNITY_EDITOR

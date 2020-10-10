@@ -451,8 +451,8 @@ namespace Chisel.Components
                 Array.Clear(meshUpdated, 0, meshUpdated.Length);
                 Profiler.EndSample();
 
+                Profiler.BeginSample("Init.RenderUpdates");
                 s_RenderUpdates.Clear();
-
                 int colliderCount = 0;
                 for (int i = 0; i < vertexBufferContents.subMeshSections.Length; i++)
                 {
@@ -474,12 +474,14 @@ namespace Chisel.Components
                                 debugHelpers[helperIndex].Clear(model, gameObjectState);
                             } else
                             {
+                                Profiler.BeginSample("new ChiselRenderObjectUpdate");
                                 s_RenderUpdates.Add(new ChiselRenderObjectUpdate
                                 {
                                     contentsIndex       = i,
                                     materialOverride    = ChiselMaterialManager.HelperMaterials[helperIndex],
                                     instance            = debugHelpers[helperIndex]
                                 });
+                                Profiler.EndSample();
                             }
                             meshUpdated[helperIndex] = true;
                         }
@@ -492,6 +494,7 @@ namespace Chisel.Components
                             renderables[renderIndex].Clear(model, gameObjectState);
                         } else
                         {
+                            Profiler.BeginSample("new ChiselRenderObjectUpdate");
                             // Group by all meshDescriptions with same query
                             s_RenderUpdates.Add(new ChiselRenderObjectUpdate
                             {
@@ -499,11 +502,13 @@ namespace Chisel.Components
                                 materialOverride    = null,
                                 instance            = renderables[renderIndex]
                             });
+                            Profiler.EndSample();
                         }
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                         colliderCount++;
                 }
+                Profiler.EndSample();
 
                 Profiler.BeginSample("Update");
                 ChiselRenderObjects.Update(model, gameObjectState, s_RenderUpdates, ref vertexBufferContents);

@@ -12,7 +12,7 @@ using Unity.Collections;
 
 namespace Chisel.Components
 {
-    public class ChiselRenderObjectUpdate
+    public struct ChiselRenderObjectUpdate
     {
         public ChiselRenderObjects  instance;
         public int                  contentsIndex;
@@ -298,7 +298,9 @@ namespace Chisel.Components
             {
                 var mesh = updates[u].instance.sharedMesh;
                 s_FoundMeshes.Add(mesh);
-                updates[u].meshIsModified = vertexBufferContents.CopyToMesh(dataArray, updates[u].contentsIndex, ref allJobs);
+                var update = updates[u];
+                update.meshIsModified = vertexBufferContents.CopyToMesh(dataArray, updates[u].contentsIndex, ref allJobs);
+                updates[u] = update;
             }
             Profiler.EndSample();
 
@@ -367,7 +369,9 @@ namespace Chisel.Components
                 if (instance.meshFilter.sharedMesh != instance.sharedMesh)
                 {
                     instance.meshFilter.sharedMesh = instance.sharedMesh;
-                    updates[u].meshIsModified = true;
+                    var update = updates[u];
+                    update.meshIsModified = true;
+                    updates[u] = update;
                 }
                 var expectedEnabled = vertexBufferContents.positions[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
