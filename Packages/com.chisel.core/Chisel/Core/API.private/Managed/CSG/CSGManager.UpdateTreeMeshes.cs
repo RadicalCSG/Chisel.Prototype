@@ -1850,7 +1850,7 @@ namespace Chisel.Core
                             // Write
                             output                      = treeUpdate.dataStream1.AsWriter()
                         };
-                        treeUpdate.allFindLoopOverlapIntersectionsJobHandle = findLoopOverlapIntersectionsJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 16, dependencies);
+                        treeUpdate.allFindLoopOverlapIntersectionsJobHandle = findLoopOverlapIntersectionsJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
                         //treeUpdate.allFindLoopOverlapIntersectionsJobHandle.Complete();
 
                         treeUpdate.allUpdateBrushIndexOrdersJobHandle   = CombineDependencies(treeUpdate.allFindLoopOverlapIntersectionsJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);

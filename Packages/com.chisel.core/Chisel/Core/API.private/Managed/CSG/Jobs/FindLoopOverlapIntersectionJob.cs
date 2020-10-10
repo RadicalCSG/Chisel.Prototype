@@ -246,10 +246,10 @@ namespace Chisel.Core
                 var compareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
                 brushIntersections.Sort(compareSortByBasePlaneIndex);
 
-                if (!intersectionSurfaceSegments.IsCreated || intersectionSurfaceSegments.Length < surfaceCount)
+                if (!intersectionSurfaceSegments.IsCreated || intersectionSurfaceSegments.Length < surfaceCount + 1)
                 {
                     if (intersectionSurfaceSegments.IsCreated) intersectionSurfaceSegments.Dispose();
-                    intersectionSurfaceSegments = new NativeArray<int2>(surfaceCount, Allocator.Temp);
+                    intersectionSurfaceSegments = new NativeArray<int2>(surfaceCount + 1, Allocator.Temp);
                 }
                 {
                     {
