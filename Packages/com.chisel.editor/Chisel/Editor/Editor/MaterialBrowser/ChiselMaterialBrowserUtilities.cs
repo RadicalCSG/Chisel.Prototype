@@ -57,7 +57,7 @@ namespace Chisel.Editors
         }
 
         // step val by powers of two
-        private static int GetPow2( int val )
+        public static int GetPow2( int val )
         {
             val--;
             val |= val >> 1;
@@ -68,22 +68,6 @@ namespace Chisel.Editors
             val++;
 
             return val;
-        }
-    }
-
-    internal static class ChiselUIElementUtility
-    {
-        private static VisualElement m_BaseUXML;
-        private static StyleSheet    m_BaseUSS;
-
-        public static VisualElement GetRootElement( this EditorWindow window )
-        {
-            if( m_BaseUXML == null ) m_BaseUXML = Resources.Load<VisualTreeAsset>( "Editor/Chisel/EditorWindow" ).CloneTree();
-            if( m_BaseUSS  == null ) m_BaseUSS  = Resources.Load<StyleSheet>( "Editor/Chisel/EditorWindow" );
-
-            m_BaseUXML.styleSheets.Add( m_BaseUSS );
-
-            return m_BaseUXML;
         }
     }
 }

@@ -4,9 +4,9 @@ EditorWindow.uss
 License: MIT (https://tldrlegal.com/license/mit-license)
 Author: Daniel Cornelius
 
-Base stylesheet for editor windows
+Base stylesheet for editor windows, these are applied to the entire window.
 * * * * * * * * * * * * * * * * * * * * * */
 
-Label {
+* {
     font-size: 16px;
 }

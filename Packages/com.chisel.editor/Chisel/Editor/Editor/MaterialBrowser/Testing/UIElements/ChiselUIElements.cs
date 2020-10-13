@@ -8,6 +8,7 @@ Author: Daniel Cornelius
 
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,47 +17,63 @@ namespace Chisel.Editors
 {
     public static class ChiselUIElements
     {
+#region CONFIG
+
+        public static void GetRootElement( this EditorWindow window, string uxmlPath, string ussPath = "EditorWindow" )
+        {
+            //VisualTreeAsset m_VTree = Resources.Load<VisualTreeAsset>( $"Editor/Chisel/{uxmlPath}" );
+
+            //m_VTree.CloneTree( window.rootVisualElement );
+
+            window.rootVisualElement.styleSheets.Add( Resources.Load<StyleSheet>( $"Editor/Chisel/{ussPath}" ) );
+        }
+
+        public static void LoadStyleSheet( this VisualElement element, string name )
+        {
+            element.styleSheets.Add( Resources.Load<StyleSheet>( $"Editor/Chisel/{name}" ) );
+        }
+
         public static void SetRotation( this VisualElement v, int degrees )
         {
             if( v.transform.rotation != Quaternion.Euler( 0, 0, degrees ) )
                 v.schedule.Execute( () => { v.transform.rotation = Quaternion.Euler( 0, 0, degrees ); } );
         }
 
-        public static void SetPosition( this VisualElement v, Vector2 position )
+        public static void SetPosition( this VisualElement v, float x, float y )
         {
-            if( v.transform.position != new Vector3( position[0], position[1], v.transform.position.z ) )
-                v.schedule.Execute( () => { v.transform.position = new Vector3( position[0], position[1], v.transform.position.z ); } );
+            if( v.transform.position != new Vector3( x, y, v.transform.position.z ) )
+                v.schedule.Execute( () => { v.transform.position = new Vector3( x, y, v.transform.position.z ); } );
         }
 
-        public static void SetSize( this VisualElement v, Vector2 size )
+        public static void SetSize( this VisualElement v, float width, float height )
         {
-            if( v.style.width != size[0] || v.style.height != size[1] )
+            if( v.style.width != width || v.style.height != height )
             {
                 v.schedule.Execute( () =>
                 {
-                    v.style.width  = size[0];
-                    v.style.height = size[1];
+                    v.style.width  = width;
+                    v.style.height = height;
                 } );
             }
         }
 
-        public static Box AddBox( this VisualElement v, Rect sizeAndPosition, Color tint = default, int depth = 0 )
+        public static void SetText( this Label label, string text )
         {
-            if(tint == default) tint = new Color( 0.5f, 0.5f, 0.5f, 0.5f );
-
-            Box box = new Box();
-            box.style.width           = sizeAndPosition.width;
-            box.style.height          = sizeAndPosition.height;
-            box.style.backgroundColor = tint;
-
-            v.Add( box );
-
-            return box;
+            if( label.text != text )
+                label.schedule.Execute( () => { label.text = text; } );
         }
+
+        public static void SetText( this Button button, string text )
+        {
+            if( button.text != text )
+                button.schedule.Execute( () => { button.text = text; } );
+        }
+
+#endregion CONFIG
 
 #region BUTTON
 
-        public static void AddButton( this VisualElement v, string label, Rect sizeAndPosition, int depth = 0, Action action = null )
+        public static Button AddButton( this VisualElement v, string label, string elementName = "", Action action = null, bool canClick = true )
         {
             if( action == null )
             {
@@ -65,16 +82,16 @@ namespace Chisel.Editors
             }
 
             Button button = new Button( action );
-            button.text         = label;
-            button.style.width  = sizeAndPosition.width;
-            button.style.height = sizeAndPosition.height;
-
-            button.transform.position = new Vector3( sizeAndPosition.x, sizeAndPosition.y, depth );
+            button.text = label;
+            button.name = elementName;
+            button.SetEnabled( canClick );
 
             v.Add( button );
+
+            return button;
         }
 
-        public static void AddButton( this Toolbar t, string label, Vector2Int size, int depth = 0, Action action = null )
+        public static Button AddButton( this Toolbar t, string label, string elementName = "", Action action = null, bool canClick = true )
         {
             if( action == null )
             {
@@ -83,28 +100,110 @@ namespace Chisel.Editors
             }
 
             ToolbarButton button = new ToolbarButton( action );
-            button.text         = label;
-            button.style.width  = size[0];
-            button.style.height = size[1];
-
-            button.transform.position = new Vector3( 0, 0, depth );
+            button.text = label;
+            button.name = elementName;
+            button.SetEnabled( canClick );
 
             t.Add( button );
+
+            return button;
         }
 
 #endregion BUTTON
 
-        public static Toolbar AddToolbar( this VisualElement v, Rect sizeAndPosition, int depth = 0 )
+        public static Toolbar AddToolbar( this VisualElement v, string elementName = "" )
         {
             Toolbar toolbar = new Toolbar();
-            toolbar.style.width  = sizeAndPosition.width;
-            toolbar.style.height = sizeAndPosition.height;
-
-            toolbar.transform.position = new Vector3( sizeAndPosition.x, sizeAndPosition.y, depth );
+            toolbar.name = elementName;
 
             v.Add( toolbar );
 
             return toolbar;
+        }
+
+        public static ToolbarSpacer AddSpacer( this Toolbar t, string elementName )
+        {
+            ToolbarSpacer spacer = new ToolbarSpacer();
+
+            spacer.name = elementName;
+
+            t.Add( spacer );
+
+            return spacer;
+        }
+
+        public static Label AddLabel( this VisualElement v, string text, string elementName = "" )
+        {
+            Label label = new Label( text );
+            label.name = elementName;
+
+            v.Add( label );
+
+            return label;
+        }
+
+        public static Box AddBox( this VisualElement v, string elementName = "" )
+        {
+            Box box = new Box();
+            box.name = elementName;
+
+            v.Add( box );
+
+            return box;
+        }
+
+        public static ScrollView AddScrollView<T>( this VisualElement v, in List<T> elements, ref Vector2 scrollPos, in int tileSize, bool horizontalScrollBar = false, string elementName = "",
+                                                   string             contentContainerName = "contentContainer" ) where T : VisualElement
+        {
+            ScrollView sv = new ScrollView( ScrollViewMode.Vertical );
+
+            sv.name           = elementName;
+            sv.scrollOffset   = scrollPos;
+            sv.elasticity     = 0;
+            sv.showHorizontal = horizontalScrollBar;
+
+            sv.contentContainer.name = contentContainerName;
+
+            foreach( var ve in elements )
+            {
+                ve.SetSize( tileSize, tileSize );
+                sv.AddContent( ve );
+            }
+
+            v.Add( sv );
+
+            return sv;
+        }
+
+        public static void AddContent( this ScrollView sv, VisualElement element )
+        {
+            sv.schedule.Execute( () => { sv.Add( element ); } );
+        }
+
+        public static Image AddImage( this VisualElement v, Texture2D image, string elementName = "" )
+        {
+            Image i = new Image();
+            i.name      = elementName;
+            i.image     = image;
+            i.scaleMode = ScaleMode.ScaleToFit;
+            i.uv        = new Rect( 0, 1, image.width, image.height );
+
+            v.Add( i );
+
+            return i;
+        }
+
+        public static Slider AddSlider( this VisualElement v, out int value, int min, int max, string label, string elementName = "" )
+        {
+            Slider slider = new Slider( min, max, SliderDirection.Horizontal );
+            slider.name  = elementName;
+            slider.label = label;
+
+            value = (int) slider.value;
+
+            v.Add( slider );
+
+            return slider;
         }
     }
 }
