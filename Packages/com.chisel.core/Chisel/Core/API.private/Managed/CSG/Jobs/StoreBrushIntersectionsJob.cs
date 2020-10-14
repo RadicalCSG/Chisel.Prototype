@@ -154,8 +154,8 @@ namespace Chisel.Core
 
             builder.Construct(ref root.brushIntersections, brushIntersections);
             builder.Construct(ref root.intersectionBits, bitset.twoBits);
-            root.Length = bitset.Length;
-            root.Offset = bitset.Offset;
+            root.BitCount = bitset.Length;
+            root.BitOffset = bitset.Offset;
             var result = builder.CreateBlobAssetReference<BrushesTouchedByBrush>(Allocator.Persistent);
             builder.Dispose();
             brushIntersections.Dispose();

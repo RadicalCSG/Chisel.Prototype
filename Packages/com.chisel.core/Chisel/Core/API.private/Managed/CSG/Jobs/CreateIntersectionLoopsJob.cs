@@ -585,10 +585,9 @@ namespace Chisel.Core
             if (!intersectionAsset.IsCreated)
                 return;
 
-
             ref var intersection                = ref intersectionAsset.Value;
-            ref var brushPairIntersection0      = ref intersection.brushes[0];
-            ref var brushPairIntersection1      = ref intersection.brushes[1];
+            ref var brushPairIntersection0      = ref intersection.brush0;
+            ref var brushPairIntersection1      = ref intersection.brush1;
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
 
@@ -662,11 +661,11 @@ namespace Chisel.Core
             { 
                 if (brushPairIntersection1.usedPlanePairs.Length > 0)
                 {
-                    FindIntersectionVertices(ref intersection.brushes[0].localSpacePlanes0,
-                                             ref intersection.brushes[1].localSpacePlanes0,
-                                             ref intersection.brushes[1].usedPlanePairs,
-                                             ref intersection.brushes[0].localSpacePlaneIndices0,
-                                             intersection.brushes[0].nodeToTreeSpace,
+                    FindIntersectionVertices(ref brushPairIntersection0.localSpacePlanes0,
+                                             ref brushPairIntersection1.localSpacePlanes0,
+                                             ref brushPairIntersection1.usedPlanePairs,
+                                             ref brushPairIntersection0.localSpacePlaneIndices0,
+                                             brushPairIntersection0.nodeToTreeSpace,
                                              ref hashedVertices,
                                              ref snapHashedVertices,
                                              foundIndices0, ref foundIndices0Length,
@@ -675,11 +674,11 @@ namespace Chisel.Core
 
                 if (brushPairIntersection0.usedPlanePairs.Length > 0)
                 {
-                    FindIntersectionVertices(ref intersection.brushes[1].localSpacePlanes0,
-                                             ref intersection.brushes[0].localSpacePlanes0,
-                                             ref intersection.brushes[0].usedPlanePairs,
-                                             ref intersection.brushes[1].localSpacePlaneIndices0,
-                                             intersection.brushes[0].nodeToTreeSpace,
+                    FindIntersectionVertices(ref brushPairIntersection1.localSpacePlanes0,
+                                             ref brushPairIntersection0.localSpacePlanes0,
+                                             ref brushPairIntersection0.usedPlanePairs,
+                                             ref brushPairIntersection1.localSpacePlaneIndices0,
+                                             brushPairIntersection0.nodeToTreeSpace,
                                              ref hashedVertices,
                                              ref snapHashedVertices,
                                              foundIndices1, ref foundIndices1Length,
@@ -691,11 +690,11 @@ namespace Chisel.Core
             if (foundIndices0Length > 0 &&
                 brushPairIntersection0.usedVertices.Length > 0)
             {
-                FindInsideVertices(ref intersection.brushes[0].usedVertices,
-                                   ref intersection.brushes[0].vertexIntersectionPlanes,
-                                   ref intersection.brushes[0].vertexIntersectionSegments,
-                                   ref intersection.brushes[1].localSpacePlanes0,
-                                   intersection.brushes[0].nodeToTreeSpace,
+                FindInsideVertices(ref brushPairIntersection0.usedVertices,
+                                   ref brushPairIntersection0.vertexIntersectionPlanes,
+                                   ref brushPairIntersection0.vertexIntersectionSegments,
+                                   ref brushPairIntersection1.localSpacePlanes0,
+                                   brushPairIntersection0.nodeToTreeSpace,
                                    float4x4.identity,
                                    ref hashedVertices,
                                    ref snapHashedVertices,
@@ -706,12 +705,12 @@ namespace Chisel.Core
             if (foundIndices1Length > 0 && 
                 brushPairIntersection1.usedVertices.Length > 0)
             {
-                FindInsideVertices(ref intersection.brushes[1].usedVertices,
-                                   ref intersection.brushes[1].vertexIntersectionPlanes,
-                                   ref intersection.brushes[1].vertexIntersectionSegments,
-                                   ref intersection.brushes[0].localSpacePlanes0,
-                                   intersection.brushes[0].nodeToTreeSpace,
-                                   intersection.brushes[1].toOtherBrushSpace,
+                FindInsideVertices(ref brushPairIntersection1.usedVertices,
+                                   ref brushPairIntersection1.vertexIntersectionPlanes,
+                                   ref brushPairIntersection1.vertexIntersectionSegments,
+                                   ref brushPairIntersection0.localSpacePlanes0,
+                                   brushPairIntersection0.nodeToTreeSpace,
+                                   brushPairIntersection1.toOtherBrushSpace,
                                    ref hashedVertices,
                                    ref snapHashedVertices,
                                    foundIndices1, ref foundIndices1Length);
@@ -726,13 +725,13 @@ namespace Chisel.Core
             {
                 if (brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].IsCreated)
                 {
-                    var brushTransformations0 = intersection.brushes[0].nodeToTreeSpace;
+                    var brushTransformations0 = brushPairIntersection0.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations0) < 0;
 
                     GenerateLoop(brushIndexOrder0,
                                  brushIndexOrder1,
                                  invertedTransform,
-                                 ref intersection.brushes[0].surfaceInfos,
+                                 ref brushPairIntersection0.surfaceInfos,
                                  ref brushTreeSpacePlanes0,
                                  foundIndices0, ref foundIndices0Length,
                                  ref hashedVertices,
@@ -747,13 +746,13 @@ namespace Chisel.Core
             {
                 if (brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].IsCreated)
                 {
-                    var brushTransformations1 = intersection.brushes[1].nodeToTreeSpace;
+                    var brushTransformations1 = brushPairIntersection1.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations1) < 0;
 
                     GenerateLoop(brushIndexOrder1,
                                  brushIndexOrder0,
                                  invertedTransform,
-                                 ref intersection.brushes[1].surfaceInfos,
+                                 ref brushPairIntersection1.surfaceInfos,
                                  ref brushTreeSpacePlanes1,
                                  foundIndices1, 
                                  ref foundIndices1Length,

@@ -18,7 +18,7 @@ namespace BrushFactoryTests
         public IEnumerator CreateBrushContainerAsset_IsPartOfManager()
         {
             var chiselSurface = new ChiselSurface();
-            var box = BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface);
+            BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface, out BrushMesh box);
             yield return null;
 
             var instance = BrushMeshInstance.Create(box);

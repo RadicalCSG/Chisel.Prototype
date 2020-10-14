@@ -9,9 +9,10 @@ using Unity.Jobs.LowLevel.Unsafe;
 namespace Chisel.Core
 {
 
-    // TODO: propertly encapusulate this w/ license etc.
-
-    // https://jacksondunstan.com/articles/4857
+    // Based on: https://github.com/jacksondunstan/NativeCollections/tree/master/JacksonDunstanNativeCollections
+    //           https://jacksondunstan.com/articles/4857
+    // by Jackson Dunstan
+    // MIT license: https://github.com/jacksondunstan/NativeCollections/blob/master/LICENSE.md
 
     public static class IJobParallelForDeferExtensions
     {

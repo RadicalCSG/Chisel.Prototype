@@ -23,6 +23,7 @@ namespace Chisel.Core
     }
 
     [DebuggerTypeProxy(typeof(CategoryRoutingRow.DebuggerProxy))]
+    [StructLayout(LayoutKind.Explicit)]
     public unsafe struct CategoryRoutingRow
     {
 #if HAVE_SELF_CATEGORIES
@@ -124,7 +125,7 @@ namespace Chisel.Core
         IntArray   destination;
 #endif
 #else
-        fixed byte destination[Length];
+        [FieldOffset(0)] fixed byte destination[Length];
 #endif
 
         #region Operation tables            
@@ -321,7 +322,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static CategoryRoutingRow operator +(CategoryRoutingRow a, int offset)
+        public static CategoryRoutingRow operator +(CategoryRoutingRow oldRow, int offset)
         {
 #if HAVE_SELF_CATEGORIES
             var newRow = new CategoryRoutingRow();
@@ -333,10 +334,10 @@ namespace Chisel.Core
             return newRow;
 #else
             var newRow = new CategoryRoutingRow();
-            newRow.destination[0] = (byte)(a.destination[0] + offset);
-            newRow.destination[1] = (byte)(a.destination[1] + offset);
-            newRow.destination[2] = (byte)(a.destination[2] + offset);
-            newRow.destination[3] = (byte)(a.destination[3] + offset);
+            newRow.destination[0] = (byte)(oldRow.destination[0] + offset);
+            newRow.destination[1] = (byte)(oldRow.destination[1] + offset);
+            newRow.destination[2] = (byte)(oldRow.destination[2] + offset);
+            newRow.destination[3] = (byte)(oldRow.destination[3] + offset);
             return newRow;
 #endif
         }

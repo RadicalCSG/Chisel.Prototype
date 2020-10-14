@@ -418,13 +418,13 @@ namespace Chisel.Core
     {
         public BlobArray<BrushIntersection> brushIntersections;
         public BlobArray<uint>              intersectionBits;
-        public int Length;
-        public int Offset;
+        public int BitCount;
+        public int BitOffset;
 
         public IntersectionType Get(int index)
         {
-            index -= Offset;
-            if (index < 0 || index >= Length)
+            index -= BitOffset;
+            if (index < 0 || index >= BitCount)
             {
                 //Debug.Assert(false);
                 return IntersectionType.InvalidValue;
@@ -523,7 +523,8 @@ namespace Chisel.Core
     {
         public IntersectionType type;
         // Note: that the localSpacePlanes0/localSpacePlaneIndices0 parameters for both brush0 and brush1 are in localspace of >brush0<
-        public BlobArray<BrushIntersectionInfo> brushes;
+        public BrushIntersectionInfo brush0;
+        public BrushIntersectionInfo brush1;
     }
 
     public struct BrushIntersectionInfo
@@ -835,7 +836,7 @@ namespace Chisel.Core
             foreach (var brushMeshIndex in Value.brushMeshUpdateList)
             {
                 var brushMeshID = brushMeshIndex + 1;
-                var brushMesh   = BrushMeshManager.GetBrushMesh(brushMeshID);
+                var brushMesh   = BrushMeshManager.GetBrushMesh(brushMeshID); //<-- should already be blobs
                 if (brushMesh == null)
                     brushMeshBlobs[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
                 else
