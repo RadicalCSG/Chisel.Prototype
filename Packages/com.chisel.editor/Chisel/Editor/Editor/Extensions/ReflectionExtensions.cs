@@ -47,10 +47,10 @@ namespace Chisel.Editors
             get
             {
                 if (property == null)
-                    return default(T);
+                    return default;
                 var result = property.GetValue(instance, null);
                 if (result == null)
-                    return default(T);
+                    return default;
                 return (T)result;
             }
             set

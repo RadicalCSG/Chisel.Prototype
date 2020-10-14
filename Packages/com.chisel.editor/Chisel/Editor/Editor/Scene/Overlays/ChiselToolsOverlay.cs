@@ -141,6 +141,19 @@ namespace Chisel.Editors
         // TODO: move somewhere else
         public static bool HaveNodesInSelection()
         {
+            if (Selection.count == 0)
+                return false;
+            if (Selection.count == 1)
+            {
+                var chiselNode = Selection.activeObject as ChiselNode;
+                if (chiselNode != null)
+                    return true;
+
+                var gameObject = Selection.activeObject as GameObject;
+                if (gameObject != null)
+                    if (gameObject.TryGetComponent<ChiselNode>(out _))
+                        return true;
+            }
             return Selection.GetFiltered<ChiselNode>(SelectionMode.OnlyUserModifiable).Length > 0;
         }
 
@@ -152,7 +165,8 @@ namespace Chisel.Editors
             {
                 var enabled = HaveNodesInSelection();
 
-                if (editModes.Values.Count > 0)
+                var values = editModes.Values;
+                if (values.Count > 0)
                 {
                     using (new EditorGUI.DisabledScope(!enabled))
                     {
@@ -166,12 +180,13 @@ namespace Chisel.Editors
                         var position    = new Rect(startX, groupRect.y, style.fixedWidth, style.fixedHeight);
 
                         int xPos = 0;
-                        var count = editModes.Values.Count;
+                        var count = values.Count;
                         var index = 0;
-                        foreach (var editMode in editModes.Values)
+                        for (int i = 0; i < count; i++)
                         {
-                            var toggleStyle = (index ==         0) ? styles.toggleStyleLeft : 
-                                              (index == count - 1) && (count < 7) ? styles.toggleStyleRight : 
+                            var editMode = values[i];
+                            var toggleStyle = (index ==         0)                ? styles.toggleStyleLeft :
+                                              (index == count - 1) && (count < 7) ? styles.toggleStyleRight :
                                               styles.toggleStyleMid;
                             position.x = startX + (xPos * buttonStep);
                             EditModeButton(position, enabled, editMode, toggleStyle);

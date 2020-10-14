@@ -9,15 +9,8 @@ namespace Chisel.Core
 {
     public struct RoutingLookup
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RoutingLookup(int startIndex, int endIndex)
-        {
-            this.startIndex = startIndex;
-            this.endIndex = endIndex;
-        }
-
-        public readonly int startIndex;
-        public readonly int endIndex;
+        public int startIndex;
+        public int endIndex;
 
         //public const int kRoutingOffset = 1 + (int)CategoryIndex.LastCategory;
 

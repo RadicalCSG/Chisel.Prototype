@@ -16,10 +16,15 @@ using UnityEngine;
 namespace Chisel.Core 
 {
     internal struct CategoryStackNode
-    { 
-        public CategoryGroupIndex   input;
-        public CSGOperationType     operation;
-        public int                  nodeIndex;
+    {
+        const int bitShift  = 24;
+        const int bitMask   = (1 << bitShift) - 1;
+
+        int  nodeIndexInput; // contains both input (max value 255) and nodeIndex (max 24 bit value)
         public CategoryRoutingRow   routingRow;
+
+
+        public CategoryGroupIndex   Input       { get => (CategoryGroupIndex)(nodeIndexInput >> bitShift); set => nodeIndexInput = (nodeIndexInput & bitMask) | ((int)value << bitShift); }
+        public int                  NodeIndex   { get => nodeIndexInput & bitMask; set => nodeIndexInput = (value & bitMask) | (nodeIndexInput & ~bitMask); }
     }
 }

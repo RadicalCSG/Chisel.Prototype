@@ -34,13 +34,14 @@ namespace Chisel.Editors
 
         const float             kSmallButtonWidth       = 30;
         static GUILayoutOption  kSmallButtonWidthOption = GUILayout.Width(kSmallButtonWidth);
+        
+        const int kButtonSize = 32 + (kButtonPadding * 2);
+        const int kButtonMargin = 1;
+        const int kButtonPadding = 2;
+        const int kSmallButtonPadding = 0;            
+        static GUILayoutOption  kToggleWidth            = GUILayout.Width(kButtonSize);
         class Styles
         {
-            public const int kButtonSize = 32 + (kButtonPadding * 2);
-            public const int kButtonMargin = 1;
-            public const int kButtonPadding = 2;
-            public const int kSmallButtonPadding = 0;
-            
             public GUIStyle toggleStyle;
             public GUIStyle toggleStyleLeft;
             public GUIStyle toggleStyleMid;
@@ -188,16 +189,22 @@ namespace Chisel.Editors
 
         internal static ReflectedField<TextEditor> s_RecycledEditor = typeof(EditorGUI).GetStaticField<TextEditor>("s_RecycledEditor");
 
-        static MethodInfo DoFloatFieldMethodInfo = typeof(EditorGUI).GetStaticMethod("DoFloatField", 8);
+        static readonly MethodInfo DoFloatFieldMethodInfo = typeof(EditorGUI).GetStaticMethod("DoFloatField", 8);
 
+        static object[] s_FloatFieldArray = new object[]{
+                null, null, null, null, null, kFloatFieldFormatString, null, null
+        };
         static float DoFloatField(Rect position, Rect dragHotZone, int id, float value, GUIStyle style, bool draggable)
         {
-            const string kFloatFieldFormatString = "g7";
-
-            var editor = s_RecycledEditor.Value;
-            return (float)DoFloatFieldMethodInfo.Invoke(null, new object[]{
-                editor, position, dragHotZone, id, value, kFloatFieldFormatString, style, draggable
-            });
+            s_FloatFieldArray[0] = s_RecycledEditor.Value;
+            s_FloatFieldArray[1] = position;
+            s_FloatFieldArray[2] = dragHotZone;
+            s_FloatFieldArray[3] = id;
+            s_FloatFieldArray[4] = value;
+            //s_FloatFieldArray[5] = kFloatFieldFormatString;
+            s_FloatFieldArray[6] = style;
+            s_FloatFieldArray[7] = draggable;
+            return (float)DoFloatFieldMethodInfo.Invoke(null, s_FloatFieldArray);
         }
 
         
@@ -207,7 +214,7 @@ namespace Chisel.Editors
         }
 
         private static readonly int s_FloatFieldHash = "EditorTextField".GetHashCode();
-        internal static string kFloatFieldFormatString = "g7";
+        const string kFloatFieldFormatString = "g7";
         internal static float FloatFieldInternal(Rect position, int id, float value, GUIStyle style)
         {
             return DoFloatField(EditorGUI.IndentedRect(position), new Rect(0, 0, 0, 0), id, value, style, false);
@@ -282,15 +289,15 @@ namespace Chisel.Editors
             return GUI.Toggle(rect, value, value ? content[1] : content[0], styles.smallToggleStyle);
         }
 
-        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent content, GUIStyle style)
+        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent content, GUIStyle style, GUILayoutOption option)
         {
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, GUILayout.Width(style.fixedWidth));
+            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, option);
             return ToggleButton(rect, value, active, flag, content, style);
         }
 
-        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent[] content, GUIStyle style)
+        public static bool ToggleButton(bool value, SnapSettings active, SnapSettings flag, GUIContent[] content, GUIStyle style, GUILayoutOption option)
         {
-            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, GUILayout.Width(style.fixedWidth));
+            var rect = EditorGUILayout.GetControlRect(false, style.fixedHeight, style, option);
             return ToggleButton(rect, value, active, flag, content, style);
         }
 
@@ -334,7 +341,7 @@ namespace Chisel.Editors
                 var usedSnappingModes = CurrentSnapSettings();
 
                 {
-                    var buttonRect = EditorGUILayout.GetControlRect(false, styles.toggleStyleLeft.fixedHeight, styles.toggleStyleLeft, GUILayout.Width(styles.toggleStyleLeft.fixedWidth));
+                    var buttonRect = EditorGUILayout.GetControlRect(false, styles.toggleStyleLeft.fixedHeight, styles.toggleStyleLeft, kToggleWidth);
                     buttonRect.x++;
                     Snapping.BoundsSnappingEnabled      = ToggleButton(buttonRect, Snapping.BoundsSnappingEnabled,   usedSnappingModes, SnapSettings.GeometryBoundsToGrid,  styles.boundsSnapIcons,   styles.toggleStyleLeft);
                     buttonRect.x += buttonRect.width;
