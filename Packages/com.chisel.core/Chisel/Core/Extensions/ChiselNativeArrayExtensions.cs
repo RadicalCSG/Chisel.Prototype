@@ -17,12 +17,27 @@ namespace Chisel.Core
                 return;
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * sizeof(T));
         }
+        public unsafe static void ClearValues<T>(this NativeArray<T> array, int length) where T : unmanaged
+        {
+            if (array.Length == 0 ||
+                length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, math.min(length, array.Length) * sizeof(T));
+        }
 
         public unsafe static void ClearStruct<T>(this NativeArray<T> array) where T : struct
         {
             if (array.Length == 0)
                 return;
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * Marshal.SizeOf<T>());
+        }
+
+        public unsafe static void ClearStruct<T>(this NativeArray<T> array, int length) where T : struct
+        {
+            if (array.Length == 0 ||
+                length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, math.min(length, array.Length) * Marshal.SizeOf<T>());
         }
         
 

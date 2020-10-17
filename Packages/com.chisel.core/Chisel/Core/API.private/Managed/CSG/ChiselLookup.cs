@@ -500,50 +500,14 @@ namespace Chisel.Core
     };
 
 
-    // Note: Stored in BlobAsset at runtime/editor-time
-    public struct BrushSurfacePair
-    {
-        public int brushNodeOrder1; // BrushIntersectionLoop.surfaceInfo has brushNode*INDEX*
-        public int basePlaneIndex;  // BrushIntersectionLoop.surfaceInfo has identical basePlaneIndex
-    }
-
-    // TODO: Could be optimized further by storing ALL vertices in a single array (somehow),
-    // which would allow us to store everything else in a simple struct (no need for BlobAssetReference)
-    // Note: Temporary BlobAssetReference that only exists during a single frame
     public struct BrushIntersectionLoop
     {
         public IndexOrder           indexOrder0;
         public IndexOrder           indexOrder1;
         public SurfaceInfo          surfaceInfo;
-        public BlobArray<float3>    loopVertices;
+        public int                  loopVertexIndex;
+        public int                  loopVertexCount;
     }
-
-    // Note: Temporary BlobAssetReference that only exists during a single frame
-    public struct BrushPairIntersection
-    {
-        public IntersectionType type;
-        // Note: that the localSpacePlanes0/localSpacePlaneIndices0 parameters for both brush0 and brush1 are in localspace of >brush0<
-        public BrushIntersectionInfo brush0;
-        public BrushIntersectionInfo brush1;
-    }
-
-    public struct BrushIntersectionInfo
-    {
-        public IndexOrder               brushIndexOrder;
-        public float4x4                 nodeToTreeSpace;
-        public float4x4                 toOtherBrushSpace;
-
-        public BlobArray<PlanePair>     usedPlanePairs;
-        public BlobArray<float4>        localSpacePlanes0;         // planes in local space of >brush0<
-        public BlobArray<int>           localSpacePlaneIndices0;   // planes indices of >brush0<
-        
-        public BlobArray<ushort>        vertexIntersectionPlanes;
-        public BlobArray<int2>          vertexIntersectionSegments;
-
-        public BlobArray<float3>        usedVertices;
-        public BlobArray<SurfaceInfo>   surfaceInfos;
-    }
-
 
     internal sealed unsafe class ChiselTreeLookup : ScriptableObject
     {
