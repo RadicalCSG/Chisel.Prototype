@@ -85,7 +85,7 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushCache;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -99,7 +99,7 @@ namespace Chisel.Core
             var brushIndexOrder = allUpdateBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
 
-            var brushIntersectionsBlob = brushesTouchedByBrushes[brushNodeOrder];
+            var brushIntersectionsBlob = brushesTouchedByBrushCache[brushNodeOrder];
             if (brushIntersectionsBlob == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
             

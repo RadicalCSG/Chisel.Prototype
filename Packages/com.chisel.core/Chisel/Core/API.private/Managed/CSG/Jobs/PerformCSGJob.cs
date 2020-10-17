@@ -17,7 +17,7 @@ namespace Chisel.Core
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;        
 
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableLookup;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<RoutingTable>>            routingTableCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>    brushTreeSpacePlaneCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeListArray<float3>                                  loopVerticesLookup;
@@ -877,7 +877,7 @@ namespace Chisel.Core
             }
 
 
-            BlobAssetReference<RoutingTable> routingTableRef = routingTableLookup[brushNodeOrder];
+            BlobAssetReference<RoutingTable> routingTableRef = routingTableCache[brushNodeOrder];
             if (routingTableRef == BlobAssetReference<RoutingTable>.Null)
             {
                 //Debug.LogError("No routing table found");

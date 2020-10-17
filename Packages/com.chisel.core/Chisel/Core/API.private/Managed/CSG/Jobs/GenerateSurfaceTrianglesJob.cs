@@ -27,7 +27,7 @@ namespace Chisel.Core
         // 'Required' for scheduling with index count
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                              allUpdateBrushIndexOrders;
         
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygons;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygonCache;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformationCache;
         [NoAlias, ReadOnly] public NativeStream.Reader input;
 
@@ -147,7 +147,7 @@ namespace Chisel.Core
 
 
 
-            if (!basePolygons[brushNodeOrder].IsCreated)
+            if (!basePolygonCache[brushNodeOrder].IsCreated)
                 return;
 
             var maxLoops = 0;
@@ -162,7 +162,7 @@ namespace Chisel.Core
             }
 
 
-            ref var baseSurfaces                = ref basePolygons[brushNodeOrder].Value.surfaces;
+            ref var baseSurfaces                = ref basePolygonCache[brushNodeOrder].Value.surfaces;
             var brushTransformations            = transformationCache[brushNodeOrder];
             var treeToNode                      = brushTransformations.treeToNode;
             var nodeToTreeInverseTransposed     = math.transpose(treeToNode);

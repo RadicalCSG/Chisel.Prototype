@@ -21,8 +21,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
 
         // Write
@@ -657,12 +657,12 @@ namespace Chisel.Core
             
             if (brushIndexOrder0.nodeOrder < brushIndexOrder1.nodeOrder)
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesCache[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesCache[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
             } else
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesCache[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesCache[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
             }
 
 
@@ -750,13 +750,13 @@ namespace Chisel.Core
             }
 
 
-            ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
-            ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
+            ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlaneCache[brushIndexOrder0.nodeOrder].Value;
+            ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlaneCache[brushIndexOrder1.nodeOrder].Value;
 
 
             if (foundIndices0Length >= 3)
             {
-                if (brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].IsCreated)
+                if (brushTreeSpacePlaneCache[brushIndexOrder0.nodeOrder].IsCreated)
                 {
                     var brushTransformations0 = brushPairIntersection0.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations0) < 0;
@@ -778,7 +778,7 @@ namespace Chisel.Core
 
             if (foundIndices1Length >= 3)
             {
-                if (brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].IsCreated)
+                if (brushTreeSpacePlaneCache[brushIndexOrder1.nodeOrder].IsCreated)
                 {
                     var brushTransformations1 = brushPairIntersection1.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations1) < 0;

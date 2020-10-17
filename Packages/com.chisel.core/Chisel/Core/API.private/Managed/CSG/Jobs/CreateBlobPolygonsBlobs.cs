@@ -20,13 +20,13 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly      brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>           basePolygons;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>           basePolygonCache;
 
 
         // Per thread scratch memory
@@ -143,11 +143,11 @@ namespace Chisel.Core
             int nodeOrder  = indexOrder.nodeOrder;
             int nodeIndex = indexOrder.nodeIndex;
 
-            if (treeSpaceVerticesArray[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesCache[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
             var mesh                    = brushMeshLookup[nodeOrder];
-            ref var treeSpaceVertices   = ref treeSpaceVerticesArray[nodeOrder].Value.treeSpaceVertices;
+            ref var treeSpaceVertices   = ref treeSpaceVerticesCache[nodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
@@ -224,14 +224,14 @@ namespace Chisel.Core
             //       then snap them all, then do this job
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
-            ref var brushIntersections = ref brushesTouchedByBrushes[nodeOrder].Value.brushIntersections;
+            ref var brushIntersections = ref brushesTouchedByBrushCache[nodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder < nodeOrder)
                     continue;
 
-                if (treeSpaceVerticesArray[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                if (treeSpaceVerticesCache[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -239,7 +239,7 @@ namespace Chisel.Core
 
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
-                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
+                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesCache[intersectingNodeOrder].Value.treeSpaceVertices;
                 hashedTreeSpaceVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
             }
 
@@ -283,7 +283,7 @@ namespace Chisel.Core
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
-            basePolygons[nodeOrder] = basePolygonsBlob;
+            basePolygonCache[nodeOrder] = basePolygonsBlob;
             //builder.Dispose();
 
             //hashedTreeSpaceVertices.Dispose();
