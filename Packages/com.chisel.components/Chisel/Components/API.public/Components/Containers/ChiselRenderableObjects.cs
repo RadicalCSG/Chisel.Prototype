@@ -16,8 +16,11 @@ namespace Chisel.Components
     {
         public ChiselRenderObjects  instance;
         public int                  contentsIndex;
+        public int                  meshIndex;
         public Material             materialOverride;
         public bool                 meshIsModified;
+        public ChiselModel          model;
+        public GameObjectState      state;
     }
 
     [Serializable]
@@ -295,29 +298,44 @@ namespace Chisel.Components
 
 
 
+        public static void Preprocess(List<ChiselRenderObjectUpdate> updates, List<Mesh> foundMeshes)
+        {
+            Profiler.BeginSample("PreProcess");
+            for (int i = 0; i < updates.Count; i++)
+            {
+                var instance = updates[i].instance;
+
+                var meshIndex = foundMeshes.Count;
+                foundMeshes.Add(instance.sharedMesh);
+                
+                var temp = updates[i];
+                temp.meshIndex = meshIndex;
+                updates[i] = temp;
+            }
+            Profiler.EndSample();
+        }
+
+
         // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
-        static readonly List<Mesh> s_FoundMeshes = new List<Mesh>();
-        public static void Update(ChiselModel model, GameObjectState state, List<ChiselRenderObjectUpdate> updates, ref VertexBufferContents vertexBufferContents)
+        public static void ScheduleMeshCopy(ref VertexBufferContents contents, List<ChiselRenderObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs)
         {
             Profiler.BeginSample("CopyToMesh");
-            var dataArray = Mesh.AllocateWritableMeshData(updates.Count);
-            s_FoundMeshes.Clear();
-            JobHandle allJobs = default;
             for (int u = 0; u < updates.Count; u++)
             {
-                var mesh = updates[u].instance.sharedMesh;
-                s_FoundMeshes.Add(mesh);
                 var update = updates[u];
-                update.meshIsModified = vertexBufferContents.CopyToMesh(dataArray, updates[u].contentsIndex, ref allJobs);
+                update.meshIsModified = contents.CopyToMesh(dataArray, update.meshIndex, update.contentsIndex, ref allJobs);
                 updates[u] = update;
             }
             Profiler.EndSample();
+        }
 
+        public static void UpdateMaterials(ref VertexBufferContents contents, List<ChiselRenderObjectUpdate> updates)
+        {
             Profiler.BeginSample("SetTriangleBrushes");
             for (int u = 0; u < updates.Count; u++)
             {
                 var instance = updates[u].instance;
-                var brushIndicesArray = vertexBufferContents.brushIndices[updates[u].contentsIndex].AsArray();
+                var brushIndicesArray = contents.brushIndices[updates[u].contentsIndex].AsArray();
                 if (instance.triangleBrushes.Length < brushIndicesArray.Length)
                     instance.triangleBrushes = new int[brushIndicesArray.Length];
                 NativeArray<int>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
@@ -330,8 +348,8 @@ namespace Chisel.Components
                 var instance = updates[u].instance;
                 var contentsIndex = updates[u].contentsIndex;
                 var materialOverride = updates[u].materialOverride;
-                var startIndex = vertexBufferContents.subMeshSections[contentsIndex].startIndex;
-                var endIndex = vertexBufferContents.subMeshSections[contentsIndex].endIndex;
+                var startIndex = contents.subMeshSections[contentsIndex].startIndex;
+                var endIndex = contents.subMeshSections[contentsIndex].endIndex;
                 var desiredCapacity = endIndex - startIndex;
                 if (instance.renderMaterials == null || instance.renderMaterials.Length != desiredCapacity)
                     instance.renderMaterials = new Material[desiredCapacity];
@@ -343,7 +361,7 @@ namespace Chisel.Components
                 {
                     for (int i = 0; i < desiredCapacity; i++)
                     {
-                        var meshDescription = vertexBufferContents.meshDescriptions[startIndex + i];
+                        var meshDescription = contents.meshDescriptions[startIndex + i];
                         var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                         instance.renderMaterials[i] = renderMaterial;
@@ -352,20 +370,17 @@ namespace Chisel.Components
                 instance.SetMaterialsIfModified(instance.meshRenderer, instance.renderMaterials);
             }
             Profiler.EndSample();
+        }
 
-            Profiler.BeginSample("Complete");
-            allJobs.Complete();
-            Profiler.EndSample();
 
-            Profiler.BeginSample("Apply");
-            Mesh.ApplyAndDisposeWritableMeshData(dataArray, s_FoundMeshes);
-            Profiler.EndSample();
-
+        public static void UpdateSettings(List<ChiselRenderObjectUpdate> updates, ref VertexBufferContents vertexBufferContents)
+        {
             Profiler.BeginSample("UpdateSettings");
             for (int u = 0; u < updates.Count; u++)
             {
-                var instance = updates[u].instance;
-                var contentsIndex = updates[u].contentsIndex;
+                var update = updates[u];
+                var instance = update.instance;
+                var contentsIndex = update.contentsIndex;
 
                 if (instance.sharedMesh.subMeshCount > 0)
                 {
@@ -378,7 +393,6 @@ namespace Chisel.Components
                 if (instance.meshFilter.sharedMesh != instance.sharedMesh)
                 {
                     instance.meshFilter.sharedMesh = instance.sharedMesh;
-                    var update = updates[u];
                     update.meshIsModified = true;
                     updates[u] = update;
                 }
@@ -386,7 +400,7 @@ namespace Chisel.Components
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
-                instance.UpdateSettings(model, state, updates[u].meshIsModified);
+                instance.UpdateSettings(update.model, update.state, update.meshIsModified);
             }
             Profiler.EndSample();
         }

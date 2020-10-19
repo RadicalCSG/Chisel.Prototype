@@ -79,7 +79,7 @@ namespace Chisel.Core
                         indexCount  = subMeshesArray[i].indexCount,
                         bounds      = dstBounds,
                         topology    = UnityEngine.MeshTopology.Triangles,
-                    });
+                    }, MeshUpdateFlags.DontRecalculateBounds);
                 }
             }
         }
@@ -96,14 +96,14 @@ namespace Chisel.Core
             return (subMeshesArray.Length == 0 || indexCount == 0 || vertexCount == 0);
         }
 
-        readonly static VertexAttributeDescriptor[] s_Descriptors = new[] 
+        readonly static VertexAttributeDescriptor[] s_FullDescriptors = new[] 
         {
             new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 1),
             new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 2),
             new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 3) 
         };
-        public bool CopyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, ref JobHandle allJobs)
+        public bool CopyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, ref JobHandle allJobs)
         {
             /*
             // TODO: store somewhere else
@@ -144,8 +144,8 @@ namespace Chisel.Core
              
 
             Profiler.BeginSample("Init");
-            var data = dataArray[contentsIndex];
-            data.SetVertexBufferParams(positionsArray.Length, s_Descriptors);
+            var data = dataArray[meshIndex];
+            data.SetVertexBufferParams(positionsArray.Length, s_FullDescriptors);
             data.SetIndexBufferParams(indexCount, IndexFormat.UInt32);
             Profiler.EndSample();
 
@@ -158,19 +158,78 @@ namespace Chisel.Core
                 normals         = normals,
                 uv0             = uv0,
                 contentsIndex   = contentsIndex,
-                data            = dataArray[contentsIndex]
+                data            = data
             };
             var copyToMeshJobHandle = copyToMeshJob.Schedule();
             allJobs = JobHandle.CombineDependencies(allJobs, copyToMeshJobHandle);
             return true;
         }
 
-        public bool CopyPositionOnlyToMesh(int contentsIndex, UnityEngine.Mesh mesh)
+        [BurstCompile]
+        struct CopyToMeshColliderJob : IJob
+        {
+            [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>    subMeshes;
+            [NoAlias, ReadOnly] public NativeListArray<int> 	            indices;
+            [NoAlias, ReadOnly] public NativeListArray<float3>              positions;
+            [NoAlias, ReadOnly] public int contentsIndex;
+            [NoAlias, ReadOnly] public int instanceID;
+
+            [NoAlias, WriteOnly] public Mesh.MeshData data;
+
+            public void Execute()
+            {
+                if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
+                    !this.positions.IsIndexCreated(contentsIndex) ||
+                    !this.indices.IsIndexCreated(contentsIndex))
+                {
+                    data.subMeshCount = 0;
+                    return;
+                }
+                
+                var subMeshesArray  = this.subMeshes[contentsIndex].AsArray();
+                var positionsArray  = this.positions[contentsIndex].AsArray();
+                var indicesArray    = this.indices[contentsIndex].AsArray();
+
+                var dstPositions = data.GetVertexData<float3>(stream: 0);
+                dstPositions.CopyFrom(positionsArray);
+                
+                var dstIndices = data.GetIndexData<int>();
+                dstIndices.CopyFrom(indicesArray);
+                
+                data.subMeshCount = subMeshesArray.Length;
+                for (int i = 0; i < subMeshesArray.Length; i++)
+                {
+                    var srcBounds   = subMeshesArray[i].bounds;
+                    var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
+                    var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
+                    var dstBounds   = new Bounds(center, size);
+
+                    data.SetSubMesh(i, new SubMeshDescriptor
+                    {
+                        baseVertex  = subMeshesArray[i].baseVertex,
+                        firstVertex = 0,
+                        vertexCount = subMeshesArray[i].vertexCount,
+                        indexStart  = subMeshesArray[i].baseIndex,
+                        indexCount  = subMeshesArray[i].indexCount,
+                        bounds      = dstBounds,
+                        topology    = UnityEngine.MeshTopology.Triangles,
+                    }, MeshUpdateFlags.DontRecalculateBounds);
+                }
+
+                Physics.BakeMesh(instanceID, false);
+            }
+        }
+
+        readonly static VertexAttributeDescriptor[] s_PositionOnlyDescriptors = new[]
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0)
+        };
+        public bool CopyPositionOnlyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, int instanceID, ref JobHandle allJobs)
         {
             //if (geometryHashValue != meshDescription.geometryHashValue)
             //{
-                //geometryHashValue = meshDescription.geometryHashValue;
-
+            //geometryHashValue = meshDescription.geometryHashValue;
+            /*
             var positionsArray  = this.positions[contentsIndex].AsArray();
             var indicesArray    = this.indices[contentsIndex].AsArray();
             if (positionsArray.Length == 0 ||
@@ -184,10 +243,43 @@ namespace Chisel.Core
 
             mesh.Clear(keepVertexLayout: true);
             mesh.SetVertices(positionsArray);
-            mesh.SetIndexBufferParams(indices[contentsIndex].Length, UnityEngine.Rendering.IndexFormat.UInt32);
-            mesh.SetIndexBufferData(indicesArray, 0, 0, indices[contentsIndex].Length, MeshUpdateFlags.Default);
-            mesh.subMeshCount = 0;
+            mesh.SetIndices(indicesArray, 0, indices[contentsIndex].Length, MeshTopology.Triangles, 0, true);
+            
+            //mesh.SetIndexBufferParams(indices[contentsIndex].Length, UnityEngine.Rendering.IndexFormat.UInt32);
+            //mesh.SetIndexBufferData(indicesArray, 0, 0, indices[contentsIndex].Length, MeshUpdateFlags.Default);
             mesh.RecalculateBounds();
+            return true;
+            
+            //var subMeshesArray    = this.subMeshes[contentsIndex].AsArray();
+            var positionsArray      = this.positions[contentsIndex].AsArray();
+            var indicesArray        = this.indices[contentsIndex].AsArray();
+
+            //var vertexCount = positionsArray.Length;
+            var indexCount  = indicesArray.Length;
+            */
+            
+            var positionsArray  = this.positions[contentsIndex].AsArray();
+            var indicesArray    = this.indices[contentsIndex].AsArray();
+
+            var indexCount = indicesArray.Length;
+
+            Profiler.BeginSample("Init");
+            var data = dataArray[meshIndex];
+            data.SetVertexBufferParams(positionsArray.Length, s_PositionOnlyDescriptors);
+            data.SetIndexBufferParams(indexCount, IndexFormat.UInt32);
+            Profiler.EndSample();
+
+            var copyToMeshJob = new CopyToMeshColliderJob
+            {
+                subMeshes       = subMeshes,
+                indices         = indices,
+                positions       = positions,
+                contentsIndex   = contentsIndex,
+                instanceID      = instanceID,
+                data            = data
+            };
+            var copyToMeshJobHandle = copyToMeshJob.Schedule();
+            allJobs = JobHandle.CombineDependencies(allJobs, copyToMeshJobHandle);
             return true;
         }
     };

@@ -357,7 +357,7 @@ namespace Chisel.Core
         public bool IsIndexCreated(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 #endif
             if (index < 0 || index >= m_Array->Length)
                 return false;

@@ -167,12 +167,16 @@ namespace Chisel.Core
                 } else
                 if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                 {
+                    subMeshesArray   .AllocateWithCapacityForIndex(i, 1);
                     indicesArray     .AllocateWithCapacityForIndex(i, totalIndexCount);
                     positionsArray   .AllocateWithCapacityForIndex(i, totalVertexCount);
                         
+                    subMeshesArray   [i].Clear();
                     indicesArray     [i].Clear();
                     positionsArray   [i].Clear();
+                    
 
+                    subMeshesArray   [i].Resize(1, NativeArrayOptions.ClearMemory);
                     indicesArray     [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
                     positionsArray   [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
                 }
@@ -201,8 +205,6 @@ namespace Chisel.Core
         public void Execute(int index)
         {
             var vertexBufferInit = subMeshSections[index];
-            if (vertexBufferInit.endIndex - vertexBufferInit.startIndex == 0)
-                return;
 
             var layerParameterIndex = vertexBufferInit.meshQuery.LayerParameterIndex;
             var startIndex          = vertexBufferInit.startIndex;
@@ -211,7 +213,9 @@ namespace Chisel.Core
             var totalIndexCount     = vertexBufferInit.totalVertexCount;
             if (layerParameterIndex == LayerParameterIndex.None ||
                 layerParameterIndex == LayerParameterIndex.RenderMaterial)
-            { 
+            {
+                if (vertexBufferInit.endIndex - vertexBufferInit.startIndex == 0)
+                    return;
                 var numberOfSubMeshes = endIndex - startIndex;
 
 
@@ -238,13 +242,13 @@ namespace Chisel.Core
                     surfaceHashValue != combinedSurfaceHashValue)
 #endif
 
-                var subMeshes    = subMeshesArray   [index].AsArray();
-                var brushIndices = brushIndicesArray[index].AsArray();
-                var indices      = indicesArray     [index].AsArray();
-                var tangents     = tangentsArray    [index].AsArray();
-                var positions    = positionsArray   [index].AsArray();
-                var uv0          = uv0Array         [index].AsArray();
-                var normals      = normalsArray     [index].AsArray();
+                var subMeshes    = this.subMeshesArray   [index].AsArray();
+                var brushIndices = this.brushIndicesArray[index].AsArray();
+                var indices      = this.indicesArray     [index].AsArray();
+                var tangents     = this.tangentsArray    [index].AsArray();
+                var positions    = this.positionsArray   [index].AsArray();
+                var uv0          = this.uv0Array         [index].AsArray();
+                var normals      = this.normalsArray     [index].AsArray();
 
                 int currentBaseVertex = 0;
                 int currentBaseIndex = 0;
@@ -312,27 +316,12 @@ namespace Chisel.Core
                         baseIndex           = currentBaseIndex,
                         indexCount          = indexCount,
                         vertexCount         = vertexCount,
-                        //surfacesOffset    = surfacesOffset,
-                        //surfacesCount     = surfacesCount,
-                        //startIndex        = startIndex,
-                        //endIndex          = endIndex,
                         bounds              = new MinMaxAABB { Min = min, Max = max }
                     };
 
                     currentBaseVertex += vertexCount;
                     currentBaseIndex += indexCount;
                 }
-                /*
-                // TODO: do this per brush & cache this!!
-                ComputeTangents(indices,
-                                positions,
-                                uv0,
-                                normals,
-                                tangents,
-                                totalIndices:  currentBaseIndex,
-                                totalVertices: currentBaseVertex);
-                */
-
             } else
             if (layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
             {
@@ -342,12 +331,15 @@ namespace Chisel.Core
 
                 var surfacesOffset  = subMeshCount.surfacesOffset;
                 var surfacesCount   = subMeshCount.surfacesCount;
+                var vertexCount		= subMeshCount.vertexCount;
+                var indexCount		= subMeshCount.indexCount;
                 
-                var indices         = this.indicesArray[index];
-                var positions       = this.positionsArray[index];
-                
-                var indicesArray       = indices.AsArray();
-                var positionsArray     = positions.AsArray();
+                var subMeshes       = this.subMeshesArray   [index].AsArray();
+                var indices         = this.indicesArray     [index].AsArray();
+                var positions       = this.positionsArray   [index].AsArray();
+
+                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
                 // copy all the vertices & indices to a mesh for the collider
                 for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
@@ -356,11 +348,11 @@ namespace Chisel.Core
                 {
                     var subMeshSurface      = subMeshSurfaces[surfaceIndex];
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
-                    ref var srcIndices      = ref sourceBuffer.indices;
-                    ref var srcVertices     = ref sourceBuffer.vertices;
+                    ref var sourceIndices   = ref sourceBuffer.indices;
+                    ref var sourceVertices  = ref sourceBuffer.vertices;
 
-                    var sourceIndexCount    = srcIndices.Length;
-                    var sourceVertexCount   = srcVertices.Length;
+                    var sourceIndexCount    = sourceIndices.Length;
+                    var sourceVertexCount   = sourceVertices.Length;
                     var sourceBrushCount    = sourceIndexCount / 3;
 
                     if (sourceIndexCount == 0 ||
@@ -370,12 +362,27 @@ namespace Chisel.Core
                     brushIDIndexOffset += sourceBrushCount;
 
                     for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
-                        indicesArray[indexOffset] = (int)(srcIndices[i] + vertexOffset); 
+                        indices[indexOffset] = (int)(sourceIndices[i] + vertexOffset); 
 
-                    positionsArray.CopyFrom(vertexOffset, ref srcVertices, 0, sourceVertexCount);
+                    positions.CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
+
+                    for (int i = 0; i < sourceVertexCount; i++)
+                    {
+                        min = math.min(min, sourceVertices[i]);
+                        max = math.max(max, sourceVertices[i]);
+                    }
 
                     vertexOffset += sourceVertexCount;
                 }
+
+                subMeshes[0] = new GeneratedSubMesh
+                { 
+                    baseVertex          = 0,
+                    baseIndex           = 0,
+                    indexCount          = indexCount,
+                    vertexCount         = vertexCount,
+                    bounds              = new MinMaxAABB { Min = min, Max = max }
+                };
             }
         }
         /*

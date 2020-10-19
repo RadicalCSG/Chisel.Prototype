@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 namespace Chisel.Core
 {
-    public delegate bool UpdateMeshEvent(CSGTree tree, ref VertexBufferContents vertexBufferContents);
+    public delegate bool UpdateMeshEvent(CSGTree tree, int index, ref VertexBufferContents vertexBufferContents);
 
     /// <summary>This class is manager class for all <see cref="Chisel.Core.CSGTreeNode"/>s.</summary>	
     public static partial class CSGManager

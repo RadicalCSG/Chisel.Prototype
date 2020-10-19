@@ -62,7 +62,7 @@ namespace Chisel.Components
             }
         }
 
-        static bool UpdateMeshEvent(CSGTree tree, ref VertexBufferContents vertexBufferContents)
+        static bool UpdateMeshEvent(CSGTree tree, int index, ref VertexBufferContents vertexBufferContents)
         {
             // TODO: clean this up
             ChiselModel model = null;

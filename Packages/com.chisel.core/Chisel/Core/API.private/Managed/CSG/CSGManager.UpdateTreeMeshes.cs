@@ -899,11 +899,9 @@ namespace Chisel.Core
                 #endregion
 
                 treeUpdateLength++;
-            }
-            
-            for (int t = 0; t < treeUpdateLength; t++)
-            {
+                
                 ref var treeUpdate = ref s_TreeUpdates[t];
+
 
                 treeUpdate.allBrushMeshInstanceIDsJobHandle = default;
                 treeUpdate.allTreeBrushIndexOrdersJobHandle = default;
@@ -2387,7 +2385,7 @@ namespace Chisel.Core
                         if (!tree.Valid)
                             continue;
 
-                        updateMeshEvent.Invoke(tree, ref treeUpdate.vertexBufferContents);
+                        updateMeshEvent.Invoke(tree, t, ref treeUpdate.vertexBufferContents);
                     }
                     Profiler.EndSample();
                 }
