@@ -4,7 +4,8 @@ using Unity.Jobs;
 
 namespace Chisel.Core
 {
-    public delegate bool UpdateMeshEvent(CSGTree tree, int index, ref VertexBufferContents vertexBufferContents);
+    public delegate bool PreUpdateMeshEvent(CSGTree tree, int index, ref VertexBufferContents vertexBufferContents);
+    public delegate JobHandle ScheduleMeshUploads(JobHandle dependencies);
 
     /// <summary>This class is manager class for all <see cref="Chisel.Core.CSGTreeNode"/>s.</summary>	
     public static partial class CSGManager
@@ -14,7 +15,7 @@ namespace Chisel.Core
 
         /// <summary>Updates all pending changes to all <see cref="Chisel.Core.CSGTree"/>s.</summary>
         /// <returns>True if any <see cref="Chisel.Core.CSGTree"/>s have been updated, false if no changes have been found.</returns>
-        public static bool	Flush	(UpdateMeshEvent updateMeshEvent)	{ if (!UpdateAllTreeMeshes(updateMeshEvent, out JobHandle handle)) return false; handle.Complete(); return true; }
+        public static bool	Flush	(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent)	{ if (!UpdateAllTreeMeshes(beginMeshEvent, preUpdateMeshEvent, scheduleMeshUploads, postUpdateMeshEvent, out JobHandle handle)) return false; handle.Complete(); return true; }
 
 
         /// <summary>Destroy all <see cref="Chisel.Core.CSGTreeNode"/>s contained in <paramref name="nodes"/>.</summary>

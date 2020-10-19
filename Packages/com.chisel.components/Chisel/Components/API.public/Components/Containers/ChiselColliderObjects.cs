@@ -14,6 +14,7 @@ namespace Chisel.Components
         public int  contentsIndex;
         public int  meshIndex;
         public int  instanceID;
+        public VertexBufferContents contents; 
     }
 
     [Serializable]
@@ -81,36 +82,17 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
-
-        public static void Preprocess(List<ChiselPhysicsObjectUpdate> updates, List<Mesh> foundMeshes)
-        {
-            Profiler.BeginSample("PreProcess");
-            for (int i = 0; i < updates.Count; i++)
-            {
-                var instance = updates[i].instance;
-
-                var meshIndex = foundMeshes.Count;
-                foundMeshes.Add(instance.sharedMesh);
-                var instanceID = instance.sharedMesh.GetInstanceID();
-
-                var temp = updates[i];
-                temp.meshIndex = meshIndex;
-                temp.instanceID = instanceID;
-                updates[i] = temp;
-            }
-            Profiler.EndSample();
-        }
-
-        public static void ScheduleMeshCopy(ref VertexBufferContents contents, List<ChiselPhysicsObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs)
+        public static void ScheduleMeshCopy(List<ChiselPhysicsObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs, JobHandle dependencies)
         {
             Profiler.BeginSample("CopyToMesh");
             for (int i = 0; i < updates.Count; i++)
             {
-                int contentsIndex = updates[i].contentsIndex;
-                var instanceID = updates[i].instanceID;
-                var meshIndex = updates[i].meshIndex;
+                var update = updates[i];
+                int contentsIndex = update.contentsIndex;
+                var instanceID = update.instanceID;
+                var meshIndex = update.meshIndex;
                 // Retrieve the generatedMesh, and store it in the Unity Mesh
-                contents.CopyPositionOnlyToMesh(dataArray, contentsIndex, meshIndex, instanceID, ref allJobs);
+                update.contents.CopyPositionOnlyToMesh(dataArray, contentsIndex, meshIndex, instanceID, ref allJobs, dependencies);
             }
             Profiler.EndSample();
         }

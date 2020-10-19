@@ -335,7 +335,7 @@ namespace Chisel.Core
 
             var flags = nodeFlags[nodeIndex];
             flags.operationType = CSGOperationType.Additive;
-            flags.nodeType = CSGNodeType.Brush;
+            flags.nodeType      = CSGNodeType.Brush;
             nodeFlags[nodeIndex] = flags;
 
             brushInfos[nodeIndex] = new BrushInfo();

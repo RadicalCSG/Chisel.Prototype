@@ -103,7 +103,7 @@ namespace Chisel.Core
             new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 2),
             new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 3) 
         };
-        public bool CopyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, ref JobHandle allJobs)
+        public bool CopyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, ref JobHandle allJobs, JobHandle dependencies)
         {
             /*
             // TODO: store somewhere else
@@ -134,7 +134,7 @@ namespace Chisel.Core
                     surfaceHashValue = combinedSurfaceHashValue;
             
             */
-            
+
             //var subMeshesArray      = this.subMeshes[contentsIndex].AsArray();
             var positionsArray      = this.positions[contentsIndex].AsArray();
             var indicesArray        = this.indices[contentsIndex].AsArray();
@@ -151,16 +151,16 @@ namespace Chisel.Core
 
             var copyToMeshJob = new CopyToMeshJob
             {
-                subMeshes       = subMeshes,
-                indices         = indices,
-                positions       = positions,
-                tangents        = tangents,
-                normals         = normals,
-                uv0             = uv0,
+                subMeshes       = this.subMeshes,
+                indices         = this.indices,
+                positions       = this.positions,
+                tangents        = this.tangents,
+                normals         = this.normals,
+                uv0             = this.uv0,
                 contentsIndex   = contentsIndex,
                 data            = data
             };
-            var copyToMeshJobHandle = copyToMeshJob.Schedule();
+            var copyToMeshJobHandle = copyToMeshJob.Schedule(dependencies);
             allJobs = JobHandle.CombineDependencies(allJobs, copyToMeshJobHandle);
             return true;
         }
@@ -224,7 +224,7 @@ namespace Chisel.Core
         {
             new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0)
         };
-        public bool CopyPositionOnlyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, int instanceID, ref JobHandle allJobs)
+        public bool CopyPositionOnlyToMesh(Mesh.MeshDataArray dataArray, int contentsIndex, int meshIndex, int instanceID, ref JobHandle allJobs, JobHandle dependencies)
         {
             //if (geometryHashValue != meshDescription.geometryHashValue)
             //{
@@ -278,7 +278,7 @@ namespace Chisel.Core
                 instanceID      = instanceID,
                 data            = data
             };
-            var copyToMeshJobHandle = copyToMeshJob.Schedule();
+            var copyToMeshJobHandle = copyToMeshJob.Schedule(dependencies);
             allJobs = JobHandle.CombineDependencies(allJobs, copyToMeshJobHandle);
             return true;
         }

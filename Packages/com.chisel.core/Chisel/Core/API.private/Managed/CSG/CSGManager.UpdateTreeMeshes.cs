@@ -382,7 +382,7 @@ namespace Chisel.Core
         #endregion
 
 
-        internal unsafe static JobHandle UpdateTreeMeshes(UpdateMeshEvent updateMeshEvent, List<int> treeNodeIDs)
+        internal unsafe static JobHandle UpdateTreeMeshes(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent, List<int> treeNodeIDs)
         {
             var finalJobHandle = default(JobHandle);
 
@@ -408,7 +408,7 @@ namespace Chisel.Core
             for (int t = 0; t < treeNodeIDs.Count; t++)
             {
                 var treeNodeID      = treeNodeIDs[t];
-                var treeNodeIndex   = treeNodeIDs[t] - 1;
+                var treeNodeIndex   = treeNodeID - 1;
                 CSGManager.UpdateTreeNodeList(treeNodeIndex);
                 var treeInfo        = CSGManager.treeInfos[treeNodeIndex];
                 var allTreeBrushes  = treeInfo.brushes;
@@ -416,7 +416,6 @@ namespace Chisel.Core
 
                 currentTree.lastJobHandle.Complete();
                 currentTree.lastJobHandle = default;
-
 
                 int brushCount = allTreeBrushes.Count;
 
@@ -2326,42 +2325,86 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
+                Profiler.BeginSample("UpdateFlags");
+                s_UpdateTrees.Clear();
+                for (int t = 0; t < treeUpdateLength; t++)
+                {
+                    ref var treeUpdate = ref s_TreeUpdates[t];
 
-                if (updateMeshEvent != null)
+                    var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+
+                    var treeNodeIndex = tree.treeNodeID - 1;
+                    var flags = CSGManager.nodeFlags[treeNodeIndex];
+                    if (!flags.IsNodeFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
+                    {
+                        treeUpdate.updateCount = 0;
+                        continue;
+                    }
+
+                    bool wasDirty = tree.Dirty;
+
+                    flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
+                    nodeFlags[treeNodeIndex] = flags;
+
+                    if (treeUpdate.updateCount == 0 &&
+                        treeUpdate.brushCount > 0)
+                    {
+                        treeUpdate.updateCount = 0;
+                        treeUpdate.brushCount = 0;
+                        continue;
+                    }
+
+                    // Don't update the mesh if the tree hasn't actually been modified
+                    if (!wasDirty)
+                    {
+                        treeUpdate.updateCount = 0;
+                        continue;
+                    }
+
+                    // Skip invalid trees since they won't work anyway
+                    if (!tree.Valid)
+                        continue;
+
+                    s_UpdateTrees.Add(tree);
+                }
+                Profiler.EndSample();
+                
+                if (beginMeshEvent != null)
+                {
+                    Profiler.BeginSample("BeginMeshEvent");
+                    beginMeshEvent.Invoke();
+                    Profiler.EndSample();
+                }
+
+                if (preUpdateMeshEvent != null)
                 {
                     Profiler.BeginSample("UpdateMeshEvents");
-                    // TODO: clean this 
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
-
-                        var treeNodeIndex   = treeUpdate.treeNodeIndex;
-                        var treeNodeID      = treeUpdate.treeNodeIndex + 1;
-
-                        var flags = CSGManager.nodeFlags[treeNodeIndex];
-                        if (!flags.IsNodeFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
+                        if (treeUpdate.updateCount == 0)
                             continue;
 
-                        var tree = new CSGTree { treeNodeID = treeNodeID };
-                        bool wasDirty = tree.Dirty;
-
-                        flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
-                        nodeFlags[treeNodeIndex] = flags;
-
-                        if (treeUpdate.updateCount == 0 &&
-                            treeUpdate.brushCount > 0)
-                            continue;
-
-                        // Don't update the mesh if the tree hasn't actually been modified
-                        if (!wasDirty)
-                            continue;
-
-                        // Skip invalid trees since they won't work anyway
-                        if (!tree.Valid)
-                            continue;
-
-                        updateMeshEvent.Invoke(tree, t, ref treeUpdate.vertexBufferContents);
+                        var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+                        preUpdateMeshEvent.Invoke(tree, t, ref treeUpdate.vertexBufferContents);
                     }
+                    Profiler.EndSample();
+                }
+
+                Profiler.BeginSample("UpdateMeshEvent");
+                {
+                    var dependencies = (JobHandle)default;
+                    var currentHandle = dependencies;
+                    if (scheduleMeshUploads != null) 
+                        currentHandle = scheduleMeshUploads(dependencies);
+                    currentHandle.Complete();
+                }
+                Profiler.EndSample();
+
+                if (postUpdateMeshEvent != null)
+                {
+                    Profiler.BeginSample("PostUpdateMeshEvents");
+                    postUpdateMeshEvent.Invoke();
                     Profiler.EndSample();
                 }
 
@@ -2415,6 +2458,8 @@ namespace Chisel.Core
             return finalJobHandle;
         }
 
+        static readonly List<CSGTree> s_UpdateTrees = new List<CSGTree>();
+
         #region TreeSorter
         // Sort trees so we try to schedule the slowest ones first, so the faster ones can then fill the gaps in between
         static int TreeUpdateCompare(TreeUpdate x, TreeUpdate y)
@@ -2466,7 +2511,7 @@ namespace Chisel.Core
         #endregion
 
         #region Reset/Rebuild
-        internal static bool UpdateAllTreeMeshes(UpdateMeshEvent updateMeshEvent, out JobHandle allTrees)
+        internal static bool UpdateAllTreeMeshes(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
@@ -2488,14 +2533,14 @@ namespace Chisel.Core
             UpdateDelayedHierarchyModifications();
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = UpdateTreeMeshes(updateMeshEvent, trees);
+            allTrees = UpdateTreeMeshes(beginMeshEvent, preUpdateMeshEvent, scheduleMeshUploads, postUpdateMeshEvent, trees);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
 
-        internal static bool RebuildAll(UpdateMeshEvent updateMeshEvent)
+        internal static bool RebuildAll(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent)
         {
-            if (!UpdateAllTreeMeshes(updateMeshEvent, out JobHandle handle))
+            if (!UpdateAllTreeMeshes(beginMeshEvent, preUpdateMeshEvent, scheduleMeshUploads, postUpdateMeshEvent, out JobHandle handle))
                 return false;
             handle.Complete();
             return true;
