@@ -370,7 +370,8 @@ namespace Chisel.Components
             }
         }
 
-        static bool[] meshUpdated = null;
+        static bool[] renderMeshUpdated = null;
+        static bool[] helperMeshUpdated = null;
 
         static readonly List<ChiselColliderObjects> s_ColliderObjects = new List<ChiselColliderObjects>();
         static readonly List<ChiselRenderObjectUpdate> s_RenderUpdates = new List<ChiselRenderObjectUpdate>();
@@ -423,6 +424,7 @@ namespace Chisel.Components
 
             // TODO: would love to use something like MeshDataArray here, but it seems to be impossible to use without stalling the pipeline
 
+
             // Loop through all meshDescriptions with LayerParameter1, and create renderable meshes from them
             if (!meshDescriptions.IsCreated || meshDescriptions.Length == 0)
             {
@@ -448,9 +450,12 @@ namespace Chisel.Components
             } else
             {
                 Profiler.BeginSample("meshUpdated");
-                if (meshUpdated == null || meshUpdated.Length < debugHelpers.Length)
-                    meshUpdated = new bool[debugHelpers.Length];
-                Array.Clear(meshUpdated, 0, meshUpdated.Length);
+                if (helperMeshUpdated == null || helperMeshUpdated.Length < debugHelpers.Length)
+                    helperMeshUpdated = new bool[debugHelpers.Length];
+                Array.Clear(helperMeshUpdated, 0, helperMeshUpdated.Length);
+                if (renderMeshUpdated == null || renderMeshUpdated.Length < renderables.Length)
+                    renderMeshUpdated = new bool[renderables.Length];
+                Array.Clear(renderMeshUpdated, 0, renderMeshUpdated.Length);
                 Profiler.EndSample();
 
                 Profiler.BeginSample("Init.RenderUpdates");
@@ -485,7 +490,7 @@ namespace Chisel.Components
                                 });
                                 Profiler.EndSample();
                             }
-                            meshUpdated[helperIndex] = true;
+                            helperMeshUpdated[helperIndex] = true;
                         }
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
@@ -506,6 +511,7 @@ namespace Chisel.Components
                             });
                             Profiler.EndSample();
                         }
+                        renderMeshUpdated[renderIndex] = true;
                     } else
                     if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                         colliderCount++;
@@ -516,10 +522,20 @@ namespace Chisel.Components
                 ChiselRenderObjects.Update(model, gameObjectState, s_RenderUpdates, ref vertexBufferContents);
                 Profiler.EndSample();
 
+                Profiler.BeginSample("renderables.Clear");
+                for (int renderIndex = 0; renderIndex < renderables.Length; renderIndex++)
+                {
+                    if (renderMeshUpdated[renderIndex])
+                        continue;
+                    if (!renderables[renderIndex].invalid)
+                        renderables[renderIndex].Clear(model, gameObjectState);
+                }
+                Profiler.EndSample();
+
                 Profiler.BeginSample("debugHelpers.Clear");
                 for (int helperIndex = 0; helperIndex < debugHelpers.Length; helperIndex++)
                 {
-                    if (meshUpdated[helperIndex])
+                    if (helperMeshUpdated[helperIndex])
                         continue;
                     if (!debugHelpers[helperIndex].invalid)
                         debugHelpers[helperIndex].Clear(model, gameObjectState);
