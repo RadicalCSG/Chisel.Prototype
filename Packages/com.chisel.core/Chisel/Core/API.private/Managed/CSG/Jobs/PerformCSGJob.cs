@@ -142,17 +142,8 @@ namespace Chisel.Core
             if (maxLength < 3)
                 return;
 
-            if (!categories1.IsCreated || categories1.Length < intersectionLoop.Length)
-            {
-                if (categories1.IsCreated) categories1.Dispose();
-                categories1 = new NativeArray<EdgeCategory>(intersectionLoop.Length, Allocator.Temp);
-            }
-
-            if (!categories2.IsCreated || categories2.Length < currentLoopEdges.Length)
-            {
-                if (categories2.IsCreated) categories2.Dispose();
-                categories2 = new NativeArray<EdgeCategory>(currentLoopEdges.Length, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref categories1, intersectionLoop.Length);
+            NativeCollectionHelpers.EnsureMinimumSize(ref categories2, currentLoopEdges.Length);
 
             int inside2 = 0, outside2 = 0;
             //var categories2           = stackalloc EdgeCategory[currentLoopEdges.Length];
@@ -199,11 +190,7 @@ namespace Chisel.Core
                 return; 
             }
 
-            if (!outEdges.IsCreated || outEdges.Length < maxLength)
-            {
-                if (outEdges.IsCreated) outEdges.Dispose();
-                outEdges = new NativeArray<Edge>(maxLength, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref outEdges, maxLength);
 
             //var outEdges        = stackalloc Edge[maxLength];
             var outEdgesLength  = 0;
@@ -259,11 +246,7 @@ namespace Chisel.Core
                 // TODO: fix touching not being updated properly
                 brushesTouchedByBrush != BlobAssetReference<BrushesTouchedByBrush>.Null)
             {
-                if (!intersectedHoleIndices.IsCreated || intersectedHoleIndices.Length < currentHoleIndices.Length)
-                {
-                    if (intersectedHoleIndices.IsCreated) intersectedHoleIndices.Dispose();
-                    intersectedHoleIndices = new NativeArray<int>(currentHoleIndices.Length, Allocator.Temp);
-                }
+                NativeCollectionHelpers.EnsureMinimumSize(ref intersectedHoleIndices, currentHoleIndices.Length);
                 var intersectedHoleIndicesLength = 0;
 
                 // the output of cutting operations are both holes for the original polygon (categorized_loop)
@@ -489,35 +472,9 @@ namespace Chisel.Core
                 }
 
 
-                if (!alltreeSpacePlanes.IsCreated)
-                {
-                    alltreeSpacePlanes = new NativeList<float4>(totalPlaneCount, Allocator.Temp);
-                } else
-                {
-                    alltreeSpacePlanes.Clear();
-                    if (alltreeSpacePlanes.Capacity < totalPlaneCount)
-                        alltreeSpacePlanes.Capacity = totalPlaneCount;
-                }
-
-                if (!allSegments.IsCreated)
-                {
-                    allSegments = new NativeList<LoopSegment>(holeIndicesList.Length + 1, Allocator.Temp);
-                } else
-                {
-                    allSegments.Clear();
-                    if (allSegments.Capacity < holeIndicesList.Length + 1)
-                        allSegments.Capacity = holeIndicesList.Length + 1;
-                }
-
-                if (!allCombinedEdges.IsCreated)
-                {
-                    allCombinedEdges = new NativeList<Edge>(totalEdgeCount, Allocator.Temp);
-                } else
-                {
-                    allCombinedEdges.Clear();
-                    if (allCombinedEdges.Capacity < totalEdgeCount)
-                        allCombinedEdges.Capacity = totalEdgeCount;
-                }
+                NativeCollectionHelpers.EnsureCapacityAndClear(ref alltreeSpacePlanes, totalPlaneCount);
+                NativeCollectionHelpers.EnsureCapacityAndClear(ref allSegments, holeIndicesList.Length + 1);
+                NativeCollectionHelpers.EnsureCapacityAndClear(ref allCombinedEdges, totalEdgeCount);
 
                 {                
                     int edgeOffset = 0;
@@ -590,12 +547,7 @@ namespace Chisel.Core
                     }
 
                     //*
-                    if (!destroyedEdges.IsCreated || destroyedEdges.Length < edgeOffset)
-                    {
-                        if (destroyedEdges.IsCreated) destroyedEdges.Dispose();
-                        destroyedEdges = new NativeBitArray(edgeOffset, Allocator.Temp, NativeArrayOptions.ClearMemory);
-                    } else
-                        destroyedEdges.Clear();
+                    NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref destroyedEdges, edgeOffset);
                     /*/
                     var destroyedEdges = stackalloc byte[edgeOffset];
                     UnsafeUtility.MemSet(destroyedEdges, 0, edgeOffset);
@@ -743,18 +695,8 @@ namespace Chisel.Core
             var inputVertices = loopVerticesLookup[brushNodeOrder];
             var vertexCount = inputVertices.Length;
 
-            if (!hashedTreeSpaceVertices.IsCreated || hashedTreeSpaceVertices.Capacity < vertexCount)
-            {
-                if (hashedTreeSpaceVertices.IsCreated) hashedTreeSpaceVertices.Dispose();
-                hashedTreeSpaceVertices = new HashedVertices(vertexCount, Allocator.Temp);
-            } else
-                hashedTreeSpaceVertices.Clear();
-
-            if (!indexRemap.IsCreated || indexRemap.Length < vertexCount)
-            {
-                if (indexRemap.IsCreated) indexRemap.Dispose();
-                indexRemap = new NativeArray<ushort>(vertexCount, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedTreeSpaceVertices, vertexCount);
+            NativeCollectionHelpers.EnsureMinimumSize(ref indexRemap, vertexCount);
             
 
             hashedTreeSpaceVertices.Clear();
@@ -766,25 +708,8 @@ namespace Chisel.Core
             //Debug.Assert(hashedTreeSpaceVertices.Length == inputVertices.Length);
 
             var basePolygonEdgesLength = input.Read<int>();
-            if (!basePolygonSurfaceInfos.IsCreated)
-            {
-                basePolygonSurfaceInfos = new NativeList<IndexSurfaceInfo>(basePolygonEdgesLength, Allocator.Temp);
-            } else
-            {
-                basePolygonSurfaceInfos.Clear();
-                if (basePolygonSurfaceInfos.Capacity < basePolygonEdgesLength)
-                    basePolygonSurfaceInfos.Capacity = basePolygonEdgesLength;
-            }
-
-            if (!basePolygonEdges.IsCreated || basePolygonEdges.Capacity < basePolygonEdgesLength)
-            {
-                if (basePolygonEdges.IsCreated) basePolygonEdges.Dispose();
-                basePolygonEdges = new NativeListArray<Edge>(basePolygonEdgesLength, Allocator.Temp);
-            } else
-                basePolygonEdges.ClearChildren();
-
-            basePolygonSurfaceInfos.ResizeUninitialized(basePolygonEdgesLength);
-            basePolygonEdges.ResizeExact(basePolygonEdgesLength);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref basePolygonSurfaceInfos, basePolygonEdgesLength);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref basePolygonEdges, basePolygonEdgesLength);
             int polygonIndex = 0;
             for (int l = 0; l < basePolygonEdgesLength; l++)
             {
@@ -827,26 +752,8 @@ namespace Chisel.Core
             //basePolygonEdges.ResizeExact(polygonIndex);
 
             var intersectionEdgesLength = input.Read<int>();
-            if (!intersectionSurfaceInfos.IsCreated)
-            {
-                intersectionSurfaceInfos = new NativeList<IndexSurfaceInfo>(intersectionEdgesLength, Allocator.Temp);
-            } else
-            {
-                intersectionSurfaceInfos.Clear();
-                if (intersectionSurfaceInfos.Capacity < intersectionEdgesLength)
-                    intersectionSurfaceInfos.Capacity = intersectionEdgesLength;
-            }
-
-            
-            if (!intersectionEdges.IsCreated || intersectionEdges.Capacity < intersectionEdgesLength)
-            {
-                if (intersectionEdges.IsCreated) intersectionEdges.Dispose();
-                intersectionEdges = new NativeListArray<Edge>(intersectionEdgesLength, Allocator.Temp);
-            } else
-                intersectionEdges.ClearChildren();
-
-            intersectionSurfaceInfos.ResizeUninitialized(intersectionEdgesLength);
-            intersectionEdges.ResizeExact(intersectionEdgesLength);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref intersectionSurfaceInfos, intersectionEdgesLength);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref intersectionEdges, intersectionEdgesLength);
             polygonIndex = 0;
             for (int l = 0; l < intersectionEdgesLength; l++)
             {
@@ -932,20 +839,8 @@ namespace Chisel.Core
 
 
             int intersectionLoopCount = maxIndex + 1;
-            if (!intersectionLoops.IsCreated || intersectionLoops.Capacity < intersectionLoopCount)
-            {
-                if (intersectionLoops.IsCreated) intersectionLoops.Dispose();
-                intersectionLoops = new NativeListArray<Edge>(intersectionLoopCount, Allocator.Temp);
-            } else
-                intersectionLoops.ClearChildren();
-            intersectionLoops.ResizeExact(intersectionLoopCount);
-
-
-            if (!intersectionSurfaceInfo.IsCreated || intersectionSurfaceInfo.Length < intersectionLoopCount)
-            {
-                if (intersectionSurfaceInfo.IsCreated) intersectionSurfaceInfo.Dispose();
-                intersectionSurfaceInfo = new NativeArray<IndexSurfaceInfo>(intersectionLoopCount, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureSizeAndClear(ref intersectionLoops, intersectionLoopCount);
+            NativeCollectionHelpers.EnsureMinimumSize(ref intersectionSurfaceInfo, intersectionLoopCount);
 
             {
                 // TODO: Sort the brushSurfaceInfos/intersectionEdges based on nodeIndexToTableIndex[surfaceInfo.brushNodeID], 
@@ -980,38 +875,10 @@ namespace Chisel.Core
 
             var maxLoops            = (routingLookupsLength + routingLookupsLength) * (surfaceCount + surfaceCount); // TODO: find a more reliable "max"
 
-            if (!holeIndices.IsCreated || holeIndices.Capacity < maxLoops)
-            {
-                if (holeIndices.IsCreated) holeIndices.Dispose();
-                holeIndices = new NativeListArray<int>(maxLoops, Allocator.Temp);
-            } else
-                holeIndices.ClearChildren();
-            
-            if (!surfaceLoopIndices.IsCreated || surfaceLoopIndices.Capacity < surfaceCount)
-            {
-                if (surfaceLoopIndices.IsCreated) surfaceLoopIndices.Dispose();
-                surfaceLoopIndices = new NativeListArray<int>(surfaceCount, Allocator.Temp);
-            } else
-                surfaceLoopIndices.ClearChildren();
-            surfaceLoopIndices.ResizeExact(surfaceCount);
-
-            if (!allInfos.IsCreated)
-            {
-                allInfos = new NativeList<IndexSurfaceInfo>(maxLoops, Allocator.Temp);
-            } else
-            {
-                allInfos.Clear();
-                if (allInfos.Capacity < maxLoops)
-                    allInfos.Capacity = maxLoops;
-            }
-
-            if (!allEdges.IsCreated || allEdges.Capacity < maxLoops)
-            {
-                if (allEdges.IsCreated) allEdges.Dispose();
-                allEdges = new NativeListArray<Edge>(maxLoops, Allocator.Temp);
-            } else
-                allEdges.ClearChildren();
-
+            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref holeIndices, maxLoops);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopIndices, surfaceCount);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref allInfos, maxLoops);
+            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref allEdges, maxLoops);
 
 
             ref var routingTable = ref routingTableRef.Value;

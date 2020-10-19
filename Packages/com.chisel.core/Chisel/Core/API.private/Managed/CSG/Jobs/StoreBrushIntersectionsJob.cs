@@ -90,16 +90,7 @@ namespace Chisel.Core
             ref var brushIndexToAncestorLegend  = ref compactTree.Value.brushIndexToAncestorLegend;
 
             // Intersections
-
-            if (!brushIntersections.IsCreated)
-            {
-                brushIntersections  = new NativeList<BrushIntersection>(intersectionCount, Allocator.Temp);
-            } else
-            {
-                brushIntersections.Clear();
-                if (brushIntersections.Capacity < intersectionCount)
-                    brushIntersections.Capacity = intersectionCount;
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref brushIntersections, intersectionCount);
 
             {
                 for (int i = 0; i < intersectionCount; i++)

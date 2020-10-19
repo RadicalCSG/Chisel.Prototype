@@ -57,39 +57,14 @@ namespace Chisel.Core
             var maxNodes    = math.max(1, brushesTouchedByBrushValue.brushIntersections.Length);
             var maxRoutes   = maxNodes * kMaxRoutesPerNode;
 
-            if (!routingTable.IsCreated || routingTable.Length < maxRoutes)
-            {
-                if (routingTable.IsCreated) routingTable.Dispose();
-                routingTable = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
-            }
-            if (!tempStackArray.IsCreated || tempStackArray.Length < maxRoutes)
-            {
-                if (tempStackArray.IsCreated) tempStackArray.Dispose();
-                tempStackArray = new NativeArray<CategoryStackNode>(maxRoutes, Allocator.Temp);
-            }
-            if (!queuedEvents.IsCreated)
-                queuedEvents = new NativeArray<QueuedEvent>(4096, Allocator.Temp);
-            if (!combineUsedIndices.IsCreated || combineUsedIndices.Length < maxRoutes)
-            {
-                if (combineUsedIndices.IsCreated) combineUsedIndices.Dispose();
-                combineUsedIndices = new NativeBitArray(maxRoutes, Allocator.Temp);
-            } else
-                combineUsedIndices.Clear();
-
+            NativeCollectionHelpers.EnsureMinimumSize(ref routingTable, maxRoutes);
+            NativeCollectionHelpers.EnsureMinimumSize(ref tempStackArray, maxRoutes);
+            NativeCollectionHelpers.EnsureMinimumSize(ref queuedEvents, 4096);
+            NativeCollectionHelpers.EnsureMinimumSize(ref routingSteps, maxRoutes);
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref combineUsedIndices, maxRoutes);
 #if USE_OPTIMIZATIONS
-            if (!combineIndexRemap.IsCreated || combineIndexRemap.Length < maxRoutes)
-            {
-                if (combineIndexRemap.IsCreated) combineIndexRemap.Dispose();
-                combineIndexRemap = new NativeArray<int>(maxRoutes, Allocator.Temp);
-            } else
-                combineIndexRemap.ClearValues();
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref combineIndexRemap, maxRoutes);
 #endif
-
-            if (!routingSteps.IsCreated || routingSteps.Length < maxRoutes)
-            {
-                if (routingSteps.IsCreated) routingSteps.Dispose();
-                routingSteps = new NativeArray<int>(maxRoutes, Allocator.Temp);
-            }
 
             var categoryStackNodeCount = GetStackNodes(processedNodeIndex, ref brushesTouchedByBrushValue, 
                                                        ref routingTable,

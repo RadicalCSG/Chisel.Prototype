@@ -34,16 +34,26 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureSizeAndClear<T>(ref NativeListArray<T> array, int minimumSize, Allocator allocator = Allocator.Temp)
+        public static void EnsureSizeAndClear<T>(ref NativeListArray<T> array, int exactSize, Allocator allocator = Allocator.Temp)
             where T : unmanaged
         {
-            if (!array.IsCreated || array.Capacity < minimumSize)
+            if (!array.IsCreated || array.Capacity < exactSize)
             {
                 if (array.IsCreated) array.Dispose();
-                array = new NativeListArray<T>(minimumSize, allocator);
+                array = new NativeListArray<T>(exactSize, allocator);
             } else
                 array.ClearChildren();
-            array.ResizeExact(minimumSize);
+            array.ResizeExact(exactSize);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureConstantSizeAndClear<T>(ref NativeListArray<T> array, int constantSize, Allocator allocator = Allocator.Temp)
+            where T : unmanaged
+        {
+            if (!array.IsCreated)
+                array = new NativeListArray<T>(constantSize, allocator);
+            else
+                array.ClearChildren();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,7 +89,59 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureMinimumSize(ref NativeBitArray array, int minimumSize, Allocator allocator = Allocator.Temp)
+        public static void EnsureSizeAndClear<T>(ref NativeList<T> container, int desiredSize, Allocator allocator = Allocator.Temp)
+            where T : struct
+        {
+            if (!container.IsCreated)
+            {
+                container = new NativeList<T>(desiredSize, allocator);
+            } else
+            {
+                container.Clear();
+                if (container.Capacity < desiredSize)
+                    container.Capacity = desiredSize;
+            }
+            container.ResizeUninitialized(desiredSize);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureCapacityAndClear<A,B>(ref NativeHashMap<A,B> container, int desiredCapacity, Allocator allocator = Allocator.Temp)
+            where A : struct, IEquatable<A>
+            where B : struct
+        {
+            if (!container.IsCreated)
+            {
+                container = new NativeHashMap<A, B>(desiredCapacity, allocator);
+            } else
+            {
+                container.Clear();
+                if (container.Capacity < desiredCapacity)
+                    container.Capacity = desiredCapacity;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureCreatedAndClear<T>(ref NativeList<T> container, Allocator allocator = Allocator.Temp)
+            where T : struct
+        {
+            if (!container.IsCreated)
+                container = new NativeList<T>(allocator);
+            else
+                container.Clear();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureConstantSizeAndClear<T>(ref NativeList<T> container, int constantSize, Allocator allocator = Allocator.Temp)
+            where T : struct
+        {
+            if (!container.IsCreated)
+                container = new NativeList<T>(constantSize, allocator);
+            else
+                container.Clear();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EnsureMinimumSizeAndClear(ref NativeBitArray array, int minimumSize, Allocator allocator = Allocator.Temp)
         {
             if (!array.IsCreated || array.Length < minimumSize)
             {

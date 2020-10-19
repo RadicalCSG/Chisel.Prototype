@@ -42,18 +42,7 @@ namespace Chisel.Core
                 return;
             ref var vertices  = ref treeSpaceVerticesBlob.Value.treeSpaceVertices;
 
-            if (!mergeVertices.IsCreated)
-            {
-                mergeVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
-            } else
-            {
-                if (mergeVertices.Capacity < vertices.Length)
-                {
-                    mergeVertices.Dispose();
-                    mergeVertices = new HashedVertices(vertices.Length, Allocator.Temp);
-                } else
-                    mergeVertices.Clear();
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref mergeVertices, math.max(vertices.Length, 1000));
             mergeVertices.AddUniqueVertices(ref vertices);
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
@@ -104,18 +93,7 @@ namespace Chisel.Core
                 return;
             
             var vertices = loopVerticesLookup[brushIndexOrder.nodeOrder];
-            if (!mergeVertices.IsCreated)
-            {
-                mergeVertices = new HashedVertices(math.max(vertices.Length, 1000), Allocator.Temp);
-            } else
-            {
-                if (mergeVertices.Capacity < vertices.Length)
-                {
-                    mergeVertices.Dispose();
-                    mergeVertices = new HashedVertices(vertices.Length, Allocator.Temp);
-                } else
-                    mergeVertices.Clear();
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref mergeVertices, math.max(vertices.Length, 1000));
             mergeVertices.AddUniqueVertices(vertices);
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree

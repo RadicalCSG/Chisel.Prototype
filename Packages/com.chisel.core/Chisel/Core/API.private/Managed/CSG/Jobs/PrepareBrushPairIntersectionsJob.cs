@@ -156,7 +156,7 @@ namespace Chisel.Core
                 return;
             }
             NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref vertexUsed, mesh.localVertices.Length);
-            NativeCollectionHelpers.EnsureMinimumSize(ref planeAvailable, mesh.localPlanes.Length);
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref planeAvailable, mesh.localPlanes.Length);
 
             // TODO: this can be partially stored in brushmesh 
             // TODO: optimize

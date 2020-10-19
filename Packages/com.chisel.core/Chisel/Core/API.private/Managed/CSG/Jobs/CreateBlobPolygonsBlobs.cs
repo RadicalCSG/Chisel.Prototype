@@ -152,33 +152,14 @@ namespace Chisel.Core
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
 
-            if (!hashedTreeSpaceVertices.IsCreated)
-            {
-                hashedTreeSpaceVertices = new HashedVertices(math.max(treeSpaceVertices.Length, 1000), Allocator.Temp);
-            } else
-            {
-                if (hashedTreeSpaceVertices.Capacity < treeSpaceVertices.Length)
-                {
-                    hashedTreeSpaceVertices.Dispose();
-                    hashedTreeSpaceVertices = new HashedVertices(treeSpaceVertices.Length, Allocator.Temp);
-                } else
-                    hashedTreeSpaceVertices.Clear();
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedTreeSpaceVertices, math.max(treeSpaceVertices.Length, 1000));
 
 
             var totalEdgeCount      = 0;
             var totalSurfaceCount   = 0;
 
-            if (!edges.IsCreated || edges.Length < halfEdges.Length)
-            {
-                if (edges.IsCreated) edges.Dispose();
-                edges = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
-            }
-            if (!validPolygons.IsCreated || validPolygons.Length < polygons.Length)
-            {
-                if (validPolygons.IsCreated) validPolygons.Dispose();
-                validPolygons = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref edges, halfEdges.Length);
+            NativeCollectionHelpers.EnsureMinimumSize(ref validPolygons, polygons.Length);
 
             //var edges           = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
             //var validPolygons   = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
@@ -202,12 +183,8 @@ namespace Chisel.Core
                 int edgeCount = 0;
                 int startEdgeIndex = totalEdgeCount;
 
-                if (!tempEdges.IsCreated || tempEdges.Length < polygons.Length)
-                {
-                    if (tempEdges.IsCreated) tempEdges.Dispose();
-                    tempEdges = new NativeArray<Edge>(polygons.Length, Allocator.Temp);
-                }
-
+                NativeCollectionHelpers.EnsureMinimumSize(ref tempEdges, halfEdges.Length);
+                
                 //var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
                 CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedTreeSpaceVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon

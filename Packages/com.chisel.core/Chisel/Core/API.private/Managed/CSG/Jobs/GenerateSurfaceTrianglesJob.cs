@@ -78,12 +78,7 @@ namespace Chisel.Core
             var brushIndexOrder = input.Read<IndexOrder>();
             var brushNodeOrder = brushIndexOrder.nodeOrder;
             var vertexCount = input.Read<int>();
-            if (!brushVertices.IsCreated || brushVertices.Capacity < vertexCount)
-            {
-                if (brushVertices.IsCreated) brushVertices.Dispose();
-                brushVertices = new HashedVertices(vertexCount, Allocator.Temp);
-            } else
-                brushVertices.Clear();
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref brushVertices, vertexCount);
             for (int v = 0; v < vertexCount; v++)
             {
                 var vertex = input.Read<float3>();
@@ -92,13 +87,7 @@ namespace Chisel.Core
 
 
             var surfaceOuterCount = input.Read<int>();
-            if (!surfaceLoopIndices.IsCreated || surfaceLoopIndices.Capacity < surfaceOuterCount)
-            {
-                if (surfaceLoopIndices.IsCreated) surfaceLoopIndices.Dispose();
-                surfaceLoopIndices = new NativeListArray<int>(surfaceOuterCount, Allocator.Temp);
-            } else
-                surfaceLoopIndices.ClearChildren();
-            surfaceLoopIndices.ResizeExact(surfaceOuterCount);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopIndices, surfaceOuterCount);
             for (int o = 0; o < surfaceOuterCount; o++)
             {
                 var surfaceInnerCount = input.Read<int>();
@@ -114,21 +103,8 @@ namespace Chisel.Core
             }
 
             var surfaceLoopCount = input.Read<int>();
-            if (!surfaceLoopAllInfos.IsCreated || surfaceLoopAllInfos.Length < surfaceLoopCount)
-            {
-                if (surfaceLoopAllInfos.IsCreated) surfaceLoopAllInfos.Dispose();
-                surfaceLoopAllInfos = new NativeArray<SurfaceInfo>(surfaceLoopCount, Allocator.Temp);
-            }
-            
-            if (!surfaceLoopAllEdges.IsCreated || surfaceLoopAllEdges.Capacity < surfaceLoopCount)
-            {
-                if (surfaceLoopAllEdges.IsCreated) surfaceLoopAllEdges.Dispose();
-                surfaceLoopAllEdges = new NativeListArray<Edge>(surfaceLoopCount, Allocator.Temp);
-            } else
-                surfaceLoopAllEdges.ClearChildren();
-
-
-            surfaceLoopAllEdges.ResizeExact(surfaceLoopCount);
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref surfaceLoopAllInfos, surfaceLoopCount);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref surfaceLoopAllEdges, surfaceLoopCount);
             for (int l = 0; l < surfaceLoopCount; l++)
             {
                 surfaceLoopAllInfos[l] = input.Read<SurfaceInfo>();
@@ -170,126 +146,21 @@ namespace Chisel.Core
 
             var pointCount                  = brushVertices.Length + 2;
 
-            if (!context_points.IsCreated || context_points.Length < pointCount)
-            {
-                if (context_points.IsCreated) context_points.Dispose();
-                context_points = new NativeArray<float2>(pointCount, Allocator.Temp);
-            }
-
-            if (!context_edges.IsCreated || context_edges.Length < pointCount)
-            {
-                if (context_edges.IsCreated) context_edges.Dispose();
-                context_edges = new NativeArray<int>(pointCount, Allocator.Temp);
-            }
-
-            if (!context_allEdges.IsCreated)
-            {
-                context_allEdges = new NativeList<Poly2Tri.DTSweep.DirectedEdge>(pointCount, Allocator.Temp);
-            } else
-            {
-                context_allEdges.Clear();
-                if (context_allEdges.Capacity < pointCount)
-                    context_allEdges.Capacity = pointCount;
-            }
-
-            if (!context_sortedPoints.IsCreated)
-            {
-                context_sortedPoints = new NativeList<int>(pointCount, Allocator.Temp);
-            } else
-            {
-                context_sortedPoints.Clear();
-                if (context_sortedPoints.Capacity < pointCount)
-                    context_sortedPoints.Capacity = pointCount;
-            }
-
-            if (!context_triangles.IsCreated)
-            {
-                context_triangles = new NativeList<Poly2Tri.DTSweep.DelaunayTriangle>(pointCount * 3, Allocator.Temp);
-            } else
-            {
-                context_triangles.Clear();
-                if (context_triangles.Capacity < pointCount * 3)
-                    context_triangles.Capacity = pointCount * 3;
-            }
-
-            if (!context_triangleInterior.IsCreated)
-            {
-                context_triangleInterior = new NativeList<bool>(pointCount * 3, Allocator.Temp);
-            } else
-            {
-                context_triangleInterior.Clear();
-                if (context_triangleInterior.Capacity < pointCount * 3)
-                    context_triangleInterior.Capacity = pointCount * 3;
-            }
-
-            if (!context_advancingFrontNodes.IsCreated)
-            {
-                context_advancingFrontNodes = new NativeList<Poly2Tri.DTSweep.AdvancingFrontNode>(pointCount, Allocator.Temp);
-            } else
-            {
-                context_advancingFrontNodes.Clear();
-                if (context_advancingFrontNodes.Capacity < pointCount)
-                    context_advancingFrontNodes.Capacity = pointCount;
-            }
-
-
-            if (!context_edgeLookupEdges.IsCreated || context_edgeLookupEdges.Capacity < pointCount)
-            {
-                if (context_edgeLookupEdges.IsCreated) context_edgeLookupEdges.Dispose();
-                context_edgeLookupEdges = new NativeListArray<Chisel.Core.Edge>(pointCount, Allocator.Temp);
-            } else
-                context_edgeLookupEdges.ClearChildren();
-
-            if (!context_foundLoops.IsCreated || context_foundLoops.Capacity < pointCount)
-            {
-                if (context_foundLoops.IsCreated) context_foundLoops.Dispose();
-                context_foundLoops = new NativeListArray<Chisel.Core.Edge>(pointCount, Allocator.Temp);
-            } else
-                context_foundLoops.ClearChildren();
-
-            if (!context_children.IsCreated)
-            {
-                context_children = new NativeListArray<int>(64, Allocator.Temp);
-            } else
-                context_children.ClearChildren();
-
-            if (!context_inputEdgesCopy.IsCreated)
-            {
-                context_inputEdgesCopy = new NativeList<Edge>(64, Allocator.Temp);
-            } else
-            {
-                context_inputEdgesCopy.Clear();
-            }
-
-            if (!context_edgeLookups.IsCreated)
-            {
-                context_edgeLookups = new NativeHashMap<int, int>(pointCount, Allocator.Temp);
-            } else
-            {
-                context_edgeLookups.Clear();
-                if (context_edgeLookups.Capacity < pointCount)
-                    context_edgeLookups.Capacity = pointCount;
-            }
-
-            if (!loops.IsCreated)
-            {
-                loops = new NativeList<int>(maxLoops, Allocator.Temp);
-            } else
-            {
-                loops.Clear();
-                if (loops.Capacity < maxLoops)
-                    loops.Capacity = maxLoops;
-            }
-
-            if (!surfaceIndexList.IsCreated)
-            {
-                surfaceIndexList = new NativeList<int>(maxIndices, Allocator.Temp);
-            } else
-            {
-                surfaceIndexList.Clear();
-                if (surfaceIndexList.Capacity < maxIndices)
-                    surfaceIndexList.Capacity = maxIndices;
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref context_points, pointCount);
+            NativeCollectionHelpers.EnsureMinimumSize(ref context_edges, pointCount);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_allEdges, pointCount);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_sortedPoints, pointCount);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_triangles, pointCount * 3);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_triangleInterior, pointCount * 3);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_advancingFrontNodes, pointCount);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref context_edgeLookupEdges, pointCount);
+            NativeCollectionHelpers.EnsureSizeAndClear(ref context_foundLoops, pointCount);
+            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_children, 64);
+            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
+            NativeCollectionHelpers.EnsureConstantSizeAndClear(ref context_inputEdgesCopy, 64);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref context_edgeLookups, pointCount);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref loops, maxLoops);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref surfaceIndexList, maxIndices);
 
             var builder = new BlobBuilder(Allocator.Temp, 4096);
             ref var root = ref builder.ConstructRoot<ChiselBrushRenderBuffer>();
@@ -352,15 +223,7 @@ namespace Chisel.Core
 
 
 
-                    if (!outputSurfaceIndicesArray.IsCreated)
-                    {
-                        outputSurfaceIndicesArray = new NativeList<int>(loopEdges.Length * 3, Allocator.Temp);
-                    } else
-                    {
-                        outputSurfaceIndicesArray.Clear();
-                        if (outputSurfaceIndicesArray.Capacity < loopEdges.Length * 3)
-                            outputSurfaceIndicesArray.Capacity = loopEdges.Length * 3;
-                    }
+                    NativeCollectionHelpers.EnsureCapacityAndClear(ref outputSurfaceIndicesArray, loopEdges.Length * 3);
                     
                     var context = new Poly2Tri.DTSweep
                     {
@@ -411,17 +274,8 @@ namespace Chisel.Core
                     continue;
 
                 var surfaceIndicesCount = surfaceIndexList.Length;
-                if (!surfaceVertices.IsCreated || surfaceVertices.Length < brushVertices.Length)
-                {
-                    if (surfaceVertices.IsCreated) surfaceVertices.Dispose();
-                    surfaceVertices = new NativeArray<float3>(brushVertices.Length, Allocator.Temp);
-                }
-                if (!indexRemap.IsCreated || indexRemap.Length < brushVertices.Length)
-                {
-                    if (indexRemap.IsCreated) indexRemap.Dispose();
-                    indexRemap = new NativeArray<int>(brushVertices.Length, Allocator.Temp);
-                } else
-                    indexRemap.ClearValues();
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceVertices, brushVertices.Length);
+                NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref indexRemap, brushVertices.Length);
 
 
                 // Only use the vertices that we've found in the indices
@@ -447,17 +301,8 @@ namespace Chisel.Core
                 var indicesHash = surfaceIndexList.Hash(surfaceIndicesCount);
                 var geometryHash = math.hash(new uint2(vertexHash, indicesHash));
 
-                if (!surfaceNormals.IsCreated || surfaceNormals.Length < surfaceVerticesCount)
-                {
-                    if (surfaceNormals.IsCreated) surfaceNormals.Dispose();
-                    surfaceNormals = new NativeArray<float3>(surfaceVerticesCount, Allocator.Temp);
-                }
-
-                if (!surfaceTangents.IsCreated || surfaceTangents.Length < surfaceVerticesCount)
-                {
-                    if (surfaceTangents.IsCreated) surfaceTangents.Dispose();
-                    surfaceTangents = new NativeArray<float4>(surfaceVerticesCount, Allocator.Temp);
-                }
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceNormals, surfaceVerticesCount);
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceTangents, surfaceVerticesCount);
 
                 {
                     if (interiorCategory == CategoryIndex.ValidReverseAligned || interiorCategory == CategoryIndex.ReverseAligned)
@@ -468,11 +313,7 @@ namespace Chisel.Core
                 var normalHash = surfaceNormals.Hash(surfaceVerticesCount);
 
 
-                if (!surfaceUV0.IsCreated || surfaceUV0.Length < surfaceVerticesCount)
-                {
-                    if (surfaceUV0.IsCreated) surfaceUV0.Dispose();
-                    surfaceUV0 = new NativeArray<float2>(surfaceVerticesCount, Allocator.Temp);
-                }
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceUV0, surfaceVerticesCount);
 
                 {
                     for (int v = 0; v < surfaceVerticesCount; v++)

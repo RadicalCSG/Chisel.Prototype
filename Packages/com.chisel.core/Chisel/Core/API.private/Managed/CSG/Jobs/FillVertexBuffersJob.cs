@@ -568,11 +568,7 @@ namespace Chisel.Core
                 requiredSurfaceCount += brushRenderData[b].brushSurfaceCount;
 
 
-            if (!inorderSurfaceInstances.IsCreated || inorderSurfaceInstances.Length < requiredSurfaceCount)
-            {
-                if (inorderSurfaceInstances.IsCreated) inorderSurfaceInstances.Dispose();
-                inorderSurfaceInstances = new NativeArray<SurfaceInstance>(requiredSurfaceCount, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref inorderSurfaceInstances, requiredSurfaceCount);
 
             //Debug.Log($"{brushRenderData.Length}");//5657
             requiredSurfaceCount = 0;

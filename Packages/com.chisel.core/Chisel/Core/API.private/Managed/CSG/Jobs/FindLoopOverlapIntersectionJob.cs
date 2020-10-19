@@ -192,7 +192,7 @@ namespace Chisel.Core
             } else
             {
                 NativeCollectionHelpers.EnsureCapacityAndClear(ref brushIntersections, intersectionCount);
-                NativeCollectionHelpers.EnsureMinimumSize(ref usedNodeOrders, maxNodeOrder);
+                NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref usedNodeOrders, maxNodeOrder);
 
                 var lastIntersectionIndex = intersectionCount + intersectionOffset;
                 for (int i = intersectionOffset; i < lastIntersectionIndex; i++)
@@ -753,10 +753,7 @@ namespace Chisel.Core
             if (otherVerticesLength == 0)
                 return;
 
-            if (!tempList.IsCreated)
-                tempList = new NativeList<ushort>(Allocator.Temp);
-            else
-                tempList.Clear();
+            NativeCollectionHelpers.EnsureCreatedAndClear(ref tempList);
 
             var tempListCapacity = (selfEdges.Length * 2) + otherVerticesLength;
             if (tempList.Capacity < tempListCapacity)
