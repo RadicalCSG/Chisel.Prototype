@@ -653,7 +653,7 @@ namespace Chisel.Components
             ChiselRenderObjects.UpdateProperties(model, meshRenderers);
             Profiler.EndSample();
             Profiler.BeginSample("UpdateColliders");
-            ChiselColliderObjects.UpdateColliders(model, colliders);
+            ChiselColliderObjects.UpdateProperties(model, colliders);
             Profiler.EndSample();
             needVisibilityMeshUpdate = true;
         }

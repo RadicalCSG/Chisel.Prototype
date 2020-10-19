@@ -115,7 +115,7 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-        public static void UpdateColliders(ChiselModel model, ChiselColliderObjects[] colliders)
+        public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             if (colliders == null)
                 return;

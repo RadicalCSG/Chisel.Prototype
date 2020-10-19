@@ -17,9 +17,6 @@ namespace Chisel.Core
         public static bool	Flush	(UpdateMeshEvent updateMeshEvent)	{ if (!UpdateAllTreeMeshes(updateMeshEvent, out JobHandle handle)) return false; handle.Complete(); return true; }
 
 
-        /// <summary>Clears all caches and rebuilds all <see cref="Chisel.Core.CSGTree"/>s.</summary>
-        public static void	Rebuild	(UpdateMeshEvent updateMeshEvent)	{ RebuildAll(updateMeshEvent); }
-
         /// <summary>Destroy all <see cref="Chisel.Core.CSGTreeNode"/>s contained in <paramref name="nodes"/>.</summary>
         /// <param name="nodes">The <see cref="Chisel.Core.CSGTreeNode"/>s to destroy</param>
         /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>s. See the log for more information.</returns>
