@@ -158,7 +158,7 @@ namespace Chisel.Components
                 {
                     case LayerUsageFlags.None:				meshRenderer.enabled = false; break;
                     case LayerUsageFlags.Renderable:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;			break;
-                    case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;	break;
+                    case LayerUsageFlags.CastShadows:		meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;   break;
                     case LayerUsageFlags.RenderCastShadows:	meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;			break;
                 }
 
@@ -166,6 +166,14 @@ namespace Chisel.Components
                 UnityEditor.EditorUtility.SetSelectedRenderState(meshRenderer, UnityEditor.EditorSelectedRenderState.Hidden);
                 ChiselGeneratedComponentManager.SetHasLightmapUVs(sharedMesh, false);
 #endif
+            } else
+            {
+                meshRenderer.allowOcclusionWhenDynamic = false;
+                meshRenderer.lightProbeUsage = LightProbeUsage.Off;
+                meshRenderer.scaleInLightmap = 0.0f;
+                meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                meshRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
+                meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
             }
         }
 
@@ -229,16 +237,17 @@ namespace Chisel.Components
             for (int i = 0; i < meshRenderers.Length; i++)
             {
                 var meshRenderer = meshRenderers[i];
-                meshRenderer.lightProbeProxyVolumeOverride	= renderSettings.lightProbeProxyVolumeOverride;
-                meshRenderer.probeAnchor					= renderSettings.probeAnchor;
-                meshRenderer.motionVectorGenerationMode		= renderSettings.motionVectorGenerationMode;
-                meshRenderer.reflectionProbeUsage			= renderSettings.reflectionProbeUsage;
-                meshRenderer.lightProbeUsage				= renderSettings.lightProbeUsage;
+                var isRenderable = meshRenderer.shadowCastingMode != ShadowCastingMode.ShadowsOnly;
+                meshRenderer.lightProbeProxyVolumeOverride	= !isRenderable ? null : renderSettings.lightProbeProxyVolumeOverride;
+                meshRenderer.probeAnchor					= !isRenderable ? null : renderSettings.probeAnchor;
+                meshRenderer.motionVectorGenerationMode		= !isRenderable ? MotionVectorGenerationMode.ForceNoMotion : renderSettings.motionVectorGenerationMode;
+                meshRenderer.reflectionProbeUsage			= !isRenderable ? ReflectionProbeUsage.Off : renderSettings.reflectionProbeUsage;
+                meshRenderer.lightProbeUsage				= !isRenderable ? LightProbeUsage.Off : renderSettings.lightProbeUsage;
                 meshRenderer.allowOcclusionWhenDynamic		= renderSettings.allowOcclusionWhenDynamic;
                 meshRenderer.renderingLayerMask				= renderSettings.renderingLayerMask;
 #if UNITY_EDITOR
-                meshRenderer.stitchLightmapSeams            = renderSettings.stitchLightmapSeams;
-                meshRenderer.scaleInLightmap                = renderSettings.scaleInLightmap;
+                meshRenderer.stitchLightmapSeams            = isRenderable && renderSettings.stitchLightmapSeams;
+                meshRenderer.scaleInLightmap                = !isRenderable ? 0.0f : renderSettings.scaleInLightmap;
                 meshRenderer.receiveGI                      = renderSettings.receiveGI;
 #endif
             }

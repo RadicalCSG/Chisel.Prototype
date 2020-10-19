@@ -394,8 +394,10 @@ namespace Chisel.Components
             {
                 if (renderables[i] == null || renderables[i].invalid)
                     continue;
+
+                bool isRenderable = (renderables[i].query & LayerUsageFlags.Renderable) == LayerUsageFlags.Renderable;
                 var renderableContainer = renderables[i].container;
-                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState);
+                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, isRenderable: isRenderable);
                 ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
             }
             
@@ -404,7 +406,7 @@ namespace Chisel.Components
                 if (debugHelpers[i] == null || debugHelpers[i].invalid)
                     continue;
                 var renderableContainer = debugHelpers[i].container;
-                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, debugHelperRenderer: true);
+                ChiselObjectUtility.UpdateContainerFlags(renderableContainer, gameObjectState, isRenderable: true, debugHelperRenderer: true);
                 ChiselObjectUtility.ResetTransform(renderableContainer.transform, requiredParent: containerTransform);
             }
             Profiler.EndSample();

@@ -143,7 +143,7 @@ namespace Chisel.Components
             probeAnchor                     = null;
             motionVectorGenerationMode		= MotionVectorGenerationMode.Object;
             reflectionProbeUsage			= ReflectionProbeUsage.BlendProbes;
-            lightProbeUsage					= LightProbeUsage.Off;
+            lightProbeUsage					= LightProbeUsage.BlendProbes;
             allowOcclusionWhenDynamic		= true;
             renderingLayerMask              = ~(uint)0;
             receiveGI                       = ReceiveGI.LightProbes;
