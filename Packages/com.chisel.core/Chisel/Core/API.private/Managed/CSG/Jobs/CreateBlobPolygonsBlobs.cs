@@ -186,7 +186,16 @@ namespace Chisel.Core
             {
                 var polygon = polygons[polygonIndex];
                 if (polygon.edgeCount < 3 || polygonIndex >= localPlanes.Length)
+                {
+                    validPolygons[totalSurfaceCount] = new ValidPolygon
+                    {
+                        basePlaneIndex = (ushort)polygonIndex,
+                        startEdgeIndex = (ushort)0,
+                        endEdgeIndex = (ushort)0
+                    };
+                    totalSurfaceCount++;
                     continue;
+                }
 
                 // Note: can end up with duplicate vertices when close enough vertices are snapped together
 
@@ -202,7 +211,16 @@ namespace Chisel.Core
                 //var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
                 CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedTreeSpaceVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon
+                {
+                    validPolygons[totalSurfaceCount] = new ValidPolygon
+                    {
+                        basePlaneIndex = (ushort)polygonIndex,
+                        startEdgeIndex = (ushort)0,
+                        endEdgeIndex = (ushort)0
+                    };
+                    totalSurfaceCount++;
                     continue;
+                }
 
                 for (int e = 0; e < edgeCount; e++)
                 {
@@ -262,15 +280,15 @@ namespace Chisel.Core
             var surfaceArray = builder.Allocate(ref root.surfaces, totalSurfaceCount);
             for (int i = 0; i < totalSurfaceCount; i++)
             {
+                Debug.Assert(validPolygons[i].basePlaneIndex == i);
                 var polygon = polygons[validPolygons[i].basePlaneIndex];
                 polygonArray[i] = new BasePolygon()
                 {
-                    nodeIndexOrder      = indexOrder,
+                    nodeIndexOrder  = indexOrder,
                     surfaceInfo     = new SurfaceInfo
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
-                        //nodeIndex           = nodeIndex,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
@@ -284,10 +302,6 @@ namespace Chisel.Core
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
             basePolygonCache[nodeOrder] = basePolygonsBlob;
-            //builder.Dispose();
-
-            //hashedTreeSpaceVertices.Dispose();
-            //edges.Dispose();
         }
     }
 }

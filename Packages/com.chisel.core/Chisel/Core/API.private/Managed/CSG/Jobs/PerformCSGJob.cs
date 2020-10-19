@@ -789,8 +789,23 @@ namespace Chisel.Core
             for (int l = 0; l < basePolygonEdgesLength; l++)
             {
                 var indexSurfaceInfo = input.Read<IndexSurfaceInfo>();
+                //if (l >= basePolygonSurfaceInfos.Length)
+                //    Debug.Log("F");
+                basePolygonSurfaceInfos[l] = indexSurfaceInfo;
+
                 var edgesLength     = input.Read<int>();
-                var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(polygonIndex, edgesLength);
+                if (edgesLength == 0)
+                {
+                    //if (l >= basePolygonEdges.Length)
+                    //    Debug.Log("C");
+                    if (basePolygonEdges.IsIndexCreated(l))
+                        basePolygonEdges[l].Clear();
+                    continue;
+                }
+                //if (l >= basePolygonEdges.Length)
+                //    Debug.Log($"D {l} {basePolygonEdges.Length} {basePolygonSurfaceInfos.Length} {basePolygonEdgesLength} {basePolygonEdges.Length}");
+                var edgesInner      = basePolygonEdges.AllocateWithCapacityForIndex(l, edgesLength);
+                //Debug.Log("E");
                 //edgesInner.ResizeUninitialized(edgesLength);
                 for (int e = 0; e < edgesLength; e++)
                 {
@@ -801,17 +816,15 @@ namespace Chisel.Core
                         continue;
                     //Debug.Assert(edge.index1 >= 0 && edge.index1 < hashedTreeSpaceVertices.Length);
                     //Debug.Assert(edge.index2 >= 0 && edge.index2 < hashedTreeSpaceVertices.Length);
+                    //if (edgesInner.Length + 1 >= edgesInner.Capacity)
+                    //    Debug.Log("E");
                     edgesInner.AddNoResize(edge);
                 }
-                if (edgesInner.Length >= 3)
-                {
-                    basePolygonSurfaceInfos[polygonIndex] = indexSurfaceInfo;
-                    polygonIndex++;
-                } else
+                if (edgesInner.Length < 3)
                     edgesInner.Clear();
             }
-            basePolygonSurfaceInfos.ResizeUninitialized(polygonIndex);
-            basePolygonEdges.ResizeExact(polygonIndex);
+            //basePolygonSurfaceInfos.ResizeUninitialized(polygonIndex);
+            //basePolygonEdges.ResizeExact(polygonIndex);
 
             var intersectionEdgesLength = input.Read<int>();
             if (!intersectionSurfaceInfos.IsCreated)
@@ -1000,9 +1013,12 @@ namespace Chisel.Core
                 allEdges.ClearChildren();
 
 
+
             ref var routingTable = ref routingTableRef.Value;
             for (int surfaceIndex = 0; surfaceIndex < surfaceCount; surfaceIndex++)
             {
+                if (!basePolygonEdges.IsIndexCreated(surfaceIndex))
+                    continue;
                 var basePolygonSrc = basePolygonEdges[surfaceIndex];
                 if (basePolygonSrc.Length < 3)
                     continue;
@@ -1094,6 +1110,11 @@ namespace Chisel.Core
             output.Write(surfaceLoopIndices.Length);
             for (int o = 0; o < surfaceLoopIndices.Length; o++)
             {
+                if (!surfaceLoopIndices.IsIndexCreated(o))
+                {
+                    output.Write(0);
+                    continue;
+                }
                 var inner = surfaceLoopIndices[o];
                 output.Write(inner.Length);
                 for (int i = 0; i < inner.Length; i++)

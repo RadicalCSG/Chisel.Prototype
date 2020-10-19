@@ -136,11 +136,7 @@ namespace Chisel.Core
                 for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
                 {
                     ref var input = ref basePolygonBlob.polygons[s];
-
-                    var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, input.endEdgeIndex - input.startEdgeIndex);
-                    for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                        edges.AddNoResize(basePolygonBlob.edges[e]);
-
+                    
                     ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
                     ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
                     basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
@@ -149,6 +145,13 @@ namespace Chisel.Core
                         interiorCategory = surfaceInfo.interiorCategory,
                         basePlaneIndex = surfaceInfo.basePlaneIndex
                     };
+
+                    if (input.endEdgeIndex == input.startEdgeIndex)
+                        continue;
+
+                    var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, input.endEdgeIndex - input.startEdgeIndex);
+                    for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
+                        edges.AddNoResize(basePolygonBlob.edges[e]);
                 }
 
                 if (intersectionEdges.IsCreated)
@@ -173,6 +176,11 @@ namespace Chisel.Core
                 for (int l = 0; l < basePolygonEdges.Length; l++)
                 {
                     output.Write(basePolygonSurfaceInfos[l]);
+                    if (!basePolygonEdges.IsIndexCreated(l))
+                    {
+                        output.Write(0);
+                        continue;
+                    }
                     var edges = basePolygonEdges[l].AsArray();
                     output.Write(edges.Length);
                     for (int e = 0; e < edges.Length; e++)
@@ -212,10 +220,6 @@ namespace Chisel.Core
                         {
                             ref var input = ref basePolygonBlob.polygons[s];
 
-                            var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersections.Length * 4));
-                            for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                                edges.AddNoResize(basePolygonBlob.edges[e]);
-
                             ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
                             ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
                             basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
@@ -224,6 +228,13 @@ namespace Chisel.Core
                                 interiorCategory    = surfaceInfo.interiorCategory,
                                 basePlaneIndex  = surfaceInfo.basePlaneIndex
                             };
+
+                            if (input.endEdgeIndex == input.startEdgeIndex)
+                                continue;
+
+                            var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersections.Length * 4));
+                            for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
+                                edges.AddNoResize(basePolygonBlob.edges[e]);
                         }
 
                         { 
@@ -291,6 +302,8 @@ namespace Chisel.Core
                             continue;
                         for (int b = 0; b < basePolygonEdges.Length; b++)
                         {
+                            if (!basePolygonEdges.IsIndexCreated(b))
+                                continue;
                             var selfEdges = basePolygonEdges[b];
                             //var before = selfEdges.Length;
 
@@ -304,6 +317,9 @@ namespace Chisel.Core
                         var intersectionSurfaceCount    = intersectionSurfaceSegments[s].y;
                         var intersectionSurfaceOffset   = intersectionSurfaceSegments[s].x;
                         if (intersectionSurfaceCount == 0)
+                            continue;
+
+                        if (!basePolygonEdges.IsIndexCreated(s))
                             continue;
 
                         var bp_edges = basePolygonEdges[s];
@@ -333,6 +349,8 @@ namespace Chisel.Core
 
                     for (int i = 0; i < basePolygonEdges.Length; i++)
                     {
+                        if (!basePolygonEdges.IsIndexCreated(i))
+                            continue;
                         // TODO: might not be necessary
                         var edges = basePolygonEdges[i];
                         RemoveDuplicates(ref edges);
@@ -373,6 +391,11 @@ namespace Chisel.Core
                 for (int l = 0; l < basePolygonEdges.Length; l++)
                 {
                     output.Write(basePolygonSurfaceInfos[l]);
+                    if (!basePolygonEdges.IsIndexCreated(l))
+                    {
+                        output.Write(0);
+                        continue;
+                    }
                     var edges = basePolygonEdges[l].AsArray();
                     output.Write(edges.Length);
                     for (int e = 0; e < edges.Length; e++)
