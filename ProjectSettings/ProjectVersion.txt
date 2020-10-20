@@ -1,2 +1,2 @@
-m_EditorVersion: 2020.2.0b6
-m_EditorVersionWithRevision: 2020.2.0b6 (24a0f8b56f72)
+m_EditorVersion: 2020.2.0b7
+m_EditorVersionWithRevision: 2020.2.0b7 (1b1252580c64)

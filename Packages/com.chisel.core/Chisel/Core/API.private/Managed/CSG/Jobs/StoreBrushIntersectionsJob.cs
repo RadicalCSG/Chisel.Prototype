@@ -83,23 +83,14 @@ namespace Chisel.Core
             int brushNodeIndex = brushIndexOrder.nodeIndex;
             //int brushNodeOrder = brushIndexOrder.nodeOrder;
 
-            var minBrushIndex = compactTree.Value.minBrushIndex;
-            var minNodeIndex = compactTree.Value.minNodeIndex;
-            var maxNodeIndex = compactTree.Value.maxNodeIndex;
+            var minBrushIndex   = compactTree.Value.minBrushIndex;
+            var minNodeIndex    = compactTree.Value.minNodeIndex;
+            var maxNodeIndex    = compactTree.Value.maxNodeIndex;
             ref var brushAncestorLegend         = ref compactTree.Value.brushAncestorLegend;
             ref var brushIndexToAncestorLegend  = ref compactTree.Value.brushIndexToAncestorLegend;
 
             // Intersections
-
-            if (!brushIntersections.IsCreated)
-            {
-                brushIntersections  = new NativeList<BrushIntersection>(intersectionCount, Allocator.Temp);
-            } else
-            {
-                brushIntersections.Clear();
-                if (brushIntersections.Capacity < intersectionCount)
-                    brushIntersections.Capacity = intersectionCount;
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref brushIntersections, intersectionCount);
 
             {
                 for (int i = 0; i < intersectionCount; i++)

@@ -15,25 +15,28 @@ namespace Chisel.Core
     struct GatherOutputSurfacesJob : IJob
     {
         // Read / Write (Sort)
-        [NoAlias] public NativeArray<BlobAssetReference<BrushIntersectionLoop>> outputSurfaces;
+        [NoAlias] public NativeArray<BrushIntersectionLoop> outputSurfaces;
 
         // Write
+        //[NoAlias, WriteOnly] public NativeReference<BlobAssetReference<BrushIntersectionLoops>> outputSurfaceLoops;
         [NoAlias, WriteOnly] public NativeArray<int2>       outputSurfacesRange;
         
-        struct ListComparer : IComparer<BlobAssetReference<BrushIntersectionLoop>>
+        struct ListComparer : IComparer<BrushIntersectionLoop>
         {
-            public int Compare(BlobAssetReference<BrushIntersectionLoop> x, BlobAssetReference<BrushIntersectionLoop> y)
+            public int Compare(BrushIntersectionLoop x, BrushIntersectionLoop y)
             {
-                var orderX = x.Value.indexOrder0.nodeOrder;
-                var orderY = y.Value.indexOrder0.nodeOrder;
+                var orderX = x.indexOrder0.nodeOrder;
+                var orderY = y.indexOrder0.nodeOrder;
                 var diff = orderX.CompareTo(orderY);
                 if (diff != 0)
                     return diff;
-                orderX = x.Value.indexOrder1.nodeOrder;
-                orderY = y.Value.indexOrder1.nodeOrder;
+                orderX = x.indexOrder1.nodeOrder;
+                orderY = y.indexOrder1.nodeOrder;
                 return orderX.CompareTo(orderY);
             }
         }
+
+        static readonly ListComparer listComparer = new ListComparer();
 
 
         public void Execute()
@@ -41,13 +44,13 @@ namespace Chisel.Core
             if (outputSurfaces.Length == 0)
                 return;
 
-            outputSurfaces.Sort(new ListComparer());
+            outputSurfaces.Sort(listComparer);
 
-            int previousOrder = outputSurfaces[0].Value.indexOrder0.nodeOrder;
+            int previousOrder = outputSurfaces[0].indexOrder0.nodeOrder;
             int2 range = new int2(0, 1);
             for (int i = 1; i < outputSurfaces.Length; i++)
             {
-                int currentOrder = outputSurfaces[i].Value.indexOrder0.nodeOrder;
+                int currentOrder = outputSurfaces[i].indexOrder0.nodeOrder;
                 if (currentOrder != previousOrder)
                 {
                     //Debug.Log($"{previousOrder} {range}");
@@ -58,8 +61,27 @@ namespace Chisel.Core
                 } else
                     range.y++;
             }
+
             //throw new Exception($"{previousOrder} {range.x} {range.y} / {brushBrushIntersections.Length}");
             outputSurfacesRange[previousOrder] = range;
+            /*
+            var blobBuilder = new BlobBuilder(Allocator.Temp);
+            ref var root = ref blobBuilder.ConstructRoot<BrushIntersectionLoops>();
+
+            var outputLoops = blobBuilder.Allocate(ref root.loops, outputSurfaces.Length);
+            for (int i = 0; i < outputSurfaces.Length; i++)
+            {
+                ref var outputSurface = ref outputSurfaces[i].Value;
+                outputLoops[i].indexOrder0 = outputSurface.indexOrder0;
+                outputLoops[i].indexOrder1 = outputSurface.indexOrder1;
+                outputLoops[i].surfaceInfo = outputSurface.surfaceInfo;
+                blobBuilder.Construct<float3>(ref outputLoops[i].loopVertices, ref outputSurface.loopVertices);
+            }
+            blobBuilder.Construct(ref root.ranges, outputSurfacesRange);
+
+
+            outputSurfaceLoops.Value = blobBuilder.CreateBlobAssetReference<BrushIntersectionLoops>(Allocator.TempJob);
+            */
         }
     }
 }

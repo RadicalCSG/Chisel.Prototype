@@ -335,7 +335,7 @@ namespace Chisel.Core
 
             var flags = nodeFlags[nodeIndex];
             flags.operationType = CSGOperationType.Additive;
-            flags.nodeType = CSGNodeType.Brush;
+            flags.nodeType      = CSGNodeType.Brush;
             nodeFlags[nodeIndex] = flags;
 
             brushInfos[nodeIndex] = new BrushInfo();
@@ -625,6 +625,7 @@ namespace Chisel.Core
             var nodeHierarchy = nodeHierarchies[treeNodeIndex];
             treeInfos[treeNodeIndex].nodes.Clear();
             treeInfos[treeNodeIndex].brushes.Clear();
+            treeInfos[treeNodeIndex].nodes.Add(treeNodeID);
             if (nodeHierarchy.children != null)
                 RecursiveAddTreeChildren(in nodeHierarchy, 
                                          treeInfos[treeNodeIndex].nodes, 
