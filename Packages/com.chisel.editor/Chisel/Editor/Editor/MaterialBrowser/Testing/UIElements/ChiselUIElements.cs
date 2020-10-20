@@ -205,5 +205,15 @@ namespace Chisel.Editors
 
             return slider;
         }
+
+        public static IMGUIContainer AddIMGUIContainer( this VisualElement v, Action onGUIDelegate, string elementName = "" )
+        {
+            IMGUIContainer container = new IMGUIContainer( onGUIDelegate );
+            container.name = elementName;
+
+            v.Add( container );
+
+            return container;
+        }
     }
 }

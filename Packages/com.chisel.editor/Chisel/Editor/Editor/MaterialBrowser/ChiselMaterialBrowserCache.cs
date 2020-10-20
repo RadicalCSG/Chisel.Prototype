@@ -32,21 +32,15 @@ namespace Chisel.Editors
         [Serializable]
         public struct CachedThumbnail
         {
-            [JsonProperty( "instance_id", Required = Required.Always, Order = 0 )]
-            public int instanceID;
 
-            [JsonProperty( "name", Required = Required.Always, Order = 1 )]
+            [JsonProperty( "name", Required = Required.Always, Order = 0 )]
             public string name;
+
+            [JsonProperty( "hash", Required = Required.Always, Order = 1 )]
+            public int hashCode;
 
             [JsonProperty( "thumbnail_b64", Required = Required.Always, Order = 2 )]
             public string data;
-
-            public CachedThumbnail( string name, int instanceID, Texture2D data )
-            {
-                this.name       = name;
-                this.instanceID = instanceID;
-                this.data       = Convert.ToBase64String( data.EncodeToPNG() );
-            }
 
             public Texture2D GetThumbnail()
             {
@@ -74,10 +68,19 @@ namespace Chisel.Editors
         [JsonIgnore]
         public int NumEntries => storedPreviewTextures.Count;
 
+        public bool HasEntry( int hash )
+        {
+            foreach( var e in storedPreviewTextures )
+            {
+                if( e.hashCode == hash ) return true;
+            }
+
+            return false;
+        }
 
         public void AddEntry( CachedThumbnail entry )
         {
-            if( storedPreviewTextures.All( e => e.instanceID != entry.instanceID ) )
+            if( !HasEntry( entry.hashCode ) )
             {
                 storedPreviewTextures.Add( entry );
 
@@ -86,10 +89,10 @@ namespace Chisel.Editors
             }
         }
 
-        public Texture2D GetThumbnail( int instanceID )
+        public Texture2D GetThumbnail( int hash )
         {
             // if the name exists in the list, return its thumbnail
-            return storedPreviewTextures.FirstOrDefault( e => e.instanceID == instanceID ).GetThumbnail();
+            return storedPreviewTextures.FirstOrDefault( e => e.hashCode == hash ).GetThumbnail();
         }
 
         public static string ConstructPath()

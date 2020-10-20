@@ -7,11 +7,10 @@ Author: Daniel Cornelius
 $TODO: Port over the browser window to this system.
 * * * * * * * * * * * * * * * * * * * * * */
 
-using System;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
-using Random = UnityEngine.Random;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -19,34 +18,31 @@ namespace Chisel.Editors
 {
     internal sealed partial class ChiselMaterialBrowserWindowTest : EditorWindow
     {
-        private const int NUM_TILES  = 8 * 200;
-        private const int THUMB_SIZE = 64;
+        public static ChiselMaterialBrowserCache Cache => m_Cache;
 
-        private int m_TileSize = 64;
+        private static ChiselMaterialBrowserCache      m_Cache;
+        private        List<ChiselMaterialBrowserTile> m_Tiles  = new List<ChiselMaterialBrowserTile>();
+        private        List<string>                    m_Labels = new List<string>();
 
+        private int m_LastSelectedMaterial = 0;
+        private int m_CurrentPropsTab      = 1;
+
+        private int     m_TileSize  = 64;
         private Vector2 m_ScrollPos = Vector2.zero;
-
-        private static List<Texture2D> tiles = new List<Texture2D>();
-
-        //private static bool isRenderingNoise = false;
 
         private VisualElement Root => rootVisualElement;
 
-        private float m_ContentSize;
-
-        private Toolbar m_TopToolbar;
-        private Toolbar m_TopToolBar2;
-        private Toolbar m_TabBar;
-        private Toolbar m_StatusBar;
-
+        private Toolbar       m_TopToolbar;
+        private Toolbar       m_TopToolBar2;
+        private Toolbar       m_TabBar;
+        private Label         m_SearchFilterLabel;
         private ToolbarSpacer m_TopToolBar2Spacer0;
-
         private ToolbarButton m_PropertiesLabel;
 
-        private Box        m_PropertiesGroup;
-        private Box        m_StatusLabelBox;
-        private ScrollView m_TileView;
-        private Label      m_TileSizeLabel;
+        private string[] m_PropsTabLabels = new string[]
+        {
+                "Labels", "Properties"
+        };
 
         [MenuItem( "Window/Chisel/Material Browser Test" )]
         private static void Init()
@@ -55,67 +51,28 @@ namespace Chisel.Editors
             window.maxSize = new Vector2( 800, 720 );
             window.minSize = new Vector2( 800, 720 );
 
-            /* // legacy code
-            for( int i = 0; i < NUM_TILES; i++ )
-            {
-                if( !isRenderingNoise )
-                    tiles.Add( GetRandNoiseTex() );
-            }*/
+            // bugfix for UI layout not being correct on unity start. this is very hack-ish, and i'd really like to find a way to do this correctly.
+            CompilationPipeline.RequestScriptCompilation();
         }
 
-        private VisualElement ConstructTilePreview( string baseElementName, int num )
+        private void OnDisable()
         {
-            VisualElement tileBase = new VisualElement();
-
-            // button for tile
-            Button bg = tileBase.AddButton( $"", $"{baseElementName}BG", () => { Debug.Log( $"Clicked material button 'Label [{num}]'" ); } );
-            bg.SetSize( m_TileSize, m_TileSize );
-            // tile thumbnail
-            bg.AddImage( GetRandNoiseTex(), $"{baseElementName}Image" );
-            // label bg
-            Box box = bg.AddBox( $"{baseElementName}LabelBG" );
-            box.SetPosition( 0, m_TileSize - 19 );
-            box.SetSize( m_TileSize, 19 );
-            box.style.backgroundColor = new StyleColor( new Color( 0, 0, 0, 0.3f ) );
-            // label
-            box.AddLabel( $"Label [{num}]", $"{baseElementName}Label" );
-
-            return tileBase;
+            EditorPrefs.SetInt( "chisel_matbrowser_pviewSize", m_TileSize );
         }
 
         private void OnEnable()
         {
+            //EditorApplication.LockReloadAssemblies(); // ensure window is loaded before unity tries to reload anything
+
+            m_TileSize = EditorPrefs.GetInt( "chisel_matbrowser_pviewSize", 64 );
+
+            // load cached thumbs
+            m_Cache ??= ChiselMaterialBrowserCache.Load();
+            Debug.Log( $"Thumbnail cache: [{Cache.Name}], Number of entries: [{Cache.NumEntries}]" );
+
+            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, ref m_Cache, false );
+
             Root.Clear();
-            /*====================================================
-             * Construct data
-             */
-            List<VisualElement> elements = new List<VisualElement>();
-
-            void ConstructElements()
-            {
-                //Stopwatch watch = Stopwatch.StartNew();
-                elements.Clear();
-                m_ContentSize = 0;
-                for( int i = 0; i < NUM_TILES; i++ )
-                {
-                    elements.Add( ConstructTilePreview( "tileImage", i + 1 ) );
-
-                    if( i % (int) Mathf.Clamp( ( position.width - 270 ) / m_TileSize, 2, 8 ) == 0 ) { m_ContentSize += m_TileSize + 4; }
-                }
-
-                if( m_TileView != null )
-                {
-                    foreach( var e in elements ) { m_TileView.Add( e ); }
-
-                    m_TileView.MarkDirtyRepaint();
-                }
-
-                //watch.Stop();
-                //Debug.Log( $"Constructed {elements.Count} elements in {watch.ElapsedMilliseconds:###00}ms" );
-            }
-
-            ConstructElements();
-
             EditorApplication.update -= Update;
             EditorApplication.update += Update;
 
@@ -130,23 +87,19 @@ namespace Chisel.Editors
             m_TopToolbar = Root.AddToolbar( "toolBar" );
             m_TopToolbar.AddButton( "Refresh", "toolBarRefreshButton", () =>
             {
-                if( m_TileView != null )
-                {
-                    m_TileView.Clear();
-                    ConstructElements();
-                    Root.MarkDirtyRepaint();
-                }
-
-                //Debug.Log( "Clicked refresh button" );
+                m_Tiles.Clear();
+                ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, ref m_Cache, false );
             } );
 
             // label bar
-            m_TopToolBar2        = Root.AddToolbar( "toolBar2" );
+            m_TopToolBar2        = Root.AddToolbar( "toolBar" );
+            m_SearchFilterLabel = m_TopToolBar2.AddLabel( "", "statusBarLabel" );
+            m_SearchFilterLabel.SetSize( 200, 24 );
             m_TopToolBar2Spacer0 = m_TopToolBar2.AddSpacer( "topToolBar2Spacer0" );
-            m_TopToolBar2Spacer0.SetSize( position.width - 263, 24 );
+            m_TopToolBar2Spacer0.SetSize( position.width - 463, 24 );
 
             // properties area label on label bar
-            m_PropertiesLabel = (ToolbarButton) m_TopToolBar2.AddButton( "Properties", "topToolBar2PropertiesLabel", () => {}, false );
+            m_PropertiesLabel = (ToolbarButton) m_TopToolBar2.AddButton( m_PropsTabLabels[m_CurrentPropsTab], "topToolBar2PropertiesLabel", () => {}, false );
             m_PropertiesLabel.SetSize( 264, 24 );
 
             // vertical tab bar
@@ -154,219 +107,221 @@ namespace Chisel.Editors
             m_TabBar.SetPosition( position.width, 0 );
             m_TabBar.SetRotation( 90 );
 
-            // properties area controlled by tab bar
-            m_PropertiesGroup = Root.AddBox( "propertiesBox" );
-            m_PropertiesGroup.SetPosition( position.width   - 264, 48 );
-            m_PropertiesGroup.SetSize( 240, position.height - 48 );
+            m_TabBar.AddButton( "Labels", "tabBarButton", () => { m_CurrentPropsTab = 0; } ).SetSize( 100, 24 );
 
-            // content scroll view, has all the material previews.
-            m_TileView = Root.AddScrollView( in elements, ref m_ScrollPos, in m_TileSize, false, "tileView" );
-            m_TileView.SetPosition( 0, 48 );
-            m_TileView.SetSize( position.width - 252, position.height - 70 );
+            m_TabBar.AddButton( "Properties", "tabBarButton", () => { m_CurrentPropsTab = 1; } ).SetSize( 100, 24 );
 
-            // bottom status bar
-            m_StatusBar = Root.AddToolbar( "statusBar" );
-            m_StatusBar.AddLabel( "status text", "statusBarLabel" );
-
-            // bottom status bar, preview tile size DOWN
-            Button downBTN = m_StatusBar.AddButton( "<", "previewSizeButtonLeft", () =>
-            {
-                m_TileSize = Mathf.Clamp( ChiselMaterialBrowserUtilities.GetPow2( m_TileSize / 2 ), 64, 256 );
-
-                m_ContentSize = 0;
-
-                for( int i = 0; i < elements.Count; i++ )
-                {
-                    if( i % (int) Mathf.Clamp( ( position.width - 270 ) / m_TileSize, 2, 8 ) == 0 ) { m_ContentSize += m_TileSize + 4; }
-                }
-
-                foreach( var ve in m_TileView.contentContainer.Children() )
-                {
-                    // button + preview texture
-                    ve.SetSize( m_TileSize, m_TileSize );
-                    ve[0].SetSize( m_TileSize, m_TileSize );
-
-                    // label BG
-                    ve[0][1].SetSize( m_TileSize, 19 );
-                    ve[0][1].SetPosition( 0, m_TileSize - 19 );
-                }
-
-                m_TileSizeLabel.text = $"{m_TileSize}";
-            } );
-            downBTN.SetPosition( position.width - 364, 0 );
-            downBTN.SetSize( 20, 24 );
-
-            // bottom status bar, preview tile size label
-            m_StatusLabelBox = m_StatusBar.AddBox( "tileSizeLabelBG" );
-            m_StatusLabelBox.SetPosition( position.width - 346, 0 );
-            m_StatusLabelBox.SetSize( 60, 22 );
-            m_TileSizeLabel = m_StatusLabelBox.AddLabel( $"{m_TileSize}", "tileSizeLabel" );
-
-            // bottom status bar, preview tile size UP
-            Button upBTN = m_StatusBar.AddButton( ">", "previewSizeButtonRight", () =>
-            {
-                m_TileSize = Mathf.Clamp( ChiselMaterialBrowserUtilities.GetPow2( m_TileSize * 2 ), 64, 256 );
-
-                m_ContentSize = 0;
-
-                for( int i = 0; i < elements.Count; i++ )
-                {
-                    if( i % (int) Mathf.Clamp( ( position.width - 270 ) / m_TileSize, 2, 8 ) == 0 ) { m_ContentSize += m_TileSize + 4; }
-                }
-
-                foreach( var ve in m_TileView.contentContainer.Children() )
-                {
-                    // button + preview texture
-                    ve.SetSize( m_TileSize, m_TileSize );
-                    ve[0].SetSize( m_TileSize, m_TileSize );
-
-                    // label BG
-                    ve[0][1].SetSize( m_TileSize, 19 );
-                    ve[0][1].SetPosition( 0, m_TileSize - 19 );
-                }
-
-                m_TileSizeLabel.text = $"{m_TileSize}";
-            } );
-            upBTN.SetPosition( position.width - 284, 0 );
-            upBTN.SetSize( 20, 24 );
-
-
-            // handle setting tab labels and functionality
-            for( int i = 0; i < 4; i++ )
-            {
-                int    num   = i;
-                string label = $"Button {i}";
-
-                // set tab labels
-                switch( num )
-                {
-                    case 0:
-                    {
-                        label = "Labels";
-                        break;
-                    }
-                    case 1:
-                    {
-                        label = "Properties";
-                        break;
-                    }
-                    case 2:  { break; }
-                    case 3:  { break; }
-                    default: throw new IndexOutOfRangeException( $"Tab {num} is out of maximum range of 4, add a new tab before trying to access it" );
-                }
-
-                // for each button in the vertical tab well, figure out what it is, and set its action accordingly
-                Button b = m_TabBar.AddButton( label, $"tabBarButton{num}", () =>
-                {
-                    switch( num )
-                    {
-                        case 0:
-                        {
-                            m_PropertiesLabel.SetText( "Labels" );
-                            break;
-                        }
-                        case 1:
-                        {
-                            m_PropertiesLabel.SetText( "Properties" );
-                            break;
-                        }
-                        case 2:  { break; }
-                        case 3:  { break; }
-                        default: throw new IndexOutOfRangeException( $"Tab {num} is out of maximum range of 4, add a new tab before trying to access it" );
-                    }
-                } );
-                b.SetSize( 100, 24 );
-            }
-
-            /* // legacy code
-            if( tiles.Count < 1 )
-            {
-                for( int i = 0; i < NUM_TILES; i++ )
-                {
-                    if( !isRenderingNoise )
-                        tiles.Add( GetRandNoiseTex() );
-                }
-            }*/
+            //EditorApplication.UnlockReloadAssemblies(); // allow unity to reload assemblies
         }
 
         private void Update()
         {
-            m_TileView.contentContainer.SetSize( position.width - 270, m_ContentSize );
+            m_PropertiesLabel.SetText( m_PropsTabLabels[m_CurrentPropsTab] );
         }
 
-        // $TODO: REMOVE ME, Replace with thumbnailing system.
-        // generates a random perlin noise texture, used for preview purposes and to create load
-        private static Texture2D GetRandNoiseTex()
-        {
-            //isRenderingNoise = true;
-            Texture2D noiseTex = new Texture2D( THUMB_SIZE, THUMB_SIZE, TextureFormat.RGB24, false, PlayerSettings.colorSpace == ColorSpace.Linear );
-            Color[]   pix      = new Color[THUMB_SIZE * THUMB_SIZE];
+        private Material m_PreviewMaterial;
+        private Editor   m_PreviewEditor;
 
-            for( int y = 0; y < THUMB_SIZE; y++ )
+        private void OnGUI()
+        {
+            int lastSelected = m_LastSelectedMaterial;
+            // rebuild IMGUI styling
+            RebuildStyles();
+
+            if( EditorApplication.isPlaying && !EditorApplication.isPaused )
+                Root.visible  = false;
+            else Root.visible = true;
+
+            if( EditorApplication.isCompiling )
             {
-                for( int x = 0; x < THUMB_SIZE; x++ )
-                {
-                    float xCoord = 0 + x / THUMB_SIZE;
-                    float yCoord = 0 + y / THUMB_SIZE;
-                    float sample = Mathf.Clamp01( 1 - Mathf.PerlinNoise( xCoord, yCoord ) * Random.value ) * 0.5f;
-                    pix[y * THUMB_SIZE + x] = new Color( sample, sample, sample );
-                }
+                Root.visible = false;
+                GUI.Box( new Rect( ( position.width * 0.5f ) - 200, ( position.height * 0.5f ) - 60, 400, 120 ), "Please wait...", "NotificationBackground" );
             }
+            else Root.visible = true;
 
-            noiseTex.SetPixels( pix );
-            noiseTex.Apply();
+            if( !EditorApplication.isCompiling && !EditorApplication.isPlaying )
+            {
+                GUI.Box( new Rect( position.width - 264, 48, 240, position.height - 48 ), "" );
 
-            //isRenderingNoise = false;
-            return noiseTex;
+                switch( m_CurrentPropsTab )
+                {
+                    case 0:
+                    {
+                        Rect labelButtonRect = new Rect( position.width - 260, 50, 224, 24 );
+
+                        for( int i = 0; i < m_Labels.Count; i++ )
+                        {
+                            if( i > 0 )
+                                labelButtonRect.y += 26;
+                            if( GUI.Button( labelButtonRect, m_Labels[i] ) ) {}
+                        }
+
+                        break;
+                    }
+                    case 1:
+                    {
+                        Rect propsAreaRect = new Rect( position.width - 264, 50, 240, position.height - 50 );
+
+                        GUI.BeginGroup( propsAreaRect, (GUIStyle) "gameviewbackground" );
+                        {
+                            Rect contentPos = new Rect( 2, 2, 234, 234 );
+
+                            if( m_Tiles[m_LastSelectedMaterial] != null )
+                            {
+                                if( m_PreviewEditor == null ) m_PreviewEditor = Editor.CreateEditor( m_PreviewMaterial, typeof( MaterialEditor ) );
+                                m_PreviewEditor.OnInteractivePreviewGUI( contentPos, EditorStyles.whiteLabel );
+                                m_PreviewEditor.Repaint();
+                            }
+                            //GUI.DrawTexture( contentPos, m_Tiles[m_LastSelectedMaterial].Preview );
+
+                            propsAreaRect.y      = 236;
+                            propsAreaRect.x      = 1;
+                            propsAreaRect.height = 90;
+                            propsAreaRect.width  = 237;
+                            GUI.BeginGroup( propsAreaRect, (GUIStyle) "helpbox" );
+                            {
+                                propsAreaRect.x      += 1;
+                                propsAreaRect.y      =  0;
+                                propsAreaRect.height =  22;
+                                GUI.Label( propsAreaRect, $"{m_Tiles[m_LastSelectedMaterial].materialName}", EditorStyles.toolbarButton );
+                                propsAreaRect.y += 22;
+                                GUI.Label( propsAreaRect, $"Size:\t{m_Tiles[m_LastSelectedMaterial].mainTexSize:###0}", EditorStyles.miniLabel );
+                                propsAreaRect.y += 22;
+                                GUI.Label( propsAreaRect, $"Offset:\t{m_Tiles[m_LastSelectedMaterial].uvOffset:####0}", EditorStyles.miniLabel );
+                                propsAreaRect.y += 22;
+                                GUI.Label( propsAreaRect, $"Scale:\t{m_Tiles[m_LastSelectedMaterial].uvScale:####0}", EditorStyles.miniLabel );
+                            }
+                            GUI.EndGroup();
+
+                            propsAreaRect.y      += 262;
+                            propsAreaRect.height =  140;
+                            GUI.BeginGroup( propsAreaRect, (GUIStyle) "helpbox" );
+                            {
+                                propsAreaRect.y      = 0;
+                                propsAreaRect.x      = 0;
+                                propsAreaRect.height = 22;
+                                GUI.Label( propsAreaRect, $"Material", EditorStyles.toolbarButton );
+                                propsAreaRect.x += 1;
+                                propsAreaRect.y += 22;
+                                GUI.Label( propsAreaRect, $"Shader:\t{m_Tiles[m_LastSelectedMaterial].shaderName}", EditorStyles.miniLabel );
+                                propsAreaRect.y += 22;
+                                GUI.Label( propsAreaRect, $"Albedo:\t{m_Tiles[m_LastSelectedMaterial].albedoName}", EditorStyles.miniLabel );
+
+                                propsAreaRect.x     += 1;
+                                propsAreaRect.y     =  88;
+                                propsAreaRect.width -= 4;
+                                if( GUI.Button( propsAreaRect, "Select In Project", "largebutton" ) )
+                                {
+                                    Material m = AssetDatabase.LoadAssetAtPath<Material>( AssetDatabase.GUIDToAssetPath( m_Tiles[m_LastSelectedMaterial].guid ) );
+                                    Selection.activeObject = m;
+                                    EditorGUIUtility.PingObject( m );
+                                }
+
+                                propsAreaRect.y += 24;
+                                if( GUI.Button( propsAreaRect, "Apply to Selected Face", "largebutton" ) ) {}
+                            }
+                            GUI.EndGroup();
+
+                            propsAreaRect.y      = 469;
+                            propsAreaRect.height = 186;
+                            GUI.BeginGroup( propsAreaRect, (GUIStyle) "helpbox" );
+                            {
+                                propsAreaRect.y      = 0;
+                                propsAreaRect.height = 22;
+                                GUI.Label( propsAreaRect, "Labels", EditorStyles.toolbarButton );
+
+                                float btnWidth = 60;
+                                int   idx      = 0;
+                                foreach( var l in m_Tiles[m_LastSelectedMaterial].labels )
+                                {
+                                    float xOffset = 2;
+                                    float yOffset = 22;
+                                    int   row     = 0;
+                                    for( int i = 0; i < ( propsAreaRect.width / btnWidth ); i++ )
+                                    {
+                                        if( idx == m_Tiles[m_LastSelectedMaterial].labels.Length ) break;
+
+                                        xOffset = ( 40 * i ) + 2;
+                                        if( GUI.Button( new Rect( xOffset, yOffset, btnWidth, 22 ), new GUIContent( l, $"Click to filter for label \"{l}\"" ), m_AssetLabelStyle ) )
+                                        {
+                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, ref m_Cache, true, l, "" );
+                                            m_SearchFilterLabel.SetText( $"Search Filter: {l}" );
+                                        }
+
+                                        idx++;
+                                    }
+
+                                    row     += 1;
+                                    yOffset =  22 + ( 22 * row );
+                                }
+                            }
+                            GUI.EndGroup();
+                        }
+                        GUI.EndGroup();
+
+                        break;
+                    }
+                    default: break;
+                }
+
+                DrawLabelAndTileArea();
+            }
         }
 
-        /* // legacy code
+        // legacy code
         private float scrollViewHeight;
-        private float xOffset = 2;
 
-        private void DrawLabelAndTileArea( Rect rect )
+        private void DrawLabelAndTileArea()
         {
-            GUI.Box( new Rect( 0, TOOLBAR_HEIGHT, rect.width - TOOLBAR_WIDTH, rect.height - ( TOOLBAR_HEIGHT * 2 ) ), "", "GameViewBackground" );
+            Rect rect = position;
+            //GUI.Box( new Rect( 0, 48, rect.width - 24, rect.height - ( 48 * 2 ) ), "", "GameViewBackground" );
 
             int idx        = 0;
-            int numColumns = (int) ( ( rect.width - ( TOOLBAR_WIDTH + 10 ) ) / THUMB_SIZE );
+            int numColumns = (int) ( ( rect.width - ( 264 + 10 ) ) / m_TileSize );
 
-            m_ScrollPos = GUI.BeginScrollView( new Rect( 0, 28, rect.width - ( TOOLBAR_WIDTH + 2 ),  rect.height - 52 ), m_ScrollPos,
-                                               new Rect( 0, 28, rect.width - ( TOOLBAR_WIDTH + 16 ), scrollViewHeight ) );
+            m_ScrollPos = GUI.BeginScrollView( new Rect( 0, 52, rect.width - 262, rect.height - 72 ), m_ScrollPos,
+                                               new Rect( 0, 0,  rect.width - 282, scrollViewHeight ) );
             {
-                float yOffset = 22;
+                float xOffset = 0;
+                float yOffset = 0;
                 int   row     = 0;
 
-                foreach( var entry in tiles )
+                foreach( var entry in m_Tiles )
                 {
-                    if( idx == tiles.Count ) break;
+                    if( idx == m_Tiles.Count ) break;
 
                     // begin horizontal
                     for( int x = 0; x < numColumns; x++ )
                     {
-                        if( x > 0 )
-                            xOffset = ( THUMB_SIZE + 3 ) * x;
+                        xOffset = ( m_TileSize * x ) + 4;
 
-                        if( idx == tiles.Count ) break;
+                        if( idx == m_Tiles.Count ) break;
 
-                        GUI.Box( new Rect( xOffset, yOffset, THUMB_SIZE, THUMB_SIZE ), tiles[idx] ); // make a custom guistyle for these, or make a method to do a proper tile
+                        if( GUI.Button( new Rect( xOffset, yOffset, m_TileSize - 2, m_TileSize - 4 ),
+                                        new GUIContent( m_Tiles[idx].Preview, $"Name: {m_Tiles[idx].materialName}\nShader: {m_Tiles[idx].shaderName}" ),
+                                        m_TileButtonStyle ) ) // make a custom guistyle for these, or make a method to do a proper tile
+                        {
+                            m_PreviewMaterial = AssetDatabase.LoadAssetAtPath<Material>( AssetDatabase.GUIDToAssetPath( m_Tiles[idx].guid ) );
+                            m_PreviewEditor   = null;
+
+                            m_LastSelectedMaterial = idx;
+                        }
 
                         idx++;
                     }
 
-                    row     += 1;
-                    xOffset =  2;
-                    if( row > 0 )
-                    {
-                        yOffset = TOOLBAR_HEIGHT + ( ( THUMB_SIZE + 3 ) * row );
-
-                        scrollViewHeight = yOffset;
-                    }
+                    row              += 1;
+                    yOffset          =  ( m_TileSize * row );
+                    scrollViewHeight =  yOffset;
 
                     // end horizontal
                 }
             }
             GUI.EndScrollView();
-        }*/
+
+            GUI.Box( new Rect( 0,   rect.height - 20, rect.width, 20 ), "", "toolbar" );
+            GUI.Label( new Rect( 0, rect.height - 20, 400,        20 ), $"Materials: {m_Tiles.Count} | Labels: {m_Labels.Count}" );
+            m_TileSize = (int) GUI.HorizontalSlider( new Rect( rect.width - 360, rect.height - 20, 80, 24 ), m_TileSize, 64, 128 );
+        }
     }
 }
