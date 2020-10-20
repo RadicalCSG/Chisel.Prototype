@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Burst.CompilerServices;
 using Unity.Collections;
@@ -343,14 +344,41 @@ namespace Chisel.Core
         {
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckCapacityInRange(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if (value < length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private void CheckAllocator(Allocator a)
+        {
+            if (a <= Allocator.None)
+            {
+                throw new Exception("Allocator must be Temp, TempJob or Persistent.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckArgPositive(int value)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+        }
+
         HashedVertices(int vertexCapacity, int chainedIndicesCapacity, Allocator allocator, int disposeSentinelStackDepth)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // Native allocation is only valid for Temp, Job and Persistent.
-            if (allocator <= Allocator.None)
-                throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
-            if (chainedIndicesCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(chainedIndicesCapacity), "Capacity must be >= 0");
+            CheckAllocator(allocator);
+            CheckArgPositive(chainedIndicesCapacity);
 
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, disposeSentinelStackDepth, allocator);
 #if UNITY_2020_1_OR_NEWER

@@ -296,22 +296,62 @@ namespace Chisel.Core
         {
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private void CheckAllocator(Allocator a)
+        {
+            if (a <= Allocator.None)
+            {
+                throw new Exception("Allocator must be Temp, TempJob or Persistent.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckCapacityInRange(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value < (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckArgInRange(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value >= (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckArgInRangeInc(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value > (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         NativeListArray(int initialListCapacity, Allocator allocator, int disposeSentinelStackDepth)
         {
             var totalSize = UnsafeUtility.SizeOf<T>() * (long)initialListCapacity;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // Native allocation is only valid for Temp, Job and Persistent.
-            if (allocator <= Allocator.None)
-                throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
-            if (initialListCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialListCapacity), "InitialListCapacity must be >= 0");
+            CheckAllocator(allocator);
+            CheckArgPositive(initialListCapacity);
 
 
             CollectionHelper.CheckIsUnmanaged<T>();
-
-            if (totalSize > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(initialListCapacity), $"InitialListCapacity * sizeof(T) cannot exceed {int.MaxValue} bytes");
+            CheckArgInRange(totalSize, int.MaxValue);
 
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, disposeSentinelStackDepth, allocator);
 #endif
@@ -330,8 +370,7 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
 #endif
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
+            CheckArgPositive(length);
             m_Array->ResizeExact(length);
         }
 
@@ -538,8 +577,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int AllocateItemAndAddValues(NativeArray<T> other, int otherLength)
         {
-            if (otherLength > other.Length)
-                throw new ArgumentOutOfRangeException("otherLength");
+            CheckArgInRangeInc(otherLength, other.Length);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
 #endif
@@ -563,54 +601,6 @@ namespace Chisel.Core
             return index;
         }
 
-#if false
-        public int AllocatItemAndAddValues(NativeList<T> other)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            var index = m_Array->AllocateItem();
-            var ptr = m_Array->Ptr[index];
-            if (ptr == null ||
-                !ptr->IsCreated)
-            {
-                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
-                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-                dstList.AddRangeNoResize(other);
-            } else
-            {
-                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-                dstList.AddRange(other);
-            }
-            return index;
-        }
-
-        public int AllocatItemAndAddValues(List<T> other)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            var index = m_Array->AllocateItem();
-            var ptr = m_Array->Ptr[index];
-            if (ptr == null ||
-                !ptr->IsCreated)
-            {
-                ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Count);
-            }
-            var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-            dstList.AddRange(other);
-            return index;
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckSufficientCapacity(int capacity, int length)
-        {
-            if (capacity < length)
-            {
-                throw new Exception($"Length {length} exceeds capacity Capacity {capacity}");
-            }
-        }
-#endif
 
         [return: AssumeRange(0, int.MaxValue)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
