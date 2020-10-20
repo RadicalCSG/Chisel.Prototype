@@ -717,7 +717,7 @@ namespace Chisel.Core
             m_Array = null;
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         internal unsafe struct UnsafeDisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction]

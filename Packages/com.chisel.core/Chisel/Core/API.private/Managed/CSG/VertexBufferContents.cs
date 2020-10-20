@@ -26,7 +26,7 @@ namespace Chisel.Core
         public NativeListArray<float3>  normals;
         public NativeListArray<float2>  uv0;
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct CopyToMeshJob : IJob
         {
             [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>    subMeshes;
@@ -165,7 +165,7 @@ namespace Chisel.Core
             return true;
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct CopyToMeshColliderJob : IJob
         {
             [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>    subMeshes;

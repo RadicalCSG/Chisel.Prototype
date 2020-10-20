@@ -32,7 +32,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct EnsureCapacityListJob<T> : IJob
             where T : struct
         {
@@ -60,7 +60,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct EnsureCapacityArrayJob<T1,T2> : IJob
             where T1 : struct
             where T2 : struct
