@@ -20,7 +20,6 @@ namespace Chisel.Components
         public Material                 materialOverride;
         public bool                     meshIsModified;
         public ChiselModel              model;
-        public GameObjectState          state;
         public VertexBufferContents     contents;
     }
 
@@ -358,14 +357,14 @@ namespace Chisel.Components
         }
 
 
-        public static void UpdateSettings(List<ChiselRenderObjectUpdate> updates)
+        public static void UpdateSettings(List<ChiselRenderObjectUpdate> updates, Dictionary<ChiselModel, GameObjectState> gameObjectStates)
         {
             Profiler.BeginSample("UpdateSettings");
             for (int u = 0; u < updates.Count; u++)
             {
-                var update = updates[u];
-                var instance = update.instance;
-                var contentsIndex = update.contentsIndex;
+                var update          = updates[u];
+                var instance        = update.instance;
+                var contentsIndex   = update.contentsIndex;
 
                 if (instance.sharedMesh.subMeshCount > 0)
                 {
@@ -385,7 +384,8 @@ namespace Chisel.Components
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
-                instance.UpdateSettings(update.model, update.state, update.meshIsModified);
+                var gameObjectState = gameObjectStates[update.model];
+                instance.UpdateSettings(update.model, gameObjectState, update.meshIsModified);
             }
             Profiler.EndSample();
         }

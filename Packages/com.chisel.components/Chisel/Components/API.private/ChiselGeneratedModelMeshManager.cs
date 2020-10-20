@@ -62,15 +62,15 @@ namespace Chisel.Components
             }
         }
 
-        static void BeginMeshEvent()
+        static void BeginMeshUpdates()
         {
             s_UpdatedModels.Clear();
-            ChiselGeneratedObjects.BeginMeshEvent();
+            ChiselGeneratedObjects.BeginMeshUpdates();
         }
 
         static readonly HashSet<ChiselModel> s_UpdatedModels = new HashSet<ChiselModel>();
 
-        static bool PreUpdateMeshEvent(CSGTree tree, int index, ref VertexBufferContents vertexBufferContents)
+        static JobHandle PerformMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
         {
             ChiselModel model = null;
             for (int m = 0; m < registeredModels.Count; m++)
@@ -82,7 +82,7 @@ namespace Chisel.Components
                     model = registeredModels[m];
             }
             if (model == null)
-                return false;
+                return (JobHandle)default;
 
             if (!ChiselGeneratedObjects.IsValid(model.generated))
             {
@@ -92,18 +92,12 @@ namespace Chisel.Components
             }
 
             s_UpdatedModels.Add(model);
-            model.generated.PreUpdate(model, model.gameObject, ref vertexBufferContents);
-            return true;
+            return model.generated.UpdateMeshes(model, model.gameObject, ref vertexBufferContents, dependencies);
         }
 
-        static JobHandle UpdateMeshEvent(JobHandle dependencies)
+        static void FinishMeshUpdates()
         {
-            return ChiselGeneratedObjects.UpdateMeshes(dependencies);
-        }
-
-        static void PostUpdateMeshEvent()
-        {
-            ChiselGeneratedObjects.PostUpdate();
+            ChiselGeneratedObjects.FinishMeshUpdates();
             foreach (var model in s_UpdatedModels)
             {
                 componentGenerator.Rebuild(model);
@@ -111,10 +105,9 @@ namespace Chisel.Components
             }
         }
         
-        static Action s_BeginMeshEvent = (Action)BeginMeshEvent;
-        static PreUpdateMeshEvent s_PreUpdateMeshEvent = (PreUpdateMeshEvent)PreUpdateMeshEvent;
-        static ScheduleMeshUploads s_UpdateMeshEvent = (ScheduleMeshUploads)UpdateMeshEvent;
-        static Action s_PostUpdateMeshEvent = (Action)PostUpdateMeshEvent;
+        static readonly Action              s_BeginMeshUpdates      = (Action)BeginMeshUpdates;
+        static readonly PerformMeshUpdate   s_PerformMeshUpdate     = (PerformMeshUpdate)PerformMeshUpdate;
+        static readonly Action              s_FinishMeshUpdates     = (Action)FinishMeshUpdates;
 
         public static void UpdateModels()
         {
@@ -123,7 +116,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush(s_BeginMeshEvent, s_PreUpdateMeshEvent, s_UpdateMeshEvent, s_PostUpdateMeshEvent))
+                if (!CSGManager.Flush(s_BeginMeshUpdates, s_PerformMeshUpdate, s_FinishMeshUpdates))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..

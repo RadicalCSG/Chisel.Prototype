@@ -118,6 +118,8 @@ namespace Chisel.Core
             internal JobHandle vertexBufferContents_uv0JobHandle;
             internal JobHandle vertexBufferContents_meshDescriptionsJobHandle;
 
+            internal JobHandle scheduleMeshUploadsJobHandle;
+
             public JobHandle lastJobHandle;
 
             public void Clear()
@@ -382,7 +384,7 @@ namespace Chisel.Core
         #endregion
 
 
-        internal unsafe static JobHandle UpdateTreeMeshes(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent, List<int> treeNodeIDs)
+        internal unsafe static JobHandle UpdateTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates, List<int> treeNodeIDs)
         {
             var finalJobHandle = default(JobHandle);
 
@@ -958,6 +960,8 @@ namespace Chisel.Core
                 currentTree.vertexBufferContents_normalsJobHandle = default;
                 currentTree.vertexBufferContents_uv0JobHandle = default;
                 currentTree.vertexBufferContents_meshDescriptionsJobHandle = default;
+                
+                currentTree.scheduleMeshUploadsJobHandle = default;
             }
 
 
@@ -2241,10 +2245,87 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
+                #region Update Flags
+                Profiler.BeginSample("UpdateTreeFlags");
+                s_UpdateTrees.Clear();
+                for (int t = 0; t < treeUpdateLength; t++)
+                {
+                    ref var treeUpdate = ref s_TreeUpdates[t];
+
+                    var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+
+                    var treeNodeIndex = tree.treeNodeID - 1;
+                    var flags = CSGManager.nodeFlags[treeNodeIndex];
+                    if (!flags.IsNodeFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
+                    {
+                        treeUpdate.updateCount = 0;
+                        continue;
+                    }
+
+                    bool wasDirty = tree.Dirty;
+
+                    flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
+                    nodeFlags[treeNodeIndex] = flags;
+
+                    if (treeUpdate.updateCount == 0 &&
+                        treeUpdate.brushCount > 0)
+                    {
+                        treeUpdate.updateCount = 0;
+                        treeUpdate.brushCount = 0;
+                        continue;
+                    }
+
+                    // Don't update the mesh if the tree hasn't actually been modified
+                    if (!wasDirty)
+                    {
+                        treeUpdate.updateCount = 0;
+                        continue;
+                    }
+
+                    // Skip invalid trees since they won't work anyway
+                    if (!tree.Valid)
+                        continue;
+
+                    s_UpdateTrees.Add(tree);
+                }
+                Profiler.EndSample();
+                #endregion
+
+                if (beginMeshUpdates != null)
+                {
+                    Profiler.BeginSample("BeginMeshUpdates");
+                    beginMeshUpdates.Invoke();
+                    Profiler.EndSample();
+                }
+
+                Profiler.BeginSample("PerformMeshUpdates");
+                {
+                    if (performMeshUpdate != null)
+                    {
+                        for (int t = 0; t < treeUpdateLength; t++)
+                        {
+                            ref var treeUpdate = ref s_TreeUpdates[t];
+                            if (treeUpdate.updateCount == 0)
+                                continue;
+                            var dependencies = CombineDependencies(treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
+                                                                   treeUpdate.vertexBufferContents_subMeshesJobHandle,
+                                                                   treeUpdate.vertexBufferContents_indicesJobHandle,
+                                                                   treeUpdate.vertexBufferContents_brushIndicesJobHandle,
+                                                                   treeUpdate.vertexBufferContents_positionsJobHandle,
+                                                                   treeUpdate.vertexBufferContents_tangentsJobHandle,
+                                                                   treeUpdate.vertexBufferContents_normalsJobHandle,
+                                                                   treeUpdate.vertexBufferContents_uv0JobHandle,
+                                                                   treeUpdate.vertexBufferContents_meshDescriptionsJobHandle);
+                            var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+                            var currentJobHandle = performMeshUpdate(tree, ref treeUpdate.vertexBufferContents, dependencies);
+                            treeUpdate.scheduleMeshUploadsJobHandle = CombineDependencies(currentJobHandle, treeUpdate.scheduleMeshUploadsJobHandle);
+                        }
+                    }
+                }
+                Profiler.EndSample();
+                
+
                 #region Complete Jobs
-
-                //JobHandle.ScheduleBatchedJobs();
-
                 Profiler.BeginSample("CSG_JobComplete");
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
@@ -2301,14 +2382,25 @@ namespace Chisel.Core
                                                     treeUpdate.vertexBufferContents_normalsJobHandle,
                                                     treeUpdate.vertexBufferContents_uv0JobHandle,
                                                     treeUpdate.vertexBufferContents_meshDescriptionsJobHandle),
-                                                finalJobHandle
+                                                CombineDependencies(
+                                                    treeUpdate.scheduleMeshUploadsJobHandle,
+                                                    finalJobHandle)
                                             );
                 }
-                finalJobHandle.Complete(); finalJobHandle = default;
+                finalJobHandle.Complete();
+                finalJobHandle = default;
                 Profiler.EndSample();
                 #endregion
 
+                if (finishMeshUpdates != null)
+                {
+                    Profiler.BeginSample("FinishMeshUpdates");
+                    finishMeshUpdates.Invoke();
+                    Profiler.EndSample();
+                }
+
                 #region Dirty all invalidated outlines
+                // TODO: Jobify this
                 Profiler.BeginSample("CSG_DirtyModifiedOutlines");
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
@@ -2318,99 +2410,16 @@ namespace Chisel.Core
                     for (int b = 0; b < treeUpdate.allUpdateBrushIndexOrders.Length; b++)
                     {
                         var brushIndexOrder = treeUpdate.allUpdateBrushIndexOrders[b];
-                        int brushNodeIndex  = brushIndexOrder.nodeIndex;
+                        int brushNodeIndex = brushIndexOrder.nodeIndex;
                         CSGManager.brushInfos[brushNodeIndex]?.DirtyOutline();
                     }
                 }
                 Profiler.EndSample();
                 #endregion
 
-                Profiler.BeginSample("UpdateFlags");
-                s_UpdateTrees.Clear();
-                for (int t = 0; t < treeUpdateLength; t++)
-                {
-                    ref var treeUpdate = ref s_TreeUpdates[t];
-
-                    var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
-
-                    var treeNodeIndex = tree.treeNodeID - 1;
-                    var flags = CSGManager.nodeFlags[treeNodeIndex];
-                    if (!flags.IsNodeFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
-                    {
-                        treeUpdate.updateCount = 0;
-                        continue;
-                    }
-
-                    bool wasDirty = tree.Dirty;
-
-                    flags.UnSetNodeFlag(NodeStatusFlags.NeedCSGUpdate);
-                    nodeFlags[treeNodeIndex] = flags;
-
-                    if (treeUpdate.updateCount == 0 &&
-                        treeUpdate.brushCount > 0)
-                    {
-                        treeUpdate.updateCount = 0;
-                        treeUpdate.brushCount = 0;
-                        continue;
-                    }
-
-                    // Don't update the mesh if the tree hasn't actually been modified
-                    if (!wasDirty)
-                    {
-                        treeUpdate.updateCount = 0;
-                        continue;
-                    }
-
-                    // Skip invalid trees since they won't work anyway
-                    if (!tree.Valid)
-                        continue;
-
-                    s_UpdateTrees.Add(tree);
-                }
-                Profiler.EndSample();
-                
-                if (beginMeshEvent != null)
-                {
-                    Profiler.BeginSample("BeginMeshEvent");
-                    beginMeshEvent.Invoke();
-                    Profiler.EndSample();
-                }
-
-                if (preUpdateMeshEvent != null)
-                {
-                    Profiler.BeginSample("UpdateMeshEvents");
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-
-                        var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
-                        preUpdateMeshEvent.Invoke(tree, t, ref treeUpdate.vertexBufferContents);
-                    }
-                    Profiler.EndSample();
-                }
-
-                Profiler.BeginSample("UpdateMeshEvent");
-                {
-                    var dependencies = (JobHandle)default;
-                    var currentHandle = dependencies;
-                    if (scheduleMeshUploads != null) 
-                        currentHandle = scheduleMeshUploads(dependencies);
-                    currentHandle.Complete();
-                }
-                Profiler.EndSample();
-
-                if (postUpdateMeshEvent != null)
-                {
-                    Profiler.BeginSample("PostUpdateMeshEvents");
-                    postUpdateMeshEvent.Invoke();
-                    Profiler.EndSample();
-                }
-
-
                 #region Store cached values back into cache (by node Index)
                 Profiler.BeginSample("CSG_StoreToCache");
+                // TODO: Jobify this
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate          = ref s_TreeUpdates[t];
@@ -2511,7 +2520,7 @@ namespace Chisel.Core
         #endregion
 
         #region Reset/Rebuild
-        internal static bool UpdateAllTreeMeshes(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent, out JobHandle allTrees)
+        internal static bool UpdateAllTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
@@ -2533,14 +2542,14 @@ namespace Chisel.Core
             UpdateDelayedHierarchyModifications();
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = UpdateTreeMeshes(beginMeshEvent, preUpdateMeshEvent, scheduleMeshUploads, postUpdateMeshEvent, trees);
+            allTrees = UpdateTreeMeshes(beginMeshUpdates, performMeshUpdate, finishMeshUpdates, trees);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
 
-        internal static bool RebuildAll(Action beginMeshEvent, PreUpdateMeshEvent preUpdateMeshEvent, ScheduleMeshUploads scheduleMeshUploads, Action postUpdateMeshEvent)
+        internal static bool RebuildAll(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates)
         {
-            if (!UpdateAllTreeMeshes(beginMeshEvent, preUpdateMeshEvent, scheduleMeshUploads, postUpdateMeshEvent, out JobHandle handle))
+            if (!UpdateAllTreeMeshes(beginMeshUpdates, performMeshUpdate, finishMeshUpdates, out JobHandle handle))
                 return false;
             handle.Complete();
             return true;
