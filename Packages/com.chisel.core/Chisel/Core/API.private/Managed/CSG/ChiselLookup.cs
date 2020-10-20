@@ -237,8 +237,10 @@ namespace Chisel.Core
                 if (nodeID == 0)
                     continue;
 
-                minNodeIndex = math.min(nodeID - 1, minNodeIndex);
-                maxNodeIndex = math.max(nodeID - 1, maxNodeIndex);
+                var nodeIndex = nodeID - 1;
+
+                minNodeIndex = math.min(nodeIndex, minNodeIndex);
+                maxNodeIndex = math.max(nodeIndex, maxNodeIndex);
             }
 
             if (minNodeIndex == int.MaxValue)
