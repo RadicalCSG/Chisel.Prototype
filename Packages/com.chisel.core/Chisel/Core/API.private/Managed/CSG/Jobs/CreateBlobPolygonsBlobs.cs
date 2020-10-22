@@ -20,13 +20,13 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly      brushMeshLookup;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>           basePolygons;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>           basePolygonCache;
 
 
         // Per thread scratch memory
@@ -143,42 +143,23 @@ namespace Chisel.Core
             int nodeOrder  = indexOrder.nodeOrder;
             int nodeIndex = indexOrder.nodeIndex;
 
-            if (treeSpaceVerticesArray[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+            if (treeSpaceVerticesCache[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
             var mesh                    = brushMeshLookup[nodeOrder];
-            ref var treeSpaceVertices   = ref treeSpaceVerticesArray[nodeOrder].Value.treeSpaceVertices;
+            ref var treeSpaceVertices   = ref treeSpaceVerticesCache[nodeOrder].Value.treeSpaceVertices;
             ref var halfEdges           = ref mesh.Value.halfEdges;
             ref var localPlanes         = ref mesh.Value.localPlanes;
             ref var polygons            = ref mesh.Value.polygons;
 
-            if (!hashedTreeSpaceVertices.IsCreated)
-            {
-                hashedTreeSpaceVertices = new HashedVertices(math.max(treeSpaceVertices.Length, 1000), Allocator.Temp);
-            } else
-            {
-                if (hashedTreeSpaceVertices.Capacity < treeSpaceVertices.Length)
-                {
-                    hashedTreeSpaceVertices.Dispose();
-                    hashedTreeSpaceVertices = new HashedVertices(treeSpaceVertices.Length, Allocator.Temp);
-                } else
-                    hashedTreeSpaceVertices.Clear();
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedTreeSpaceVertices, math.max(treeSpaceVertices.Length, 1000));
 
 
             var totalEdgeCount      = 0;
             var totalSurfaceCount   = 0;
 
-            if (!edges.IsCreated || edges.Length < halfEdges.Length)
-            {
-                if (edges.IsCreated) edges.Dispose();
-                edges = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
-            }
-            if (!validPolygons.IsCreated || validPolygons.Length < polygons.Length)
-            {
-                if (validPolygons.IsCreated) validPolygons.Dispose();
-                validPolygons = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref edges, halfEdges.Length);
+            NativeCollectionHelpers.EnsureMinimumSize(ref validPolygons, polygons.Length);
 
             //var edges           = new NativeArray<Edge>(halfEdges.Length, Allocator.Temp);
             //var validPolygons   = new NativeArray<ValidPolygon>(polygons.Length, Allocator.Temp);
@@ -186,23 +167,37 @@ namespace Chisel.Core
             {
                 var polygon = polygons[polygonIndex];
                 if (polygon.edgeCount < 3 || polygonIndex >= localPlanes.Length)
+                {
+                    validPolygons[totalSurfaceCount] = new ValidPolygon
+                    {
+                        basePlaneIndex = (ushort)polygonIndex,
+                        startEdgeIndex = (ushort)0,
+                        endEdgeIndex = (ushort)0
+                    };
+                    totalSurfaceCount++;
                     continue;
+                }
 
                 // Note: can end up with duplicate vertices when close enough vertices are snapped together
 
                 int edgeCount = 0;
                 int startEdgeIndex = totalEdgeCount;
 
-                if (!tempEdges.IsCreated || tempEdges.Length < polygons.Length)
-                {
-                    if (tempEdges.IsCreated) tempEdges.Dispose();
-                    tempEdges = new NativeArray<Edge>(polygons.Length, Allocator.Temp);
-                }
-
+                NativeCollectionHelpers.EnsureMinimumSize(ref tempEdges, halfEdges.Length);
+                
                 //var tempEdges = new NativeArray<Edge>(polygon.edgeCount, Allocator.Temp);
                 CopyPolygonToIndices(mesh, ref treeSpaceVertices, polygonIndex, hashedTreeSpaceVertices, tempEdges, ref edgeCount);
                 if (edgeCount == 0) // Can happen when multiple vertices are collapsed on eachother / degenerate polygon
+                {
+                    validPolygons[totalSurfaceCount] = new ValidPolygon
+                    {
+                        basePlaneIndex = (ushort)polygonIndex,
+                        startEdgeIndex = (ushort)0,
+                        endEdgeIndex = (ushort)0
+                    };
+                    totalSurfaceCount++;
                     continue;
+                }
 
                 for (int e = 0; e < edgeCount; e++)
                 {
@@ -224,14 +219,14 @@ namespace Chisel.Core
             //       then snap them all, then do this job
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
-            ref var brushIntersections = ref brushesTouchedByBrushes[nodeOrder].Value.brushIntersections;
+            ref var brushIntersections = ref brushesTouchedByBrushCache[nodeOrder].Value.brushIntersections;
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
                 if (intersectingNodeOrder < nodeOrder)
                     continue;
 
-                if (treeSpaceVerticesArray[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
+                if (treeSpaceVerticesCache[intersectingNodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                     continue;
 
                 // In order, goes through the previous brushes in the tree, 
@@ -239,7 +234,7 @@ namespace Chisel.Core
 
                 // TODO: figure out a better way to do this that merges vertices to an average position instead, 
                 //       this will break down if too many vertices are close to each other
-                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
+                ref var intersectingTreeSpaceVertices = ref treeSpaceVerticesCache[intersectingNodeOrder].Value.treeSpaceVertices;
                 hashedTreeSpaceVertices.ReplaceIfExists(ref intersectingTreeSpaceVertices);
             }
 
@@ -262,15 +257,15 @@ namespace Chisel.Core
             var surfaceArray = builder.Allocate(ref root.surfaces, totalSurfaceCount);
             for (int i = 0; i < totalSurfaceCount; i++)
             {
+                Debug.Assert(validPolygons[i].basePlaneIndex == i);
                 var polygon = polygons[validPolygons[i].basePlaneIndex];
                 polygonArray[i] = new BasePolygon()
                 {
-                    nodeIndexOrder      = indexOrder,
+                    nodeIndexOrder  = indexOrder,
                     surfaceInfo     = new SurfaceInfo
                     {
                         basePlaneIndex      = (ushort)validPolygons[i].basePlaneIndex,
                         interiorCategory    = (CategoryGroupIndex)(int)CategoryIndex.ValidAligned,
-                        //nodeIndex           = nodeIndex,
                     },
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
@@ -283,11 +278,7 @@ namespace Chisel.Core
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);
-            basePolygons[nodeOrder] = basePolygonsBlob;
-            //builder.Dispose();
-
-            //hashedTreeSpaceVertices.Dispose();
-            //edges.Dispose();
+            basePolygonCache[nodeOrder] = basePolygonsBlob;
         }
     }
 }

@@ -65,14 +65,9 @@ namespace Chisel.Core
                 }
                 return;
             }
-            
-            if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
-                foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
-            foundBrushes.Clear();
 
-            if (!usedBrushes.IsCreated || usedBrushes.Length < allTreeBrushIndexOrders.Length)
-                usedBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
-            usedBrushes.Clear();
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref foundBrushes, allTreeBrushIndexOrders.Length);
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref usedBrushes, allTreeBrushIndexOrders.Length);
 
             // TODO: figure out a way to avoid needing this
             for (int a = 0; a < rebuildTreeBrushIndexOrders.Length; a++)
@@ -160,14 +155,8 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            if (!requiredTemporaryBullShitByDOTS.IsCreated)
-                requiredTemporaryBullShitByDOTS = new NativeList<IndexOrder>(allTreeBrushIndexOrders.Length, Allocator.Temp);
-            requiredTemporaryBullShitByDOTS.Clear();
-
-
-            if (!foundBrushes.IsCreated || foundBrushes.Length < allTreeBrushIndexOrders.Length)
-                foundBrushes = new NativeBitArray(allTreeBrushIndexOrders.Length, Allocator.Temp);
-            foundBrushes.Clear();
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref requiredTemporaryBullShitByDOTS, allTreeBrushIndexOrders.Length);
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref foundBrushes, allTreeBrushIndexOrders.Length);
 
             //*
             for (int i = 0; i < rebuildTreeBrushIndexOrders.Length; i++)
@@ -443,6 +432,22 @@ namespace Chisel.Core
                         ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
                         nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
                     }
+                    for (int b0 = 0; b0 < brushIntersections.Length; b0++)
+                    {
+                        ref var brushIntersection0 = ref brushIntersections[b0];
+                        ref var nodeIndexOrder0 = ref brushIntersection0.nodeIndexOrder;
+                        for (int b1 = b0+1; b1 < brushIntersections.Length; b1++)
+                        {
+                            ref var brushIntersection1 = ref brushIntersections[b1];
+                            ref var nodeIndexOrder1 = ref brushIntersection1.nodeIndexOrder;
+                            if (nodeIndexOrder0.nodeOrder > nodeIndexOrder1.nodeOrder)
+                            {
+                                var t = nodeIndexOrder0;
+                                nodeIndexOrder0 = nodeIndexOrder1;
+                                nodeIndexOrder1 = t;
+                            }
+                        }
+                    }
                     brushesTouchedByBrushCache[nodeOrder] = item;
                 }
             }
@@ -483,12 +488,8 @@ namespace Chisel.Core
                                                               [NoAlias] ref NativeArray<float4> transformedPlanes1)
         {
             ref var brushPlanes0   = ref brushMesh0.localPlanes;
-            
-            if (!transformedPlanes0.IsCreated || transformedPlanes0.Length < brushPlanes0.Length)
-            {
-                if (transformedPlanes0.IsCreated) transformedPlanes0.Dispose();
-                transformedPlanes0 = new NativeArray<float4>(brushPlanes0.Length, Allocator.Temp);
-            }
+
+            NativeCollectionHelpers.EnsureMinimumSize(ref transformedPlanes0, brushPlanes0.Length);
             TransformOtherIntoBrushSpace(ref treeToNode0SpaceMatrix, ref nodeToTree1SpaceMatrix, ref brushPlanes0, transformedPlanes0);
 
             ref var brushVertices1 = ref brushMesh1.localVertices;
@@ -510,12 +511,8 @@ namespace Chisel.Core
 
             ref var brushPlanes1    = ref brushMesh1.localPlanes;
             //*
-            
-            if (!transformedPlanes1.IsCreated || transformedPlanes1.Length < brushPlanes1.Length)
-            {
-                if (transformedPlanes1.IsCreated) transformedPlanes1.Dispose();
-                transformedPlanes1 = new NativeArray<float4>(brushPlanes1.Length, Allocator.Temp);
-            }
+
+            NativeCollectionHelpers.EnsureMinimumSize(ref transformedPlanes1, brushPlanes1.Length);
             TransformOtherIntoBrushSpace(ref treeToNode1SpaceMatrix, ref nodeToTree0SpaceMatrix, ref brushPlanes1, transformedPlanes1);
 
 

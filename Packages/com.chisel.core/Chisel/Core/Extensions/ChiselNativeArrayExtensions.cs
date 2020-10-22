@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -17,12 +18,27 @@ namespace Chisel.Core
                 return;
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * sizeof(T));
         }
+        public unsafe static void ClearValues<T>(this NativeArray<T> array, int length) where T : unmanaged
+        {
+            if (array.Length == 0 ||
+                length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, math.min(length, array.Length) * sizeof(T));
+        }
 
         public unsafe static void ClearStruct<T>(this NativeArray<T> array) where T : struct
         {
             if (array.Length == 0)
                 return;
             UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, array.Length * Marshal.SizeOf<T>());
+        }
+
+        public unsafe static void ClearStruct<T>(this NativeArray<T> array, int length) where T : struct
+        {
+            if (array.Length == 0 ||
+                length == 0)
+                return;
+            UnsafeUtility.MemSet(array.GetUnsafePtr(), 0, math.min(length, array.Length) * Marshal.SizeOf<T>());
         }
         
 
@@ -34,10 +50,19 @@ namespace Chisel.Core
             return nativeList;
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal static void CheckLengthInRange(int value, int length)
+        {
+            if (value < 0)
+                throw new IndexOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value > (uint)length)
+                throw new IndexOutOfRangeException($"Value {value} is out of range of '{length}' Length.");
+        }
+
         public unsafe static uint Hash<T>(this NativeArray<T> list, int length) where T : unmanaged
         {
-            if (length < 0 || length > list.Length)
-                throw new ArgumentOutOfRangeException("length");
+            CheckLengthInRange(length, list.Length);
             if (length == 0)
                 return 0;
             return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));

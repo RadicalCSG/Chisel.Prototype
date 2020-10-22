@@ -8,15 +8,17 @@ namespace UnitySceneExtensions
 
         #region Pivot rendering
 
-        static Vector2[] circlePoints = null;
+        static Vector2[] circlePoints2D = null;
+        static Vector3[] circlePoints3D = null;
 
         static void SetupCirclePoints()
         {
             const int steps = 16;
-            circlePoints = new Vector2[steps];
+            circlePoints2D = new Vector2[steps];
+            circlePoints3D = new Vector3[steps];
             for (int i = 0; i < steps; i++)
             {
-                circlePoints[i] = new Vector2(
+                circlePoints2D[i] = new Vector2(
                         (float)Mathf.Cos((i / (float)steps) * Mathf.PI * 2),
                         (float)Mathf.Sin((i / (float)steps) * Mathf.PI * 2)
                     );
@@ -31,14 +33,13 @@ namespace UnitySceneExtensions
             var right = camera.transform.right;
             var up = camera.transform.up;
 
-            if (circlePoints == null)
+            if (circlePoints2D == null)
                 SetupCirclePoints();
 
-            var points = new Vector3[circlePoints.Length];
-            for (int i = 0; i < circlePoints.Length; i++)
+            for (int i = 0; i < circlePoints2D.Length; i++)
             {
-                var circle = circlePoints[i];
-                points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
+                var circle = circlePoints2D[i];
+                circlePoints3D[i] = position + (((right * circle.x) + (up * circle.y)) * size);
             }
 
             //position = UnityEditor.Handles.matrix.MultiplyPoint(position);
@@ -47,10 +48,10 @@ namespace UnitySceneExtensions
                 Color c = outerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
 
                 UnityEditor.Handles.color = c;
-                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
+                for (int i = circlePoints3D.Length - 1, j = 0; j < circlePoints3D.Length; i = j, j++)
                 {
-                    linePoints[0] = points[i];
-                    linePoints[1] = points[j];
+                    linePoints[0] = circlePoints3D[i];
+                    linePoints[1] = circlePoints3D[j];
                     UnityEditor.Handles.DrawAAPolyLine(6.0f, linePoints);
                 }
             }
@@ -59,10 +60,10 @@ namespace UnitySceneExtensions
                 Color c = innerColor * new Color(1, 1, 1, .5f) + (UnityEditor.Handles.lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)) * new Color(1, 1, 1, 0.99f);
 
                 UnityEditor.Handles.color = c;
-                for (int i = points.Length - 1, j = 0; j < points.Length; i = j, j++)
+                for (int i = circlePoints3D.Length - 1, j = 0; j < circlePoints3D.Length; i = j, j++)
                 {
-                    linePoints[0] = points[i];
-                    linePoints[1] = points[j];
+                    linePoints[0] = circlePoints3D[i];
+                    linePoints[1] = circlePoints3D[j];
                     UnityEditor.Handles.DrawAAPolyLine(2.0f, linePoints);
                 }
             }
@@ -74,13 +75,13 @@ namespace UnitySceneExtensions
             var right = camera.transform.right;
             var up = camera.transform.up;
 
-            if (circlePoints == null)
+            if (circlePoints2D == null)
                 SetupCirclePoints();
 
-            var points = new Vector3[circlePoints.Length];
-            for (int i = 0; i < circlePoints.Length; i++)
+            var points = new Vector3[circlePoints2D.Length];
+            for (int i = 0; i < circlePoints2D.Length; i++)
             {
-                var circle = circlePoints[i];
+                var circle = circlePoints2D[i];
                 points[i] = position + (((right * circle.x) + (up * circle.y)) * size);
             }
 

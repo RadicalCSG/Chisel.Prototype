@@ -13,7 +13,7 @@ using UnityEngine;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateIntersectionLoopsJob : IJobParallelFor
+    unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
@@ -21,12 +21,13 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<BrushPair2> uniqueBrushPairs;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlanes;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache;
         [NoAlias, ReadOnly] public NativeStream.Reader                                          intersectingBrushesStream;
-        
+
         // Write
-        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces;
+        [NoAlias, WriteOnly] public NativeListExtensions.ParallelWriterExt<float3>      outputSurfaceVertices;
+        [NoAlias, WriteOnly] public NativeList<BrushIntersectionLoop>.ParallelWriter    outputSurfaces;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   localVertices;
@@ -39,6 +40,7 @@ namespace Chisel.Core
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>                   foundVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionEdge>         foundEdges;
         [NativeDisableContainerSafetyRestriction] NativeArray<IntersectionPlanes>       foundIntersections;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>                   temporaryVertices;
         [NativeDisableContainerSafetyRestriction] HashedVertices                        hashedVertices;
         [NativeDisableContainerSafetyRestriction] HashedVertices                        snapHashedVertices;
                 
@@ -55,10 +57,10 @@ namespace Chisel.Core
             public ushort planeIndex;
         }
         
-        bool IsOutsidePlanes(ref BlobArray<float4> planes, float4 localVertex)
+        static bool IsOutsidePlanes([NoAlias] NativeArray<float4> planes, int planesLength, float4 localVertex)
         {
             int n = 0;
-            for (; n + 4 < planes.Length; n+=4)
+            for (; n + 4 < planesLength; n+=4)
             {
                 var distance = new float4(math.dot(planes[n+0], localVertex),
                                           math.dot(planes[n+1], localVertex),
@@ -69,7 +71,7 @@ namespace Chisel.Core
                 if (!math.all(distance <= kFatPlaneWidthEpsilon))
                     return true;
             }
-            for (; n < planes.Length; n ++)
+            for (; n < planesLength; n ++)
             {
                 var distance = math.dot(planes[n], localVertex);
 
@@ -82,7 +84,7 @@ namespace Chisel.Core
 
 
         #region Sort
-        static float3 FindPolygonCentroid(HashedVertices vertices, NativeArray<ushort> indices, int offset, int indicesCount)
+        static float3 FindPolygonCentroid([NoAlias] HashedVertices vertices, [NoAlias] NativeArray<ushort> indices, int offset, int indicesCount)
         {
             var centroid = float3.zero;
             for (int i = 0; i < indicesCount; i++, offset++)
@@ -91,7 +93,7 @@ namespace Chisel.Core
         }
 
         // TODO: sort by using plane information instead of unreliable floating point math ..
-        static void SortIndices(HashedVertices vertices, NativeArray<int2> sortedStack, NativeArray<ushort> indices, int offset, int indicesCount, float3 normal)
+        static void SortIndices([NoAlias] HashedVertices vertices, [NoAlias] NativeArray<int2> sortedStack, [NoAlias] NativeArray<ushort> indices, int offset, int indicesCount, float3 normal)
         {
             // There's no point in trying to sort a point or a line 
             if (indicesCount < 3)
@@ -194,44 +196,35 @@ namespace Chisel.Core
         #endregion
         
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void FindInsideVertices(ref BlobArray<float3>               usedVertices0,
-                                ref BlobArray<ushort>               vertexIntersectionPlanes,
-                                ref BlobArray<int2>                 vertexIntersectionSegments,
-                                ref BlobArray<float4>               intersectingPlanes1,
+        void FindInsideVertices([NoAlias] NativeArray<float3>       usedVertices0,
+                                int                                 usedVertices0Length,
+                                [NoAlias] NativeArray<ushort>       vertexIntersectionPlanes,
+                                int                                 vertexIntersectionPlanesLength,
+                                [NoAlias] NativeArray<int2>         vertexIntersectionSegments,
+                                int                                 vertexIntersectionSegmentsLength,
+                                [NoAlias] NativeArray<float4>       intersectingPlanes1,
+                                int                                 intersectingPlanes1Length,
                                 float4x4                            nodeToTreeSpaceMatrix1,
                                 float4x4                            vertexToLocal0,
-                                ref HashedVertices                  hashedVertices,
-                                ref HashedVertices                  snapHashedVertices,
-                                NativeArray<PlaneVertexIndexPair>   foundIndices0,
-                                ref int                             foundIndices0Length)
+                                [NoAlias] ref HashedVertices        hashedVertices,
+                                [NoAlias] ref HashedVertices        snapHashedVertices,
+                                [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
+                                ref int                                     foundIndices0Length)
         {
-            if (!localVertices.IsCreated || localVertices.Length < usedVertices0.Length)
-            {
-                if (localVertices.IsCreated) localVertices.Dispose();
-                localVertices = new NativeArray<float4>(usedVertices0.Length, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref localVertices, usedVertices0Length);
+            NativeCollectionHelpers.EnsureMinimumSize(ref usedVertexIndices, usedVertices0Length);
 
-            if (!usedVertexIndices.IsCreated || usedVertexIndices.Length < usedVertices0.Length)
-            {
-                if (usedVertexIndices.IsCreated) usedVertexIndices.Dispose();
-                usedVertexIndices = new NativeArray<ushort>(usedVertices0.Length, Allocator.Temp);
-            }
-
-            //var localVertices       = stackalloc float4[usedVertices0.Length];
-            //var usedVertexIndices   = stackalloc ushort[usedVertices0.Length];
-            var foundVertexCount = 0;
-
-            for (int j = 0; j < usedVertices0.Length; j++)
+            for (int j = 0; j < usedVertices0Length; j++)
             {
                 var brushVertex1 = new float4(usedVertices0[j], 1);
                 localVertices[j] = math.mul(vertexToLocal0, brushVertex1);
                 usedVertexIndices[j] = (ushort)j;
             }
 
-            foundVertexCount = usedVertices0.Length;
+            var foundVertexCount = usedVertices0Length;
             for (int j = foundVertexCount - 1; j >= 0; j--)
             {
-                if (IsOutsidePlanes(ref intersectingPlanes1, localVertices[j]))
+                if (IsOutsidePlanes(intersectingPlanes1, intersectingPlanes1Length, localVertices[j]))
                 {
                     if (j < foundVertexCount - 1)
                     {
@@ -277,11 +270,14 @@ namespace Chisel.Core
             public float4       edgeVertex1;
         }
 
-        //[MethodImpl(MethodImplOptions.NoInlining)]
-        void FindIntersectionVertices(ref BlobArray<float4>             intersectingPlanes0,
-                                      ref BlobArray<float4>             intersectingPlanes1,
-                                      ref BlobArray<PlanePair>          usedPlanePairs1,
-                                      ref BlobArray<int>                intersectingPlaneIndices0,
+        void FindIntersectionVertices(ref NativeArray<float4>           intersectingPlanes0,
+                                      int                               intersectingPlanes0Length,
+                                      ref NativeArray<float4>           intersectingPlanes1,
+                                      int                               intersectingPlanes1Length,
+                                      ref NativeArray<PlanePair>        usedPlanePairs1,
+                                      int                               usedPlanePairs1Length,
+                                      ref NativeArray<int>              intersectingPlaneIndices0,
+                                      int                               intersectingPlaneIndices0Length,
                                       float4x4                          nodeToTreeSpaceMatrix0,
                                       ref HashedVertices                hashedVertices,
                                       ref HashedVertices                snapHashedVertices,
@@ -290,27 +286,15 @@ namespace Chisel.Core
                                       NativeArray<PlaneVertexIndexPair> foundIndices1,
                                       ref int                           foundIndices1Length)
         {
-            int foundVerticesCount = usedPlanePairs1.Length * intersectingPlanes0.Length;
-            if (!foundVertices.IsCreated || foundVertices.Length < foundVerticesCount)
-            {
-                if (foundVertices.IsCreated) foundVertices.Dispose();
-                foundVertices = new NativeArray<float4>(foundVerticesCount, Allocator.Temp);
-            }
-            if (!foundEdges.IsCreated || foundEdges.Length < foundVerticesCount)
-            {
-                if (foundEdges.IsCreated) foundEdges.Dispose();
-                foundEdges = new NativeArray<IntersectionEdge>(foundVerticesCount, Allocator.Temp);
-            }
-            if (!foundIntersections.IsCreated || foundIntersections.Length < foundVerticesCount)
-            {
-                if (foundIntersections.IsCreated) foundIntersections.Dispose();
-                foundIntersections = new NativeArray<IntersectionPlanes>(foundVerticesCount, Allocator.Temp);
-            }
+            int foundVerticesCount = usedPlanePairs1Length * intersectingPlanes0Length;
+            NativeCollectionHelpers.EnsureMinimumSize(ref foundVertices, foundVerticesCount);
+            NativeCollectionHelpers.EnsureMinimumSize(ref foundEdges, foundVerticesCount);
+            NativeCollectionHelpers.EnsureMinimumSize(ref foundIntersections, foundVerticesCount);
 
             var n = 0;
-            for (int i = 0; i < usedPlanePairs1.Length; i++)
+            for (int i = 0; i < usedPlanePairs1Length; i++)
             {
-                for (int j = 0; j < intersectingPlanes0.Length; j++)
+                for (int j = 0; j < intersectingPlanes0Length; j++)
                 { 
                     var plane0 = usedPlanePairs1[i].plane0;
                     var plane1 = usedPlanePairs1[i].plane1;
@@ -374,8 +358,8 @@ namespace Chisel.Core
 
             for (int k = n - 1; k >= 0; k--)
             {
-                if (IsOutsidePlanes(ref intersectingPlanes0, foundVertices[k]) ||
-                    IsOutsidePlanes(ref intersectingPlanes1, foundVertices[k]))
+                if (IsOutsidePlanes(intersectingPlanes0, intersectingPlanes0Length, foundVertices[k]) ||
+                    IsOutsidePlanes(intersectingPlanes1, intersectingPlanes1Length, foundVertices[k]))
                 {
                     if (k < n - 1)
                     {
@@ -412,15 +396,16 @@ namespace Chisel.Core
         }
 
         //[MethodImpl(MethodImplOptions.NoInlining)]
-        void GenerateLoop(IndexOrder                        brushIndexOrder0,
-                          IndexOrder                        brushIndexOrder1,
-                          bool                              invertedTransform,
-                          ref BlobArray<SurfaceInfo>        surfaceInfos,
-                          ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
-                          NativeArray<PlaneVertexIndexPair> foundIndices0,
-                          ref int                           foundIndices0Length,
-                          ref HashedVertices                hashedTreeSpaceVertices,
-                          NativeList<BlobAssetReference<BrushIntersectionLoop>>.ParallelWriter outputSurfaces)
+        void GenerateLoop(IndexOrder brushIndexOrder0,
+                          IndexOrder brushIndexOrder1,
+                          bool       invertedTransform,
+                          [NoAlias] NativeArray<SurfaceInfo>          surfaceInfos,
+                          [NoAlias] int                               surfaceInfosLength,
+                          [NoAlias] ref BrushTreeSpacePlanes          brushTreeSpacePlanes0,
+                          [NoAlias] NativeArray<PlaneVertexIndexPair> foundIndices0,
+                          [NoAlias] ref int                           foundIndices0Length,
+                          [NoAlias] ref HashedVertices                hashedTreeSpaceVertices,
+                          [NoAlias] NativeList<BrushIntersectionLoop>.ParallelWriter outputSurfaces)
         {
             // Why is the unity NativeSort slower than bubble sort?
             for (int i = 0; i < foundIndices0Length - 1; i++)
@@ -444,16 +429,8 @@ namespace Chisel.Core
             }
 
 
-            if (!planeIndexOffsets.IsCreated || planeIndexOffsets.Length < foundIndices0Length)
-            {
-                if (planeIndexOffsets.IsCreated) planeIndexOffsets.Dispose();
-                planeIndexOffsets = new NativeArray<PlaneIndexOffsetLength>(foundIndices0Length, Allocator.Temp);
-            }
-            if (!uniqueIndices.IsCreated || uniqueIndices.Length < foundIndices0Length)
-            {
-                if (uniqueIndices.IsCreated) uniqueIndices.Dispose();
-                uniqueIndices = new NativeArray<ushort>(foundIndices0Length, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref planeIndexOffsets, foundIndices0Length);
+            NativeCollectionHelpers.EnsureMinimumSize(ref uniqueIndices, foundIndices0Length);
 
             var planeIndexOffsetsLength = 0;
             //var planeIndexOffsets       = stackalloc PlaneIndexOffsetLength[foundIndices0Length];
@@ -517,11 +494,7 @@ namespace Chisel.Core
             for (int i = 0; i < planeIndexOffsetsLength; i++)
                 maxLength = math.max(maxLength, planeIndexOffsets[i].length);
 
-            if (!sortedStack.IsCreated || sortedStack.Length < maxLength * 2)
-            {
-                if (sortedStack.IsCreated) sortedStack.Dispose();
-                sortedStack = new NativeArray<int2>(maxLength * 2, Allocator.Temp);
-            }
+            NativeCollectionHelpers.EnsureMinimumSize(ref sortedStack, maxLength * 2);
 
             // For each segment, we now sort our vertices within each segment, 
             // making the assumption that they are convex
@@ -550,7 +523,7 @@ namespace Chisel.Core
                 totalSize += (loopLength * UnsafeUtility.SizeOf<float3>()); 
             }
 
-            var srcVertices = hashedTreeSpaceVertices;//.GetUnsafeReadOnlyPtr();
+            var srcVertices = hashedTreeSpaceVertices;
             for (int j = 0; j < planeIndexOffsetsLength; j++)
             { 
                 var planeIndexLength    = planeIndexOffsets[j];
@@ -559,94 +532,137 @@ namespace Chisel.Core
                 var basePlaneIndex      = planeIndexLength.planeIndex;
                 var surfaceInfo         = surfaceInfos[basePlaneIndex];
 
-                var blobBuilder = new BlobBuilder(Allocator.Temp, totalSize);
-                ref var root = ref blobBuilder.ConstructRoot<BrushIntersectionLoop>();
-
-                root.indexOrder0 = brushIndexOrder0;
-                root.indexOrder1 = brushIndexOrder1;
-                root.surfaceInfo = surfaceInfo;
-                var dstVertices = blobBuilder.Allocate(ref root.loopVertices, loopLength);
+                NativeCollectionHelpers.EnsureMinimumSize(ref temporaryVertices, loopLength);
                 for (int d = 0; d < loopLength; d++)
-                    dstVertices[d] = srcVertices[uniqueIndices[offset + d]];
+                    temporaryVertices[d] = srcVertices[uniqueIndices[offset + d]];
 
-                outputSurfaces.AddNoResize(blobBuilder.CreateBlobAssetReference<BrushIntersectionLoop>(Allocator.TempJob));
+                outputSurfaces.AddNoResize(new BrushIntersectionLoop
+                {
+                    indexOrder0 = brushIndexOrder0,
+                    indexOrder1 = brushIndexOrder1,
+                    surfaceInfo = surfaceInfo,
+                    loopVertexIndex = outputSurfaceVertices.AddRangeNoResize(temporaryVertices.GetUnsafePtr(), loopLength),
+                    loopVertexCount = loopLength
+                });
             }
 
-            //blobBuilder.Dispose(); // Allocated with Temp, so don't need dispose
         }
+
+        // Note: Temporary BlobAssetReference that only exists during a single frame
+        public struct BrushPairIntersection
+        {
+            public IntersectionType         type;
+            // Note: that the localSpacePlanes0/localSpacePlaneIndices0 parameters for both brush0 and brush1 are in localspace of >brush0<
+            public BrushIntersectionInfo    brush0;
+            public BrushIntersectionInfo    brush1;
+        }
+
+        public struct BrushIntersectionInfo
+        {
+            public IndexOrder               brushIndexOrder;
+
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<float3>      usedVertices;
+            public int                      usedVerticesLength;
+            
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<PlanePair>   usedPlanePairs;
+            public int                      usedPlanePairsLength;
+            
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<float4>      localSpacePlanes0;         // planes in local space of >brush0<
+            public int                      localSpacePlanes0Length;
+            
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<int>         localSpacePlaneIndices0;   // planes indices of >brush0<
+            public int                      localSpacePlaneIndices0Length;
+
+            public float4x4                 nodeToTreeSpace;
+            public float4x4                 toOtherBrushSpace;
+
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<ushort>      vertexIntersectionPlanes;
+            public int                      vertexIntersectionPlanesLength;
+            
+            [NativeDisableContainerSafetyRestriction] 
+            public NativeArray<int2>        vertexIntersectionSegments;
+            public int                      vertexIntersectionSegmentsLength;
+
+            [NativeDisableContainerSafetyRestriction]
+            public NativeArray<SurfaceInfo> surfaceInfos;
+            public int                      surfaceInfosLength;
+        }
+
+        [NativeDisableContainerSafetyRestriction] 
+        BrushPairIntersection intersection;
 
         public void Execute(int index)
         {
             intersectingBrushesStream.BeginForEachIndex(index);
-            // Note: although is a BlobAssetReference, it only exists during a single frame and 
-            //       its IndexOrder's are always correct
-            var intersectionAsset = intersectingBrushesStream.Read<BlobAssetReference<BrushPairIntersection>>();
-            intersectingBrushesStream.EndForEachIndex();
-            if (!intersectionAsset.IsCreated)
+
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.type);
+            if (this.intersection.type == IntersectionType.InvalidValue)
                 return;
 
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush0.brushIndexOrder);
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush0.nodeToTreeSpace);
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush0.toOtherBrushSpace);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.usedVertices, out this.intersection.brush0.usedVerticesLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.usedPlanePairs, out this.intersection.brush0.usedPlanePairsLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.localSpacePlanes0, out this.intersection.brush0.localSpacePlanes0Length);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.localSpacePlaneIndices0, out this.intersection.brush0.localSpacePlaneIndices0Length);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.vertexIntersectionPlanes, out this.intersection.brush0.vertexIntersectionPlanesLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.vertexIntersectionSegments, out this.intersection.brush0.vertexIntersectionSegmentsLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush0.surfaceInfos, out this.intersection.brush0.surfaceInfosLength);
 
-            ref var intersection                = ref intersectionAsset.Value;
-            ref var brushPairIntersection0      = ref intersection.brushes[0];
-            ref var brushPairIntersection1      = ref intersection.brushes[1];
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush1.brushIndexOrder);
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush1.nodeToTreeSpace);
+            NativeStreamExtensions.Read(ref intersectingBrushesStream, ref this.intersection.brush1.toOtherBrushSpace);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.usedVertices, out this.intersection.brush1.usedVerticesLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.usedPlanePairs, out this.intersection.brush1.usedPlanePairsLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.localSpacePlanes0, out this.intersection.brush1.localSpacePlanes0Length);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.localSpacePlaneIndices0, out this.intersection.brush1.localSpacePlaneIndices0Length);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.vertexIntersectionPlanes, out this.intersection.brush1.vertexIntersectionPlanesLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.vertexIntersectionSegments, out this.intersection.brush1.vertexIntersectionSegmentsLength);
+            NativeStreamExtensions.ReadArrayAndEnsureSize(ref intersectingBrushesStream, ref this.intersection.brush1.surfaceInfos, out this.intersection.brush1.surfaceInfosLength);
+            intersectingBrushesStream.EndForEachIndex();
+
+
+            ref var brushPairIntersection0      = ref intersection.brush0;
+            ref var brushPairIntersection1      = ref intersection.brush1;
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
 
             UnityEngine.Debug.Assert(brushPairIntersection0.brushIndexOrder.nodeIndex == brushIndexOrder0.nodeIndex);
             UnityEngine.Debug.Assert(brushPairIntersection1.brushIndexOrder.nodeIndex == brushIndexOrder1.nodeIndex);
 
-            int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVertices.Length);
-            int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVertices.Length);
-            int intersectionStream0Capacity     = math.max(1, brushPairIntersection1.usedPlanePairs.Length) * brushPairIntersection0.localSpacePlanes0.Length;
-            int intersectionStream1Capacity     = math.max(1, brushPairIntersection0.usedPlanePairs.Length) * brushPairIntersection1.localSpacePlanes0.Length;
-            int foundIndices0Capacity           = intersectionStream0Capacity + (2 * intersectionStream1Capacity) + (brushPairIntersection0.localSpacePlanes0.Length * insideVerticesStream0Capacity);
-            int foundIndices1Capacity           = intersectionStream1Capacity + (2 * intersectionStream0Capacity) + (brushPairIntersection1.localSpacePlanes0.Length * insideVerticesStream1Capacity);
-
-            if (!foundIndices0.IsCreated || foundIndices0.Length < foundIndices0Capacity)
-            {
-                if (foundIndices0.IsCreated) foundIndices0.Dispose();
-                foundIndices0 = new NativeArray<PlaneVertexIndexPair>(foundIndices0Capacity, Allocator.Temp);
-            }
-            if (!foundIndices1.IsCreated || foundIndices1.Length < foundIndices1Capacity)
-            {
-                if (foundIndices1.IsCreated) foundIndices1.Dispose();
-                foundIndices1 = new NativeArray<PlaneVertexIndexPair>(foundIndices1Capacity, Allocator.Temp);
-            }
+            int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVerticesLength);
+            int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVerticesLength);
+            int intersectionStream0Capacity     = math.max(1, brushPairIntersection1.usedPlanePairsLength) * brushPairIntersection0.localSpacePlanes0Length;
+            int intersectionStream1Capacity     = math.max(1, brushPairIntersection0.usedPlanePairsLength) * brushPairIntersection1.localSpacePlanes0Length;
+            int foundIndices0Capacity           = intersectionStream0Capacity + (2 * intersectionStream1Capacity) + (brushPairIntersection0.localSpacePlanes0Length * insideVerticesStream0Capacity);
+            int foundIndices1Capacity           = intersectionStream1Capacity + (2 * intersectionStream0Capacity) + (brushPairIntersection1.localSpacePlanes0Length * insideVerticesStream1Capacity);
+            
+            NativeCollectionHelpers.EnsureMinimumSize(ref foundIndices0, foundIndices0Capacity);
+            NativeCollectionHelpers.EnsureMinimumSize(ref foundIndices1, foundIndices1Capacity);
 
             var foundIndices0Length     = 0;
             var foundIndices1Length     = 0;
 
             var desiredVertexCapacity = math.max(foundIndices0Capacity, foundIndices1Capacity);
-            if (!hashedVertices.IsCreated)
-            {
-                hashedVertices = new HashedVertices(desiredVertexCapacity, Allocator.Temp);
-                snapHashedVertices = new HashedVertices(desiredVertexCapacity, Allocator.Temp);
-            } else
-            {
-                if (hashedVertices.Capacity < desiredVertexCapacity)
-                {
-                    hashedVertices.Dispose();
-                    hashedVertices = new HashedVertices(desiredVertexCapacity, Allocator.Temp);
-
-                    snapHashedVertices.Dispose();
-                    snapHashedVertices = new HashedVertices(desiredVertexCapacity, Allocator.Temp);
-                } else
-                {
-                    hashedVertices.Clear();
-                    snapHashedVertices.Clear();
-                }
-            }
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref hashedVertices, desiredVertexCapacity);
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref snapHashedVertices, desiredVertexCapacity);
 
             // TODO: fill them with original brush vertices so that they're always snapped to these
             
             if (brushIndexOrder0.nodeOrder < brushIndexOrder1.nodeOrder)
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesCache[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesCache[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
             } else
             {
-                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesArray[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
-                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesArray[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.AddUniqueVertices(ref treeSpaceVerticesCache[brushIndexOrder1.nodeOrder].Value.treeSpaceVertices);
+                snapHashedVertices.ReplaceIfExists(ref treeSpaceVerticesCache[brushIndexOrder0.nodeOrder].Value.treeSpaceVertices);
             }
 
 
@@ -660,26 +676,34 @@ namespace Chisel.Core
             // Now find all the intersection vertices
             if (intersection.type == IntersectionType.Intersection)
             { 
-                if (brushPairIntersection1.usedPlanePairs.Length > 0)
+                if (brushPairIntersection1.usedPlanePairsLength > 0)
                 {
-                    FindIntersectionVertices(ref intersection.brushes[0].localSpacePlanes0,
-                                             ref intersection.brushes[1].localSpacePlanes0,
-                                             ref intersection.brushes[1].usedPlanePairs,
-                                             ref intersection.brushes[0].localSpacePlaneIndices0,
-                                             intersection.brushes[0].nodeToTreeSpace,
+                    FindIntersectionVertices(ref brushPairIntersection0.localSpacePlanes0,
+                                                 brushPairIntersection0.localSpacePlanes0Length,
+                                             ref brushPairIntersection1.localSpacePlanes0,
+                                                 brushPairIntersection1.localSpacePlanes0Length,
+                                             ref brushPairIntersection1.usedPlanePairs,
+                                                 brushPairIntersection1.usedPlanePairsLength,
+                                             ref brushPairIntersection0.localSpacePlaneIndices0,
+                                                 brushPairIntersection0.localSpacePlaneIndices0Length,
+                                             brushPairIntersection0.nodeToTreeSpace,
                                              ref hashedVertices,
                                              ref snapHashedVertices,
                                              foundIndices0, ref foundIndices0Length,
                                              foundIndices1, ref foundIndices1Length);
                 }
 
-                if (brushPairIntersection0.usedPlanePairs.Length > 0)
+                if (brushPairIntersection0.usedPlanePairsLength > 0)
                 {
-                    FindIntersectionVertices(ref intersection.brushes[1].localSpacePlanes0,
-                                             ref intersection.brushes[0].localSpacePlanes0,
-                                             ref intersection.brushes[0].usedPlanePairs,
-                                             ref intersection.brushes[1].localSpacePlaneIndices0,
-                                             intersection.brushes[0].nodeToTreeSpace,
+                    FindIntersectionVertices(ref brushPairIntersection1.localSpacePlanes0,
+                                                 brushPairIntersection1.localSpacePlanes0Length,
+                                             ref brushPairIntersection0.localSpacePlanes0,
+                                                 brushPairIntersection0.localSpacePlanes0Length,
+                                             ref brushPairIntersection0.usedPlanePairs,
+                                                 brushPairIntersection0.usedPlanePairsLength,
+                                             ref brushPairIntersection1.localSpacePlaneIndices0,
+                                                 brushPairIntersection1.localSpacePlaneIndices0Length,
+                                             brushPairIntersection0.nodeToTreeSpace,
                                              ref hashedVertices,
                                              ref snapHashedVertices,
                                              foundIndices1, ref foundIndices1Length,
@@ -689,13 +713,17 @@ namespace Chisel.Core
 
             // Find all vertices of brush0 that are inside brush1, and put their intersections into the appropriate loops
             if (foundIndices0Length > 0 &&
-                brushPairIntersection0.usedVertices.Length > 0)
+                brushPairIntersection0.usedVerticesLength > 0)
             {
-                FindInsideVertices(ref intersection.brushes[0].usedVertices,
-                                   ref intersection.brushes[0].vertexIntersectionPlanes,
-                                   ref intersection.brushes[0].vertexIntersectionSegments,
-                                   ref intersection.brushes[1].localSpacePlanes0,
-                                   intersection.brushes[0].nodeToTreeSpace,
+                FindInsideVertices(brushPairIntersection0.usedVertices,
+                                   brushPairIntersection0.usedVerticesLength,
+                                   brushPairIntersection0.vertexIntersectionPlanes,
+                                   brushPairIntersection0.vertexIntersectionPlanesLength,
+                                   brushPairIntersection0.vertexIntersectionSegments,
+                                   brushPairIntersection0.vertexIntersectionSegmentsLength,
+                                   brushPairIntersection1.localSpacePlanes0,
+                                   brushPairIntersection1.localSpacePlanes0Length,
+                                   brushPairIntersection0.nodeToTreeSpace,
                                    float4x4.identity,
                                    ref hashedVertices,
                                    ref snapHashedVertices,
@@ -704,35 +732,40 @@ namespace Chisel.Core
 
             // Find all vertices of brush1 that are inside brush0, and put their intersections into the appropriate loops
             if (foundIndices1Length > 0 && 
-                brushPairIntersection1.usedVertices.Length > 0)
+                brushPairIntersection1.usedVerticesLength > 0)
             {
-                FindInsideVertices(ref intersection.brushes[1].usedVertices,
-                                   ref intersection.brushes[1].vertexIntersectionPlanes,
-                                   ref intersection.brushes[1].vertexIntersectionSegments,
-                                   ref intersection.brushes[0].localSpacePlanes0,
-                                   intersection.brushes[0].nodeToTreeSpace,
-                                   intersection.brushes[1].toOtherBrushSpace,
+                FindInsideVertices(brushPairIntersection1.usedVertices,
+                                   brushPairIntersection1.usedVerticesLength,
+                                   brushPairIntersection1.vertexIntersectionPlanes,
+                                   brushPairIntersection1.vertexIntersectionPlanesLength,
+                                   brushPairIntersection1.vertexIntersectionSegments,
+                                   brushPairIntersection1.vertexIntersectionSegmentsLength,
+                                   brushPairIntersection0.localSpacePlanes0,
+                                   brushPairIntersection0.localSpacePlanes0Length,
+                                   brushPairIntersection0.nodeToTreeSpace,
+                                   brushPairIntersection1.toOtherBrushSpace,
                                    ref hashedVertices,
                                    ref snapHashedVertices,
                                    foundIndices1, ref foundIndices1Length);
             }
 
 
-            ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].Value;
-            ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].Value;
+            ref var brushTreeSpacePlanes0 = ref brushTreeSpacePlaneCache[brushIndexOrder0.nodeOrder].Value;
+            ref var brushTreeSpacePlanes1 = ref brushTreeSpacePlaneCache[brushIndexOrder1.nodeOrder].Value;
 
 
             if (foundIndices0Length >= 3)
             {
-                if (brushTreeSpacePlanes[brushIndexOrder0.nodeOrder].IsCreated)
+                if (brushTreeSpacePlaneCache[brushIndexOrder0.nodeOrder].IsCreated)
                 {
-                    var brushTransformations0 = intersection.brushes[0].nodeToTreeSpace;
+                    var brushTransformations0 = brushPairIntersection0.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations0) < 0;
 
                     GenerateLoop(brushIndexOrder0,
                                  brushIndexOrder1,
                                  invertedTransform,
-                                 ref intersection.brushes[0].surfaceInfos,
+                                 brushPairIntersection0.surfaceInfos,
+                                 brushPairIntersection0.surfaceInfosLength,
                                  ref brushTreeSpacePlanes0,
                                  foundIndices0, ref foundIndices0Length,
                                  ref hashedVertices,
@@ -745,15 +778,16 @@ namespace Chisel.Core
 
             if (foundIndices1Length >= 3)
             {
-                if (brushTreeSpacePlanes[brushIndexOrder1.nodeOrder].IsCreated)
+                if (brushTreeSpacePlaneCache[brushIndexOrder1.nodeOrder].IsCreated)
                 {
-                    var brushTransformations1 = intersection.brushes[1].nodeToTreeSpace;
+                    var brushTransformations1 = brushPairIntersection1.nodeToTreeSpace;
                     var invertedTransform = math.determinant(brushTransformations1) < 0;
 
                     GenerateLoop(brushIndexOrder1,
                                  brushIndexOrder0,
                                  invertedTransform,
-                                 ref intersection.brushes[1].surfaceInfos,
+                                 brushPairIntersection1.surfaceInfos,
+                                 brushPairIntersection1.surfaceInfosLength,
                                  ref brushTreeSpacePlanes1,
                                  foundIndices1, 
                                  ref foundIndices1Length,
@@ -764,13 +798,6 @@ namespace Chisel.Core
                     UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder1.nodeIndex}");
                 }
             }
-
-            //foundIndices0.Dispose();
-            //foundIndices1.Dispose();
-
-            //hashedVertices.Dispose(); // Allocated with Temp, so do not need to dispose
-
-            intersectionAsset.Dispose();
         }
     }
 }

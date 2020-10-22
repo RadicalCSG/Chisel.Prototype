@@ -72,11 +72,6 @@ namespace UnitySceneExtensions
                 return dashOffset2;
             }
             
-            List<Vector3>	newVertices1	= new List<Vector3>(MaxVertexCount);
-            List<Vector3>	newVertices2	= new List<Vector3>(MaxVertexCount);
-            List<Vector4>	newLineParams	= new List<Vector4>(MaxVertexCount);
-            List<Color32>	newColors		= new List<Color32>(MaxVertexCount);
-
             public void CommitMesh()
             {
                 if (vertexCount == 0)
@@ -108,29 +103,10 @@ namespace UnitySceneExtensions
                     indices[j + 3] = i + 0; indices[j + 4] = i + 2; indices[j + 5] = i + 3;
                 }
                 
-                // thanks unity API
-                newVertices1	.Clear();
-                newVertices2	.Clear();
-                newLineParams	.Clear();
-                newColors		.Clear();
-                if (vertexCount != MaxVertexCount)
-                { 
-                    newVertices1 .AddRange(vertices1 .Take(vertexCount)); 
-                    newVertices2 .AddRange(vertices2 .Take(vertexCount));
-                    newLineParams.AddRange(lineParams.Take(vertexCount));
-                    newColors	 .AddRange(colors    .Take(vertexCount));
-                } else
-                {
-                    newVertices1 .AddRange(vertices1);
-                    newVertices2 .AddRange(vertices2);
-                    newLineParams.AddRange(lineParams);
-                    newColors    .AddRange(colors);
-                }
-
-                mesh.SetVertices(newVertices1);
-                mesh.SetUVs(0, newVertices2);
-                mesh.SetUVs(1, newLineParams);
-                mesh.SetColors(newColors);
+                mesh.SetVertices(vertices1, 0, vertexCount);
+                mesh.SetUVs(0, vertices2, 0, vertexCount);
+                mesh.SetUVs(1, lineParams, 0, vertexCount);
+                mesh.SetColors(colors, 0, vertexCount);
                 mesh.SetIndices(indices, MeshTopology.Triangles, 0, calculateBounds: false);
                 mesh.RecalculateBounds();
                 mesh.UploadMeshData(false);

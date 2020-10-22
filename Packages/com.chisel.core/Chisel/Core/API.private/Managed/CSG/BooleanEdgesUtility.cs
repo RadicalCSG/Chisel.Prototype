@@ -3,6 +3,8 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Entities;
+using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -29,17 +31,8 @@ namespace Chisel.Core
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 
 
-        public static int IndexOf(NativeArray<Edge> edges, int edgesOffset, int edgesLength, Edge edge, out bool inverted)
-        {
-            for (int e = edgesOffset; e < edgesOffset + edgesLength; e++)
-            {
-                if (edges[e].index1 == edge.index1 && edges[e].index2 == edge.index2) { inverted = false; return e; }
-                if (edges[e].index1 == edge.index2 && edges[e].index2 == edge.index1) { inverted = true; return e; }
-            }
-            inverted = false;
-            return -1;
-        }
-        public static int IndexOf(NativeListArray<Edge>.NativeList edges, int edgesOffset, int edgesLength, Edge edge, out bool inverted)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int IndexOf([NoAlias] in NativeArray<Edge> edges, int edgesOffset, int edgesLength, Edge edge, out bool inverted)
         {
             for (int e = edgesOffset; e < edgesOffset + edgesLength; e++)
             {
@@ -50,7 +43,8 @@ namespace Chisel.Core
             return -1;
         }
 
-        public static int IndexOf(NativeArray<Edge> edges, Edge edge, out bool inverted)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int IndexOf([NoAlias] in NativeArray<Edge> edges, Edge edge, out bool inverted)
         {
             for (int e = 0; e < edges.Length; e++)
             {
@@ -61,7 +55,8 @@ namespace Chisel.Core
             return -1;
         }
 
-        public static int IndexOf(NativeListArray<Edge>.NativeList edges, Edge edge, out bool inverted)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static int IndexOf([NoAlias] in NativeListArray<Edge>.NativeList edges, Edge edge, out bool inverted)
         {
             for (int e = 0; e < edges.Length; e++)
             {
@@ -72,7 +67,8 @@ namespace Chisel.Core
             return -1;
         }
 
-        public static unsafe EdgeCategory IsOutsidePlanes(NativeList<float4> planes, int planesOffset, int planesLength, float4 localVertex)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe EdgeCategory IsOutsidePlanes([NoAlias] in NativeList<float4> planes, int planesOffset, int planesLength, float4 localVertex)
         {
             var planePtr = (float4*)planes.GetUnsafeReadOnlyPtr();
             for (int n = 0; n < planesLength; n++)
@@ -86,7 +82,8 @@ namespace Chisel.Core
             return EdgeCategory.Inside;
         }
 
-        public static unsafe bool IsOutsidePlanes(ref BlobArray<float4> planes, float4 localVertex)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static unsafe bool IsOutsidePlanes([NoAlias] ref BlobArray<float4> planes, float4 localVertex)
         {
             for (int n = 0; n < planes.Length; n++)
             {
@@ -100,8 +97,7 @@ namespace Chisel.Core
         }
 
 
-
-        public unsafe static bool IsPointInPolygon(float3 right, float3 forward, NativeArray<Edge> edges, in HashedVertices vertices, float3 point)
+        public unsafe static bool IsPointInPolygon(float3 right, float3 forward, [NoAlias] in NativeArray<Edge> edges, [NoAlias] in HashedVertices vertices, float3 point)
         {
             var px = math.dot(right, point);
             var py = math.dot(forward, point);
@@ -129,22 +125,24 @@ namespace Chisel.Core
             return result;
         }
 
-        public static EdgeCategory CategorizeEdge(Edge edge, in NativeList<float4> planes, in NativeArray<Edge> edges, in LoopSegment segment, in HashedVertices vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] in NativeList<float4> planes, [NoAlias] in NativeArray<Edge> edges, [NoAlias] in LoopSegment segment, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
-            if (IndexOf(edges, segment.edgeOffset, segment.edgeLength, edge, out bool inverted) != -1)
+            if (IndexOf(in edges, segment.edgeOffset, segment.edgeLength, edge, out bool inverted) != -1)
                 return (inverted) ? EdgeCategory.ReverseAligned : EdgeCategory.Aligned;
             var midPoint = (vertices[edge.index1] + vertices[edge.index2]) * 0.5f;
 
             // TODO: shouldn't be testing against our own plane
 
-            return IsOutsidePlanes(planes, segment.planesOffset, segment.planesLength, new float4(midPoint, 1));
+            return IsOutsidePlanes(in planes, segment.planesOffset, segment.planesLength, new float4(midPoint, 1));
         }
 
-        internal static EdgeCategory CategorizeEdge(Edge edge, ref BlobArray<float4> planes, in NativeArray<Edge> edges, in HashedVertices vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref BlobArray<float4> planes, [NoAlias] in NativeArray<Edge> edges, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
-            if (IndexOf(edges, edge, out bool inverted) != -1)
+            if (IndexOf(in edges, edge, out bool inverted) != -1)
                 return (inverted) ? EdgeCategory.ReverseAligned : EdgeCategory.Aligned;
             var midPoint = (vertices[edge.index1] + vertices[edge.index2]) * 0.5f;
 
@@ -153,10 +151,11 @@ namespace Chisel.Core
             return EdgeCategory.Inside;
         }
 
-        internal static EdgeCategory CategorizeEdge(Edge edge, ref BlobArray<float4> planes, in NativeListArray<Edge>.NativeList edges, in HashedVertices vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static EdgeCategory CategorizeEdge(Edge edge, [NoAlias] ref BlobArray<float4> planes, [NoAlias] in NativeListArray<Edge>.NativeList edges, [NoAlias] in HashedVertices vertices)
         {
             // TODO: use something more clever than looping through all edges
-            if (IndexOf(edges, edge, out bool inverted) != -1)
+            if (IndexOf(in edges, edge, out bool inverted) != -1)
                 return (inverted) ? EdgeCategory.ReverseAligned : EdgeCategory.Aligned;
             var midPoint = (vertices[edge.index1] + vertices[edge.index2]) * 0.5f;
 
@@ -167,7 +166,8 @@ namespace Chisel.Core
 
 
         // Note: Assumes polygons are convex
-        public unsafe static bool AreLoopsOverlapping(NativeListArray<Edge>.NativeList polygon1, NativeListArray<Edge>.NativeList polygon2)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool AreLoopsOverlapping([NoAlias] in NativeListArray<Edge>.NativeList polygon1, [NoAlias] in NativeListArray<Edge>.NativeList polygon2)
         {
             if (polygon1.Length < 3 ||
                 polygon2.Length < 3)
@@ -178,7 +178,7 @@ namespace Chisel.Core
 
             for (int i = 0; i < polygon1.Length; i++)
             {
-                if (IndexOf(polygon2, polygon1[i], out bool _) == -1)
+                if (IndexOf(in polygon2, polygon1[i], out bool _) == -1)
                     return false;
             }
             return true;

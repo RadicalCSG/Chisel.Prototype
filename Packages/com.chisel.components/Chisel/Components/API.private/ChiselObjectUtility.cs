@@ -244,7 +244,7 @@ namespace Chisel.Components
         const HideFlags kTransformHideFlags         = HideFlags.NotEditable;// | HideFlags.HideInInspector;
         const HideFlags kComponentHideFlags         = HideFlags.HideInHierarchy | HideFlags.NotEditable; // Avoids MeshCollider showing wireframe
 
-        internal static void UpdateContainerFlags(GameObject gameObject, GameObjectState state, bool debugHelperRenderer = false)
+        internal static void UpdateContainerFlags(GameObject gameObject, GameObjectState state, bool debugHelperRenderer = false, bool isRenderable = false)
         {
             var transform = gameObject.transform;
             var desiredGameObjectFlags  = debugHelperRenderer ? kEditorGameObjectHideFlags : kGameObjectHideFlags;
@@ -262,6 +262,8 @@ namespace Chisel.Components
             {
                 desiredStaticFlags = UnityEditor.GameObjectUtility.GetStaticEditorFlags(gameObject);
             }
+            if (!isRenderable && desiredStaticFlags != (StaticEditorFlags)0)
+                desiredStaticFlags |= StaticEditorFlags.OccluderStatic;
             if (desiredStaticFlags != state.staticFlags)
                 UnityEditor.GameObjectUtility.SetStaticEditorFlags(gameObject, desiredStaticFlags);
 #endif

@@ -115,10 +115,13 @@ namespace Chisel.Core
             return vertices;
         }
 
-        public static BrushMesh CreateBox(Vector3 min, Vector3 max, in ChiselSurface surface)
+        public static void CreateBox(Vector3 min, Vector3 max, in ChiselSurface surface, out BrushMesh box)
         {
             if (!BoundsExtensions.IsValid(min, max))
-                return null;
+            {
+                box = default;
+                return;
+            }
 
             if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
@@ -129,7 +132,7 @@ namespace Chisel.Core
             for (int i = 0; i < vertices.Length; i++)
                 vertices[i] = vec_vertices[i];
 
-            return new BrushMesh
+            box = new BrushMesh
             {
                 polygons	= CreateBoxPolygons(in surface),
                 halfEdges	= boxHalfEdges.ToArray(),
@@ -143,10 +146,10 @@ namespace Chisel.Core
         /// <param name="size">The size of the box</param>
         /// <param name="material">The [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html) that will be set to all surfaces of the box (optional)</param>
         /// <returns>A <see cref="Chisel.Core.BrushMesh"/> on success, null on failure</returns>
-        public static BrushMesh CreateBox(Vector3 size, in ChiselSurface surface)
+        public static void CreateBox(Vector3 size, in ChiselSurface surface, out BrushMesh box)
         {
             var halfSize = size * 0.5f;
-            return CreateBox(-halfSize, halfSize, in surface);
+            CreateBox(-halfSize, halfSize, in surface, out box);
         }
     }
 }

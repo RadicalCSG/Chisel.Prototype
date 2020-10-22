@@ -17,7 +17,7 @@ namespace FoundationTests
         [Test]
         public void CreateBrushMesh()
         {
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
+            TestUtility.CreateBox(Vector3.one, null, out BrushMesh brushMesh);
 
             Assert.AreNotEqual(null, brushMesh);
             Assert.AreNotEqual(null, brushMesh.vertices);
@@ -31,7 +31,7 @@ namespace FoundationTests
         [Test]
         public void CreateBrushMeshInstanceFromBrushMesh()
         {
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
+            TestUtility.CreateBox(Vector3.one, null, out BrushMesh brushMesh);
 
             BrushMeshInstance coreBrushMesh = BrushMeshInstance.Create(brushMesh);
 
@@ -41,7 +41,7 @@ namespace FoundationTests
         [Test]
         public void DestroyBrushMeshInstance()
         {
-            BrushMesh brushMesh = TestUtility.CreateBox(Vector3.one, null);
+            TestUtility.CreateBox(Vector3.one, null, out BrushMesh brushMesh);
             BrushMeshInstance brushMeshInstance = BrushMeshInstance.Create(brushMesh);
 
             brushMeshInstance.Destroy();

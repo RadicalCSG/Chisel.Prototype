@@ -47,16 +47,7 @@ namespace Chisel.Core
         {
             var minCount = brushBrushIntersections.Count * 16;
 
-            if (!intersections.IsCreated)
-            {
-                intersections = new NativeList<BrushPair>(minCount, Allocator.Temp);
-            } else
-            {
-                intersections.Clear();
-                if (intersections.Capacity < minCount)
-                    intersections.Capacity = minCount;
-            }
-
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref intersections, minCount);
 
             for (int i = 0; i < brushBrushIntersections.Count; i++)
             {
@@ -77,9 +68,11 @@ namespace Chisel.Core
                     intersections.Add(pair);
                 }
             }
-            intersections.Sort(new ListComparer());
-            
             brushIntersectionsWith->Clear();
+            if (intersections.Length == 0)
+                return;
+
+            intersections.Sort(new ListComparer());           
 
             var currentPair = intersections[0];
             int previousOrder = currentPair.brushNodeOrder0;

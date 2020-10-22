@@ -30,12 +30,7 @@ namespace Chisel.Core
         {
             var maxPairs = (maxOrder * maxOrder);
 
-            if (!usedLookup.IsCreated || usedLookup.Length < maxPairs)
-            {
-                if (usedLookup.IsCreated) usedLookup.Dispose();
-                usedLookup = new NativeBitArray(maxPairs, Allocator.Temp);
-            } else
-                usedLookup.Clear();
+            NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref usedLookup, maxPairs);
 
             for (int b0 = 0; b0 < allUpdateBrushIndexOrders.Length; b0++)
             {

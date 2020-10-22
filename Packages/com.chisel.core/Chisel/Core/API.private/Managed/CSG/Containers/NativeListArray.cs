@@ -11,6 +11,7 @@ using Unity.Jobs;
 
 namespace Chisel.Core
 {
+    using System.Runtime.CompilerServices;
     using Chisel.Core.LowLevel.Unsafe;
     using UnityEngine;
 
@@ -27,6 +28,7 @@ namespace Chisel.Core
 
         public Allocator Allocator;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UnsafeListArray* Create(Allocator allocator)
         {
             UnsafeListArray* arrayData = (UnsafeListArray*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<UnsafeListArray>(), UnsafeUtility.AlignOf<UnsafeListArray>(), allocator);
@@ -103,6 +105,7 @@ namespace Chisel.Core
             Length = newLength;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UnsafeList* InitializeIndex(int index, int sizeOf, int alignOf, int capacity, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
         {
             CheckIndexInRange(index, Length);
@@ -111,12 +114,14 @@ namespace Chisel.Core
             return ptr;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UnsafeList* InitializeIndex(int index, int sizeOf, int alignOf, NativeArrayOptions options = NativeArrayOptions.UninitializedMemory)
         {
             return InitializeIndex(index, sizeOf, alignOf, InitialListCapacity, options);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckAlreadyAllocated(int length)
         {
             if (length > 0)
@@ -125,6 +130,7 @@ namespace Chisel.Core
 
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckIndexInRange(int value, int length)
         {
             if (value < 0)
@@ -135,6 +141,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void NullCheck(void* arrayData)
         {
             if (arrayData == null)
@@ -154,6 +161,7 @@ namespace Chisel.Core
 
         public bool IsCreated => Ptr != null;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool ShouldDeallocate(Allocator allocator)
         {
             // Allocator.Invalid == container is not initialized.
@@ -220,6 +228,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static private void CheckAllocator(Allocator a)
         {
             if (a <= Allocator.None)
@@ -228,16 +237,19 @@ namespace Chisel.Core
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf<T>(T value) where T : unmanaged, IEquatable<T>
         {
             return NativeArrayExtensions.IndexOf<T, T>(Ptr, Length, value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains<T>(T value) where T : unmanaged, IEquatable<T>
         {
             return IndexOf(value) != -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AllocateItem()
         {
             var prevLength = Length;
@@ -267,36 +279,79 @@ namespace Chisel.Core
         [NativeDisableUnsafePtrRestriction]
         internal UnsafeListArray* m_Array;
         
-        public int Length { [return: AssumeRange(0, int.MaxValue)] get { return m_Array->Length; } }
-        public int Count { [return: AssumeRange(0, int.MaxValue)] get { return m_Array->Length; } }
-        public int Capacity { [return: AssumeRange(0, int.MaxValue)] get { return m_Array->Capacity; } }
+        public int Length { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
+        public int Count { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Length; } }
+        public int Capacity { [return: AssumeRange(0, int.MaxValue)][MethodImpl(MethodImplOptions.AggressiveInlining)] get { return m_Array->Capacity; } }
         public bool IsCreated => m_Array != null;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeListArray(Allocator allocator)
             : this(1, allocator, 2)
         {
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeListArray(int initialListCapacity, Allocator allocator)
             : this(initialListCapacity, allocator, 2)
         {
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static private void CheckAllocator(Allocator a)
+        {
+            if (a <= Allocator.None)
+            {
+                throw new Exception("Allocator must be Temp, TempJob or Persistent.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckCapacityInRange(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value < (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckArgInRange(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value >= (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckArgInRangeInc(long value, long length)
+        {
+            if (value < 0)
+                throw new ArgumentOutOfRangeException($"Value {value} must be positive.");
+
+            if ((uint)value > (uint)length)
+                throw new ArgumentOutOfRangeException($"Value {value} is out of range in NativeListArray of '{length}' Length.");
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         NativeListArray(int initialListCapacity, Allocator allocator, int disposeSentinelStackDepth)
         {
             var totalSize = UnsafeUtility.SizeOf<T>() * (long)initialListCapacity;
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             // Native allocation is only valid for Temp, Job and Persistent.
-            if (allocator <= Allocator.None)
-                throw new ArgumentException("Allocator must be Temp, TempJob or Persistent", nameof(allocator));
-            if (initialListCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialListCapacity), "InitialListCapacity must be >= 0");
+            CheckAllocator(allocator);
+            CheckArgPositive(initialListCapacity);
 
 
             CollectionHelper.CheckIsUnmanaged<T>();
-
-            if (totalSize > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(initialListCapacity), $"InitialListCapacity * sizeof(T) cannot exceed {int.MaxValue} bytes");
+            CheckArgInRange(totalSize, int.MaxValue);
 
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, disposeSentinelStackDepth, allocator);
 #endif
@@ -309,16 +364,17 @@ namespace Chisel.Core
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResizeExact(int length)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
 #endif
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
+            CheckArgPositive(length);
             m_Array->ResizeExact(length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Clear()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -327,6 +383,7 @@ namespace Chisel.Core
             m_Array->Clear();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ClearChildren()
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -335,10 +392,11 @@ namespace Chisel.Core
             m_Array->ClearChildren();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsIndexCreated(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 #endif
             if (index < 0 || index >= m_Array->Length)
                 return false;
@@ -346,6 +404,7 @@ namespace Chisel.Core
             return (ptr != null && ptr->IsCreated);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeList SafeGet(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -371,6 +430,7 @@ namespace Chisel.Core
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsAllocated(int index)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -383,6 +443,7 @@ namespace Chisel.Core
             return (ptr != null && ptr->IsCreated);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeList AllocateWithCapacityForIndex(int index, int capacity)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -413,6 +474,7 @@ namespace Chisel.Core
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeList AddAndAllocateWithCapacity(int capacity)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -438,6 +500,7 @@ namespace Chisel.Core
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AllocateItemAndAddValues(NativeArray<T> other)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -457,6 +520,7 @@ namespace Chisel.Core
             return index;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int AllocateItemAndAddValues(NativeListArray<T>.NativeList other)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -484,6 +548,7 @@ namespace Chisel.Core
             return index;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int AllocateItemAndAddValues(T* otherPtr, int otherLength)
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -509,10 +574,10 @@ namespace Chisel.Core
             return index;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int AllocateItemAndAddValues(NativeArray<T> other, int otherLength)
         {
-            if (otherLength > other.Length)
-                throw new ArgumentOutOfRangeException("otherLength");
+            CheckArgInRangeInc(otherLength, other.Length);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
 #endif
@@ -536,56 +601,9 @@ namespace Chisel.Core
             return index;
         }
 
-#if false
-        public int AllocatItemAndAddValues(NativeList<T> other)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            var index = m_Array->AllocateItem();
-            var ptr = m_Array->Ptr[index];
-            if (ptr == null ||
-                !ptr->IsCreated)
-            {
-                m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Length);
-                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-                dstList.AddRangeNoResize(other);
-            } else
-            {
-                var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-                dstList.AddRange(other);
-            }
-            return index;
-        }
-
-        public int AllocatItemAndAddValues(List<T> other)
-        {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndBumpSecondaryVersion(m_Safety);
-#endif
-            var index = m_Array->AllocateItem();
-            var ptr = m_Array->Ptr[index];
-            if (ptr == null ||
-                !ptr->IsCreated)
-            {
-                ptr = m_Array->InitializeIndex(index, UnsafeUtility.SizeOf<T>(), UnsafeUtility.AlignOf<T>(), other.Count);
-            }
-            var dstList = new NativeList(m_Array->Ptr[index], ref m_Safety);
-            dstList.AddRange(other);
-            return index;
-        }
-
-        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        private static void CheckSufficientCapacity(int capacity, int length)
-        {
-            if (capacity < length)
-            {
-                throw new Exception($"Length {length} exceeds capacity Capacity {capacity}");
-            }
-        }
-#endif
 
         [return: AssumeRange(0, int.MaxValue)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int AssumePositive(int x)
         {
             return x;
@@ -593,6 +611,7 @@ namespace Chisel.Core
 
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckNull(UnsafeList* listData)
         {
             if (listData == null)
@@ -600,6 +619,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckAllocated(UnsafeList* listData)
         {
             if (listData == null || !listData->IsCreated)
@@ -607,6 +627,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckNotAllocated(UnsafeList* listData)
         {
             if (listData != null && listData->IsCreated)
@@ -614,6 +635,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckIndexInRange(int value, int length)
         {
             if (value < 0)
@@ -624,6 +646,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckCapacityInRange(int value, int length)
         {
             if (value < 0)
@@ -634,6 +657,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckArgInRange(int value, int length)
         {
             if (value < 0)
@@ -644,6 +668,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CheckArgPositive(int value)
         {
             if (value < 0)
@@ -651,6 +676,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe static void CheckPtrInitialized(UnsafeList* ptr, int index)
         {
             if (ptr == null ||
@@ -660,6 +686,7 @@ namespace Chisel.Core
 
         public NativeList this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -729,6 +756,7 @@ namespace Chisel.Core
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             internal AtomicSafetyHandle m_Safety;
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe NativeList(UnsafeList* listData, ref AtomicSafetyHandle safety)
             {
                 m_ListData = listData;
@@ -743,6 +771,7 @@ namespace Chisel.Core
 
             public T this[int index]
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -752,6 +781,7 @@ namespace Chisel.Core
 #endif
                     return UnsafeUtility.ReadArrayElement<T>(m_ListData->Ptr, AssumePositive(index));
                 }
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -765,6 +795,7 @@ namespace Chisel.Core
 
             public int Length
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
                     if (m_ListData == null)
@@ -780,6 +811,7 @@ namespace Chisel.Core
 
             public int Count
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
                     if (m_ListData == null)
@@ -796,6 +828,7 @@ namespace Chisel.Core
 
             public int Capacity
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
                     if (m_ListData == null)
@@ -809,6 +842,7 @@ namespace Chisel.Core
                     return AssumePositive(m_ListData->Capacity);
                 }
 
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -820,6 +854,7 @@ namespace Chisel.Core
                 }
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddNoResize(T value)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -829,6 +864,7 @@ namespace Chisel.Core
                 m_ListData->AddNoResize(value);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(void* ptr, int length)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -839,6 +875,7 @@ namespace Chisel.Core
                 m_ListData->AddRangeNoResize<T>(ptr, length);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeArray<T> other, int length)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -849,16 +886,19 @@ namespace Chisel.Core
                 m_ListData->AddRangeNoResize<T>(other.GetUnsafeReadOnlyPtr(), length);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeArray<T> list)
             {
                 AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeList<T> list)
             {
                 AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void AddRangeNoResize(NativeListArray<T>.NativeList list)
             {
                 AddRangeNoResize(list.GetUnsafeReadOnlyPtr(), list.Length);
@@ -902,6 +942,7 @@ namespace Chisel.Core
                 AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
             }
             */
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void RemoveAtSwapBack(int index)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -912,6 +953,7 @@ namespace Chisel.Core
                 m_ListData->RemoveAtSwapBack<T>(AssumePositive(index));
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Clear()
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -921,11 +963,13 @@ namespace Chisel.Core
                 m_ListData->Clear();
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static implicit operator NativeArray<T>(NativeList nativeList)
             {
                 return nativeList.AsArray();
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public NativeArray<T> AsArray()
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -962,6 +1006,8 @@ namespace Chisel.Core
                 return result;
             }
             */
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public NativeList<T> ToList(Allocator allocator)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -984,6 +1030,8 @@ namespace Chisel.Core
                 na.CopyFrom(array);
             }
             */
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Resize(int length, NativeArrayOptions options)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS

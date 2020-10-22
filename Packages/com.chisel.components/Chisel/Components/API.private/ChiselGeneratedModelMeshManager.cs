@@ -62,9 +62,16 @@ namespace Chisel.Components
             }
         }
 
-        static bool UpdateMeshEvent(CSGTree tree, ref VertexBufferContents vertexBufferContents)
+        static void BeginMeshUpdates()
         {
-            // TODO: clean this up
+            s_UpdatedModels.Clear();
+            ChiselGeneratedObjects.BeginMeshUpdates();
+        }
+
+        static readonly HashSet<ChiselModel> s_UpdatedModels = new HashSet<ChiselModel>();
+
+        static JobHandle PerformMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
+        {
             ChiselModel model = null;
             for (int m = 0; m < registeredModels.Count; m++)
             {
@@ -75,7 +82,7 @@ namespace Chisel.Components
                     model = registeredModels[m];
             }
             if (model == null)
-                return false;
+                return (JobHandle)default;
 
             if (!ChiselGeneratedObjects.IsValid(model.generated))
             {
@@ -84,13 +91,23 @@ namespace Chisel.Components
                 model.generated = ChiselGeneratedObjects.Create(model.gameObject);
             }
 
-            model.generated.Update(model, model.gameObject, vertexBufferContents);
-            componentGenerator.Rebuild(model);
-            PostUpdateModel?.Invoke(model);
-            return true;
+            s_UpdatedModels.Add(model);
+            return model.generated.UpdateMeshes(model, model.gameObject, ref vertexBufferContents, dependencies);
         }
 
-        static UpdateMeshEvent s_UpdateMeshEvent = (UpdateMeshEvent)UpdateMeshEvent;
+        static void FinishMeshUpdates()
+        {
+            ChiselGeneratedObjects.FinishMeshUpdates();
+            foreach (var model in s_UpdatedModels)
+            {
+                componentGenerator.Rebuild(model);
+                PostUpdateModel?.Invoke(model);
+            }
+        }
+        
+        static readonly Action              s_BeginMeshUpdates      = (Action)BeginMeshUpdates;
+        static readonly PerformMeshUpdate   s_PerformMeshUpdate     = (PerformMeshUpdate)PerformMeshUpdate;
+        static readonly Action              s_FinishMeshUpdates     = (Action)FinishMeshUpdates;
 
         public static void UpdateModels()
         {
@@ -99,7 +116,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush(s_UpdateMeshEvent))
+                if (!CSGManager.Flush(s_BeginMeshUpdates, s_PerformMeshUpdate, s_FinishMeshUpdates))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..

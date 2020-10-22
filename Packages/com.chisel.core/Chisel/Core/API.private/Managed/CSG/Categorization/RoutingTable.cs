@@ -13,5 +13,6 @@ namespace Chisel.Core
         public BlobArray<CategoryRoutingRow>	routingRows;
         public BlobArray<RoutingLookup>         routingLookups;
         public BlobArray<int>	                nodeIndexToTableIndex;
+        public int	                            nodeIndexOffset;
     }
 }

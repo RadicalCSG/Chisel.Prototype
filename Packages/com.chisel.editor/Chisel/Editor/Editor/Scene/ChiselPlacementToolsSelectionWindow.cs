@@ -185,6 +185,8 @@ namespace Chisel.Editors
             public GUIStyle toggleStyleRight;
             public GUIStyle addStyle;
             public GUIStyle groupTitleStyle;
+            public GUIStyle boxStyle;
+            public float boxStyleVerticalMargin;
         }
 
         static Styles styles = null;
@@ -195,6 +197,7 @@ namespace Chisel.Editors
                 ChiselEditorSettings.Load();
                 styles = new Styles
                 {
+                    boxStyle  = new GUIStyle(GUI.skin.box),
                     namedToggleStyle = new GUIStyle(GUI.skin.button)
                     {
                         alignment   = TextAnchor.MiddleLeft,
@@ -232,6 +235,7 @@ namespace Chisel.Editors
                     },
                     groupTitleStyle =  new GUIStyle(EditorStyles.boldLabel)
                 };
+                styles.boxStyleVerticalMargin = styles.boxStyle.margin.vertical;
             }
         }
 
@@ -295,6 +299,7 @@ namespace Chisel.Editors
             kAddButton = ChiselEditorResources.GetIconContent(kAddIconName, kAddTooltip)[0];
         }
 
+
         public static void RenderCreationTools()
         {
             InitStyles();
@@ -314,8 +319,7 @@ namespace Chisel.Editors
             }
 
             int rows = Mathf.CeilToInt((usedModes + 1) / (float)kToolsWide);
-            var boxStyle = new GUIStyle(GUI.skin.box);
-            var groupRect = EditorGUILayout.GetControlRect(false, (rows * style.fixedHeight) + boxStyle.margin.vertical, ChiselOverlay.kMinWidthLayout);
+            var groupRect = EditorGUILayout.GetControlRect(false, (rows * style.fixedHeight) + styles.boxStyleVerticalMargin, ChiselOverlay.kMinWidthLayout);
             groupRect.xMin -= 2;
             groupRect.yMin += 5;
             groupRect.xMax += 3;
@@ -330,8 +334,8 @@ namespace Chisel.Editors
                 GUI.DrawTexture(new Rect(groupRect.x, groupRect.y - 1, groupRect.width, 1), Texture2D.whiteTexture);
                 GUI.color = oldColor;
 
-                boxStyle.Draw(groupRect, false, false, false, false);
-                boxStyle.Draw(groupRect, false, false, false, false);
+                styles.boxStyle.Draw(groupRect, false, false, false, false);
+                styles.boxStyle.Draw(groupRect, false, false, false, false);
             }
 
             var topX            = groupRect.x + 3;

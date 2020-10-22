@@ -1,6 +1,7 @@
 ﻿using Chisel.Core.LowLevel.Unsafe;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Unity.Burst;
 using Unity.Collections;
@@ -9,6 +10,7 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
@@ -82,10 +84,30 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckLengthInRange(int length, int range)
+        {
+            if (length < 0 || length > range)
+                throw new ArgumentOutOfRangeException("length");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckIndexInRangeExc(int index, int length)
+        {
+            if (index < 0 || index >= length)
+                throw new ArgumentOutOfRangeException("index");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckIndexInRangeInc(int index, int length)
+        {
+            if (index < 0 || index > length)
+                throw new ArgumentOutOfRangeException("index");
+        }
+
         public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
-            if (length < 0 || length > elements.Length)
-                throw new ArgumentOutOfRangeException("length");
+            CheckLengthInRange(length, elements.Length);
             if (length == 0)
                 return;
             list.AddRangeNoResize(elements.GetUnsafePtr(), length);
@@ -93,8 +115,7 @@ namespace Chisel.Core
 
         public static uint Hash<T>(this NativeList<T> list, int length) where T : unmanaged
         {
-            if (length < 0 || length > list.Length)
-                throw new ArgumentOutOfRangeException("length");
+            CheckLengthInRange(length, list.Length);
             if (length == 0)
                 return 0;
             return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
@@ -125,19 +146,15 @@ namespace Chisel.Core
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
-            if (count > elements.Length)
-                throw new ArgumentOutOfRangeException("count");
-            if (start < 0 || start + count > elements.Length)
-                throw new ArgumentOutOfRangeException("start");
+            CheckLengthInRange(count, elements.Length);
+            CheckIndexInRangeInc(start, elements.Length - count);
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
         public static void CopyFrom<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
-            if (count > elements.Length)
-                throw new ArgumentOutOfRangeException("count");
-            if (start < 0 || start + count > elements.Length)
-                throw new ArgumentOutOfRangeException("start");
+            CheckLengthInRange(count, elements.Length);
+            CheckIndexInRangeInc(start, elements.Length - count);
 
             list.Clear();
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
@@ -145,10 +162,9 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
         {
-            if (count > srcList.Length || count > dstArray.Length)
-                throw new ArgumentOutOfRangeException("count");
-            if (start < 0 || start + count > srcList.Length)
-                throw new ArgumentOutOfRangeException("start");
+            CheckLengthInRange(count, srcList.Length);
+            CheckLengthInRange(count, dstArray.Length);
+            CheckIndexInRangeInc(start, srcList.Length - count);
 
             var srcPtr  = (T*)srcList.GetUnsafeReadOnlyPtr() + start;
             var dstPtr  = (T*)dstArray.GetUnsafePtr();
@@ -158,10 +174,9 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
-            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
-                throw new ArgumentOutOfRangeException("srcCount");
-            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
-                throw new ArgumentOutOfRangeException("srcIndex");
+            CheckLengthInRange(srcCount, srcArray.Length);
+            CheckLengthInRange(srcCount, dstArray.Length);
+            CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
 
             var srcPtr  = (T*)srcArray.GetUnsafeReadOnlyPtr() + srcIndex;
             var dstPtr  = (T*)dstArray.GetUnsafePtr();
@@ -171,12 +186,10 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
-            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
-                throw new ArgumentOutOfRangeException("srcCount");
-            if (dstIndex < 0 || dstIndex + srcCount > dstArray.Length)
-                throw new ArgumentOutOfRangeException("dstIndex");
-            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
-                throw new ArgumentOutOfRangeException("srcIndex");
+            CheckLengthInRange(srcCount, srcArray.Length);
+            CheckLengthInRange(srcCount, dstArray.Length);
+            CheckIndexInRangeInc(dstIndex, dstArray.Length - srcCount);
+            CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
 
             var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
             var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;
@@ -186,12 +199,10 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeSlice<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
-            if (srcCount > srcArray.Length || srcCount > dstArray.Length)
-                throw new ArgumentOutOfRangeException("srcCount");
-            if (dstIndex < 0 || dstIndex + srcCount > dstArray.Length)
-                throw new ArgumentOutOfRangeException("dstIndex");
-            if (srcIndex < 0 || srcIndex + srcCount > srcArray.Length)
-                throw new ArgumentOutOfRangeException("srcIndex");
+            CheckLengthInRange(srcCount, srcArray.Length);
+            CheckLengthInRange(srcCount, dstArray.Length);
+            CheckIndexInRangeInc(dstIndex, dstArray.Length - srcCount);
+            CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
 
             var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
             var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;

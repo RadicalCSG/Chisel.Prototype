@@ -276,13 +276,14 @@ namespace Chisel.Core
             
             var treeNodeID          = tree.NodeID;
             var treeNodeIndex       = treeNodeID - 1;
-            var treeInfo            = CSGManager.nodeHierarchies[treeNodeIndex].treeInfo;
+            CSGManager.UpdateTreeNodeList(treeNodeIndex);
+            var treeInfo            = CSGManager.treeInfos[treeNodeIndex];
 
             var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
             var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
 
             // TODO: optimize
-            var allTreeBrushes = treeInfo.allTreeBrushes.items;
+            var allTreeBrushes = treeInfo.brushes;
             for (int i = 0; i < allTreeBrushes.Count; i++)
             {
                 var brushNodeID = allTreeBrushes[i];
@@ -333,7 +334,7 @@ namespace Chisel.Core
 
             return foundIntersections.ToArray();
         }
-
+         
         public static CSGTreeNode[] GetNodesInFrustum(CSGTree       tree,
                                                       MeshQuery[]   meshQueries, // TODO: add meshquery support here
                                                       Plane[]       planes)

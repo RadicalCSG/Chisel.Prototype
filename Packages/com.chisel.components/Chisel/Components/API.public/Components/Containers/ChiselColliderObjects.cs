@@ -4,9 +4,19 @@ using System;
 using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
+using System.Collections.Generic;
 
 namespace Chisel.Components
 {
+    public struct ChiselPhysicsObjectUpdate
+    {
+        public ChiselColliderObjects instance;
+        public int  contentsIndex;
+        public int  meshIndex;
+        public int  instanceID;
+        public VertexBufferContents contents; 
+    }
+
     [Serializable]
     public class ChiselColliderObjects
     {
@@ -72,35 +82,22 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
-        public void Update(ChiselModel model, ref VertexBufferContents contents, int contentsIndex)
+        public static void ScheduleMeshCopy(List<ChiselPhysicsObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs, JobHandle dependencies)
         {
-            var meshIsModified = false;
-
-            // Retrieve the generatedMesh, and store it in the Unity Mesh
-            var modelTree = model.Node;
-            Profiler.BeginSample("CopyFromPositionOnly");
-            meshIsModified = contents.CopyPositionOnlyToMesh(contentsIndex, sharedMesh);
-            Profiler.EndSample();
-
-            if (meshCollider.sharedMesh != sharedMesh)
-                meshIsModified = true;
-
-            var expectedEnabled = sharedMesh.vertexCount > 0;
-            if (meshCollider.enabled != expectedEnabled)
-                meshCollider.enabled = expectedEnabled;
-
-#if UNITY_EDITOR
-            if (meshIsModified)
+            Profiler.BeginSample("CopyToMesh");
+            for (int i = 0; i < updates.Count; i++)
             {
-                // MeshCollider doesn't rebuild it's internal collider mesh unless you change it's mesh
-                meshCollider.sharedMesh = sharedMesh;
-                UnityEditor.EditorUtility.SetDirty(meshCollider);
-                UnityEditor.EditorUtility.SetDirty(model);
+                var update = updates[i];
+                int contentsIndex = update.contentsIndex;
+                var instanceID = update.instanceID;
+                var meshIndex = update.meshIndex;
+                // Retrieve the generatedMesh, and store it in the Unity Mesh
+                update.contents.CopyPositionOnlyToMesh(dataArray, contentsIndex, meshIndex, instanceID, ref allJobs, dependencies);
             }
-#endif
+            Profiler.EndSample();
         }
 
-        public static void UpdateColliders(ChiselModel model, ChiselColliderObjects[] colliders)
+        public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             if (colliders == null)
                 return;
@@ -110,6 +107,14 @@ namespace Chisel.Components
                 var meshCollider = colliders[i].meshCollider;
                 if (!meshCollider)
                     continue;
+
+                var sharedMesh = colliders[i].sharedMesh;
+                if (meshCollider.sharedMesh != sharedMesh)
+                    meshCollider.sharedMesh = sharedMesh;
+
+                var expectedEnabled = sharedMesh.vertexCount > 0;
+                if (meshCollider.enabled != expectedEnabled)
+                    meshCollider.enabled = expectedEnabled;
 
                 if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
                     meshCollider.cookingOptions	=  colliderSettings.cookingOptions;
