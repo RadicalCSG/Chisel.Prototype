@@ -7,27 +7,25 @@ namespace Chisel.Editors
     internal static class ChiselEmbeddedTextures
     {
         private static string m_TempTexB64 =
-                @"iVBORw0KGgoAAAANSUhE
-                UgAAAIAAAACACAYAAADDPmHLAAACQ0lEQVR4Ae3bwW
-                3FMAxEQRetLlz0D3QwsEgLbw5BeCXsHZGK87zv+yv/
-                nHN+5Z+n/PBv7+WHf3v3AhDAEVBWgAAEIAABwptA+e
-                EbAm0BtgAChPl3D+AewEWQm0BXwf4WEL4LcBEUfvjW
-                QGugNdAaaA1MbwJmADOAPwaVjwECEIAABAgPguWHf3
-                t3BDgCHAFlBQhAAAIQwBCYvQ10BDgCHAGOAEeAI6D6
-                aVg5/bd3M4AZwAxQVoAABCAAAWwBtgBbQPMfRMwAZg
-                AzgBnADGAGMAOYAZL/JFrm//ZuCDQEGgLLChCAAAQg
-                gDXQGmgNtAZaA4PzgCEw+NB35vECeAFsAZuIWk0AAh
-                CglvrtlwAEIMAmolYTgAAEqKV++yUAAQiwiajVBCAA
-                AWqp334JQAACbCJq9VNr+H+/1Q9hvr69AOHP4e5L4A
-                XwAjS/hfuOgo/C6m8CEIAA1fSbAc5Jfgm9L7wjwBHg
-                CNhE1GoCEIAAtdRvvwQgAAE2EbWaAAQgQC312y8BCE
-                CATUStJgABCFBL/fZLAAIQYBNRqwlAAALUUr/9EoAA
-                BNhE1GoCEIAAtdRvvwQgAAE2EbWaAAQgQC312y8BCE
-                CATUStJgABCFBL/fZLAAIQYBNRqwlAAALUUr/9EoAA
-                BNhE1GoCEIAAtdRvvwQgAAE2EbWaAAQgQC312y8BCE
-                CATUStJgABCFBL/fZLAAIQYBNRqwlAAALUUr/9EoAA
-                BNhE1GoCEIAAtdRvvwQgAAE2EbWaAAQgQC312y8B4g
-                L8ARmZaVKQSMMPAAAAAElFTkSuQmCC";
+                @"iVBORw0KGgoAAAANSUhEUgAAAI
+                AAAACACAYAAADDPmHLAAACRElEQVR4Ae3bwW3FMAxEQRfhAt
+                R/kz/QwcAiLbw5BOGVsHdEKs7zvu+v/HPO+ZV/nvLDv72XH/
+                7t3QtAAEdAWQECEIAABAhvAuWHbwi0BdgCCBDm3z2AewAXQW
+                4CXQX7W0D4LsBFUPjhWwOtgdZAa6A1ML0JmAHMAP4YVD4GCE
+                AAAhAgPAiWH/7t3RHgCHAElBUgAAEIQABDYPY20BHgCHAEOA
+                IcAY6A6qdh5fTf3s0AZgAzQFkBAhCAAASwBdgCbAHNfxAxA5
+                gBzABmADOAGcAMYAZI/pNomf/buyHQEGgILCtAAAIQgADWQG
+                ugNdAaaA0MzgOGwOBD35nHC+AFsAVsImo1AQhAgFrqt18CEI
+                AAm4haTQACEKCW+u2XAAQgwCaiVhOAAASopX77JQABCLCJqN
+                VPreH//VY/hPn69gKEP4e7L4EXwAvQ/BbuOwo+Cqu/CUAAAl
+                TTbwY4J/kl9L7wjgBHgCNgE1GrCUAAAtRSv/0SgAAE2ETUag
+                IQgAC11G+/BCAAATYRtZoABCBALfXbLwEIQIBNRK0mAAEIUE
+                v99ksAAhBgE1GrCUAAAtRSv/0SgAAE2ETUagIQgAC11G+/BC
+                AAATYRtZoABCBALfXbLwEIQIBNRK0mAAEIUEv99ksAAhBgE1
+                GrCUAAAtRSv/0SgAAE2ETUagIQgAC11G+/BCAAATYRtZoABC
+                BALfXbLwEIQIBNRK0mAAEIUEv99ksAAhBgE1GrCUAAAtRSv/
+                0SgAAE2ETUagIQgAC11G+/BIgL8AfYVETeKhvzFQAAAABJRU
+                5ErkJggg==";
 
         private static Texture2D m_TemporaryTexture = null;
 

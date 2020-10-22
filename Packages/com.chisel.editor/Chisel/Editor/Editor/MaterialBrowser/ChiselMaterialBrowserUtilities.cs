@@ -76,13 +76,13 @@ namespace Chisel.Editors
         // and then adds them to the list of materials to be used in this window
         public static void GetMaterials( ref List<ChiselMaterialBrowserTile> materials,
                                           ref List<string>                    labels,
-                                          ref ChiselMaterialBrowserCache      cache,
+                                          //ref ChiselMaterialBrowserCache      cache,
                                           bool                                usingLabel,
                                           string                              searchLabel = "",
                                           string                              searchText  = "" )
         {
             if(usingLabel && searchLabel == string.Empty)
-                Debug.LogError( $"usingLabel set to true, but no search term was given. This may give unpredictable results." );
+                Debug.LogError( $"usingLabel set to true, but no search term was given. This may give undesired results." );
 
             materials.Clear();
 
@@ -97,7 +97,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( var id in guids )
             {
-                ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id, ref cache );
+                ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id ); //, ref cache );
 
                 if( labels != null )
                 {
@@ -118,7 +118,7 @@ namespace Chisel.Editors
             }
 
             //Debug.Log( $"Found {materials.Count} materials with applied filters." );
-            cache.Save();
+            //cache.Save();
         }
     }
 }//

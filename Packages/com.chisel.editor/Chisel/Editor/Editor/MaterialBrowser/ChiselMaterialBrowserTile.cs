@@ -40,7 +40,7 @@ namespace Chisel.Editors
         private int       m_InstanceID = 0;
         private Texture2D m_Preview    = null;
 
-        public ChiselMaterialBrowserTile( string instID, ref ChiselMaterialBrowserCache cache )
+        public ChiselMaterialBrowserTile( string instID)//, ref ChiselMaterialBrowserCache cache )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 
@@ -75,34 +75,14 @@ namespace Chisel.Editors
 
             if( m_Preview == null )
             {
-                m_Preview = cache.GetThumbnail( m_InstanceID );
-
                 if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
-                    ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreviews(), () => { m_Preview = AssetPreview.GetAssetPreview( m ); } );
-
-                if( ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
-                {
-                    ChiselMaterialBrowserCache.CachedThumbnail thumbnail = new ChiselMaterialBrowserCache.CachedThumbnail()
+                    ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreviews(), () =>
                     {
-                            name = materialName,
-                            data = Convert.ToBase64String( m_Preview.EncodeToPNG() )
-                    };
-                    thumbnail.hashCode = thumbnail.GetHashCode();
-                    cache.AddEntry( thumbnail );
-                }
-            }
-        }
-
-        // $TODO: Use GUI instead of GUILayout
-        public void Draw( Rect offset )
-        {
-            //if(m_Preview == null) Debug.LogError( $"Preview thumbnail [{materialName}] null" );
-
-            if( Preview != null )
-            {
-                GUIContent previewContent = new GUIContent( Preview, $"{materialName}\nIn: [{path}]" );
-
-                GUILayout.Box( previewContent, GUILayout.Height( offset.height ), GUILayout.Width( offset.width ) );
+                        if( ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
+                        {
+                            m_Preview = AssetPreview.GetAssetPreview( m );
+                        }
+                    } );
             }
         }
     }
