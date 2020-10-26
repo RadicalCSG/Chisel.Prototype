@@ -9,52 +9,51 @@ Author: Daniel Cornelius
 using System;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using Object = System.Object;
 
 namespace Chisel.Editors
 {
-    internal class ChiselMaterialBrowserTile
+    internal class ChiselMaterialBrowserTile : IDisposable
     {
         public readonly string   path;
         public readonly string   guid;
         public readonly string   shaderName;
         public readonly string   materialName;
-        public readonly Vector2  mainTexSize;
-        public readonly Vector2  uvOffset;
-        public readonly Vector2  uvScale;
-        public readonly string   albedoName;
         public readonly string[] labels;
 
-        public Texture2D Preview
-        {
-            get
-            {
-                if( m_Preview == null ) { return ChiselEmbeddedTextures.TemporaryTexture; }
+        private bool isVisible;
 
-                return m_Preview;
-            }
+        public  Texture2D Preview => m_Preview;
+        private Texture2D m_Preview;
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            m_Preview = null;
         }
 
-        public int InstanceID => m_InstanceID;
+        public bool CheckVisible( float yOffset, float thumbnailSize, Vector2 scrollPos, float scrollViewHeight )
+        {
+            if( scrollPos.y + scrollViewHeight < ( yOffset - thumbnailSize ) ) return isVisible = false;
+            if( yOffset     + thumbnailSize    < scrollPos.y ) return isVisible = false;
+            return isVisible = true;
+        }
 
-        private int       m_InstanceID = 0;
-        private Texture2D m_Preview    = null;
-
-        public ChiselMaterialBrowserTile( string instID)//, ref ChiselMaterialBrowserCache cache )
+        public ChiselMaterialBrowserTile( string instID ) //, ref ChiselMaterialBrowserCache cache )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 
             Material m = AssetDatabase.LoadAssetAtPath<Material>( path );
 
+            int id = m.GetInstanceID();
             guid         = instID;
-            m_InstanceID = m.GetInstanceID();
             labels       = AssetDatabase.GetLabels( m );
             shaderName   = m.shader.name;
             materialName = m.name;
-            uvOffset     = m.mainTextureOffset;
-            uvScale      = m.mainTextureScale;
 
-            for( int i = 0; i < ShaderUtil.GetPropertyCount( m.shader ); i++ )
+            m = null;
+
+            /*for( int i = 0; i < ShaderUtil.GetPropertyCount( m.shader ); i++ )
             {
                 if( ShaderUtil.GetPropertyType( m.shader, i ) == ShaderUtil.ShaderPropertyType.TexEnv )
                 {
@@ -71,18 +70,15 @@ namespace Chisel.Editors
                         }
                     }
                 }
-            }
+            }*/
 
-            if( m_Preview == null )
+            if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
             {
-                if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
-                    ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreviews(), () =>
-                    {
-                        if( ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
-                        {
-                            m_Preview = AssetPreview.GetAssetPreview( m );
-                        }
-                    } );
+                if( ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
+                {
+                    ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreview( id ),
+                                                         () => { m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid ); } );
+                }
             }
         }
     }
