@@ -338,6 +338,16 @@ namespace Chisel.Core
                 builder.Construct(ref surfaceRenderBuffer.tangents, surfaceTangents, surfaceVerticesCount);
                 builder.Construct(ref surfaceRenderBuffer.uv0, surfaceUV0, surfaceVerticesCount);
 
+                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+                for (int i = 0; i < surfaceVertices.Length; i++)
+                {
+                    min = math.min(min, surfaceVertices[i]);
+                    max = math.max(max, surfaceVertices[i]);
+                }
+                surfaceRenderBuffer.min = min;
+                surfaceRenderBuffer.max = max;
+
                 surfaceRenderBuffer.surfaceHash = math.hash(new uint3(normalHash, tangentHash, uv0Hash));
                 surfaceRenderBuffer.geometryHash = geometryHash;
                 surfaceRenderBuffer.surfaceLayers = surfaceLayers;

@@ -70,7 +70,7 @@ namespace Chisel.Components
 
         static readonly HashSet<ChiselModel> s_UpdatedModels = new HashSet<ChiselModel>();
 
-        static JobHandle PerformMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
+        static JobHandle PerformMeshUpdate(CSGTree tree, List<Mesh.MeshDataArray> meshDataArrays, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
         {
             ChiselModel model = null;
             for (int m = 0; m < registeredModels.Count; m++)
@@ -92,22 +92,32 @@ namespace Chisel.Components
             }
 
             s_UpdatedModels.Add(model);
-            return model.generated.UpdateMeshes(model, model.gameObject, ref vertexBufferContents, dependencies);
+            return model.generated.UpdateMeshes(model, model.gameObject, meshDataArrays, ref vertexBufferContents, dependencies);
         }
 
-        static void FinishMeshUpdates()
+        static int FinishMeshUpdates(CSGTree tree)
         {
-            ChiselGeneratedObjects.FinishMeshUpdates();
-            foreach (var model in s_UpdatedModels)
+            ChiselModel model = null;
+            for (int m = 0; m < registeredModels.Count; m++)
             {
-                componentGenerator.Rebuild(model);
-                PostUpdateModel?.Invoke(model);
+                if (!registeredModels[m])
+                    continue;
+
+                if (registeredModels[m].Node == tree)
+                    model = registeredModels[m];
             }
+            if (model == null)
+                return 0;
+
+            var count = ChiselGeneratedObjects.FinishMeshUpdates(model);
+            componentGenerator.Rebuild(model);
+            PostUpdateModel?.Invoke(model);
+            return count;
         }
         
         static readonly Action              s_BeginMeshUpdates      = (Action)BeginMeshUpdates;
         static readonly PerformMeshUpdate   s_PerformMeshUpdate     = (PerformMeshUpdate)PerformMeshUpdate;
-        static readonly Action              s_FinishMeshUpdates     = (Action)FinishMeshUpdates;
+        static readonly FinishMeshUpdate    s_FinishMeshUpdates     = (FinishMeshUpdate)FinishMeshUpdates;
 
         public static void UpdateModels()
         {

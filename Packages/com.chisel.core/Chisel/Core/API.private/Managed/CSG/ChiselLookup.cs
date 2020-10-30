@@ -393,6 +393,8 @@ namespace Chisel.Core
         public BlobArray<float4>	tangents;
         public BlobArray<float2>    uv0;
 
+        public float3           min, max;
+
         public uint             geometryHash;
         public uint             surfaceHash;
 

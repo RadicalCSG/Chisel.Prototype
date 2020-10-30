@@ -19,6 +19,8 @@ namespace Chisel.Core
             public int      updateCount;
             public int      maxNodeOrder;
             
+            public List<UnityEngine.Mesh.MeshDataArray> meshDataArrays;
+
             public NativeList<IndexOrder>               allTreeBrushIndexOrders;
             public NativeList<IndexOrder>               rebuildTreeBrushIndexOrders;
             public NativeList<IndexOrder>               allUpdateBrushIndexOrders;
@@ -107,7 +109,8 @@ namespace Chisel.Core
             internal JobHandle transformationCacheJobHandle;
 
             internal JobHandle uniqueBrushPairsJobHandle;
-
+            
+            internal JobHandle vertexBufferContents_descriptorsJobHandle;
             internal JobHandle vertexBufferContents_subMeshSectionsJobHandle;
             internal JobHandle vertexBufferContents_subMeshesJobHandle;
             internal JobHandle vertexBufferContents_indicesJobHandle;
@@ -149,10 +152,7 @@ namespace Chisel.Core
                 subMeshSurfaces                 .Clear();
                 Profiler.EndSample();
 
-                if (vertexBufferContents.subMeshSections.IsCreated)
-                    vertexBufferContents.subMeshSections.Clear();
-                if (vertexBufferContents.meshDescriptions.IsCreated)
-                    vertexBufferContents.meshDescriptions.Clear();
+                vertexBufferContents.Clear();
                 
                 brushMeshLookup.ClearStruct();
 
@@ -168,6 +168,8 @@ namespace Chisel.Core
                 //outputSurfaceLoopsRef.Value = default;
 
                 loopVerticesLookup.ResizeExact(brushCount);
+
+                meshDataArrays.Clear();
             }
 
             public unsafe void EnsureSize(int newBrushCount)
@@ -179,6 +181,8 @@ namespace Chisel.Core
                     Profiler.EndSample();
                     return;
                 }
+
+                meshDataArrays = new List<UnityEngine.Mesh.MeshDataArray>();
 
                 Profiler.BeginSample("NEW");
                 this.brushCount                 = newBrushCount;
@@ -218,17 +222,7 @@ namespace Chisel.Core
                 loopVerticesLookup              = new NativeListArray<float3>(brushCount, Allocator.Persistent);
                 loopVerticesLookup.ResizeExact(brushCount);
                 
-                if (!vertexBufferContents.subMeshes       .IsCreated) vertexBufferContents.subMeshes        = new NativeListArray<GeneratedSubMesh>(Allocator.Persistent);
-                if (!vertexBufferContents.tangents        .IsCreated) vertexBufferContents.tangents         = new NativeListArray<float4>(Allocator.Persistent);
-                if (!vertexBufferContents.normals         .IsCreated) vertexBufferContents.normals          = new NativeListArray<float3>(Allocator.Persistent);
-                if (!vertexBufferContents.uv0             .IsCreated) vertexBufferContents.uv0              = new NativeListArray<float2>(Allocator.Persistent);
-                if (!vertexBufferContents.positions       .IsCreated) vertexBufferContents.positions        = new NativeListArray<float3>(Allocator.Persistent);
-                if (!vertexBufferContents.indices         .IsCreated) vertexBufferContents.indices          = new NativeListArray<int>(Allocator.Persistent);
-                if (!vertexBufferContents.brushIndices    .IsCreated) vertexBufferContents.brushIndices     = new NativeListArray<int>(Allocator.Persistent);
-                if (!vertexBufferContents.meshDescriptions.IsCreated) vertexBufferContents.meshDescriptions = new NativeList<GeneratedMeshDescription>(Allocator.Persistent);
-                else vertexBufferContents.meshDescriptions.Clear();
-                if (!vertexBufferContents.subMeshSections .IsCreated) vertexBufferContents.subMeshSections  = new NativeList<SubMeshSection>(Allocator.Persistent);
-                else vertexBufferContents.subMeshSections.Clear();
+                vertexBufferContents.EnsureInitialized();
                 
                 meshQueries = default;
 
@@ -287,27 +281,8 @@ namespace Chisel.Core
                 if (meshQueries.IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, meshQueries.Dispose(disposeJobHandle));
                 meshQueries = default;
 
-                
-                if (vertexBufferContents.subMeshSections .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.subMeshSections.Dispose(disposeJobHandle));
-                if (vertexBufferContents.meshDescriptions.IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.meshDescriptions.Dispose(disposeJobHandle));
-                if (vertexBufferContents.subMeshes       .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.subMeshes.Dispose(disposeJobHandle));
-                if (vertexBufferContents.indices         .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.indices.Dispose(disposeJobHandle));
-                if (vertexBufferContents.brushIndices    .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.brushIndices.Dispose(disposeJobHandle));
-                if (vertexBufferContents.positions       .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.positions.Dispose(disposeJobHandle));
-                if (vertexBufferContents.tangents        .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.tangents.Dispose(disposeJobHandle));
-                if (vertexBufferContents.normals         .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.normals.Dispose(disposeJobHandle));
-                if (vertexBufferContents.uv0             .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.uv0.Dispose(disposeJobHandle));
-
-                vertexBufferContents.subMeshSections    = default;
-                vertexBufferContents.meshDescriptions   = default;
-                vertexBufferContents.subMeshes          = default;
-                vertexBufferContents.indices            = default;
-                vertexBufferContents.brushIndices       = default;
-                vertexBufferContents.positions          = default;
-                vertexBufferContents.tangents           = default;
-                vertexBufferContents.normals            = default;
-                vertexBufferContents.uv0                = default;
-                vertexBufferContents                    = default;
+                lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.Dispose(disposeJobHandle));
+                vertexBufferContents            = default;
 
                 sections                        = default;
                 brushRenderData                 = default;
@@ -384,7 +359,7 @@ namespace Chisel.Core
         #endregion
 
 
-        internal unsafe static JobHandle UpdateTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates, List<int> treeNodeIDs)
+        internal unsafe static JobHandle UpdateTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, FinishMeshUpdate finishMeshUpdates, List<int> treeNodeIDs)
         {
             var finalJobHandle = default(JobHandle);
 
@@ -951,6 +926,7 @@ namespace Chisel.Core
 
                 currentTree.uniqueBrushPairsJobHandle = default;
 
+                currentTree.vertexBufferContents_descriptorsJobHandle = default;
                 currentTree.vertexBufferContents_subMeshSectionsJobHandle = default;
                 currentTree.vertexBufferContents_subMeshesJobHandle = default;
                 currentTree.vertexBufferContents_indicesJobHandle = default;
@@ -2022,6 +1998,37 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+
+                // Start the jobs on the worker threads
+                JobHandle.ScheduleBatchedJobs();
+
+                Profiler.BeginSample("Mesh.AllocateWritableMeshData");
+                try
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+
+                        // TODO: calculate the maximum number of meshes (depending on meshRenderer.mesh count + physicMaterial count)
+                        const int kMaxMeshAllocation = 1000;
+                        for (int i = 0; i < kMaxMeshAllocation; i++)
+                            treeUpdate.meshDataArrays.Add(UnityEngine.Mesh.AllocateWritableMeshData(1));
+                    }
+                }
+                finally { Profiler.EndSample(); }
+
+                if (beginMeshUpdates != null)
+                {
+                    Profiler.BeginSample("BeginMeshUpdates");
+                    try
+                    {
+                        beginMeshUpdates.Invoke();
+                    }
+                    finally { Profiler.EndSample(); }
+                }
+
                 Profiler.BeginSample("JOB_PrepareSubSections");
                 try
                 {
@@ -2109,16 +2116,16 @@ namespace Chisel.Core
                         var allocateVertexBuffersJob = new AllocateVertexBuffersJob
                         {
                             // Read
-                            subMeshSections     = treeUpdate.vertexBufferContents.subMeshSections.AsDeferredJobArray(),
+                            subMeshSections         = treeUpdate.vertexBufferContents.subMeshSections.AsDeferredJobArray(),
 
                             // Read Write
-                            subMeshesArray      = treeUpdate.vertexBufferContents.subMeshes,
-                            indicesArray        = treeUpdate.vertexBufferContents.indices,
-                            brushIndicesArray   = treeUpdate.vertexBufferContents.brushIndices,
-                            positionsArray      = treeUpdate.vertexBufferContents.positions,
-                            tangentsArray       = treeUpdate.vertexBufferContents.tangents,
-                            normalsArray        = treeUpdate.vertexBufferContents.normals,
-                            uv0Array            = treeUpdate.vertexBufferContents.uv0
+                            subMeshesArray          = treeUpdate.vertexBufferContents.subMeshes,
+                            indicesArray            = treeUpdate.vertexBufferContents.indices,
+                            positionsArray          = treeUpdate.vertexBufferContents.positions,
+                            tangentsArray           = treeUpdate.vertexBufferContents.tangents,
+                            normalsArray            = treeUpdate.vertexBufferContents.normals,
+                            uv0Array                = treeUpdate.vertexBufferContents.uv0,
+                            triangleBrushIndices    = treeUpdate.vertexBufferContents.triangleBrushIndices
                         };
                         var currentJobHandle = allocateVertexBuffersJob.Schedule(dependencies);
                         //currentJobHandle.Complete();
@@ -2183,18 +2190,18 @@ namespace Chisel.Core
                         var generateVertexBuffersJob = new FillVertexBuffersJob
                         {
                             // Read
-                            subMeshSections     = treeUpdate.vertexBufferContents.subMeshSections.AsDeferredJobArray(),               
-                            subMeshCounts       = treeUpdate.subMeshCounts.AsDeferredJobArray(),
-                            subMeshSurfaces     = treeUpdate.subMeshSurfaces.AsDeferredJobArray(),
+                            subMeshSections         = treeUpdate.vertexBufferContents.subMeshSections.AsDeferredJobArray(),               
+                            subMeshCounts           = treeUpdate.subMeshCounts.AsDeferredJobArray(),
+                            subMeshSurfaces         = treeUpdate.subMeshSurfaces.AsDeferredJobArray(),
 
                             // Read Write
-                            subMeshesArray      = treeUpdate.vertexBufferContents.subMeshes,
-                            tangentsArray       = treeUpdate.vertexBufferContents.tangents,
-                            normalsArray        = treeUpdate.vertexBufferContents.normals,
-                            uv0Array            = treeUpdate.vertexBufferContents.uv0,
-                            positionsArray      = treeUpdate.vertexBufferContents.positions,
-                            indicesArray        = treeUpdate.vertexBufferContents.indices,
-                            brushIndicesArray   = treeUpdate.vertexBufferContents.brushIndices
+                            subMeshesArray          = treeUpdate.vertexBufferContents.subMeshes,
+                            indicesArray            = treeUpdate.vertexBufferContents.indices,
+                            positionsArray          = treeUpdate.vertexBufferContents.positions,
+                            tangentsArray           = treeUpdate.vertexBufferContents.tangents,
+                            normalsArray            = treeUpdate.vertexBufferContents.normals,
+                            uv0Array                = treeUpdate.vertexBufferContents.uv0,
+                            triangleBrushIndices    = treeUpdate.vertexBufferContents.triangleBrushIndices
                         };
                         var currentJobHandle = generateVertexBuffersJob.Schedule(treeUpdate.vertexBufferContents.subMeshSections, 1, dependencies);
                         //currentJobHandle.Complete();
@@ -2291,14 +2298,9 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
-                if (beginMeshUpdates != null)
-                {
-                    Profiler.BeginSample("BeginMeshUpdates");
-                    beginMeshUpdates.Invoke();
-                    Profiler.EndSample();
-                }
 
                 Profiler.BeginSample("PerformMeshUpdates");
+                try
                 {
                     if (performMeshUpdate != null)
                     {
@@ -2307,7 +2309,8 @@ namespace Chisel.Core
                             ref var treeUpdate = ref s_TreeUpdates[t];
                             if (treeUpdate.updateCount == 0)
                                 continue;
-                            var dependencies = CombineDependencies(treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
+                            var dependencies = CombineDependencies(treeUpdate.vertexBufferContents_descriptorsJobHandle,
+                                                                   treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
                                                                    treeUpdate.vertexBufferContents_subMeshesJobHandle,
                                                                    treeUpdate.vertexBufferContents_indicesJobHandle,
                                                                    treeUpdate.vertexBufferContents_brushIndicesJobHandle,
@@ -2316,13 +2319,16 @@ namespace Chisel.Core
                                                                    treeUpdate.vertexBufferContents_normalsJobHandle,
                                                                    treeUpdate.vertexBufferContents_uv0JobHandle,
                                                                    treeUpdate.vertexBufferContents_meshDescriptionsJobHandle);
+
+
                             var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
-                            var currentJobHandle = performMeshUpdate(tree, ref treeUpdate.vertexBufferContents, dependencies);
+                            var currentJobHandle = performMeshUpdate(tree, treeUpdate.meshDataArrays, ref treeUpdate.vertexBufferContents, dependencies);
                             treeUpdate.scheduleMeshUploadsJobHandle = CombineDependencies(currentJobHandle, treeUpdate.scheduleMeshUploadsJobHandle);
+                            treeUpdate.vertexBufferContents_descriptorsJobHandle = CombineDependencies(currentJobHandle, treeUpdate.vertexBufferContents_descriptorsJobHandle);
                         }
                     }
                 }
-                Profiler.EndSample();
+                finally { Profiler.EndSample(); }
                 
 
                 #region Complete Jobs
@@ -2373,6 +2379,7 @@ namespace Chisel.Core
                                                     treeUpdate.transformationCacheJobHandle,
                                                     treeUpdate.uniqueBrushPairsJobHandle),
                                                 CombineDependencies(
+                                                    treeUpdate.vertexBufferContents_descriptorsJobHandle,
                                                     treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
                                                     treeUpdate.vertexBufferContents_subMeshesJobHandle,
                                                     treeUpdate.vertexBufferContents_indicesJobHandle,
@@ -2380,9 +2387,9 @@ namespace Chisel.Core
                                                     treeUpdate.vertexBufferContents_positionsJobHandle,
                                                     treeUpdate.vertexBufferContents_tangentsJobHandle,
                                                     treeUpdate.vertexBufferContents_normalsJobHandle,
-                                                    treeUpdate.vertexBufferContents_uv0JobHandle,
-                                                    treeUpdate.vertexBufferContents_meshDescriptionsJobHandle),
+                                                    treeUpdate.vertexBufferContents_uv0JobHandle),
                                                 CombineDependencies(
+                                                    treeUpdate.vertexBufferContents_meshDescriptionsJobHandle,
                                                     treeUpdate.scheduleMeshUploadsJobHandle,
                                                     finalJobHandle)
                                             );
@@ -2395,9 +2402,24 @@ namespace Chisel.Core
                 if (finishMeshUpdates != null)
                 {
                     Profiler.BeginSample("FinishMeshUpdates");
-                    finishMeshUpdates.Invoke();
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+                        var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+                        var usedMeshCount = finishMeshUpdates(tree);
+
+
+                        Profiler.BeginSample("Mesh.Dispose");
+                        for (int i = usedMeshCount; i < treeUpdate.meshDataArrays.Count; i++)
+                            treeUpdate.meshDataArrays[i].Dispose();
+                        treeUpdate.meshDataArrays.Clear();
+                        Profiler.EndSample();
+                    }
                     Profiler.EndSample();
                 }
+
 
                 #region Dirty all invalidated outlines
                 // TODO: Jobify this
@@ -2520,7 +2542,7 @@ namespace Chisel.Core
         #endregion
 
         #region Reset/Rebuild
-        internal static bool UpdateAllTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates, out JobHandle allTrees)
+        internal static bool UpdateAllTreeMeshes(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
@@ -2547,7 +2569,7 @@ namespace Chisel.Core
             return true;
         }
 
-        internal static bool RebuildAll(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, Action finishMeshUpdates)
+        internal static bool RebuildAll(Action beginMeshUpdates, PerformMeshUpdate performMeshUpdate, FinishMeshUpdate finishMeshUpdates)
         {
             if (!UpdateAllTreeMeshes(beginMeshUpdates, performMeshUpdate, finishMeshUpdates, out JobHandle handle))
                 return false;
