@@ -47,7 +47,6 @@ Packages overview:
 * `com.scene.handles.extensions` Custom scene handle extensions
 
 Known issues:
-* [Extrusion generator is glitchy due to problems with convex decomposition code](https://github.com/RadicalCSG/Chisel.Prototype/issues/255)
 * [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
 * There are some cases where overlapping surfaces create overlapping polygon
 
