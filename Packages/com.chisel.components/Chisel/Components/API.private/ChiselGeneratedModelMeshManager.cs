@@ -55,47 +55,19 @@ namespace Chisel.Components
                 return;
 
             var model = node as ChiselModel;
-            if (!ReferenceEquals(model, null))
-            {
-                registeredModels.Add(model);
-                componentGenerator.Register(model);
-            }
+            if (ReferenceEquals(model, null))
+                return;
+            
+            registeredModels.Add(model);
+            componentGenerator.Register(model);
         }
 
-        static void BeginMeshUpdates()
-        {
-            s_UpdatedModels.Clear();
-            ChiselGeneratedObjects.BeginMeshUpdates();
-        }
-
-        static readonly HashSet<ChiselModel> s_UpdatedModels = new HashSet<ChiselModel>();
-
-        static JobHandle PerformMeshUpdate(CSGTree tree, List<Mesh.MeshDataArray> meshDataArrays, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
-        {
-            ChiselModel model = null;
-            for (int m = 0; m < registeredModels.Count; m++)
-            {
-                if (!registeredModels[m])
-                    continue;
-
-                if (registeredModels[m].Node == tree)
-                    model = registeredModels[m];
-            }
-            if (model == null)
-                return (JobHandle)default;
-
-            if (!ChiselGeneratedObjects.IsValid(model.generated))
-            {
-                if (model.generated != null)
-                    model.generated.Destroy();
-                model.generated = ChiselGeneratedObjects.Create(model.gameObject);
-            }
-
-            s_UpdatedModels.Add(model);
-            return model.generated.UpdateMeshes(model, model.gameObject, meshDataArrays, ref vertexBufferContents, dependencies);
-        }
-
-        static int FinishMeshUpdates(CSGTree tree)
+        static int FinishMeshUpdates(CSGTree                        tree, 
+                                     ref VertexBufferContents       vertexBufferContents, 
+                                     List<Mesh.MeshDataArray>       meshDataArrays,
+                                     NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
+                                     NativeList<ChiselMeshUpdate>   debugHelperMeshes,
+                                     NativeList<ChiselMeshUpdate>   renderMeshes)
         {
             ChiselModel model = null;
             for (int m = 0; m < registeredModels.Count; m++)
@@ -109,14 +81,20 @@ namespace Chisel.Components
             if (model == null)
                 return 0;
 
-            var count = ChiselGeneratedObjects.FinishMeshUpdates(model);
+            if (!ChiselGeneratedObjects.IsValid(model.generated))
+            {
+                if (model.generated != null)
+                    model.generated.Destroy();
+                model.generated = ChiselGeneratedObjects.Create(model.gameObject);
+            }
+
+            var count = model.generated.FinishMeshUpdates(model, model.gameObject, meshDataArrays, ref vertexBufferContents,
+                                                          colliderMeshUpdates, debugHelperMeshes, renderMeshes);
             componentGenerator.Rebuild(model);
             PostUpdateModel?.Invoke(model);
             return count;
         }
         
-        static readonly Action              s_BeginMeshUpdates      = (Action)BeginMeshUpdates;
-        static readonly PerformMeshUpdate   s_PerformMeshUpdate     = (PerformMeshUpdate)PerformMeshUpdate;
         static readonly FinishMeshUpdate    s_FinishMeshUpdates     = (FinishMeshUpdate)FinishMeshUpdates;
 
         public static void UpdateModels()
@@ -126,7 +104,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush(s_BeginMeshUpdates, s_PerformMeshUpdate, s_FinishMeshUpdates))
+                if (!CSGManager.Flush(s_FinishMeshUpdates))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..

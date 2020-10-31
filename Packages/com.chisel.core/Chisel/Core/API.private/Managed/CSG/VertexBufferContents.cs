@@ -114,13 +114,241 @@ namespace Chisel.Core
 
             return (subMeshesArray.Length == 0 || indexCount == 0 || vertexCount == 0);
         }
+
+
+        public static JobHandle UpdateMeshes(NativeList<Mesh.MeshData> meshDatas, 
+                                             ref VertexBufferContents vertexBufferContents, 
+                                             NativeList<ChiselMeshUpdate> colliderMeshUpdates,
+                                             NativeList<ChiselMeshUpdate> debugHelperMeshes,
+                                             NativeList<ChiselMeshUpdate> renderMeshes,
+                                             JobHandle dependencies)
+        {
+            var assignMeshesJob = new AssignMeshesJob
+            {
+                // Read
+                meshDescriptions    = vertexBufferContents.meshDescriptions,
+                subMeshSections     = vertexBufferContents.subMeshSections,
+                meshDatas           = meshDatas,
+
+                // Write
+                meshes              = vertexBufferContents.meshes,
+                colliderMeshUpdates = colliderMeshUpdates,
+                debugHelperMeshes   = debugHelperMeshes,
+                renderMeshes        = renderMeshes,
+            };  
+            var assignMeshesJobHandle = assignMeshesJob.Schedule(dependencies);
+            dependencies = JobHandle.CombineDependencies(assignMeshesJobHandle, dependencies);
+            
+
+            // TODO: - find a way to keep the list of used physicMaterials in each particular model
+            //       - keep a list of meshes around, one for each physicMaterial
+            //       - the number of meshes is now fixed as long as no physicMaterial is added/removed
+            //       - the number of meshColliders could be the same size, just some meshColliders enabled/disabled
+            //       - our number of meshes (colliders + renderers) is now predictable
+            //
+            // PROBLEM: Still wouldn't know in advance _which_ of these meshes would actually not change at all ...
+            //          ... and don't want to change ALL of them, ALL the time. 
+            //          So the mesh count would still be an unknown until we do a Complete
+
+            var currentJobHandle = (JobHandle)assignMeshesJobHandle;
+
+            // Start jobs to copy mesh data from our generated meshes to unity meshes
+
+            Profiler.BeginSample("Renderers.ScheduleMeshCopy");
+            { 
+                var copyToMeshJob = new CopyToRenderMeshJob
+                {
+                    // Read
+                    renderMeshes        = renderMeshes,
+                    renderDescriptors   = vertexBufferContents.renderDescriptors,
+                    subMeshes           = vertexBufferContents.subMeshes,
+                    indices             = vertexBufferContents.indices,
+                    positions           = vertexBufferContents.positions,
+                    tangents            = vertexBufferContents.tangents,
+                    normals             = vertexBufferContents.normals,
+                    uv0                 = vertexBufferContents.uv0,
+                
+                    // Read/Write
+                    meshes = vertexBufferContents.meshes,
+                };
+                var copyToMeshJobHandle = copyToMeshJob.Schedule(renderMeshes, 16, dependencies);
+                currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
+            }
+
+            { 
+                var copyToMeshJob = new CopyToRenderMeshJob
+                {
+                    // Read
+                    renderMeshes        = debugHelperMeshes,
+                    renderDescriptors   = vertexBufferContents.renderDescriptors,
+                    subMeshes           = vertexBufferContents.subMeshes,
+                    indices             = vertexBufferContents.indices,
+                    positions           = vertexBufferContents.positions,
+                    tangents            = vertexBufferContents.tangents,
+                    normals             = vertexBufferContents.normals,
+                    uv0                 = vertexBufferContents.uv0,
+                    //contentsIndex       = update.contentsIndex,
+                    //meshIndex           = update.meshIndex,
+
+                    // Read/Write
+                    meshes = vertexBufferContents.meshes,
+                };
+                var copyToMeshJobHandle = copyToMeshJob.Schedule(debugHelperMeshes, 16, dependencies);
+                currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
+            }
+            Profiler.EndSample();
+
+            Profiler.BeginSample("Colliders.ScheduleMeshCopy");
+            {    
+                var copyToMeshJob = new CopyToColliderMeshJob
+                {
+                    // Read
+                    colliderMeshes      = colliderMeshUpdates,
+                    colliderDescriptors = vertexBufferContents.colliderDescriptors,
+                    subMeshes           = vertexBufferContents.subMeshes,
+                    indices             = vertexBufferContents.indices,
+                    positions           = vertexBufferContents.positions,
+
+                    // Read/Write
+                    meshes = vertexBufferContents.meshes,
+                };
+                var copyToMeshJobHandle = copyToMeshJob.Schedule(colliderMeshUpdates, 16, dependencies);
+                currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
+            }
+            Profiler.EndSample();
+
+            return currentJobHandle;
+        }
     };
+
+
+    public struct ChiselMeshUpdate
+    {
+        public int contentsIndex;
+        public int meshIndex;
+        public int objectIndex;
+    }
     
+    [BurstCompile(CompileSynchronously = true)]
+    public struct AssignMeshesJob : IJob
+    {
+        public const int kDebugHelperCount = 6;
+        public struct DebugRenderFlags { public LayerUsageFlags Item1; public LayerUsageFlags Item2; };
+        public static readonly DebugRenderFlags[] kGeneratedDebugRendererFlags = new DebugRenderFlags[kDebugHelperCount]
+        {
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.None                  , Item2 = LayerUsageFlags.Renderable },              // is explicitly set to "not visible"
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.RenderCastShadows     , Item2 = LayerUsageFlags.RenderCastShadows },       // casts Shadows and is renderered
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.CastShadows           , Item2 = LayerUsageFlags.RenderCastShadows },       // casts Shadows and is NOT renderered (shadowOnly)
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.RenderReceiveShadows  , Item2 = LayerUsageFlags.RenderReceiveShadows },    // any surface that receives shadows (must be rendered)
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.Collidable            , Item2 = LayerUsageFlags.Collidable },              // collider surfaces
+            new DebugRenderFlags{ Item1 = LayerUsageFlags.Culled                , Item2 = LayerUsageFlags.Culled }                   // all surfaces removed by the CSG algorithm
+        };
+
+        [NoAlias, ReadOnly] public NativeList<GeneratedMeshDescription> meshDescriptions;
+        [NoAlias, ReadOnly] public NativeList<SubMeshSection>           subMeshSections;
+        [NoAlias, ReadOnly] public NativeList<Mesh.MeshData>            meshDatas;
+
+        [NoAlias, WriteOnly] public NativeList<Mesh.MeshData>        meshes;
+        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>     debugHelperMeshes;
+        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>     renderMeshes;
+
+        [NoAlias] public NativeList<ChiselMeshUpdate> colliderMeshUpdates;
+
+
+        [BurstDiscard]
+        public static void InvalidQuery(LayerUsageFlags query, LayerUsageFlags mask)
+        {
+            Debug.Assert(false, $"Invalid helper query used (query: {query}, mask: {mask})");
+
+        }
+
+        public void Execute() 
+        {
+            int meshIndex = 0;
+            int colliderCount = 0;
+            if (meshDescriptions.IsCreated)
+            {
+                for (int i = 0; i < subMeshSections.Length; i++)
+                {
+                    var subMeshSection = subMeshSections[i];
+                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.None)
+                    {
+                        int helperIndex = -1;
+                        var query   = subMeshSection.meshQuery.LayerQuery;
+                        var mask    = subMeshSection.meshQuery.LayerQueryMask;
+                        for (int f = 0; f < kGeneratedDebugRendererFlags.Length; f++)
+                        {
+                            if (kGeneratedDebugRendererFlags[f].Item1 != query ||
+                                kGeneratedDebugRendererFlags[f].Item2 != mask)
+                                continue;
+
+                            helperIndex = f;
+                            break;
+                        }
+                        if (helperIndex == -1)
+                        {
+                            InvalidQuery(query, mask);
+                            continue;
+                        }
+
+                        meshes.Add(meshDatas[meshIndex]);
+                        debugHelperMeshes.Add(new ChiselMeshUpdate
+                        {
+                            contentsIndex       = i,
+                            meshIndex           = meshIndex,
+                            objectIndex         = helperIndex
+                        });
+                        meshIndex++; 
+                    } else
+                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
+                    {
+                        var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
+                        meshes.Add(meshDatas[meshIndex]);
+                        renderMeshes.Add(new ChiselMeshUpdate
+                        {
+                            contentsIndex       = i,
+                            meshIndex           = meshIndex,
+                            objectIndex         = renderIndex
+                        });
+                        meshIndex++;
+                    } else
+                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
+                        colliderCount++;
+                }
+            }
+
+            if (colliderMeshUpdates.Capacity < colliderCount)
+                colliderMeshUpdates.Capacity = colliderCount;
+            var colliderIndex = 0;
+            if (meshDescriptions.IsCreated)
+            {
+                for (int i = 0; i < subMeshSections.Length; i++)
+                {
+                    var subMeshSection = subMeshSections[i];
+                    if (subMeshSection.meshQuery.LayerParameterIndex != LayerParameterIndex.PhysicsMaterial)
+                        continue;
+
+                    var surfaceParameter = meshDescriptions[subMeshSection.startIndex].surfaceParameter;
+
+                    meshes.Add(meshDatas[meshIndex]);
+                    colliderMeshUpdates.Add(new ChiselMeshUpdate
+                    {
+                        contentsIndex   = colliderIndex,
+                        meshIndex       = meshIndex,
+                        objectIndex     = surfaceParameter
+                    }); 
+                    colliderIndex++;
+                    meshIndex++;
+                }
+            }
+        }
+    }
 
     [BurstCompile(CompileSynchronously = true)]
-    public struct CopyToRenderMeshJob : IJob
+    public struct CopyToRenderMeshJob : IJobParallelFor
     {
-        //Read
+        // Read
+        [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             renderMeshes;
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
         [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
         [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
@@ -128,16 +356,17 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeListArray<float4>                  tangents;
         [NoAlias, ReadOnly] public NativeListArray<float3>                  normals;
         [NoAlias, ReadOnly] public NativeListArray<float2>                  uv0;
-        [NoAlias, ReadOnly] public int contentsIndex;
-        [NoAlias, ReadOnly] public int meshIndex;
 
         // Read (get meshData)/Write (write to meshData)
         [NativeDisableContainerSafetyRestriction]
-        [NoAlias] public NativeArray<Mesh.MeshData> meshes;
+        [NoAlias] public NativeList<Mesh.MeshData> meshes;
 
-        public void Execute()
+        public void Execute(int renderIndex)
         {
-            var meshData = meshes[meshIndex];
+            var update          = renderMeshes[renderIndex];
+            var contentsIndex   = update.contentsIndex;
+            var meshIndex       = update.meshIndex;
+            var meshData        = meshes[meshIndex];
 
             if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
                 !this.positions.IsIndexCreated(contentsIndex) ||
@@ -197,9 +426,10 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    public struct CopyToColliderMeshJob : IJob
+    public struct CopyToColliderMeshJob : IJobParallelFor
     {
         // Read
+        [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             colliderMeshes;
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
         [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
         [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
@@ -209,11 +439,14 @@ namespace Chisel.Core
 
         // Read (get meshData)/Write (write to meshData)
         [NativeDisableContainerSafetyRestriction]
-        [NoAlias] public NativeArray<Mesh.MeshData> meshes;
-
-        public void Execute()
+        [NoAlias] public NativeList<Mesh.MeshData> meshes;
+        
+        public void Execute(int colliderIndex)
         {
-            var meshData = meshes[meshIndex];
+            var update          = colliderMeshes[colliderIndex];
+            var contentsIndex   = update.contentsIndex;
+            var meshIndex       = update.meshIndex;
+            var meshData        = meshes[meshIndex];
 
             if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
                 !this.positions.IsIndexCreated(contentsIndex) ||

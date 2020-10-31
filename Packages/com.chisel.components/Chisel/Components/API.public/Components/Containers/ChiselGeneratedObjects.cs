@@ -8,8 +8,11 @@ using System.Transactions;
 using UnityEngine.Profiling;
 using Unity.Collections;
 using Unity.Jobs;
+using Unity.Burst;
 using UnityEditor;
 using System.Runtime.InteropServices;
+using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Components
 {        
@@ -26,14 +29,6 @@ namespace Chisel.Components
         ShowDiscarded   = 64,
     }
     
-    public struct ChiselMeshUpdate
-    {
-        public int                  contentsIndex;
-        public int                  meshIndex;
-        public int                  objectIndex;
-        public VertexBufferContents contents; 
-    }
-
     //
     // 1. figure out what you where trying to do here, and remove need for the dictionary
     // 2. then do the same for the rendering equiv.
@@ -71,15 +66,6 @@ namespace Chisel.Components
             "‹[debug-ReceiveShadows]›",                             // LayerUsageFlags.RenderableReceiveShadows
             "‹[debug-Collidable]›",                                 // LayerUsageFlags.Collidable
             "‹[debug-Culled]›"                                      // LayerUsageFlags.Culled
-        };
-        public static readonly (LayerUsageFlags, LayerUsageFlags)[] kGeneratedDebugRendererFlags = new (LayerUsageFlags, LayerUsageFlags)[kDebugHelperCount]
-        {
-            ( LayerUsageFlags.None                  , LayerUsageFlags.Renderable),              // is explicitly set to "not visible"
-            ( LayerUsageFlags.RenderCastShadows     , LayerUsageFlags.RenderCastShadows),       // casts Shadows and is renderered
-            ( LayerUsageFlags.CastShadows           , LayerUsageFlags.RenderCastShadows),       // casts Shadows and is NOT renderered (shadowOnly)
-            ( LayerUsageFlags.RenderReceiveShadows  , LayerUsageFlags.RenderReceiveShadows),    // any surface that receives shadows (must be rendered)
-            ( LayerUsageFlags.Collidable            , LayerUsageFlags.Collidable),              // collider surfaces
-            ( LayerUsageFlags.Culled                , LayerUsageFlags.Culled)                   // all surfaces removed by the CSG algorithm
         };
         public static readonly DrawModeFlags[] kGeneratedDebugShowFlags = new DrawModeFlags[kDebugHelperCount]
         {
@@ -156,7 +142,7 @@ namespace Chisel.Components
             var debugMeshRenderers = new MeshRenderer[kDebugHelperCount];
             for (int i = 0; i < kDebugHelperCount; i++)
             {
-                debugHelpers[i] = ChiselRenderObjects.Create(kGeneratedDebugRendererNames[i], containerTransform, gameObjectState, kGeneratedDebugRendererFlags[i].Item1, debugHelperRenderer: true);
+                debugHelpers[i] = ChiselRenderObjects.Create(kGeneratedDebugRendererNames[i], containerTransform, gameObjectState, AssignMeshesJob.kGeneratedDebugRendererFlags[i].Item1, debugHelperRenderer: true);
                 debugMeshRenderers[i] = debugHelpers[0].meshRenderer;
                 debugHelpers[i].invalid = false;
             }
@@ -379,50 +365,27 @@ namespace Chisel.Components
             }
         }
 
-        static bool[] renderMeshUpdated = null;
-        static bool[] helperMeshUpdated = null;
+        
+        readonly Dictionary<ChiselModel, GameObjectState>   gameObjectStates        = new Dictionary<ChiselModel, GameObjectState>();
+        readonly List<ChiselColliderObjectUpdate>           colliderObjectUpdates   = new List<ChiselColliderObjectUpdate>();
+        readonly List<ChiselMeshUpdate>                     renderMeshUpdates       = new List<ChiselMeshUpdate>();
+        readonly List<ChiselRenderObjectUpdate>             renderObjectUpdates     = new List<ChiselRenderObjectUpdate>();
+        readonly List<ChiselColliderObjects>                colliderObjects         = new List<ChiselColliderObjects>();
+        readonly List<Mesh>                                 foundMeshes             = new List<Mesh>();
 
-        class ModelResults
-        {
-            public readonly List<Mesh> foundMeshes = new List<Mesh>();
-        }
+        // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
-        static readonly Dictionary<ChiselModel, ModelResults> s_ModelResults = new Dictionary<ChiselModel, ModelResults>();
-
-        readonly Dictionary<ChiselModel, GameObjectState>   gameObjectStates       = new Dictionary<ChiselModel, GameObjectState>();
-        readonly List<ChiselMeshUpdate>                     colliderMeshUpdates    = new List<ChiselMeshUpdate>();
-        readonly List<ChiselColliderObjectUpdate>           colliderObjectUpdates  = new List<ChiselColliderObjectUpdate>();
-        readonly List<ChiselMeshUpdate>                     renderMeshUpdates      = new List<ChiselMeshUpdate>();
-        readonly List<ChiselRenderObjectUpdate>             renderObjectUpdates    = new List<ChiselRenderObjectUpdate>();
-        readonly List<ChiselColliderObjects>                colliderObjects        = new List<ChiselColliderObjects>();
-
-        readonly List<ChiselMeshUpdate>    debugHelperMeshes   = new List<ChiselMeshUpdate>();
-        readonly List<ChiselMeshUpdate>    renderMeshes        = new List<ChiselMeshUpdate>();
-
-        int                 colliderCount       = 0;
-
-        public static void BeginMeshUpdates()
-        {
-            s_ModelResults.Clear();
-        }
-
-        public JobHandle UpdateMeshes(ChiselModel model, GameObject parentGameObject, List<Mesh.MeshDataArray> meshDataArrays, ref VertexBufferContents vertexBufferContents, JobHandle dependencies)
+        public int FinishMeshUpdates(ChiselModel model, GameObject parentGameObject, List<Mesh.MeshDataArray> meshDataArrays, ref VertexBufferContents vertexBufferContents, 
+                                     NativeList<ChiselMeshUpdate> colliderMeshUpdates,
+                                     NativeList<ChiselMeshUpdate> debugHelperMeshes,
+                                     NativeList<ChiselMeshUpdate> renderMeshes)
         {
             gameObjectStates.Clear();
-            colliderMeshUpdates.Clear();
             colliderObjectUpdates.Clear();
             renderMeshUpdates.Clear();
             renderObjectUpdates.Clear();
             colliderObjects.Clear();
-            debugHelperMeshes.Clear();
-            renderMeshes.Clear();
-            colliderCount = 0;
-
-            if (!s_ModelResults.TryGetValue(model, out var modelResults))
-            {
-                s_ModelResults[model] = modelResults = new ModelResults();
-            }
-            int meshIndex = 0;
+            foundMeshes.Clear();
 
             GameObjectState gameObjectState;
             { 
@@ -460,39 +423,7 @@ namespace Chisel.Components
                 }
                 Profiler.EndSample();
                 gameObjectStates.Add(model, gameObjectState);
-
-                Profiler.BeginSample("meshUpdated");
-                if (helperMeshUpdated == null || helperMeshUpdated.Length < debugHelpers.Length)
-                    helperMeshUpdated = new bool[debugHelpers.Length];
-                Array.Clear(helperMeshUpdated, 0, helperMeshUpdated.Length);
-                if (renderMeshUpdated == null || renderMeshUpdated.Length < renderables.Length)
-                    renderMeshUpdated = new bool[renderables.Length];
-                Array.Clear(renderMeshUpdated, 0, renderMeshUpdated.Length);
-                Profiler.EndSample();
             }
-
-            dependencies.Complete(); // because of dependency on vertexBufferContents 
-                                     //                 => could potentially be jobified
-                                     //            dependency on count of sections in vertexBufferContents which are colliders 
-                                     //                 => theoretical maximum could potentially be determined in advance (see below)
-                                     //            dependency on Mesh.AllocateWritableMeshData(number_of_meshes_to_create) 
-                                     //                 => CAN NOT currently be worked around b/c we cannot know in advance which meshes would get modified
-                                     //                     (see below)
-                                     //                     => WRONG, can allocate MeshDataArrays of size 1, and dispose those that we don't use at all!
-
-
-
-            // TODO: - find a way to keep the list of used physicMaterials in each particular model
-            //       - keep a list of meshes around, one for each physicMaterial
-            //       - the number of meshes is now fixed as long as no physicMaterial is added/removed
-            //       - the number of meshColliders could be the same size, just some meshColliders enabled/disabled
-            //       - our number of meshes (colliders + renderers) is now predictable
-            //
-            // PROBLEM: Still wouldn't know in advance _which_ of these meshes would actually not change at all ...
-            //          ... and don't want to change ALL of them, ALL the time. 
-            //          So the mesh count would still be an unknown until we do a Complete
-
-            var currentJobHandle = (JobHandle)default;
 
             Debug.Assert(LayerParameterIndex.LayerParameter1 < LayerParameterIndex.LayerParameter2);
             Debug.Assert((LayerParameterIndex.LayerParameter1 + 1) == LayerParameterIndex.LayerParameter2);
@@ -502,167 +433,33 @@ namespace Chisel.Components
                          vertexBufferContents.meshDescriptions[0].meshQuery.LayerParameterIndex >= LayerParameterIndex.None);
 
 
-            // TODO: put this stuff in job, move out of here
-            Profiler.BeginSample("Init.RenderUpdates");
-            if (vertexBufferContents.meshDescriptions.IsCreated)
-            {
-                for (int i = 0; i < vertexBufferContents.subMeshSections.Length; i++)
-                {
-                    var subMeshSection = vertexBufferContents.subMeshSections[i];
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.None)
-                    {
-                        int helperIndex = Array.IndexOf(kGeneratedDebugRendererFlags, (subMeshSection.meshQuery.LayerQuery, subMeshSection.meshQuery.LayerQueryMask));
-                        if (helperIndex == -1)
-                        {
-                            Debug.Assert(false, $"Invalid helper query used (query: {subMeshSection.meshQuery.LayerQuery}, mask: {subMeshSection.meshQuery.LayerQueryMask})");
-                            continue;
-                        }
-
-                        // Group by all meshDescriptions with same query
-                        if (debugHelpers[helperIndex].Valid)
-                        {
-                            if (!vertexBufferContents.IsEmpty(i))
-                            {
-                                Profiler.BeginSample("Helper ChiselMeshUpdate");
-                                var meshDataArray = meshDataArrays[meshIndex];
-                                vertexBufferContents.meshes.Add(meshDataArray[0]);
-                                var renderMeshUpdate = new ChiselMeshUpdate
-                                {
-                                    contentsIndex       = i,
-                                    meshIndex           = meshIndex,
-                                    objectIndex         = helperIndex,
-                                    contents            = vertexBufferContents
-                                };
-                                meshIndex++;
-                                renderMeshUpdates.Add(renderMeshUpdate);
-                                debugHelperMeshes.Add(renderMeshUpdate);
-                                Profiler.EndSample();
-                            }
-                            helperMeshUpdated[helperIndex] = true;
-                        }
-                    } else
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
-                    {
-                        var renderIndex = (int)(subMeshSection.meshQuery.LayerQuery & LayerUsageFlags.RenderReceiveCastShadows);
-                        if (!vertexBufferContents.IsEmpty(i))
-                        {
-                            Profiler.BeginSample("Render ChiselMeshUpdate");
-                            var meshDataArray = meshDataArrays[meshIndex];
-                            vertexBufferContents.meshes.Add(meshDataArray[0]);
-                            var renderMeshUpdate = new ChiselMeshUpdate
-                            {
-                                contentsIndex       = i,
-                                meshIndex           = meshIndex,
-                                objectIndex         = renderIndex,
-                                contents            = vertexBufferContents
-                            };
-                            meshIndex++;
-                            renderMeshUpdates.Add(renderMeshUpdate);
-                            renderMeshes.Add(renderMeshUpdate);
-                            Profiler.EndSample();
-                        }
-                        renderMeshUpdated[renderIndex] = true;
-                    } else
-                    if (subMeshSection.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
-                        colliderCount++;
-                }
-            }
-            Profiler.EndSample();
-
-
             Profiler.BeginSample("sColliderObjects.Clear");
-            if (colliderMeshUpdates.Capacity < colliderCount)
-                colliderMeshUpdates.Capacity = colliderCount;
+            var colliderCount = colliderMeshUpdates.Length;
             if (colliderObjects.Capacity < colliderCount)
                 colliderObjects.Capacity = colliderCount;
             for (int i = 0; i < colliderCount; i++)
                 colliderObjects.Add(null);
             Profiler.EndSample();
 
-            Profiler.BeginSample("Update.Colliders");
-            if (vertexBufferContents.meshDescriptions.IsCreated)
+            for (int i = 0; i < renderMeshes.Length; i++)
+                renderMeshUpdates.Add(renderMeshes[i]);
+
+            for (int i = 0; i < debugHelperMeshes.Length; i++)
+                renderMeshUpdates.Add(debugHelperMeshes[i]);
+            renderMeshUpdates.Sort(delegate (ChiselMeshUpdate x, ChiselMeshUpdate y)
             {
-                for (int i = 0; i < vertexBufferContents.subMeshSections.Length; i++)
-                {
-                    var subMeshSection = vertexBufferContents.subMeshSections[i];
-                    if (subMeshSection.meshQuery.LayerParameterIndex != LayerParameterIndex.PhysicsMaterial)
-                        continue;
+                return x.contentsIndex - y.contentsIndex;
+            });
 
-                    var surfaceParameter = vertexBufferContents.meshDescriptions[subMeshSection.startIndex].surfaceParameter;
-
-                    Profiler.BeginSample("Collider ChiselMeshUpdate");
-                    var meshDataArray = meshDataArrays[meshIndex];
-                    var colliderIndex = colliderMeshUpdates.Count;
-                    vertexBufferContents.meshes.Add(meshDataArray[0]);
-                    var chiselColliderMeshUpdate = new ChiselMeshUpdate
-                    {
-                        contentsIndex   = colliderIndex,
-                        meshIndex       = meshIndex,
-                        objectIndex     = surfaceParameter,
-                        contents        = vertexBufferContents
-                    };
-                    meshIndex++;
-                    colliderMeshUpdates.Add(chiselColliderMeshUpdate);
-                    Profiler.EndSample();
-                }
-            }
-            Profiler.EndSample();
-            
-            // Start jobs to copy mesh data from our generated meshes to unity meshes
-
-            Profiler.BeginSample("Renderers.ScheduleMeshCopy");
-            for (int u = 0; u < renderMeshUpdates.Count; u++)
-            {
-                var update = renderMeshUpdates[u];
-                var copyToMeshJob = new CopyToRenderMeshJob
-                {
-                    meshes              = update.contents.meshes.AsDeferredJobArray(),
-                    renderDescriptors   = update.contents.renderDescriptors,
-                    subMeshes           = update.contents.subMeshes,
-                    indices             = update.contents.indices,
-                    positions           = update.contents.positions,
-                    tangents            = update.contents.tangents,
-                    normals             = update.contents.normals,
-                    uv0                 = update.contents.uv0,
-                    contentsIndex       = update.contentsIndex,
-                    meshIndex           = update.meshIndex
-                };
-                var copyToMeshJobHandle = copyToMeshJob.Schedule(dependencies);
-                currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
-            }
-            Profiler.EndSample();
-
-            Profiler.BeginSample("Colliders.ScheduleMeshCopy");
-            for (int i = 0; i < colliderMeshUpdates.Count; i++)
-            {
-                var update = colliderMeshUpdates[i];             
-                var copyToMeshJob = new CopyToColliderMeshJob
-                {
-                    meshes              = update.contents.meshes.AsDeferredJobArray(),
-                    colliderDescriptors = update.contents.colliderDescriptors,
-                    subMeshes           = update.contents.subMeshes,
-                    indices             = update.contents.indices,
-                    positions           = update.contents.positions,
-                    contentsIndex       = update.contentsIndex,
-                    meshIndex           = update.meshIndex
-                };
-                var copyToMeshJobHandle = copyToMeshJob.Schedule(dependencies);
-                currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
-            }
-            Profiler.EndSample();
-
-            
-            // Start the jobs on the worker threads
-            JobHandle.ScheduleBatchedJobs();
 
 
             // Now do all kinds of book-keeping code that we might as well do while our jobs are running on other threads
             Profiler.BeginSample("new ChiselRenderObjectUpdate");
-            for (int i = 0; i < debugHelperMeshes.Count; i++)
+            for (int i = 0; i < debugHelperMeshes.Length; i++)
             {
                 var debugHelperMeshUpdate   = debugHelperMeshes[i];
                 var instance                = debugHelpers[debugHelperMeshUpdate.objectIndex];
-                modelResults.foundMeshes.Add(instance.sharedMesh);
+                foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
                     meshIndex           = debugHelperMeshUpdate.meshIndex,
@@ -675,11 +472,11 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("new ChiselRenderObjectUpdate");
-            for (int i = 0; i < renderMeshes.Count; i++)
+            for (int i = 0; i < renderMeshes.Length; i++)
             {
                 var renderMeshUpdate    = renderMeshes[i];
                 var instance            = renderables[renderMeshUpdate.objectIndex];
-                modelResults.foundMeshes.Add(instance.sharedMesh);
+                foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
                     meshIndex           = renderMeshUpdate.meshIndex,
@@ -692,7 +489,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("new ChiselPhysicsObjectUpdate");
-            for (int i = 0; i < colliderMeshUpdates.Count; i++)
+            for (int i = 0; i < colliderMeshUpdates.Length; i++)
             {
                 var colliderMeshUpdate  = colliderMeshUpdates[i];
 
@@ -718,7 +515,7 @@ namespace Chisel.Components
                 Profiler.EndSample();
 
                 var instance            = colliderObjects[colliderIndex];
-                modelResults.foundMeshes.Add(instance.sharedMesh);
+                foundMeshes.Add(instance.sharedMesh);
                 colliderObjectUpdates.Add(new ChiselColliderObjectUpdate
                 {
                     meshIndex           = colliderMeshUpdate.meshIndex,
@@ -728,32 +525,9 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("Colliders.UpdateMaterials");
-            ChiselRenderObjects.UpdateMaterials(renderMeshUpdates, renderObjectUpdates);
+            ChiselRenderObjects.UpdateMaterials(renderMeshUpdates, renderObjectUpdates, ref vertexBufferContents);
             Profiler.EndSample();
 
-            Profiler.BeginSample("renderables.Clear");
-            for (int renderIndex = 0; renderIndex < renderables.Length; renderIndex++)
-            {
-                if (renderMeshUpdated[renderIndex])
-                    continue;
-                var renderable = renderables[renderIndex];
-                if (!renderable.Valid)
-                    continue;
-                renderable.Clear(model, gameObjectState);
-            }
-            Profiler.EndSample();
-
-            Profiler.BeginSample("debugHelpers.Clear");
-            for (int helperIndex = 0; helperIndex < debugHelpers.Length; helperIndex++)
-            {
-                if (helperMeshUpdated[helperIndex])
-                    continue;
-                var renderable = debugHelpers[helperIndex];
-                if (!debugHelpers[helperIndex].Valid)
-                    continue;
-                renderable.Clear(model, gameObjectState);
-            }
-            Profiler.EndSample();
 
             Profiler.BeginSample("CleanUp.Colliders");
             for (int j = 0; j < colliders.Length; j++)
@@ -769,69 +543,53 @@ namespace Chisel.Components
             for (int i = 0; i < colliderCount; i++)
                 colliders[i] = colliderObjects[i];
             Profiler.EndSample();
-
-            return currentJobHandle;
-        }
-
-        // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
-
-        public static int FinishMeshUpdates(ChiselModel model)
-        {
-            var modelResults    = s_ModelResults[model];
-            var foundMeshes     = modelResults.foundMeshes;
-
-            var generatedObject = model.generated;
             
-            for (int i = 0; i < generatedObject.renderObjectUpdates.Count; i++)
+            for (int i = 0; i < this.renderObjectUpdates.Count; i++)
             {
-                var update = generatedObject.renderObjectUpdates[i];
+                var update = this.renderObjectUpdates[i];
                 var meshIndex = update.meshIndex;
                 if (update.meshDataArray.Length > 0)
                     Mesh.ApplyAndDisposeWritableMeshData(update.meshDataArray,
                                                             foundMeshes[meshIndex], 
                                                             UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
                 update.meshDataArray = default;
-                generatedObject.renderObjectUpdates[i] = update;
+                this.renderObjectUpdates[i] = update;
             } 
-            for (int i = 0; i < generatedObject.colliderObjectUpdates.Count; i++)
+            for (int i = 0; i < this.colliderObjectUpdates.Count; i++)
             {
-                var update = generatedObject.colliderObjectUpdates[i];
+                var update = this.colliderObjectUpdates[i];
                 var meshIndex = update.meshIndex;
                 if (update.meshDataArray.Length > 0)
                     Mesh.ApplyAndDisposeWritableMeshData(update.meshDataArray,
                                                             foundMeshes[meshIndex],
                                                             UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
                 update.meshDataArray = default;
-                generatedObject.colliderObjectUpdates[i] = update;
+                this.colliderObjectUpdates[i] = update;
             }
 
 
             // TODO: see if we can move this to the end of UpdateMeshes
 
             Profiler.BeginSample("Renderers.Update");
-            ChiselRenderObjects.UpdateSettings(generatedObject.renderMeshUpdates, generatedObject.renderObjectUpdates, generatedObject.gameObjectStates);
+            ChiselRenderObjects.UpdateSettings(this.renderMeshUpdates, this.renderObjectUpdates, this.gameObjectStates, ref vertexBufferContents);
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateProperties");
-            ChiselRenderObjects.UpdateProperties(model, generatedObject.meshRenderers);
+            ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateColliders");
-            ChiselColliderObjects.UpdateProperties(model, generatedObject.colliders);
+            ChiselColliderObjects.UpdateProperties(model, this.colliders);
             Profiler.EndSample();
-            generatedObject.needVisibilityMeshUpdate = true;
+            this.needVisibilityMeshUpdate = true;
 
-            generatedObject.gameObjectStates.Clear();
-            generatedObject.colliderMeshUpdates.Clear();
-            generatedObject.debugHelperMeshes.Clear();
-            generatedObject.renderMeshes.Clear();
-            generatedObject.renderMeshUpdates.Clear();
-            generatedObject.renderObjectUpdates.Clear();
-            generatedObject.colliderObjects.Clear();
-            generatedObject.colliderCount = 0;
-
-            var foundMeshCount = modelResults.foundMeshes.Count;
-            modelResults.foundMeshes.Clear();
+            this.gameObjectStates.Clear();
+            this.renderMeshUpdates.Clear();
+            this.renderObjectUpdates.Clear();
+            this.colliderObjects.Clear();
+            
+            var foundMeshCount = foundMeshes.Count;
+            foundMeshes.Clear();
             return foundMeshCount;
         }
 

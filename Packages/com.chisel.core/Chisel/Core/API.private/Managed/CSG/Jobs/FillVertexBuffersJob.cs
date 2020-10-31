@@ -323,7 +323,7 @@ namespace Chisel.Core
             if (layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
             {
                 var subMeshCount    = subMeshCounts[startIndex];
-                var meshIndex		= subMeshCount.meshQueryIndex;
+                //var meshIndex		= subMeshCount.meshQueryIndex;
                 var subMeshIndex	= subMeshCount.subMeshQueryIndex;
 
                 var surfacesOffset  = subMeshCount.surfacesOffset;
@@ -652,17 +652,12 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct SortSurfacesJob : IJob
     {
-        const int kMaxPhysicsVertexCount = 64000;
-
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SectionData>       sections;
+        [NativeMatchesParallelForLength]
+        [NoAlias, ReadOnly] public NativeArray<SectionData> sections;
 
         // Read Write (Sort)
-        [NoAlias] public NativeArray<SubMeshSurface>              subMeshSurfaces;
-        [NoAlias] public NativeList<SubMeshCounts>                subMeshCounts;
-
-        // Write
-        [NoAlias, WriteOnly] public NativeList<SubMeshSection>    subMeshSections;
+        [NoAlias] public NativeArray<SubMeshSurface>        subMeshSurfaces;
             
         struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
         {
@@ -672,48 +667,58 @@ namespace Chisel.Core
             }
         }
         
-        struct SubMeshCountsComparer : IComparer<SubMeshCounts>
-        {
-            public int Compare(SubMeshCounts x, SubMeshCounts y)
-            {
-                if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
-                if (x.meshQuery.LayerQuery != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
-                if (x.surfaceParameter != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
-                if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
-                return 0;
-            }
-        }
-
         static readonly SubMeshSurfaceComparer  subMeshSurfaceComparer  = new SubMeshSurfaceComparer();
-        static readonly SubMeshCountsComparer   subMeshCountsComparer   = new SubMeshCountsComparer();
 
 
         public void Execute()
         {
-            for (int t = 0, meshIndex = 0, surfacesOffset = 0; t < sections.Length; t++)
+            for (int t = 0; t < sections.Length; t++)
             {
                 var section = sections[t];
                 if (section.surfacesCount == 0)
-                    continue;
+                    return;
                 var slice = subMeshSurfaces.Slice(section.surfacesOffset, section.surfacesCount);
                 slice.Sort(subMeshSurfaceComparer);
+            }
+        }
+    }
+    
+    
+    [BurstCompile(CompileSynchronously = true)]
+    struct SortSurfacesParallelJob : IJob
+    {
+        const int kMaxPhysicsVertexCount = 64000;
 
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<SectionData>     sections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>  subMeshSurfaces;
+
+        // Write
+        [NoAlias, WriteOnly] public NativeList<SubMeshCounts>   subMeshCounts;
+        
+        public void Execute()
+        {
+            for (int t = 0; t < sections.Length; t++)
+            {
+                var section = sections[t];
+                if (section.surfacesCount == 0)
+                    return;
 
                 var meshQuery       = section.meshQuery;
-                var querySurfaces   = subMeshSurfaces.Slice(section.surfacesOffset, section.surfacesCount);
+                var queryOffset     = section.surfacesOffset;
+                var queryCount      = section.surfacesCount;
                 var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
-                var currentSubMesh = new SubMeshCounts
+                var currentSubMesh  = new SubMeshCounts
                 {
-                    meshQueryIndex      = meshIndex,
+                    meshQueryIndex      = t,
                     subMeshQueryIndex   = 0,
                     meshQuery           = meshQuery,
-                    surfaceParameter    = querySurfaces[0].surfaceParameter,
-                    surfacesOffset      = surfacesOffset
+                    surfaceParameter    = subMeshSurfaces[queryOffset].surfaceParameter
                 };
-                for (int b = 0; b < querySurfaces.Length; b++)
+                for (int b = 0; b < queryCount; b++)
                 {
-                    var subMeshSurface              = querySurfaces[b];
+                    var subMeshSurface              = subMeshSurfaces[queryOffset + b];
                     var surfaceParameter            = subMeshSurface.surfaceParameter;
                     ref var brushRenderBufferRef    = ref subMeshSurface.brushRenderBuffer.Value;
                     ref var brushSurfaceBuffer      = ref brushRenderBufferRef.surfaces[subMeshSurface.surfaceIndex];
@@ -734,7 +739,6 @@ namespace Chisel.Core
                         currentSubMesh.geometryHashValue    = 0;
                         currentSubMesh.indexCount           = 0;
                         currentSubMesh.vertexCount          = 0;
-                        currentSubMesh.surfacesOffset       += currentSubMesh.surfacesCount;
                         currentSubMesh.surfacesCount        = 0;
                     } 
 
@@ -747,12 +751,45 @@ namespace Chisel.Core
                 // Store the last subMeshCount
                 if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
                     subMeshCounts.AddNoResize(currentSubMesh);
-                surfacesOffset = currentSubMesh.surfacesOffset + currentSubMesh.surfacesCount;
-                meshIndex++;
             }
+        }
+    }
 
+    [BurstCompile(CompileSynchronously = true)]
+    struct SortSurfacesGatherJob : IJob
+    {
+        // Read Write (Sort)
+        [NoAlias] public NativeList<SubMeshCounts>                subMeshCounts;
+
+        // Write
+        [NoAlias, WriteOnly] public NativeList<SubMeshSection>    subMeshSections;
+            
+        struct SubMeshCountsComparer : IComparer<SubMeshCounts>
+        {
+            public int Compare(SubMeshCounts x, SubMeshCounts y)
+            {
+                if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
+                if (x.meshQuery.LayerQuery != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
+                if (x.surfaceParameter != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
+                if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
+                return 0;
+            }
+        }
+
+        static readonly SubMeshCountsComparer   subMeshCountsComparer   = new SubMeshCountsComparer();
+
+
+        public void Execute()
+        {
             if (subMeshCounts.Length == 0)
                 return;
+
+            for (int i = 1; i < subMeshCounts.Length; i++)
+            {
+                var currCount = subMeshCounts[i];
+                currCount.surfacesOffset = subMeshCounts[i - 1].surfacesOffset + subMeshCounts[i - 1].surfacesCount;
+                subMeshCounts[i] = currCount;
+            }
 
             // Sort all meshDescriptions so that meshes that can be merged are next to each other
             subMeshCounts.Sort(subMeshCountsComparer);

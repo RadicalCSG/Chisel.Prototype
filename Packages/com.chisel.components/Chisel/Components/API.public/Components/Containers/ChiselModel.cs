@@ -258,7 +258,6 @@ namespace Chisel.Components
         }
 
         public ChiselModel() : base() { }
-        protected override void OnDisable() { base.OnDisable(); }
 
 
         internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }

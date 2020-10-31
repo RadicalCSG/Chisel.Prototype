@@ -294,7 +294,7 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-        public static void UpdateMaterials(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates)
+        public static void UpdateMaterials(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, ref VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("SetTriangleBrushes");
             for (int u = 0; u < objectUpdates.Count; u++)
@@ -302,7 +302,7 @@ namespace Chisel.Components
                 var meshUpdate          = meshUpdates[u];
                 var objectUpdate        = objectUpdates[u];
                 var instance            = objectUpdate.instance;
-                var brushIndicesArray   = meshUpdate.contents.triangleBrushIndices[meshUpdate.contentsIndex].AsArray();
+                var brushIndicesArray   = vertexBufferContents.triangleBrushIndices[meshUpdate.contentsIndex].AsArray();
                 if (instance.triangleBrushes.Length < brushIndicesArray.Length)
                     instance.triangleBrushes = new int[brushIndicesArray.Length];
                 NativeArray<int>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
@@ -317,8 +317,8 @@ namespace Chisel.Components
                 var instance            = objectUpdate.instance;
                 var contentsIndex       = meshUpdate.contentsIndex;
                 var materialOverride    = objectUpdate.materialOverride;
-                var startIndex          = meshUpdate.contents.subMeshSections[contentsIndex].startIndex;
-                var endIndex            = meshUpdate.contents.subMeshSections[contentsIndex].endIndex;
+                var startIndex          = vertexBufferContents.subMeshSections[contentsIndex].startIndex;
+                var endIndex            = vertexBufferContents.subMeshSections[contentsIndex].endIndex;
                 var desiredCapacity = endIndex - startIndex;
                 if (instance.renderMaterials == null || instance.renderMaterials.Length != desiredCapacity)
                     instance.renderMaterials = new Material[desiredCapacity];
@@ -330,7 +330,7 @@ namespace Chisel.Components
                 {
                     for (int i = 0; i < desiredCapacity; i++)
                     {
-                        var meshDescription = meshUpdate.contents.meshDescriptions[startIndex + i];
+                        var meshDescription = vertexBufferContents.meshDescriptions[startIndex + i];
                         var renderMaterial  = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                         instance.renderMaterials[i] = renderMaterial;
@@ -342,7 +342,7 @@ namespace Chisel.Components
         }
 
 
-        public static void UpdateSettings(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, Dictionary<ChiselModel, GameObjectState> gameObjectStates)
+        public static void UpdateSettings(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, Dictionary<ChiselModel, GameObjectState> gameObjectStates, ref VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("UpdateSettings");
             for (int u = 0; u < objectUpdates.Count; u++)
@@ -366,7 +366,7 @@ namespace Chisel.Components
                     objectUpdate.meshIsModified = true;
                     objectUpdates[u] = objectUpdate;
                 }
-                var expectedEnabled = meshUpdate.contents.positions[contentsIndex].Length > 0;
+                var expectedEnabled = vertexBufferContents.positions[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
