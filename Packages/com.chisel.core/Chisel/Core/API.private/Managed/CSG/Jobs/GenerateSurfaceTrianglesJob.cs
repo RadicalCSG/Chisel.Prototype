@@ -36,10 +36,8 @@ namespace Chisel.Core
         [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceVertices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceNormals;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float4>       surfaceTangents;
-        [NativeDisableContainerSafetyRestriction] NativeArray<float2>       surfaceUV0;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceColliderVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<RenderVertex> surfaceRenderVertices;
         [NativeDisableContainerSafetyRestriction] NativeArray<int>          indexRemap;
 
         [NativeDisableContainerSafetyRestriction] HashedVertices            brushVertices;
@@ -274,14 +272,16 @@ namespace Chisel.Core
                     continue;
 
                 var surfaceIndicesCount = surfaceIndexList.Length;
-                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceVertices, brushVertices.Length);
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceColliderVertices, brushVertices.Length);
+                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceRenderVertices, brushVertices.Length);                
                 NativeCollectionHelpers.EnsureMinimumSizeAndClear(ref indexRemap, brushVertices.Length);
 
 
+                if (interiorCategory == CategoryIndex.ValidReverseAligned || interiorCategory == CategoryIndex.ReverseAligned)
+                    normal = -normal;
+
                 // Only use the vertices that we've found in the indices
                 var surfaceVerticesCount = 0;
-                //var surfaceVertices = stackalloc float3[brushVertices.Length];
-                //var indexRemap = stackalloc int[brushVertices.Length];
                 for (int i = 0; i < surfaceIndicesCount; i++)
                 {
                     var vertexIndexSrc = surfaceIndexList[i];
@@ -289,7 +289,16 @@ namespace Chisel.Core
                     if (vertexIndexDst == 0)
                     {
                         vertexIndexDst = surfaceVerticesCount;
-                        surfaceVertices[surfaceVerticesCount] = brushVertices[vertexIndexSrc];
+                        var position = brushVertices[vertexIndexSrc];
+                        surfaceColliderVertices[surfaceVerticesCount] = position;
+
+                        var uv0 = math.mul(uv0Matrix, new float4(position, 1)).xy;
+                        surfaceRenderVertices[surfaceVerticesCount] = new RenderVertex
+                        {
+                            position    = position,
+                            normal      = normal,
+                            uv0         = uv0
+                        };
                         surfaceVerticesCount++;
                         indexRemap[vertexIndexSrc] = vertexIndexDst + 1;
                     } else
@@ -297,58 +306,34 @@ namespace Chisel.Core
                     surfaceIndexList[i] = vertexIndexDst;
                 }
 
-                var vertexHash = surfaceVertices.Hash(surfaceVerticesCount);
+                var vertexHash = surfaceColliderVertices.Hash(surfaceVerticesCount);
                 var indicesHash = surfaceIndexList.Hash(surfaceIndicesCount);
                 var geometryHash = math.hash(new uint2(vertexHash, indicesHash));
 
-                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceNormals, surfaceVerticesCount);
-                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceTangents, surfaceVerticesCount);
-
-                {
-                    if (interiorCategory == CategoryIndex.ValidReverseAligned || interiorCategory == CategoryIndex.ReverseAligned)
-                        normal = -normal;
-                    for (int i = 0; i < surfaceVerticesCount; i++)
-                        surfaceNormals[i] = normal;
-                }
-                var normalHash = surfaceNormals.Hash(surfaceVerticesCount);
-
-
-                NativeCollectionHelpers.EnsureMinimumSize(ref surfaceUV0, surfaceVerticesCount);
-
-                {
-                    for (int v = 0; v < surfaceVerticesCount; v++)
-                        surfaceUV0[v] = math.mul(uv0Matrix, new float4(surfaceVertices[v], 1)).xy;
-                }
-                var uv0Hash = surfaceUV0.Hash(surfaceVerticesCount);
-
+                
 
                 ComputeTangents(surfaceIndexList.AsArray(),
-                                surfaceVertices,
-                                surfaceUV0,
-                                surfaceNormals,
-                                surfaceTangents,
+                                surfaceRenderVertices,
                                 surfaceIndicesCount,
                                 surfaceVerticesCount);
 
-                var tangentHash = surfaceTangents.Hash(surfaceVerticesCount);
 
                 builder.Construct(ref surfaceRenderBuffer.indices, surfaceIndexList, surfaceIndicesCount);
-                builder.Construct(ref surfaceRenderBuffer.vertices, surfaceVertices, surfaceVerticesCount);
-                builder.Construct(ref surfaceRenderBuffer.normals, surfaceNormals, surfaceVerticesCount);
-                builder.Construct(ref surfaceRenderBuffer.tangents, surfaceTangents, surfaceVerticesCount);
-                builder.Construct(ref surfaceRenderBuffer.uv0, surfaceUV0, surfaceVerticesCount);
+                builder.Construct(ref surfaceRenderBuffer.colliderVertices, surfaceColliderVertices, surfaceVerticesCount);
+                builder.Construct(ref surfaceRenderBuffer.renderVertices, surfaceRenderVertices, surfaceVerticesCount);                
 
                 var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-                for (int i = 0; i < surfaceVertices.Length; i++)
+                for (int i = 0; i < surfaceColliderVertices.Length; i++)
                 {
-                    min = math.min(min, surfaceVertices[i]);
-                    max = math.max(max, surfaceVertices[i]);
+                    min = math.min(min, surfaceColliderVertices[i]);
+                    max = math.max(max, surfaceColliderVertices[i]);
                 }
                 surfaceRenderBuffer.min = min;
                 surfaceRenderBuffer.max = max;
 
-                surfaceRenderBuffer.surfaceHash = math.hash(new uint3(normalHash, tangentHash, uv0Hash));
+                // TODO: properly compute hash again, AND USE IT
+                surfaceRenderBuffer.surfaceHash = 0;// math.hash(new uint3(normalHash, tangentHash, uv0Hash));
                 surfaceRenderBuffer.geometryHash = geometryHash;
                 surfaceRenderBuffer.surfaceLayers = surfaceLayers;
                 surfaceRenderBuffer.surfaceIndex = surfaceIndex;
@@ -363,11 +348,8 @@ namespace Chisel.Core
         }
 
         
-        static void ComputeTangents(NativeArray<int>        indices,
-                                    NativeArray<float3>	    positions,
-                                    NativeArray<float2>	    uvs,
-                                    NativeArray<float3>	    normals,
-                                    NativeArray<float4>	    tangents,
+        static void ComputeTangents(NativeArray<int>            indices,
+                                    NativeArray<RenderVertex>   vertices,
                                     int totalIndices,
                                     int totalVertices) 
         {
@@ -381,17 +363,20 @@ namespace Chisel.Core
                 var index1 = indices[i + 1];
                 var index2 = indices[i + 2];
 
-                var vertices0 = positions[index0];
-                var vertices1 = positions[index1];
-                var vertices2 = positions[index2];
-                var uvs0 = uvs[index0];
-                var uvs1 = uvs[index1];
-                var uvs2 = uvs[index2];
+                var vertex0 = vertices[index0];
+                var vertex1 = vertices[index1];
+                var vertex2 = vertices[index2];
+                var position0 = vertex0.position;
+                var position1 = vertex1.position;
+                var position2 = vertex2.position;
+                var uv0 = vertex0.uv0;
+                var uv1 = vertex1.uv0;
+                var uv2 = vertex2.uv0;
 
-                var p = new double3(vertices1.x - vertices0.x, vertices1.y - vertices0.y, vertices1.z - vertices0.z );
-                var q = new double3(vertices2.x - vertices0.x, vertices2.y - vertices0.y, vertices2.z - vertices0.z );
-                var s = new double2(uvs1.x - uvs0.x, uvs2.x - uvs0.x);
-                var t = new double2(uvs1.y - uvs0.y, uvs2.y - uvs0.y);
+                var p = new double3(position1.x - position0.x, position1.y - position0.y, position1.z - position0.z );
+                var q = new double3(position2.x - position0.x, position2.y - position0.y, position2.z - position0.z );
+                var s = new double2(uv1.x - uv0.x, uv2.x - uv0.x);
+                var t = new double2(uv1.y - uv0.y, uv2.y - uv0.y);
 
                 var scale       = s.x * t.y - s.y * t.x;
                 var absScale    = math.abs(scale);
@@ -400,9 +385,9 @@ namespace Chisel.Core
                 var tangent  = math.normalize(t.y * p - t.x * q) * absScale;
                 var binormal = math.normalize(s.x * q - s.y * p) * absScale;
 
-                var edge20 = math.normalize(vertices2 - vertices0);
-                var edge01 = math.normalize(vertices0 - vertices1);
-                var edge12 = math.normalize(vertices1 - vertices2);
+                var edge20 = math.normalize(position2 - position0);
+                var edge01 = math.normalize(position0 - position1);
+                var edge12 = math.normalize(position1 - position2);
 
                 var angle0 = math.dot(edge20, -edge01);
                 var angle1 = math.dot(edge01, -edge12);
@@ -424,7 +409,8 @@ namespace Chisel.Core
             {
                 var originalTangent  = triTangents[v];
                 var originalBinormal = triBinormals[v];
-                var normal           = (double3)normals[v];
+                var vertex           = vertices[v];
+                var normal           = (double3)vertex.normal;
 
                 var dotTangent = math.dot(normal, originalTangent);
                 var newTangent = new double3(originalTangent.x - dotTangent * normal.x, 
@@ -473,7 +459,10 @@ namespace Chisel.Core
                 }
 
                 var dp = math.dot(math.cross(normal, newTangent), newBinormal);
-                tangents[v] = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
+                var tangent = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
+                
+                vertex.tangent = tangent;
+                vertices[v] = vertex;
             }
         }
     }

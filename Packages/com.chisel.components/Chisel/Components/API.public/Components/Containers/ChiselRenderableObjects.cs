@@ -366,7 +366,7 @@ namespace Chisel.Components
                     objectUpdate.meshIsModified = true;
                     objectUpdates[u] = objectUpdate;
                 }
-                var expectedEnabled = vertexBufferContents.positions[contentsIndex].Length > 0;
+                var expectedEnabled = vertexBufferContents.renderVertices[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 

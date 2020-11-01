@@ -67,7 +67,8 @@ namespace Chisel.Components
                                      List<Mesh.MeshDataArray>       meshDataArrays,
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
                                      NativeList<ChiselMeshUpdate>   debugHelperMeshes,
-                                     NativeList<ChiselMeshUpdate>   renderMeshes)
+                                     NativeList<ChiselMeshUpdate>   renderMeshes,
+                                     JobHandle                      dependencies)
         {
             ChiselModel model = null;
             for (int m = 0; m < registeredModels.Count; m++)
@@ -89,7 +90,8 @@ namespace Chisel.Components
             }
 
             var count = model.generated.FinishMeshUpdates(model, model.gameObject, meshDataArrays, ref vertexBufferContents,
-                                                          colliderMeshUpdates, debugHelperMeshes, renderMeshes);
+                                                          colliderMeshUpdates, debugHelperMeshes, renderMeshes,
+                                                          dependencies);
             componentGenerator.Rebuild(model);
             PostUpdateModel?.Invoke(model);
             return count;

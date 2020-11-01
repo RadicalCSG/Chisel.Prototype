@@ -387,11 +387,9 @@ namespace Chisel.Core
 
     public struct ChiselSurfaceRenderBuffer
     {
-        public BlobArray<Int32>		indices;
-        public BlobArray<float3>	vertices;
-        public BlobArray<float3>	normals;
-        public BlobArray<float4>	tangents;
-        public BlobArray<float2>    uv0;
+        public BlobArray<Int32>		    indices;
+        public BlobArray<RenderVertex>	renderVertices;
+        public BlobArray<float3>	    colliderVertices;
 
         public float3           min, max;
 

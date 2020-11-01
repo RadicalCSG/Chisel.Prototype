@@ -8,7 +8,8 @@ namespace Chisel.Core
     public delegate int FinishMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, List<UnityEngine.Mesh.MeshDataArray> meshDataArrays, 
                                          NativeList<ChiselMeshUpdate> colliderMeshUpdates,
                                          NativeList<ChiselMeshUpdate> debugHelperMeshes,
-                                         NativeList<ChiselMeshUpdate> renderMeshes);
+                                         NativeList<ChiselMeshUpdate> renderMeshes,
+                                         JobHandle dependencies);
 
     /// <summary>This class is manager class for all <see cref="Chisel.Core.CSGTreeNode"/>s.</summary>	
     public static partial class CSGManager

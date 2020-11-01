@@ -59,15 +59,11 @@ namespace Chisel.Core
 
         // Write
         [NativeDisableParallelForRestriction, NoAlias] public NativeList<BrushData>         brushRenderData;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeList<SubMeshSurface>    subMeshSurfaces;
         [NativeDisableParallelForRestriction, NoAlias] public NativeList<SubMeshCounts>     subMeshCounts;
         [NativeDisableParallelForRestriction, NoAlias] public NativeList<SubMeshSection>    subMeshSections;
 
         public void Execute()
         {
-            //if (brushRenderData.Capacity < allTreeBrushIndexOrders.Length)
-            //    brushRenderData.Capacity = allTreeBrushIndexOrders.Length;
-
             int surfaceCount = 0;
             for (int b = 0, count_b = allTreeBrushIndexOrders.Length; b < count_b; b++)
             {
@@ -93,10 +89,6 @@ namespace Chisel.Core
                 surfaceCount += surfaces.Length;
             }
             
-            var surfaceCapacity = surfaceCount * meshQueryLength;
-            if (subMeshSurfaces.Capacity < surfaceCapacity)
-                subMeshSurfaces.Capacity = surfaceCapacity;
-
             var subMeshCapacity = surfaceCount * meshQueryLength;
             if (subMeshCounts.Capacity < subMeshCapacity)
                 subMeshCounts.Capacity = subMeshCapacity;
@@ -114,23 +106,19 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<GeneratedSubMesh> subMeshesArray;
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	            indicesArray;
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	            triangleBrushIndices;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           positionsArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float4>           tangentsArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           normalsArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float2>           uv0Array;
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<RenderVertex>     renderVerticesArray;
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           colliderVerticesArray;
 
         public void Execute()
         {
             if (subMeshSections.Length == 0)
                 return;
 
-            subMeshesArray.      ResizeExact(subMeshSections.Length);
-            indicesArray.        ResizeExact(subMeshSections.Length);
-            triangleBrushIndices.ResizeExact(subMeshSections.Length);
-            positionsArray.      ResizeExact(subMeshSections.Length);
-            tangentsArray.       ResizeExact(subMeshSections.Length);
-            normalsArray.        ResizeExact(subMeshSections.Length);
-            uv0Array.            ResizeExact(subMeshSections.Length);
+            subMeshesArray.         ResizeExact(subMeshSections.Length);
+            indicesArray.           ResizeExact(subMeshSections.Length);
+            triangleBrushIndices.   ResizeExact(subMeshSections.Length);
+            renderVerticesArray.    ResizeExact(subMeshSections.Length);
+            colliderVerticesArray.  ResizeExact(subMeshSections.Length);
             for (int i = 0; i < subMeshSections.Length; i++)
             {
                 var section = subMeshSections[i];
@@ -141,44 +129,34 @@ namespace Chisel.Core
                 if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.None ||
                     section.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
                 { 
-                    subMeshesArray      .AllocateWithCapacityForIndex(i, numberOfSubMeshes);
-                    triangleBrushIndices.AllocateWithCapacityForIndex(i, totalIndexCount / 3);
-                    indicesArray        .AllocateWithCapacityForIndex(i, totalIndexCount);
-                    positionsArray      .AllocateWithCapacityForIndex(i, totalVertexCount);
-                    tangentsArray       .AllocateWithCapacityForIndex(i, totalVertexCount);
-                    normalsArray        .AllocateWithCapacityForIndex(i, totalVertexCount);
-                    uv0Array            .AllocateWithCapacityForIndex(i, totalVertexCount);
+                    subMeshesArray          .AllocateWithCapacityForIndex(i, numberOfSubMeshes);
+                    triangleBrushIndices    .AllocateWithCapacityForIndex(i, totalIndexCount / 3);
+                    indicesArray            .AllocateWithCapacityForIndex(i, totalIndexCount);
+                    renderVerticesArray     .AllocateWithCapacityForIndex(i, totalVertexCount);
                         
-                    subMeshesArray      [i].Clear();
-                    triangleBrushIndices[i].Clear();
-                    indicesArray        [i].Clear();
-                    positionsArray      [i].Clear();
-                    tangentsArray       [i].Clear();
-                    normalsArray        [i].Clear();
-                    uv0Array            [i].Clear();
+                    subMeshesArray          [i].Clear();
+                    triangleBrushIndices    [i].Clear();
+                    indicesArray            [i].Clear();
+                    renderVerticesArray     [i].Clear();
 
-                    subMeshesArray      [i].Resize(numberOfSubMeshes, NativeArrayOptions.ClearMemory);
-                    triangleBrushIndices[i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
-                    indicesArray        [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
-                    positionsArray      [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
-                    tangentsArray       [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
-                    normalsArray        [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
-                    uv0Array            [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
+                    subMeshesArray          [i].Resize(numberOfSubMeshes, NativeArrayOptions.ClearMemory);
+                    triangleBrushIndices    [i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+                    indicesArray            [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
+                    renderVerticesArray     [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
                 } else
                 if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
                 {
-                    subMeshesArray   .AllocateWithCapacityForIndex(i, 1);
-                    indicesArray     .AllocateWithCapacityForIndex(i, totalIndexCount);
-                    positionsArray   .AllocateWithCapacityForIndex(i, totalVertexCount);
+                    subMeshesArray          .AllocateWithCapacityForIndex(i, 1);
+                    indicesArray            .AllocateWithCapacityForIndex(i, totalIndexCount);
+                    colliderVerticesArray   .AllocateWithCapacityForIndex(i, totalVertexCount);
                         
-                    subMeshesArray   [i].Clear();
-                    indicesArray     [i].Clear();
-                    positionsArray   [i].Clear();
-                    
+                    subMeshesArray          [i].Clear();
+                    indicesArray            [i].Clear();
+                    colliderVerticesArray   [i].Clear();
 
-                    subMeshesArray   [i].Resize(1, NativeArrayOptions.ClearMemory);
-                    indicesArray     [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
-                    positionsArray   [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
+                    subMeshesArray          [i].Resize(1, NativeArrayOptions.ClearMemory);
+                    indicesArray            [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
+                    colliderVerticesArray   [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);                    
                 }
             }
         }
@@ -197,10 +175,8 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<GeneratedSubMesh> subMeshesArray;         // numberOfSubMeshes
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int>              triangleBrushIndices;   // indexCount / 3
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int>		        indicesArray;           // indexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           positionsArray;         // vertexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float4>           tangentsArray;          // vertexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           normalsArray;           // vertexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float2>           uv0Array;               // vertexCount
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<RenderVertex>     renderVerticesArray;    // vertexCount
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           colliderVerticesArray;  // vertexCount
 
         public void Execute(int index)
         {
@@ -245,10 +221,7 @@ namespace Chisel.Core
                 var subMeshes            = this.subMeshesArray      [index].AsArray();
                 var triangleBrushIndices = this.triangleBrushIndices[index].AsArray();
                 var indices              = this.indicesArray        [index].AsArray();
-                var tangents             = this.tangentsArray       [index].AsArray();
-                var positions            = this.positionsArray      [index].AsArray();
-                var uv0                  = this.uv0Array            [index].AsArray();
-                var normals              = this.normalsArray        [index].AsArray();
+                var renderVertices       = this.renderVerticesArray [index].AsArray();
 
                 int currentBaseVertex = 0;
                 int currentBaseIndex = 0;
@@ -274,7 +247,7 @@ namespace Chisel.Core
                         ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
                         ref var sourceIndices   = ref sourceBuffer.indices;
-                        ref var sourceVertices  = ref sourceBuffer.vertices;
+                        ref var sourceVertices  = ref sourceBuffer.renderVertices;
 
                         var sourceIndexCount    = sourceIndices.Length;
                         var sourceVertexCount   = sourceVertices.Length;
@@ -284,10 +257,6 @@ namespace Chisel.Core
                             sourceVertexCount == 0)
                             continue;
                         
-                        ref var sourceUV0       = ref sourceBuffer.uv0;
-                        ref var sourceNormals   = ref sourceBuffer.normals;
-                        ref var sourceTangents  = ref sourceBuffer.tangents;
-
                         var brushNodeID = brushNodeIndex + 1;                        
                         for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
                             triangleBrushIndices[brushIDIndexOffset] = brushNodeID;
@@ -296,10 +265,7 @@ namespace Chisel.Core
                             indices[indexOffset] = (int)(sourceIndices[i] + indexVertexOffset);
 
                         var vertexOffset = currentBaseVertex + indexVertexOffset;
-                        positions   .CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
-                        normals     .CopyFrom(vertexOffset, ref sourceNormals,  0, sourceVertexCount);
-                        tangents    .CopyFrom(vertexOffset, ref sourceTangents, 0, sourceVertexCount);
-                        uv0         .CopyFrom(vertexOffset, ref sourceUV0,      0, sourceVertexCount);
+                        renderVertices  .CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
 
                         min = math.min(min, sourceBuffer.min);
                         max = math.max(max, sourceBuffer.max);
@@ -331,9 +297,9 @@ namespace Chisel.Core
                 var vertexCount		= subMeshCount.vertexCount;
                 var indexCount		= subMeshCount.indexCount;
                 
-                var subMeshes       = this.subMeshesArray   [index].AsArray();
-                var indices         = this.indicesArray     [index].AsArray();
-                var positions       = this.positionsArray   [index].AsArray();
+                var subMeshes          = this.subMeshesArray       [index].AsArray();
+                var indices            = this.indicesArray         [index].AsArray();
+                var colliderVertices   = this.colliderVerticesArray[index].AsArray();
 
                 var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -346,7 +312,7 @@ namespace Chisel.Core
                     var subMeshSurface      = subMeshSurfaces[surfaceIndex];
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                     ref var sourceIndices   = ref sourceBuffer.indices;
-                    ref var sourceVertices  = ref sourceBuffer.vertices;
+                    ref var sourceVertices  = ref sourceBuffer.colliderVertices;
 
                     var sourceIndexCount    = sourceIndices.Length;
                     var sourceVertexCount   = sourceVertices.Length;
@@ -359,10 +325,10 @@ namespace Chisel.Core
                     brushIDIndexOffset += sourceBrushCount;
 
                     for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
-                        indices[indexOffset] = (int)(sourceIndices[i] + vertexOffset); 
+                        indices[indexOffset] = (int)(sourceIndices[i] + vertexOffset);
 
-                    positions.CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
-
+                    colliderVertices.CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
+                    
                     min = math.min(min, sourceBuffer.min);
                     max = math.max(max, sourceBuffer.max);
 
@@ -379,121 +345,6 @@ namespace Chisel.Core
                 };
             }
         }
-        /*
-        static void ComputeTangents(NativeArray<int>        indices,
-                                    NativeArray<float3>	    positions,
-                                    NativeArray<float2>	    uvs,
-                                    NativeArray<float3>	    normals,
-                                    NativeArray<float4>	    tangents,
-                                    int totalIndices,
-                                    int totalVertices) 
-        {
-
-            var triTangents     = new NativeArray<double3>(totalVertices, Allocator.Temp);
-            var triBinormals    = new NativeArray<double3>(totalVertices, Allocator.Temp);
-
-            for (int i = 0; i < totalIndices; i += 3)
-            {
-                var index0 = indices[i + 0];
-                var index1 = indices[i + 1];
-                var index2 = indices[i + 2];
-
-                var vertices0 = positions[index0];
-                var vertices1 = positions[index1];
-                var vertices2 = positions[index2];
-                var uvs0 = uvs[index0];
-                var uvs1 = uvs[index1];
-                var uvs2 = uvs[index2];
-
-                var p = new double3(vertices1.x - vertices0.x, vertices1.y - vertices0.y, vertices1.z - vertices0.z );
-                var q = new double3(vertices2.x - vertices0.x, vertices2.y - vertices0.y, vertices2.z - vertices0.z );
-                var s = new double2(uvs1.x - uvs0.x, uvs2.x - uvs0.x);
-                var t = new double2(uvs1.y - uvs0.y, uvs2.y - uvs0.y);
-
-                var scale       = s.x * t.y - s.y * t.x;
-                var absScale    = math.abs(scale);
-                p *= scale; q *= scale;
-
-                var tangent  = math.normalize(t.y * p - t.x * q) * absScale;
-                var binormal = math.normalize(s.x * q - s.y * p) * absScale;
-
-                var edge20 = math.normalize(vertices2 - vertices0);
-                var edge01 = math.normalize(vertices0 - vertices1);
-                var edge12 = math.normalize(vertices1 - vertices2);
-
-                var angle0 = math.dot(edge20, -edge01);
-                var angle1 = math.dot(edge01, -edge12);
-                var angle2 = math.dot(edge12, -edge20);
-                var weight0 = math.acos(math.clamp(angle0, -1.0, 1.0));
-                var weight1 = math.acos(math.clamp(angle1, -1.0, 1.0));
-                var weight2 = math.acos(math.clamp(angle2, -1.0, 1.0));
-
-                triTangents[index0] = weight0 * tangent;
-                triTangents[index1] = weight1 * tangent;
-                triTangents[index2] = weight2 * tangent;
-
-                triBinormals[index0] = weight0 * binormal;
-                triBinormals[index1] = weight1 * binormal;
-                triBinormals[index2] = weight2 * binormal;
-            }
-
-            for (int v = 0; v < totalVertices; ++v)
-            {
-                var originalTangent  = triTangents[v];
-                var originalBinormal = triBinormals[v];
-                var normal           = (double3)normals[v];
-
-                var dotTangent = math.dot(normal, originalTangent);
-                var newTangent = new double3(originalTangent.x - dotTangent * normal.x, 
-                                                originalTangent.y - dotTangent * normal.y, 
-                                                originalTangent.z - dotTangent * normal.z);
-                var tangentMagnitude = math.length(newTangent);
-                newTangent /= tangentMagnitude;
-
-                var dotBinormal = math.dot(normal, originalBinormal);
-                dotTangent      = math.dot(newTangent, originalBinormal) * tangentMagnitude;
-                var newBinormal = new double3(originalBinormal.x - dotBinormal * normal.x - dotTangent * newTangent.x,
-                                                originalBinormal.y - dotBinormal * normal.y - dotTangent * newTangent.y,
-                                                originalBinormal.z - dotBinormal * normal.z - dotTangent * newTangent.z);
-                var binormalMagnitude = math.length(newBinormal);
-                newBinormal /= binormalMagnitude;
-
-                const double kNormalizeEpsilon = 1e-6;
-                if (tangentMagnitude <= kNormalizeEpsilon || binormalMagnitude <= kNormalizeEpsilon)
-                {
-                    var dpXN = math.abs(math.dot(new double3(1, 0, 0), normal));
-                    var dpYN = math.abs(math.dot(new double3(0, 1, 0), normal));
-                    var dpZN = math.abs(math.dot(new double3(0, 0, 1), normal));
-
-                    double3 axis1, axis2;
-                    if (dpXN <= dpYN && dpXN <= dpZN)
-                    {
-                        axis1 = new double3(1,0,0);
-                        axis2 = (dpYN <= dpZN) ? new double3(0, 1, 0) : new double3(0, 0, 1);
-                    }
-                    else if (dpYN <= dpXN && dpYN <= dpZN)
-                    {
-                        axis1 = new double3(0, 1, 0);
-                        axis2 = (dpXN <= dpZN) ? new double3(1, 0, 0) : new double3(0, 0, 1);
-                    }
-                    else
-                    {
-                        axis1 = new double3(0, 0, 1);
-                        axis2 = (dpXN <= dpYN) ? new double3(1, 0, 0) : new double3(0, 1, 0);
-                    }
-
-                    newTangent  = axis1 - math.dot(normal, axis1) * normal;
-                    newBinormal = axis2 - math.dot(normal, axis2) * normal - math.dot(newTangent, axis2) * math.normalizesafe(newTangent);
-
-                    newTangent  = math.normalizesafe(newTangent);
-                    newBinormal = math.normalizesafe(newBinormal);
-                }
-
-                var dp = math.dot(math.cross(normal, newTangent), newBinormal);
-                tangents[v] = new float4((float3)newTangent.xyz, (dp > 0) ? 1 : -1);
-            }
-        }
-        */
     }
 
     [BurstCompile(CompileSynchronously = true)]
@@ -538,12 +389,27 @@ namespace Chisel.Core
         public int surfacesCount;
         public MeshQuery meshQuery;
     }
+    internal struct SubMeshSurface
+    {
+        public int      surfaceParameter;
+        public int      surfaceIndex;
+        public int      brushNodeIndex;
+        public int      vertexCount;
+        public int      indexCount;
+        public uint     surfaceHash;
+        public uint     geometryHash;
+        public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
+    }
 
     struct SurfaceInstance
     {
-        public SurfaceLayers                                surfaceLayers;
-        public int                                          surfaceIndex;
-        public int                                          brushNodeIndex;
+        public SurfaceLayers    surfaceLayers;
+        public int              surfaceIndex;
+        public int              brushNodeIndex;
+        public int              vertexCount;
+        public int              indexCount;
+        public uint             surfaceHash;
+        public uint             geometryHash;
         public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
     }
     
@@ -562,6 +428,16 @@ namespace Chisel.Core
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<SurfaceInstance> inorderSurfaceInstances;
 
+        struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
+        {
+            public int Compare(SubMeshSurface x, SubMeshSurface y)
+            {
+                return x.surfaceParameter.CompareTo(y.surfaceParameter);
+            }
+        }
+
+        static readonly SubMeshSurfaceComparer subMeshSurfaceComparer = new SubMeshSurfaceComparer();
+
         public void Execute()
         {
             int requiredSurfaceCount = 0;
@@ -578,6 +454,13 @@ namespace Chisel.Core
                 var brushData           = brushRenderData[b];
                 var brushNodeIndex      = brushData.brushIndexOrder.nodeIndex;
                 var brushRenderBuffer   = brushData.brushRenderBuffer;
+
+                // THIS IS THE SLOWDOWN
+                // TODO: store surface separately from brushes
+                // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
+                // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
+                // TODO: per vertex data should be stored together, as its actually copied into the final mesh together
+                // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
                 ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
                 ref var surfaces             = ref brushRenderBufferRef.surfaces;
 
@@ -589,7 +472,11 @@ namespace Chisel.Core
                         surfaceLayers       = surfaces[j].surfaceLayers,
                         surfaceIndex        = j,
                         brushNodeIndex      = brushNodeIndex,
-                        brushRenderBuffer   = brushRenderBuffer
+                        brushRenderBuffer   = brushRenderBuffer,
+                        vertexCount         = surfaces[j].colliderVertices.Length,
+                        indexCount          = surfaces[j].indices.Length,
+                        surfaceHash         = surfaces[j].surfaceHash,
+                        geometryHash        = surfaces[j].geometryHash,
                     };
                     requiredSurfaceCount++;
                 }
@@ -626,7 +513,11 @@ namespace Chisel.Core
                             surfaceIndex        = inorderSurfaceInstances[n].surfaceIndex,
                             brushNodeIndex      = inorderSurfaceInstances[n].brushNodeIndex,
                             surfaceParameter    = surfaceParameterIndex < 0 ? 0 : surfaceLayers.layerParameters[surfaceParameterIndex],
-                            brushRenderBuffer   = inorderSurfaceInstances[n].brushRenderBuffer
+                            brushRenderBuffer   = inorderSurfaceInstances[n].brushRenderBuffer,
+                            vertexCount         = inorderSurfaceInstances[n].vertexCount,
+                            indexCount          = inorderSurfaceInstances[n].indexCount,
+                            surfaceHash         = inorderSurfaceInstances[n].surfaceHash,
+                            geometryHash        = inorderSurfaceInstances[n].geometryHash,
                         };
                         surfacesLength++;
                     }
@@ -635,6 +526,9 @@ namespace Chisel.Core
                 var surfacesCount = surfacesLength - surfacesOffset;
                 if (surfacesCount == 0)
                     continue;
+
+                var slice = subMeshSurfaceArray.Slice(surfacesOffset, surfacesCount);
+                slice.Sort(subMeshSurfaceComparer);
 
                 sectionsArray[sectionCount] = new SectionData
                 { 
@@ -646,46 +540,21 @@ namespace Chisel.Core
             }
             subMeshSurfaces.ResizeUninitialized(surfacesLength);
             sections.ResizeUninitialized(sectionCount);
-        }
-    }
 
-    [BurstCompile(CompileSynchronously = true)]
-    struct SortSurfacesJob : IJob
-    {
-        // Read
-        [NativeMatchesParallelForLength]
-        [NoAlias, ReadOnly] public NativeArray<SectionData> sections;
-
-        // Read Write (Sort)
-        [NoAlias] public NativeArray<SubMeshSurface>        subMeshSurfaces;
-            
-        struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
-        {
-            public int Compare(SubMeshSurface x, SubMeshSurface y)
+            if (sections.Length == 0)
             {
-                return x.surfaceParameter.CompareTo(y.surfaceParameter);
-            }
-        }
-        
-        static readonly SubMeshSurfaceComparer  subMeshSurfaceComparer  = new SubMeshSurfaceComparer();
-
-
-        public void Execute()
-        {
-            for (int t = 0; t < sections.Length; t++)
-            {
-                var section = sections[t];
-                if (section.surfacesCount == 0)
-                    return;
-                var slice = subMeshSurfaces.Slice(section.surfacesOffset, section.surfacesCount);
-                slice.Sort(subMeshSurfaceComparer);
+                // Cannot Schedule using list length, when its 0 (throws exception)
+                sections.AddNoResize(new SectionData
+                {
+                    surfacesCount = 0 // will early out
+                });
             }
         }
     }
-    
-    
+
     [BurstCompile(CompileSynchronously = true)]
     struct SortSurfacesParallelJob : IJob
+    //struct SortSurfacesParallelJob : IJobParallelFor
     {
         const int kMaxPhysicsVertexCount = 64000;
 
@@ -694,91 +563,95 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>  subMeshSurfaces;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<SubMeshCounts>   subMeshCounts;
-        
+        [NoAlias, WriteOnly] public NativeList<SubMeshCounts>//.ParallelWriter <-- crashes when IJob
+                                        subMeshCounts;
+
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<SubMeshCounts> sectionSubMeshCounts;
+
         public void Execute()
         {
+            // TODO: figure out why this order matters
             for (int t = 0; t < sections.Length; t++)
             {
-                var section = sections[t];
-                if (section.surfacesCount == 0)
-                    return;
-
-                var meshQuery       = section.meshQuery;
-                var queryOffset     = section.surfacesOffset;
-                var queryCount      = section.surfacesCount;
-                var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
-
-                var currentSubMesh  = new SubMeshCounts
-                {
-                    meshQueryIndex      = t,
-                    subMeshQueryIndex   = 0,
-                    meshQuery           = meshQuery,
-                    surfaceParameter    = subMeshSurfaces[queryOffset].surfaceParameter
-                };
-                for (int b = 0; b < queryCount; b++)
-                {
-                    var subMeshSurface              = subMeshSurfaces[queryOffset + b];
-                    var surfaceParameter            = subMeshSurface.surfaceParameter;
-                    ref var brushRenderBufferRef    = ref subMeshSurface.brushRenderBuffer.Value;
-                    ref var brushSurfaceBuffer      = ref brushRenderBufferRef.surfaces[subMeshSurface.surfaceIndex];
-                    var surfaceVertexCount          = brushSurfaceBuffer.vertices.Length;
-                    var surfaceIndexCount           = brushSurfaceBuffer.indices.Length;
-
-                    if (currentSubMesh.surfaceParameter != surfaceParameter || 
-                        (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))
-                    {
-                        // Store the previous subMeshCount
-                        if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
-                            subMeshCounts.AddNoResize(currentSubMesh);
-                        
-                        // Create the new SubMeshCount
-                        currentSubMesh.surfaceParameter     = surfaceParameter;
-                        currentSubMesh.subMeshQueryIndex++;
-                        currentSubMesh.surfaceHashValue     = 0;
-                        currentSubMesh.geometryHashValue    = 0;
-                        currentSubMesh.indexCount           = 0;
-                        currentSubMesh.vertexCount          = 0;
-                        currentSubMesh.surfacesCount        = 0;
-                    } 
-
-                    currentSubMesh.indexCount   += surfaceIndexCount;
-                    currentSubMesh.vertexCount  += surfaceVertexCount;
-                    currentSubMesh.surfaceHashValue  = math.hash(new uint2(currentSubMesh.surfaceHashValue, brushSurfaceBuffer.surfaceHash));
-                    currentSubMesh.geometryHashValue = math.hash(new uint2(currentSubMesh.geometryHashValue, brushSurfaceBuffer.geometryHash));
-                    currentSubMesh.surfacesCount++;
-                }
-                // Store the last subMeshCount
-                if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
-                    subMeshCounts.AddNoResize(currentSubMesh);
+                Execute(t);
             }
+        }
+
+        public void Execute(int t)
+        {
+            var section         = sections[t];
+            var surfaceCount    = section.surfacesCount;
+            if (surfaceCount == 0)
+                return;
+
+            var meshQuery       = section.meshQuery;
+            var queryOffset     = section.surfacesOffset;
+            var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
+
+            if (sectionSubMeshCounts.IsCreated)
+            {
+                sectionSubMeshCounts.Clear();
+                if (sectionSubMeshCounts.Capacity < surfaceCount)
+                    sectionSubMeshCounts.Capacity = surfaceCount;
+            } else
+                sectionSubMeshCounts = new NativeList<SubMeshCounts>(surfaceCount, Allocator.Temp);
+
+            var currentSubMesh  = new SubMeshCounts
+            {
+                meshQueryIndex      = t,
+                subMeshQueryIndex   = 0,
+                meshQuery           = meshQuery,
+                surfaceParameter    = subMeshSurfaces[queryOffset].surfaceParameter
+            };
+            for (int b = 0; b < surfaceCount; b++)
+            {
+                var subMeshSurface              = subMeshSurfaces[queryOffset + b];
+                var surfaceParameter            = subMeshSurface.surfaceParameter;
+                var surfaceVertexCount          = subMeshSurface.vertexCount;
+                var surfaceIndexCount           = subMeshSurface.indexCount;
+
+
+                if (currentSubMesh.surfaceParameter != surfaceParameter || 
+                    (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))
+                {
+                    // Store the previous subMeshCount
+                    if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
+                        sectionSubMeshCounts.AddNoResize(currentSubMesh);
+                        
+                    // Create the new SubMeshCount
+                    currentSubMesh.surfaceParameter     = surfaceParameter;
+                    currentSubMesh.subMeshQueryIndex++;
+                    currentSubMesh.surfaceHashValue     = 0;
+                    currentSubMesh.geometryHashValue    = 0;
+                    currentSubMesh.indexCount           = 0;
+                    currentSubMesh.vertexCount          = 0;
+                    currentSubMesh.surfacesCount        = 0;
+                } 
+
+                currentSubMesh.indexCount   += surfaceIndexCount;
+                currentSubMesh.vertexCount  += surfaceVertexCount;
+                currentSubMesh.surfaceHashValue  = math.hash(new uint2(currentSubMesh.surfaceHashValue, subMeshSurface.surfaceHash));
+                currentSubMesh.geometryHashValue = math.hash(new uint2(currentSubMesh.geometryHashValue, subMeshSurface.geometryHash));
+                currentSubMesh.surfacesCount++;
+            }
+            // Store the last subMeshCount
+            if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
+                sectionSubMeshCounts.AddNoResize(currentSubMesh);
+
+            subMeshCounts.AddRangeNoResize(sectionSubMeshCounts);
         }
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct SortSurfacesGatherJob : IJob
+    struct GatherSurfacesJob : IJob
     {
-        // Read Write (Sort)
-        [NoAlias] public NativeList<SubMeshCounts>                subMeshCounts;
+        // Read / Write
+        [NoAlias] public NativeList<SubMeshCounts>              subMeshCounts;
 
         // Write
-        [NoAlias, WriteOnly] public NativeList<SubMeshSection>    subMeshSections;
+        [NoAlias, WriteOnly] public NativeList<SubMeshSection>  subMeshSections;
             
-        struct SubMeshCountsComparer : IComparer<SubMeshCounts>
-        {
-            public int Compare(SubMeshCounts x, SubMeshCounts y)
-            {
-                if (x.meshQuery.LayerParameterIndex != y.meshQuery.LayerParameterIndex) return ((int)x.meshQuery.LayerParameterIndex) - ((int)y.meshQuery.LayerParameterIndex);
-                if (x.meshQuery.LayerQuery != y.meshQuery.LayerQuery) return ((int)x.meshQuery.LayerQuery) - ((int)y.meshQuery.LayerQuery);
-                if (x.surfaceParameter != y.surfaceParameter) return ((int)x.surfaceParameter) - ((int)y.surfaceParameter);
-                if (x.geometryHashValue != y.geometryHashValue) return ((int)x.geometryHashValue) - ((int)y.geometryHashValue);
-                return 0;
-            }
-        }
-
-        static readonly SubMeshCountsComparer   subMeshCountsComparer   = new SubMeshCountsComparer();
-
-
         public void Execute()
         {
             if (subMeshCounts.Length == 0)
@@ -790,10 +663,6 @@ namespace Chisel.Core
                 currCount.surfacesOffset = subMeshCounts[i - 1].surfacesOffset + subMeshCounts[i - 1].surfacesCount;
                 subMeshCounts[i] = currCount;
             }
-
-            // Sort all meshDescriptions so that meshes that can be merged are next to each other
-            subMeshCounts.Sort(subMeshCountsComparer);
-
 
             int descriptionIndex = 0;
             //var contentsIndex = 0;

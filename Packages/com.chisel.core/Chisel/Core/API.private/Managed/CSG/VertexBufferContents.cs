@@ -14,37 +14,54 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
+    public struct RenderVertex
+    {
+        public float3 position;
+        public float3 normal;
+        public float4 tangent;
+        public float2 uv0;
+    }
+
     public struct VertexBufferContents
     {
+        readonly static VertexAttributeDescriptor[] s_RenderDescriptors = new[]
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
+            new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 0),
+            new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 0),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 0),
+        };
+
+        readonly static VertexAttributeDescriptor[] s_ColliderDescriptors = new[]
+        {
+            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0)
+        };
+
         public NativeList<GeneratedMeshDescription> meshDescriptions;
         public NativeList<SubMeshSection>           subMeshSections;
         public NativeListArray<GeneratedSubMesh>    subMeshes;
         
-        public NativeListArray<int> 	    indices;
-        public NativeListArray<int> 	    triangleBrushIndices;
-        public NativeListArray<float3>      positions;        
-        public NativeListArray<float4>      tangents;
-        public NativeListArray<float3>      normals;
-        public NativeListArray<float2>      uv0;
-        public NativeList<Mesh.MeshData>    meshes;
+        public NativeListArray<int> 	        indices;
+        public NativeListArray<int> 	        triangleBrushIndices;
+        public NativeListArray<float3>          colliderVertices;
+        public NativeListArray<RenderVertex>    renderVertices;
+        public NativeList<Mesh.MeshData>        meshes;
 
         public NativeArray<VertexAttributeDescriptor> renderDescriptors;
         public NativeArray<VertexAttributeDescriptor> colliderDescriptors;
 
         public void EnsureInitialized()
         {
-            if (!meshDescriptions.IsCreated) meshDescriptions = new NativeList<GeneratedMeshDescription>(Allocator.Persistent);
+            if (!meshDescriptions.IsCreated) meshDescriptions   = new NativeList<GeneratedMeshDescription>(Allocator.Persistent);
             else meshDescriptions.Clear();
-            if (!subMeshSections.IsCreated) subMeshSections = new NativeList<SubMeshSection>(Allocator.Persistent);
+            if (!subMeshSections.IsCreated) subMeshSections     = new NativeList<SubMeshSection>(Allocator.Persistent);
             else subMeshSections.Clear();
             if (!subMeshes           .IsCreated) subMeshes            = new NativeListArray<GeneratedSubMesh>(Allocator.Persistent);
             if (!meshes              .IsCreated) meshes               = new NativeList<Mesh.MeshData>(Allocator.Persistent);
             if (!indices             .IsCreated) indices              = new NativeListArray<int>(Allocator.Persistent);
             if (!triangleBrushIndices.IsCreated) triangleBrushIndices = new NativeListArray<int>(Allocator.Persistent);
-            if (!positions           .IsCreated) positions            = new NativeListArray<float3>(Allocator.Persistent);
-            if (!tangents            .IsCreated) tangents             = new NativeListArray<float4>(Allocator.Persistent);
-            if (!normals             .IsCreated) normals              = new NativeListArray<float3>(Allocator.Persistent);
-            if (!uv0                 .IsCreated) uv0                  = new NativeListArray<float2>(Allocator.Persistent);
+            if (!colliderVertices    .IsCreated) colliderVertices     = new NativeListArray<float3>(Allocator.Persistent);
+            if (!renderVertices      .IsCreated) renderVertices       = new NativeListArray<RenderVertex>(Allocator.Persistent);
 
             if (!renderDescriptors.IsCreated)
                 renderDescriptors = new NativeArray<VertexAttributeDescriptor>(s_RenderDescriptors, Allocator.Persistent);
@@ -67,10 +84,8 @@ namespace Chisel.Core
             if (meshes              .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, meshes.Dispose(dependency));
             if (indices             .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, indices.Dispose(dependency));
             if (triangleBrushIndices.IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, triangleBrushIndices.Dispose(dependency));
-            if (positions           .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, positions.Dispose(dependency));
-            if (tangents            .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, tangents.Dispose(dependency));
-            if (normals             .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, normals.Dispose(dependency));
-            if (uv0                 .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, uv0.Dispose(dependency));
+            if (colliderVertices    .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderVertices.Dispose(dependency));
+            if (renderVertices      .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderVertices.Dispose(dependency));
 
             if (renderDescriptors   .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, renderDescriptors  .Dispose(dependency));
             if (colliderDescriptors .IsCreated) lastJobHandle = JobHandle.CombineDependencies(lastJobHandle, colliderDescriptors.Dispose(dependency));
@@ -81,38 +96,11 @@ namespace Chisel.Core
             meshes               = default;
             indices              = default;
             triangleBrushIndices = default;
-            positions            = default;
-            tangents             = default;
-            normals              = default;
-            uv0                  = default;
+            colliderVertices     = default;
+            renderVertices       = default;
             renderDescriptors    = default;
             colliderDescriptors  = default;
             return lastJobHandle;
-        }
-
-        readonly static VertexAttributeDescriptor[] s_RenderDescriptors = new[]
-        {
-            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
-            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 1),
-            new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 2),
-            new VertexAttributeDescriptor(VertexAttribute.Tangent,   dimension: 4, stream: 3)
-        };
-
-        readonly static VertexAttributeDescriptor[] s_ColliderDescriptors = new[]
-        {
-            new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0)
-        };
-
-        public bool IsEmpty(int contentsIndex)
-        {
-            var subMeshesArray  = this.subMeshes[contentsIndex].AsArray();
-            var positionsArray  = this.positions[contentsIndex].AsArray();
-            var indicesArray    = this.indices[contentsIndex].AsArray();
-
-            var vertexCount     = positionsArray.Length;
-            var indexCount      = indicesArray.Length;
-
-            return (subMeshesArray.Length == 0 || indexCount == 0 || vertexCount == 0);
         }
 
 
@@ -163,15 +151,12 @@ namespace Chisel.Core
                     renderDescriptors   = vertexBufferContents.renderDescriptors,
                     subMeshes           = vertexBufferContents.subMeshes,
                     indices             = vertexBufferContents.indices,
-                    positions           = vertexBufferContents.positions,
-                    tangents            = vertexBufferContents.tangents,
-                    normals             = vertexBufferContents.normals,
-                    uv0                 = vertexBufferContents.uv0,
+                    vertices            = vertexBufferContents.renderVertices,
                 
                     // Read/Write
                     meshes = vertexBufferContents.meshes,
                 };
-                var copyToMeshJobHandle = copyToMeshJob.Schedule(renderMeshes, 16, dependencies);
+                var copyToMeshJobHandle = copyToMeshJob.Schedule(renderMeshes, 1, dependencies);
                 currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
             }
 
@@ -183,17 +168,12 @@ namespace Chisel.Core
                     renderDescriptors   = vertexBufferContents.renderDescriptors,
                     subMeshes           = vertexBufferContents.subMeshes,
                     indices             = vertexBufferContents.indices,
-                    positions           = vertexBufferContents.positions,
-                    tangents            = vertexBufferContents.tangents,
-                    normals             = vertexBufferContents.normals,
-                    uv0                 = vertexBufferContents.uv0,
-                    //contentsIndex       = update.contentsIndex,
-                    //meshIndex           = update.meshIndex,
+                    vertices            = vertexBufferContents.renderVertices,
 
                     // Read/Write
                     meshes = vertexBufferContents.meshes,
                 };
-                var copyToMeshJobHandle = copyToMeshJob.Schedule(debugHelperMeshes, 16, dependencies);
+                var copyToMeshJobHandle = copyToMeshJob.Schedule(debugHelperMeshes, 1, dependencies);
                 currentJobHandle = JobHandle.CombineDependencies(currentJobHandle, copyToMeshJobHandle);
             }
             Profiler.EndSample();
@@ -207,7 +187,7 @@ namespace Chisel.Core
                     colliderDescriptors = vertexBufferContents.colliderDescriptors,
                     subMeshes           = vertexBufferContents.subMeshes,
                     indices             = vertexBufferContents.indices,
-                    positions           = vertexBufferContents.positions,
+                    vertices            = vertexBufferContents.colliderVertices,
 
                     // Read/Write
                     meshes = vertexBufferContents.meshes,
@@ -352,10 +332,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
         [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
         [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
-        [NoAlias, ReadOnly] public NativeListArray<float3>                  positions;
-        [NoAlias, ReadOnly] public NativeListArray<float4>                  tangents;
-        [NoAlias, ReadOnly] public NativeListArray<float3>                  normals;
-        [NoAlias, ReadOnly] public NativeListArray<float2>                  uv0;
+        [NoAlias, ReadOnly] public NativeListArray<RenderVertex>            vertices;
 
         // Read (get meshData)/Write (write to meshData)
         [NativeDisableContainerSafetyRestriction]
@@ -369,7 +346,7 @@ namespace Chisel.Core
             var meshData        = meshes[meshIndex];
 
             if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
-                !this.positions.IsIndexCreated(contentsIndex) ||
+                !this.vertices.IsIndexCreated(contentsIndex) ||
                 !this.indices.IsIndexCreated(contentsIndex))
             {
                 meshData.SetVertexBufferParams(0, renderDescriptors);
@@ -379,28 +356,16 @@ namespace Chisel.Core
             }
                 
             var subMeshesArray      = this.subMeshes[contentsIndex].AsArray();
-            var positionsArray      = this.positions[contentsIndex].AsArray();
+            var verticesArray       = this.vertices[contentsIndex].AsArray();
             var indicesArray        = this.indices[contentsIndex].AsArray();
-            var normalsArray        = this.normals[contentsIndex].AsArray();
-            var tangentsArray       = this.tangents[contentsIndex].AsArray();
-            var uv0Array            = this.uv0[contentsIndex].AsArray();
 
 
-            meshData.SetVertexBufferParams(positionsArray.Length, renderDescriptors);
+            meshData.SetVertexBufferParams(verticesArray.Length, renderDescriptors);
             meshData.SetIndexBufferParams(indicesArray.Length, IndexFormat.UInt32);
 
-            var dstPositions = meshData.GetVertexData<float3>(stream: 0);
-            dstPositions.CopyFrom(positionsArray);
+            var dstVertices = meshData.GetVertexData<RenderVertex>(stream: 0);
+            dstVertices.CopyFrom(verticesArray);
             
-            var dstTexCoord0 = meshData.GetVertexData<float2>(stream: 1);
-            dstTexCoord0.CopyFrom(uv0Array);
-
-            var dstNormals = meshData.GetVertexData<float3>(stream: 2);
-            dstNormals.CopyFrom(normalsArray);
-
-            var dstTangents = meshData.GetVertexData<float4>(stream: 3);
-            dstTangents.CopyFrom(tangentsArray);
-                
             var dstIndices = meshData.GetIndexData<int>();
             dstIndices.CopyFrom(indicesArray);
 
@@ -433,7 +398,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
         [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
         [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
-        [NoAlias, ReadOnly] public NativeListArray<float3>                  positions;
+        [NoAlias, ReadOnly] public NativeListArray<float3>                  vertices;
         [NoAlias, ReadOnly] public int contentsIndex;
         [NoAlias, ReadOnly] public int meshIndex;
 
@@ -449,7 +414,7 @@ namespace Chisel.Core
             var meshData        = meshes[meshIndex];
 
             if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
-                !this.positions.IsIndexCreated(contentsIndex) ||
+                !this.vertices.IsIndexCreated(contentsIndex) ||
                 !this.indices.IsIndexCreated(contentsIndex))
             {
                 meshData.SetVertexBufferParams(0, colliderDescriptors);
@@ -459,14 +424,14 @@ namespace Chisel.Core
             }
                 
             var subMeshesArray  = this.subMeshes[contentsIndex].AsArray();
-            var positionsArray  = this.positions[contentsIndex].AsArray();
+            var verticesArray   = this.vertices[contentsIndex].AsArray();
             var indicesArray    = this.indices[contentsIndex].AsArray();
 
-            meshData.SetVertexBufferParams(positionsArray.Length, colliderDescriptors);
+            meshData.SetVertexBufferParams(verticesArray.Length, colliderDescriptors);
             meshData.SetIndexBufferParams(indicesArray.Length, IndexFormat.UInt32);
 
-            var dstPositions = meshData.GetVertexData<float3>(stream: 0);
-            dstPositions.CopyFrom(positionsArray);
+            var dstVertices = meshData.GetVertexData<float3>(stream: 0);
+            dstVertices.CopyFrom(verticesArray);
                 
             var dstIndices = meshData.GetIndexData<int>();
             dstIndices.CopyFrom(indicesArray);
