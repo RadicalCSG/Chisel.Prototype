@@ -45,6 +45,7 @@ namespace Chisel.Core
     public struct BrushData
     {
         public IndexOrder                                   brushIndexOrder; //<- TODO: if we use NodeOrder maybe this could be explicit based on the order in array?
+        public int                                          brushSurfaceOffset;
         public int                                          brushSurfaceCount;
         public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
     }
@@ -74,19 +75,20 @@ namespace Chisel.Core
                     continue;
 
                 ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
-                ref var surfaces = ref brushRenderBufferRef.surfaces;
 
-                var brushSurfaceCount = surfaces.Length;
+                var brushSurfaceCount = brushRenderBufferRef.surfaceCount;
                 if (brushSurfaceCount == 0)
                     continue;
 
+                var brushSurfaceOffset = brushRenderBufferRef.surfaceOffset;
                 brushRenderData.AddNoResize(new BrushData{
                     brushIndexOrder     = brushIndexOrder,
+                    brushSurfaceOffset  = brushSurfaceOffset,
                     brushSurfaceCount   = brushSurfaceCount,
                     brushRenderBuffer   = brushRenderBuffer
                 });
 
-                surfaceCount += surfaces.Length;
+                surfaceCount += brushSurfaceCount;
             }
             
             var subMeshCapacity = surfaceCount * meshQueryLength;
@@ -389,13 +391,16 @@ namespace Chisel.Core
         public int surfacesCount;
         public MeshQuery meshQuery;
     }
+
     internal struct SubMeshSurface
     {
-        public int      surfaceParameter;
-        public int      surfaceIndex;
         public int      brushNodeIndex;
+        public int      surfaceIndex;
+        public int      surfaceParameter;
+
         public int      vertexCount;
         public int      indexCount;
+
         public uint     surfaceHash;
         public uint     geometryHash;
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
@@ -403,11 +408,13 @@ namespace Chisel.Core
 
     struct SurfaceInstance
     {
-        public SurfaceLayers    surfaceLayers;
-        public int              surfaceIndex;
         public int              brushNodeIndex;
+        public int              surfaceIndex;
+        public SurfaceLayers    surfaceLayers;
+
         public int              vertexCount;
         public int              indexCount;
+
         public uint             surfaceHash;
         public uint             geometryHash;
         public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
@@ -452,7 +459,7 @@ namespace Chisel.Core
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
             {
                 var brushData           = brushRenderData[b];
-                var brushNodeIndex      = brushData.brushIndexOrder.nodeIndex;
+                //var brushNodeIndex      = brushData.brushIndexOrder.nodeIndex;
                 var brushRenderBuffer   = brushData.brushRenderBuffer;
 
                 // THIS IS THE SLOWDOWN
@@ -467,16 +474,20 @@ namespace Chisel.Core
                 //Debug.Log($"    x {surfaces.Length}");//~6
                 for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
                 {
+                    //Debug.Assert(surfaces[j].colliderVertices.Length == surfaces[j].vertexCount);
                     inorderSurfaceInstances[requiredSurfaceCount] = new SurfaceInstance
                     {
+                        brushNodeIndex      = surfaces[j].brushNodeIndex,
+                        surfaceIndex        = surfaces[j].surfaceIndex,
                         surfaceLayers       = surfaces[j].surfaceLayers,
-                        surfaceIndex        = j,
-                        brushNodeIndex      = brushNodeIndex,
-                        brushRenderBuffer   = brushRenderBuffer,
-                        vertexCount         = surfaces[j].colliderVertices.Length,
-                        indexCount          = surfaces[j].indices.Length,
+                        
+                        vertexCount         = surfaces[j].vertexCount,
+                        indexCount          = surfaces[j].indexCount,
+
                         surfaceHash         = surfaces[j].surfaceHash,
                         geometryHash        = surfaces[j].geometryHash,
+
+                        brushRenderBuffer   = brushRenderBuffer,
                     };
                     requiredSurfaceCount++;
                 }

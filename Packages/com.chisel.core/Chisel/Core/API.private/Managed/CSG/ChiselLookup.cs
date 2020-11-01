@@ -387,22 +387,28 @@ namespace Chisel.Core
 
     public struct ChiselSurfaceRenderBuffer
     {
-        public BlobArray<Int32>		    indices;
-        public BlobArray<RenderVertex>	renderVertices;
-        public BlobArray<float3>	    colliderVertices;
+        public int              brushNodeIndex;
+        public int              surfaceIndex;
+        public SurfaceLayers    surfaceLayers;
 
-        public float3           min, max;
+        public int              vertexCount;
+        public int              indexCount;
 
         public uint             geometryHash;
         public uint             surfaceHash;
 
-        public SurfaceLayers    surfaceLayers;
-        public Int32		    surfaceIndex;
+        public float3           min, max;  
+
+        public BlobArray<Int32>		    indices;
+        public BlobArray<RenderVertex>	renderVertices;
+        public BlobArray<float3>	    colliderVertices;
     };
 
     public struct ChiselBrushRenderBuffer
     {
         public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
+        public int surfaceOffset;
+        public int surfaceCount;
     };
 
     // Note: Stored in BlobAsset at runtime/editor-time

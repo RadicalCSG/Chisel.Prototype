@@ -136,11 +136,10 @@ namespace Chisel.Core
             }
 
 
-            ref var baseSurfaces                = ref basePolygonCache[brushNodeOrder].Value.surfaces;
-            var brushTransformations            = transformationCache[brushNodeOrder];
-            var treeToNode                      = brushTransformations.treeToNode;
-            var nodeToTreeInverseTransposed     = math.transpose(treeToNode);
-                
+            ref var baseSurfaces            = ref basePolygonCache[brushNodeOrder].Value.surfaces;
+            var brushTransformations        = transformationCache[brushNodeOrder];
+            var treeToNode                  = brushTransformations.treeToNode;
+            var nodeToTreeInverseTransposed = math.transpose(treeToNode);                
 
             var pointCount                  = brushVertices.Length + 2;
 
@@ -166,10 +165,14 @@ namespace Chisel.Core
 
             for (int s = 0; s < surfaceLoopIndices.Length; s++)
             {
+                ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
+                var surfaceIndex = s;
+                surfaceRenderBuffer.brushNodeIndex = brushIndexOrder.nodeIndex;
+                surfaceRenderBuffer.surfaceIndex = surfaceIndex;
+
                 if (!surfaceLoopIndices.IsIndexCreated(s))
                     continue;
 
-                ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
                 loops.Clear();
 
                 var loopIndices = surfaceLoopIndices[s];
@@ -187,7 +190,6 @@ namespace Chisel.Core
                 }
 
                 // TODO: why are we doing this in tree-space? better to do this in brush-space, then we can more easily cache this
-                var surfaceIndex            = s;
                 var surfaceLayers           = baseSurfaces[surfaceIndex].layers;
                 var localSpacePlane         = baseSurfaces[surfaceIndex].localPlane;
                 var UV0                     = baseSurfaces[surfaceIndex].UV0;
@@ -318,13 +320,18 @@ namespace Chisel.Core
                                 surfaceVerticesCount);
 
 
-                builder.Construct(ref surfaceRenderBuffer.indices, surfaceIndexList, surfaceIndicesCount);
-                builder.Construct(ref surfaceRenderBuffer.colliderVertices, surfaceColliderVertices, surfaceVerticesCount);
-                builder.Construct(ref surfaceRenderBuffer.renderVertices, surfaceRenderVertices, surfaceVerticesCount);                
+                surfaceRenderBuffer.surfaceLayers = surfaceLayers;
+
+                surfaceRenderBuffer.vertexCount = surfaceVerticesCount;
+                surfaceRenderBuffer.indexCount = surfaceIndexList.Length;
+
+                // TODO: properly compute hash again, AND USE IT
+                surfaceRenderBuffer.surfaceHash = 0;// math.hash(new uint3(normalHash, tangentHash, uv0Hash));
+                surfaceRenderBuffer.geometryHash = geometryHash;
 
                 var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-                for (int i = 0; i < surfaceColliderVertices.Length; i++)
+                for (int i = 0; i < surfaceVerticesCount; i++)
                 {
                     min = math.min(min, surfaceColliderVertices[i]);
                     max = math.max(max, surfaceColliderVertices[i]);
@@ -332,12 +339,17 @@ namespace Chisel.Core
                 surfaceRenderBuffer.min = min;
                 surfaceRenderBuffer.max = max;
 
-                // TODO: properly compute hash again, AND USE IT
-                surfaceRenderBuffer.surfaceHash = 0;// math.hash(new uint3(normalHash, tangentHash, uv0Hash));
-                surfaceRenderBuffer.geometryHash = geometryHash;
-                surfaceRenderBuffer.surfaceLayers = surfaceLayers;
-                surfaceRenderBuffer.surfaceIndex = surfaceIndex;
+                var outputIndices = builder.Construct(ref surfaceRenderBuffer.indices, surfaceIndexList, surfaceIndicesCount);
+                var outputVertices = builder.Construct(ref surfaceRenderBuffer.colliderVertices, surfaceColliderVertices, surfaceVerticesCount);
+                builder.Construct(ref surfaceRenderBuffer.renderVertices, surfaceRenderVertices, surfaceVerticesCount);
+
+
+                Debug.Assert(outputVertices.Length == surfaceRenderBuffer.vertexCount);
+                Debug.Assert(outputIndices.Length == surfaceRenderBuffer.indexCount);
             }
+
+            root.surfaceOffset = 0;
+            root.surfaceCount = surfaceRenderBuffers.Length;
 
             var brushRenderBuffer = builder.CreateBlobAssetReference<ChiselBrushRenderBuffer>(Allocator.Persistent);
 
