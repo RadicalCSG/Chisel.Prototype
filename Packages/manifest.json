@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.unity.burst": "1.4.1-pre.1",
+    "com.unity.burst": "1.4.1",
     "com.unity.entities": "0.16.0-preview.21",
     "com.unity.ide.visualstudio": "2.0.3",
     "com.unity.nuget.newtonsoft-json": "2.0.0",
