@@ -169,9 +169,9 @@ namespace Chisel.Core
     struct FillVertexBuffersJob : IJobParallelFor
     {
         // Read Only
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>  subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>   subMeshCounts;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>  subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>      subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>       subMeshCounts;
+        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
 
         // Read / Write 
         [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<GeneratedSubMesh> subMeshesArray;         // numberOfSubMeshes
@@ -182,7 +182,7 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            var vertexBufferInit = subMeshSections[index];
+            var vertexBufferInit =   subMeshSections[index];
 
             var layerParameterIndex = vertexBufferInit.meshQuery.LayerParameterIndex;
             var startIndex          = vertexBufferInit.startIndex;
@@ -235,6 +235,8 @@ namespace Chisel.Core
                     var indexCount		    = subMeshCount.indexCount;
                     var surfacesOffset      = subMeshCount.surfacesOffset;
                     var surfacesCount       = subMeshCount.surfacesCount;
+                    var meshQueryIndex      = subMeshCount.meshQueryIndex;
+                    var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
 
                     var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
                     var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -244,7 +246,7 @@ namespace Chisel.Core
                             surfaceIndex < lastSurfaceIndex;
                             ++surfaceIndex)
                     {
-                        var subMeshSurface      = subMeshSurfaces[surfaceIndex];
+                        var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
                         var brushNodeIndex      = subMeshSurface.brushNodeIndex;
                         ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
@@ -290,15 +292,16 @@ namespace Chisel.Core
             } else
             if (layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
             {
-                var subMeshCount    = subMeshCounts[startIndex];
-                //var meshIndex		= subMeshCount.meshQueryIndex;
-                var subMeshIndex	= subMeshCount.subMeshQueryIndex;
+                var subMeshCount        = subMeshCounts[startIndex];
+                var meshQueryIndex		= subMeshCount.meshQueryIndex;
+                var subMeshIndex	    = subMeshCount.subMeshQueryIndex;
 
-                var surfacesOffset  = subMeshCount.surfacesOffset;
-                var surfacesCount   = subMeshCount.surfacesCount;
-                var vertexCount		= subMeshCount.vertexCount;
-                var indexCount		= subMeshCount.indexCount;
-                
+                var surfacesOffset      = subMeshCount.surfacesOffset;
+                var surfacesCount       = subMeshCount.surfacesCount;
+                var vertexCount		    = subMeshCount.vertexCount;
+                var indexCount		    = subMeshCount.indexCount;
+                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
+
                 var subMeshes          = this.subMeshesArray       [index].AsArray();
                 var indices            = this.indicesArray         [index].AsArray();
                 var colliderVertices   = this.colliderVerticesArray[index].AsArray();
@@ -311,7 +314,7 @@ namespace Chisel.Core
                         surfaceIndex < lastSurfaceIndex;
                         ++surfaceIndex)
                 {
-                    var subMeshSurface      = subMeshSurfaces[surfaceIndex];
+                    var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                     ref var sourceIndices   = ref sourceBuffer.indices;
                     ref var sourceVertices  = ref sourceBuffer.colliderVertices;
@@ -407,15 +410,15 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct PrepareSubSectionsJob : IJob
+    struct PrepareSubSectionsJob : IJobParallelFor
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
         [NoAlias, ReadOnly] public NativeArray<BrushData>           brushRenderData;
 
         // Read, Write
-        [NoAlias] public NativeList<SectionData>            sections;
-        [NoAlias] public NativeList<SubMeshSurface>         subMeshSurfaces;
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeListArray<SubMeshSurface>    subMeshSurfaces;
 
         struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
         {
@@ -429,6 +432,14 @@ namespace Chisel.Core
 
         public void Execute()
         {
+            for (int t = 0; t < meshQueries.Length; t++)
+            {
+                Execute(t);
+            }
+        }
+
+        public void Execute(int t)
+        {
             int requiredSurfaceCount = 0;
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
                 requiredSurfaceCount += brushRenderData[b].brushSurfaceCount;
@@ -441,78 +452,37 @@ namespace Chisel.Core
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
             // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
+                
+            subMeshSurfaces.AllocateWithCapacityForIndex(t, requiredSurfaceCount);
+            var subMeshSurfaceList = subMeshSurfaces[t];
 
-
-            var maximumLength = meshQueries.Length * requiredSurfaceCount;
-            if (subMeshSurfaces.Capacity < maximumLength)
-                subMeshSurfaces.Capacity = maximumLength;
-            subMeshSurfaces.ResizeUninitialized(maximumLength);
-            var subMeshSurfaceArray = subMeshSurfaces.AsArray();
-            sections.ResizeUninitialized(meshQueries.Length);
-            var sectionsArray = sections.AsArray();
-
-            var surfacesLength = 0;
-            var sectionCount = 0;
-            //Debug.Log($"{meshQueries.Length} x {requiredSurfaceCount}");//11 x 33761
-            for (int t = 0; t < meshQueries.Length; t++)
+            for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
             {
-                var surfacesOffset          = surfacesLength;
-                var meshQuery               = meshQueries[t];
+                var brushData           = brushRenderData[b];
+                var brushRenderBuffer   = brushData.brushRenderBuffer;
+                ref var querySurfaces   = ref brushRenderBuffer.Value.querySurfaces[t]; // <-- 1. somehow this needs to 
+                                                                                        //     be in outer loop
+                ref var brushNodeIndex  = ref querySurfaces.brushNodeIndex;
+                ref var surfaces        = ref querySurfaces.surfaces;
 
-                for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
+                for (int s = 0; s < surfaces.Length; s++) 
                 {
-                    var brushData           = brushRenderData[b];
-                    var brushRenderBuffer   = brushData.brushRenderBuffer;
-                    ref var querySurfaces   = ref brushRenderBuffer.Value.querySurfaces[t]; // <-- 1. somehow this needs to 
-                                                                                            //     be in outer loop
-                    ref var brushNodeIndex  = ref querySurfaces.brushNodeIndex;
-                    ref var surfaces        = ref querySurfaces.surfaces;
-
-                    for (int s = 0; s < surfaces.Length; s++) 
+                    subMeshSurfaceList.AddNoResize(new SubMeshSurface
                     {
-                        subMeshSurfaceArray[surfacesLength] = new SubMeshSurface
-                        {
-                            brushNodeIndex      = brushNodeIndex,
-                            surfaceIndex        = surfaces[s].surfaceIndex,
-                            surfaceParameter    = surfaces[s].surfaceParameter, // <-- 2. store array per surfaceParameter => no sort
-                            vertexCount         = surfaces[s].vertexCount,
-                            indexCount          = surfaces[s].indexCount,
-                            surfaceHash         = surfaces[s].surfaceHash,
-                            geometryHash        = surfaces[s].geometryHash,
-                            brushRenderBuffer   = brushRenderBuffer, // <-- 3. Get rid of this somehow => memcpy
-                        };
-                        surfacesLength++;
-                    }
-                    // ^ do those 3 points (mentioned in comments) 
-                    // v and we basically already have our sections, and the whole job becomes unnecessary
+                        brushNodeIndex      = brushNodeIndex,
+                        surfaceIndex        = surfaces[s].surfaceIndex,
+                        surfaceParameter    = surfaces[s].surfaceParameter, // <-- 2. store array per surfaceParameter => no sort
+                        vertexCount         = surfaces[s].vertexCount,
+                        indexCount          = surfaces[s].indexCount,
+                        surfaceHash         = surfaces[s].surfaceHash,
+                        geometryHash        = surfaces[s].geometryHash,
+                        brushRenderBuffer   = brushRenderBuffer, // <-- 3. Get rid of this somehow => memcpy
+                    });
                 }
-
-                var surfacesCount = surfacesLength - surfacesOffset;
-                if (surfacesCount == 0)
-                    continue;
-
-                var slice = subMeshSurfaceArray.Slice(surfacesOffset, surfacesCount);
-                slice.Sort(subMeshSurfaceComparer);
-
-                sectionsArray[sectionCount] = new SectionData
-                { 
-                    surfacesOffset  = surfacesOffset,
-                    surfacesCount   = surfacesCount,
-                    meshQuery       = meshQuery
-                };
-                sectionCount++;
+                // ^ do those 3 points (mentioned in comments)
             }
-            subMeshSurfaces.ResizeUninitialized(surfacesLength);
-            sections.ResizeUninitialized(sectionCount);
 
-            if (sections.Length == 0)
-            {
-                // Cannot Schedule using list length, when its 0 (throws exception)
-                sections.AddNoResize(new SectionData
-                {
-                    surfacesCount = 0 // will early out
-                });
-            }
+            subMeshSurfaceList.AsArray().Sort(subMeshSurfaceComparer);
         }
     }
 
@@ -523,8 +493,8 @@ namespace Chisel.Core
         const int kMaxPhysicsVertexCount = 64000;
 
         // Read
-        [NoAlias, ReadOnly] public NativeArray<SectionData>     sections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSurface>  subMeshSurfaces;
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
+        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<SubMeshCounts>//.ParallelWriter <-- crashes when IJob
@@ -536,7 +506,7 @@ namespace Chisel.Core
         public void Execute()
         {
             // TODO: figure out why this order matters
-            for (int t = 0; t < sections.Length; t++)
+            for (int t = 0; t < subMeshSurfaces.Length; t++)
             {
                 Execute(t);
             }
@@ -544,13 +514,12 @@ namespace Chisel.Core
 
         public void Execute(int t)
         {
-            var section         = sections[t];
-            var surfaceCount    = section.surfacesCount;
+            var subMeshSurfaceList  = subMeshSurfaces[t];
+            var surfaceCount        = subMeshSurfaceList.Length;
             if (surfaceCount == 0)
                 return;
 
-            var meshQuery       = section.meshQuery;
-            var queryOffset     = section.surfacesOffset;
+            var meshQuery       = meshQueries[t];
             var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
             if (sectionSubMeshCounts.IsCreated)
@@ -566,11 +535,12 @@ namespace Chisel.Core
                 meshQueryIndex      = t,
                 subMeshQueryIndex   = 0,
                 meshQuery           = meshQuery,
-                surfaceParameter    = subMeshSurfaces[queryOffset].surfaceParameter
+                surfacesOffset      = 0,
+                surfaceParameter    = subMeshSurfaceList[0].surfaceParameter
             };
             for (int b = 0; b < surfaceCount; b++)
             {
-                var subMeshSurface              = subMeshSurfaces[queryOffset + b];
+                var subMeshSurface              = subMeshSurfaceList[b];
                 var surfaceParameter            = subMeshSurface.surfaceParameter;
                 var surfaceVertexCount          = subMeshSurface.vertexCount;
                 var surfaceIndexCount           = subMeshSurface.indexCount;
@@ -589,6 +559,7 @@ namespace Chisel.Core
                     currentSubMesh.geometryHashValue    = 0;
                     currentSubMesh.indexCount           = 0;
                     currentSubMesh.vertexCount          = 0;
+                    currentSubMesh.surfacesOffset       += currentSubMesh.surfacesCount;
                     currentSubMesh.surfacesCount        = 0;
                 } 
 
@@ -619,13 +590,6 @@ namespace Chisel.Core
         {
             if (subMeshCounts.Length == 0)
                 return;
-
-            for (int i = 1; i < subMeshCounts.Length; i++)
-            {
-                var currCount = subMeshCounts[i];
-                currCount.surfacesOffset = subMeshCounts[i - 1].surfacesOffset + subMeshCounts[i - 1].surfacesCount;
-                subMeshCounts[i] = currCount;
-            }
 
             int descriptionIndex = 0;
             //var contentsIndex = 0;

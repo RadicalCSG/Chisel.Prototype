@@ -29,6 +29,7 @@ namespace Chisel.Core
             
             public BlobAssetReference<CompactTree>      compactTree;
             public NativeArray<MeshQuery>               meshQueries;
+            public int                                  meshQueriesLength;
 
             public NativeListArray<BrushIntersectWith>  brushBrushIntersections;
             public NativeList<BrushIntersectWith>       brushIntersectionsWith;
@@ -53,10 +54,9 @@ namespace Chisel.Core
             public NativeList<int>                      nodeIndexToNodeOrderArray;
             public int                                  nodeIndexToNodeOrderOffset;
 
-            public NativeList<SectionData>              sections;
             public NativeList<BrushData>                brushRenderData;
             public NativeList<SubMeshCounts>            subMeshCounts;
-            public NativeList<SubMeshSurface>           subMeshSurfaces;
+            public NativeListArray<SubMeshSurface>      subMeshSurfaces;
 
             public NativeStream                         dataStream1;
             public NativeStream                         dataStream2;
@@ -154,7 +154,6 @@ namespace Chisel.Core
                 allUpdateBrushIndexOrders       .Clear();
                 allBrushMeshInstanceIDs         .ClearValues();
 
-                sections                        .Clear();
                 brushRenderData                 .Clear();
                 subMeshCounts                   .Clear();
                 subMeshSurfaces                 .Clear();
@@ -271,7 +270,6 @@ namespace Chisel.Core
                 Profiler.EndSample();
 
                 Profiler.BeginSample("DISPOSE LIST");
-                if (sections                     .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, sections                     .Dispose(disposeJobHandle));
                 if (brushRenderData              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushRenderData              .Dispose(disposeJobHandle));
                 if (subMeshCounts                .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, subMeshCounts                .Dispose(disposeJobHandle));
                 if (subMeshSurfaces              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, subMeshSurfaces              .Dispose(disposeJobHandle));
@@ -306,7 +304,6 @@ namespace Chisel.Core
                 meshDataArrays                  = default;
                 meshDatas                       = default;
 
-                sections                        = default;
                 brushRenderData                 = default;
                 subMeshCounts                   = default;
                 subMeshSurfaces                 = default;
@@ -441,6 +438,7 @@ namespace Chisel.Core
                 #region MeshQueries
                 // TODO: have more control over the queries
                 var meshQueries = MeshQuery.DefaultQueries.ToNativeArray(Allocator.TempJob);
+                var meshQueriesLength = MeshQuery.DefaultQueries.Length;
                 meshQueries.Sort(meshQueryComparer);
                 #endregion
 
@@ -450,19 +448,19 @@ namespace Chisel.Core
                 currentTree.EnsureSize(brushCount);
                 Profiler.EndSample();
 
-                if (!currentTree.sections       .IsCreated) currentTree.sections        = new NativeList<SectionData>(Allocator.Persistent);
-                if (!currentTree.subMeshSurfaces.IsCreated) currentTree.subMeshSurfaces = new NativeList<SubMeshSurface>(Allocator.Persistent);
+                if (!currentTree.subMeshSurfaces.IsCreated) currentTree.subMeshSurfaces = new NativeListArray<SubMeshSurface>(Allocator.Persistent);
                 if (!currentTree.subMeshCounts  .IsCreated) currentTree.subMeshCounts   = new NativeList<SubMeshCounts>(Allocator.Persistent);
 
                 if (!currentTree.colliderMeshUpdates.IsCreated) currentTree.colliderMeshUpdates = new NativeList<ChiselMeshUpdate>(Allocator.Persistent);
                 if (!currentTree.debugHelperMeshes  .IsCreated) currentTree.debugHelperMeshes   = new NativeList<ChiselMeshUpdate>(Allocator.Persistent);
                 if (!currentTree.renderMeshes       .IsCreated) currentTree.renderMeshes        = new NativeList<ChiselMeshUpdate>(Allocator.Persistent);
 
-                currentTree.subMeshCounts.Clear();
-                currentTree.sections.Clear();
-                if (currentTree.sections.Capacity < meshQueries.Length)
-                    currentTree.sections.Capacity = meshQueries.Length;
+                currentTree.subMeshSurfaces.ResizeExact(meshQueriesLength);
+                for (int i = 0; i < meshQueriesLength; i++)
+                    currentTree.subMeshSurfaces.AllocateWithCapacityForIndex(i, 1000);
 
+                currentTree.subMeshCounts.Clear();
+                
                 ref var brushesThatNeedIndirectUpdateHashMap = ref currentTree.brushesThatNeedIndirectUpdateHashMap;
                 ref var brushesThatNeedIndirectUpdate        = ref currentTree.brushesThatNeedIndirectUpdate;
                 ref var outputSurfaces                       = ref currentTree.outputSurfaces;
@@ -879,12 +877,13 @@ namespace Chisel.Core
 
                 #region Build per tree lookup
                 Profiler.BeginSample("Init");
-                currentTree.treeNodeIndex   = treeNodeIndex;
-                currentTree.brushCount      = brushCount;
-                currentTree.updateCount     = rebuildTreeBrushIndexOrders.Length;
-                currentTree.maxNodeOrder    = allTreeBrushes.Count;
-                currentTree.compactTree     = compactTree;
-                currentTree.meshQueries     = meshQueries;
+                currentTree.treeNodeIndex       = treeNodeIndex;
+                currentTree.brushCount          = brushCount;
+                currentTree.updateCount         = rebuildTreeBrushIndexOrders.Length;
+                currentTree.maxNodeOrder        = allTreeBrushes.Count;
+                currentTree.compactTree         = compactTree;
+                currentTree.meshQueries         = meshQueries;
+                currentTree.meshQueriesLength   = meshQueriesLength;
                 Profiler.EndSample();
                 #endregion
 
@@ -2021,7 +2020,7 @@ namespace Chisel.Core
                         var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
                         {
                             // Read
-                            meshQueryLength         = treeUpdate.meshQueries.Length,
+                            meshQueryLength         = treeUpdate.meshQueriesLength,
                             allTreeBrushIndexOrders = treeUpdate.allTreeBrushIndexOrders.AsArray(),
                             brushRenderBufferCache  = chiselLookupValues.brushRenderBufferCache.AsDeferredJobArray(),
 
@@ -2067,10 +2066,9 @@ namespace Chisel.Core
                             brushRenderData     = treeUpdate.brushRenderData.AsDeferredJobArray(),
 
                             // Write
-                            sections            = treeUpdate.sections,
                             subMeshSurfaces     = treeUpdate.subMeshSurfaces,
                         };
-                        var currentJobHandle = prepareJob.Schedule(dependencies);
+                        var currentJobHandle    = prepareJob.Schedule(treeUpdate.meshQueriesLength, 1, dependencies);
                         //currentJobHandle.Complete();
 
                         //treeUpdate.meshQueriesJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.meshQueriesJobHandle);
@@ -2098,14 +2096,14 @@ namespace Chisel.Core
                         var parallelSortJob = new SortSurfacesParallelJob
                         {
                             // Read
-                            sections         = treeUpdate.sections.AsDeferredJobArray(),
-                            subMeshSurfaces  = treeUpdate.subMeshSurfaces.AsDeferredJobArray(),
+                            meshQueries      = treeUpdate.meshQueries.AsReadOnly(),
+                            subMeshSurfaces  = treeUpdate.subMeshSurfaces,//.AsDeferredJobArray(),
 
                             // Write
                             subMeshCounts    = treeUpdate.subMeshCounts//.AsParallelWriter()
                         };
                         var currentJobHandle = parallelSortJob.Schedule(dependencies);
-                        //currentJobHandle = parallelSortJob.Schedule(treeUpdate.sections, 1, dependencies);
+                        //var currentJobHandle = parallelSortJob.Schedule(treeUpdate.meshQueriesLength, 1, dependencies);
                         //currentJobHandle.Complete();
 
                         //treeUpdate.sectionsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.sectionsJobHandle);
@@ -2229,7 +2227,7 @@ namespace Chisel.Core
                             // Read
                             subMeshSections         = treeUpdate.vertexBufferContents.subMeshSections.AsDeferredJobArray(),               
                             subMeshCounts           = treeUpdate.subMeshCounts.AsDeferredJobArray(),
-                            subMeshSurfaces         = treeUpdate.subMeshSurfaces.AsDeferredJobArray(),
+                            subMeshSurfaces         = treeUpdate.subMeshSurfaces,
 
                             // Read Write
                             subMeshesArray          = treeUpdate.vertexBufferContents.subMeshes,
