@@ -29,22 +29,24 @@ namespace Chisel.Core
         
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BasePolygonsBlob>>    basePolygonCache;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                     transformationCache;
-        [NoAlias, ReadOnly] public NativeStream.Reader input;
+        [NoAlias, ReadOnly] public NativeStream.Reader                                  input;        
+        [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly                      meshQueries;
 
         // Write
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction] NativeArray<float3>       surfaceColliderVertices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<RenderVertex> surfaceRenderVertices;
-        [NativeDisableContainerSafetyRestriction] NativeArray<int>          indexRemap;
+        [NativeDisableContainerSafetyRestriction] NativeArray<float3>               surfaceColliderVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<RenderVertex>         surfaceRenderVertices;
+        [NativeDisableContainerSafetyRestriction] NativeArray<int>                  indexRemap;
+        [NativeDisableContainerSafetyRestriction] NativeList<int>                   loops;
+        [NativeDisableContainerSafetyRestriction] NativeList<ChiselQuerySurface>    querySurfaceList;
 
         [NativeDisableContainerSafetyRestriction] HashedVertices            brushVertices;
         [NativeDisableContainerSafetyRestriction] NativeListArray<int>      surfaceLoopIndices;
         [NativeDisableContainerSafetyRestriction] NativeArray<SurfaceInfo>  surfaceLoopAllInfos;
         [NativeDisableContainerSafetyRestriction] NativeListArray<Edge>     surfaceLoopAllEdges;
-        [NativeDisableContainerSafetyRestriction] NativeList<int>           loops;
         [NativeDisableContainerSafetyRestriction] NativeList<int>           surfaceIndexList;
         [NativeDisableContainerSafetyRestriction] NativeList<int>           outputSurfaceIndicesArray;
         [NativeDisableContainerSafetyRestriction] NativeArray<float2>       context_points;
@@ -346,6 +348,41 @@ namespace Chisel.Core
 
                 Debug.Assert(outputVertices.Length == surfaceRenderBuffer.vertexCount);
                 Debug.Assert(outputIndices.Length == surfaceRenderBuffer.indexCount);
+            }
+            
+
+            var querySurfaces = builder.Allocate(ref root.querySurfaces, meshQueries.Length);
+            for (int t = 0; t < meshQueries.Length; t++)
+            {
+                var meshQuery       = meshQueries[t];
+                var layerQueryMask  = meshQuery.LayerQueryMask;
+                var layerQuery      = meshQuery.LayerQuery;
+                var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 && 
+                                             meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                                             (int)meshQuery.LayerParameterIndex - 1 : -1;
+
+                NativeCollectionHelpers.EnsureCapacityAndClear(ref querySurfaceList, surfaceRenderBuffers.Length);
+
+                for (int s = 0; s < surfaceRenderBuffers.Length; s++)
+                {
+                    var surfaceLayers       = surfaceRenderBuffers[s].surfaceLayers;
+                    var core_surface_flags  = surfaceLayers.layerUsage;
+                    if ((core_surface_flags & layerQueryMask) != layerQuery)
+                        continue;
+
+                    querySurfaceList.AddNoResize(new ChiselQuerySurface
+                    {
+                        surfaceIndex        = surfaceRenderBuffers[s].surfaceIndex,
+                        surfaceParameter    = surfaceParameterIndex < 0 ? 0 : surfaceLayers.layerParameters[surfaceParameterIndex],
+                        vertexCount         = surfaceRenderBuffers[s].vertexCount,
+                        indexCount          = surfaceRenderBuffers[s].indexCount,
+                        surfaceHash         = surfaceRenderBuffers[s].surfaceHash,
+                        geometryHash        = surfaceRenderBuffers[s].geometryHash
+                    });
+                }
+
+                builder.Construct(ref querySurfaces[t].surfaces, querySurfaceList);
+                querySurfaces[t].brushNodeIndex = brushIndexOrder.nodeIndex;
             }
 
             root.surfaceOffset = 0;

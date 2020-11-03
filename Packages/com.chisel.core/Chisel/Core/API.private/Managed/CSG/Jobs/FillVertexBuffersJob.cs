@@ -406,21 +406,6 @@ namespace Chisel.Core
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
 
-    struct SurfaceInstance
-    {
-        public int              brushNodeIndex;
-        public int              surfaceIndex;
-        public SurfaceLayers    surfaceLayers;
-
-        public int              vertexCount;
-        public int              indexCount;
-
-        public uint             surfaceHash;
-        public uint             geometryHash;
-        public BlobAssetReference<ChiselBrushRenderBuffer>  brushRenderBuffer;
-    }
-    
-
     [BurstCompile(CompileSynchronously = true)]
     struct PrepareSubSectionsJob : IJob
     {
@@ -431,9 +416,6 @@ namespace Chisel.Core
         // Read, Write
         [NoAlias] public NativeList<SectionData>            sections;
         [NoAlias] public NativeList<SubMeshSurface>         subMeshSurfaces;
-
-        // Per thread scratch memory
-        [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<SurfaceInstance> inorderSurfaceInstances;
 
         struct SubMeshSurfaceComparer : IComparer<SubMeshSurface>
         {
@@ -451,47 +433,15 @@ namespace Chisel.Core
             for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
                 requiredSurfaceCount += brushRenderData[b].brushSurfaceCount;
 
+            // THIS IS THE SLOWDOWN
+            // TODO: store surface separately from brushes, *somehow* make lifetime work
+            //              => multiple arrays, one for each meshQuery!
+            //              => sorted by surface.layerParameters[meshQuery.layerParameterIndex]!
+            //              => this whole job could be removed
+            // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
+            // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
+            // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
 
-            NativeCollectionHelpers.EnsureMinimumSize(ref inorderSurfaceInstances, requiredSurfaceCount);
-
-            //Debug.Log($"{brushRenderData.Length}");//5657
-            requiredSurfaceCount = 0;
-            for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
-            {
-                var brushData           = brushRenderData[b];
-                //var brushNodeIndex      = brushData.brushIndexOrder.nodeIndex;
-                var brushRenderBuffer   = brushData.brushRenderBuffer;
-
-                // THIS IS THE SLOWDOWN
-                // TODO: store surface separately from brushes
-                // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
-                // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
-                // TODO: per vertex data should be stored together, as its actually copied into the final mesh together
-                // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
-                ref var brushRenderBufferRef = ref brushRenderBuffer.Value;
-                ref var surfaces             = ref brushRenderBufferRef.surfaces;
-
-                //Debug.Log($"    x {surfaces.Length}");//~6
-                for (int j = 0, count_j = (int)surfaces.Length; j < count_j; j++)
-                {
-                    //Debug.Assert(surfaces[j].colliderVertices.Length == surfaces[j].vertexCount);
-                    inorderSurfaceInstances[requiredSurfaceCount] = new SurfaceInstance
-                    {
-                        brushNodeIndex      = surfaces[j].brushNodeIndex,
-                        surfaceIndex        = surfaces[j].surfaceIndex,
-                        surfaceLayers       = surfaces[j].surfaceLayers,
-                        
-                        vertexCount         = surfaces[j].vertexCount,
-                        indexCount          = surfaces[j].indexCount,
-
-                        surfaceHash         = surfaces[j].surfaceHash,
-                        geometryHash        = surfaces[j].geometryHash,
-
-                        brushRenderBuffer   = brushRenderBuffer,
-                    };
-                    requiredSurfaceCount++;
-                }
-            }
 
             var maximumLength = meshQueries.Length * requiredSurfaceCount;
             if (subMeshSurfaces.Capacity < maximumLength)
@@ -506,32 +456,35 @@ namespace Chisel.Core
             //Debug.Log($"{meshQueries.Length} x {requiredSurfaceCount}");//11 x 33761
             for (int t = 0; t < meshQueries.Length; t++)
             {
-                var surfacesOffset  = surfacesLength;
-                var meshQuery       = meshQueries[t];
-                var layerQueryMask  = meshQuery.LayerQueryMask;
-                var layerQuery      = meshQuery.LayerQuery;
-                var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 && 
-                                             meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
-                                             (int)meshQuery.LayerParameterIndex - 1 : -1;
-                for (int n = 0; n < requiredSurfaceCount; n++) 
+                var surfacesOffset          = surfacesLength;
+                var meshQuery               = meshQueries[t];
+
+                for (int b = 0, count_b = brushRenderData.Length; b < count_b; b++)
                 {
-                    var surfaceLayers       = inorderSurfaceInstances[n].surfaceLayers;
-                    var core_surface_flags  = surfaceLayers.layerUsage;
-                    if ((core_surface_flags & layerQueryMask) == layerQuery)
+                    var brushData           = brushRenderData[b];
+                    var brushRenderBuffer   = brushData.brushRenderBuffer;
+                    ref var querySurfaces   = ref brushRenderBuffer.Value.querySurfaces[t]; // <-- 1. somehow this needs to 
+                                                                                            //     be in outer loop
+                    ref var brushNodeIndex  = ref querySurfaces.brushNodeIndex;
+                    ref var surfaces        = ref querySurfaces.surfaces;
+
+                    for (int s = 0; s < surfaces.Length; s++) 
                     {
                         subMeshSurfaceArray[surfacesLength] = new SubMeshSurface
                         {
-                            surfaceIndex        = inorderSurfaceInstances[n].surfaceIndex,
-                            brushNodeIndex      = inorderSurfaceInstances[n].brushNodeIndex,
-                            surfaceParameter    = surfaceParameterIndex < 0 ? 0 : surfaceLayers.layerParameters[surfaceParameterIndex],
-                            brushRenderBuffer   = inorderSurfaceInstances[n].brushRenderBuffer,
-                            vertexCount         = inorderSurfaceInstances[n].vertexCount,
-                            indexCount          = inorderSurfaceInstances[n].indexCount,
-                            surfaceHash         = inorderSurfaceInstances[n].surfaceHash,
-                            geometryHash        = inorderSurfaceInstances[n].geometryHash,
+                            brushNodeIndex      = brushNodeIndex,
+                            surfaceIndex        = surfaces[s].surfaceIndex,
+                            surfaceParameter    = surfaces[s].surfaceParameter, // <-- 2. store array per surfaceParameter => no sort
+                            vertexCount         = surfaces[s].vertexCount,
+                            indexCount          = surfaces[s].indexCount,
+                            surfaceHash         = surfaces[s].surfaceHash,
+                            geometryHash        = surfaces[s].geometryHash,
+                            brushRenderBuffer   = brushRenderBuffer, // <-- 3. Get rid of this somehow => memcpy
                         };
                         surfacesLength++;
                     }
+                    // ^ do those 3 points (mentioned in comments) 
+                    // v and we basically already have our sections, and the whole job becomes unnecessary
                 }
 
                 var surfacesCount = surfacesLength - surfacesOffset;
@@ -621,7 +574,6 @@ namespace Chisel.Core
                 var surfaceParameter            = subMeshSurface.surfaceParameter;
                 var surfaceVertexCount          = subMeshSurface.vertexCount;
                 var surfaceIndexCount           = subMeshSurface.indexCount;
-
 
                 if (currentSubMesh.surfaceParameter != surfaceParameter || 
                     (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))

@@ -1967,6 +1967,7 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
                         var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.meshQueriesJobHandle,
                                                                           treeUpdate.basePolygonCacheJobHandle,
                                                                           treeUpdate.transformationCacheJobHandle,
                                                                           treeUpdate.dataStream2JobHandle,
@@ -1980,6 +1981,7 @@ namespace Chisel.Core
                             basePolygonCache            = chiselLookupValues.basePolygonCache.AsDeferredJobArray(),
                             transformationCache         = chiselLookupValues.transformationCache.AsDeferredJobArray(),
                             input                       = treeUpdate.dataStream2.AsReader(),
+                            meshQueries                 = treeUpdate.meshQueries.AsReadOnly(),
 
                             // Write
                             brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsDeferredJobArray()
@@ -2360,17 +2362,17 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
                         var dependencies = CombineDependencies(treeUpdate.meshQueriesJobHandle,
-                                                                treeUpdate.meshDatasJobHandle,
-                                                                treeUpdate.vertexBufferContents_descriptorsJobHandle,
-                                                                treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
-                                                                treeUpdate.vertexBufferContents_subMeshesJobHandle,
-                                                                treeUpdate.vertexBufferContents_indicesJobHandle,
-                                                                treeUpdate.vertexBufferContents_brushIndicesJobHandle,
-                                                                treeUpdate.vertexBufferContents_positionsJobHandle,
-                                                                treeUpdate.vertexBufferContents_tangentsJobHandle,
-                                                                treeUpdate.vertexBufferContents_normalsJobHandle,
-                                                                treeUpdate.vertexBufferContents_uv0JobHandle,
-                                                                treeUpdate.vertexBufferContents_meshDescriptionsJobHandle);
+                                                               treeUpdate.meshDatasJobHandle,
+                                                               treeUpdate.vertexBufferContents_descriptorsJobHandle,
+                                                               treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
+                                                               treeUpdate.vertexBufferContents_subMeshesJobHandle,
+                                                               treeUpdate.vertexBufferContents_indicesJobHandle,
+                                                               treeUpdate.vertexBufferContents_brushIndicesJobHandle,
+                                                               treeUpdate.vertexBufferContents_positionsJobHandle,
+                                                               treeUpdate.vertexBufferContents_tangentsJobHandle,
+                                                               treeUpdate.vertexBufferContents_normalsJobHandle,
+                                                               treeUpdate.vertexBufferContents_uv0JobHandle,
+                                                               treeUpdate.vertexBufferContents_meshDescriptionsJobHandle);
 
 
                         var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };

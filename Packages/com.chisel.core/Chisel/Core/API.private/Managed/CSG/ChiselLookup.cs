@@ -404,9 +404,28 @@ namespace Chisel.Core
         public BlobArray<float3>	    colliderVertices;
     };
 
+    public struct ChiselQuerySurface
+    {
+        public int      surfaceIndex;
+        public int      surfaceParameter;
+
+        public int      vertexCount;
+        public int      indexCount;
+
+        public uint     geometryHash;
+        public uint     surfaceHash;
+    }
+
+    public struct ChiselQuerySurfaces
+    {
+        public int                              brushNodeIndex;
+        public BlobArray<ChiselQuerySurface>    surfaces;
+    }
+
     public struct ChiselBrushRenderBuffer
     {
         public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
+        public BlobArray<ChiselQuerySurfaces>       querySurfaces;
         public int surfaceOffset;
         public int surfaceCount;
     };
