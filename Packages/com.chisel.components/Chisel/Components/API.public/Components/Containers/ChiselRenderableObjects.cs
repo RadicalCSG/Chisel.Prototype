@@ -351,22 +351,23 @@ namespace Chisel.Components
                 var meshUpdate      = meshUpdates[u];
                 var instance        = objectUpdate.instance;
                 var contentsIndex   = meshUpdate.contentsIndex;
+                var sharedMesh      = instance.sharedMesh;
 
-                if (instance.sharedMesh.subMeshCount > 0)
+                if (sharedMesh.subMeshCount > 0)
                 {
-                    var bounds = instance.sharedMesh.GetSubMesh(0).bounds;
-                    for (int s = 1; s < instance.sharedMesh.subMeshCount; s++)
-                        bounds.Encapsulate(instance.sharedMesh.GetSubMesh(s).bounds);
-                    instance.sharedMesh.bounds = bounds;
+                    var bounds = sharedMesh.GetSubMesh(0).bounds;
+                    for (int s = 1; s < sharedMesh.subMeshCount; s++)
+                        bounds.Encapsulate(sharedMesh.GetSubMesh(s).bounds);
+                    sharedMesh.bounds = bounds;
                 }
 
-                if (instance.meshFilter.sharedMesh != instance.sharedMesh)
+                if (instance.meshFilter.sharedMesh != sharedMesh)
                 {
-                    instance.meshFilter.sharedMesh = instance.sharedMesh;
+                    instance.meshFilter.sharedMesh = sharedMesh;
                     objectUpdate.meshIsModified = true;
                     objectUpdates[u] = objectUpdate;
                 }
-                var expectedEnabled = vertexBufferContents.renderVertices[contentsIndex].Length > 0;
+                var expectedEnabled = vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 

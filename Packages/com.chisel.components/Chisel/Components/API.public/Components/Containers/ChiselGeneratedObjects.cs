@@ -529,7 +529,7 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
-            Profiler.BeginSample("Colliders.UpdateMaterials");
+            Profiler.BeginSample("Renderers.UpdateMaterials");
             ChiselRenderObjects.UpdateMaterials(renderMeshUpdates, renderObjectUpdates, ref vertexBufferContents);
             Profiler.EndSample();
 
@@ -551,14 +551,6 @@ namespace Chisel.Components
 
             Profiler.BeginSample("Renderers.Update");
             ChiselRenderObjects.UpdateSettings(this.renderMeshUpdates, this.renderObjectUpdates, this.gameObjectStates, ref vertexBufferContents);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateProperties");
-            ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateColliders");
-            ChiselColliderObjects.UpdateProperties(model, this.colliders);
             Profiler.EndSample();
 
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
@@ -584,6 +576,14 @@ namespace Chisel.Components
                 update.meshDataArray = default;
                 this.colliderObjectUpdates[i] = update;
             }
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateProperties");
+            ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateColliders");
+            ChiselColliderObjects.UpdateProperties(model, this.colliders);
             Profiler.EndSample();
 
             this.needVisibilityMeshUpdate = true;

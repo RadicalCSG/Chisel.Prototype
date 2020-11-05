@@ -387,7 +387,6 @@ namespace Chisel.Core
 
     public struct ChiselSurfaceRenderBuffer
     {
-        public int              brushNodeIndex;
         public int              surfaceIndex;
         public SurfaceLayers    surfaceLayers;
 

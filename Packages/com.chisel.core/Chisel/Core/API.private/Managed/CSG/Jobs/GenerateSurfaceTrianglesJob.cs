@@ -84,7 +84,6 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
-            //var brushNodeIndex = treeBrushNodeIndices[index];
             var count = input.BeginForEachIndex(index);
             if (count == 0)
                 return;
@@ -183,7 +182,6 @@ namespace Chisel.Core
             {
                 ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
                 var surfaceIndex = s;
-                surfaceRenderBuffer.brushNodeIndex = brushIndexOrder.nodeIndex;
                 surfaceRenderBuffer.surfaceIndex = surfaceIndex;
 
                 if (!surfaceLoopIndices.IsIndexCreated(s))
@@ -336,6 +334,14 @@ namespace Chisel.Core
                                 surfaceVerticesCount);
 
 
+                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+                for (int i = 0; i < surfaceVerticesCount; i++)
+                {
+                    min = math.min(min, surfaceColliderVertices[i]);
+                    max = math.max(max, surfaceColliderVertices[i]);
+                }
+
                 surfaceRenderBuffer.surfaceLayers = surfaceLayers;
 
                 surfaceRenderBuffer.vertexCount = surfaceVerticesCount;
@@ -345,13 +351,6 @@ namespace Chisel.Core
                 surfaceRenderBuffer.surfaceHash = 0;// math.hash(new uint3(normalHash, tangentHash, uv0Hash));
                 surfaceRenderBuffer.geometryHash = geometryHash;
 
-                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-                for (int i = 0; i < surfaceVerticesCount; i++)
-                {
-                    min = math.min(min, surfaceColliderVertices[i]);
-                    max = math.max(max, surfaceColliderVertices[i]);
-                }
                 surfaceRenderBuffer.min = min;
                 surfaceRenderBuffer.max = max;
 

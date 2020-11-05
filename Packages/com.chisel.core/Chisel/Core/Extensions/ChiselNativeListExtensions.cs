@@ -207,6 +207,19 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        {
+            CheckLengthInRange(srcCount, srcArray.Length);
+            CheckLengthInRange(srcCount, dstList.Length);
+            CheckIndexInRangeInc(dstIndex, dstList.Length - srcCount);
+            CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
+
+            var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
+            var dstPtr = (T*)dstList.GetUnsafePtr() + dstIndex;
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
+        }
+
         public static void CopyFrom<T>(this NativeSlice<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             CheckLengthInRange(srcCount, srcArray.Length);

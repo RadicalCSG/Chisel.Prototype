@@ -7,7 +7,6 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -16,7 +15,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
-    internal struct SubMeshCounts
+    public struct SubMeshCounts
     {
         public MeshQuery    meshQuery;
         public int		    surfaceParameter;
@@ -101,14 +100,7 @@ namespace Chisel.Core
         }
     }
 
-    public struct SectionData
-    {
-        public int surfacesOffset;
-        public int surfacesCount;
-        public MeshQuery meshQuery;
-    }
-
-    internal struct SubMeshSurface
+    public struct SubMeshSurface
     {
         public int      brushNodeIndex;
         public int      surfaceIndex;
@@ -202,8 +194,6 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct SortSurfacesParallelJob : IJob
     {
-        const int kMaxPhysicsVertexCount = 64000;
-
         // Read
         [NoAlias, ReadOnly] public NativeArray<MeshQuery>.ReadOnly  meshQueries;
         [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
@@ -256,8 +246,7 @@ namespace Chisel.Core
                 var surfaceVertexCount          = subMeshSurface.vertexCount;
                 var surfaceIndexCount           = subMeshSurface.indexCount;
 
-                if (currentSubMesh.surfaceParameter != surfaceParameter || 
-                    (isPhysics && currentSubMesh.vertexCount >= kMaxPhysicsVertexCount))
+                if (currentSubMesh.surfaceParameter != surfaceParameter)
                 {
                     // Store the previous subMeshCount
                     if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
@@ -280,6 +269,7 @@ namespace Chisel.Core
                 currentSubMesh.geometryHashValue = math.hash(new uint2(currentSubMesh.geometryHashValue, subMeshSurface.geometryHash));
                 currentSubMesh.surfacesCount++;
             }
+
             // Store the last subMeshCount
             if (currentSubMesh.indexCount > 0 && currentSubMesh.vertexCount > 0)
                 sectionSubMeshCounts.AddNoResize(currentSubMesh);
@@ -396,63 +386,29 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     struct AllocateVertexBuffersJob : IJob
     {
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>        subMeshSections;
+        // Read
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>                      subMeshSections;
 
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<GeneratedSubMesh> subMeshesArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	            indicesArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	            triangleBrushIndices;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<RenderVertex>     renderVerticesArray;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           colliderVerticesArray;
+        // Read / Write
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	triangleBrushIndices;
 
         public void Execute()
         {
             if (subMeshSections.Length == 0)
                 return;
 
-            subMeshesArray.         ResizeExact(subMeshSections.Length);
-            indicesArray.           ResizeExact(subMeshSections.Length);
             triangleBrushIndices.   ResizeExact(subMeshSections.Length);
-            renderVerticesArray.    ResizeExact(subMeshSections.Length);
-            colliderVerticesArray.  ResizeExact(subMeshSections.Length);
             for (int i = 0; i < subMeshSections.Length; i++)
             {
-                var section = subMeshSections[i];
-                var numberOfSubMeshes   = section.endIndex - section.startIndex;
-                var totalVertexCount    = section.totalVertexCount;
+                var section             = subMeshSections[i];
+                if (section.meshQuery.LayerParameterIndex != LayerParameterIndex.None &&
+                    section.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
+                    continue;
+                 
                 var totalIndexCount     = section.totalIndexCount;
-                
-                if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.None ||
-                    section.meshQuery.LayerParameterIndex == LayerParameterIndex.RenderMaterial)
-                { 
-                    subMeshesArray          .AllocateWithCapacityForIndex(i, numberOfSubMeshes);
-                    triangleBrushIndices    .AllocateWithCapacityForIndex(i, totalIndexCount / 3);
-                    indicesArray            .AllocateWithCapacityForIndex(i, totalIndexCount);
-                    renderVerticesArray     .AllocateWithCapacityForIndex(i, totalVertexCount);
-                        
-                    subMeshesArray          [i].Clear();
-                    triangleBrushIndices    [i].Clear();
-                    indicesArray            [i].Clear();
-                    renderVerticesArray     [i].Clear();
-
-                    subMeshesArray          [i].Resize(numberOfSubMeshes, NativeArrayOptions.ClearMemory);
-                    triangleBrushIndices    [i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
-                    indicesArray            [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
-                    renderVerticesArray     [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);
-                } else
-                if (section.meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial)
-                {
-                    subMeshesArray          .AllocateWithCapacityForIndex(i, 1);
-                    indicesArray            .AllocateWithCapacityForIndex(i, totalIndexCount);
-                    colliderVerticesArray   .AllocateWithCapacityForIndex(i, totalVertexCount);
-                        
-                    subMeshesArray          [i].Clear();
-                    indicesArray            [i].Clear();
-                    colliderVerticesArray   [i].Clear();
-
-                    subMeshesArray          [i].Resize(1, NativeArrayOptions.ClearMemory);
-                    indicesArray            [i].Resize(totalIndexCount, NativeArrayOptions.ClearMemory);
-                    colliderVerticesArray   [i].Resize(totalVertexCount, NativeArrayOptions.ClearMemory);                    
-                }
+                triangleBrushIndices    .AllocateWithCapacityForIndex(i, totalIndexCount / 3);                        
+                triangleBrushIndices    [i].Clear();
+                triangleBrushIndices    [i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
             }
         }
     }
@@ -492,193 +448,6 @@ namespace Chisel.Core
             }
         }
     }    
-
-    [BurstCompile(CompileSynchronously = true)]
-    struct FillVertexBuffersJob : IJobParallelFor
-    {
-        // Read Only
-        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>      subMeshSections;
-        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>       subMeshCounts;
-        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>  subMeshSurfaces;
-
-        // Read / Write 
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<GeneratedSubMesh> subMeshesArray;         // numberOfSubMeshes
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int>              triangleBrushIndices;   // indexCount / 3
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int>		        indicesArray;           // indexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<RenderVertex>     renderVerticesArray;    // vertexCount
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<float3>           colliderVerticesArray;  // vertexCount
-
-        public void Execute(int index)
-        {
-            var vertexBufferInit =   subMeshSections[index];
-
-            var layerParameterIndex = vertexBufferInit.meshQuery.LayerParameterIndex;
-            var startIndex          = vertexBufferInit.startIndex;
-            var endIndex            = vertexBufferInit.endIndex;
-            var totalVertexCount    = vertexBufferInit.totalVertexCount;
-            var totalIndexCount     = vertexBufferInit.totalVertexCount;
-            if (layerParameterIndex == LayerParameterIndex.None ||
-                layerParameterIndex == LayerParameterIndex.RenderMaterial)
-            {
-                if (vertexBufferInit.endIndex - vertexBufferInit.startIndex == 0)
-                    return;
-                var numberOfSubMeshes = endIndex - startIndex;
-
-
-#if false
-                const long kHashMagicValue = (long)1099511628211ul;
-                UInt64 combinedGeometryHashValue = 0;
-                UInt64 combinedSurfaceHashValue = 0;
-
-                for (int i = startIndex; i < endIndex; i++)
-                {
-                    ref var meshDescription = ref subMeshCounts[i];
-                    if (meshDescription.vertexCount < 3 ||
-                        meshDescription.indexCount < 3)
-                        continue;
-
-                    combinedGeometryHashValue   = (combinedGeometryHashValue ^ meshDescription.geometryHashValue) * kHashMagicValue;
-                    combinedSurfaceHashValue    = (combinedSurfaceHashValue  ^ meshDescription.surfaceHashValue) * kHashMagicValue;
-                }
-                        
-                if (geometryHashValue != combinedGeometryHashValue ||
-                    surfaceHashValue != combinedSurfaceHashValue)
-                {
-                    geometryHashValue != combinedGeometryHashValue ||
-                    surfaceHashValue != combinedSurfaceHashValue)
-#endif
-
-                var subMeshes            = this.subMeshesArray      [index].AsArray();
-                var triangleBrushIndices = this.triangleBrushIndices[index].AsArray();
-                var indices              = this.indicesArray        [index].AsArray();
-                var renderVertices       = this.renderVerticesArray [index].AsArray();
-
-                int currentBaseVertex = 0;
-                int currentBaseIndex = 0;
-
-                for (int subMeshIndex = 0, d = startIndex; d < endIndex; d++, subMeshIndex++)
-                {
-                    var subMeshCount        = subMeshCounts[d];
-                    var vertexCount		    = subMeshCount.vertexCount;
-                    var indexCount		    = subMeshCount.indexCount;
-                    var surfacesOffset      = subMeshCount.surfacesOffset;
-                    var surfacesCount       = subMeshCount.surfacesCount;
-                    var meshQueryIndex      = subMeshCount.meshQueryIndex;
-                    var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
-
-                    var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-                    var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-
-                    // copy all the vertices & indices to the sub-meshes for each material
-                    for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = currentBaseIndex / 3, indexOffset = currentBaseIndex, indexVertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
-                            surfaceIndex < lastSurfaceIndex;
-                            ++surfaceIndex)
-                    {
-                        var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
-                        var brushNodeIndex      = subMeshSurface.brushNodeIndex;
-                        ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
-                            
-                        ref var sourceIndices   = ref sourceBuffer.indices;
-                        ref var sourceVertices  = ref sourceBuffer.renderVertices;
-
-                        var sourceIndexCount    = sourceIndices.Length;
-                        var sourceVertexCount   = sourceVertices.Length;
-                        var sourceBrushCount    = sourceIndexCount / 3;
-
-                        if (sourceIndexCount == 0 ||
-                            sourceVertexCount == 0)
-                            continue;
-                        
-                        var brushNodeID = brushNodeIndex + 1;                        
-                        for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
-                            triangleBrushIndices[brushIDIndexOffset] = brushNodeID;
-
-                        for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
-                            indices[indexOffset] = (int)(sourceIndices[i] + indexVertexOffset);
-
-                        var vertexOffset = currentBaseVertex + indexVertexOffset;
-                        renderVertices  .CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
-
-                        min = math.min(min, sourceBuffer.min);
-                        max = math.max(max, sourceBuffer.max);
-
-                        indexVertexOffset += sourceVertexCount;
-                    }
-                    
-                    subMeshes[subMeshIndex] = new GeneratedSubMesh
-                    { 
-                        baseVertex          = currentBaseVertex,
-                        baseIndex           = currentBaseIndex,
-                        indexCount          = indexCount,
-                        vertexCount         = vertexCount,
-                        bounds              = new MinMaxAABB { Min = min, Max = max }
-                    };
-
-                    currentBaseVertex += vertexCount;
-                    currentBaseIndex += indexCount;
-                }
-            } else
-            if (layerParameterIndex == LayerParameterIndex.PhysicsMaterial)
-            {
-                var subMeshCount        = subMeshCounts[startIndex];
-                var meshQueryIndex		= subMeshCount.meshQueryIndex;
-                var subMeshIndex	    = subMeshCount.subMeshQueryIndex;
-
-                var surfacesOffset      = subMeshCount.surfacesOffset;
-                var surfacesCount       = subMeshCount.surfacesCount;
-                var vertexCount		    = subMeshCount.vertexCount;
-                var indexCount		    = subMeshCount.indexCount;
-                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
-
-                var subMeshes          = this.subMeshesArray       [index].AsArray();
-                var indices            = this.indicesArray         [index].AsArray();
-                var colliderVertices   = this.colliderVerticesArray[index].AsArray();
-
-                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-
-                // copy all the vertices & indices to a mesh for the collider
-                for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = 0, indexOffset = 0, vertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
-                        surfaceIndex < lastSurfaceIndex;
-                        ++surfaceIndex)
-                {
-                    var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
-                    ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
-                    ref var sourceIndices   = ref sourceBuffer.indices;
-                    ref var sourceVertices  = ref sourceBuffer.colliderVertices;
-
-                    var sourceIndexCount    = sourceIndices.Length;
-                    var sourceVertexCount   = sourceVertices.Length;
-                    var sourceBrushCount    = sourceIndexCount / 3;
-
-                    if (sourceIndexCount == 0 ||
-                        sourceVertexCount == 0)
-                        continue;
-
-                    brushIDIndexOffset += sourceBrushCount;
-
-                    for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
-                        indices[indexOffset] = (int)(sourceIndices[i] + vertexOffset);
-
-                    colliderVertices.CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
-                    
-                    min = math.min(min, sourceBuffer.min);
-                    max = math.max(max, sourceBuffer.max);
-
-                    vertexOffset += sourceVertexCount;
-                }
-
-                subMeshes[0] = new GeneratedSubMesh
-                { 
-                    baseVertex          = 0,
-                    baseIndex           = 0,
-                    indexCount          = indexCount,
-                    vertexCount         = vertexCount,
-                    bounds              = new MinMaxAABB { Min = min, Max = max }
-                };
-            }
-        }
-    }
     
 
 
@@ -704,15 +473,18 @@ namespace Chisel.Core
             new DebugRenderFlags{ Item1 = LayerUsageFlags.Culled                , Item2 = LayerUsageFlags.Culled }                   // all surfaces removed by the CSG algorithm
         };
 
+        // Read
         [NoAlias, ReadOnly] public NativeList<GeneratedMeshDescription> meshDescriptions;
         [NoAlias, ReadOnly] public NativeList<SubMeshSection>           subMeshSections;
         [NoAlias, ReadOnly] public NativeList<Mesh.MeshData>            meshDatas;
 
-        [NoAlias, WriteOnly] public NativeList<Mesh.MeshData>        meshes;
-        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>     debugHelperMeshes;
-        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>     renderMeshes;
+        // Write
+        [NoAlias, WriteOnly] public NativeList<Mesh.MeshData>           meshes;
+        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>        debugHelperMeshes;
+        [NoAlias, WriteOnly] public NativeList<ChiselMeshUpdate>        renderMeshes;
 
-        [NoAlias] public NativeList<ChiselMeshUpdate> colliderMeshUpdates;
+        // Read / Write
+        [NoAlias] public NativeList<ChiselMeshUpdate>                   colliderMeshUpdates;
 
 
         [BurstDiscard]
@@ -808,64 +580,118 @@ namespace Chisel.Core
     public struct CopyToRenderMeshJob : IJobParallelFor
     {
         // Read
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
+        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
+
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   renderDescriptors;
         [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             renderMeshes;
-        [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
-        [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
-        [NoAlias, ReadOnly] public NativeListArray<RenderVertex>            vertices;
 
-        // Read (get meshData)/Write (write to meshData)
-        [NativeDisableContainerSafetyRestriction]
-        [NoAlias] public NativeList<Mesh.MeshData> meshes;
+        // Read / Write
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeListArray<int>      triangleBrushIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
 
         public void Execute(int renderIndex)
         {
             var update          = renderMeshes[renderIndex];
             var contentsIndex   = update.contentsIndex;
             var meshIndex       = update.meshIndex;
+            
+            var vertexBufferInit    = subMeshSections[contentsIndex];
+            var startIndex          = vertexBufferInit.startIndex;
+            var endIndex            = vertexBufferInit.endIndex;
+            var numberOfSubMeshes   = endIndex - startIndex;
+            var totalVertexCount    = vertexBufferInit.totalVertexCount;
+            var totalIndexCount     = vertexBufferInit.totalIndexCount;
+            
             var meshData        = meshes[meshIndex];
-
-            if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
-                !this.vertices.IsIndexCreated(contentsIndex) ||
-                !this.indices.IsIndexCreated(contentsIndex))
+            if (numberOfSubMeshes == 0 ||
+                totalVertexCount == 0 ||
+                totalIndexCount == 0)
             {
                 meshData.SetVertexBufferParams(0, renderDescriptors);
                 meshData.SetIndexBufferParams(0, IndexFormat.UInt32);
                 meshData.subMeshCount = 0;
                 return;
             }
+
+            meshData.SetVertexBufferParams(totalVertexCount, renderDescriptors);
+            meshData.SetIndexBufferParams(totalIndexCount, IndexFormat.UInt32);
+            meshData.subMeshCount = numberOfSubMeshes;
+
+            var vertices    = meshData.GetVertexData<RenderVertex>(stream: 0);
+            var indices     = meshData.GetIndexData<int>();
+
+            var triangleBrushIndices = this.triangleBrushIndices[contentsIndex].AsArray();
                 
-            var subMeshesArray      = this.subMeshes[contentsIndex].AsArray();
-            var verticesArray       = this.vertices[contentsIndex].AsArray();
-            var indicesArray        = this.indices[contentsIndex].AsArray();
+            int currentBaseVertex = 0;
+            int currentBaseIndex = 0;
 
-
-            meshData.SetVertexBufferParams(verticesArray.Length, renderDescriptors);
-            meshData.SetIndexBufferParams(indicesArray.Length, IndexFormat.UInt32);
-
-            var dstVertices = meshData.GetVertexData<RenderVertex>(stream: 0);
-            dstVertices.CopyFrom(verticesArray);
-            
-            var dstIndices = meshData.GetIndexData<int>();
-            dstIndices.CopyFrom(indicesArray);
-
-            meshData.subMeshCount = subMeshesArray.Length;
-            for (int i = 0; i < subMeshesArray.Length; i++)
+            for (int subMeshIndex = 0, d = startIndex; d < endIndex; d++, subMeshIndex++)
             {
-                var srcBounds   = subMeshesArray[i].bounds;
+                var subMeshCount        = subMeshCounts[d];
+                var vertexCount		    = subMeshCount.vertexCount;
+                var indexCount		    = subMeshCount.indexCount;
+                var surfacesOffset      = subMeshCount.surfacesOffset;
+                var surfacesCount       = subMeshCount.surfacesCount;
+                var meshQueryIndex      = subMeshCount.meshQueryIndex;
+                var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
+
+                var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+                var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
+                // copy all the vertices & indices to the sub-meshes, one sub-mesh per material
+                for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = currentBaseIndex / 3, indexOffset = currentBaseIndex, indexVertexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
+                        surfaceIndex < lastSurfaceIndex;
+                        ++surfaceIndex)
+                {
+                    var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
+                    var brushNodeIndex      = subMeshSurface.brushNodeIndex;
+                    ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
+                            
+                    ref var sourceIndices   = ref sourceBuffer.indices;
+                    ref var sourceVertices  = ref sourceBuffer.renderVertices;
+
+                    var sourceIndexCount    = sourceIndices.Length;
+                    var sourceVertexCount   = sourceVertices.Length;
+                    var sourceBrushCount    = sourceIndexCount / 3;
+
+                    if (sourceIndexCount == 0 ||
+                        sourceVertexCount == 0)
+                        continue;
+                        
+                    var brushNodeID = brushNodeIndex + 1;                        
+                    for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
+                        triangleBrushIndices[brushIDIndexOffset] = brushNodeID;
+
+                    for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
+                        indices[indexOffset] = (int)(sourceIndices[i] + indexVertexOffset);
+
+                    vertices.CopyFrom(currentBaseVertex + indexVertexOffset, ref sourceVertices, 0, sourceVertexCount);
+
+                    min = math.min(min, sourceBuffer.min);
+                    max = math.max(max, sourceBuffer.max);
+
+                    indexVertexOffset += sourceVertexCount;
+                }
+                
+                var srcBounds   = new MinMaxAABB { Min = min, Max = max };
                 var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
                 var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
                 var dstBounds   = new Bounds(center, size);
-                meshData.SetSubMesh(i, new SubMeshDescriptor
+                meshData.SetSubMesh(subMeshIndex, new SubMeshDescriptor
                 {
-                    baseVertex  = subMeshesArray[i].baseVertex,
+                    baseVertex  = currentBaseVertex,
                     firstVertex = 0,
-                    vertexCount = subMeshesArray[i].vertexCount,
-                    indexStart  = subMeshesArray[i].baseIndex,
-                    indexCount  = subMeshesArray[i].indexCount,
+                    vertexCount = vertexCount,
+                    indexStart  = currentBaseIndex,
+                    indexCount  = indexCount,
                     bounds      = dstBounds,
                     topology    = UnityEngine.MeshTopology.Triangles,
                 }, MeshUpdateFlags.DontRecalculateBounds);
+
+                currentBaseVertex += vertexCount;
+                currentBaseIndex += indexCount;
             }
         }
     }
@@ -874,67 +700,133 @@ namespace Chisel.Core
     public struct CopyToColliderMeshJob : IJobParallelFor
     {
         // Read
+        [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
+        [NoAlias, ReadOnly] public NativeArray<SubMeshCounts>               subMeshCounts;
+        [NoAlias, ReadOnly] public NativeListArray<SubMeshSurface>          subMeshSurfaces;
+
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
         [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             colliderMeshes;
-        [NoAlias, ReadOnly] public NativeListArray<GeneratedSubMesh>        subMeshes;
-        [NoAlias, ReadOnly] public NativeListArray<int> 	                indices;
-        [NoAlias, ReadOnly] public NativeListArray<float3>                  vertices;
         [NoAlias, ReadOnly] public int contentsIndex;
         [NoAlias, ReadOnly] public int meshIndex;
 
-        // Read (get meshData)/Write (write to meshData)
-        [NativeDisableContainerSafetyRestriction]
-        [NoAlias] public NativeList<Mesh.MeshData> meshes;
-        
+        // Read / Write
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
+
+
+        // Per thread scratch memory
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<int>      indices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] NativeList<float3>   vertices;
+
         public void Execute(int colliderIndex)
         {
-            var update          = colliderMeshes[colliderIndex];
-            var contentsIndex   = update.contentsIndex;
-            var meshIndex       = update.meshIndex;
-            var meshData        = meshes[meshIndex];
+            var update              = colliderMeshes[colliderIndex];
+            var contentsIndex       = update.contentsIndex;
+            var meshIndex           = update.meshIndex;
+            
+            var vertexBufferInit    = subMeshSections[contentsIndex];
+            var totalVertexCount    = vertexBufferInit.totalVertexCount;
+            var totalIndexCount     = vertexBufferInit.totalIndexCount;
 
-            if (!this.subMeshes.IsIndexCreated(contentsIndex) ||
-                !this.vertices.IsIndexCreated(contentsIndex) ||
-                !this.indices.IsIndexCreated(contentsIndex))
+            var meshData            = meshes[meshIndex];
+            if (totalVertexCount == 0 ||
+                totalIndexCount == 0)
             {
                 meshData.SetVertexBufferParams(0, colliderDescriptors);
                 meshData.SetIndexBufferParams(0, IndexFormat.UInt32);
                 meshData.subMeshCount = 0;
                 return;
             }
-                
-            var subMeshesArray  = this.subMeshes[contentsIndex].AsArray();
-            var verticesArray   = this.vertices[contentsIndex].AsArray();
-            var indicesArray    = this.indices[contentsIndex].AsArray();
+            var startIndex          = vertexBufferInit.startIndex;
 
-            meshData.SetVertexBufferParams(verticesArray.Length, colliderDescriptors);
-            meshData.SetIndexBufferParams(indicesArray.Length, IndexFormat.UInt32);
+            if (indices.IsCreated)
+            {
+                indices.Clear();
+                if (indices.Capacity < totalIndexCount)
+                    indices.Capacity = totalIndexCount;
+            } else
+                indices = new NativeList<int>(totalIndexCount, Allocator.Temp);
+            indices.ResizeUninitialized(totalIndexCount);
+
+            if (vertices.IsCreated)
+            {
+                vertices.Clear();
+                if (vertices.Capacity < totalVertexCount)
+                    vertices.Capacity = totalVertexCount;
+            } else
+                vertices = new NativeList<float3>(totalVertexCount, Allocator.Temp);
+            vertices.ResizeUninitialized(totalVertexCount);
+
+            var subMeshCount        = subMeshCounts[startIndex];
+            var meshQueryIndex		= subMeshCount.meshQueryIndex;
+
+            var surfacesOffset      = subMeshCount.surfacesOffset;
+            var surfacesCount       = subMeshCount.surfacesCount;
+            var vertexCount		    = subMeshCount.vertexCount;
+            var indexCount		    = subMeshCount.indexCount;
+            var subMeshSurfaceArray = subMeshSurfaces[meshQueryIndex];
+
+            var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
+            // copy all the vertices & indices to a mesh for the collider
+            int indexOffset = 0, vertexOffset = 0;
+            for (int surfaceIndex = surfacesOffset, brushIDIndexOffset = 0, lastSurfaceIndex = surfacesCount + surfacesOffset;
+                    surfaceIndex < lastSurfaceIndex;
+                    ++surfaceIndex)
+            {
+                var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
+                ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
+                ref var sourceIndices   = ref sourceBuffer.indices;
+                ref var sourceVertices  = ref sourceBuffer.colliderVertices;
+
+                var sourceIndexCount    = sourceIndices.Length;
+                var sourceVertexCount   = sourceVertices.Length;
+                var sourceBrushCount    = sourceIndexCount / 3;
+
+                if (sourceIndexCount == 0 ||
+                    sourceVertexCount == 0)
+                    continue;
+
+                brushIDIndexOffset += sourceBrushCount;
+
+                for (int i = 0; i < sourceIndexCount; i++, indexOffset++)
+                    indices[indexOffset] = (int)(sourceIndices[i] + vertexOffset);
+
+                vertices.CopyFrom(vertexOffset, ref sourceVertices, 0, sourceVertexCount);
+                    
+                min = math.min(min, sourceBuffer.min);
+                max = math.max(max, sourceBuffer.max);
+
+                vertexOffset += sourceVertexCount;
+            }
+            Debug.Assert(indexOffset == totalIndexCount);
+            Debug.Assert(vertexOffset == totalVertexCount);
+
+
+            meshData.SetVertexBufferParams(vertices.Length, colliderDescriptors);
+            meshData.SetIndexBufferParams(indices.Length, IndexFormat.UInt32);
 
             var dstVertices = meshData.GetVertexData<float3>(stream: 0);
-            dstVertices.CopyFrom(verticesArray);
+            dstVertices.CopyFrom(vertices);
                 
             var dstIndices = meshData.GetIndexData<int>();
-            dstIndices.CopyFrom(indicesArray);
+            dstIndices.CopyFrom(indices);
                 
-            meshData.subMeshCount = subMeshesArray.Length;
-            for (int i = 0; i < subMeshesArray.Length; i++)
+            var srcBounds   = new MinMaxAABB { Min = min, Max = max };
+            var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
+            var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
+            
+            meshData.subMeshCount = 1;
+            meshData.SetSubMesh(0, new SubMeshDescriptor
             {
-                var srcBounds   = subMeshesArray[i].bounds;
-                var center      = (Vector3)((srcBounds.Max + srcBounds.Min) * 0.5f);
-                var size        = (Vector3)(srcBounds.Max - srcBounds.Min);
-                var dstBounds   = new Bounds(center, size);
-
-                meshData.SetSubMesh(i, new SubMeshDescriptor
-                {
-                    baseVertex  = subMeshesArray[i].baseVertex,
-                    firstVertex = 0,
-                    vertexCount = subMeshesArray[i].vertexCount,
-                    indexStart  = subMeshesArray[i].baseIndex,
-                    indexCount  = subMeshesArray[i].indexCount,
-                    bounds      = dstBounds,
-                    topology    = UnityEngine.MeshTopology.Triangles,
-                }, MeshUpdateFlags.DontRecalculateBounds);
-            }
+                baseVertex  = 0,
+                firstVertex = 0,
+                vertexCount = vertexCount,
+                indexStart  = 0,
+                indexCount  = indexCount,
+                bounds      = new Bounds(center, size),
+                topology    = UnityEngine.MeshTopology.Triangles,
+            }, MeshUpdateFlags.DontRecalculateBounds);
 
             // TODO: Figure out why sometimes setting a mesh on a MeshCollider causes BakeMesh to be called by unity
             //       (in which case this would happen serially on the main thread, which would be slower than calling it here)
