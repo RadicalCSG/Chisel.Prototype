@@ -160,6 +160,16 @@ namespace Chisel.Core
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
+        public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
+        {
+            CheckLengthInRange(count, elements.Length);
+            CheckIndexInRangeInc(start, elements.Length - count);
+
+            list.Clear();
+            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
+        }
+
+
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
         {
             CheckLengthInRange(count, srcList.Length);

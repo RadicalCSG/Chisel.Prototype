@@ -7,6 +7,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Entities;
+using System.Collections.Generic;
 
 namespace Chisel.Core
 {
@@ -67,6 +68,19 @@ namespace Chisel.Core
         {
             Debug.Assert(false, $"Invalid final category {_interiorCategory}");
         }
+
+        struct CompareSortByBasePlaneIndex : IComparer<ChiselQuerySurface>
+        {
+            public int Compare(ChiselQuerySurface x, ChiselQuerySurface y)
+            {
+                var diff = x.surfaceParameter - y.surfaceParameter;
+                if (diff != 0)
+                    return diff;
+                return x.surfaceIndex - y.surfaceIndex;
+            }
+        }
+
+        static readonly CompareSortByBasePlaneIndex compareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
 
         public void Execute(int index)
         {
@@ -349,7 +363,8 @@ namespace Chisel.Core
                 Debug.Assert(outputVertices.Length == surfaceRenderBuffer.vertexCount);
                 Debug.Assert(outputIndices.Length == surfaceRenderBuffer.indexCount);
             }
-            
+
+            NativeCollectionHelpers.EnsureCapacityAndClear(ref querySurfaceList, surfaceRenderBuffers.Length);
 
             var querySurfaces = builder.Allocate(ref root.querySurfaces, meshQueries.Length);
             for (int t = 0; t < meshQueries.Length; t++)
@@ -361,7 +376,7 @@ namespace Chisel.Core
                                              meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
                                              (int)meshQuery.LayerParameterIndex - 1 : -1;
 
-                NativeCollectionHelpers.EnsureCapacityAndClear(ref querySurfaceList, surfaceRenderBuffers.Length);
+                querySurfaceList.Clear();
 
                 for (int s = 0; s < surfaceRenderBuffers.Length; s++)
                 {
@@ -380,6 +395,7 @@ namespace Chisel.Core
                         geometryHash        = surfaceRenderBuffers[s].geometryHash
                     });
                 }
+                querySurfaceList.Sort(compareSortByBasePlaneIndex);
 
                 builder.Construct(ref querySurfaces[t].surfaces, querySurfaceList);
                 querySurfaces[t].brushNodeIndex = brushIndexOrder.nodeIndex;
