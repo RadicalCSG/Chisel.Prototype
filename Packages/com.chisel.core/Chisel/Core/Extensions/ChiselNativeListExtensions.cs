@@ -32,7 +32,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct EnsureCapacityListJob<T> : IJob
             where T : struct
         {
@@ -60,7 +60,7 @@ namespace Chisel.Core
         }
 
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct EnsureCapacityArrayJob<T1,T2> : IJob
             where T1 : struct
             where T2 : struct
@@ -160,6 +160,16 @@ namespace Chisel.Core
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
+        public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
+        {
+            CheckLengthInRange(count, elements.Length);
+            CheckIndexInRangeInc(start, elements.Length - count);
+
+            list.Clear();
+            list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
+        }
+
+
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
         {
             CheckLengthInRange(count, srcList.Length);
@@ -193,6 +203,19 @@ namespace Chisel.Core
 
             var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
             var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;
+
+            UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
+        }
+
+        public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        {
+            CheckLengthInRange(srcCount, srcArray.Length);
+            CheckLengthInRange(srcCount, dstList.Length);
+            CheckIndexInRangeInc(dstIndex, dstList.Length - srcCount);
+            CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
+
+            var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
+            var dstPtr = (T*)dstList.GetUnsafePtr() + dstIndex;
 
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }

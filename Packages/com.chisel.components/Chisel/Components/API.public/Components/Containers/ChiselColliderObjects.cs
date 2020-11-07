@@ -8,13 +8,10 @@ using System.Collections.Generic;
 
 namespace Chisel.Components
 {
-    public struct ChiselPhysicsObjectUpdate
+    public struct ChiselColliderObjectUpdate
     {
-        public ChiselColliderObjects instance;
-        public int  contentsIndex;
-        public int  meshIndex;
-        public int  instanceID;
-        public VertexBufferContents contents; 
+        public int                  meshIndex;
+        public Mesh.MeshDataArray   meshDataArray;
     }
 
     [Serializable]
@@ -80,21 +77,6 @@ namespace Chisel.Components
         {
             meshCollider.sharedMesh = sharedMesh;
             meshCollider.sharedMaterial = physicsMaterial;
-        }
-
-        public static void ScheduleMeshCopy(List<ChiselPhysicsObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs, JobHandle dependencies)
-        {
-            Profiler.BeginSample("CopyToMesh");
-            for (int i = 0; i < updates.Count; i++)
-            {
-                var update = updates[i];
-                int contentsIndex = update.contentsIndex;
-                var instanceID = update.instanceID;
-                var meshIndex = update.meshIndex;
-                // Retrieve the generatedMesh, and store it in the Unity Mesh
-                update.contents.CopyPositionOnlyToMesh(dataArray, contentsIndex, meshIndex, instanceID, ref allJobs, dependencies);
-            }
-            Profiler.EndSample();
         }
 
         public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)

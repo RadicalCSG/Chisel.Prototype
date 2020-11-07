@@ -2,9 +2,9 @@
     "name": "com.chisel.core",
     "rootNamespace": "",
     "references": [
+        "Unity.Burst",
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",
-        "Unity.Burst",
         "Unity.Collections",
         "Unity.Entities",
         "Unity.Mathematics.Extensions",

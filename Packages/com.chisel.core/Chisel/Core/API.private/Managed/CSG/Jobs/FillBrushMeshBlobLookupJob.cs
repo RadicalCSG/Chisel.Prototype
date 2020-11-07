@@ -18,12 +18,14 @@ namespace Chisel.Core
     [BurstCompile(CompileSynchronously = true)]
     public struct FillBrushMeshBlobLookupJob : IJob
     {
-        [ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>> brushMeshBlobs;        
-        [ReadOnly] public NativeArray<IndexOrder>   allTreeBrushIndexOrders;
-        [ReadOnly] public NativeArray<int>          allBrushMeshInstanceIDs;
+        // Read
+        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>> brushMeshBlobs;        
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>   allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<int>          allBrushMeshInstanceIDs;
 
-        [WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
-        [WriteOnly] public NativeReference<int> surfaceCountRef;
+        // Write
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
+        [NoAlias, WriteOnly] public NativeReference<int> surfaceCountRef;
 
         public void Execute()
         {

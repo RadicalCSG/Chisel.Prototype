@@ -350,7 +350,7 @@ namespace Chisel.Core
             CheckArgPositive(initialListCapacity);
 
 
-            CollectionHelper.CheckIsUnmanaged<T>();
+            //CollectionHelper.CheckIsUnmanaged<T>();
             CheckArgInRange(totalSize, int.MaxValue);
 
             DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, disposeSentinelStackDepth, allocator);
@@ -717,7 +717,7 @@ namespace Chisel.Core
             m_Array = null;
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         internal unsafe struct UnsafeDisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction]

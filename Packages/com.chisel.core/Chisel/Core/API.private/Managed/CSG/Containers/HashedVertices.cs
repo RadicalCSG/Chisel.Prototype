@@ -453,9 +453,9 @@ namespace Chisel.Core
             // Allocator.None    == container is initialized, but container doesn't own data.
             return allocator > Allocator.None;
         }
-        
 
-        [BurstCompile]
+
+        [BurstCompile(CompileSynchronously = true)]
         internal unsafe struct UnsafeDisposeJob : IJob
         {
             [NativeDisableUnsafePtrRestriction] public UnsafeList* vertices;
