@@ -10,8 +10,7 @@ namespace Chisel.Components
 {
     public struct ChiselColliderObjectUpdate
     {
-        public int                  meshIndex;
-        public Mesh.MeshDataArray   meshDataArray;
+        public int              meshIndex;
     }
 
     [Serializable]

@@ -376,7 +376,7 @@ namespace Chisel.Components
         // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
         public int FinishMeshUpdates(ChiselModel model, GameObject  parentGameObject, 
-                                     List<Mesh.MeshDataArray>       meshDataArrays, 
+                                     Mesh.MeshDataArray             meshDataArray, 
                                      ref VertexBufferContents       vertexBufferContents, 
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
                                      NativeList<ChiselMeshUpdate>   debugHelperMeshes,
@@ -460,15 +460,17 @@ namespace Chisel.Components
 
             // Now do all kinds of book-keeping code that we might as well do while our jobs are running on other threads
             Profiler.BeginSample("new ChiselRenderObjectUpdate");
+
+            var usedDebugHelpers = new HashSet<int>();
             for (int i = 0; i < debugHelperMeshes.Length; i++)
             {
                 var debugHelperMeshUpdate   = debugHelperMeshes[i];
+                usedDebugHelpers.Add(debugHelperMeshUpdate.objectIndex);
                 var instance                = debugHelpers[debugHelperMeshUpdate.objectIndex];
                 foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
                     meshIndex           = debugHelperMeshUpdate.meshIndex,
-                    meshDataArray       = meshDataArrays[debugHelperMeshUpdate.meshIndex],
                     materialOverride    = ChiselMaterialManager.HelperMaterials[debugHelperMeshUpdate.objectIndex],
                     instance            = instance,
                     model               = model
@@ -477,15 +479,16 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("new ChiselRenderObjectUpdate");
+            var usedRenderMeshes = new HashSet<int>();
             for (int i = 0; i < renderMeshes.Length; i++)
             {
                 var renderMeshUpdate    = renderMeshes[i];
+                usedRenderMeshes.Add(renderMeshUpdate.objectIndex);
                 var instance            = renderables[renderMeshUpdate.objectIndex];
                 foundMeshes.Add(instance.sharedMesh);
                 renderObjectUpdates.Add(new ChiselRenderObjectUpdate
                 {
                     meshIndex           = renderMeshUpdate.meshIndex,
-                    meshDataArray       = meshDataArrays[renderMeshUpdate.meshIndex],
                     materialOverride    = null,
                     instance            = instance,
                     model               = model
@@ -523,8 +526,7 @@ namespace Chisel.Components
                 foundMeshes.Add(instance.sharedMesh);
                 colliderObjectUpdates.Add(new ChiselColliderObjectUpdate
                 {
-                    meshIndex           = colliderMeshUpdate.meshIndex,
-                    meshDataArray       = meshDataArrays[colliderMeshUpdate.meshIndex],
+                    meshIndex   = colliderMeshUpdate.meshIndex
                 });
             }
             Profiler.EndSample();
@@ -553,29 +555,47 @@ namespace Chisel.Components
             ChiselRenderObjects.UpdateSettings(this.renderMeshUpdates, this.renderObjectUpdates, this.gameObjectStates, ref vertexBufferContents);
             Profiler.EndSample();
 
-            Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
-            for (int i = 0; i < this.renderObjectUpdates.Count; i++)
+            Debug.Assert(foundMeshes.Count <= meshDataArray.Length);
+
             {
-                var update = this.renderObjectUpdates[i];
-                var meshIndex = update.meshIndex;
-                if (update.meshDataArray.Length > 0)
-                    Mesh.ApplyAndDisposeWritableMeshData(update.meshDataArray,
-                                                         foundMeshes[meshIndex], 
-                                                         UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
-                update.meshDataArray = default;
-                this.renderObjectUpdates[i] = update;
-            } 
-            for (int i = 0; i < this.colliderObjectUpdates.Count; i++)
-            {
-                var update = this.colliderObjectUpdates[i];
-                var meshIndex = update.meshIndex;
-                if (update.meshDataArray.Length > 0)
-                    Mesh.ApplyAndDisposeWritableMeshData(update.meshDataArray,
-                                                         foundMeshes[meshIndex],
-                                                         UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
-                update.meshDataArray = default;
-                this.colliderObjectUpdates[i] = update;
+                // This is a hack to ensure foundMeshes is the same exact length as meshDataArray
+                // (All these need to be set to empty anyway)
+
+                // TODO: figure out why the maximum meshDataArray.Length does not match the maximum used meshes?
+
+                for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < renderables.Length; i++)
+                {
+                    if (usedRenderMeshes.Contains(i))
+                        continue;
+
+                    var instance = renderables[i];
+                    var sharedMesh = instance.sharedMesh;
+                    if (!sharedMesh || foundMeshes.Contains(sharedMesh))
+                        continue;
+                    foundMeshes.Add(sharedMesh);
+                    meshDataArray[i].SetIndexBufferParams(0, IndexFormat.UInt32);
+                    meshDataArray[i].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                }
+
+                for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < debugHelpers.Length; i++)
+                {
+                    if (usedDebugHelpers.Contains(i))
+                        continue;
+
+                    var instance = debugHelpers[i];
+                    var sharedMesh = instance.sharedMesh;
+                    if (!sharedMesh || foundMeshes.Contains(sharedMesh))
+                        continue;
+
+                    foundMeshes.Add(sharedMesh);
+                    meshDataArray[i].SetIndexBufferParams(0, IndexFormat.UInt32);
+                    meshDataArray[i].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                }
             }
+
+            Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
+                                                 UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateProperties");

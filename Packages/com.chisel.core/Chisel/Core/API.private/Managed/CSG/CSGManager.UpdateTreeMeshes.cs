@@ -11,15 +11,20 @@ namespace Chisel.Core
 {
     static partial class CSGManager
     {
+        static readonly HashSet<int> s_FoundBrushMeshIndices = new HashSet<int>();
+        static readonly HashSet<int> s_RemoveBrushMeshIndices = new HashSet<int>();
+
         internal unsafe struct TreeUpdate
         {
 
-            public int      treeNodeIndex;
-            public int      brushCount;
-            public int      updateCount;
-            public int      maxNodeOrder;
-            
-            public List<UnityEngine.Mesh.MeshDataArray>     meshDataArrays;
+            public int treeNodeIndex;
+            public int brushCount;
+            public int updateCount;
+            public int maxNodeOrder;
+            public int parameter1Count;
+            public int parameter2Count;
+
+            public UnityEngine.Mesh.MeshDataArray           meshDataArray;
             public NativeList<UnityEngine.Mesh.MeshData>    meshDatas;
 
             public NativeList<IndexOrder>               allTreeBrushIndexOrders;
@@ -179,7 +184,6 @@ namespace Chisel.Core
 
                 loopVerticesLookup.ResizeExact(brushCount);
 
-                meshDataArrays.Clear();
                 meshDatas.Clear();
             }
 
@@ -195,7 +199,7 @@ namespace Chisel.Core
                     return;
                 }
 
-                meshDataArrays  = new List<UnityEngine.Mesh.MeshDataArray>();
+                meshDataArray   = default;
                 meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(Allocator.Persistent);
 
                 Profiler.BeginSample("NEW");
@@ -305,7 +309,7 @@ namespace Chisel.Core
                 
 
                 vertexBufferContents            = default;
-                meshDataArrays                  = default;
+                meshDataArray                   = default;
                 meshDatas                       = default;
 
                 brushRenderData                 = default;
@@ -410,6 +414,10 @@ namespace Chisel.Core
                 s_TreeUpdates = new TreeUpdate[treeNodeIDs.Count];
             Profiler.EndSample();
 
+            // This cache stores all brushMeshes of all trees
+            Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
+            ChiselMeshLookup.Update();
+            Profiler.EndSample();
 
             // TODO: sort the treeNodeIDs by their position in the hierarchy (so we do everything in the same order, every time)
             // TODO: store all data separately for each tree
@@ -892,34 +900,125 @@ namespace Chisel.Core
                 #endregion
 
                 
-                // TODO: do this in job, build brushMeshList in same job
                 #region Build all BrushMeshBlobs
 
                 Profiler.BeginSample("CSG_AllBrushMeshInstanceIDs");
 
+                ref var parameters1 = ref chiselLookupValues.parameters1;
+                ref var parameters2 = ref chiselLookupValues.parameters2;
+                var allKnownBrushMeshIndices    = chiselLookupValues.allKnownBrushMeshIndices;
+                var previousMeshIDGeneration    = chiselLookupValues.previousMeshIDGeneration;
+
+                ref var brushMeshBlobGeneration = ref ChiselMeshLookup.Value.brushMeshBlobGeneration;
                 ref var allBrushMeshInstanceIDs = ref currentTree.allBrushMeshInstanceIDs;
+
+                bool rebuildParameterList = false;
+                s_FoundBrushMeshIndices.Clear();
                 // TODO: just store CSGManager.brushInfos[nodeIndex].brushMeshInstanceID as a NativeList to begin with
+                // TODO: do this in job, build brushMeshList in same job
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
-                    int nodeID = allTreeBrushes[nodeOrder];
-                    int nodeIndex = nodeID - 1;
+                    int nodeID      = allTreeBrushes[nodeOrder];
+                    int nodeIndex   = nodeID - 1;
                     int brushMeshID = 0;
                     if (!IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
                         (brushMeshID = CSGManager.brushInfos[nodeIndex].brushMeshInstanceID) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");
+                        Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");                        
                         allBrushMeshInstanceIDs[nodeOrder] = 0;
                     } else
+                    {
+                        if (!previousMeshIDGeneration.TryGetValue(brushMeshID, out var currentGeneration))
+                        {
+                            if (!brushMeshBlobGeneration.TryGetValue(brushMeshID - 1, out var newGeneration))
+                                newGeneration = 0;
+                            previousMeshIDGeneration[brushMeshID] = newGeneration;
+                        } else
+                        {
+                            if (!brushMeshBlobGeneration.TryGetValue(brushMeshID - 1, out var newGeneration))
+                                newGeneration = 0;
+                            if (currentGeneration != newGeneration)
+                            {
+                                // TODO: we do not have the previous parameters for this mesh to unregister .. 
+                                //       if we did, we could unregister those, and register the new ones instead
+                                rebuildParameterList = true;
+                                previousMeshIDGeneration[brushMeshID] = newGeneration;
+                            }
+                        }
                         allBrushMeshInstanceIDs[nodeOrder] = brushMeshID;
+                        s_FoundBrushMeshIndices.Add(brushMeshID - 1);
+                    }
                 }
-                Profiler.EndSample();
 
-                Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
-                ChiselMeshLookup.Update();
+                // TODO: optimize all of this, especially slow for complete update
+                
+                s_RemoveBrushMeshIndices.Clear();
+                foreach (var brushMeshIndex in allKnownBrushMeshIndices)
+                {
+                    if (s_FoundBrushMeshIndices.Contains(brushMeshIndex))
+                        s_FoundBrushMeshIndices.Remove(brushMeshIndex);
+                    else
+                        s_RemoveBrushMeshIndices.Add(brushMeshIndex);
+                }
+
+                //Debug.Log($"Remove: {s_RemoveBrushMeshIndices.Count}  Add: {s_FoundBrushMeshIndices.Count}  Rebuild: {rebuildParameterList}");
+
+                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
+                if (rebuildParameterList)
+                {
+                    foreach (int brushMeshIndex in s_RemoveBrushMeshIndices)
+                        allKnownBrushMeshIndices.Remove(brushMeshIndex);
+                    parameters1.Clear();
+                    parameters2.Clear();
+                    foreach (var brushMeshIndex in allKnownBrushMeshIndices)
+                    {
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        for (int p = 0; p < polygons.Length; p++)
+                        {
+                            ref var polygon = ref polygons[p];
+                            var layerUsage = polygon.layerDefinition.layerUsage;
+                            if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.RegisterParameter(polygon.layerDefinition.layerParameter1);
+                            if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.layerDefinition.layerParameter2);
+                        }
+                    }
+                } else
+                {
+                    foreach (int brushMeshIndex in s_RemoveBrushMeshIndices)
+                    {
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        for (int p = 0; p < polygons.Length; p++)
+                        {
+                            ref var polygon = ref polygons[p];
+                            var layerUsage = polygon.layerDefinition.layerUsage;
+                            if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.UnregisterParameter(polygon.layerDefinition.layerParameter1);
+                            if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.UnregisterParameter(polygon.layerDefinition.layerParameter2);
+                        }
+                        allKnownBrushMeshIndices.Remove(brushMeshIndex);
+                    }
+                    foreach (int brushMeshIndex in s_FoundBrushMeshIndices)
+                    {
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        for (int p = 0; p < polygons.Length; p++)
+                        {
+                            ref var polygon = ref polygons[p];
+                            var layerUsage = polygon.layerDefinition.layerUsage;
+                            if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.RegisterParameter(polygon.layerDefinition.layerParameter1);
+                            if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.layerDefinition.layerParameter2);
+                        }
+                    }
+                }
+                
+                foreach (int brushMeshIndex in s_FoundBrushMeshIndices)
+                    allKnownBrushMeshIndices.Add(brushMeshIndex);
+
                 Profiler.EndSample();
                 #endregion
+
+
+                currentTree.parameter1Count = chiselLookupValues.parameters1.uniqueParameterCount;
+                currentTree.parameter2Count = chiselLookupValues.parameters2.uniqueParameterCount;
 
                 treeUpdateLength++;
 
@@ -1004,9 +1103,8 @@ namespace Chisel.Core
             //          => cache this material index 
             //          => have a lookup table for material <=> material index
             //       have array of lists for indices, colliderVertices, renderVertices
-            //       our number of meshes is now 100% predictable, now do only ONE Mesh.AllocateWritableMeshData call
-            //       instead of storing indices,vertices etc. in blobs, store these
-            //          in these lists, per query
+            //       our number of meshes is now 100% predictable
+            //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
             //       at beginning of frame remove all invalidated pieces of these lists and pack them
             //       when adding new geometry, add them at the end
             //       then figure out if its worth it to keep these lists "in order"
@@ -2158,19 +2256,35 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
 
-                        // TODO: - find a way to keep the list of used physicMaterials in each particular model
-                        //       - keep a list of meshes around, one for each physicMaterial
-                        //       - the number of meshes is now fixed as long as no physicMaterial is added/removed
-                        //       - the number of meshColliders could be the same size, just some meshColliders enabled/disabled
-                        //       - our number of meshes (colliders + renderers) is now predictable
-
-                        const int kMaxMeshAllocation = 100;
-                        for (int i = 0; i < kMaxMeshAllocation; i++)
+                        var meshAllocations = 0;
+                        for (int m = 0; m < treeUpdate.meshQueries.Length; m++)
                         {
-                            var meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(1);
-                            treeUpdate.meshDataArrays.Add(meshDataArray);
-                            treeUpdate.meshDatas.Add(meshDataArray[0]);
+                            var meshQuery = treeUpdate.meshQueries[m];
+                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                                                         meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                                                         (int)meshQuery.LayerParameterIndex : 0;
+
+                            // Query uses Material
+                            if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
+                            {
+                                // Each Material is stored as a submesh in the same mesh
+                                meshAllocations += 1;  
+                            }
+                            // Query uses PhysicMaterial
+                            else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
+                            {
+                                // Each PhysicMaterial is stored in its own separate mesh
+                                meshAllocations += treeUpdate.parameter2Count; 
+                            } else
+                                meshAllocations++;
                         }
+
+                        //Debug.Log($"{meshAllocations} {treeUpdate.parameter1Count} {treeUpdate.parameter2Count} {treeUpdate.meshQueries.Length}");
+
+                        treeUpdate.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
+
+                        for (int i = 0; i < meshAllocations; i++)
+                            treeUpdate.meshDatas.Add(treeUpdate.meshDataArray[i]);
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -2487,17 +2601,11 @@ namespace Chisel.Core
                         
                         var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
                         var usedMeshCount = finishMeshUpdates(tree, ref treeUpdate.vertexBufferContents,
-                                                              treeUpdate.meshDataArrays,
+                                                              treeUpdate.meshDataArray,
                                                               treeUpdate.colliderMeshUpdates,
                                                               treeUpdate.debugHelperMeshes,
                                                               treeUpdate.renderMeshes,
                                                               dependencies);
-
-                        Profiler.BeginSample("Mesh.Dispose");
-                        for (int i = usedMeshCount; i < treeUpdate.meshDataArrays.Count; i++)
-                            treeUpdate.meshDataArrays[i].Dispose();
-                        treeUpdate.meshDataArrays.Clear();
-                        Profiler.EndSample();
                     }
                     Profiler.EndSample();
                 }

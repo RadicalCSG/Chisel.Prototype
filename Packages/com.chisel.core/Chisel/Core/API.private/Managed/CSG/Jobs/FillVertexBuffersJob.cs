@@ -156,7 +156,6 @@ namespace Chisel.Core
             //              => this whole job could be removed
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
-            // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
                 
             subMeshSurfaces.AllocateWithCapacityForIndex(t, requiredSurfaceCount);
             var subMeshSurfaceList = subMeshSurfaces[t];
@@ -221,7 +220,6 @@ namespace Chisel.Core
                 return;
 
             var meshQuery       = meshQueries[t];
-            var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
             if (sectionSubMeshCounts.IsCreated)
             {

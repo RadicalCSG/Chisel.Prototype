@@ -24,7 +24,7 @@ namespace Chisel.Core
 
     public struct VertexBufferContents
     {
-        readonly static VertexAttributeDescriptor[] s_RenderDescriptors = new[]
+        public readonly static VertexAttributeDescriptor[] s_RenderDescriptors = new[]
         {
             new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0),
             new VertexAttributeDescriptor(VertexAttribute.Normal,    dimension: 3, stream: 0),
@@ -32,7 +32,7 @@ namespace Chisel.Core
             new VertexAttributeDescriptor(VertexAttribute.TexCoord0, dimension: 2, stream: 0),
         };
 
-        readonly static VertexAttributeDescriptor[] s_ColliderDescriptors = new[]
+        public readonly static VertexAttributeDescriptor[] s_ColliderDescriptors = new[]
         {
             new VertexAttributeDescriptor(VertexAttribute.Position,  dimension: 3, stream: 0)
         };
