@@ -595,7 +595,7 @@ namespace Chisel.Components
 
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
-                                                 UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+                                                 UnityEngine.Rendering.MeshUpdateFlags.Default);
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateProperties");

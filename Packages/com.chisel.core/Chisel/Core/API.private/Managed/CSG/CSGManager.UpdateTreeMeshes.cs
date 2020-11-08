@@ -1109,6 +1109,7 @@ namespace Chisel.Core
             //       when adding new geometry, add them at the end
             //       then figure out if its worth it to keep these lists "in order"
 
+            // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
 
             try
             {
@@ -2278,8 +2279,6 @@ namespace Chisel.Core
                             } else
                                 meshAllocations++;
                         }
-
-                        //Debug.Log($"{meshAllocations} {treeUpdate.parameter1Count} {treeUpdate.parameter2Count} {treeUpdate.meshQueries.Length}");
 
                         treeUpdate.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
 
