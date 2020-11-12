@@ -563,6 +563,7 @@ namespace Chisel.Components
 
                 // TODO: figure out why the maximum meshDataArray.Length does not match the maximum used meshes?
 
+                int meshDataArrayOffset = foundMeshes.Count;
                 for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < renderables.Length; i++)
                 {
                     if (usedRenderMeshes.Contains(i))
@@ -573,8 +574,9 @@ namespace Chisel.Components
                     if (!sharedMesh || foundMeshes.Contains(sharedMesh))
                         continue;
                     foundMeshes.Add(sharedMesh);
-                    meshDataArray[i].SetIndexBufferParams(0, IndexFormat.UInt32);
-                    meshDataArray[i].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                    meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
+                    meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                    meshDataArrayOffset++;
                 }
 
                 for (int i = 0; foundMeshes.Count < meshDataArray.Length && i < debugHelpers.Length; i++)
@@ -588,8 +590,9 @@ namespace Chisel.Components
                         continue;
 
                     foundMeshes.Add(sharedMesh);
-                    meshDataArray[i].SetIndexBufferParams(0, IndexFormat.UInt32);
-                    meshDataArray[i].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                    meshDataArray[meshDataArrayOffset].SetIndexBufferParams(0, IndexFormat.UInt32);
+                    meshDataArray[meshDataArrayOffset].SetVertexBufferParams(0, VertexBufferContents.s_RenderDescriptors);
+                    meshDataArrayOffset++;
                 }
             }
 
