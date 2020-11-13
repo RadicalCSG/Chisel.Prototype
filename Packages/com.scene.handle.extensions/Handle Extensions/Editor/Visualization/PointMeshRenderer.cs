@@ -100,24 +100,28 @@ namespace UnitySceneExtensions
 
             if (pointMaterial)
             {
-                for (int i = 0; i <= currentPointMesh; i++)
+                if (pointMaterial.SetPass(0))
                 {
-                    if (pointMeshes[i].vertexCount == 0 ||
-                        pointMeshes[i].pointIndexCount == 0)
-                        continue;
-                    if (pointMaterial.SetPass(0))
+                    for (int i = 0; i <= currentPointMesh; i++)
+                    {
+                        if (pointMeshes[i].vertexCount == 0 ||
+                            pointMeshes[i].pointIndexCount == 0)
+                            continue;
                         Graphics.DrawMeshNow(pointMeshes[i].pointMesh, Matrix4x4.identity, 0);
+                    }
                 }
             }
             if (lineMaterial)
             {
-                for (int i = 0; i <= currentPointMesh; i++)
+                if (lineMaterial.SetPass(0))
                 {
-                    if (pointMeshes[i].vertexCount == 0 ||
-                        pointMeshes[i].lineIndexCount == 0)
-                        continue;
-                    if (lineMaterial.SetPass(0))
+                    for (int i = 0; i <= currentPointMesh; i++)
+                    {
+                        if (pointMeshes[i].vertexCount == 0 ||
+                            pointMeshes[i].lineIndexCount == 0)
+                            continue;
                         Graphics.DrawMeshNow(pointMeshes[i].lineMesh, Matrix4x4.identity, 0);
+                    }
                 }
             }
         }
