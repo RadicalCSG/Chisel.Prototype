@@ -346,14 +346,16 @@ namespace UnitySceneExtensions
                 return;
 
             var max = Mathf.Min(currentTriangleMesh, triangleMeshes.Count - 1);
-            for (int i = 0; i <= max; i++)
+            if (polygonMaterial.SetPass(0))
             {
-                var mesh = triangleMeshes[i].mesh;
-                if (triangleMeshes[i].vertexCount == 0 || !mesh)
-                    continue;
+                for (int i = 0; i <= max; i++)
+                {
+                    var mesh = triangleMeshes[i].mesh;
+                    if (triangleMeshes[i].vertexCount == 0 || !mesh)
+                        continue;
 
-                if (polygonMaterial.SetPass(0))
                     Graphics.DrawMeshNow(mesh, Matrix4x4.identity, 0);
+                }
             }
         }
 
