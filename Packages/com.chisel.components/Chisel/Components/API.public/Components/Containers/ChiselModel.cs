@@ -42,20 +42,20 @@ namespace Chisel.Components
     {
         public const string kIsTriggerName      = nameof(isTrigger);
         public const string kConvexName         = nameof(convex);
-        public const string kCookingOptionsName = nameof(cookingOptions);
-        public const string kSkinWidthName      = nameof(skinWidth);
+//      public const string kCookingOptionsName = nameof(cookingOptions);
+//      public const string kSkinWidthName      = nameof(skinWidth);
 
         public bool                         isTrigger;
         public bool		                    convex;
-        public MeshColliderCookingOptions   cookingOptions;
-        public float	                    skinWidth;
+//      public MeshColliderCookingOptions   cookingOptions;
+//      public float	                    skinWidth;
 
         public void Reset()
         {
             isTrigger       = false;
             convex          = false;
-            cookingOptions	= (MeshColliderCookingOptions)(2|4|8);
-            skinWidth       = 0.01f;
+  //        cookingOptions	= (MeshColliderCookingOptions)(2|4|8);
+  //        skinWidth       = 0.01f;
         }
     }
 
