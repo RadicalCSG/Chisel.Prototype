@@ -557,6 +557,7 @@ namespace Chisel.Components
 
             Debug.Assert(foundMeshes.Count <= meshDataArray.Length);
 
+            var realMeshDataArraySize = meshDataArray.Length;
             {
                 // This is a hack to ensure foundMeshes is the same exact length as meshDataArray
                 // (All these need to be set to empty anyway)
@@ -598,7 +599,11 @@ namespace Chisel.Components
 
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
-                                                 UnityEngine.Rendering.MeshUpdateFlags.Default);
+                                                 UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+
+            // Unfortunately the MeshData API is a big bag of buggy bullshit and it doesn't actually update the bounds (no matter what flags you use)
+            for (int i = 0; i < realMeshDataArraySize; i++)
+                foundMeshes[i].RecalculateBounds();
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateProperties");

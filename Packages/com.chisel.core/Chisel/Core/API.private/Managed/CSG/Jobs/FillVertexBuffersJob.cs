@@ -686,7 +686,7 @@ namespace Chisel.Core
                     indexCount  = indexCount,
                     bounds      = dstBounds,
                     topology    = UnityEngine.MeshTopology.Triangles,
-                }, MeshUpdateFlags.Default);
+                }, MeshUpdateFlags.DontRecalculateBounds);
 
                 currentBaseVertex += vertexCount;
                 currentBaseIndex += indexCount;
@@ -822,7 +822,7 @@ namespace Chisel.Core
                 indexCount  = indexCount,
                 bounds      = new Bounds(center, size),
                 topology    = UnityEngine.MeshTopology.Triangles,
-            }, MeshUpdateFlags.Default);
+            }, MeshUpdateFlags.DontRecalculateBounds);
         }
     }
 }
