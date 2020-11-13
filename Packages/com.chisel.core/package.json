@@ -1,14 +1,21 @@
 {
-    "description": "The core algorithms for the Chisel Editor",
-    "displayName": "Chisel Core",
-    "name": "com.chisel.core",
-    "keywords": [
-        "level design",
-        "world building",
-        "CSG",
-        "BSP",
-        "Boolean"
-    ],
-    "unity": "2018.3",
-    "version": "0.0.1-preview"
+  "description": "The core algorithms for the Chisel Editor",
+  "displayName": "Chisel Core",
+  "name": "com.chisel.core",
+  "keywords": [
+    "level design",
+    "world building",
+    "CSG",
+    "BSP",
+    "Boolean"
+  ],
+  "unity": "2020.2",
+  "version": "0.0.1-preview",
+  "dependencies": {
+    "com.unity.burst": "1.4.1",
+    "com.unity.collections": "0.14.0-preview.16",
+    "com.unity.entities": "0.16.0-preview.21",
+    "com.unity.mathematics": "1.2.1"
+  },
+  "type": "library"
 }

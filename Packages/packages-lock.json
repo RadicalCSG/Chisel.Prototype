@@ -21,7 +21,12 @@
       "version": "file:com.chisel.core",
       "depth": 0,
       "source": "embedded",
-      "dependencies": {}
+      "dependencies": {
+        "com.unity.burst": "1.4.1",
+        "com.unity.collections": "0.14.0-preview.16",
+        "com.unity.entities": "0.16.0-preview.21",
+        "com.unity.mathematics": "1.2.1"
+      }
     },
     "com.chisel.core.tests": {
       "version": "file:com.chisel.core.tests",
