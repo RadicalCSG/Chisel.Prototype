@@ -156,7 +156,6 @@ namespace Chisel.Core
             //              => this whole job could be removed
             // TODO: store surface info and its vertices/indices separately, both sequentially in arrays
             // TODO: store surface vertices/indices sequentially in a big array, *somehow* make ordering work
-            // TODO: AllocateVertexBuffersJob/FillVertexBuffersJob and CopyToRenderMeshJob could be combined (one copy only)
                 
             subMeshSurfaces.AllocateWithCapacityForIndex(t, requiredSurfaceCount);
             var subMeshSurfaceList = subMeshSurfaces[t];
@@ -221,7 +220,6 @@ namespace Chisel.Core
                 return;
 
             var meshQuery       = meshQueries[t];
-            var isPhysics       = meshQuery.LayerParameterIndex == LayerParameterIndex.PhysicsMaterial;
 
             if (sectionSubMeshCounts.IsCreated)
             {
@@ -688,7 +686,7 @@ namespace Chisel.Core
                     indexCount  = indexCount,
                     bounds      = dstBounds,
                     topology    = UnityEngine.MeshTopology.Triangles,
-                }, MeshUpdateFlags.DontRecalculateBounds);
+                }, MeshUpdateFlags.Default);
 
                 currentBaseVertex += vertexCount;
                 currentBaseIndex += indexCount;
@@ -706,8 +704,6 @@ namespace Chisel.Core
 
         [NoAlias, ReadOnly] public NativeArray<VertexAttributeDescriptor>   colliderDescriptors;
         [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             colliderMeshes;
-        [NoAlias, ReadOnly] public int contentsIndex;
-        [NoAlias, ReadOnly] public int meshIndex;
 
         // Read / Write
         [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
@@ -826,13 +822,7 @@ namespace Chisel.Core
                 indexCount  = indexCount,
                 bounds      = new Bounds(center, size),
                 topology    = UnityEngine.MeshTopology.Triangles,
-            }, MeshUpdateFlags.DontRecalculateBounds);
-
-            // TODO: Figure out why sometimes setting a mesh on a MeshCollider causes BakeMesh to be called by unity
-            //       (in which case this would happen serially on the main thread, which would be slower than calling it here)
-            //       And sometimes it's not called? (in which case calling BakeMesh here would be *slower*)
-            //       Also, if we use Unity.Physics then this wouldn't make sense at all
-            //Physics.BakeMesh(instanceID, false);
+            }, MeshUpdateFlags.Default);
         }
     }
 }

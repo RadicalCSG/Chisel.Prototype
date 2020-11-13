@@ -5,7 +5,8 @@ using Unity.Jobs;
 
 namespace Chisel.Core
 {
-    public delegate int FinishMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, List<UnityEngine.Mesh.MeshDataArray> meshDataArrays, 
+    public delegate int FinishMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, 
+                                         UnityEngine.Mesh.MeshDataArray meshDataArray, 
                                          NativeList<ChiselMeshUpdate> colliderMeshUpdates,
                                          NativeList<ChiselMeshUpdate> debugHelperMeshes,
                                          NativeList<ChiselMeshUpdate> renderMeshes,

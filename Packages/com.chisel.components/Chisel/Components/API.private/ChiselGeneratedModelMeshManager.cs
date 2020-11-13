@@ -64,7 +64,7 @@ namespace Chisel.Components
 
         static int FinishMeshUpdates(CSGTree                        tree, 
                                      ref VertexBufferContents       vertexBufferContents, 
-                                     List<Mesh.MeshDataArray>       meshDataArrays,
+                                     Mesh.MeshDataArray             meshDataArray,
                                      NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
                                      NativeList<ChiselMeshUpdate>   debugHelperMeshes,
                                      NativeList<ChiselMeshUpdate>   renderMeshes,
@@ -89,7 +89,7 @@ namespace Chisel.Components
                 model.generated = ChiselGeneratedObjects.Create(model.gameObject);
             }
 
-            var count = model.generated.FinishMeshUpdates(model, model.gameObject, meshDataArrays, ref vertexBufferContents,
+            var count = model.generated.FinishMeshUpdates(model, model.gameObject, meshDataArray, ref vertexBufferContents,
                                                           colliderMeshUpdates, debugHelperMeshes, renderMeshes,
                                                           dependencies);
             componentGenerator.Rebuild(model);

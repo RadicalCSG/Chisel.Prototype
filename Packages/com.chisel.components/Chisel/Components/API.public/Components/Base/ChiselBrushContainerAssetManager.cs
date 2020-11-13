@@ -240,6 +240,8 @@ namespace Chisel.Components
 
         static void OnChiselBrushMaterialsReset()
         {
+            // TODO: what about the previously registered surfaces for this brush??
+
             ChiselBrushContainerAssetManager.RegisterAllSurfaces();
         }
 
