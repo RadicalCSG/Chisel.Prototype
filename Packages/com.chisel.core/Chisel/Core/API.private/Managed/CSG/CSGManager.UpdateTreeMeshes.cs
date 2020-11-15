@@ -1112,7 +1112,8 @@ namespace Chisel.Core
                 #region CSG Jobs
                 Profiler.BeginSample("CSG_Jobs");
 
-
+                #region Prepare
+                // Create lookup table for all brushMeshBlobs, based on the node order in the tree
                 Profiler.BeginSample("Job_FillBrushMeshBlobLookup");
                 try
                 {
@@ -1150,6 +1151,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+                // Invalidate outdated caches for all modified brushes
                 Profiler.BeginSample("Job_InvalidateBrushCache");
                 try
                 {
@@ -1193,6 +1195,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+                // Fix up indices in the cache when ordering of brushes has changed   
                 Profiler.BeginSample("Job_FixupBrushCacheIndices");
                 try
                 {   
@@ -1227,7 +1230,8 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-                
+
+                // Create tree space vertices from local vertices + transformations & an AABB for each brush
                 Profiler.BeginSample("Job_CreateTreeSpaceVerticesAndBounds");
                 try
                 {
@@ -1266,6 +1270,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+                // Find all pairs of brushes that intersect, for those brushes that have been modified
                 Profiler.BeginSample("Job_FindAllBrushIntersectionPairs");
                 try
                 {
@@ -1313,6 +1318,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+                // Find all brushes that touch the brushes that have been modified
                 Profiler.BeginSample("Job_FindUniqueIndirectBrushIntersections");
                 try
                 {
@@ -1341,6 +1347,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
+                // Invalidate the cache for the brushes that have been indirectly modified (touch a brush that has changed)
                 Profiler.BeginSample("Job_InvalidateBrushCache_Indirect");
                 try
                 {
@@ -1647,7 +1654,13 @@ namespace Chisel.Core
                         treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
                     }
                 } finally { Profiler.EndSample(); }
+                #endregion
 
+                //
+                // Ensure vertices that should be identical on different brushes, ARE actually identical
+                //
+
+                #region Merge vertices
                 Profiler.BeginSample("Job_MergeTouchingBrushVertices");
                 try
                 {
@@ -1694,8 +1707,14 @@ namespace Chisel.Core
                         treeUpdate.treeSpaceVerticesCacheJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.treeSpaceVerticesCacheJobHandle);
                     }
                 }
-                finally { Profiler.EndSample(); }                
+                finally { Profiler.EndSample(); }
+                #endregion
 
+                //
+                // Determine all surfaces and intersections
+                //
+
+                #region Determine Intersection Surfaces
                 Profiler.BeginSample("Job_GenerateBasePolygonLoops");
                 try
                 {
@@ -1904,7 +1923,13 @@ namespace Chisel.Core
                         treeUpdate.dataStream1JobHandle                 = CombineDependencies(currentJobHandle, treeUpdate.dataStream1JobHandle);
                     }
                 } finally { Profiler.EndSample(); }
+                #endregion
 
+                //
+                // Ensure vertices that should be identical on different brushes, ARE actually identical
+                //
+
+                #region Merge vertices
                 Profiler.BeginSample("Job_MergeTouchingBrushVerticesIndirect");
                 try
                 {
@@ -1937,7 +1962,13 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-                
+                #endregion
+
+                //
+                // Perform CSG on prepared surfaces, giving each surface a categorization
+                //
+
+                #region Perform CSG     
                 Profiler.BeginSample("Job_UpdateBrushCategorizationTables");
                 try
                 {
@@ -2030,7 +2061,13 @@ namespace Chisel.Core
                         treeUpdate.dataStream2JobHandle                  = CombineDependencies(currentJobHandle, treeUpdate.dataStream2JobHandle);
                     }
                 } finally { Profiler.EndSample(); }
+                #endregion
 
+                //
+                // Triangulate the surfaces
+                //
+
+                #region Triangulate Surfaces
                 Profiler.BeginSample("Job_GenerateSurfaceTriangles");
                 try
                 {
@@ -2070,6 +2107,55 @@ namespace Chisel.Core
                         //treeUpdate.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.transformationCacheJobHandle);
                         //treeUpdate.dataStream2JobHandle               = CombineDependencies(currentJobHandle, treeUpdate.dataStream2JobHandle);
                         treeUpdate.brushRenderBufferCacheJobHandle      = CombineDependencies(currentJobHandle, treeUpdate.brushRenderBufferCacheJobHandle);
+                    }
+                }
+                finally { Profiler.EndSample(); }
+                
+                // Schedule all the jobs
+                JobHandle.ScheduleBatchedJobs();
+                #endregion
+
+                //
+                // Create meshes out of ALL the generated and cached surfaces
+                //
+
+                #region Create Meshes
+                Profiler.BeginSample("Mesh.AllocateWritableMeshData");
+                try
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+
+                        var meshAllocations = 0;
+                        for (int m = 0; m < treeUpdate.meshQueries.Length; m++)
+                        {
+                            var meshQuery = treeUpdate.meshQueries[m];
+                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
+                                                         meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                                                         (int)meshQuery.LayerParameterIndex : 0;
+
+                            // Query uses Material
+                            if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
+                            {
+                                // Each Material is stored as a submesh in the same mesh
+                                meshAllocations += 1;  
+                            }
+                            // Query uses PhysicMaterial
+                            else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
+                            {
+                                // Each PhysicMaterial is stored in its own separate mesh
+                                meshAllocations += treeUpdate.parameter2Count; 
+                            } else
+                                meshAllocations++;
+                        }
+
+                        treeUpdate.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
+
+                        for (int i = 0; i < meshAllocations; i++)
+                            treeUpdate.meshDatas.Add(treeUpdate.meshDataArray[i]);
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -2116,10 +2202,6 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-
-
-                // Start the jobs on the worker threads
-                JobHandle.ScheduleBatchedJobs();
 
                 Profiler.BeginSample("Job_PrepareSubSections");
                 try
@@ -2203,49 +2285,6 @@ namespace Chisel.Core
 
                         treeUpdate.subMeshCountsJobHandle                           = CombineDependencies(currentJobHandle, treeUpdate.subMeshCountsJobHandle);
                         treeUpdate.vertexBufferContents_subMeshSectionsJobHandle    = CombineDependencies(currentJobHandle, treeUpdate.vertexBufferContents_subMeshSectionsJobHandle);
-                    }
-                }
-                finally { Profiler.EndSample(); }
-
-                // Schedule all the jobs
-                JobHandle.ScheduleBatchedJobs();
-
-                Profiler.BeginSample("Mesh.AllocateWritableMeshData");
-                try
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-
-                        var meshAllocations = 0;
-                        for (int m = 0; m < treeUpdate.meshQueries.Length; m++)
-                        {
-                            var meshQuery = treeUpdate.meshQueries[m];
-                            var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
-                                                         meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
-                                                         (int)meshQuery.LayerParameterIndex : 0;
-
-                            // Query uses Material
-                            if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
-                            {
-                                // Each Material is stored as a submesh in the same mesh
-                                meshAllocations += 1;  
-                            }
-                            // Query uses PhysicMaterial
-                            else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
-                            {
-                                // Each PhysicMaterial is stored in its own separate mesh
-                                meshAllocations += treeUpdate.parameter2Count; 
-                            } else
-                                meshAllocations++;
-                        }
-
-                        treeUpdate.meshDataArray = UnityEngine.Mesh.AllocateWritableMeshData(meshAllocations);
-
-                        for (int i = 0; i < meshAllocations; i++)
-                            treeUpdate.meshDatas.Add(treeUpdate.meshDataArray[i]);
                     }
                 }
                 finally { Profiler.EndSample(); }
@@ -2424,44 +2463,54 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-                
-                #region Store cached values back into cache (by node Index)
-                Profiler.BeginSample("CSG_StoreToCache");
-                for (int t = 0; t < treeUpdateLength; t++)
-                {
-                    ref var treeUpdate          = ref s_TreeUpdates[t];
-                    if (treeUpdate.updateCount == 0)
-                        continue;
-
-                    var chiselLookupValues              = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                    
-                    var dependencies = CombineDependencies(treeUpdate.allTreeBrushIndexOrdersJobHandle,
-                                                           treeUpdate.brushTreeSpaceBoundCacheJobHandle,
-                                                           treeUpdate.brushRenderBufferCacheJobHandle);
-                    
-                    var storeToCacheJob = new StoreToCacheJob
-                    {
-                        // Read
-                        allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsDeferredJobArray(),
-                        brushTreeSpaceBoundCache    = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
-                        brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsDeferredJobArray(),
-
-                        // Read Write
-                        brushTreeSpaceBoundLookup   = chiselLookupValues.brushTreeSpaceBoundLookup,
-                        brushRenderBufferLookup     = chiselLookupValues.brushRenderBufferLookup
-                    };
-                    var currentJobHandle = storeToCacheJob.Schedule(dependencies);
-                    //currentJobHandle.Complete();
-
-                    treeUpdate.storeToCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.storeToCacheJobHandle);
-                }
-                Profiler.EndSample();
                 #endregion
 
-                // Schedule all the jobs
+                //
+                // Finally store the generated surfaces into our cache
+                //
+
+                #region Store cached values back into cache (by node Index)
+                Profiler.BeginSample("CSG_StoreToCache");
+                try
+                { 
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate          = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+
+                        var chiselLookupValues              = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
+                    
+                        var dependencies = CombineDependencies(treeUpdate.allTreeBrushIndexOrdersJobHandle,
+                                                               treeUpdate.brushTreeSpaceBoundCacheJobHandle,
+                                                               treeUpdate.brushRenderBufferCacheJobHandle);
+                    
+                        var storeToCacheJob = new StoreToCacheJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders.AsDeferredJobArray(),
+                            brushTreeSpaceBoundCache    = chiselLookupValues.brushTreeSpaceBoundCache.AsDeferredJobArray(),
+                            brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache.AsDeferredJobArray(),
+
+                            // Read Write
+                            brushTreeSpaceBoundLookup   = chiselLookupValues.brushTreeSpaceBoundLookup,
+                            brushRenderBufferLookup     = chiselLookupValues.brushRenderBufferLookup
+                        };
+                        var currentJobHandle = storeToCacheJob.Schedule(dependencies);
+                        //currentJobHandle.Complete();
+
+                        treeUpdate.storeToCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.storeToCacheJobHandle);
+                    }
+                }
+                finally { Profiler.EndSample(); }
+                #endregion
+
+                // Start the jobs on the worker threads
                 JobHandle.ScheduleBatchedJobs();
 
+                //
                 // Do some main thread work while we wait for meshes to be updated
+                //
 
                 #region Reset Flags
                 Profiler.BeginSample("Reset_Flags");
@@ -2538,28 +2587,33 @@ namespace Chisel.Core
                 Profiler.EndSample();
                 #endregion
 
-                #region Clear garbage
+                #region Clear Garbage
                 Profiler.BeginSample("ClearGarbage");
                 s_TransformTreeBrushIndicesList.Clear();
                 Profiler.EndSample();
                 #endregion
 
-                if (finishMeshUpdates != null)
-                {
-                    Profiler.BeginSample("FinishMeshUpdates");
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
+                //
+                // Finish the mesh update jobs and assign them to our components
+                //
 
-                        var dependencies = CombineDependencies(treeUpdate.meshDatasJobHandle,
-                                                               treeUpdate.colliderMeshUpdatesJobHandle,
-                                                               treeUpdate.debugHelperMeshesJobHandle,
-                                                               treeUpdate.renderMeshesJobHandle,
-                                                               treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                               treeUpdate.vertexBufferContents_meshesJobHandle);
-                        
+                #region Finish Mesh Updates / Update Components
+                Profiler.BeginSample("FinishMeshUpdates");
+                for (int t = 0; t < treeUpdateLength; t++)
+                {
+                    ref var treeUpdate = ref s_TreeUpdates[t];
+                    if (treeUpdate.updateCount == 0)
+                        continue;
+
+                    var dependencies = CombineDependencies(treeUpdate.meshDatasJobHandle,
+                                                            treeUpdate.colliderMeshUpdatesJobHandle,
+                                                            treeUpdate.debugHelperMeshesJobHandle,
+                                                            treeUpdate.renderMeshesJobHandle,
+                                                            treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                            treeUpdate.vertexBufferContents_meshesJobHandle);
+
+                    if (finishMeshUpdates != null)
+                    {
                         var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
                         var usedMeshCount = finishMeshUpdates(tree, ref treeUpdate.vertexBufferContents,
                                                               treeUpdate.meshDataArray,
@@ -2568,11 +2622,13 @@ namespace Chisel.Core
                                                               treeUpdate.renderMeshes,
                                                               dependencies);
                     }
-                    Profiler.EndSample();
+                    dependencies.Complete(); // Whatever happens, our jobs need to be completed at this point
                 }
+                Profiler.EndSample();
+                #endregion
 
                 #region Dirty all invalidated outlines
-                // TODO: Jobify this
+                // TODO: Jobify this (has dependencies on jobs, so can't be run before finishMeshUpdates)
                 Profiler.BeginSample("CSG_DirtyModifiedOutlines");
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
