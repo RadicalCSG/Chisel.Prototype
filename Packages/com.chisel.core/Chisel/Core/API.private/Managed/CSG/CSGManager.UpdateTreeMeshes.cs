@@ -255,11 +255,7 @@ namespace Chisel.Core
                 //lastJobHandle = disposeJobHandle;
 
 
-                if (meshQueries.IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, meshQueries.Dispose(disposeJobHandle));
-                meshQueries = default;
-
-
-                Profiler.BeginSample("DISPOSE surfaceCountRef");
+                Profiler.BeginSample("DISPOSE_surfaceCountRef");
                 if (surfaceCountRef.IsCreated) surfaceCountRef.Dispose();
                 surfaceCountRef = default;
                 Profiler.EndSample();
@@ -267,17 +263,17 @@ namespace Chisel.Core
                 //if (onlyBlobs)
                 //  return;
 
-                Profiler.BeginSample("DISPOSE ARRAY");
+                Profiler.BeginSample("DISPOSE_ARRAY");
                 if (brushMeshLookup              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushMeshLookup              .Dispose(disposeJobHandle));
                 if (brushIntersectionsWithRange  .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushIntersectionsWithRange  .Dispose(disposeJobHandle));
                 if (outputSurfacesRange          .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, outputSurfacesRange          .Dispose(disposeJobHandle));
                 Profiler.EndSample();
 
-                Profiler.BeginSample("DISPOSE LISTARRAY");
+                Profiler.BeginSample("DISPOSE_LISTARRAY");
                 if (loopVerticesLookup           .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, loopVerticesLookup           .Dispose(disposeJobHandle));
                 Profiler.EndSample();
 
-                Profiler.BeginSample("DISPOSE LIST");
+                Profiler.BeginSample("DISPOSE_LIST");
                 if (brushRenderData              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushRenderData              .Dispose(disposeJobHandle));
                 if (subMeshCounts                .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, subMeshCounts                .Dispose(disposeJobHandle));
                 if (subMeshSurfaces              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, subMeshSurfaces              .Dispose(disposeJobHandle));
@@ -297,7 +293,7 @@ namespace Chisel.Core
                 if (meshDatas                    .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, meshDatas                    .Dispose(disposeJobHandle));
                 Profiler.EndSample();
 
-                Profiler.BeginSample("DISPOSE HASMAP");
+                Profiler.BeginSample("DISPOSE_HASMAP");
                 if (brushesThatNeedIndirectUpdateHashMap.IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushesThatNeedIndirectUpdateHashMap.Dispose(disposeJobHandle));
                 if (brushBrushIntersections             .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushBrushIntersections             .Dispose(disposeJobHandle));
                 Profiler.EndSample();

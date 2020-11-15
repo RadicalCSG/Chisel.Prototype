@@ -459,7 +459,7 @@ namespace Chisel.Components
 
 
             // Now do all kinds of book-keeping code that we might as well do while our jobs are running on other threads
-            Profiler.BeginSample("new ChiselRenderObjectUpdate");
+            Profiler.BeginSample("new_ChiselRenderObjectUpdate");
 
             var usedDebugHelpers = new HashSet<int>();
             for (int i = 0; i < debugHelperMeshes.Length; i++)
@@ -478,7 +478,7 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
-            Profiler.BeginSample("new ChiselRenderObjectUpdate");
+            Profiler.BeginSample("new_ChiselRenderObjectUpdate");
             var usedRenderMeshes = new HashSet<int>();
             for (int i = 0; i < renderMeshes.Length; i++)
             {
@@ -496,7 +496,7 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
-            Profiler.BeginSample("new ChiselPhysicsObjectUpdate");
+            Profiler.BeginSample("new_ChiselPhysicsObjectUpdate");
             for (int i = 0; i < colliderMeshUpdates.Length; i++)
             {
                 var colliderMeshUpdate  = colliderMeshUpdates[i];
