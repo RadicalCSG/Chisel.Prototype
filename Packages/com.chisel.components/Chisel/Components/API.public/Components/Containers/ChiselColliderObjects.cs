@@ -120,12 +120,8 @@ namespace Chisel.Components
 
                 var sharedMesh = colliders[i].sharedMesh;
                 var expectedEnabled = sharedMesh.vertexCount > 0;
-                if (expectedEnabled)
-                    meshCollider.enabled = !expectedEnabled;
-                meshCollider.enabled = expectedEnabled;
-
-                if (meshCollider.sharedMesh != sharedMesh)
-                    meshCollider.sharedMesh = sharedMesh;
+                if (meshCollider.enabled != expectedEnabled)
+                    meshCollider.enabled = expectedEnabled;
             }
 
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
@@ -156,7 +152,18 @@ namespace Chisel.Components
             };
             // WHY ARE THEY RUN SEQUENTIALLY ON THE SAME WORKER THREAD?
             var jobHandle = bakeColliderJob.Schedule(colliders.Length, 1);
+
+            jobHandle.Complete();
             bakingSettings.Dispose(jobHandle);
+            // TODO: is there a way to defer forcing the collider to update?
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                var meshCollider = colliders[i].meshCollider;
+                if (!meshCollider)
+                    continue;
+
+                meshCollider.sharedMesh = colliders[i].sharedMesh;
+            }
         }
     }
 }
