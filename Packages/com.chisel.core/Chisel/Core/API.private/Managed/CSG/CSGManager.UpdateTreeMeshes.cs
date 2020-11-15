@@ -1573,10 +1573,10 @@ namespace Chisel.Core
                     }
                 } finally { Profiler.EndSample(); }
 
-                // Create unique loops between brush intersections
                 Profiler.BeginSample("Job_FindBrushPairs");
                 try
                 {
+                    // Create unique loops between brush intersections
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
@@ -1606,42 +1606,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
-                Profiler.BeginSample("Job_UpdateBrushCategorizationTables");
-                try
-                {
-                    // TODO: only update when brush or any touching brush has been added/removed or changes operation/order
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
-                                                                          treeUpdate.brushesTouchedByBrushCacheJobHandle,
-                                                                          treeUpdate.compactTreeJobHandle,
-                                                                          treeUpdate.routingTableCacheJobHandle);
-                        // Build categorization trees for brushes
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                        var createRoutingTableJob   = new CreateRoutingTableJob
-                        {
-                            // Read
-                            allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
-                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
-                            compactTree                 = treeUpdate.compactTree,
-
-                            // Write
-                            routingTableLookup          = chiselLookupValues.routingTableCache.AsDeferredJobArray()
-                        };
-                        var currentJobHandle = createRoutingTableJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
-                        //currentJobHandle.Complete();
-
-                        //treeUpdate.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
-                        //treeUpdate.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesTouchedByBrushCacheJobHandle);
-                        //treeUpdate.compactTreeJobHandle                = CombineDependencies(currentJobHandle, treeUpdate.compactTreeJobHandle);
-                        treeUpdate.routingTableCacheJobHandle            = CombineDependencies(currentJobHandle, treeUpdate.routingTableCacheJobHandle);
-                    }
-                } finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_PrepareBrushPairStream");
+                Profiler.BeginSample("Job_PrepareBrushPairIntersections");
                 try
                 {
                     for (int t = 0; t < treeUpdateLength; t++)
@@ -1657,19 +1622,8 @@ namespace Chisel.Core
 
                         //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
                         treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
-                    }
-                }
-                finally { Profiler.EndSample(); }
 
-                Profiler.BeginSample("Job_PrepareBrushPairIntersections");
-                try
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.uniqueBrushPairsJobHandle,
+                        dependencies                = CombineDependencies(treeUpdate.uniqueBrushPairsJobHandle,
                                                                           treeUpdate.transformationCacheJobHandle,
                                                                           treeUpdate.brushMeshLookupJobHandle,
                                                                           treeUpdate.intersectingBrushesStreamJobHandle);
@@ -1684,7 +1638,7 @@ namespace Chisel.Core
                             // Write
                             intersectingBrushesStream   = treeUpdate.intersectingBrushesStream.AsWriter()
                         };
-                        var currentJobHandle = prepareBrushPairIntersectionsJob.Schedule(treeUpdate.uniqueBrushPairs, 1, dependencies);
+                        currentJobHandle = prepareBrushPairIntersectionsJob.Schedule(treeUpdate.uniqueBrushPairs, 1, dependencies);
                         //currentJobHandle.Complete();
 
                         //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
@@ -1983,6 +1937,41 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
+                
+                Profiler.BeginSample("Job_UpdateBrushCategorizationTables");
+                try
+                {
+                    // TODO: only update when brush or any touching brush has been added/removed or changes operation/order
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+                        var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.brushesTouchedByBrushCacheJobHandle,
+                                                                          treeUpdate.compactTreeJobHandle,
+                                                                          treeUpdate.routingTableCacheJobHandle);
+                        // Build categorization trees for brushes
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
+                        var createRoutingTableJob   = new CreateRoutingTableJob
+                        {
+                            // Read
+                            allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
+                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
+                            compactTree                 = treeUpdate.compactTree,
+
+                            // Write
+                            routingTableLookup          = chiselLookupValues.routingTableCache.AsDeferredJobArray()
+                        };
+                        var currentJobHandle = createRoutingTableJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 1, dependencies);
+                        //currentJobHandle.Complete();
+
+                        //treeUpdate.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
+                        //treeUpdate.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesTouchedByBrushCacheJobHandle);
+                        //treeUpdate.compactTreeJobHandle                = CombineDependencies(currentJobHandle, treeUpdate.compactTreeJobHandle);
+                        treeUpdate.routingTableCacheJobHandle            = CombineDependencies(currentJobHandle, treeUpdate.routingTableCacheJobHandle);
+                    }
+                } finally { Profiler.EndSample(); }
 
                 Profiler.BeginSample("Job_PerformCSG");
                 try
