@@ -138,7 +138,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct UpdateUpdateBrushIndexOrdersJob : IJob
+    struct AddIndirectUpdatedBrushesToListAndSortJob : IJob
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         allTreeBrushIndexOrders;
@@ -193,9 +193,6 @@ namespace Chisel.Core
         // Read (Re-alloc) / Write
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeListArray<BrushIntersectWith>                brushBrushIntersections;
-
-        // Write
-        [NoAlias, WriteOnly] public NativeList<IndexOrder>.ParallelWriter   allUpdateBrushIndexOrders;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction] NativeArray<float4>       transformedPlanes0;

@@ -546,6 +546,7 @@ namespace Chisel.Core
                 // TODO: if all brushes need to be rebuild, don't bother to remap since everything is going to be redone anyway
 
                 // Remaps all cached data from previous brush order in tree, to new brush order
+                #region Remap Brush Tree Order For Cached Data
                 Profiler.BeginSample("REMAP");
                 var previousBrushIndexLength = chiselLookupValues.brushIndices.Length;
                 if (previousBrushIndexLength > 0)
@@ -713,7 +714,8 @@ namespace Chisel.Core
                     }
                 }                    
                 Profiler.EndSample();
-                
+                #endregion
+
                 Profiler.BeginSample("RESIZE");
                 if (chiselLookupValues.basePolygonCache.Length != brushCount)
                     chiselLookupValues.basePolygonCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
@@ -894,12 +896,9 @@ namespace Chisel.Core
                 currentTree.meshQueriesLength   = meshQueriesLength;
                 Profiler.EndSample();
                 #endregion
-
-                
+      
                 #region Build all BrushMeshBlobs
-
                 Profiler.BeginSample("CSG_AllBrushMeshInstanceIDs");
-
                 ref var parameters1 = ref chiselLookupValues.parameters1;
                 ref var parameters2 = ref chiselLookupValues.parameters2;
                 var allKnownBrushMeshIndices    = chiselLookupValues.allKnownBrushMeshIndices;
@@ -958,9 +957,11 @@ namespace Chisel.Core
                     else
                         s_RemoveBrushMeshIndices.Add(brushMeshIndex);
                 }
+                Profiler.EndSample();
+                #endregion
 
-                //Debug.Log($"Remove: {s_RemoveBrushMeshIndices.Count}  Add: {s_FoundBrushMeshIndices.Count}  Rebuild: {rebuildParameterList}");
-
+                #region Find all Unique Parameters (Materials/PhysicMaterials)
+                Profiler.BeginSample("CSG_FindUniqueParameters");
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
                 if (rebuildParameterList)
                 {
@@ -1009,16 +1010,15 @@ namespace Chisel.Core
                 foreach (int brushMeshIndex in s_FoundBrushMeshIndices)
                     allKnownBrushMeshIndices.Add(brushMeshIndex);
 
-                Profiler.EndSample();
-                #endregion
-
-
                 currentTree.parameter1Count = chiselLookupValues.parameters1.uniqueParameterCount;
                 currentTree.parameter2Count = chiselLookupValues.parameters2.uniqueParameterCount;
+                Profiler.EndSample();
+                #endregion
 
                 treeUpdateLength++;
 
 
+                #region Reset All JobHandles
                 currentTree.allBrushMeshInstanceIDsJobHandle = default;
                 currentTree.allTreeBrushIndexOrdersJobHandle = default;
                 currentTree.allUpdateBrushIndexOrdersJobHandle = default;
@@ -1080,6 +1080,7 @@ namespace Chisel.Core
 
                 currentTree.meshDatasJobHandle = default;
                 currentTree.storeToCacheJobHandle = default;
+                #endregion
             }
 
 
@@ -1195,7 +1196,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
-                // Fix up indices in the cache when ordering of brushes has changed   
+                // Fix up brush order index in cache data (ordering of brushes may have changed)
                 Profiler.BeginSample("Job_FixupBrushCacheIndices");
                 try
                 {   
@@ -1231,7 +1232,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
-                // Create tree space vertices from local vertices + transformations & an AABB for each brush
+                // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been modified
                 Profiler.BeginSample("Job_CreateTreeSpaceVerticesAndBounds");
                 try
                 {
@@ -1391,41 +1392,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
 
-                Profiler.BeginSample("Job_UpdateUpdateBrushIndexOrders");
-                try
-                {
-                    // TODO: optimize, use hashed grid
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.allTreeBrushIndexOrdersJobHandle,
-                                                                          treeUpdate.brushesThatNeedIndirectUpdateJobHandle,
-                                                                          treeUpdate.rebuildTreeBrushIndexOrdersJobHandle,
-                                                                          treeUpdate.allUpdateBrushIndexOrdersJobHandle);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                        var findAllIntersectionsJob = new UpdateUpdateBrushIndexOrdersJob
-                        {
-                            // Read
-                            allTreeBrushIndexOrders         = treeUpdate.allTreeBrushIndexOrders.AsArray().AsReadOnly(),
-                            brushesThatNeedIndirectUpdate   = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
-                            rebuildTreeBrushIndexOrders     = treeUpdate.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
-
-                            // Write
-                            allUpdateBrushIndexOrders       = treeUpdate.allUpdateBrushIndexOrders.AsParallelWriter(),
-                        };
-                        var currentJobHandle = findAllIntersectionsJob.Schedule(dependencies);
-                        //currentJobHandle.Complete();
-
-                        //treeUpdate.allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.allTreeBrushIndexOrdersJobHandle);
-                        //treeUpdate.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesThatNeedIndirectUpdateJobHandle);
-                        //treeUpdate.rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.rebuildTreeBrushIndexOrdersJobHandle);
-                        treeUpdate.allUpdateBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
-                    }
-                }
-                finally { Profiler.EndSample(); }
-                
+                // Create tree space vertices from local vertices + transformations & an AABB for each brush that has been indirectly modified
                 Profiler.BeginSample("Job_CreateTreeSpaceVerticesAndBounds_Indirect");
                 try
                 {
@@ -1462,7 +1429,8 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-                
+
+                // Find all pairs of brushes that intersect, for those brushes that have been indirectly modified
                 Profiler.BeginSample("Job_FindAllBrushIntersectionPairs_Indirect");
                 try
                 {
@@ -1477,8 +1445,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushMeshLookupJobHandle,
                                                                           treeUpdate.brushTreeSpaceBoundCacheJobHandle,
                                                                           treeUpdate.brushesThatNeedIndirectUpdateJobHandle,
-                                                                          treeUpdate.brushBrushIntersectionsJobHandle,
-                                                                          treeUpdate.allUpdateBrushIndexOrdersJobHandle);
+                                                                          treeUpdate.brushBrushIntersectionsJobHandle);
                         var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
                         var findAllIntersectionsJob = new FindAllIndirectBrushIntersectionPairsJob
                         {
@@ -1490,10 +1457,7 @@ namespace Chisel.Core
                             brushesThatNeedIndirectUpdate   = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
                             
                             // Read / Write
-                            brushBrushIntersections         = treeUpdate.brushBrushIntersections,
-
-                            // Write
-                            allUpdateBrushIndexOrders       = treeUpdate.allUpdateBrushIndexOrders.AsParallelWriter(),
+                            brushBrushIntersections         = treeUpdate.brushBrushIntersections
                         };
                         var currentJobHandle = findAllIntersectionsJob.Schedule(treeUpdate.brushesThatNeedIndirectUpdate, 1, dependencies);
                         //currentJobHandle.Complete();
@@ -1504,12 +1468,12 @@ namespace Chisel.Core
                         //treeUpdate.brushTreeSpaceBoundCacheJobHandle      = CombineDependencies(currentJobHandle, treeUpdate.brushTreeSpaceBoundCacheJobHandle);
                         //treeUpdate.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesThatNeedIndirectUpdateJobHandle);
                         treeUpdate.brushBrushIntersectionsJobHandle         = CombineDependencies(currentJobHandle, treeUpdate.brushBrushIntersectionsJobHandle);
-                        treeUpdate.allUpdateBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
                     }
                 }
                 finally { Profiler.EndSample(); }
 
-                Profiler.BeginSample("Job_GatherBrushIntersectionPairs");
+                // Add brushes that need to be indirectly updated to our list of brushes that need updates
+                Profiler.BeginSample("Job_AddIndirectUpdatedBrushesToListAndSort");
                 try
                 {
                     for (int t = 0; t < treeUpdateLength; t++)
@@ -1517,6 +1481,42 @@ namespace Chisel.Core
                         ref var treeUpdate = ref s_TreeUpdates[t];
                         if (treeUpdate.updateCount == 0)
                             continue;
+                        var dependencies            = CombineDependencies(treeUpdate.allTreeBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.brushesThatNeedIndirectUpdateJobHandle,
+                                                                          treeUpdate.rebuildTreeBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.allUpdateBrushIndexOrdersJobHandle);
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
+                        var findAllIntersectionsJob = new AddIndirectUpdatedBrushesToListAndSortJob
+                        {
+                            // Read
+                            allTreeBrushIndexOrders         = treeUpdate.allTreeBrushIndexOrders.AsArray().AsReadOnly(),
+                            brushesThatNeedIndirectUpdate   = treeUpdate.brushesThatNeedIndirectUpdate.AsDeferredJobArray(),
+                            rebuildTreeBrushIndexOrders     = treeUpdate.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
+
+                            // Write
+                            allUpdateBrushIndexOrders       = treeUpdate.allUpdateBrushIndexOrders.AsParallelWriter(),
+                        };
+                        var currentJobHandle = findAllIntersectionsJob.Schedule(dependencies);
+                        //currentJobHandle.Complete();
+
+                        //treeUpdate.allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.allTreeBrushIndexOrdersJobHandle);
+                        //treeUpdate.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesThatNeedIndirectUpdateJobHandle);
+                        //treeUpdate.rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.rebuildTreeBrushIndexOrdersJobHandle);
+                        treeUpdate.allUpdateBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
+                    }
+                }
+                finally { Profiler.EndSample(); }
+
+                // Gather all found pairs of brushes that intersect with each other and cache them
+                Profiler.BeginSample("Job_GatherAndStoreBrushIntersections");
+                try
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+                        
                         var dependencies            = CombineDependencies(treeUpdate.brushBrushIntersectionsJobHandle,
                                                                           treeUpdate.brushIntersectionsWithJobHandle,
                                                                           treeUpdate.brushIntersectionsWithRangeJobHandle);
@@ -1535,19 +1535,8 @@ namespace Chisel.Core
                         //treeUpdate.brushBrushIntersectionsJobHandle     = CombineDependencies(currentJobHandle, treeUpdate.brushBrushIntersectionsJobHandle);
                         treeUpdate.brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, treeUpdate.brushIntersectionsWithJobHandle);
                         treeUpdate.brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushIntersectionsWithRangeJobHandle);
-                    }
-                }
-                finally { Profiler.EndSample(); }
 
-                Profiler.BeginSample("Job_StoreBrushIntersections");
-                try
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.compactTreeJobHandle,
+                        dependencies                = CombineDependencies(treeUpdate.compactTreeJobHandle,
                                                                           treeUpdate.allTreeBrushIndexOrdersJobHandle,
                                                                           treeUpdate.allUpdateBrushIndexOrdersJobHandle,
                                                                           treeUpdate.brushIntersectionsWithJobHandle,
@@ -1568,7 +1557,7 @@ namespace Chisel.Core
                             // Write
                             brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray()
                         };
-                        var currentJobHandle = storeBrushIntersectionsJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 16, dependencies);
+                        currentJobHandle = storeBrushIntersectionsJob.Schedule(treeUpdate.allUpdateBrushIndexOrders, 16, dependencies);
                         //currentJobHandle.Complete();
                         
                         //treeUpdate.compactTreeJobHandle               = CombineDependencies(currentJobHandle, treeUpdate.compactTreeJobHandle);
@@ -1577,81 +1566,6 @@ namespace Chisel.Core
                         treeUpdate.brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, treeUpdate.brushIntersectionsWithJobHandle);
                         treeUpdate.brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushIntersectionsWithRangeJobHandle);
                         treeUpdate.brushesTouchedByBrushCacheJobHandle  = CombineDependencies(currentJobHandle, treeUpdate.brushesTouchedByBrushCacheJobHandle);
-                    }
-                } finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_FindBrushPairs");
-                try
-                {
-                    // Create unique loops between brush intersections
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
-                                                                          treeUpdate.brushesTouchedByBrushCacheJobHandle,
-                                                                          treeUpdate.uniqueBrushPairsJobHandle);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                        var findBrushPairsJob       = new FindBrushPairsJob
-                        {
-                            // Read
-                            maxOrder                    = treeUpdate.brushCount,
-                            allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
-                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
-                                    
-                            // Read (Re-allocate) / Write
-                            uniqueBrushPairs            = treeUpdate.uniqueBrushPairs.GetUnsafeList()
-                        };
-                        var currentJobHandle = findBrushPairsJob.Schedule(dependencies);
-                        //currentJobHandle.Complete();
-
-                        //treeUpdate.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
-                        //treeUpdate.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesTouchedByBrushCacheJobHandle);
-                        treeUpdate.uniqueBrushPairsJobHandle             = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
-                    }
-                }
-                finally { Profiler.EndSample(); }
-
-                Profiler.BeginSample("Job_PrepareBrushPairIntersections");
-                try
-                {
-                    for (int t = 0; t < treeUpdateLength; t++)
-                    {
-                        ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
-                        var dependencies            = CombineDependencies(treeUpdate.intersectingBrushesStreamJobHandle,
-                                                                          treeUpdate.uniqueBrushPairsJobHandle);
-
-                        var currentJobHandle        = NativeStream.ScheduleConstruct(out treeUpdate.intersectingBrushesStream, treeUpdate.uniqueBrushPairs, dependencies, Allocator.TempJob);
-                        //currentJobHandle.Complete();
-
-                        //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
-                        treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
-
-                        dependencies                = CombineDependencies(treeUpdate.uniqueBrushPairsJobHandle,
-                                                                          treeUpdate.transformationCacheJobHandle,
-                                                                          treeUpdate.brushMeshLookupJobHandle,
-                                                                          treeUpdate.intersectingBrushesStreamJobHandle);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
-                        var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
-                        {
-                            // Read
-                            uniqueBrushPairs            = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
-                            transformationCache         = chiselLookupValues.transformationCache.AsDeferredJobArray(),
-                            brushMeshLookup             = treeUpdate.brushMeshLookup.AsReadOnly(),
-
-                            // Write
-                            intersectingBrushesStream   = treeUpdate.intersectingBrushesStream.AsWriter()
-                        };
-                        currentJobHandle = prepareBrushPairIntersectionsJob.Schedule(treeUpdate.uniqueBrushPairs, 1, dependencies);
-                        //currentJobHandle.Complete();
-
-                        //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
-                        //treeUpdate.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.transformationCacheJobHandle);
-                        //treeUpdate.brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, treeUpdate.brushMeshLookupJobHandle);
-                        treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
                     }
                 } finally { Profiler.EndSample(); }
                 #endregion
@@ -1715,6 +1629,70 @@ namespace Chisel.Core
                 //
 
                 #region Determine Intersection Surfaces
+                // Find all pairs of brush intersections for each brush
+                Profiler.BeginSample("Job_PrepareBrushPairIntersections");
+                try
+                {
+                    for (int t = 0; t < treeUpdateLength; t++)
+                    {
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+                        
+                        var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.brushesTouchedByBrushCacheJobHandle,
+                                                                          treeUpdate.uniqueBrushPairsJobHandle);
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
+                        var findBrushPairsJob       = new FindBrushPairsJob
+                        {
+                            // Read
+                            maxOrder                    = treeUpdate.brushCount,
+                            allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
+                            brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
+                                    
+                            // Read (Re-allocate) / Write
+                            uniqueBrushPairs            = treeUpdate.uniqueBrushPairs.GetUnsafeList()
+                        };
+                        var currentJobHandle = findBrushPairsJob.Schedule(dependencies);
+                        //currentJobHandle.Complete();
+
+                        //treeUpdate.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, treeUpdate.allUpdateBrushIndexOrdersJobHandle);
+                        //treeUpdate.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, treeUpdate.brushesTouchedByBrushCacheJobHandle);
+                        treeUpdate.uniqueBrushPairsJobHandle             = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
+
+                        dependencies                = CombineDependencies(treeUpdate.intersectingBrushesStreamJobHandle,
+                                                                          treeUpdate.uniqueBrushPairsJobHandle);
+
+                        currentJobHandle            = NativeStream.ScheduleConstruct(out treeUpdate.intersectingBrushesStream, treeUpdate.uniqueBrushPairs, dependencies, Allocator.TempJob);
+                        //currentJobHandle.Complete();
+
+                        //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
+                        treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
+
+                        dependencies                = CombineDependencies(treeUpdate.uniqueBrushPairsJobHandle,
+                                                                          treeUpdate.transformationCacheJobHandle,
+                                                                          treeUpdate.brushMeshLookupJobHandle,
+                                                                          treeUpdate.intersectingBrushesStreamJobHandle);
+                        var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
+                        {
+                            // Read
+                            uniqueBrushPairs            = treeUpdate.uniqueBrushPairs.AsDeferredJobArray(),
+                            transformationCache         = chiselLookupValues.transformationCache.AsDeferredJobArray(),
+                            brushMeshLookup             = treeUpdate.brushMeshLookup.AsReadOnly(),
+
+                            // Write
+                            intersectingBrushesStream   = treeUpdate.intersectingBrushesStream.AsWriter()
+                        };
+                        currentJobHandle = prepareBrushPairIntersectionsJob.Schedule(treeUpdate.uniqueBrushPairs, 1, dependencies);
+                        //currentJobHandle.Complete();
+
+                        //treeUpdate.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, treeUpdate.uniqueBrushPairsJobHandle);
+                        //treeUpdate.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, treeUpdate.transformationCacheJobHandle);
+                        //treeUpdate.brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, treeUpdate.brushMeshLookupJobHandle);
+                        treeUpdate.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, treeUpdate.intersectingBrushesStreamJobHandle);
+                    }
+                } finally { Profiler.EndSample(); }
+
                 Profiler.BeginSample("Job_GenerateBasePolygonLoops");
                 try
                 {
@@ -2599,32 +2577,34 @@ namespace Chisel.Core
 
                 #region Finish Mesh Updates / Update Components
                 Profiler.BeginSample("FinishMeshUpdates");
-                for (int t = 0; t < treeUpdateLength; t++)
+                try
                 {
-                    ref var treeUpdate = ref s_TreeUpdates[t];
-                    if (treeUpdate.updateCount == 0)
-                        continue;
-
-                    var dependencies = CombineDependencies(treeUpdate.meshDatasJobHandle,
-                                                            treeUpdate.colliderMeshUpdatesJobHandle,
-                                                            treeUpdate.debugHelperMeshesJobHandle,
-                                                            treeUpdate.renderMeshesJobHandle,
-                                                            treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                            treeUpdate.vertexBufferContents_meshesJobHandle);
-
-                    if (finishMeshUpdates != null)
+                    for (int t = 0; t < treeUpdateLength; t++)
                     {
-                        var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
-                        var usedMeshCount = finishMeshUpdates(tree, ref treeUpdate.vertexBufferContents,
-                                                              treeUpdate.meshDataArray,
-                                                              treeUpdate.colliderMeshUpdates,
-                                                              treeUpdate.debugHelperMeshes,
-                                                              treeUpdate.renderMeshes,
-                                                              dependencies);
+                        ref var treeUpdate = ref s_TreeUpdates[t];
+                        if (treeUpdate.updateCount == 0)
+                            continue;
+
+                        var dependencies = CombineDependencies(treeUpdate.meshDatasJobHandle,
+                                                                treeUpdate.colliderMeshUpdatesJobHandle,
+                                                                treeUpdate.debugHelperMeshesJobHandle,
+                                                                treeUpdate.renderMeshesJobHandle,
+                                                                treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                                treeUpdate.vertexBufferContents_meshesJobHandle);
+
+                        if (finishMeshUpdates != null)
+                        {
+                            var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeIndex + 1 };
+                            var usedMeshCount = finishMeshUpdates(tree, ref treeUpdate.vertexBufferContents,
+                                                                  treeUpdate.meshDataArray,
+                                                                  treeUpdate.colliderMeshUpdates,
+                                                                  treeUpdate.debugHelperMeshes,
+                                                                  treeUpdate.renderMeshes,
+                                                                  dependencies);
+                        }
+                        dependencies.Complete(); // Whatever happens, our jobs need to be completed at this point
                     }
-                    dependencies.Complete(); // Whatever happens, our jobs need to be completed at this point
-                }
-                Profiler.EndSample();
+                } finally { Profiler.EndSample(); }
                 #endregion
 
                 #region Dirty all invalidated outlines
