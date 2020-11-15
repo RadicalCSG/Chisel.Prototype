@@ -24,9 +24,12 @@ namespace Chisel.Core
             public int parameter1Count;
             public int parameter2Count;
 
+            #region Meshes
             public UnityEngine.Mesh.MeshDataArray           meshDataArray;
             public NativeList<UnityEngine.Mesh.MeshData>    meshDatas;
+            #endregion
 
+            #region All Native Collection Temporaries
             public NativeList<IndexOrder>               allTreeBrushIndexOrders;
             public NativeList<IndexOrder>               rebuildTreeBrushIndexOrders;
             public NativeList<IndexOrder>               allUpdateBrushIndexOrders;
@@ -71,7 +74,9 @@ namespace Chisel.Core
             public NativeList<ChiselMeshUpdate>         colliderMeshUpdates;
             public NativeList<ChiselMeshUpdate>         debugHelperMeshes;
             public NativeList<ChiselMeshUpdate>         renderMeshes;
+            #endregion
 
+            #region In Between JobHandles
 
             internal JobHandle allBrushMeshInstanceIDsJobHandle;
             internal JobHandle allTreeBrushIndexOrdersJobHandle;
@@ -134,9 +139,12 @@ namespace Chisel.Core
 
             internal JobHandle meshDatasJobHandle;
             internal JobHandle storeToCacheJobHandle;
+            #endregion
 
             public JobHandle lastJobHandle;
 
+            // TODO: We're not reusing buffers, so clear is useless?
+            //       If we ARE reusing buffers, some allocations are not set to a brush size??
             public void Clear()
             {
                 Profiler.BeginSample("HASMAP_CLEAR");
@@ -249,19 +257,10 @@ namespace Chisel.Core
 
                 Profiler.EndSample();
             }
-            
-            public void Dispose(JobHandle disposeJobHandle)//, bool onlyBlobs = false)
+
+            public JobHandle Dispose(JobHandle disposeJobHandle)
             {
-                //lastJobHandle = disposeJobHandle;
-
-
-                Profiler.BeginSample("DISPOSE_surfaceCountRef");
-                if (surfaceCountRef.IsCreated) surfaceCountRef.Dispose();
-                surfaceCountRef = default;
-                Profiler.EndSample();
-
-                //if (onlyBlobs)
-                //  return;
+                lastJobHandle = disposeJobHandle;
 
                 Profiler.BeginSample("DISPOSE_ARRAY");
                 if (brushMeshLookup              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushMeshLookup              .Dispose(disposeJobHandle));
@@ -304,6 +303,15 @@ namespace Chisel.Core
                 lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents.Dispose(disposeJobHandle));
                 
 
+
+                Profiler.BeginSample("DISPOSE_surfaceCountRef");
+                surfaceCountRefJobHandle.Complete();
+                surfaceCountRefJobHandle = default;
+                if (surfaceCountRef.IsCreated) surfaceCountRef.Dispose();
+                surfaceCountRef = default;
+                Profiler.EndSample();
+
+
                 vertexBufferContents            = default;
                 meshDataArray                   = default;
                 meshDatas                       = default;
@@ -333,6 +341,8 @@ namespace Chisel.Core
                 renderMeshes                    = default;
 
                 brushCount = 0;
+
+                return lastJobHandle;
             }
         }
 
@@ -343,7 +353,12 @@ namespace Chisel.Core
         static int[]            s_NodeIndexToNodeOrderArray;
         static TreeUpdate[]     s_TreeUpdates;
 
-        struct IndexOrderSort : IComparer<int2>
+        static int[] s_IndexLookup;
+        static int2[] s_RemapOldOrderToNewOrder;
+
+
+        #region IndexOrderComparer - Sort index order to ensure consistency
+        struct IndexOrderComparer : IComparer<int2>
         {
             public int Compare(int2 x, int2 y)
             {
@@ -353,9 +368,22 @@ namespace Chisel.Core
                 return x.x.CompareTo(y.x);
             }
         }
+        static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
+        #endregion
 
-        static int[] s_IndexLookup;
-        static int2[] s_RemapOldOrderToNewOrder;
+        #region MeshQueryComparer - Sort mesh mesh queries to help ensure consistency
+        struct MeshQueryComparer : IComparer<MeshQuery>
+        {
+            public int Compare(MeshQuery x, MeshQuery y)
+            {
+                if (x.LayerParameterIndex != y.LayerParameterIndex) return ((int)x.LayerParameterIndex) - ((int)y.LayerParameterIndex);
+                if (x.LayerQuery != y.LayerQuery) return ((int)x.LayerQuery) - ((int)y.LayerQuery);
+                return 0;
+            }
+        }
+
+        static readonly MeshQueryComparer meshQueryComparer = new MeshQueryComparer();
+        #endregion
 
         #region CombineDependencies
         static JobHandle CombineDependencies(JobHandle handle0) { return handle0; }
@@ -385,35 +413,9 @@ namespace Chisel.Core
         }
         #endregion
 
-        struct MeshQueryComparer : IComparer<MeshQuery>
-        {
-            public int Compare(MeshQuery x, MeshQuery y)
-            {
-                if (x.LayerParameterIndex != y.LayerParameterIndex) return ((int)x.LayerParameterIndex) - ((int)y.LayerParameterIndex);
-                if (x.LayerQuery != y.LayerQuery) return ((int)x.LayerQuery) - ((int)y.LayerQuery);
-                return 0;
-            }
-        }
-
-        static readonly MeshQueryComparer meshQueryComparer = new MeshQueryComparer();
-
-
         internal unsafe static JobHandle UpdateTreeMeshes(FinishMeshUpdate finishMeshUpdates, List<int> treeNodeIDs)
         {
             var finalJobHandle = default(JobHandle);
-
-            #region Do the setup for the CSG Jobs
-            Profiler.BeginSample("CSG_Setup");
-
-            Profiler.BeginSample("TreeUpdate_Allocate");
-            if (s_TreeUpdates == null || s_TreeUpdates.Length < treeNodeIDs.Count)
-                s_TreeUpdates = new TreeUpdate[treeNodeIDs.Count];
-            Profiler.EndSample();
-
-            // This cache stores all brushMeshes of all trees
-            Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
-            ChiselMeshLookup.Update();
-            Profiler.EndSample();
 
             // TODO: sort the treeNodeIDs by their position in the hierarchy (so we do everything in the same order, every time)
             // TODO: store all data separately for each tree
@@ -424,12 +426,44 @@ namespace Chisel.Core
             //                  we don't have gaps between nodes
             //                  order is always predictable
 
+            // TODO: ensure we only update exactly what we need, and nothing more
+
+            // TODO: figure out exactly what materials/physicMaterials we have per tree
+            //          => give each material a unique index per tree.
+            //          => cache this material index 
+            //          => have a lookup table for material <=> material index
+            //       have array of lists for indices, colliderVertices, renderVertices
+            //       our number of meshes is now 100% predictable
+            //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
+            //       at beginning of frame remove all invalidated pieces of these lists and pack them
+            //       when adding new geometry, add them at the end
+            //       then figure out if its worth it to keep these lists "in order"
+
+            // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
+
+            #region Do the setup for the CSG Jobs
+            Profiler.BeginSample("CSG_Prepare");
+
+            #region Update Unique BrushMeshBlobs
+            // This cache stores all brushMeshes of all trees
+            Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
+            ChiselMeshLookup.Update();
+            Profiler.EndSample();
+            #endregion
+
+            #region Prepare Trees
+            Profiler.BeginSample("CSG_TreeUpdate_Allocate");
+            if (s_TreeUpdates == null || s_TreeUpdates.Length < treeNodeIDs.Count)
+                s_TreeUpdates = new TreeUpdate[treeNodeIDs.Count];
+            Profiler.EndSample();
+
             var treeUpdateLength = 0;
             for (int t = 0; t < treeNodeIDs.Count; t++)
             {
                 var treeNodeID      = treeNodeIDs[t];
                 var treeNodeIndex   = treeNodeID - 1;
                 CSGManager.UpdateTreeNodeList(treeNodeIndex);
+
                 var treeInfo        = CSGManager.treeInfos[treeNodeIndex];
                 var allTreeBrushes  = treeInfo.brushes;
                 ref var currentTree = ref s_TreeUpdates[treeUpdateLength];
@@ -439,10 +473,6 @@ namespace Chisel.Core
 
                 int brushCount = allTreeBrushes.Count;
 
-                var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
-                chiselLookupValues.EnsureCapacity(brushCount);
-
-
                 #region MeshQueries
                 // TODO: have more control over the queries
                 var meshQueries = MeshQuery.DefaultQueries.ToNativeArray(Allocator.TempJob);
@@ -450,7 +480,31 @@ namespace Chisel.Core
                 meshQueries.Sort(meshQueryComparer);
                 #endregion
 
-                #region All Native Allocations
+                #region Allocations/Resize
+                var chiselLookupValues = ChiselTreeLookup.Value[treeNodeIndex];
+                chiselLookupValues.EnsureCapacity(brushCount);
+
+                Profiler.BeginSample("RESIZE");
+                if (chiselLookupValues.basePolygonCache.Length != brushCount)
+                    chiselLookupValues.basePolygonCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.routingTableCache.Length != brushCount)
+                    chiselLookupValues.routingTableCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.transformationCache.Length != brushCount)
+                    chiselLookupValues.transformationCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.brushRenderBufferCache.Length != brushCount)
+                    chiselLookupValues.brushRenderBufferCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.treeSpaceVerticesCache.Length != brushCount)
+                    chiselLookupValues.treeSpaceVerticesCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.brushTreeSpaceBoundCache.Length != brushCount)
+                    chiselLookupValues.brushTreeSpaceBoundCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.brushTreeSpacePlaneCache.Length != brushCount)
+                    chiselLookupValues.brushTreeSpacePlaneCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.brushesTouchedByBrushCache.Length != brushCount)
+                    chiselLookupValues.brushesTouchedByBrushCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
+                if (chiselLookupValues.brushIndices.Length != brushCount)
+                    chiselLookupValues.brushIndices.ResizeUninitialized(brushCount);
+                Profiler.EndSample();
+
                 Profiler.BeginSample("CSG_Allocations");
                 Profiler.BeginSample("ENSURE_SIZE");
                 currentTree.EnsureSize(brushCount);
@@ -627,7 +681,7 @@ namespace Chisel.Core
                         Profiler.EndSample();
 
                         Profiler.BeginSample("sort");
-                        Array.Sort(s_RemapOldOrderToNewOrder, 0, previousBrushIndexLength, new IndexOrderSort());
+                        Array.Sort(s_RemapOldOrderToNewOrder, 0, previousBrushIndexLength, indexOrderComparer);
                         Profiler.EndSample();
 
                         Profiler.BeginSample("REMAP2");
@@ -712,47 +766,27 @@ namespace Chisel.Core
                         }
                         Profiler.EndSample();
                     }
+
+                    brushIndices                = ref chiselLookupValues.brushIndices;
+                    basePolygonCache            = ref chiselLookupValues.basePolygonCache;
+                    routingTableCache           = ref chiselLookupValues.routingTableCache;
+                    transformationCache         = ref chiselLookupValues.transformationCache;
+                    brushRenderBufferCache      = ref chiselLookupValues.brushRenderBufferCache;
+                    treeSpaceVerticesCache      = ref chiselLookupValues.treeSpaceVerticesCache;
+                    brushTreeSpaceBoundCache    = ref chiselLookupValues.brushTreeSpaceBoundCache;
+                    brushTreeSpacePlaneCache    = ref chiselLookupValues.brushTreeSpacePlaneCache;
+                    brushesTouchedByBrushCache  = ref chiselLookupValues.brushesTouchedByBrushCache;
                 }                    
                 Profiler.EndSample();
                 #endregion
 
-                Profiler.BeginSample("RESIZE");
-                if (chiselLookupValues.basePolygonCache.Length != brushCount)
-                    chiselLookupValues.basePolygonCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.routingTableCache.Length != brushCount)
-                    chiselLookupValues.routingTableCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.transformationCache.Length != brushCount)
-                    chiselLookupValues.transformationCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushRenderBufferCache.Length != brushCount)
-                    chiselLookupValues.brushRenderBufferCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.treeSpaceVerticesCache.Length != brushCount)
-                    chiselLookupValues.treeSpaceVerticesCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushTreeSpaceBoundCache.Length != brushCount)
-                    chiselLookupValues.brushTreeSpaceBoundCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushTreeSpacePlaneCache.Length != brushCount)
-                    chiselLookupValues.brushTreeSpacePlaneCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushesTouchedByBrushCache.Length != brushCount)
-                    chiselLookupValues.brushesTouchedByBrushCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushIndices.Length != brushCount)
-                    chiselLookupValues.brushIndices.ResizeUninitialized(brushCount);
-                Profiler.EndSample();
 
+                #region Nodex Index by Brush Index lookup
                 Profiler.BeginSample("chiselLookupValues.brushIndices");
                 for (int i = 0; i < brushCount; i++)
                     chiselLookupValues.brushIndices[i] = allTreeBrushIndexOrders[i].nodeIndex;
                 Profiler.EndSample();
-
-                
-                brushIndices                = ref chiselLookupValues.brushIndices;
-                basePolygonCache            = ref chiselLookupValues.basePolygonCache;
-                routingTableCache           = ref chiselLookupValues.routingTableCache;
-                transformationCache         = ref chiselLookupValues.transformationCache;
-                brushRenderBufferCache      = ref chiselLookupValues.brushRenderBufferCache;
-                treeSpaceVerticesCache      = ref chiselLookupValues.treeSpaceVerticesCache;
-                brushTreeSpaceBoundCache    = ref chiselLookupValues.brushTreeSpaceBoundCache;
-                brushTreeSpacePlaneCache    = ref chiselLookupValues.brushTreeSpacePlaneCache;
-                brushesTouchedByBrushCache  = ref chiselLookupValues.brushesTouchedByBrushCache;
-
+                #endregion
 
                 #region Build list of all brushes that have been modified
                 Profiler.BeginSample("Modified_Brushes");
@@ -1082,32 +1116,18 @@ namespace Chisel.Core
                 currentTree.storeToCacheJobHandle = default;
                 #endregion
             }
+            #endregion
 
-
+            #region Sort trees from largest (slowest) to smallest (fastest)
             Profiler.BeginSample("Sort");
-            // Sort trees from largest (slowest) to smallest (fastest)
             // The slowest trees will run first, and the fastest trees can then hopefully fill the gaps
             Array.Sort(s_TreeUpdates, s_TreeSorter);
             Profiler.EndSample();
+            #endregion
 
             Profiler.EndSample();
             #endregion
-
-            // TODO: ensure we only update exactly what we need, and nothing more
-
-            // TODO: figure out exactly what materials/physicMaterials we have per tree
-            //          => give each material a unique index per tree.
-            //          => cache this material index 
-            //          => have a lookup table for material <=> material index
-            //       have array of lists for indices, colliderVertices, renderVertices
-            //       our number of meshes is now 100% predictable
-            //       instead of storing indices, vertices etc. in blobs, store these in these lists, per query
-            //       at beginning of frame remove all invalidated pieces of these lists and pack them
-            //       when adding new geometry, add them at the end
-            //       then figure out if its worth it to keep these lists "in order"
-
-            // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
-
+            
             try
             {
                 #region CSG Jobs
@@ -2483,11 +2503,12 @@ namespace Chisel.Core
                 finally { Profiler.EndSample(); }
                 #endregion
 
-                // Start the jobs on the worker threads
+
+                // Make sure we start the already scheduled jobs on the worker threads
                 JobHandle.ScheduleBatchedJobs();
 
                 //
-                // Do some main thread work while we wait for meshes to be updated
+                // Do some main thread work that we need to do anyway, while the previously scheduled jobs are running
                 //
 
                 #region Reset Flags
@@ -2572,7 +2593,7 @@ namespace Chisel.Core
                 #endregion
 
                 //
-                // Finish the mesh update jobs and assign them to our components
+                // Wait for our mesh update jobs to finish, ensure our components are setup correctly, and upload our mesh data to the meshes
                 //
 
                 #region Finish Mesh Updates / Update Components
@@ -2607,6 +2628,7 @@ namespace Chisel.Core
                 } finally { Profiler.EndSample(); }
                 #endregion
 
+
                 #region Dirty all invalidated outlines
                 // TODO: Jobify this (has dependencies on jobs, so can't be run before finishMeshUpdates)
                 Profiler.BeginSample("CSG_DirtyModifiedOutlines");
@@ -2640,7 +2662,7 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
 
-                        var disposeJobHandle = CombineDependencies(
+                        var dependencies = CombineDependencies(
                                                     CombineDependencies(
                                                         treeUpdate.allBrushMeshInstanceIDsJobHandle,
                                                         treeUpdate.allTreeBrushIndexOrdersJobHandle,
@@ -2694,9 +2716,11 @@ namespace Chisel.Core
                                                         treeUpdate.meshDatasJobHandle,
                                                         treeUpdate.storeToCacheJobHandle)
                                                 );
-                        //disposeJobHandle.Complete();
-                        treeUpdate.Dispose(disposeJobHandle);//, onlyBlobs: false);
-                        finalJobHandle = CombineDependencies(finalJobHandle, disposeJobHandle);
+                        treeUpdate.Dispose(dependencies);
+
+                        // We let the final JobHandle dependend on the dependencies, but not on the disposal, 
+                        // because we do not need to wait for the disposal of native collections do use our generated data
+                        finalJobHandle = CombineDependencies(finalJobHandle, dependencies);
                     }
                 }
                 Profiler.EndSample();
