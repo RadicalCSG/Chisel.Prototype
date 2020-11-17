@@ -165,6 +165,18 @@ namespace Chisel.Core
                 vertices[v] = GetVertexFromIntersectingPlanes(v);
             Profiler.EndSample();
 
+            Profiler.BeginSample("RemoveDegenerateTopology");
+            RemoveDegenerateTopology(out _, out _);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("CalculatePlanes");
+            CalculatePlanes();
+            Profiler.EndSample();
+
+            //Profiler.BeginSample("SplitNonPlanarPolygons");
+            //SplitNonPlanarPolygons();
+            //Profiler.EndSample();
+
             Profiler.EndSample();
             return center;
         }
