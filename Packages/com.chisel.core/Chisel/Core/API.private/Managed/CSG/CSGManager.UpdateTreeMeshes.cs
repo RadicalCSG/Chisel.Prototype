@@ -2289,8 +2289,6 @@ namespace Chisel.Core
                     for (int t = 0; t < treeUpdateLength; t++)
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
-                        if (treeUpdate.updateCount == 0)
-                            continue;
 
                         // Combine all JobHandles of all jobs to ensure that we wait for ALL of them to finish 
                         // before we dispose of our temporaries.
