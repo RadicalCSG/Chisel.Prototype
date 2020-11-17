@@ -655,6 +655,7 @@ namespace Chisel.Components
             return pickedGeneratedComponent;
         }
 
+#if UNITY_EDITOR
         static readonly Dictionary<Camera, DrawModeFlags>   s_CameraDrawMode    = new Dictionary<Camera, DrawModeFlags>();
 
         static bool s_IgnoreVisibility = false;
@@ -693,5 +694,6 @@ namespace Chisel.Components
         {
             UpdateHelperSurfaceState(DrawModeFlags.Default, ignoreBrushVisibility: true);
         }
+#endif
     }
 }

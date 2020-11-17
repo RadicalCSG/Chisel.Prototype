@@ -171,10 +171,12 @@ namespace Chisel.Components
             {
                 meshRenderer.allowOcclusionWhenDynamic = false;
                 meshRenderer.lightProbeUsage = LightProbeUsage.Off;
-                meshRenderer.scaleInLightmap = 0.0f;
                 meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 meshRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
                 meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+#if UNITY_EDITOR
+                meshRenderer.scaleInLightmap = 0.0f;
+#endif
             }
         }
 
