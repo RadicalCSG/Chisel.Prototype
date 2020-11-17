@@ -122,7 +122,7 @@ namespace Chisel.Core
                 brushContainer.EnsureSize(1);
                 Profiler.EndSample();
 
-                Profiler.BeginSample("new BrushMesh");
+                Profiler.BeginSample("new_BrushMesh");
                 BrushMesh brushMesh;
                 if (brushContainer.brushMeshes[0] == null)
                 {

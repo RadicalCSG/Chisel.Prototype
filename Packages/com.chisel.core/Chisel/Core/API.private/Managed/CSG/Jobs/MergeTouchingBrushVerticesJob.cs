@@ -73,8 +73,9 @@ namespace Chisel.Core
     struct MergeTouchingBrushVerticesIndirectJob : IJobParallelFor
     {
         // Read
-        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesArray;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -98,6 +99,20 @@ namespace Chisel.Core
 
             // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             ref var brushIntersections = ref brushIntersectionsBlob.Value.brushIntersections;
+            for (int i = 0; i < brushIntersections.Length; i++)
+            {
+                var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;
+                if (intersectingNodeOrder > brushNodeOrder ||
+                    !loopVerticesLookup.IsIndexCreated(intersectingNodeOrder))
+                    continue;
+
+                // In order, goes through the previous brushes in the tree, 
+                // and snaps any vertex that is almost the same in the next brush, with that vertex
+                ref var intersectingVertices = ref treeSpaceVerticesArray[intersectingNodeOrder].Value.treeSpaceVertices;
+                mergeVertices.ReplaceIfExists(ref intersectingVertices);
+            }
+
+            // NOTE: assumes brushIntersections is in the same order as the brushes are in the tree
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var intersectingNodeOrder = brushIntersections[i].nodeIndexOrder.nodeOrder;

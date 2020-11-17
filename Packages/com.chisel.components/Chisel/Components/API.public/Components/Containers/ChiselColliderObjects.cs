@@ -108,7 +108,7 @@ namespace Chisel.Components
                 if (!meshCollider)
                     continue;
 
-                // Requires us to set the sharedMesh again, which would force a full slow rebake, 
+                // If the cookingOptions are not the default values it would force a full slow rebake later, 
                 // even if we already did a Bake in a job
                 //if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
                 //    meshCollider.cookingOptions = colliderSettings.cookingOptions;
@@ -120,16 +120,12 @@ namespace Chisel.Components
 
                 var sharedMesh = colliders[i].sharedMesh;
                 var expectedEnabled = sharedMesh.vertexCount > 0;
-                if (expectedEnabled)
-                    meshCollider.enabled = !expectedEnabled;
-                meshCollider.enabled = expectedEnabled;
-
-                if (meshCollider.sharedMesh != sharedMesh)
-                    meshCollider.sharedMesh = sharedMesh;
+                if (meshCollider.enabled != expectedEnabled)
+                    meshCollider.enabled = expectedEnabled;
             }
 
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
-            //          hopefully that will make it easier for Unity to not fuck up the scheduling
+            //          hopefully that will make it easier for Unity to not screw up the scheduling
             var bakingSettings = new NativeArray<BakeData>(colliders.Length,Allocator.TempJob);
             for (int i = 0; i < colliders.Length; i++)
             {
@@ -154,9 +150,20 @@ namespace Chisel.Components
             {
                 bakingSettings = bakingSettings.AsReadOnly()
             };
-            // WHY ARE THEY RUN SEQUENTIALLY ON THE SAME WORKER THREAD?
+            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON THE SAME WORKER THREAD?
             var jobHandle = bakeColliderJob.Schedule(colliders.Length, 1);
+
+            jobHandle.Complete();
             bakingSettings.Dispose(jobHandle);
+            // TODO: is there a way to defer forcing the collider to update?
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                var meshCollider = colliders[i].meshCollider;
+                if (!meshCollider)
+                    continue;
+
+                meshCollider.sharedMesh = colliders[i].sharedMesh;
+            }
         }
     }
 }

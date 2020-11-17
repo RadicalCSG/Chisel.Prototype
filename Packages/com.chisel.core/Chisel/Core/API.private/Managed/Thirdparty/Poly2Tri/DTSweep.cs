@@ -308,7 +308,7 @@ namespace Poly2Tri
         [NoAlias, ReadOnly] public NativeListArray<int>                 children;
         [NoAlias, ReadOnly] public NativeList<Edge>                     inputEdgesCopy;
         [NoAlias, ReadOnly] public NativeListArray<Edge>.NativeList     inputEdges;
-        [NoAlias, ReadOnly] public NativeList<int>                      surfaceIndicesArray;
+        [NoAlias]           public NativeList<int>                      surfaceIndicesArray;
 
         void Clear()
         {
