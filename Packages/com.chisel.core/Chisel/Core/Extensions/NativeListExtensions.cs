@@ -24,9 +24,9 @@ namespace Chisel.Core
         public unsafe static ParallelWriterExt<T> AsParallelWriterExt<T>(this NativeList<T> list)
             where T : struct
         {
+            var m_ListData = list.GetUnsafeList();
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
             var m_Safety = NativeListUnsafeUtility.GetAtomicSafetyHandle(ref list);
-            var m_ListData = list.GetUnsafeList();
             return new ParallelWriterExt<T>(m_ListData->Ptr, m_ListData, ref m_Safety);
 #else
             return new ParallelWriterExt<T>(m_ListData->Ptr, m_ListData);
@@ -64,7 +64,7 @@ namespace Chisel.Core
             }
 
 #else
-            internal unsafe ParallelWriter(void* ptr, UnsafeList* listData)
+            internal unsafe ParallelWriterExt(void* ptr, UnsafeList* listData)
             {
                 Ptr = ptr;
                 ListData = listData;
