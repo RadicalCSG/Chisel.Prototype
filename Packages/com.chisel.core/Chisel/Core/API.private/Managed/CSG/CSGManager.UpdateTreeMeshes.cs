@@ -1224,7 +1224,7 @@ namespace Chisel.Core
                 //
                 // Ensure vertices that should be identical on different brushes, ARE actually identical
                 //
-
+                /*
                 #region Merge vertices
                 Profiler.BeginSample("Job_MergeTouchingBrushVertices");
                 try
@@ -1274,7 +1274,7 @@ namespace Chisel.Core
                 }
                 finally { Profiler.EndSample(); }
                 #endregion
-
+                */
                 //
                 // Determine all surfaces and intersections
                 //
@@ -1570,6 +1570,7 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
                         var dependencies            = CombineDependencies(treeUpdate.allUpdateBrushIndexOrdersJobHandle,
+                                                                          treeUpdate.treeSpaceVerticesCacheJobHandle,
                                                                           treeUpdate.brushesTouchedByBrushCacheJobHandle,
                                                                           treeUpdate.loopVerticesLookupJobHandle);
                         var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeIndex];
@@ -1578,6 +1579,7 @@ namespace Chisel.Core
                             // Read
                             allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders.AsDeferredJobArray(),
                             brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsDeferredJobArray(),
+                            treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache.AsDeferredJobArray(),
                             
                             // Read Write
                             loopVerticesLookup          = treeUpdate.loopVerticesLookup,
