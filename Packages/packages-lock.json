@@ -45,6 +45,23 @@
         "com.chisel.components": "0.0.1-preview"
       }
     },
+    "com.chisel.node": {
+      "version": "file:com.chisel.node",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.chisel.core": "0.0.1-preview",
+        "com.chisel.components": "0.0.1-preview",
+        "com.github.siccity.xnode": "1.8.0"
+      }
+    },
+    "com.github.siccity.xnode": {
+      "version": "https://github.com/siccity/xNode.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "6b893fd5a4e48d0bb45c07741cc827a1aa86797b"
+    },
     "com.scene.handle.extensions": {
       "version": "file:com.scene.handle.extensions",
       "depth": 0,

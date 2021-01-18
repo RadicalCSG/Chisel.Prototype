@@ -1,0 +1,23 @@
+{
+  "description": "The Chisel Node Generator",
+  "displayName": "Chisel Node Generator",
+  "name": "com.chisel.node",
+  "keywords": [
+    "level design",
+    "world building",
+    "CSG",
+    "BSP",
+    "Boolean",	
+    "node",
+	"procedural"
+  ],
+  "unity": "2020.2",
+  "version": "0.0.1-preview",
+  "dependencies": {
+    "com.chisel.core": "0.0.1-preview",
+    "com.chisel.components": "0.0.1-preview",
+	"com.github.siccity.xnode": "1.8.0"	
+  },
+  "type": "tool",
+  "hideInEditor": false
+}
