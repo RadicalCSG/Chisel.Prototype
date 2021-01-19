@@ -16,6 +16,11 @@ namespace Chisel.Nodes
 
         CSGTree tree;
 
+        void Start()
+        {
+            CreateTree();
+        }
+
         void CreateTree()
         {
             tree = CSGTree.Create(GetInstanceID());
@@ -24,6 +29,9 @@ namespace Chisel.Nodes
             var box = new ChiselBoxDefinition();
 
             BrushMeshFactory.GenerateBox(ref brushContainer, ref box);
+
+            Debug.Log(brushContainer.brushMeshes.Length);
+
             brush.BrushMesh = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
             tree.Add(brush);
         }
