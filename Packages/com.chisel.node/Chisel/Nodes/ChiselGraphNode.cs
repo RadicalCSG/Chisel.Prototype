@@ -1,53 +1,32 @@
 using System;
 using UnityEngine;
 using XNode;
+using Chisel.Core;
 
 namespace Chisel.Nodes
 {
     public abstract class ChiselGraphNode : Node
     {
-        [Input] public CSGTree child;
-        [Output] public CSGTree parent;
+        [Input] public CSG child;
+        [Output] public CSG parent;
 
         public Action onStateChange;
+        public ChiselGraph chiselGraph => graph as ChiselGraph;
 
         public void SetActive()
         {
-            var chiselGraph = graph as ChiselGraph;
+            var chiselGraph = graph as Nodes.ChiselGraph;
             chiselGraph.active = this;
         }
 
-        protected abstract void Generate();
+        public abstract CSGTreeNode GetNode();
 
-        public override void OnCreateConnection(NodePort from, NodePort to)
+        void OnValidate()
         {
-            Generate();
+            chiselGraph.UpdateCSG();
         }
 
         [Serializable]
-        public class CSGTree { }
-    }
-
-    public abstract class ChiselGraphGeneratorNode : Node
-    {
-        [Output] public CSGTree parent;
-
-        public Action onStateChange;
-
-        public void SetActive()
-        {
-            var chiselGraph = graph as ChiselGraph;
-            //chiselGraph.active = this;
-        }
-
-        protected abstract void Generate();
-
-        public override void OnCreateConnection(NodePort from, NodePort to)
-        {
-            Generate();
-        }
-
-        [Serializable]
-        public class CSGTree { }
+        public class CSG { }
     }
 }

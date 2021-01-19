@@ -1,16 +1,16 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+//using System.Collections;
+//using System.Collections.Generic;
+//using UnityEngine;
 
-namespace Chisel.Nodes
-{
-    public class CompositeNode : ChiselGraphNode
-    {
-        [Input] public CSGTree child2;
+//namespace Chisel.Nodes
+//{
+//    public class CompositeNode : ChiselGraphNode
+//    {
+//        [Input] public ChiselGraph child2;
 
-        protected override void Generate()
-        {
-            Debug.Log("generate box");
-        }
-    }
-}
+//        public override CSGTreeNode GetNode()
+//        {
+//            Debug.Log("generate box");
+//        }
+//    }
+//}

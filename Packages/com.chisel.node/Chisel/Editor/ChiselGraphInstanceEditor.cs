@@ -22,7 +22,7 @@ namespace Chisel.Nodes
             if (GUILayout.Button("Create Tree", GUI.skin.GetStyle("button")))
             {
                 var instance = target as ChiselGraphInstance;
-                instance.CreateTree();
+                instance.UpdateCSG();
             }
 
             if (GUILayout.Button("Rebuild", GUI.skin.GetStyle("button")))
