@@ -13,7 +13,24 @@ MonoBehaviour:
   m_Name: Chisel Box
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: -136, y: -40}
+  position: {x: -216, y: -72}
+  ports:
+    keys: []
+    values: []
+--- !u!114 &-7307979638694703134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d678cf2bf10f3bf4f8d68ae693a7a7a3, type: 3}
+  m_Name: Chisel Box
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: 72, y: -40}
   ports:
     keys: []
     values: []
@@ -31,5 +48,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   nodes:
   - {fileID: -7909353669299017541}
-  active: {fileID: 0}
+  - {fileID: -7307979638694703134}
+  active: {fileID: -7909353669299017541}
   instance: {fileID: 0}

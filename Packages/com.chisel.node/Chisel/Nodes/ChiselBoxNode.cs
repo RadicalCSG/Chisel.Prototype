@@ -4,13 +4,11 @@ using UnityEngine;
 
 namespace Chisel.Nodes
 {
-    public class ChiselBoxNode : ChiselNode
+    public class ChiselBoxNode : ChiselGraphNode
     {
-        public override bool led => throw new System.NotImplementedException();
-
-        protected override void OnInputChanged()
+        protected override void Generate()
         {
-            throw new System.NotImplementedException();
+            Debug.Log("generate box");
         }
     }
 }

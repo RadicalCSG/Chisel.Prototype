@@ -6,7 +6,7 @@ namespace Chisel.Nodes
     [CreateAssetMenu(fileName = "New Chisel Graph", menuName = "Chisel Graph")]
     public class ChiselGraph : NodeGraph
     {
-        public ChiselNode active;
+        public ChiselGraphNode active;
         public ChiselGraphInstance instance;
     }
 }

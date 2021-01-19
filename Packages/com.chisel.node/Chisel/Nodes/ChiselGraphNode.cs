@@ -4,10 +4,12 @@ using XNode;
 
 namespace Chisel.Nodes
 {
-    public abstract class ChiselNode : Node
+    public abstract class ChiselGraphNode : Node
     {
+        [Input] public Generation enter;
+        [Output] public Generation exit;
+
         public Action onStateChange;
-        public abstract bool led { get; }
 
         public void SetActive()
         {
@@ -15,11 +17,14 @@ namespace Chisel.Nodes
             chiselGraph.active = this;
         }
 
-        protected abstract void OnInputChanged();
+        protected abstract void Generate();
 
         public override void OnCreateConnection(NodePort from, NodePort to)
         {
-            OnInputChanged();
+            Generate();
         }
+
+        [Serializable]
+        public class Generation { }
     }
 }
