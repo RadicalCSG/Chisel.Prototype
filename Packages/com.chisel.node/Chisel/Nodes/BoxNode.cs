@@ -8,8 +8,6 @@ namespace Chisel.Nodes
         [Input] public Vector3 center;
         [Input] public Vector3 size = Vector3.one;
 
-        CSGTreeNode treeNode;
-
         public override CSGTreeNode GetNode()
         {
             var box = new ChiselBoxDefinition();
@@ -20,18 +18,11 @@ namespace Chisel.Nodes
             BrushMeshFactory.GenerateBox(ref brushContainer, ref box);
 
             var instance = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
-            treeNode = CSGTreeBrush.Create(0, instance);
+            var treeNode = CSGTreeBrush.Create(0, instance);
 
             treeNode.Operation = operation;
 
             return treeNode;
-        }
-
-        void OnValidate()
-        {
-            if (treeNode.Valid)
-                treeNode.SetDirty();
-            chiselGraph.UpdateCSG();
         }
     }
 }

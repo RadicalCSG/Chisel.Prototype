@@ -117,8 +117,50 @@ MonoBehaviour:
       _typeConstraint: 0
       _dynamic: 0
   operation: 1
-  center: {x: 0, y: 0.25, z: 0}
-  size: {x: 1.4, y: 0.7, z: 1}
+  center: {x: 0, y: 0.39, z: 0}
+  size: {x: 0.39, y: 0.7, z: 1}
+--- !u!114 &-1383906636815730267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dbbcedd95044154d9273ec01444868a, type: 3}
+  m_Name: Sub Graph
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: 632, y: 168}
+  ports:
+    keys:
+    - children
+    - parent
+    values:
+    - _fieldName: children
+      _node: {fileID: -1383906636815730267}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: parent
+        node: {fileID: 6654120812992344769}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: parent
+      _node: {fileID: -1383906636815730267}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  operation: 1
+  subgraph: {fileID: 11400000, guid: fcd800f03725c234c8d479a178882e4e, type: 2}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,6 +177,7 @@ MonoBehaviour:
   - {fileID: 3873916941957806223}
   - {fileID: -3665420030514838893}
   - {fileID: 6654120812992344769}
+  - {fileID: -1383906636815730267}
   active: {fileID: 6654120812992344769}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
@@ -150,7 +193,7 @@ MonoBehaviour:
   m_Name: Box
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: -296, y: 88}
+  position: {x: -168, y: 152}
   ports:
     keys:
     - center
@@ -199,7 +242,7 @@ MonoBehaviour:
       _dynamic: 0
   operation: 0
   center: {x: 0, y: 0, z: 0}
-  size: {x: 2, y: 0.5, z: 2}
+  size: {x: 3.42, y: 0.62, z: 2.88}
 --- !u!114 &6654120812992344769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -213,7 +256,7 @@ MonoBehaviour:
   m_Name: Box
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: 408, y: 120}
+  position: {x: 376, y: 168}
   ports:
     keys:
     - center
@@ -255,11 +298,14 @@ MonoBehaviour:
       _node: {fileID: 6654120812992344769}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections: []
+      connections:
+      - fieldName: children
+        node: {fileID: -1383906636815730267}
+        reroutePoints: []
       _direction: 1
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  operation: 0
+  operation: 1
   center: {x: 0, y: -0.31, z: 0}
-  size: {x: 0.79, y: 1.02, z: 0.52}
+  size: {x: 0.69, y: 1.26, z: 0.52}

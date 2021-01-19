@@ -24,7 +24,9 @@ namespace Chisel.Nodes
 
         public void CollectTreeNode(CSGTree tree)
         {
-            active.ParseNode(tree);
+            var branch = CSGTreeBranch.Create();
+            active.ParseNode(branch);
+            tree.Add(branch);
         }
     }
 }

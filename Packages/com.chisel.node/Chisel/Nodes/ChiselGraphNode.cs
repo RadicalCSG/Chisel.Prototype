@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using XNode;
 using Chisel.Core;
+using System.Collections.Generic;
 
 namespace Chisel.Nodes
 {
@@ -22,19 +23,26 @@ namespace Chisel.Nodes
 
         public abstract CSGTreeNode GetNode();
 
-        public void ParseNode(CSGTree tree)
+        public void ParseNode(CSGTreeBranch branch)
         {
             var childrenPort = GetInputPort("children");
             if (childrenPort.IsConnected)
             {
                 var chiselNode = childrenPort.Connection.node as ChiselGraphNode;
-                chiselNode.ParseNode(tree);
+                chiselNode.ParseNode(branch);
             }
 
             var node = GetNode();
-            node.Operation = operation;
-            tree.Add(node);
+            if (node.Valid)
+            {
+                node.Operation = operation;
+                branch.Add(node);
+            }
+
+            OnParseNode(branch);
         }
+
+        public virtual void OnParseNode(CSGTreeBranch nodes) { }
 
         public override object GetValue(NodePort port)
         {
