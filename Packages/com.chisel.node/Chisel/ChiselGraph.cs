@@ -12,18 +12,19 @@ namespace Chisel.Nodes
 
         public void SetActiveNode(ChiselGraphNode node)
         {
+            active = node;
             UpdateCSG();
         }
 
         public void UpdateCSG()
         {
             if (instance != null)
-                instance.isDirty = true;
+                instance.IsDirty = true;
         }
 
         public void CollectTreeNode(CSGTree tree)
         {
-            tree.Add(active.GetNode());
+            active.ParseNode(tree);
         }
     }
 }

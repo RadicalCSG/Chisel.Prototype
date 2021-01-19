@@ -12,7 +12,7 @@ namespace Chisel.Nodes
         public ChiselGraph graph;
         public MeshFilter meshFilter;
         public MeshRenderer meshRenderer;
-        public bool isDirty;
+        public bool IsDirty { get; set; }
 
         CSGTree tree;
         List<Mesh> meshes;
@@ -25,13 +25,13 @@ namespace Chisel.Nodes
 
         void Update()
         {
-            if (isDirty)
+            if (IsDirty)
                 UpdateCSG();
         }
 
         public void UpdateCSG()
         {
-            isDirty = false;
+            IsDirty = false;
             if (!tree.Valid)
                 tree = CSGTree.Create(GetInstanceID());
             else

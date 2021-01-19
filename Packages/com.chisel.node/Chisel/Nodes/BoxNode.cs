@@ -22,12 +22,15 @@ namespace Chisel.Nodes
             var instance = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
             treeNode = CSGTreeBrush.Create(0, instance);
 
+            treeNode.Operation = operation;
+
             return treeNode;
         }
 
         void OnValidate()
         {
-            treeNode.SetDirty();
+            if (treeNode.Valid)
+                treeNode.SetDirty();
             chiselGraph.UpdateCSG();
         }
     }
