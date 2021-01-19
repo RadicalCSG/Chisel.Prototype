@@ -11,7 +11,7 @@ namespace Chisel.Nodes
             GUI.color = Color.white;
             var node = target as ChiselGraphNode;
             var graph = node.graph as ChiselGraph;
-            if (graph.active == node) GUI.color = Color.cyan;
+            if (graph.active == node) GUI.color = Color.green;
 
             string title = target.name;
             GUILayout.Label(title, NodeEditorResources.styles.nodeHeader, GUILayout.Height(30));
@@ -22,7 +22,11 @@ namespace Chisel.Nodes
         {
             base.OnBodyGUI();
             var node = target as ChiselGraphNode;
-            if (GUILayout.Button("Preview")) node.SetActive();
+            if (node.chiselGraph.active != node)
+            {
+                if (GUILayout.Button("Preview"))
+                    node.SetActive();
+            }
         }
     }
 }
