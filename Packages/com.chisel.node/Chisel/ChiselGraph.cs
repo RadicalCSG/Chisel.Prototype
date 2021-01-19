@@ -8,5 +8,10 @@ namespace Chisel.Nodes
     {
         public ChiselGraphNode active;
         public ChiselGraphInstance instance;
+
+        public void SetActiveNode(ChiselGraphNode node)
+        {
+
+        }
     }
 }

@@ -15,33 +15,35 @@ namespace Chisel.Nodes
         public MeshRenderer meshRenderer;
 
         CSGTree tree;
+        List<Mesh> meshes;
 
         void Start()
         {
+            meshes = new List<Mesh>();
             CreateTree();
         }
 
-        void CreateTree()
+        public void CreateTree()
         {
             tree = CSGTree.Create(GetInstanceID());
-            var brush = new CSGTreeBrush();
-            var brushContainer = new ChiselBrushContainer();
             var box = new ChiselBoxDefinition();
+            box.min = -Vector3.one;
+            box.max = Vector3.one;
 
+            var brushContainer = new ChiselBrushContainer();
             BrushMeshFactory.GenerateBox(ref brushContainer, ref box);
 
-            Debug.Log(brushContainer.brushMeshes.Length);
-
-            brush.BrushMesh = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
+            var instance = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
+            var brush = CSGTreeBrush.Create(0, instance);
             tree.Add(brush);
+
+            UpdateMesh();
         }
 
         void UpdateMesh()
         {
             CSGManager.Flush(finishMeshUpdates);
         }
-
-        List<Mesh> foundMeshes = new List<Mesh>();
 
         int finishMeshUpdates(CSGTree tree,
             ref VertexBufferContents vertexBufferContents,
@@ -51,14 +53,33 @@ namespace Chisel.Nodes
             NativeList<ChiselMeshUpdate> renderMeshes,
             JobHandle dependencies)
         {
-            meshFilter = gameObject.AddComponent<MeshFilter>();
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
 
+            print(meshDataArray.Length);
 
+            meshes = new List<Mesh>();
+            for (int i = 0; i < meshDataArray.Length; i++)
+            {
+                var mesh = new Mesh();
+                meshes.Add(mesh);
+            }
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, meshes);
 
-            var foundMeshCount = foundMeshes.Count;
-            foundMeshes.Clear();
-            return foundMeshCount;
+            for (int i = 0; i < meshDataArray.Length; i++)
+            {
+                var mesh = meshes[i];
+                mesh.RecalculateNormals();
+                mesh.RecalculateBounds();
+            }
+
+            meshFilter.mesh = meshes[1];
+
+            return 1;
+        }
+
+        public void Rebuild()
+        {
+            CSGManager.Clear();
+            ChiselBrushMaterialManager.Reset();
         }
     }
 }

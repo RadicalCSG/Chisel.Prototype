@@ -18,6 +18,18 @@ namespace Chisel.Nodes
 
                 NodeEditorWindow.Open(instance.graph);
             }
+
+            if (GUILayout.Button("Create Tree", GUI.skin.GetStyle("button")))
+            {
+                var instance = target as ChiselGraphInstance;
+                instance.CreateTree();
+            }
+
+            if (GUILayout.Button("Rebuild", GUI.skin.GetStyle("button")))
+            {
+                var instance = target as ChiselGraphInstance;
+                instance.Rebuild();
+            }
         }
     }
 }
