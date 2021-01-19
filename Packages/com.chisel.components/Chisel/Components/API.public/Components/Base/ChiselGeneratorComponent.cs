@@ -868,6 +868,7 @@ namespace Chisel.Components
             finally { Profiler.EndSample(); }
 
             Profiler.BeginSample("UpdateGeneratorInternal");
+            print("UpdateGeneratorInternal");
             try { UpdateGeneratorInternal(); }
             finally { Profiler.EndSample(); }
 
