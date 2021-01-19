@@ -1,6 +1,6 @@
 {
-  "description": "The Chisel Node Generator",
-  "displayName": "Chisel Node Generator",
+  "description": "The Chisel Node Graph",
+  "displayName": "Chisel Node Graph",
   "name": "com.chisel.node",
   "keywords": [
     "level design",

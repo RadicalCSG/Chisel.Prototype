@@ -458,6 +458,7 @@ namespace Chisel.Core
         {
             if (!AssertNodeIDValid(nodeID))
                 return false;
+
             switch (nodeFlags[nodeID - 1].nodeType)
             {
                 case CSGNodeType.Brush:     { return SetBrushDirtyWithFlag(nodeID, brushNodeFlags); }

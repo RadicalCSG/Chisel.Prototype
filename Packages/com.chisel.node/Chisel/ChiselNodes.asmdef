@@ -2,6 +2,7 @@
     "name": "ChiselNode",
     "rootNamespace": "",
     "references": [
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
         "GUID:642cde28f6a094d458a26f9a4533c056",
         "GUID:c5c65302a7823bb47a9cb6d9c848b0da",
         "GUID:b8e24fd1eb19b4226afebb2810e3c19b"

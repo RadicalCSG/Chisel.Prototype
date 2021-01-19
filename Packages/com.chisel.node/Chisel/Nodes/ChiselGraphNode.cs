@@ -6,8 +6,8 @@ namespace Chisel.Nodes
 {
     public abstract class ChiselGraphNode : Node
     {
-        [Input] public Generation enter;
-        [Output] public Generation exit;
+        [Input] public CSGTree child;
+        [Output] public CSGTree parent;
 
         public Action onStateChange;
 
@@ -25,6 +25,29 @@ namespace Chisel.Nodes
         }
 
         [Serializable]
-        public class Generation { }
+        public class CSGTree { }
+    }
+
+    public abstract class ChiselGraphGeneratorNode : Node
+    {
+        [Output] public CSGTree parent;
+
+        public Action onStateChange;
+
+        public void SetActive()
+        {
+            var chiselGraph = graph as ChiselGraph;
+            //chiselGraph.active = this;
+        }
+
+        protected abstract void Generate();
+
+        public override void OnCreateConnection(NodePort from, NodePort to)
+        {
+            Generate();
+        }
+
+        [Serializable]
+        public class CSGTree { }
     }
 }

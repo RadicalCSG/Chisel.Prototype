@@ -1,6 +1,56 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-7909353669299017541
+--- !u!114 &-5955115620694431845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19f9840a1e94116468e933114f7167e2, type: 3}
+  m_Name: Composite
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: 40, y: -136}
+  ports:
+    keys:
+    - child
+    - child2
+    - parent
+    values:
+    - _fieldName: child
+      _node: {fileID: -5955115620694431845}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSGTree, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: parent
+        node: {fileID: -2987355259691116483}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: child2
+      _node: {fileID: -5955115620694431845}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSGTree, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: parent
+      _node: {fileID: -5955115620694431845}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSGTree, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+--- !u!114 &-2987355259691116483
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,30 +60,36 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d678cf2bf10f3bf4f8d68ae693a7a7a3, type: 3}
-  m_Name: Chisel Box
+  m_Name: Box
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: -216, y: -72}
+  position: {x: -280, y: -136}
   ports:
-    keys: []
-    values: []
---- !u!114 &-7307979638694703134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d678cf2bf10f3bf4f8d68ae693a7a7a3, type: 3}
-  m_Name: Chisel Box
-  m_EditorClassIdentifier: 
-  graph: {fileID: 11400000}
-  position: {x: 72, y: -40}
-  ports:
-    keys: []
-    values: []
+    keys:
+    - parent
+    - child
+    values:
+    - _fieldName: parent
+      _node: {fileID: -2987355259691116483}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSGTree, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: child
+        node: {fileID: -5955115620694431845}
+        reroutePoints: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: child
+      _node: {fileID: -2987355259691116483}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSGTree, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47,7 +103,7 @@ MonoBehaviour:
   m_Name: New Chisel Graph
   m_EditorClassIdentifier: 
   nodes:
-  - {fileID: -7909353669299017541}
-  - {fileID: -7307979638694703134}
-  active: {fileID: -7909353669299017541}
+  - {fileID: -2987355259691116483}
+  - {fileID: -5955115620694431845}
+  active: {fileID: 0}
   instance: {fileID: 0}
