@@ -10,12 +10,12 @@ namespace Chisel.Nodes
         {
             base.OnBodyGUI();
             var node = target as PropertyNode<FloatProperty>;
-            node.property.Name = EditorGUILayout.TextField("Name", node.property.Name);
 
             EditorGUI.BeginChangeCheck();
+            node.property.Name = EditorGUILayout.TextField("Name", node.property.Name);
             node.property.Value = EditorGUILayout.FloatField("Value", node.property.Value);
             if (EditorGUI.EndChangeCheck())
-                node.chiselGraph.UpdateCSG();
+                node.ChiselGraph.UpdateProperties();
         }
     }
 }

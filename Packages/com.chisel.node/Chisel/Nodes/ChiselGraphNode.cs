@@ -51,7 +51,7 @@ namespace Chisel.Nodes
 
         void OnValidate()
         {
-            chiselGraph.UpdateCSG();
+            chiselGraph.UpdateProperties();
         }
 
         [Serializable]

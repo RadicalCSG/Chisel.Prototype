@@ -16,18 +16,12 @@ namespace Chisel.Nodes
         public void SetActiveNode(ChiselGraphNode node)
         {
             active = node;
-            UpdateCSG();
+            UpdateProperties();
         }
 
-        public void UpdateCSG()
+        public void UpdateProperties()
         {
-            if (properties == null)
-                properties = new List<GraphProperty>();
-
-            properties.Clear();
-            foreach (var node in nodes)
-                if (node is FloatPropertyNode floatNode)
-                    properties.Add(floatNode.property);
+            OnValidate();
 
             if (instance != null)
                 instance.IsDirty = true;
@@ -50,6 +44,14 @@ namespace Chisel.Nodes
             if (instance.overriddenProperties.ContainsKey(key))
                 return instance.overriddenProperties[key] as T;
             return null;
+        }
+
+        void OnValidate()
+        {
+            properties = new List<GraphProperty>();
+            foreach (var node in nodes)
+                if (node is IPropertyNode propertyNode)
+                    properties.Add(propertyNode.Property);
         }
     }
 }

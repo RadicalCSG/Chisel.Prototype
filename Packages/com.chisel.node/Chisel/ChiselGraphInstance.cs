@@ -41,10 +41,8 @@ namespace Chisel.Nodes
                 InitProperties();
 
             for (int i = 0; i < graph.properties.Count; i++)
-            {
                 if (graph.properties[i].Name != properties[i].Name)
                     InitProperties();
-            }
         }
 
         void InitProperties()
@@ -107,7 +105,6 @@ namespace Chisel.Nodes
 
             if (meshes == null || meshes.Count != meshDataArray.Length)
             {
-                Debug.Log("new mesh");
                 meshes = new List<Mesh>();
                 for (int i = 0; i < meshDataArray.Length; i++)
                     meshes.Add(new Mesh());

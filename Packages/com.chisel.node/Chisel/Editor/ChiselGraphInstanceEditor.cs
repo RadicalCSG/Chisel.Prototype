@@ -13,8 +13,10 @@ namespace Chisel.Nodes
     {
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector();
             var instance = target as ChiselGraphInstance;
+            instance.TriggerOnValidate();
+
+            DrawDefaultInspector();
 
             if (GUILayout.Button("Edit", GUI.skin.GetStyle("button")))
             {
@@ -40,8 +42,8 @@ namespace Chisel.Nodes
 
             if (EditorGUI.EndChangeCheck())
             {
-                instance.IsDirty = true;
                 instance.UpdateProperties();
+                instance.IsDirty = true;
                 instance.UpdateCSG();
             }
         }

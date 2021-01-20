@@ -9,7 +9,7 @@ namespace Chisel.Nodes
 
         public override object GetValue(NodePort port)
         {
-            var overridden = chiselGraph.GetOverriddenProperty<FloatProperty>(property.Name);
+            var overridden = ChiselGraph.GetOverriddenProperty<FloatProperty>(property.Name);
             if (overridden != null)
                 return overridden.Value;
 

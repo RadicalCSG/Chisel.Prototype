@@ -4,11 +4,28 @@ using XNode;
 
 namespace Chisel.Nodes
 {
-    public class PropertyNode<T> : Node where T:GraphProperty
+    public class PropertyNode<T> : Node, IPropertyNode where T : GraphProperty
     {
         [HideInInspector]
         public T property;
-        public ChiselGraph chiselGraph => graph as ChiselGraph;
+        public GraphProperty Property => property;
+
+        public ChiselGraph ChiselGraph => graph as ChiselGraph;
+
+        protected override void Init()
+        {
+            ChiselGraph.UpdateProperties();
+        }
+
+        void OnDestroy()
+        {
+            ChiselGraph.UpdateProperties();
+        }
+    }
+
+    public interface IPropertyNode
+    {
+        GraphProperty Property { get; }
     }
 
     [Serializable]

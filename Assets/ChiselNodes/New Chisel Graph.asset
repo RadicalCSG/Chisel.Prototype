@@ -192,6 +192,70 @@ MonoBehaviour:
   operation: 1
   center: {x: 0, y: 0.39, z: 0}
   size: {x: 0.39, y: 0.7, z: 1}
+--- !u!114 &-2623054864538869351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc0e9af9ffadcb346b582cd96952763d, type: 3}
+  m_Name: Vector 3
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: -440, y: 312}
+  ports:
+    keys:
+    - x
+    - y
+    - z
+    - output
+    values:
+    - _fieldName: x
+      _node: {fileID: -2623054864538869351}
+      _typeQualifiedName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: y
+      _node: {fileID: -2623054864538869351}
+      _typeQualifiedName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: z
+      _node: {fileID: -2623054864538869351}
+      _typeQualifiedName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: output
+      _node: {fileID: -2623054864538869351}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: size
+        node: {fileID: 3873916941957806223}
+        reroutePoints: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  x: 1
+  y: 1
+  z: 1
+  output: {x: 0, y: 0, z: 0}
 --- !u!114 &-1856057758424149880
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,7 +269,7 @@ MonoBehaviour:
   m_Name: Float Property
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: -712, y: 168}
+  position: {x: -728, y: 184}
   ports:
     keys:
     - exit
@@ -231,7 +295,7 @@ MonoBehaviour:
   property:
     Name: Center
     overrideValue: 0
-    Value: 1.85
+    Value: 0.65
   exit: 0
 --- !u!114 &-1383906636815730267
 MonoBehaviour:
@@ -294,7 +358,8 @@ MonoBehaviour:
   - {fileID: -1383906636815730267}
   - {fileID: -1856057758424149880}
   - {fileID: -6880739622989829563}
-  active: {fileID: -1383906636815730267}
+  - {fileID: -2623054864538869351}
+  active: {fileID: 3873916941957806223}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -333,7 +398,10 @@ MonoBehaviour:
       _node: {fileID: 3873916941957806223}
       _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections: []
+      connections:
+      - fieldName: output
+        node: {fileID: -2623054864538869351}
+        reroutePoints: []
       _direction: 0
       _connectionType: 0
       _typeConstraint: 0
