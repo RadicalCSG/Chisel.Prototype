@@ -230,7 +230,8 @@ MonoBehaviour:
       _dynamic: 0
   property:
     Name: Center
-    Value: 0.19
+    overrideValue: 0
+    Value: 2.57
   exit: 0
 --- !u!114 &-1383906636815730267
 MonoBehaviour:
@@ -295,8 +296,6 @@ MonoBehaviour:
   - {fileID: -6880739622989829563}
   active: {fileID: 3873916941957806223}
   instance: {fileID: 0}
-  properties:
-  - Name: Center
 --- !u!114 &3873916941957806223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -362,7 +361,7 @@ MonoBehaviour:
       _dynamic: 0
   operation: 0
   center: {x: 0, y: 0, z: 0}
-  size: {x: 2.98, y: 0.62, z: 2.88}
+  size: {x: 2.11, y: 0.62, z: 2.88}
 --- !u!114 &6654120812992344769
 MonoBehaviour:
   m_ObjectHideFlags: 0

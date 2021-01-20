@@ -24,6 +24,12 @@ namespace Chisel.Nodes
             if (instance != null)
                 instance.IsDirty = true;
 
+            if (properties == null)
+                properties = new List<GraphProperty>();
+
+            if (instance != null && instance.properties == null)
+                instance.properties = new List<GraphProperty>();
+
             properties.Clear();
             instance?.properties.Clear();
             foreach (var node in nodes)
