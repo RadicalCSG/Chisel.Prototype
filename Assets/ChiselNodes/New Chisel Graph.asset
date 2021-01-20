@@ -294,7 +294,7 @@ MonoBehaviour:
   - {fileID: -1383906636815730267}
   - {fileID: -1856057758424149880}
   - {fileID: -6880739622989829563}
-  active: {fileID: 6654120812992344769}
+  active: {fileID: -1383906636815730267}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -361,7 +361,7 @@ MonoBehaviour:
       _dynamic: 0
   operation: 0
   center: {x: 0, y: 0, z: 0}
-  size: {x: 0.51, y: 0.62, z: 2.88}
+  size: {x: 0.85, y: 0.62, z: 2.88}
 --- !u!114 &6654120812992344769
 MonoBehaviour:
   m_ObjectHideFlags: 0

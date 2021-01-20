@@ -82,6 +82,8 @@ namespace Chisel.Nodes
             if (!IsDirty) return;
             IsDirty = false;
 
+            graph.instance = this;
+
             if (!tree.Valid)
                 tree = CSGTree.Create(GetInstanceID());
             else
@@ -98,6 +100,9 @@ namespace Chisel.Nodes
             NativeList<ChiselMeshUpdate> renderMeshes,
             JobHandle dependencies)
         {
+            if (this.tree != tree)
+                return 0;
+
             dependencies.Complete();
 
             if (meshes == null || meshes.Count != meshDataArray.Length)
@@ -114,7 +119,7 @@ namespace Chisel.Nodes
             meshes[1].RecalculateBounds();
             meshFilter.mesh = meshes[1];
 
-            return 1;
+            return 0;
         }
 
         public void Rebuild()
