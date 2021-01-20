@@ -14,6 +14,7 @@ namespace Chisel.Nodes
         public MeshRenderer meshRenderer;
         public bool IsDirty { get; set; }
 
+        [HideInInspector]
         public List<GraphProperty> properties;
 
         CSGTree tree;

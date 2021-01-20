@@ -230,7 +230,7 @@ MonoBehaviour:
       _dynamic: 0
   property:
     Name: Center
-    Value: 0.66
+    Value: 0.19
   exit: 0
 --- !u!114 &-1383906636815730267
 MonoBehaviour:
