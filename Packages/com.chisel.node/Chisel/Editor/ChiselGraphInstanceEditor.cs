@@ -41,6 +41,7 @@ namespace Chisel.Nodes
             if (EditorGUI.EndChangeCheck())
             {
                 instance.IsDirty = true;
+                instance.UpdateProperties();
                 instance.UpdateCSG();
             }
         }
@@ -101,7 +102,7 @@ namespace Chisel.Nodes
         {
             var overrideRect = GUILayoutUtility.GetRect(17f, 17f, GUILayout.ExpandWidth(false));
             overrideRect.yMin += 4f;
-            property.overrideValue = GUI.Toggle(overrideRect, property.overrideValue, EditorGUIUtility.TrTextContent("", "Override this setting for this volume."), ChiselGrpahEditorStyles.smallTickbox);
+            property.overrideValue = GUI.Toggle(overrideRect, property.overrideValue, EditorGUIUtility.TrTextContent("", "Override this setting."), ChiselGrpahEditorStyles.smallTickbox);
         }
 
         public static IEnumerable<Type> GetAllTypesDerivedFrom<T>()

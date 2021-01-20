@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using XNode;
 
 namespace Chisel.Nodes
@@ -11,11 +9,13 @@ namespace Chisel.Nodes
 
         public override object GetValue(NodePort port)
         {
+            var overridden = chiselGraph.GetOverriddenProperty<FloatProperty>(property.Name);
+            if (overridden != null)
+                return overridden.Value;
+
             return property.Value;
         }
     }
-
-    
 
     [Serializable]
     public class FloatProperty : GraphProperty

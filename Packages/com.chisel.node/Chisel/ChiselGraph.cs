@@ -21,23 +21,16 @@ namespace Chisel.Nodes
 
         public void UpdateCSG()
         {
-            if (instance != null)
-                instance.IsDirty = true;
-
             if (properties == null)
                 properties = new List<GraphProperty>();
 
-            if (instance != null && instance.properties == null)
-                instance.properties = new List<GraphProperty>();
-
             properties.Clear();
-            instance?.properties.Clear();
             foreach (var node in nodes)
                 if (node is FloatPropertyNode floatNode)
-                {
-                    instance?.properties.Add(floatNode.property);
                     properties.Add(floatNode.property);
-                }
+
+            if (instance != null)
+                instance.IsDirty = true;
         }
 
         public void CollectTreeNode(CSGTree tree)
@@ -45,6 +38,18 @@ namespace Chisel.Nodes
             var branch = CSGTreeBranch.Create();
             active.ParseNode(branch);
             tree.Add(branch);
+        }
+
+        public T GetOverriddenProperty<T>(string key) where T : GraphProperty
+        {
+            if (instance == null) return null;
+
+            if (instance.overriddenProperties == null)
+                instance.UpdateProperties();
+
+            if (instance.overriddenProperties.ContainsKey(key))
+                return instance.overriddenProperties[key] as T;
+            return null;
         }
     }
 }

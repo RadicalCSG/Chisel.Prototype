@@ -1,5 +1,7 @@
 using Chisel.Core;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine;
@@ -14,8 +16,8 @@ namespace Chisel.Nodes
         public MeshRenderer meshRenderer;
         public bool IsDirty { get; set; }
 
-        [HideInInspector]
         public List<GraphProperty> properties;
+        public Dictionary<string, GraphProperty> overriddenProperties;
 
         CSGTree tree;
         List<Mesh> meshes;
@@ -34,7 +36,45 @@ namespace Chisel.Nodes
         void OnValidate()
         {
             graph.instance = this;
-            UpdateCSG();
+
+            if (properties == null || graph.properties.Count != properties.Count)
+                InitProperties();
+
+            for (int i = 0; i < graph.properties.Count; i++)
+            {
+                if (graph.properties[i].Name != properties[i].Name)
+                    InitProperties();
+            }
+        }
+
+        void InitProperties()
+        {
+            properties = new List<GraphProperty>();
+            foreach (var property in graph.properties)
+                properties.Add(Clone(property));
+            UpdateProperties();
+        }
+
+        GraphProperty Clone(GraphProperty source)
+        {
+            var newProperty = Activator.CreateInstance(source.GetType()) as GraphProperty;
+            var fields = source.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var info in fields)
+                info.SetValue(newProperty, info.GetValue(source));
+
+            return newProperty;
+        }
+
+        public void UpdateProperties()
+        {
+            if (overriddenProperties == null)
+                overriddenProperties = new Dictionary<string, GraphProperty>();
+            overriddenProperties.Clear();
+
+            foreach (var property in properties)
+                if (property.overrideValue)
+                    overriddenProperties[property.Name] = property;
         }
 
         public void UpdateCSG()
