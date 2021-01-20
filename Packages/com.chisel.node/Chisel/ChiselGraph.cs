@@ -1,4 +1,5 @@
 using Chisel.Core;
+using System.Collections.Generic;
 using UnityEngine;
 using XNode;
 
@@ -10,6 +11,8 @@ namespace Chisel.Nodes
         public ChiselGraphNode active;
         public ChiselGraphInstance instance;
 
+        public List<GraphProperty> properties;
+
         public void SetActiveNode(ChiselGraphNode node)
         {
             active = node;
@@ -20,6 +23,15 @@ namespace Chisel.Nodes
         {
             if (instance != null)
                 instance.IsDirty = true;
+
+            properties.Clear();
+            instance?.properties.Clear();
+            foreach (var node in nodes)
+                if (node is FloatPropertyNode floatNode)
+                {
+                    instance?.properties.Add(floatNode.property);
+                    properties.Add(floatNode.property);
+                }
         }
 
         public void CollectTreeNode(CSGTree tree)

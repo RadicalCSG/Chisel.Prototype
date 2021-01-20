@@ -11,8 +11,8 @@ namespace Chisel.Nodes
         public override CSGTreeNode GetNode()
         {
             var box = new ChiselBoxDefinition();
-            box.center = center;
-            box.size = size;
+            box.center = GetInputValue("center", center);
+            box.size = GetInputValue("size", size);
 
             var brushContainer = new ChiselBrushContainer();
             BrushMeshFactory.GenerateBox(ref brushContainer, ref box);

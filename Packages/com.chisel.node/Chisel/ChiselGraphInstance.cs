@@ -14,6 +14,8 @@ namespace Chisel.Nodes
         public MeshRenderer meshRenderer;
         public bool IsDirty { get; set; }
 
+        public List<GraphProperty> properties;
+
         CSGTree tree;
         List<Mesh> meshes;
 
@@ -25,13 +27,20 @@ namespace Chisel.Nodes
 
         void Update()
         {
-            if (IsDirty)
-                UpdateCSG();
+            UpdateCSG();
+        }
+
+        void OnValidate()
+        {
+            graph.instance = this;
+            UpdateCSG();
         }
 
         public void UpdateCSG()
         {
+            if (!IsDirty) return;
             IsDirty = false;
+
             if (!tree.Valid)
                 tree = CSGTree.Create(GetInstanceID());
             else
@@ -60,7 +69,7 @@ namespace Chisel.Nodes
 
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, meshes);
 
-            meshes[0].RecalculateNormals();
+            meshes[1].RecalculateNormals();
             meshes[1].RecalculateBounds();
             meshFilter.mesh = meshes[1];
 
