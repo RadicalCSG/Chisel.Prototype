@@ -189,9 +189,9 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  operation: 1
+  operation: 0
   center: {x: 0, y: 0.39, z: 0}
-  size: {x: 0.39, y: 0.7, z: 1}
+  size: {x: 0.39, y: 1.39, z: 1}
 --- !u!114 &-2623054864538869351
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -252,9 +252,9 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  x: 1
-  y: 1
-  z: 1
+  x: 2.98
+  y: 0.19
+  z: 3.39
   output: {x: 0, y: 0, z: 0}
 --- !u!114 &-1856057758424149880
 MonoBehaviour:
@@ -359,7 +359,7 @@ MonoBehaviour:
   - {fileID: -1856057758424149880}
   - {fileID: -6880739622989829563}
   - {fileID: -2623054864538869351}
-  active: {fileID: 3873916941957806223}
+  active: {fileID: 6654120812992344769}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -493,6 +493,6 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  operation: 1
-  center: {x: 0, y: -0.31, z: 0}
+  operation: 0
+  center: {x: 1.09, y: 0.65, z: 0}
   size: {x: 0.69, y: 1.26, z: 0.52}

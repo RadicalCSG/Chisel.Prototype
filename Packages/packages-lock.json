@@ -45,8 +45,8 @@
         "com.chisel.components": "0.0.1-preview"
       }
     },
-    "com.chisel.node": {
-      "version": "file:com.chisel.node",
+    "com.chisel.graph": {
+      "version": "file:com.chisel.graph",
       "depth": 0,
       "source": "embedded",
       "dependencies": {

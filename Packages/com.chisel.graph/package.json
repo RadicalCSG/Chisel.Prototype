@@ -1,7 +1,7 @@
 {
   "description": "The Chisel Node Graph",
   "displayName": "Chisel Node Graph",
-  "name": "com.chisel.node",
+  "name": "com.chisel.graph",
   "keywords": [
     "level design",
     "world building",
