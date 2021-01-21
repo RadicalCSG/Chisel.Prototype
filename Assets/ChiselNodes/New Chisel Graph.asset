@@ -187,6 +187,9 @@ MonoBehaviour:
       - fieldName: output
         node: {fileID: 3873916941957806223}
         reroutePoints: []
+      - fieldName: output
+        node: {fileID: 6932176701218924448}
+        reroutePoints: []
       _direction: 0
       _connectionType: 0
       _typeConstraint: 0
@@ -404,7 +407,8 @@ MonoBehaviour:
   - {fileID: -6880739622989829563}
   - {fileID: -2623054864538869351}
   - {fileID: 7746474342110482381}
-  active: {fileID: -1383906636815730267}
+  - {fileID: 6932176701218924448}
+  active: {fileID: -3665420030514838893}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -585,6 +589,102 @@ MonoBehaviour:
   operation: 0
   center: {x: 0.72, y: 0.65, z: 0}
   size: {x: 0.69, y: 1.26, z: 0.52}
+--- !u!114 &6932176701218924448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c0b6f7ddb5b0034697c7de4ea7f6f99, type: 3}
+  m_Name: Cylinder
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: -168, y: 440}
+  ports:
+    keys:
+    - diameter
+    - input
+    - output
+    - localPosition
+    - localRotation
+    - height
+    - sides
+    values:
+    - _fieldName: diameter
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: output
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: input
+        node: {fileID: -3665420030514838893}
+        reroutePoints: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: height
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: sides
+      _node: {fileID: 6932176701218924448}
+      _typeQualifiedName: System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral,
+        PublicKeyToken=b77a5c561934e089
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 0, y: -0.19, z: 0}
+  localRotation: {x: 0.1, y: 0, z: 0}
+  operation: 1
+  diameter: 1.08
+  height: 1.24
+  sides: 12
 --- !u!114 &7746474342110482381
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -31,8 +31,12 @@ namespace Chisel.Nodes
             var inputPort = GetInputPort("input");
             if (inputPort.IsConnected)
             {
-                var chiselNode = inputPort.Connection.node as ChiselGraphNode;
-                chiselNode.ParseNode(branch);
+                var connections = inputPort.GetConnections();
+                foreach (var connection in connections)
+                {
+                    var chiselNode = connection.node as ChiselGraphNode;
+                    chiselNode.ParseNode(branch);
+                }
             }
 
             var node = GetNode();
