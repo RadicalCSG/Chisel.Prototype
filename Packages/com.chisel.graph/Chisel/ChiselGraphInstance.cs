@@ -77,9 +77,10 @@ namespace Chisel.Nodes
 
         public void UpdateCSG()
         {
-            CSGManager.Clear();
             if (!IsDirty) return;
             IsDirty = false;
+
+            CSGManager.Clear();
 
             graph.instance = this;
 
