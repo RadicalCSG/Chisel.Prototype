@@ -18,9 +18,7 @@ namespace Chisel.Nodes
             BrushMeshFactory.GenerateBox(ref brushContainer, ref box);
 
             var instance = BrushMeshInstance.Create(brushContainer.brushMeshes[0]);
-            var treeNode = CSGTreeBrush.Create(0, instance);
-
-            treeNode.Operation = operation;
+            var treeNode = CSGTreeBrush.Create(GetInstanceID(), instance);
 
             return treeNode;
         }

@@ -8,7 +8,7 @@ public class SubGraphNode : ChiselGraphNode
 
     public override CSGTreeNode GetNode()
     {
-        var branch = CSGTreeBranch.Create();
+        var branch = CSGTreeBranch.Create(GetInstanceID());
         subgraph.active.ParseNode(branch);
         return branch;
     }

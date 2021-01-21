@@ -77,6 +77,7 @@ namespace Chisel.Nodes
 
         public void UpdateCSG()
         {
+            CSGManager.Clear();
             if (!IsDirty) return;
             IsDirty = false;
 
@@ -86,6 +87,7 @@ namespace Chisel.Nodes
                 tree = CSGTree.Create(GetInstanceID());
             else
                 tree.Clear();
+
             graph.CollectTreeNode(tree);
             CSGManager.Flush(finishMeshUpdates);
         }

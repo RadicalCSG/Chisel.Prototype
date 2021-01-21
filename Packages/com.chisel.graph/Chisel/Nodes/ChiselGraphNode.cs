@@ -64,6 +64,11 @@ namespace Chisel.Nodes
             chiselGraph.UpdateProperties();
         }
 
+        protected int GetGraphNodeID()
+        {
+            return chiselGraph.nodes.IndexOf(this);
+        }
+
         [Serializable]
         public class CSG { }
     }

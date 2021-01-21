@@ -32,12 +32,11 @@ namespace Chisel.Nodes
         {
             if (instance != null)
                 instance.IsDirty = true;
-            Debug.Log("csg");
         }
 
         public void CollectTreeNode(CSGTree tree)
         {
-            var branch = CSGTreeBranch.Create();
+            var branch = CSGTreeBranch.Create(GetInstanceID());
             active.ParseNode(branch);
             tree.Add(branch);
         }
