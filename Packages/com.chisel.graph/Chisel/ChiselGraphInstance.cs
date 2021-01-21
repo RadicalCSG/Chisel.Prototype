@@ -89,6 +89,8 @@ namespace Chisel.Nodes
             else
                 tree.Clear();
 
+            print(tree.UserID + "|" + tree.NodeID);
+
             graph.CollectTreeNode(tree);
             CSGManager.Flush(finishMeshUpdates);
         }

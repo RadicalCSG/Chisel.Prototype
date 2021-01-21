@@ -3,7 +3,6 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Chisel.Core;
-//using Chisel.Components;
 
 namespace Chisel.Nodes
 {
@@ -312,19 +311,9 @@ namespace Chisel.Nodes
                     labelRect.width -= labelOffset;
                     if (childCount > 0)
                         openNodes[nodeID] = EditorGUI.Foldout(foldOutRect, isOpen, string.Empty, true, styles.foldOut);
-                    if (EditorGUI.EndChangeCheck() ||
-                        GUI.Button(labelRect, name, labelStyle))
-                    {
-                        Debug.Log(name);
-                        var obj = EditorUtility.InstanceIDToObject(userID);
-                        if (!(obj is GameObject))
-                        {
-                            var mono = (obj as MonoBehaviour);
-                            if (mono)
-                                userID = mono.gameObject.GetInstanceID();
-                        }
+
+                    if (EditorGUI.EndChangeCheck() || GUI.Button(labelRect, name, labelStyle))
                         Selection.instanceIDs = new[] { userID };
-                    }
                 }
                 itemRect.y += kItemHeight;
 
@@ -352,12 +341,8 @@ namespace Chisel.Nodes
             foreach (var instanceID in Selection.instanceIDs)
             {
                 var obj = EditorUtility.InstanceIDToObject(instanceID);
-                var graphNode = obj as ChiselGraphNode;
-                if (graphNode != null)
-                {
-                    var instanceID_ = graphNode.GetInstanceID();
-                    selectedInstanceIDs.Add(instanceID_);
-                }
+                if (obj != null)
+                    selectedInstanceIDs.Add(obj.GetInstanceID());
             }
 
             float kItemHeight = EditorGUIUtility.singleLineHeight;
@@ -405,18 +390,16 @@ namespace Chisel.Nodes
             if (selectedInstanceIDs.Count == 1)
             {
                 var instanceID = selectedInstanceIDs.First();
-                var graphNode = EditorUtility.InstanceIDToObject(instanceID) as ChiselGraphNode;
-                if (graphNode)
+                var obj = EditorUtility.InstanceIDToObject(instanceID);
+                if (obj)
                 {
                     int nodeID = CSGTreeNode.InvalidNode.NodeID;
                     for (int n = 0; n < allNodes.Length; n++)
-                    {
                         if (allNodes[n].UserID == instanceID)
                         {
                             nodeID = allNodes[n].NodeID;
                             break;
                         }
-                    }
 
 
                     if (nodeID != CSGTreeNode.InvalidNode.NodeID)
