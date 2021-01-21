@@ -42,11 +42,7 @@ namespace Chisel.Nodes
                 node.Operation = operation;
                 branch.Add(node);
             }
-
-            OnParseNode(branch);
         }
-
-        public virtual void OnParseNode(CSGTreeBranch nodes) { }
 
         public override object GetValue(NodePort port)
         {
