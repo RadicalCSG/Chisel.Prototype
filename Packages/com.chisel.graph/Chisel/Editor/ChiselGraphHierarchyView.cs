@@ -405,27 +405,19 @@ namespace Chisel.Nodes
             if (selectedInstanceIDs.Count == 1)
             {
                 var instanceID = selectedInstanceIDs.First();
-                var obj = EditorUtility.InstanceIDToObject(instanceID) as ChiselGraphNode;
-                if (obj)
+                var graphNode = EditorUtility.InstanceIDToObject(instanceID) as ChiselGraphNode;
+                if (graphNode)
                 {
-                    //var brush		= obj as ChiselBrush;
-                    //var composite	= obj as ChiselComposite;
-                    //var model		= obj as ChiselModel;
                     int nodeID = CSGTreeNode.InvalidNode.NodeID;
-                    //if      (brush    ) nodeID = brush.TopNode.NodeID;
-                    //else if (composite) nodeID = composite.Node.NodeID;
-                    //else if (model    ) nodeID = model.Node.NodeID;
-                    //else
+                    for (int n = 0; n < allNodes.Length; n++)
                     {
-                        for (int n = 0; n < allNodes.Length; n++)
+                        if (allNodes[n].UserID == instanceID)
                         {
-                            if (allNodes[n].UserID == instanceID)
-                            {
-                                nodeID = allNodes[n].NodeID;
-                                break;
-                            }
+                            nodeID = allNodes[n].NodeID;
+                            break;
                         }
                     }
+
 
                     if (nodeID != CSGTreeNode.InvalidNode.NodeID)
                     {
@@ -440,6 +432,8 @@ namespace Chisel.Nodes
                         GUI.Label(labelArea, "Valid: " + node.Valid); labelArea.y += kItemHeight;
                         GUI.Label(labelArea, "NodeType: " + node.Type); labelArea.y += kItemHeight;
                         GUI.Label(labelArea, "ChildCount: " + node.Count); labelArea.y += kItemHeight;
+                        GUI.Label(labelArea, "LocalPosition: " + GetPosition(node.LocalTransformation)); labelArea.y += kItemHeight;
+                        GUI.Label(labelArea, "LocalRotation: " + GetRotation(node.LocalTransformation)); labelArea.y += kItemHeight;
                         if (node.Type != CSGNodeType.Tree)
                         {
                             GUI.Label(labelArea, "Parent: " + (node.Parent.NodeID - 1) + " valid: " + node.Parent.Valid); labelArea.y += kItemHeight;
@@ -454,6 +448,15 @@ namespace Chisel.Nodes
                     }
                 }
             }
+        }
+        public static Vector3 GetPosition(Matrix4x4 m)
+        {
+            return m.GetColumn(3);
+        }
+
+        public static Vector3 GetRotation(Matrix4x4 m)
+        {
+            return Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1)).eulerAngles;
         }
     }
 #endif
