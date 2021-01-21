@@ -20,6 +20,15 @@ namespace Chisel.Nodes
 
         public override void OnBodyGUI()
         {
+
+            var input = target.GetPort("input");
+            var output = target.GetPort("output");
+
+            GUILayout.BeginHorizontal();
+            if (input != null) NodeEditorGUILayout.PortField(GUIContent.none, input, GUILayout.MinWidth(0));
+            if (output != null) NodeEditorGUILayout.PortField(GUIContent.none, output, GUILayout.MinWidth(0));
+            GUILayout.EndHorizontal();
+
             base.OnBodyGUI();
             var node = target as ChiselGraphNode;
             if (node.chiselGraph.active != node)

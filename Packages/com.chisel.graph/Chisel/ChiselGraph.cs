@@ -21,10 +21,18 @@ namespace Chisel.Nodes
 
         public void UpdateProperties()
         {
-            OnValidate();
+            properties = new List<GraphProperty>();
+            foreach (var node in nodes)
+                if (node is IPropertyNode propertyNode)
+                    properties.Add(propertyNode.Property);
+            UpdateCSG();
+        }
 
+        public void UpdateCSG()
+        {
             if (instance != null)
                 instance.IsDirty = true;
+            Debug.Log("csg");
         }
 
         public void CollectTreeNode(CSGTree tree)
@@ -48,10 +56,7 @@ namespace Chisel.Nodes
 
         void OnValidate()
         {
-            properties = new List<GraphProperty>();
-            foreach (var node in nodes)
-                if (node is IPropertyNode propertyNode)
-                    properties.Add(propertyNode.Property);
+            UpdateProperties();
         }
     }
 }

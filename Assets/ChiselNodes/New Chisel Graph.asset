@@ -139,13 +139,15 @@ MonoBehaviour:
   m_Name: Box
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: 88, y: 216}
+  position: {x: 104, y: 200}
   ports:
     keys:
     - center
     - size
-    - children
-    - parent
+    - output
+    - input
+    - localPosition
+    - localRotation
     values:
     - _fieldName: center
       _node: {fileID: -3665420030514838893}
@@ -165,30 +167,50 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-    - _fieldName: children
+    - _fieldName: output
       _node: {fileID: -3665420030514838893}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
       connections:
-      - fieldName: parent
-        node: {fileID: 3873916941957806223}
-        reroutePoints: []
-      _direction: 0
-      _connectionType: 0
-      _typeConstraint: 0
-      _dynamic: 0
-    - _fieldName: parent
-      _node: {fileID: -3665420030514838893}
-      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
-        Culture=neutral, PublicKeyToken=null
-      connections:
-      - fieldName: children
+      - fieldName: input
         node: {fileID: 6654120812992344769}
         reroutePoints: []
       _direction: 1
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: -3665420030514838893}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: output
+        node: {fileID: 3873916941957806223}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: -3665420030514838893}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: -3665420030514838893}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: -0.17, y: 0, z: 1.21}
+  localRotation: {x: 0, y: 42.19, z: 0}
   operation: 0
   center: {x: 0, y: 0.39, z: 0}
   size: {x: 0.39, y: 1.39, z: 1}
@@ -310,25 +332,15 @@ MonoBehaviour:
   m_Name: Sub Graph
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: 632, y: 168}
+  position: {x: 632, y: 200}
   ports:
     keys:
-    - children
-    - parent
+    - output
+    - input
+    - localPosition
+    - localRotation
     values:
-    - _fieldName: children
-      _node: {fileID: -1383906636815730267}
-      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
-        Culture=neutral, PublicKeyToken=null
-      connections:
-      - fieldName: parent
-        node: {fileID: 6654120812992344769}
-        reroutePoints: []
-      _direction: 0
-      _connectionType: 0
-      _typeConstraint: 0
-      _dynamic: 0
-    - _fieldName: parent
+    - _fieldName: output
       _node: {fileID: -1383906636815730267}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
@@ -337,6 +349,38 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: -1383906636815730267}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: output
+        node: {fileID: 6654120812992344769}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: -1383906636815730267}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: -1383906636815730267}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 0.97, y: -1.15, z: 0.08}
+  localRotation: {x: 1.13, y: 0, z: 0}
   operation: 0
   subgraph: {fileID: 11400000, guid: fcd800f03725c234c8d479a178882e4e, type: 2}
 --- !u!114 &11400000
@@ -359,7 +403,7 @@ MonoBehaviour:
   - {fileID: -1856057758424149880}
   - {fileID: -6880739622989829563}
   - {fileID: -2623054864538869351}
-  active: {fileID: 6654120812992344769}
+  active: {fileID: -1383906636815730267}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -379,8 +423,10 @@ MonoBehaviour:
     keys:
     - center
     - size
-    - children
-    - parent
+    - output
+    - input
+    - localPosition
+    - localRotation
     values:
     - _fieldName: center
       _node: {fileID: 3873916941957806223}
@@ -406,7 +452,19 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-    - _fieldName: children
+    - _fieldName: output
+      _node: {fileID: 3873916941957806223}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: input
+        node: {fileID: -3665420030514838893}
+        reroutePoints: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: input
       _node: {fileID: 3873916941957806223}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
@@ -415,18 +473,26 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-    - _fieldName: parent
+    - _fieldName: localPosition
       _node: {fileID: 3873916941957806223}
-      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections:
-      - fieldName: children
-        node: {fileID: -3665420030514838893}
-        reroutePoints: []
-      _direction: 1
+      connections: []
+      _direction: 0
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: 3873916941957806223}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 0, y: 0, z: 0}
+  localRotation: {x: 0, y: 0, z: 0}
   operation: 0
   center: {x: 0, y: 0, z: 0}
   size: {x: 0.85, y: 0.62, z: 2.88}
@@ -448,8 +514,10 @@ MonoBehaviour:
     keys:
     - center
     - size
-    - children
-    - parent
+    - output
+    - input
+    - localPosition
+    - localRotation
     values:
     - _fieldName: center
       _node: {fileID: 6654120812992344769}
@@ -469,30 +537,50 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-    - _fieldName: children
+    - _fieldName: output
       _node: {fileID: 6654120812992344769}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
       connections:
-      - fieldName: parent
-        node: {fileID: -3665420030514838893}
-        reroutePoints: []
-      _direction: 0
-      _connectionType: 0
-      _typeConstraint: 0
-      _dynamic: 0
-    - _fieldName: parent
-      _node: {fileID: 6654120812992344769}
-      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
-        Culture=neutral, PublicKeyToken=null
-      connections:
-      - fieldName: children
+      - fieldName: input
         node: {fileID: -1383906636815730267}
         reroutePoints: []
       _direction: 1
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: 6654120812992344769}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: output
+        node: {fileID: -3665420030514838893}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: 6654120812992344769}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: 6654120812992344769}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 1.17, y: 0.38, z: 0}
+  localRotation: {x: 0, y: 0, z: 0}
   operation: 0
-  center: {x: 1.09, y: 0.65, z: 0}
+  center: {x: 0.72, y: 0.65, z: 0}
   size: {x: 0.69, y: 1.26, z: 0.52}
