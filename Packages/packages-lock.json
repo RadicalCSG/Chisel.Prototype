@@ -45,6 +45,23 @@
         "com.chisel.components": "0.0.1-preview"
       }
     },
+    "com.chisel.graph": {
+      "version": "file:com.chisel.graph",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.chisel.core": "0.0.1-preview",
+        "com.chisel.components": "0.0.1-preview",
+        "com.github.siccity.xnode": "1.8.0"
+      }
+    },
+    "com.github.siccity.xnode": {
+      "version": "https://github.com/siccity/xNode.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "6b893fd5a4e48d0bb45c07741cc827a1aa86797b"
+    },
     "com.scene.handle.extensions": {
       "version": "file:com.scene.handle.extensions",
       "depth": 0,
@@ -90,14 +107,14 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ext.nunit": {
-      "version": "1.0.0",
+      "version": "1.0.5",
       "depth": 3,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.3",
+      "version": "2.0.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -197,11 +214,11 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.test-framework": {
-      "version": "1.1.18",
+      "version": "1.1.19",
       "depth": 2,
       "source": "registry",
       "dependencies": {
-        "com.unity.ext.nunit": "1.0.0",
+        "com.unity.ext.nunit": "1.0.5",
         "com.unity.modules.imgui": "1.0.0",
         "com.unity.modules.jsonserialize": "1.0.0"
       },

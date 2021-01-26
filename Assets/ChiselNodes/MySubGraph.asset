@@ -1,0 +1,189 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6468980190964667538
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d678cf2bf10f3bf4f8d68ae693a7a7a3, type: 3}
+  m_Name: Box
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: 136, y: 168}
+  ports:
+    keys:
+    - center
+    - size
+    - output
+    - input
+    - localPosition
+    - localRotation
+    values:
+    - _fieldName: center
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: size
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: output
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: output
+        node: {fileID: 1688561918610544374}
+        reroutePoints: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: -6468980190964667538}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 0, y: 0, z: 0}
+  localRotation: {x: 0, y: 0, z: 0}
+  operation: 1
+  center: {x: 0, y: 0.93, z: 0}
+  size: {x: 2.16, y: 1, z: 1}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1719bdb460489264dbc2eda6f3845f03, type: 3}
+  m_Name: MySubGraph
+  m_EditorClassIdentifier: 
+  nodes:
+  - {fileID: 1688561918610544374}
+  - {fileID: -6468980190964667538}
+  active: {fileID: -6468980190964667538}
+  instance: {fileID: 0}
+--- !u!114 &1688561918610544374
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d678cf2bf10f3bf4f8d68ae693a7a7a3, type: 3}
+  m_Name: Box
+  m_EditorClassIdentifier: 
+  graph: {fileID: 11400000}
+  position: {x: -184, y: 168}
+  ports:
+    keys:
+    - center
+    - size
+    - output
+    - input
+    - localPosition
+    - localRotation
+    values:
+    - _fieldName: center
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: size
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: output
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections:
+      - fieldName: input
+        node: {fileID: -6468980190964667538}
+        reroutePoints: []
+      _direction: 1
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: input
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localPosition
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+    - _fieldName: localRotation
+      _node: {fileID: 1688561918610544374}
+      _typeQualifiedName: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
+        Culture=neutral, PublicKeyToken=null
+      connections: []
+      _direction: 0
+      _connectionType: 0
+      _typeConstraint: 0
+      _dynamic: 0
+  localPosition: {x: 0, y: 0, z: 0}
+  localRotation: {x: 0, y: 0, z: 0}
+  operation: 0
+  center: {x: 0, y: 0, z: 0}
+  size: {x: 2, y: 2, z: 2}

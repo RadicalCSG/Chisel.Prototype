@@ -1,0 +1,19 @@
+{
+    "name": "ChiselNodeEditor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:642cde28f6a094d458a26f9a4533c056",
+        "GUID:cf37be73cdb56984ba3a7eb55f849524",
+        "GUID:002c1bbed08fa44d282ef34fd5edb138",
+        "GUID:b8e24fd1eb19b4226afebb2810e3c19b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
