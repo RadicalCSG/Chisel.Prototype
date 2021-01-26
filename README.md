@@ -46,6 +46,10 @@ Packages overview:
 * `com.chisel.components` Unity Monobehaviour runtime API (to allow for possible ECS replacement in future)
 * `com.scene.handles.extensions` Custom scene handle extensions
 
+Extensions:
+* [Source Engine 2006 Map Importer for Chisel Editor]( https://github.com/Henry00IS/Chisel.Import.Source)
+  * [Decal support for importer](https://github.com/Henry00IS/Chisel.Decals)
+
 Known issues:
 * [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
 * There are some cases where overlapping surfaces create overlapping polygon
