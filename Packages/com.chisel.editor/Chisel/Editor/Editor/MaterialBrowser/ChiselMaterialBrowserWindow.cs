@@ -282,6 +282,7 @@ namespace Chisel.Editors
                 m_ToolbarRect.width  = 100;
                 m_ToolbarRect.height = 24;
 
+                // $TODO: change styling on this... its fugly. Also needs tooltips.
                 EditorGUI.BeginChangeCheck();
                 showNameLabels = GUI.Toggle( m_ToolbarRect, showNameLabels, ( showNameLabels ) ? "Hide Labels" : "Show Labels", "ToolbarButton" );
                 if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetBool( TILE_LABEL_PREF_KEY, showNameLabels );
@@ -348,7 +349,7 @@ namespace Chisel.Editors
                         m_TileContentRect.height = tileSize - 4;
 
                         m_TileContentText.image   = m_Tiles[idx].Preview;
-                        m_TileContentText.tooltip = "";
+                        m_TileContentText.tooltip = $"{m_Tiles[idx].materialName}\n\nClick to apply to the currently selected surface.";
 
                         if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, tileScrollViewHeight ) )
                         {
@@ -363,7 +364,7 @@ namespace Chisel.Editors
                                 lastSelectedMaterialIndex = idx;
                             }
 
-                            if( !m_TileContentRect.Contains( Event.current.mousePosition ) )
+                            if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels )
                             {
                                 m_TileContentRect.height = 22;
                                 m_TileContentRect.y      = ( m_TileContentRect.y ) + tileSize - 22;
