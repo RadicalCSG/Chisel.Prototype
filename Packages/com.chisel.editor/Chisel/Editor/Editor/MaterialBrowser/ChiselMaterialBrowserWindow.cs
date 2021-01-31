@@ -8,6 +8,7 @@ Author: Daniel Cornelius
 
 using System;
 using System.Collections.Generic;
+using Chisel.Components;
 using Chisel.Core;
 using UnityEditor;
 using UnityEditor.ShortcutManagement;
@@ -20,15 +21,14 @@ namespace Chisel.Editors
         private const string PREVIEW_SIZE_PREF_KEY = "chisel_matbrowser_pviewSize";
         private const string TILE_LABEL_PREF_KEY   = "chisel_matbrowser_pviewShowLabel";
 
-        private List<ChiselMaterialBrowserTile> m_Tiles  = new List<ChiselMaterialBrowserTile>();
-        private List<string>                    m_Labels = new List<string>();
+        private static List<ChiselMaterialBrowserTile> m_Tiles  = new List<ChiselMaterialBrowserTile>();
+        private static List<string>                    m_Labels = new List<string>();
 
-        private int m_CurrentPropsTab = 1;
-
-        public int     lastSelectedMaterialIndex = 0;
-        public int     tileSize                  = 64;
-        public Vector2 tileScrollPos             = Vector2.zero;
-        public bool    showNameLabels            = false;
+        private static int     m_CurrentPropsTab         = 1;
+        private static int     lastSelectedMaterialIndex = 0;
+        private static int     tileSize                  = 64;
+        private static Vector2 tileScrollPos             = Vector2.zero;
+        private static bool    showNameLabels            = false;
 
         private readonly GUIContent[] m_PropsTabLabels = new GUIContent[]
         {
@@ -213,7 +213,10 @@ namespace Chisel.Editors
                                         }
 
                                         m_PropsAreaRect.y += 24;
-                                        if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) ) {}
+                                        if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) )
+                                        {
+                                            ApplySelectedMaterial();
+                                        }
                                     }
                                     GUI.EndGroup();
 
@@ -362,6 +365,8 @@ namespace Chisel.Editors
                                 previewEditor   = null;
 
                                 lastSelectedMaterialIndex = idx;
+
+                                ApplySelectedMaterial();
                             }
 
                             if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels )
@@ -414,7 +419,7 @@ namespace Chisel.Editors
             if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetInt( PREVIEW_SIZE_PREF_KEY, tileSize );
         }
 
-        public Material GetPreviewMaterial( int index )
+        private static Material GetPreviewMaterial( int index )
         {
             Material m = AssetDatabase.LoadAssetAtPath<Material>( AssetDatabase.GUIDToAssetPath( m_Tiles[index].guid ) );
 
@@ -426,6 +431,21 @@ namespace Chisel.Editors
         [Shortcut( "Chisel/Material Browser/Apply Last Selected Material", ChiselKeyboardDefaults.ApplyLastSelectedMaterialKey, ChiselKeyboardDefaults.ApplyLastSelectedMaterialModifier )]
         public static void ApplySelectedMaterial()
         {
+            if( lastSelectedMaterialIndex > m_Tiles.Count )
+                return;
+
+            if( m_Tiles[lastSelectedMaterialIndex] != null ) { ApplyMaterial( GetPreviewMaterial( lastSelectedMaterialIndex ) ); }
+        }
+
+        private static void ApplyMaterial( Material material )
+        {
+            if( ChiselSurfaceSelectionManager.HaveSelection )
+            {
+                HashSet<SurfaceReference> selected = ChiselSurfaceSelectionManager.Selection;
+
+                foreach( SurfaceReference surf in selected ) { surf.BrushMaterial.RenderMaterial = material; }
+            }
+            //else Debug.Log( "No surface selected, please select a surface before applying a material." );
         }
     }
 }
