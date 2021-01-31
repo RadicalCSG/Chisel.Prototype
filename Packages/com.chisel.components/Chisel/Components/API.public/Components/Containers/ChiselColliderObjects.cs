@@ -5,16 +5,13 @@ using UnityEngine.Profiling;
 using Unity.Jobs;
 using Unity.Collections;
 using System.Collections.Generic;
+using Unity.Burst;
 
 namespace Chisel.Components
 {
-    public struct ChiselPhysicsObjectUpdate
+    public struct ChiselColliderObjectUpdate
     {
-        public ChiselColliderObjects instance;
-        public int  contentsIndex;
-        public int  meshIndex;
-        public int  instanceID;
-        public VertexBufferContents contents; 
+        public int              meshIndex;
     }
 
     [Serializable]
@@ -82,25 +79,28 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
-        public static void ScheduleMeshCopy(List<ChiselPhysicsObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs, JobHandle dependencies)
+        [BurstCompile(CompileSynchronously = true)]
+        struct BakeColliderJob : IJobParallelFor
         {
-            Profiler.BeginSample("CopyToMesh");
-            for (int i = 0; i < updates.Count; i++)
+            [NoAlias, ReadOnly] public NativeArray<BakeData>.ReadOnly bakingSettings;
+            public void Execute(int index)
             {
-                var update = updates[i];
-                int contentsIndex = update.contentsIndex;
-                var instanceID = update.instanceID;
-                var meshIndex = update.meshIndex;
-                // Retrieve the generatedMesh, and store it in the Unity Mesh
-                update.contents.CopyPositionOnlyToMesh(dataArray, contentsIndex, meshIndex, instanceID, ref allJobs, dependencies);
+                if (bakingSettings[index].instanceID != 0)
+                    Physics.BakeMesh(bakingSettings[index].instanceID, bakingSettings[index].convex);
             }
-            Profiler.EndSample();
+        }
+
+        struct BakeData
+        {
+            public bool convex;
+            public int  instanceID;
         }
 
         public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             if (colliders == null)
                 return;
+
             var colliderSettings = model.ColliderSettings;
             for (int i = 0; i < colliders.Length; i++)
             {
@@ -108,20 +108,61 @@ namespace Chisel.Components
                 if (!meshCollider)
                     continue;
 
-                var sharedMesh = colliders[i].sharedMesh;
-                if (meshCollider.sharedMesh != sharedMesh)
-                    meshCollider.sharedMesh = sharedMesh;
+                // If the cookingOptions are not the default values it would force a full slow rebake later, 
+                // even if we already did a Bake in a job
+                //if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
+                //    meshCollider.cookingOptions = colliderSettings.cookingOptions;
 
+                if (meshCollider.convex != colliderSettings.convex)
+                    meshCollider.convex = colliderSettings.convex;
+                if (meshCollider.isTrigger != colliderSettings.isTrigger)
+                    meshCollider.isTrigger = colliderSettings.isTrigger;
+
+                var sharedMesh = colliders[i].sharedMesh;
                 var expectedEnabled = sharedMesh.vertexCount > 0;
                 if (meshCollider.enabled != expectedEnabled)
                     meshCollider.enabled = expectedEnabled;
+            }
 
-                if (meshCollider.cookingOptions != colliderSettings.cookingOptions)
-                    meshCollider.cookingOptions	=  colliderSettings.cookingOptions;
-                if (meshCollider.convex         != colliderSettings.convex)
-                    meshCollider.convex			=  colliderSettings.convex;
-                if (meshCollider.isTrigger      != colliderSettings.isTrigger)
-                    meshCollider.isTrigger		=  colliderSettings.isTrigger;
+            // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
+            //          hopefully that will make it easier for Unity to not screw up the scheduling
+            var bakingSettings = new NativeArray<BakeData>(colliders.Length,Allocator.TempJob);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                var meshCollider = colliders[i].meshCollider;
+                if (!meshCollider)
+                {
+                    bakingSettings[i] = new BakeData
+                    {
+                        instanceID = 0
+                    };
+                    continue;
+                }
+
+                var sharedMesh = colliders[i].sharedMesh;
+                bakingSettings[i] = new BakeData
+                {
+                    convex      = colliderSettings.convex,
+                    instanceID  = sharedMesh.GetInstanceID()
+                };
+            }
+            var bakeColliderJob = new BakeColliderJob
+            {
+                bakingSettings = bakingSettings.AsReadOnly()
+            };
+            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON THE SAME WORKER THREAD?
+            var jobHandle = bakeColliderJob.Schedule(colliders.Length, 1);
+
+            jobHandle.Complete();
+            bakingSettings.Dispose(jobHandle);
+            // TODO: is there a way to defer forcing the collider to update?
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                var meshCollider = colliders[i].meshCollider;
+                if (!meshCollider)
+                    continue;
+
+                meshCollider.sharedMesh = colliders[i].sharedMesh;
             }
         }
     }

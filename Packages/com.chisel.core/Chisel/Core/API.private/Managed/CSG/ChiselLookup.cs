@@ -387,22 +387,46 @@ namespace Chisel.Core
 
     public struct ChiselSurfaceRenderBuffer
     {
-        public BlobArray<Int32>		indices;
-        public BlobArray<float3>	vertices;
-        public BlobArray<float3>	normals;
-        public BlobArray<float4>	tangents;
-        public BlobArray<float2>    uv0;
+        public int              surfaceIndex;
+        public SurfaceLayers    surfaceLayers;
+
+        public int              vertexCount;
+        public int              indexCount;
 
         public uint             geometryHash;
         public uint             surfaceHash;
 
-        public SurfaceLayers    surfaceLayers;
-        public Int32		    surfaceIndex;
+        public float3           min, max;  
+
+        public BlobArray<Int32>		    indices;
+        public BlobArray<RenderVertex>	renderVertices;
+        public BlobArray<float3>	    colliderVertices;
     };
+
+    public struct ChiselQuerySurface
+    {
+        public int      surfaceIndex;
+        public int      surfaceParameter;
+
+        public int      vertexCount;
+        public int      indexCount;
+
+        public uint     geometryHash;
+        public uint     surfaceHash;
+    }
+
+    public struct ChiselQuerySurfaces
+    {
+        public int                              brushNodeIndex;
+        public BlobArray<ChiselQuerySurface>    surfaces;
+    }
 
     public struct ChiselBrushRenderBuffer
     {
         public BlobArray<ChiselSurfaceRenderBuffer> surfaces;
+        public BlobArray<ChiselQuerySurfaces>       querySurfaces;
+        public int surfaceOffset;
+        public int surfaceCount;
     };
 
     // Note: Stored in BlobAsset at runtime/editor-time
@@ -515,8 +539,12 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
-            public NativeList<int> brushIndices;
-            
+            public NativeList<int>          brushIndices;
+            public ChiselLayerParameters    parameters1;
+            public ChiselLayerParameters    parameters2;
+            public HashSet<int>             allKnownBrushMeshIndices    = new HashSet<int>();
+            public Dictionary<int, int>     previousMeshIDGeneration    = new Dictionary<int, int>();
+
             public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
             public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
@@ -547,6 +575,9 @@ namespace Chisel.Core
                 brushesTouchedByBrushCache  = new NativeList<BlobAssetReference<BrushesTouchedByBrush>>(1000, Allocator.Persistent);
                 transformationCache         = new NativeList<NodeTransformations>(1000, Allocator.Persistent);
                 brushRenderBufferCache      = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+
+                parameters1.Initialize();
+                parameters2.Initialize();
             }
 
             internal void EnsureCapacity(int brushCount)
@@ -677,6 +708,11 @@ namespace Chisel.Core
                 if (compactTree.IsCreated)
                     compactTree.Dispose();
                 compactTree = default;
+
+                parameters1.Dispose();
+                parameters1 = default;
+                parameters2.Dispose();
+                parameters2 = default;
             }
         }
 
@@ -759,23 +795,99 @@ namespace Chisel.Core
                 _singleton = null;
         }
     }
-    
+
+    public struct ChiselLayerParameterIndex
+    {
+        public int count;
+        public int index;
+    }
+
+    // TODO: store this PER TREE
+    public struct ChiselLayerParameters
+    {
+        public NativeHashMap<int, ChiselLayerParameterIndex> uniqueParameters;
+        public int uniqueParameterCount;
+
+        internal void UnregisterParameter(int parameter)
+        {
+            if (parameter == 0)
+                return;
+            if (!uniqueParameters.TryGetValue(parameter, out var item))
+                return;
+            item.count--;
+            if (item.count < 0)
+                item.count = 0;
+            uniqueParameters[parameter] = item;
+            
+            // TODO: have some way to remove parameters (swap with last index? would need to swap things outside of this class as well somehow)
+        }
+
+        internal bool RegisterParameter(int parameter)
+        {
+            if (parameter == 0)
+                return false;
+            if (!uniqueParameters.TryGetValue(parameter, out var item))
+            {
+                var index = uniqueParameterCount;
+                uniqueParameterCount++;
+                if (uniqueParameters.Capacity < uniqueParameterCount)
+                    uniqueParameters.Capacity = Mathf.CeilToInt(uniqueParameterCount * 1.5f);
+                uniqueParameters.Add(parameter, 
+                    new ChiselLayerParameterIndex 
+                    { 
+                        count = 1, 
+                        index = index 
+                    });
+                return true;
+            } else
+            {
+                item.count++;
+                uniqueParameters[parameter] = item;
+                return false;
+            }
+        }
+
+        internal void Initialize()
+        {
+            uniqueParameters = new NativeHashMap<int, ChiselLayerParameterIndex>(1000, Allocator.Persistent);
+            uniqueParameterCount = 0;
+        }
+
+        internal void Dispose()
+        {
+            if (uniqueParameters.IsCreated) { uniqueParameters.Dispose(); uniqueParameters = default; }
+            uniqueParameterCount = 0;
+        }
+
+        internal void Clear()
+        {
+            uniqueParameters.Clear();
+            uniqueParameterCount = 0;
+        }
+    }
+
+
     internal sealed unsafe class ChiselMeshLookup : ScriptableObject
     {
         public unsafe class Data
         {
             public readonly HashSet<int> brushMeshUpdateList = new HashSet<int>();
             public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>> brushMeshBlobs;
-            
+            public NativeHashMap<int, int> brushMeshBlobGeneration;
+
             internal void Initialize()
             {
-                brushMeshBlobs = new NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>(1000, Allocator.Persistent);
+                brushMeshBlobs          = new NativeHashMap<int, BlobAssetReference<BrushMeshBlob>>(1000, Allocator.Persistent);
+                brushMeshBlobGeneration = new NativeHashMap<int, int>(1000, Allocator.Persistent);
             }
 
             public void EnsureCapacity(int capacity)
             {
                 if (brushMeshBlobs.Capacity < capacity)
+                {
                     brushMeshBlobs.Capacity = capacity;
+                    brushMeshBlobGeneration.Capacity = capacity;
+                }
             }
 
             internal void Dispose()
@@ -792,25 +904,43 @@ namespace Chisel.Core
                                 item.Dispose();
                         }
                     }
+                    brushMeshBlobGeneration.Dispose();
+                    brushMeshBlobs = default;
+                    brushMeshBlobGeneration = default;
                 }
             }
+
         }
 
         public static void Update()
         {
-            var brushMeshBlobs = ChiselMeshLookup.Value.brushMeshBlobs;
+            var instance                = ChiselMeshLookup.Value;
+            var brushMeshBlobGeneration = instance.brushMeshBlobGeneration;
+            var brushMeshBlobs          = instance.brushMeshBlobs;
             foreach (var brushMeshIndex in Value.brushMeshUpdateList)
             {
                 var brushMeshID = brushMeshIndex + 1;
                 var brushMesh   = BrushMeshManager.GetBrushMesh(brushMeshID); //<-- should already be blobs
                 if (brushMesh == null)
+                {
                     brushMeshBlobs[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
+                } else
+                {
+                    var newBrushMesh = BrushMeshBlob.Build(brushMesh);
+                    brushMeshBlobs[brushMeshIndex] = newBrushMesh;
+                }
+                if (!brushMeshBlobGeneration.TryGetValue(brushMeshIndex, out var currentGeneration))
+                    brushMeshBlobGeneration[brushMeshIndex] = 1;
                 else
-                    brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
+                {
+                    var newGeneration = currentGeneration + 1;
+                    if (newGeneration == 0)
+                        newGeneration++;
+                    brushMeshBlobGeneration[brushMeshIndex] = newGeneration;
+                }
             }
-            Value.brushMeshUpdateList.Clear();
+            instance.brushMeshUpdateList.Clear();
         }
-
 
         static ChiselMeshLookup _singleton;
 

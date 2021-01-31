@@ -10,7 +10,7 @@ Chisel is an extension for **Unity** that allows for _rapid_, iterative, **non d
 * If you have questions be sure to ask in the discord! **[Click here for to join the official Discord server!](https://discord.gg/zttNkPQ)**
 
 Notes:
-- Chisel requires Unity 2020.2.b07 or newer
+- Chisel requires Unity 2020.2.b11 or newer
 - UX is still under development
 - CSG algorithm is still under development
 - It is *not yet* ready for production, but please feel free to try it out, or better yet, help out!
@@ -46,8 +46,11 @@ Packages overview:
 * `com.chisel.components` Unity Monobehaviour runtime API (to allow for possible ECS replacement in future)
 * `com.scene.handles.extensions` Custom scene handle extensions
 
+Extensions:
+* [Source Engine 2006 Map Importer for Chisel Editor]( https://github.com/Henry00IS/Chisel.Import.Source)
+  * [Decal support for importer](https://github.com/Henry00IS/Chisel.Decals)
+
 Known issues:
-* [Extrusion generator is glitchy due to problems with convex decomposition code](https://github.com/RadicalCSG/Chisel.Prototype/issues/255)
 * [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
 * There are some cases where overlapping surfaces create overlapping polygon
 

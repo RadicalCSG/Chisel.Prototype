@@ -5,7 +5,9 @@
         "com.chisel.core",
         "com.scene.handle.extensions.runtime",
         "Unity.Mathematics",
-        "Unity.Collections"
+        "Unity.Collections",
+        "Unity.Burst",
+        "Unity.Jobs"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -59,7 +59,7 @@ namespace Chisel.Core
         static bool IsPointInsideSurface(ref ChiselSurfaceRenderBuffer surface, float3 treeSpacePoint, out float3 treeSpaceNormal)
         {
             ref var triangles	= ref surface.indices;
-            ref var vertices    = ref surface.vertices;
+            ref var vertices    = ref surface.colliderVertices;
 
             for (int i = 0, triangle_count = triangles.Length; i < triangle_count; i += 3)
 	        {
@@ -404,7 +404,7 @@ namespace Chisel.Core
                         if (!IsSurfaceVisible(meshQueries, ref surfaceRenderBuffer))
                             goto SkipSurface;
 
-                        ref var vertices = ref surfaceRenderBuffer.vertices;
+                        ref var vertices = ref surfaceRenderBuffer.colliderVertices;
                         for (int p = 0; p < 6; p++)
                         {
                             var plane = planes[p];

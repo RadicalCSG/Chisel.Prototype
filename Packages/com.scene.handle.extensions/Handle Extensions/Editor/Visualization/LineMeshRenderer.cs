@@ -148,14 +148,16 @@ namespace UnitySceneExtensions
 
             SceneHandleMaterialManager.InitGenericLineMaterial(lineMaterial);
             var max = Mathf.Min(currentLineMesh, lineMeshes.Count - 1);
-            for (int i = 0; i <= max; i++)
+            if (lineMaterial.SetPass(0))
             {
-                var mesh = lineMeshes[i].mesh;
-                if (lineMeshes[i].vertexCount == 0 || !mesh)
-                    continue;
+                for (int i = 0; i <= max; i++)
+                {
+                    var mesh = lineMeshes[i].mesh;
+                    if (lineMeshes[i].vertexCount == 0 || !mesh)
+                        continue;
 
-                if (lineMaterial.SetPass(0))
                     Graphics.DrawMeshNow(mesh, Matrix4x4.identity, 0);
+                }
             }
         }
 

@@ -878,15 +878,22 @@ namespace Chisel.Editors
             return true;
         }
 
+        static readonly HashSet<System.Object> s_FoundObjects = new HashSet<System.Object>();
+        static readonly HashSet<T> s_RemoveTargets = new HashSet<T>();
+        static readonly HashSet<GameObject> s_SelectedGameObject = new HashSet<GameObject>();
         void UpdateSelection()
         {
-            var selectedGameObject = Selection.gameObjects.ToList();
-            var removeTargets = new HashSet<T>();
+            s_SelectedGameObject.Clear();
+            foreach (var item in Selection.gameObjects)
+                s_SelectedGameObject.Add(item);
+            s_RemoveTargets.Clear();
+            s_FoundObjects.Clear();
             foreach (var target in targets)
             {
                 if (!target)
                     continue;
 
+                s_FoundObjects.Add(target);
                 if (!knownTargets.Add(target))
                     continue;
 
@@ -900,7 +907,7 @@ namespace Chisel.Editors
 
             foreach (var knownTarget in knownTargets)
             {
-                if (!targets.Contains(knownTarget))
+                if (!s_FoundObjects.Contains(knownTarget))
                 {
                     var removeTarget = target as T;
                     if (validTargets.Contains(removeTarget))
@@ -909,24 +916,27 @@ namespace Chisel.Editors
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
                     }
-                    removeTargets.Add(removeTarget);
+                    s_RemoveTargets.Add(removeTarget);
                 } else
                 {
                     var removeTarget = target as T;
                     if (removeTarget == null ||
-                        !selectedGameObject.Contains(removeTarget.gameObject))
+                        !s_SelectedGameObject.Contains(removeTarget.gameObject))
                     {
                         handles.generatorStateLookup.Remove(removeTarget);
                         OnGeneratorDeselected(removeTarget);
                         validTargets.Remove(removeTarget);
-                        removeTargets.Add(removeTarget);
-                        continue;
+                        s_RemoveTargets.Add(removeTarget);
                     }
                 }
             }
+            s_FoundObjects.Clear();
 
-            foreach (var removeTarget in removeTargets)
+            foreach (var removeTarget in s_RemoveTargets)
                 knownTargets.Remove(removeTarget);
+            s_SelectedGameObject.Clear();
+            s_RemoveTargets.Clear();
+            s_FoundObjects.Clear();
         }
 
         public override void OnInspectorGUI()
@@ -968,6 +978,30 @@ namespace Chisel.Editors
             {
                 OnDefaultSceneTools();
                 return;
+            }
+
+            // Skip some events, to prevent scalability issues (when selecting thousands of brushes at the same time)
+            // Could happen when doing control-A (select all)
+            switch (Event.current.type)
+            {
+                case EventType.MouseEnterWindow:
+                case EventType.MouseLeaveWindow:
+                case EventType.Ignore:
+                case EventType.Used:
+                    return;
+
+                case EventType.MouseDown:
+                case EventType.MouseUp:
+                case EventType.MouseDrag:
+                case EventType.DragExited:
+                case EventType.DragPerform:
+                case EventType.DragUpdated:
+                {
+                    // Mouse messages don't make sense when the mouse is not over the current window
+                    if (SceneView.currentDrawingSceneView != EditorWindow.mouseOverWindow)
+                        return;
+                    break;
+                }
             }
 
             var generator   = target as T;

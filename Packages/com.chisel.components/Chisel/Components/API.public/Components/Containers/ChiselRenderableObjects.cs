@@ -14,13 +14,11 @@ namespace Chisel.Components
 {
     public struct ChiselRenderObjectUpdate
     {
-        public ChiselRenderObjects      instance;
-        public int                      contentsIndex;
-        public int                      meshIndex;
-        public Material                 materialOverride;
-        public bool                     meshIsModified;
-        public ChiselModel              model;
-        public VertexBufferContents     contents;
+        public int                  meshIndex;
+        public ChiselRenderObjects  instance;
+        public Material             materialOverride;
+        public bool                 meshIsModified;
+        public ChiselModel          model;
     }
 
     [Serializable]
@@ -173,10 +171,12 @@ namespace Chisel.Components
             {
                 meshRenderer.allowOcclusionWhenDynamic = false;
                 meshRenderer.lightProbeUsage = LightProbeUsage.Off;
-                meshRenderer.scaleInLightmap = 0.0f;
                 meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 meshRenderer.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
                 meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+#if UNITY_EDITOR
+                meshRenderer.scaleInLightmap = 0.0f;
+#endif
             }
         }
 
@@ -295,30 +295,15 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
-
-
-
-        // Retrieve the generatedMeshes and its materials, combine them into a single Unity Mesh/Material array
-        public static void ScheduleMeshCopy(List<ChiselRenderObjectUpdate> updates, Mesh.MeshDataArray dataArray, ref JobHandle allJobs, JobHandle dependencies)
-        {
-            Profiler.BeginSample("CopyToMesh");
-            for (int u = 0; u < updates.Count; u++)
-            {
-                var update = updates[u];
-                update.meshIsModified = update.contents.CopyToMesh(dataArray, update.contentsIndex, update.meshIndex, ref allJobs, dependencies);
-                updates[u] = update;
-            }
-            Profiler.EndSample();
-        }
-
-        public static void UpdateMaterials(List<ChiselRenderObjectUpdate> updates)
+        public static void UpdateMaterials(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, ref VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("SetTriangleBrushes");
-            for (int u = 0; u < updates.Count; u++)
+            for (int u = 0; u < objectUpdates.Count; u++)
             {
-                var update = updates[u];
-                var instance = update.instance;
-                var brushIndicesArray = update.contents.brushIndices[update.contentsIndex].AsArray();
+                var meshUpdate          = meshUpdates[u];
+                var objectUpdate        = objectUpdates[u];
+                var instance            = objectUpdate.instance;
+                var brushIndicesArray   = vertexBufferContents.triangleBrushIndices[meshUpdate.contentsIndex].AsArray();
                 if (instance.triangleBrushes.Length < brushIndicesArray.Length)
                     instance.triangleBrushes = new int[brushIndicesArray.Length];
                 NativeArray<int>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
@@ -326,14 +311,15 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateMaterials");
-            for (int u = 0; u < updates.Count; u++)
+            for (int u = 0; u < objectUpdates.Count; u++)
             {
-                var update = updates[u];
-                var instance = update.instance;
-                var contentsIndex = update.contentsIndex;
-                var materialOverride = update.materialOverride;
-                var startIndex = update.contents.subMeshSections[contentsIndex].startIndex;
-                var endIndex = update.contents.subMeshSections[contentsIndex].endIndex;
+                var meshUpdate          = meshUpdates[u];
+                var objectUpdate        = objectUpdates[u];
+                var instance            = objectUpdate.instance;
+                var contentsIndex       = meshUpdate.contentsIndex;
+                var materialOverride    = objectUpdate.materialOverride;
+                var startIndex          = vertexBufferContents.subMeshSections[contentsIndex].startIndex;
+                var endIndex            = vertexBufferContents.subMeshSections[contentsIndex].endIndex;
                 var desiredCapacity = endIndex - startIndex;
                 if (instance.renderMaterials == null || instance.renderMaterials.Length != desiredCapacity)
                     instance.renderMaterials = new Material[desiredCapacity];
@@ -345,8 +331,8 @@ namespace Chisel.Components
                 {
                     for (int i = 0; i < desiredCapacity; i++)
                     {
-                        var meshDescription = update.contents.meshDescriptions[startIndex + i];
-                        var renderMaterial = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
+                        var meshDescription = vertexBufferContents.meshDescriptions[startIndex + i];
+                        var renderMaterial  = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                         instance.renderMaterials[i] = renderMaterial;
                     }
@@ -357,35 +343,38 @@ namespace Chisel.Components
         }
 
 
-        public static void UpdateSettings(List<ChiselRenderObjectUpdate> updates, Dictionary<ChiselModel, GameObjectState> gameObjectStates)
+        public static void UpdateSettings(List<ChiselMeshUpdate> meshUpdates, List<ChiselRenderObjectUpdate> objectUpdates, Dictionary<ChiselModel, GameObjectState> gameObjectStates, ref VertexBufferContents vertexBufferContents)
         {
             Profiler.BeginSample("UpdateSettings");
-            for (int u = 0; u < updates.Count; u++)
+            for (int u = 0; u < objectUpdates.Count; u++)
             {
-                var update          = updates[u];
-                var instance        = update.instance;
-                var contentsIndex   = update.contentsIndex;
+                var objectUpdate    = objectUpdates[u];
+                var meshUpdate      = meshUpdates[u];
+                var instance        = objectUpdate.instance;
+                var contentsIndex   = meshUpdate.contentsIndex;
+                var sharedMesh      = instance.sharedMesh;
 
-                if (instance.sharedMesh.subMeshCount > 0)
+                if (sharedMesh.subMeshCount > 0)
                 {
-                    var bounds = instance.sharedMesh.GetSubMesh(0).bounds;
-                    for (int s = 1; s < instance.sharedMesh.subMeshCount; s++)
-                        bounds.Encapsulate(instance.sharedMesh.GetSubMesh(s).bounds);
-                    instance.sharedMesh.bounds = bounds;
+                    var bounds = sharedMesh.GetSubMesh(0).bounds;
+                    for (int s = 1; s < sharedMesh.subMeshCount; s++)
+                        bounds.Encapsulate(sharedMesh.GetSubMesh(s).bounds);
+                    sharedMesh.bounds = bounds;
                 }
 
-                if (instance.meshFilter.sharedMesh != instance.sharedMesh)
+                if (instance.meshFilter.sharedMesh != sharedMesh)
                 {
-                    instance.meshFilter.sharedMesh = instance.sharedMesh;
-                    update.meshIsModified = true;
-                    updates[u] = update;
+                    instance.meshFilter.sharedMesh = sharedMesh;
+                    objectUpdate.meshIsModified = true;
+                    objectUpdates[u] = objectUpdate;
                 }
-                var expectedEnabled = update.contents.positions[contentsIndex].Length > 0;
+
+                var expectedEnabled = vertexBufferContents.triangleBrushIndices[contentsIndex].Length > 0;
                 if (instance.meshRenderer.enabled != expectedEnabled)
                     instance.meshRenderer.enabled = expectedEnabled;
 
-                var gameObjectState = gameObjectStates[update.model];
-                instance.UpdateSettings(update.model, gameObjectState, update.meshIsModified);
+                var gameObjectState = gameObjectStates[objectUpdate.model];
+                instance.UpdateSettings(objectUpdate.model, gameObjectState, objectUpdate.meshIsModified);
             }
             Profiler.EndSample();
         }
