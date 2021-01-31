@@ -7,7 +7,9 @@ Author: Daniel Cornelius
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;
+using System.Text;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using Object = System.Object;
 
@@ -21,8 +23,6 @@ namespace Chisel.Editors
         public readonly string   materialName;
         public readonly string[] labels;
 
-        private bool isVisible;
-
         public  Texture2D Preview => m_Preview;
         private Texture2D m_Preview;
 
@@ -34,12 +34,12 @@ namespace Chisel.Editors
 
         public bool CheckVisible( float yOffset, float thumbnailSize, Vector2 scrollPos, float scrollViewHeight )
         {
-            if( scrollPos.y + scrollViewHeight < ( yOffset - thumbnailSize ) ) return isVisible = false;
-            if( yOffset     + thumbnailSize    < scrollPos.y ) return isVisible = false;
-            return isVisible = true;
+            if( scrollPos.y + scrollViewHeight < ( yOffset - thumbnailSize ) ) return false;
+            if( yOffset     + thumbnailSize    < scrollPos.y ) return false;
+            return true;
         }
 
-        public ChiselMaterialBrowserTile( string instID ) //, ref ChiselMaterialBrowserCache cache )
+        public ChiselMaterialBrowserTile( string instID )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 
@@ -52,25 +52,6 @@ namespace Chisel.Editors
             materialName = m.name;
 
             m = null;
-
-            /*for( int i = 0; i < ShaderUtil.GetPropertyCount( m.shader ); i++ )
-            {
-                if( ShaderUtil.GetPropertyType( m.shader, i ) == ShaderUtil.ShaderPropertyType.TexEnv )
-                {
-                    string propName = ShaderUtil.GetPropertyName( m.shader, i );
-
-                    if( propName == "_MainTex" )
-                    {
-                        Texture t = m.GetTexture( propName );
-
-                        if( t != null )
-                        {
-                            albedoName  = t.name;
-                            mainTexSize = new Vector2( t.width, t.height );
-                        }
-                    }
-                }
-            }*/
 
             if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
             {

@@ -27,7 +27,13 @@ namespace Chisel.Editors
                 0SgAAE2ETUagIQgAC11G+/BIgL8AfYVETeKhvzFQAAAABJRU
                 5ErkJggg==";
 
+        private static string m_BlackTexB64 =
+                @"iVBORw0KGgoAAAANSUhEUgAAAA
+                EAAAABCAYAAAAfFcSJAAAADUlEQVQYGWNgYGD4DwABBAEAqX
+                IB5QAAAABJRU5ErkJggg==";
+
         private static Texture2D m_TemporaryTexture = null;
+        private static Texture2D m_BlackTexture     = null;
 
         public static Texture2D TemporaryTexture
         {
@@ -43,6 +49,21 @@ namespace Chisel.Editors
                 }
 
                 return m_TemporaryTexture;
+            }
+        }
+
+        public static Texture2D BlackTexture
+        {
+            get
+            {
+                if( m_BlackTexture == null )
+                {
+                    m_BlackTexture = new Texture2D( 1, 1, TextureFormat.RGBA32, false, PlayerSettings.colorSpace == ColorSpace.Linear );
+                    m_BlackTexture.LoadImage( Convert.FromBase64String( m_BlackTexB64 ) );
+                    m_BlackTexture.Apply();
+                }
+
+                return m_BlackTexture;
             }
         }
     }

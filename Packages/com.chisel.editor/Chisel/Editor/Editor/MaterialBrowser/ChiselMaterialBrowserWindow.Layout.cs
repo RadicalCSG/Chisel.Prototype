@@ -8,22 +8,25 @@ Author: Daniel Cornelius
 
 #define CHISEL_MWIN_DEBUG_UI
 
-using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 namespace Chisel.Editors
 {
     internal sealed partial class ChiselMaterialBrowserWindow
     {
-        private GUIStyle m_TileButtonStyle;
-        private GUIStyle m_AssetLabelStyle;
-        private GUIStyle m_ToolbarStyle;
-        private GUIStyle m_PropsSectionBG;
+        public GUIStyle tileButtonStyle;
+        public GUIStyle assetLabelStyle;
+        public GUIStyle toolbarStyle;
+        public GUIStyle propsSectionBG;
+        public GUIStyle tileLabelStyle;
+        public GUIStyle tileLabelBGStyle;
 
         private Texture2D m_TileButtonBGTexHover;
         private Texture2D m_TileButtonBGTex;
+
+        private GUIContent applyToSelectedFaceLabelContent;
 
         private void RebuildStyles()
         {
@@ -55,28 +58,86 @@ namespace Chisel.Editors
                 m_TileButtonBGTex.Apply();
             }
 
-#if CHISEL_MWIN_DEBUG_UI // update every frame while debugging, helps when changing color without the need to re-init the window
-            m_TileButtonStyle = new GUIStyle()
-#else
-            m_TileButtonStyle ??= new GUIStyle()
-#endif
+#if CHISEL_MWIN_DEBUG_UI
+
+            applyToSelectedFaceLabelContent = new GUIContent
+            (
+                    "Apply to Selected Face",
+                    $"Apply the currently selected material to the face selected in the scene view. Shortcut: {ShortcutManager.instance.GetShortcutBinding( "Chisel/Material Browser/Apply Last Selected Material" )}"
+            );
+
+            assetLabelStyle = new GUIStyle( "assetLabel" ) { alignment = TextAnchor.UpperCenter };
+            toolbarStyle    = new GUIStyle( "dragtab" ) { fixedHeight  = 0, fixedWidth = 0 };
+            propsSectionBG  = new GUIStyle( "flow background" );
+
+            tileLabelBGStyle = new GUIStyle( "box" )
             {
-                    margin  = new RectOffset( 2, 2, 2, 2 ),
+                    normal = { background = ChiselEmbeddedTextures.BlackTexture, scaledBackgrounds = new[] { ChiselEmbeddedTextures.BlackTexture } }
+            };
+
+            tileLabelStyle = new GUIStyle()
+            {
+                    //font      = ChiselEmbeddedFonts.Consolas,
+                    fontSize  = 10,
+                    fontStyle = FontStyle.Normal,
+                    alignment = TextAnchor.MiddleLeft,
+                    normal    = { textColor = Color.white },
+                    clipping  = TextClipping.Clip
+            };
+
+            tileButtonStyle = new GUIStyle()
+            {
+                    margin        = new RectOffset( 2, 2, 2, 2 ),
+                    padding       = new RectOffset( 2, 2, 2, 2 ),
+                    contentOffset = new Vector2( 1, 0 ),
+                    //border  = new RectOffset( 1, 0, 1, 1 ),
+                    normal        = { background = m_TileButtonBGTex },
+                    hover         = { background = m_TileButtonBGTexHover },
+                    active        = { background = Texture2D.redTexture },
+                    imagePosition = ImagePosition.ImageOnly
+                    //onNormal = { background = Texture2D.grayTexture }
+            };
+
+#else
+            applyToSelectedFaceLabelContent ??= new GUIContent
+            (
+                    "Apply to Selected Face",
+                    $"Apply the currently selected material to the face selected in the scene view. Shortcut: {ShortcutManager.instance.GetShortcutBinding( "Chisel/Material Browser/Apply Last Selected Material" )}"
+            );
+
+            assetLabelStyle ??= new GUIStyle( "assetlabel" ) { alignment = TextAnchor.UpperCenter };
+            toolbarStyle ??= new GUIStyle( "dragtab" ) { fixedHeight = 0, fixedWidth = 0 };
+            propsSectionBG ??= new GUIStyle( "flow background" );
+
+            tileLabelBGStyle ??= new GUIStyle( "box" )
+            {
+                    normal = { background = ChiselEmbeddedTextures.BlackTexture, scaledBackgrounds = new[] { ChiselEmbeddedTextures.BlackTexture } }
+            };
+
+            tileLabelStyle ??= new GUIStyle()
+            {
+                    font = ChiselEmbeddedFonts.Consolas,
+                    fontSize = 12,
+                    fontStyle = FontStyle.Normal,
+                    alignment = TextAnchor.MiddleLeft,
+                    normal = { textColor = Color.white },
+                    clipping = TextClipping.Clip
+            };
+
+            tileButtonStyle ??= new GUIStyle()
+            {
+                    margin = new RectOffset( 2, 2, 2, 2 ),
                     padding = new RectOffset( 2, 2, 2, 2 ),
                     contentOffset = new Vector2( 1, 0 ),
                     //border  = new RectOffset( 1, 0, 1, 1 ),
                     normal = { background = m_TileButtonBGTex },
-                    hover  = { background = m_TileButtonBGTexHover },
+                    hover = { background = m_TileButtonBGTexHover },
                     active = { background = Texture2D.redTexture },
+                    imagePosition = ImagePosition.ImageOnly
                     //onNormal = { background = Texture2D.grayTexture }
             };
+#endif
 
-            m_AssetLabelStyle ??= new GUIStyle( "assetlabel" ) { alignment = TextAnchor.UpperCenter };
-            m_ToolbarStyle ??= new GUIStyle( "dragtab" )
-            {
-                    fixedHeight = 0, fixedWidth = 0
-            };
-            m_PropsSectionBG ??= new GUIStyle( "flow background" );
 
             if( mouseOverWindow == this )
                 Repaint();
@@ -84,12 +145,12 @@ namespace Chisel.Editors
 
         private void SetButtonStyleBG( in int index )
         {
-            if( m_TileButtonStyle != null )
+            if( tileButtonStyle != null )
             {
-                if( index == m_LastSelectedMaterialIndex ) { m_TileButtonStyle.normal.background = m_TileButtonBGTexHover; }
+                if( index == lastSelectedMaterialIndex ) { tileButtonStyle.normal.background = m_TileButtonBGTexHover; }
                 else
                 {
-                    if( m_TileButtonStyle.normal.background != m_TileButtonBGTex ) m_TileButtonStyle.normal.background = m_TileButtonBGTex;
+                    if( tileButtonStyle.normal.background != m_TileButtonBGTex ) tileButtonStyle.normal.background = m_TileButtonBGTex;
                 }
             }
         }
