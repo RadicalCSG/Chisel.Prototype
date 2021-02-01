@@ -92,9 +92,10 @@ namespace Chisel.Editors
             m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
             m_NotifRect.y      = ( position.height * 0.5f ) - 60;
             m_NotifRect.width  = 400;
-            m_NotifRect.height = 120;
+            m_NotifRect.height = 150;
 
             if( EditorApplication.isCompiling ) { GUI.Box( m_NotifRect, "Please wait...", "NotificationBackground" ); }
+            if(EditorApplication.isPlaying || EditorApplication.isPaused) GUI.Box( m_NotifRect, "Exit Playmode to Edit Materials", "NotificationBackground" );
 
             if( !EditorApplication.isCompiling && !EditorApplication.isPlaying )
             {

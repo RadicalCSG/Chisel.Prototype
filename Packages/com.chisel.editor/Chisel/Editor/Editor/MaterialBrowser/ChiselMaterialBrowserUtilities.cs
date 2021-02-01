@@ -7,7 +7,6 @@ Author: Daniel Cornelius
 $TODO: Do we want to filter by label, too? it would allow user-ignored materials.
 * * * * * * * * * * * * * * * * * * * * * */
 
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
@@ -129,7 +128,7 @@ namespace Chisel.Editors
                     "GetAssetPreviewFromGUID",
                     BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
                     null,
-                    new Type[] { typeof( string ) },
+                    new [] { typeof( string ) },
                     null
             );
 
