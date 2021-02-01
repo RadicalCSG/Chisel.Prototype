@@ -84,7 +84,7 @@ namespace Chisel.Editors
             if( usingLabel && searchLabel == string.Empty )
                 Debug.LogError( $"usingLabel set to true, but no search term was given. This may give undesired results." );
 
-            materials.Clear();
+            materials?.Clear();
 
             ChiselMaterialThumbnailRenderer.CancelAll();
 
