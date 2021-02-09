@@ -84,7 +84,13 @@ namespace Chisel.Editors
             if( usingLabel && searchLabel == string.Empty )
                 Debug.LogError( $"usingLabel set to true, but no search term was given. This may give undesired results." );
 
-            materials?.Clear();
+            materials.ForEach(e =>
+            {
+                e.Dispose();
+                e = null;
+            });
+
+            materials.Clear();
 
             ChiselMaterialThumbnailRenderer.CancelAll();
 
@@ -92,8 +98,6 @@ namespace Chisel.Editors
             string search = usingLabel ? $"l:{searchLabel} {searchText}" : $"{searchText}";
 
             string[] guids = AssetDatabase.FindAssets( $"t:Material {search}" );
-
-            AssetPreview.SetPreviewTextureCacheSize( materials.Capacity = guids.Length + 1 );
 
             // assemble preview tiles
             foreach( var id in guids )

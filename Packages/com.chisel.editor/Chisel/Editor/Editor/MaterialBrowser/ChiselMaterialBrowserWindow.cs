@@ -54,8 +54,8 @@ namespace Chisel.Editors
                 e = null;
             } );
 
-            m_Tiles  = null;
-            m_Labels = null;
+            m_Tiles.Clear();
+            m_Labels.Clear();
 
             AssetDatabase.ReleaseCachedFileHandles();
             EditorUtility.UnloadUnusedAssetsImmediate( true );
@@ -332,9 +332,10 @@ namespace Chisel.Editors
 
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
             {
-                float xOffset = 0;
-                float yOffset = 0;
-                int   row     = 0;
+                float xOffset      = 0;
+                float yOffset      = 0;
+                int   row          = 0;
+                int   previewCount = 0;
 
                 foreach( var entry in m_Tiles )
                 {
@@ -352,11 +353,13 @@ namespace Chisel.Editors
                         m_TileContentRect.width  = tileSize - 2;
                         m_TileContentRect.height = tileSize - 4;
 
-                        m_TileContentText.image   = m_Tiles[idx].Preview;
-                        m_TileContentText.tooltip = $"{m_Tiles[idx].materialName}\n\nClick to apply to the currently selected surface.";
-
-                        if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, tileScrollViewHeight ) )
+                        if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height) )
                         {
+                            previewCount++;
+                            m_Tiles[idx].RenderPreview();
+                            m_TileContentText.image = m_Tiles[idx].Preview;
+                            m_TileContentText.tooltip = $"{m_Tiles[idx].materialName}\n\nClick to apply to the currently selected surface.";
+
                             SetButtonStyleBG( in idx );
 
                             //Debug.Log( $"IsInView for element {idx} is true, show thumbnail for material {m_Tiles[idx].materialName}" );
@@ -394,6 +397,9 @@ namespace Chisel.Editors
 
                     // end horizontal
                 }
+
+                AssetPreview.SetPreviewTextureCacheSize(previewCount + 1);
+
             }
             GUI.EndScrollView();
 
