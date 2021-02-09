@@ -22,9 +22,11 @@ namespace Chisel.Editors
         public readonly string   shaderName;
         public readonly string   materialName;
         public readonly string[] labels;
+        public readonly int      id;
 
         public  Texture2D Preview => m_Preview;
         private Texture2D m_Preview;
+        private bool m_Rendering;
 
         /// <inheritdoc />
         public void Dispose()
@@ -39,28 +41,35 @@ namespace Chisel.Editors
             return true;
         }
 
+        public void RenderPreview()
+        {
+            if ((m_Preview && m_Preview != AssetPreview.GetMiniTypeThumbnail(typeof(Material)))
+                || m_Rendering
+                || materialName.Contains("Font Material")
+                || !ChiselMaterialBrowserUtilities.IsValidEntry(this))
+            {
+                return;
+            }
+            m_Rendering = true;
+            ChiselMaterialThumbnailRenderer.Add(materialName,
+                () => m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID(guid),
+                () => !AssetPreview.IsLoadingAssetPreview(id),
+                () => m_Rendering = false);
+        }
+
         public ChiselMaterialBrowserTile( string instID )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 
             Material m = AssetDatabase.LoadAssetAtPath<Material>( path );
 
-            int id = m.GetInstanceID();
+            id = m.GetInstanceID();
             guid         = instID;
             labels       = AssetDatabase.GetLabels( m );
             shaderName   = m.shader.name;
             materialName = m.name;
 
             m = null;
-
-            if( !materialName.Contains( "Font Material" ) ) // dont even consider font materials
-            {
-                if( ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
-                {
-                    ChiselMaterialThumbnailRenderer.Add( materialName, () => !AssetPreview.IsLoadingAssetPreview( id ),
-                                                         () => { m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid ); } );
-                }
-            }
         }
     }
 }

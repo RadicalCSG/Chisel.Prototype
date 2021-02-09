@@ -27,6 +27,7 @@ namespace Chisel.Editors
             // used for debug
             public string taskName;
 
+            public Action     StartWith    { get; }
             public Func<bool> Completed    { get; }
             public Action     ContinueWith { get; }
 
@@ -40,10 +41,11 @@ namespace Chisel.Editors
 
         private static readonly List<RenderJob> jobs = new List<RenderJob>();
 
-        public static void Add( string name, Func<bool> completed, Action continueWith )
+        public static void Add( string name, Action startWith, Func<bool> completed, Action continueWith )
         {
             if( !jobs.Any() ) EditorApplication.update += Update;
             jobs.Add( new RenderJob( name, completed, continueWith ) );
+            startWith?.Invoke();
         }
 
         private static void Update()
