@@ -7,7 +7,9 @@ Author: Daniel Cornelius
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using Chisel.Components;
 using UnityEditor;
 using UnityEngine;
 
@@ -74,19 +76,21 @@ namespace Chisel.Editors
         // gets all materials and the labels on them in the project, compares them against a filter,
         // and then adds them to the list of materials to be used in this window
         public static void GetMaterials( ref List<ChiselMaterialBrowserTile> materials,
+                                         ref List<ChiselMaterialBrowserTile> usedMaterials,
                                          ref List<string>                    labels,
-                                         bool   usingLabel,
-                                         string searchLabel = "",
-                                         string searchText  = "" )
+                                         ref List<ChiselModel>               models,
+                                         bool                                usingLabel,
+                                         string                              searchLabel = "",
+                                         string                              searchText  = "" )
         {
             if( usingLabel && searchLabel == string.Empty )
                 Debug.LogError( $"usingLabel set to true, but no search term was given. This may give undesired results." );
 
-            materials.ForEach(e =>
+            materials.ForEach( e =>
             {
                 e.Dispose();
                 e = null;
-            });
+            } );
 
             materials.Clear();
 
@@ -118,7 +122,75 @@ namespace Chisel.Editors
                 }
             }
 
-            AssetPreview.SetPreviewTextureCacheSize(materials.Count + 1);
+            AssetPreview.SetPreviewTextureCacheSize( materials.Count + 1 );
+
+            models = Object.FindObjectsOfType<ChiselModel>().ToList();
+
+            PopulateUsedMaterials( ref usedMaterials, ref models, searchLabel, searchText );
+        }
+
+        private static void PopulateUsedMaterials( ref List<ChiselMaterialBrowserTile> tiles, ref List<ChiselModel> models, string searchLabel, string searchText )
+        {
+            tiles.ForEach( e =>
+            {
+                e.Dispose();
+                e = null;
+            } );
+
+            tiles.Clear();
+
+            foreach( ChiselModel m in models )
+            {
+                MeshRenderer[] renderMeshes = m.generated.meshRenderers;
+
+                if( renderMeshes.Length > 0 )
+                    foreach( MeshRenderer mesh in renderMeshes )
+                    {
+                        foreach( Material mat in mesh.sharedMaterials )
+                        {
+                            if( mat != null )
+                                if( mat.name.Contains( searchText ) || MaterialContainsLabel( searchLabel, mat ) )
+                                {
+                                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier( mat, out string guid, out long id );
+
+                                    tiles.Add( new ChiselMaterialBrowserTile( guid ) );
+                                }
+                        }
+                    }
+            }
+        }
+
+        private static bool MaterialContainsLabel( string label, Material material )
+        {
+            string[] labels = AssetDatabase.GetLabels( material );
+
+            if( labels.Length > 0 )
+                foreach( string l in labels )
+                {
+                    if( l.Contains( label ) ) return true;
+                }
+
+            return false;
+        }
+
+        public static void SelectMaterialInScene( string name )
+        {
+            MeshRenderer[] objects = Object.FindObjectsOfType<MeshRenderer>();
+
+            if( objects.Length > 0 )
+                foreach( MeshRenderer r in objects )
+                {
+                    if( r.sharedMaterials.Length > 0 )
+                        foreach( Material m in r.sharedMaterials )
+                        {
+                            if( m != null )
+                                if( m.name.Contains( name ) )
+                                {
+                                    EditorGUIUtility.PingObject( r.gameObject );
+                                    Selection.activeObject = r.gameObject;
+                                }
+                        }
+                }
         }
 
         public static Texture2D GetAssetPreviewFromGUID( string guid )
@@ -127,7 +199,7 @@ namespace Chisel.Editors
                     "GetAssetPreviewFromGUID",
                     BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
                     null,
-                    new [] { typeof( string ) },
+                    new[] { typeof( string ) },
                     null
             );
 
