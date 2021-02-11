@@ -26,16 +26,20 @@ namespace Chisel.Editors
 
         private GUIContent applyToSelectedFaceLabelContent;
 
+        private bool IsDarkSkin => EditorGUIUtility.isProSkin;
+
         private void RebuildStyles()
         {
-            // update every frame while debugging, helps when changing color without the need to re-init the window
             if( m_TileButtonBGTexHover == null )
             {
                 m_TileButtonBGTexHover = new Texture2D( 32, 32, TextureFormat.RGBA32, false, false );
 
                 for( int i = 0; i < 32; i++ )
                 {
-                    for( int j = 0; j < 32; j++ ) { m_TileButtonBGTexHover.SetPixel( i, j, new Color32( 90, 130, 115, 255 ) ); }
+                    for( int j = 0; j < 32; j++ ) {
+                        Color32 color = IsDarkSkin ? new Color32( 90, 130, 115, 255 ) : new Color32( 20, 140, 180, 255 );
+
+                        m_TileButtonBGTexHover.SetPixel( i, j, color ); }
                 }
 
                 m_TileButtonBGTexHover.Apply();
@@ -47,7 +51,12 @@ namespace Chisel.Editors
 
                 for( int i = 0; i < 32; i++ )
                 {
-                    for( int j = 0; j < 32; j++ ) { m_TileButtonBGTex.SetPixel( i, j, new Color32( 32, 32, 32, 255 ) ); }
+                    for( int j = 0; j < 32; j++ )
+                    {
+                        Color32 color = IsDarkSkin ? new Color32( 32, 32, 32, 255 ) : new Color32( 180, 180, 180, 255 );
+
+                        m_TileButtonBGTex.SetPixel( i, j, color );
+                    }
                 }
 
                 m_TileButtonBGTex.Apply();
@@ -65,7 +74,14 @@ namespace Chisel.Editors
 
             tileLabelBGStyle ??= new GUIStyle( "box" )
             {
-                    normal = { background = ChiselEmbeddedTextures.BlackTexture, scaledBackgrounds = new[] { ChiselEmbeddedTextures.DarkBGTex } }
+                    normal =
+                    {
+                            background = IsDarkSkin ? ChiselEmbeddedTextures.DarkBGTex : ChiselEmbeddedTextures.GetColoredTexture( new Color32( 100, 100, 100, 220 ) ),
+                            scaledBackgrounds = new[]
+                            {
+                                    IsDarkSkin ? ChiselEmbeddedTextures.DarkBGTex : ChiselEmbeddedTextures.GetColoredTexture( new Color32( 180, 180, 180, 200 ) )
+                            }
+                    }
             };
 
             tileLabelStyle ??= new GUIStyle()
@@ -74,7 +90,7 @@ namespace Chisel.Editors
                     fontSize  = 10,
                     fontStyle = FontStyle.Normal,
                     alignment = TextAnchor.MiddleLeft,
-                    normal    = { textColor = new Color32( 200, 200, 200, 255 ) },
+                    normal    = { textColor = ( IsDarkSkin ? new Color32( 200, 200, 200, 255 ) : new Color32( 0, 0, 0, 255 ) ) },
                     clipping  = TextClipping.Clip
             };
 

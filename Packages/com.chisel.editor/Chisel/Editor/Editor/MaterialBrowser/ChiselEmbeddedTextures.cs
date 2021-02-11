@@ -31,13 +31,15 @@ namespace Chisel.Editors
         private static Texture2D m_BlackTexture     = null;
         private static Texture2D m_UnityDarkBGTex   = null;
 
+        private static bool IsGamma => PlayerSettings.colorSpace == ColorSpace.Gamma;
+
         public static Texture2D TemporaryTexture
         {
             get
             {
                 if( m_TemporaryTexture == null )
                 {
-                    m_TemporaryTexture = new Texture2D( 128, 128, TextureFormat.RGBA32, false, true );
+                    m_TemporaryTexture = new Texture2D( 128, 128, TextureFormat.RGBA32, false, IsGamma );
 
                     m_TemporaryTexture.LoadImage( Convert.FromBase64String( m_TempTexB64 ) );
 
@@ -54,7 +56,7 @@ namespace Chisel.Editors
             {
                 if( m_BlackTexture == null )
                 {
-                    m_BlackTexture = new Texture2D( 1, 1, TextureFormat.RGBA32, false, true );
+                    m_BlackTexture = new Texture2D( 1, 1, TextureFormat.RGBA32, false, IsGamma );
                     m_BlackTexture.SetPixel( 0, 0, Color.black );
                     m_BlackTexture.Apply();
                 }
@@ -67,15 +69,24 @@ namespace Chisel.Editors
         {
             get
             {
-                if( m_UnityDarkBGTex == null )
+                //if( m_UnityDarkBGTex == null )
                 {
-                    m_UnityDarkBGTex = new Texture2D( 1, 1, TextureFormat.RGBA32, false, true );
-                    m_UnityDarkBGTex.SetPixel( 0, 0, new Color32( 50, 50, 50, 220 ) );
+                    m_UnityDarkBGTex = new Texture2D( 1, 1, TextureFormat.RGBA32, false, IsGamma );
+                    m_UnityDarkBGTex.SetPixel( 0, 0, new Color32( 40, 40, 40, 220 ) );
                     m_UnityDarkBGTex.Apply();
                 }
 
                 return m_UnityDarkBGTex;
             }
+        }
+
+        public static Texture2D GetColoredTexture( Color color )
+        {
+            Texture2D tex = new Texture2D( 1, 1, TextureFormat.RGBA32, false, IsGamma );
+            tex.SetPixel( 0, 0, color );
+            tex.Apply();
+
+            return tex;
         }
     }
 }
