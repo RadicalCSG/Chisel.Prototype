@@ -29,6 +29,7 @@ namespace Chisel.Editors
         private static int     tileSize                  = 64;
         private static Vector2 tileScrollPos             = Vector2.zero;
         private static bool    showNameLabels            = false;
+        private static string  searchText                = string.Empty;
 
         private readonly GUIContent[] m_PropsTabLabels = new GUIContent[]
         {
@@ -95,7 +96,8 @@ namespace Chisel.Editors
             m_NotifRect.height = 150;
 
             if( EditorApplication.isCompiling ) { GUI.Box( m_NotifRect, "Please wait...", "NotificationBackground" ); }
-            if(EditorApplication.isPlaying || EditorApplication.isPaused) GUI.Box( m_NotifRect, "Exit Playmode to Edit Materials", "NotificationBackground" );
+
+            if( EditorApplication.isPlaying || EditorApplication.isPaused ) GUI.Box( m_NotifRect, "Exit Playmode to Edit Materials", "NotificationBackground" );
 
             if( !EditorApplication.isCompiling && !EditorApplication.isPlaying )
             {
@@ -117,181 +119,199 @@ namespace Chisel.Editors
                     previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
                 }
 
-                if( m_ShowPropsArea )
+                m_ToolbarRect.x      =  6;
+                m_ToolbarRect.y      += 28;
+                m_ToolbarRect.width  =  200;
+                m_ToolbarRect.height =  22;
+
+                EditorGUI.BeginChangeCheck();
+                searchText = EditorGUI.DelayedTextField( m_ToolbarRect, string.Empty, searchText, EditorStyles.toolbarSearchField );
+                if( EditorGUI.EndChangeCheck() ) { ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, false, searchText: searchText ); }
+
+                if( m_Tiles.Count > 0 )
                 {
-                    m_ToolbarRect.x      = position.width - 262;
-                    m_ToolbarRect.y      = 26;
-                    m_ToolbarRect.width  = 262;
-                    m_ToolbarRect.height = 24;
-
-                    GUI.Box( m_ToolbarRect, "", "dockHeader" );
-                    m_ToolbarRect.y   += 2;
-                    m_ToolbarRect.x   += 4;
-                    m_CurrentPropsTab =  GUI.Toolbar( m_ToolbarRect, m_CurrentPropsTab, m_PropsTabLabels, EditorStyles.toolbarButton, GUI.ToolbarButtonSize.FitToContents );
-
-                    switch( m_CurrentPropsTab )
+                    if( m_ShowPropsArea )
                     {
-                        case 0:
+                        m_ToolbarRect.x      = position.width - 262;
+                        m_ToolbarRect.y      = 26;
+                        m_ToolbarRect.width  = 262;
+                        m_ToolbarRect.height = 24;
+
+                        GUI.Box( m_ToolbarRect, "", "dockHeader" );
+                        m_ToolbarRect.y   += 2;
+                        m_ToolbarRect.x   += 4;
+                        m_CurrentPropsTab =  GUI.Toolbar( m_ToolbarRect, m_CurrentPropsTab, m_PropsTabLabels, EditorStyles.toolbarButton, GUI.ToolbarButtonSize.FitToContents );
+
+                        switch( m_CurrentPropsTab )
                         {
-                            m_PropsAreaRect.x      = position.width - 256;
-                            m_PropsAreaRect.y      = 50;
-                            m_PropsAreaRect.width  = 240;
-                            m_PropsAreaRect.height = position.height;
-
-
-                            m_LabelScrollViewArea.x      = position.width - 256;
-                            m_LabelScrollViewArea.y      = 50;
-                            m_LabelScrollViewArea.width  = 240;
-                            m_LabelScrollViewArea.height = 0;
-
-                            m_LabelScrollPositon = GUI.BeginScrollView( m_PropsAreaRect, m_LabelScrollPositon, m_LabelScrollViewArea );
+                            case 0:
                             {
-                                m_PropsAreaRect.height = 24;
+                                m_PropsAreaRect.x      = position.width - 256;
+                                m_PropsAreaRect.y      = 50;
+                                m_PropsAreaRect.width  = 240;
+                                m_PropsAreaRect.height = position.height;
 
-                                for( int i = 0; i < m_Labels.Count; i++ )
+
+                                m_LabelScrollViewArea.x      = position.width - 256;
+                                m_LabelScrollViewArea.y      = 50;
+                                m_LabelScrollViewArea.width  = 240;
+                                m_LabelScrollViewArea.height = 0;
+
+                                m_LabelScrollPositon = GUI.BeginScrollView( m_PropsAreaRect, m_LabelScrollPositon, m_LabelScrollViewArea );
                                 {
-                                    m_LabelScrollViewArea.height += 24;
+                                    m_PropsAreaRect.height = 24;
 
-                                    if( i > 0 )
-                                        m_PropsAreaRect.y += 26;
-                                    if( GUI.Button( m_PropsAreaRect, m_Labels[i] ) )
+                                    for( int i = 0; i < m_Labels.Count; i++ )
                                     {
-                                        ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, m_Labels[i], "" );
-                                        lastSelectedMaterialIndex = 0;
+                                        m_LabelScrollViewArea.height += 24;
 
-                                        previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
+                                        if( i > 0 )
+                                            m_PropsAreaRect.y += 26;
+                                        if( GUI.Button( m_PropsAreaRect, m_Labels[i] ) )
+                                        {
+                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, m_Labels[i], "" );
+                                            lastSelectedMaterialIndex = 0;
+
+                                            previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
+                                        }
                                     }
                                 }
+                                GUI.EndScrollView();
+
+                                break;
                             }
-                            GUI.EndScrollView();
-
-                            break;
-                        }
-                        case 1:
-                        {
-                            m_PropsAreaRect.x      = position.width - 260;
-                            m_PropsAreaRect.y      = 50;
-                            m_PropsAreaRect.width  = 260;
-                            m_PropsAreaRect.height = position.height - 50;
-
-                            GUI.BeginGroup( m_PropsAreaRect, propsSectionBG );
+                            case 1:
                             {
-                                m_PropsAreaRect.x      = 0;
-                                m_PropsAreaRect.y      = 0;
-                                m_PropsAreaRect.height = 22;
-                                GUI.Label( m_PropsAreaRect, $"{m_Tiles[lastSelectedMaterialIndex].materialName}", EditorStyles.toolbarButton );
+                                m_PropsAreaRect.x      = position.width - 260;
+                                m_PropsAreaRect.y      = 50;
+                                m_PropsAreaRect.width  = 260;
+                                m_PropsAreaRect.height = position.height - 50;
 
-                                m_PropsAreaRect.x      = 2;
-                                m_PropsAreaRect.y      = 22;
-                                m_PropsAreaRect.width  = 256;
-                                m_PropsAreaRect.height = 256;
-
-                                if( m_Tiles[lastSelectedMaterialIndex] != null && previewMaterial != null )
+                                GUI.BeginGroup( m_PropsAreaRect, propsSectionBG );
                                 {
-                                    if( previewEditor == null ) previewEditor = Editor.CreateEditor( previewMaterial, typeof( MaterialEditor ) );
-                                    previewEditor.OnInteractivePreviewGUI( m_PropsAreaRect, EditorStyles.whiteLabel );
-                                    previewEditor.Repaint();
-                                }
+                                    m_PropsAreaRect.x      = 0;
+                                    m_PropsAreaRect.y      = 0;
+                                    m_PropsAreaRect.height = 22;
+                                    GUI.Label( m_PropsAreaRect, $"{m_Tiles[lastSelectedMaterialIndex].materialName}", EditorStyles.toolbarButton );
 
-                                if( position.height > 520 )
-                                {
-                                    m_PropsAreaRect.y      = 278;
                                     m_PropsAreaRect.x      = 2;
-                                    m_PropsAreaRect.height = 188;
+                                    m_PropsAreaRect.y      = 22;
                                     m_PropsAreaRect.width  = 256;
+                                    m_PropsAreaRect.height = 256;
 
-                                    GUI.BeginGroup( m_PropsAreaRect );
+                                    if( m_Tiles[lastSelectedMaterialIndex] != null && previewMaterial != null )
                                     {
-                                        m_PropsAreaRect.x      = 0;
-                                        m_PropsAreaRect.y      = 0;
-                                        m_PropsAreaRect.height = 22;
-                                        GUI.Label( m_PropsAreaRect, $"Material", EditorStyles.toolbarButton );
-
-                                        m_PropsAreaRect.y += 24;
-                                        if( GUI.Button( m_PropsAreaRect, "Select In Project", "largebutton" ) )
-                                        {
-                                            EditorGUIUtility.PingObject( Selection.activeObject = GetPreviewMaterial( lastSelectedMaterialIndex ) );
-                                        }
-
-                                        m_PropsAreaRect.y += 24;
-                                        if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) )
-                                        {
-                                            ApplySelectedMaterial();
-                                        }
+                                        if( previewEditor == null ) previewEditor = Editor.CreateEditor( previewMaterial, typeof( MaterialEditor ) );
+                                        previewEditor.OnInteractivePreviewGUI( m_PropsAreaRect, EditorStyles.whiteLabel );
+                                        previewEditor.Repaint();
                                     }
-                                    GUI.EndGroup();
 
-                                    if( position.height >= 400 )
+                                    if( position.height > 520 )
                                     {
+                                        m_PropsAreaRect.y      = 278;
                                         m_PropsAreaRect.x      = 2;
-                                        m_PropsAreaRect.y      = 369;
-                                        m_PropsAreaRect.height = 200;
+                                        m_PropsAreaRect.height = 188;
+                                        m_PropsAreaRect.width  = 256;
+
                                         GUI.BeginGroup( m_PropsAreaRect );
                                         {
                                             m_PropsAreaRect.x      = 0;
                                             m_PropsAreaRect.y      = 0;
                                             m_PropsAreaRect.height = 22;
-                                            GUI.Label( m_PropsAreaRect, "Labels", EditorStyles.toolbarButton );
+                                            GUI.Label( m_PropsAreaRect, $"Material", EditorStyles.toolbarButton );
 
-                                            float btnWidth = 60;
-                                            int   idx      = 0;
-                                            foreach( var l in m_Tiles[lastSelectedMaterialIndex].labels )
+                                            m_PropsAreaRect.y += 24;
+                                            if( GUI.Button( m_PropsAreaRect, "Select In Project", "largebutton" ) )
                                             {
-                                                float xOffset = 2;
-                                                float yOffset = 22;
-                                                int   row     = 0;
-                                                for( int i = 0; i < ( m_PropsAreaRect.width / btnWidth ); i++ )
-                                                {
-                                                    if( idx == m_Tiles[lastSelectedMaterialIndex].labels.Length ) break;
-
-                                                    xOffset = ( 40 * i ) + 2;
-                                                    if( GUI.Button( new Rect( xOffset, yOffset, btnWidth, 22 ), new GUIContent( l, $"Click to filter for label \"{l}\"" ), assetLabelStyle ) )
-                                                    {
-                                                        ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, l, "" );
-                                                        lastSelectedMaterialIndex = 0;
-
-                                                        previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
-                                                    }
-
-                                                    idx++;
-                                                }
-
-                                                row     += 1;
-                                                yOffset =  22 + ( 22 * row );
+                                                EditorGUIUtility.PingObject( Selection.activeObject = GetPreviewMaterial( lastSelectedMaterialIndex ) );
                                             }
+
+                                            m_PropsAreaRect.y += 24;
+                                            if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) ) { ApplySelectedMaterial(); }
                                         }
                                         GUI.EndGroup();
+
+                                        if( position.height >= 400 )
+                                        {
+                                            m_PropsAreaRect.x      = 2;
+                                            m_PropsAreaRect.y      = 369;
+                                            m_PropsAreaRect.height = 200;
+                                            GUI.BeginGroup( m_PropsAreaRect );
+                                            {
+                                                m_PropsAreaRect.x      = 0;
+                                                m_PropsAreaRect.y      = 0;
+                                                m_PropsAreaRect.height = 22;
+                                                GUI.Label( m_PropsAreaRect, "Labels", EditorStyles.toolbarButton );
+
+                                                float btnWidth = 60;
+                                                int   idx      = 0;
+                                                foreach( var l in m_Tiles[lastSelectedMaterialIndex].labels )
+                                                {
+                                                    float xOffset = 2;
+                                                    float yOffset = 22;
+                                                    int   row     = 0;
+                                                    for( int i = 0; i < ( m_PropsAreaRect.width / btnWidth ); i++ )
+                                                    {
+                                                        if( idx == m_Tiles[lastSelectedMaterialIndex].labels.Length ) break;
+
+                                                        xOffset = ( 40 * i ) + 2;
+                                                        if( GUI.Button( new Rect( xOffset, yOffset, btnWidth, 22 ), new GUIContent( l, $"Click to filter for label \"{l}\"" ), assetLabelStyle ) )
+                                                        {
+                                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, l, "" );
+                                                            lastSelectedMaterialIndex = 0;
+
+                                                            previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
+                                                        }
+
+                                                        idx++;
+                                                    }
+
+                                                    row     += 1;
+                                                    yOffset =  22 + ( 22 * row );
+                                                }
+                                            }
+                                            GUI.EndGroup();
+                                        }
                                     }
                                 }
+                                GUI.EndGroup();
+
+                                break;
                             }
-                            GUI.EndGroup();
-
-                            break;
+                            default: break;
                         }
-                        default: break;
                     }
+
+                    m_ToolbarRect.width  = 22;
+                    m_ToolbarRect.height = 24;
+                    m_ToolbarRect.x      = position.width - 24;
+                    m_ToolbarRect.y      = 28;
+
+                    m_PropsAreaToggleContent.text    = ( m_ShowPropsArea ) ? ">>" : "<<";
+                    m_PropsAreaToggleContent.tooltip = ( m_ShowPropsArea ) ? "Hide utility bar" : "Show utility bar";
+                    m_ShowPropsArea                  = GUI.Toggle( m_ToolbarRect, m_ShowPropsArea, m_PropsAreaToggleContent, EditorStyles.toolbarButton );
+
+                    m_ToolbarRect.x      = position.width - 104;
+                    m_ToolbarRect.y      = 2;
+                    m_ToolbarRect.width  = 100;
+                    m_ToolbarRect.height = 24;
+
+                    // $TODO: change styling on this... its fugly. Also needs tooltips.
+                    EditorGUI.BeginChangeCheck();
+                    showNameLabels = GUI.Toggle( m_ToolbarRect, showNameLabels, ( showNameLabels ) ? "Hide Labels" : "Show Labels", "ToolbarButton" );
+                    if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetBool( TILE_LABEL_PREF_KEY, showNameLabels );
+
+                    DrawTileArea();
                 }
+                else
+                {
+                    m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
+                    m_NotifRect.y      = ( position.height * 0.5f ) - 80;
+                    m_NotifRect.width  = 400;
+                    m_NotifRect.height = 130;
 
-                m_ToolbarRect.width  = 22;
-                m_ToolbarRect.height = 24;
-                m_ToolbarRect.x      = position.width - 24;
-                m_ToolbarRect.y      = 28;
-
-                m_PropsAreaToggleContent.text    = ( m_ShowPropsArea ) ? ">>" : "<<";
-                m_PropsAreaToggleContent.tooltip = ( m_ShowPropsArea ) ? "Hide utility bar" : "Show utility bar";
-                m_ShowPropsArea                  = GUI.Toggle( m_ToolbarRect, m_ShowPropsArea, m_PropsAreaToggleContent, EditorStyles.toolbarButton );
-
-                m_ToolbarRect.x      = position.width - 104;
-                m_ToolbarRect.y      = 2;
-                m_ToolbarRect.width  = 100;
-                m_ToolbarRect.height = 24;
-
-                // $TODO: change styling on this... its fugly. Also needs tooltips.
-                EditorGUI.BeginChangeCheck();
-                showNameLabels = GUI.Toggle( m_ToolbarRect, showNameLabels, ( showNameLabels ) ? "Hide Labels" : "Show Labels", "ToolbarButton" );
-                if( EditorGUI.EndChangeCheck() ) EditorPrefs.SetBool( TILE_LABEL_PREF_KEY, showNameLabels );
-
-                DrawTileArea();
+                    GUI.Box( m_NotifRect, "No Results", "NotificationBackground" );
+                }
             }
         }
 
@@ -353,11 +373,11 @@ namespace Chisel.Editors
                         m_TileContentRect.width  = tileSize - 2;
                         m_TileContentRect.height = tileSize - 4;
 
-                        if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height) )
+                        if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height ) )
                         {
                             previewCount++;
                             m_Tiles[idx].RenderPreview();
-                            m_TileContentText.image = m_Tiles[idx].Preview;
+                            m_TileContentText.image   = m_Tiles[idx].Preview;
                             m_TileContentText.tooltip = $"{m_Tiles[idx].materialName}\n\nClick to apply to the currently selected surface.";
 
                             SetButtonStyleBG( in idx );
@@ -373,7 +393,7 @@ namespace Chisel.Editors
                                 ApplySelectedMaterial();
                             }
 
-                            if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels )
+                            if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels && lastSelectedMaterialIndex != idx )
                             {
                                 m_TileContentRect.height = 22;
                                 m_TileContentRect.y      = ( m_TileContentRect.y ) + tileSize - 22;
@@ -397,9 +417,6 @@ namespace Chisel.Editors
 
                     // end horizontal
                 }
-
-                AssetPreview.SetPreviewTextureCacheSize(previewCount + 1);
-
             }
             GUI.EndScrollView();
 
@@ -452,6 +469,7 @@ namespace Chisel.Editors
 
                 foreach( SurfaceReference surf in selected ) { surf.BrushMaterial.RenderMaterial = material; }
             }
+
             //else Debug.Log( "No surface selected, please select a surface before applying a material." );
         }
     }

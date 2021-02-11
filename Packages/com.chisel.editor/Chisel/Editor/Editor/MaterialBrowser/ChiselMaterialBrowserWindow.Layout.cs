@@ -6,7 +6,7 @@ Author: Daniel Cornelius
 
 * * * * * * * * * * * * * * * * * * * * * */
 
-#define CHISEL_MWIN_DEBUG_UI
+//#define CHISEL_MWIN_DEBUG_UI
 
 using UnityEditor;
 using UnityEditor.ShortcutManagement;
@@ -34,11 +34,11 @@ namespace Chisel.Editors
             if( m_TileButtonBGTexHover == null )
 #endif
             {
-                m_TileButtonBGTexHover = new Texture2D( 32, 32, TextureFormat.RGBA32, false, PlayerSettings.colorSpace == ColorSpace.Linear );
+                m_TileButtonBGTexHover = new Texture2D( 32, 32, TextureFormat.RGBA32, false, false );
 
                 for( int i = 0; i < 32; i++ )
                 {
-                    for( int j = 0; j < 32; j++ ) { m_TileButtonBGTexHover.SetPixel( i, j, new Color32( 50, 80, 65, 255 ) ); }
+                    for( int j = 0; j < 32; j++ ) { m_TileButtonBGTexHover.SetPixel( i, j, new Color32( 90, 130, 115, 255 ) ); }
                 }
 
                 m_TileButtonBGTexHover.Apply();
@@ -48,7 +48,7 @@ namespace Chisel.Editors
             if( m_TileButtonBGTex == null )
 #endif
             {
-                m_TileButtonBGTex = new Texture2D( 32, 32, TextureFormat.RGBA32, false, PlayerSettings.colorSpace == ColorSpace.Linear );
+                m_TileButtonBGTex = new Texture2D( 32, 32, TextureFormat.RGBA32, false, false );
 
                 for( int i = 0; i < 32; i++ )
                 {
@@ -59,7 +59,6 @@ namespace Chisel.Editors
             }
 
 #if CHISEL_MWIN_DEBUG_UI
-
             applyToSelectedFaceLabelContent = new GUIContent
             (
                     "Apply to Selected Face",
@@ -67,8 +66,8 @@ namespace Chisel.Editors
             );
 
             assetLabelStyle = new GUIStyle( "assetLabel" ) { alignment = TextAnchor.UpperCenter };
-            toolbarStyle    = new GUIStyle( "dragtab" ) { fixedHeight  = 0, fixedWidth = 0 };
-            propsSectionBG  = new GUIStyle( "flow background" );
+            toolbarStyle = new GUIStyle( "dragtab" ) { fixedHeight = 0, fixedWidth = 0 };
+            propsSectionBG = new GUIStyle( "flow background" );
 
             tileLabelBGStyle = new GUIStyle( "box" )
             {
@@ -78,22 +77,22 @@ namespace Chisel.Editors
             tileLabelStyle = new GUIStyle()
             {
                     //font      = ChiselEmbeddedFonts.Consolas,
-                    fontSize  = 10,
+                    fontSize = 10,
                     fontStyle = FontStyle.Normal,
                     alignment = TextAnchor.MiddleLeft,
-                    normal    = { textColor = Color.white },
-                    clipping  = TextClipping.Clip
+                    normal = { textColor = Color.white },
+                    clipping = TextClipping.Clip
             };
 
             tileButtonStyle = new GUIStyle()
             {
-                    margin        = new RectOffset( 2, 2, 2, 2 ),
-                    padding       = new RectOffset( 2, 2, 2, 2 ),
+                    margin = new RectOffset( 2, 2, 2, 2 ),
+                    padding = new RectOffset( 2, 2, 2, 2 ),
                     contentOffset = new Vector2( 1, 0 ),
                     //border  = new RectOffset( 1, 0, 1, 1 ),
-                    normal        = { background = m_TileButtonBGTex },
-                    hover         = { background = m_TileButtonBGTexHover },
-                    active        = { background = Texture2D.redTexture },
+                    normal = { background = m_TileButtonBGTex },
+                    hover = { background = m_TileButtonBGTexHover },
+                    active = { background = Texture2D.redTexture },
                     imagePosition = ImagePosition.ImageOnly
                     //onNormal = { background = Texture2D.grayTexture }
             };
@@ -106,33 +105,33 @@ namespace Chisel.Editors
             );
 
             assetLabelStyle ??= new GUIStyle( "assetlabel" ) { alignment = TextAnchor.UpperCenter };
-            toolbarStyle ??= new GUIStyle( "dragtab" ) { fixedHeight = 0, fixedWidth = 0 };
-            propsSectionBG ??= new GUIStyle( "flow background" );
+            toolbarStyle    ??= new GUIStyle( "dragtab" ) { fixedHeight  = 0, fixedWidth = 0 };
+            propsSectionBG  ??= new GUIStyle( "flow background" );
 
             tileLabelBGStyle ??= new GUIStyle( "box" )
             {
-                    normal = { background = ChiselEmbeddedTextures.BlackTexture, scaledBackgrounds = new[] { ChiselEmbeddedTextures.BlackTexture } }
+                    normal = { background = ChiselEmbeddedTextures.BlackTexture, scaledBackgrounds = new[] { ChiselEmbeddedTextures.DarkBGTex } }
             };
 
             tileLabelStyle ??= new GUIStyle()
             {
-                    font = ChiselEmbeddedFonts.Consolas,
-                    fontSize = 12,
+                    //font      = ChiselEmbeddedFonts.Consolas,
+                    fontSize  = 10,
                     fontStyle = FontStyle.Normal,
                     alignment = TextAnchor.MiddleLeft,
-                    normal = { textColor = Color.white },
-                    clipping = TextClipping.Clip
+                    normal    = { textColor = new Color32( 200, 200, 200, 255 ) },
+                    clipping  = TextClipping.Clip
             };
 
             tileButtonStyle ??= new GUIStyle()
             {
-                    margin = new RectOffset( 2, 2, 2, 2 ),
-                    padding = new RectOffset( 2, 2, 2, 2 ),
+                    margin        = new RectOffset( 2, 2, 2, 2 ),
+                    padding       = new RectOffset( 2, 2, 2, 2 ),
                     contentOffset = new Vector2( 1, 0 ),
                     //border  = new RectOffset( 1, 0, 1, 1 ),
-                    normal = { background = m_TileButtonBGTex },
-                    hover = { background = m_TileButtonBGTexHover },
-                    active = { background = Texture2D.redTexture },
+                    normal        = { background = m_TileButtonBGTex },
+                    hover         = { background = m_TileButtonBGTexHover },
+                    active        = { background = Texture2D.redTexture },
                     imagePosition = ImagePosition.ImageOnly
                     //onNormal = { background = Texture2D.grayTexture }
             };

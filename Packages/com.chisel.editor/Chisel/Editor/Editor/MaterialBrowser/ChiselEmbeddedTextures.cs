@@ -6,7 +6,7 @@ namespace Chisel.Editors
 {
     internal static class ChiselEmbeddedTextures
     {
-        private static string m_TempTexB64 =
+        private const string m_TempTexB64 =
                 @"iVBORw0KGgoAAAANSUhEUgAAAI
                 AAAACACAYAAADDPmHLAAACRElEQVR4Ae3bwW3FMAxEQRfhAt
                 R/kz/QwcAiLbw5BOGVsHdEKs7zvu+v/HPO+ZV/nvLDv72XH/
@@ -27,13 +27,9 @@ namespace Chisel.Editors
                 0SgAAE2ETUagIQgAC11G+/BIgL8AfYVETeKhvzFQAAAABJRU
                 5ErkJggg==";
 
-        private static string m_BlackTexB64 =
-                @"iVBORw0KGgoAAAANSUhEUgAAAA
-                EAAAABCAYAAAAfFcSJAAAADUlEQVQYGWNgYGD4DwABBAEAqX
-                IB5QAAAABJRU5ErkJggg==";
-
         private static Texture2D m_TemporaryTexture = null;
         private static Texture2D m_BlackTexture     = null;
+        private static Texture2D m_UnityDarkBGTex   = null;
 
         public static Texture2D TemporaryTexture
         {
@@ -41,7 +37,7 @@ namespace Chisel.Editors
             {
                 if( m_TemporaryTexture == null )
                 {
-                    m_TemporaryTexture = new Texture2D( 128, 128, TextureFormat.RGBA32, false, PlayerSettings.colorSpace == ColorSpace.Linear );
+                    m_TemporaryTexture = new Texture2D( 128, 128, TextureFormat.RGBA32, false, true );
 
                     m_TemporaryTexture.LoadImage( Convert.FromBase64String( m_TempTexB64 ) );
 
@@ -58,12 +54,27 @@ namespace Chisel.Editors
             {
                 if( m_BlackTexture == null )
                 {
-                    m_BlackTexture = new Texture2D( 1, 1, TextureFormat.RGBA32, false, PlayerSettings.colorSpace == ColorSpace.Linear );
-                    m_BlackTexture.LoadImage( Convert.FromBase64String( m_BlackTexB64 ) );
+                    m_BlackTexture = new Texture2D( 1, 1, TextureFormat.RGBA32, false, true );
+                    m_BlackTexture.SetPixel( 0, 0, Color.black );
                     m_BlackTexture.Apply();
                 }
 
                 return m_BlackTexture;
+            }
+        }
+
+        public static Texture2D DarkBGTex
+        {
+            get
+            {
+                if( m_UnityDarkBGTex == null )
+                {
+                    m_UnityDarkBGTex = new Texture2D( 1, 1, TextureFormat.RGBA32, false, true );
+                    m_UnityDarkBGTex.SetPixel( 0, 0, new Color32( 50, 50, 50, 220 ) );
+                    m_UnityDarkBGTex.Apply();
+                }
+
+                return m_UnityDarkBGTex;
             }
         }
     }

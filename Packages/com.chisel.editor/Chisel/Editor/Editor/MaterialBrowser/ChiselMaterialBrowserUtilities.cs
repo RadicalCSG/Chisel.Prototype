@@ -100,7 +100,7 @@ namespace Chisel.Editors
             string[] guids = AssetDatabase.FindAssets( $"t:Material {search}" );
 
             // assemble preview tiles
-            foreach( var id in guids )
+            foreach( string id in guids )
             {
                 ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id ); //, ref cache );
 
@@ -121,6 +121,8 @@ namespace Chisel.Editors
                     materials.Add( browserTile );
                 }
             }
+
+            AssetPreview.SetPreviewTextureCacheSize(materials.Count + 1);
 
             //Debug.Log( $"Found {materials.Count} materials with applied filters." );
             //cache.Save();
