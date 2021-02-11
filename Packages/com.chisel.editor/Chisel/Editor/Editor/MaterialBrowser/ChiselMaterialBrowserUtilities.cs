@@ -4,7 +4,6 @@ Chisel.Editors.ChiselMaterialBrowserCache.cs
 License: MIT (https://tldrlegal.com/license/mit-license)
 Author: Daniel Cornelius
 
-$TODO: Do we want to filter by label, too? it would allow user-ignored materials.
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System.Collections.Generic;
@@ -76,7 +75,6 @@ namespace Chisel.Editors
         // and then adds them to the list of materials to be used in this window
         public static void GetMaterials( ref List<ChiselMaterialBrowserTile> materials,
                                          ref List<string>                    labels,
-                                         //ref ChiselMaterialBrowserCache      cache,
                                          bool   usingLabel,
                                          string searchLabel = "",
                                          string searchText  = "" )
@@ -91,8 +89,6 @@ namespace Chisel.Editors
             });
 
             materials.Clear();
-
-            ChiselMaterialThumbnailRenderer.CancelAll();
 
             // exclude the label search tag if we arent searching for a specific label right now
             string search = usingLabel ? $"l:{searchLabel} {searchText}" : $"{searchText}";
@@ -123,9 +119,6 @@ namespace Chisel.Editors
             }
 
             AssetPreview.SetPreviewTextureCacheSize(materials.Count + 1);
-
-            //Debug.Log( $"Found {materials.Count} materials with applied filters." );
-            //cache.Save();
         }
 
         public static Texture2D GetAssetPreviewFromGUID( string guid )
@@ -141,4 +134,4 @@ namespace Chisel.Editors
             return info.Invoke( null, new object[] { guid } ) as Texture2D;
         }
     }
-} //
+}

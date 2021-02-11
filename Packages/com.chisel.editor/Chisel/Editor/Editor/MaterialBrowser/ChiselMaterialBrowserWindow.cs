@@ -31,6 +31,8 @@ namespace Chisel.Editors
         private static bool    showNameLabels            = false;
         private static string  searchText                = string.Empty;
 
+        private readonly GUIContent m_PropsAreaToggleContent = new GUIContent( "", "" );
+
         private readonly GUIContent[] m_PropsTabLabels = new GUIContent[]
         {
                 new GUIContent( "Search\t    " ), new GUIContent( "Current Selection    " ),
@@ -69,18 +71,17 @@ namespace Chisel.Editors
             tileSize       = EditorPrefs.GetInt( PREVIEW_SIZE_PREF_KEY, 64 );
             showNameLabels = EditorPrefs.GetBool( TILE_LABEL_PREF_KEY, false );
 
-            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels /*, ref m_Cache*/, false );
+            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, false );
         }
 
-        public  Material   previewMaterial;
-        public  Editor     previewEditor;
-        private Rect       m_PropsAreaRect          = Rect.zero;
-        private Rect       m_NotifRect              = Rect.zero;
-        private Rect       m_ToolbarRect            = Rect.zero;
-        private Rect       m_LabelScrollViewArea    = Rect.zero;
-        private Vector2    m_LabelScrollPositon     = Vector2.zero;
-        private bool       m_ShowPropsArea          = true;
-        private GUIContent m_PropsAreaToggleContent = new GUIContent( "", "" );
+        public  Material previewMaterial;
+        public  Editor   previewEditor;
+        private Rect     m_PropsAreaRect       = Rect.zero;
+        private Rect     m_NotifRect           = Rect.zero;
+        private Rect     m_ToolbarRect         = Rect.zero;
+        private Rect     m_LabelScrollViewArea = Rect.zero;
+        private Vector2  m_LabelScrollPositon  = Vector2.zero;
+        private bool     m_ShowPropsArea       = true;
 
         private void OnGUI()
         {
@@ -169,7 +170,7 @@ namespace Chisel.Editors
                                             m_PropsAreaRect.y += 26;
                                         if( GUI.Button( m_PropsAreaRect, m_Labels[i] ) )
                                         {
-                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, m_Labels[i], "" );
+                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, m_Labels[i], searchText );
                                             lastSelectedMaterialIndex = 0;
 
                                             previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
@@ -243,9 +244,10 @@ namespace Chisel.Editors
                                                 m_PropsAreaRect.height = 22;
                                                 GUI.Label( m_PropsAreaRect, "Labels", EditorStyles.toolbarButton );
 
-                                                float btnWidth = 60;
-                                                int   idx      = 0;
-                                                foreach( var l in m_Tiles[lastSelectedMaterialIndex].labels )
+                                                const float btnWidth = 60;
+                                                int         idx      = 0;
+
+                                                foreach( string l in m_Tiles[lastSelectedMaterialIndex].labels )
                                                 {
                                                     float xOffset = 2;
                                                     float yOffset = 22;
@@ -257,7 +259,7 @@ namespace Chisel.Editors
                                                         xOffset = ( 40 * i ) + 2;
                                                         if( GUI.Button( new Rect( xOffset, yOffset, btnWidth, 22 ), new GUIContent( l, $"Click to filter for label \"{l}\"" ), assetLabelStyle ) )
                                                         {
-                                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, l, "" );
+                                                            ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_Labels, true, l, searchText );
                                                             lastSelectedMaterialIndex = 0;
 
                                                             previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( 0 ) );
@@ -315,10 +317,11 @@ namespace Chisel.Editors
             }
         }
 
-        public  float      tileScrollViewHeight;
-        private Rect       m_TileContentRect = Rect.zero;
-        private Rect       m_ScrollViewRect  = Rect.zero;
-        private GUIContent m_TileContentText = new GUIContent();
+        public  float tileScrollViewHeight;
+        private Rect  m_TileContentRect = Rect.zero;
+        private Rect  m_ScrollViewRect  = Rect.zero;
+
+        private readonly GUIContent m_TileContentText = new GUIContent();
 
         private void DrawTileArea()
         {
@@ -352,12 +355,11 @@ namespace Chisel.Editors
 
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
             {
-                float xOffset      = 0;
-                float yOffset      = 0;
-                int   row          = 0;
-                int   previewCount = 0;
+                float xOffset = 0;
+                float yOffset = 0;
+                int   row     = 0;
 
-                foreach( var entry in m_Tiles )
+                foreach( ChiselMaterialBrowserTile entry in m_Tiles )
                 {
                     if( idx == m_Tiles.Count ) break;
 
@@ -375,14 +377,12 @@ namespace Chisel.Editors
 
                         if( m_Tiles[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height ) )
                         {
-                            previewCount++;
                             m_Tiles[idx].RenderPreview();
                             m_TileContentText.image   = m_Tiles[idx].Preview;
                             m_TileContentText.tooltip = $"{m_Tiles[idx].materialName}\n\nClick to apply to the currently selected surface.";
 
                             SetButtonStyleBG( in idx );
 
-                            //Debug.Log( $"IsInView for element {idx} is true, show thumbnail for material {m_Tiles[idx].materialName}" );
                             if( GUI.Button( m_TileContentRect, m_TileContentText, tileButtonStyle ) )
                             {
                                 previewMaterial = GetPreviewMaterial( idx );
@@ -406,7 +406,6 @@ namespace Chisel.Editors
                                 GUI.Label( m_TileContentRect, m_Tiles[idx].materialName, tileLabelStyle );
                             }
                         }
-                        //else Debug.Log( $"IsInView for element {idx} is false, not drawing." );
 
                         idx++;
                     }
@@ -469,8 +468,6 @@ namespace Chisel.Editors
 
                 foreach( SurfaceReference surf in selected ) { surf.BrushMaterial.RenderMaterial = material; }
             }
-
-            //else Debug.Log( "No surface selected, please select a surface before applying a material." );
         }
     }
 }

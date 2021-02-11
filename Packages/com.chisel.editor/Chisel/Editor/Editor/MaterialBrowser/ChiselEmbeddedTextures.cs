@@ -69,7 +69,7 @@ namespace Chisel.Editors
         {
             get
             {
-                //if( m_UnityDarkBGTex == null )
+                if( m_UnityDarkBGTex == null )
                 {
                     m_UnityDarkBGTex = new Texture2D( 1, 1, TextureFormat.RGBA32, false, IsGamma );
                     m_UnityDarkBGTex.SetPixel( 0, 0, new Color32( 40, 40, 40, 220 ) );

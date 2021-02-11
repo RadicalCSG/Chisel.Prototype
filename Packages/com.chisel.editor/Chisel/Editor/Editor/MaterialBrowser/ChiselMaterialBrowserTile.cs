@@ -7,11 +7,8 @@ Author: Daniel Cornelius
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;
-using System.Text;
 using UnityEditor;
-using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using Object = System.Object;
 
 namespace Chisel.Editors
 {
@@ -26,7 +23,6 @@ namespace Chisel.Editors
 
         public  Texture2D Preview => m_Preview;
         private Texture2D m_Preview;
-        private bool m_Rendering;
 
         /// <inheritdoc />
         public void Dispose()
@@ -43,21 +39,12 @@ namespace Chisel.Editors
 
         public void RenderPreview()
         {
-            if ((m_Preview && m_Preview != AssetPreview.GetMiniTypeThumbnail(typeof(Material)))
+            if( ( m_Preview && m_Preview != AssetPreview.GetMiniTypeThumbnail( typeof( Material ) ) )
                 || AssetPreview.IsLoadingAssetPreview( id )
-                || materialName.Contains("Font Material")
-                || !ChiselMaterialBrowserUtilities.IsValidEntry(this))
-            {
-                return;
-            }
-            m_Rendering = true;
+                || materialName.Contains( "Font Material" )
+                || !ChiselMaterialBrowserUtilities.IsValidEntry( this ) ) { return; }
 
-            m_Preview=ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid );
-
-            /*ChiselMaterialThumbnailRenderer.Add(materialName,
-                () => m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID(guid),
-                () => !AssetPreview.IsLoadingAssetPreview(id),
-                () => m_Rendering = false);*/
+            m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid );
         }
 
         public ChiselMaterialBrowserTile( string instID )
@@ -66,13 +53,13 @@ namespace Chisel.Editors
 
             Material m = AssetDatabase.LoadAssetAtPath<Material>( path );
 
-            id = m.GetInstanceID();
+            id           = m.GetInstanceID();
             guid         = instID;
             labels       = AssetDatabase.GetLabels( m );
             shaderName   = m.shader.name;
             materialName = m.name;
 
-            RenderPreview();//m = null;
+            RenderPreview();
         }
     }
 }

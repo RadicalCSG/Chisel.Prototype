@@ -28,44 +28,17 @@ namespace Chisel.Editors
 
         private bool IsDarkSkin => EditorGUIUtility.isProSkin;
 
+        private string ApplyLastMaterialShortcut => ShortcutManager.instance.GetShortcutBinding( "Chisel/Material Browser/Apply Last Selected Material" ).ToString();
+
         private void RebuildStyles()
         {
-            if( m_TileButtonBGTexHover == null )
-            {
-                m_TileButtonBGTexHover = new Texture2D( 32, 32, TextureFormat.RGBA32, false, false );
-
-                for( int i = 0; i < 32; i++ )
-                {
-                    for( int j = 0; j < 32; j++ ) {
-                        Color32 color = IsDarkSkin ? new Color32( 90, 130, 115, 255 ) : new Color32( 20, 140, 180, 255 );
-
-                        m_TileButtonBGTexHover.SetPixel( i, j, color ); }
-                }
-
-                m_TileButtonBGTexHover.Apply();
-            }
-
-            if( m_TileButtonBGTex == null )
-            {
-                m_TileButtonBGTex = new Texture2D( 32, 32, TextureFormat.RGBA32, false, false );
-
-                for( int i = 0; i < 32; i++ )
-                {
-                    for( int j = 0; j < 32; j++ )
-                    {
-                        Color32 color = IsDarkSkin ? new Color32( 32, 32, 32, 255 ) : new Color32( 180, 180, 180, 255 );
-
-                        m_TileButtonBGTex.SetPixel( i, j, color );
-                    }
-                }
-
-                m_TileButtonBGTex.Apply();
-            }
+            m_TileButtonBGTexHover ??= ChiselEmbeddedTextures.GetColoredTexture( IsDarkSkin ? new Color32( 90, 130, 115, 255 ) : new Color32( 20,  140, 180, 255 ) );
+            m_TileButtonBGTex      ??= ChiselEmbeddedTextures.GetColoredTexture( IsDarkSkin ? new Color32( 32, 32,  32,  255 ) : new Color32( 180, 180, 180, 255 ) );
 
             applyToSelectedFaceLabelContent ??= new GUIContent
             (
                     "Apply to Selected Face",
-                    $"Apply the currently selected material to the face selected in the scene view. Shortcut: {ShortcutManager.instance.GetShortcutBinding( "Chisel/Material Browser/Apply Last Selected Material" )}"
+                    $"Apply the currently selected material to the face selected in the scene view. Shortcut: {ApplyLastMaterialShortcut}"
             );
 
             assetLabelStyle ??= new GUIStyle( "assetlabel" ) { alignment = TextAnchor.UpperCenter };
@@ -86,7 +59,6 @@ namespace Chisel.Editors
 
             tileLabelStyle ??= new GUIStyle()
             {
-                    //font      = ChiselEmbeddedFonts.Consolas,
                     fontSize  = 10,
                     fontStyle = FontStyle.Normal,
                     alignment = TextAnchor.MiddleLeft,
@@ -99,12 +71,10 @@ namespace Chisel.Editors
                     margin        = new RectOffset( 2, 2, 2, 2 ),
                     padding       = new RectOffset( 2, 2, 2, 2 ),
                     contentOffset = new Vector2( 1, 0 ),
-                    //border  = new RectOffset( 1, 0, 1, 1 ),
                     normal        = { background = m_TileButtonBGTex },
                     hover         = { background = m_TileButtonBGTexHover },
                     active        = { background = Texture2D.redTexture },
                     imagePosition = ImagePosition.ImageOnly
-                    //onNormal = { background = Texture2D.grayTexture }
             };
 
             if( mouseOverWindow == this )
