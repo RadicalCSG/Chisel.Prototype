@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
+    // color space adjusted texture utilities
     internal static class ChiselEmbeddedTextures
     {
         private static Texture2D m_BlackTexture     = null;

@@ -193,9 +193,11 @@ namespace Chisel.Editors
                 }
         }
 
+        private static MethodInfo m_GetAssetPreviewMethod;
+
         public static Texture2D GetAssetPreviewFromGUID( string guid )
         {
-            MethodInfo info = typeof( AssetPreview ).GetMethod(
+            m_GetAssetPreviewMethod ??= typeof( AssetPreview ).GetMethod(
                     "GetAssetPreviewFromGUID",
                     BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.InvokeMethod,
                     null,
@@ -203,7 +205,7 @@ namespace Chisel.Editors
                     null
             );
 
-            return info.Invoke( null, new object[] { guid } ) as Texture2D;
+            return m_GetAssetPreviewMethod.Invoke( null, new object[] { guid } ) as Texture2D;
         }
     }
 }

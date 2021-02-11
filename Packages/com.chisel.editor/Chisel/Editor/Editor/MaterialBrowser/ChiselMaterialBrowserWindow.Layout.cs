@@ -30,8 +30,24 @@ namespace Chisel.Editors
 
         private string ApplyLastMaterialShortcut => ShortcutManager.instance.GetShortcutBinding( "Chisel/Material Browser/Apply Last Selected Material" ).ToString();
 
+        private void ResetStyles()
+        {
+            tileButtonStyle                 = null;
+            assetLabelStyle                 = null;
+            toolbarStyle                    = null;
+            propsSectionBG                  = null;
+            tileLabelStyle                  = null;
+            tileLabelBGStyle                = null;
+            m_TileButtonBGTexHover          = null;
+            m_TileButtonBGTex               = null;
+            applyToSelectedFaceLabelContent = null;
+
+            RebuildStyles();
+        }
+
         private void RebuildStyles()
         {
+            // highlight colors for dark/light themes
             m_TileButtonBGTexHover ??= ChiselEmbeddedTextures.GetColoredTexture( IsDarkSkin ? new Color32( 90, 130, 115, 255 ) : new Color32( 20,  140, 180, 255 ) );
             m_TileButtonBGTex      ??= ChiselEmbeddedTextures.GetColoredTexture( IsDarkSkin ? new Color32( 32, 32,  32,  255 ) : new Color32( 180, 180, 180, 255 ) );
 
@@ -45,6 +61,7 @@ namespace Chisel.Editors
             toolbarStyle    ??= new GUIStyle( "dragtab" ) { fixedHeight  = 0, fixedWidth = 0 };
             propsSectionBG  ??= new GUIStyle( "flow background" );
 
+            // background styling for tiles, adjusted for dark/light themes
             tileLabelBGStyle ??= new GUIStyle( "box" )
             {
                     normal =
@@ -77,10 +94,12 @@ namespace Chisel.Editors
                     imagePosition = ImagePosition.ImageOnly
             };
 
+            // refresh UI when mouse is over window. this ensures that hover hilighting is updated properly, and the interactive preview is drawn correctly.
             if( mouseOverWindow == this )
                 Repaint();
         }
 
+        // used to switch between hover/unhovered backgrounds
         private void SetButtonStyleBG( in int index )
         {
             if( tileButtonStyle != null )

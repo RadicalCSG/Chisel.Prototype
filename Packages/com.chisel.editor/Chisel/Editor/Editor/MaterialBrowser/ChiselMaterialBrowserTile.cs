@@ -39,6 +39,7 @@ namespace Chisel.Editors
 
         public void RenderPreview()
         {
+            // dont include specific materials
             if( ( m_Preview && m_Preview != AssetPreview.GetMiniTypeThumbnail( typeof( Material ) ) )
                 || AssetPreview.IsLoadingAssetPreview( id )
                 || materialName.Contains( "Font Material" )

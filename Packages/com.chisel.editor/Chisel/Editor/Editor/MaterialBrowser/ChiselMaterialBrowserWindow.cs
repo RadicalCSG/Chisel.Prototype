@@ -104,6 +104,7 @@ namespace Chisel.Editors
             if( previewMaterial == null )
                 previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex );
 
+            // notification layout
             m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
             m_NotifRect.y      = ( position.height * 0.5f ) - 60;
             m_NotifRect.width  = 400;
@@ -113,28 +114,36 @@ namespace Chisel.Editors
 
             if( EditorApplication.isPlaying || EditorApplication.isPaused ) GUI.Box( m_NotifRect, "Exit Playmode to Edit Materials", "NotificationBackground" );
 
+            // toolbar and side bar
             if( !EditorApplication.isCompiling && !EditorApplication.isPlaying )
             {
+                // toolbars
                 m_ToolbarRect.x      = 0;
                 m_ToolbarRect.y      = 2;
                 m_ToolbarRect.width  = position.width;
                 m_ToolbarRect.height = 24;
 
+                // top
                 GUI.Label( m_ToolbarRect, "", toolbarStyle );
 
+                // 2nd top
                 m_ToolbarRect.y += 25;
                 GUI.Label( m_ToolbarRect, "", toolbarStyle );
 
+                // refresh button
                 m_ToolbarRect.y     = 2;
                 m_ToolbarRect.width = 60;
                 if( GUI.Button( m_ToolbarRect, "Refresh", EditorStyles.toolbarButton ) )
                 {
                     ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false );
                     previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex = 0 ) );
+
+                    ResetStyles();
                 }
 
-                m_ToolbarRect.x      =  6;
-                m_ToolbarRect.y      += 28;
+                // search field
+                m_ToolbarRect.x      =  position.width < 600 ? 66 : 6;
+                m_ToolbarRect.y      += position.width < 600 ? 0 : 28;
                 m_ToolbarRect.width  =  200;
                 m_ToolbarRect.height =  22;
 
@@ -142,8 +151,9 @@ namespace Chisel.Editors
                 searchText = EditorGUI.DelayedTextField( m_ToolbarRect, string.Empty, searchText, EditorStyles.toolbarSearchField );
                 if( EditorGUI.EndChangeCheck() ) { ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText ); }
 
-
-                m_ToolbarRect.x      = position.width - ( m_ShowPropsArea ? 372 : 0 );
+                // all/used material filter
+                m_ToolbarRect.x      = position.width  - ( m_ShowPropsArea ? 372 : 135 );
+                m_ToolbarRect.y      = m_ToolbarRect.y + ( position.width < 600 ? 28 : 0 );
                 m_ToolbarRect.width  = 100;
                 m_ToolbarRect.height = 22;
 
@@ -157,25 +167,29 @@ namespace Chisel.Editors
                 }
 
                 m_ToolbarRect.width = 40;
-                m_ToolbarRect.x     = position.width - ( m_ShowPropsArea ? 412 : 0 );
+                m_ToolbarRect.x     = position.width - ( m_ShowPropsArea ? 412 : 175 );
                 GUI.Label( m_ToolbarRect, "Show:", EditorStyles.toolbarButton );
 
                 if( m_Tiles.Count > 0 )
                 {
                     if( m_ShowPropsArea )
                     {
+                        // tab group area
                         m_ToolbarRect.x      = position.width - 262;
                         m_ToolbarRect.y      = 26;
                         m_ToolbarRect.width  = 262;
                         m_ToolbarRect.height = 24;
 
                         GUI.Box( m_ToolbarRect, "", "dockHeader" );
+
+                        // tabs
                         m_ToolbarRect.y   += 2;
                         m_ToolbarRect.x   += 4;
                         m_CurrentPropsTab =  GUI.Toolbar( m_ToolbarRect, m_CurrentPropsTab, m_PropsTabLabels, EditorStyles.toolbarButton, GUI.ToolbarButtonSize.FitToContents );
 
                         switch( m_CurrentPropsTab )
                         {
+                            // label search property page
                             case 0:
                             {
                                 m_PropsAreaRect.x      = position.width - 256;
@@ -199,6 +213,8 @@ namespace Chisel.Editors
 
                                         if( i > 0 )
                                             m_PropsAreaRect.y += 26;
+
+                                        // label button, filters search to the specified label when clicked
                                         if( GUI.Button( m_PropsAreaRect, m_Labels[i] ) )
                                         {
                                             ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, true, m_Labels[i], searchText );
@@ -212,8 +228,11 @@ namespace Chisel.Editors
 
                                 break;
                             }
+
+                            // material property page
                             case 1:
                             {
+                                // material property page group
                                 m_PropsAreaRect.x      = position.width - 260;
                                 m_PropsAreaRect.y      = 50;
                                 m_PropsAreaRect.width  = 260;
@@ -221,11 +240,13 @@ namespace Chisel.Editors
 
                                 GUI.BeginGroup( m_PropsAreaRect, propsSectionBG );
                                 {
+                                    // header label
                                     m_PropsAreaRect.x      = 0;
                                     m_PropsAreaRect.y      = 0;
                                     m_PropsAreaRect.height = 22;
                                     GUI.Label( m_PropsAreaRect, $"{m_Tiles[lastSelectedMaterialIndex].materialName}", EditorStyles.toolbarButton );
 
+                                    // interactive preview
                                     m_PropsAreaRect.x      = 2;
                                     m_PropsAreaRect.y      = 22;
                                     m_PropsAreaRect.width  = 256;
@@ -238,6 +259,7 @@ namespace Chisel.Editors
                                         previewEditor.Repaint();
                                     }
 
+                                    // buttons, hidden when the window is too small
                                     if( position.height > 520 )
                                     {
                                         m_PropsAreaRect.y      = 278;
@@ -272,16 +294,19 @@ namespace Chisel.Editors
                                         }
                                         GUI.EndGroup();
 
+                                        // labels on the selected material
                                         if( position.height >= 400 )
                                         {
                                             m_PropsAreaRect.x      = 2;
                                             m_PropsAreaRect.y      = 379;
                                             m_PropsAreaRect.height = 200;
+
                                             GUI.BeginGroup( m_PropsAreaRect );
                                             {
                                                 m_PropsAreaRect.x      = 0;
                                                 m_PropsAreaRect.y      = 0;
                                                 m_PropsAreaRect.height = 22;
+
                                                 GUI.Label( m_PropsAreaRect, "Labels", EditorStyles.toolbarButton );
 
                                                 const float btnWidth = 60;
@@ -320,10 +345,10 @@ namespace Chisel.Editors
 
                                 break;
                             }
-                            default: break;
                         }
                     }
 
+                    // side bar toggle, hides/shows the entire side bar when toggled
                     m_ToolbarRect.width  = 22;
                     m_ToolbarRect.height = 24;
                     m_ToolbarRect.x      = position.width - 24;
@@ -345,6 +370,7 @@ namespace Chisel.Editors
 
                     DrawTileArea( (ChiselMaterialBrowserTab) m_CurrentTilesTab );
                 }
+                // search has no results, show notification to convey this
                 else
                 {
                     m_NotifRect.x      = ( position.width  * 0.5f ) - 200;
@@ -368,6 +394,7 @@ namespace Chisel.Editors
             int idx        = 0;
             int numColumns = (int) ( ( position.width - ( ( m_ShowPropsArea ) ? ( 264 + 10 ) : 0 ) ) / tileSize );
 
+            // adjust scroll and content areas based on if the side bar is visible
             if( m_ShowPropsArea )
             {
                 m_ScrollViewRect.x      = 0;
@@ -393,12 +420,14 @@ namespace Chisel.Editors
                 m_TileContentRect.height = tileScrollViewHeight;
             }
 
+            // tile scroll area
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
             {
                 float xOffset = 0;
                 float yOffset = 0;
                 int   row     = 0;
 
+                // show content for used/all tiles
                 List<ChiselMaterialBrowserTile> current = selectedTab > 0 ? m_UsedTiles : m_Tiles;
 
                 foreach( ChiselMaterialBrowserTile entry in current )
@@ -425,6 +454,7 @@ namespace Chisel.Editors
 
                             SetButtonStyleBG( in idx );
 
+                            // tile
                             if( GUI.Button( m_TileContentRect, m_TileContentText, tileButtonStyle ) )
                             {
                                 previewMaterial = GetPreviewMaterial( idx );
@@ -435,6 +465,7 @@ namespace Chisel.Editors
                                 ApplySelectedMaterial();
                             }
 
+                            // tile label
                             if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels && lastSelectedMaterialIndex != idx )
                             {
                                 m_TileContentRect.height = 22;
@@ -461,6 +492,7 @@ namespace Chisel.Editors
             }
             GUI.EndScrollView();
 
+            // bottom info bar
             m_TileContentRect.x      = 0;
             m_TileContentRect.y      = position.height - 20;
             m_TileContentRect.width  = position.width;
