@@ -72,6 +72,37 @@ namespace Chisel.Editors
             return val;
         }
 
+        public static void GetSurfacePresets( ref List<ChiselSurfacePresetBrowserTile> tiles,
+                                              ref List<string>                         labels,
+                                              bool                                     usingLabel,
+                                              string                                   searchLabel = "",
+                                              string                                   searchText  = "" )
+        {
+            if( usingLabel && searchLabel == string.Empty )
+                Debug.LogError( $"usingLabel set to true, but no search term was given. This may give undesired results." );
+
+            tiles.Clear();
+
+            string search = usingLabel ? $"l{searchLabel} {searchText}" : $"{searchText}";
+
+            string[] guids = AssetDatabase.FindAssets( $"t:{typeof( ChiselSurfacePresetAsset ).FullName} {search}" );
+
+            foreach( string id in guids )
+            {
+                ChiselSurfacePresetBrowserTile tile = new ChiselSurfacePresetBrowserTile( id );
+
+                if( labels != null )
+                {
+                    foreach( string label in tile.labels )
+                    {
+                        if(!labels.Contains( label ))
+                            labels.Add( label );
+                    }
+                }
+
+                tiles.Add( tile );
+            }
+        }
 
         // gets all materials and the labels on them in the project, compares them against a filter,
         // and then adds them to the list of materials to be used in this window
@@ -102,7 +133,7 @@ namespace Chisel.Editors
             // assemble preview tiles
             foreach( string id in guids )
             {
-                ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id ); //, ref cache );
+                ChiselMaterialBrowserTile browserTile = new ChiselMaterialBrowserTile( id );
 
                 if( labels != null )
                 {

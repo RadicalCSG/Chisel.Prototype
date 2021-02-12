@@ -11,7 +11,8 @@ namespace Chisel.Editors
 {
     public enum ChiselMaterialBrowserTab
     {
-        All  = 0,
-        Used = 1,
+        All      = 0,
+        Used     = 1,
+        Surfaces = 2,
     }
 }
