@@ -42,6 +42,13 @@ namespace Chisel.Editors
                 new GUIContent( "Labels\t    " ), new GUIContent( "Current Selection    " ),
         };
 
+        // event that gets triggered by ChiselMaterialBrowserHooks on project change.
+        private void Reload()
+        {
+            OnDisable();
+            OnEnable();
+        }
+
         [MenuItem( "Window/Chisel/Material Browser" )]
         private static void Init()
         {
@@ -80,6 +87,9 @@ namespace Chisel.Editors
 
         private void OnEnable()
         {
+            EditorApplication.projectChanged -= Reload;
+            EditorApplication.projectChanged += Reload;
+
             tileSize          = EditorPrefs.GetInt( PREVIEW_SIZE_PREF_KEY, 64 );
             showNameLabels    = EditorPrefs.GetBool( TILE_LABEL_PREF_KEY, false );
             m_CurrentTilesTab = (ChiselMaterialBrowserTab) EditorPrefs.GetInt( TILE_LAST_TAB_OPT_KEY, 0 );
