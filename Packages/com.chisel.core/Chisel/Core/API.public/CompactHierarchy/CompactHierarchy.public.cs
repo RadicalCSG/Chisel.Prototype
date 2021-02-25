@@ -10,27 +10,29 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core
+namespace Chisel.Core.New
 {
 
     [BurstCompatible]
     public readonly struct CompactNodeID
     {
-        public static readonly CompactNodeID Invalid = new CompactNodeID(id: -1);
+        public static readonly CompactNodeID Invalid = new CompactNodeID(hierarchyID: CompactHierarchyID.Invalid, id: -1);
 
-        // TODO: have an unique id to identify the hierarchy, to be able to detect accidentally adding to the wrong hierarchy
         public readonly Int32 ID;
         public readonly Int32 generation;
-        internal CompactNodeID(Int32 id, Int32 generation = 0) { this.ID = id; this.generation = generation; }
+
+        public readonly CompactHierarchyID hierarchyID;
+
+        internal CompactNodeID(CompactHierarchyID hierarchyID, Int32 id, Int32 generation = 0) { this.hierarchyID = hierarchyID; this.ID = id; this.generation = generation; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override string ToString() { return $"NodeID = {ID}, Generation = {generation}"; }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(CompactNodeID left, CompactNodeID right) { return left.ID == right.ID && left.generation == right.generation; }
+        public static bool operator ==(CompactNodeID left, CompactNodeID right) { return left.ID == right.ID && left.generation == right.generation && left.hierarchyID == right.hierarchyID; }
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(CompactNodeID left, CompactNodeID right) { return left.ID != right.ID || left.generation != right.generation; }
+        public static bool operator !=(CompactNodeID left, CompactNodeID right) { return left.ID != right.ID || left.generation != right.generation || left.hierarchyID != right.hierarchyID; }
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
         public override bool Equals(object obj)
         {
@@ -81,13 +83,26 @@ namespace Chisel.Core
     public partial struct CompactHierarchy : IDisposable
     {
         #region CreateHierarchy
-        public static CompactHierarchy CreateHierarchy(Allocator allocator, Int32 userID = 0)
+        public static CompactHierarchy CreateHierarchy(Int32 userID, Allocator allocator)
         {
+            return CreateHierarchy(CompactHierarchyID.Invalid, userID, allocator);
+        }
+
+        public static CompactHierarchy CreateHierarchy(Allocator allocator)
+        {
+            return CreateHierarchy(CompactHierarchyID.Invalid, 0, allocator);
+        }
+
+        internal static CompactHierarchy CreateHierarchy(CompactHierarchyID hierarchyID, Int32 userID, Allocator allocator)
+        {
+            var rootID = new CompactNodeID(hierarchyID: hierarchyID, id: 0);
             var compactHierarchy = new CompactHierarchy
             {
-                compactNodes   = new NativeList<CompactChildNode>(allocator),
-                idToIndex      = new NativeList<Generation>(allocator),
-                freeIDs        = new NativeList<int>(allocator)
+                compactNodes    = new NativeList<CompactChildNode>(allocator),
+                idToIndex       = new NativeList<Generation>(allocator),
+                freeIDs         = new NativeList<int>(allocator),
+                hierarchyID     = hierarchyID,
+                RootID          = rootID,
             };
             compactHierarchy.compactNodes.Add(new CompactChildNode
             {
@@ -98,7 +113,7 @@ namespace Chisel.Core
                     transformation  = float4x4.identity,
                     brushMeshID     = 0
                 },
-                nodeID          = RootID,           
+                nodeID          = rootID,
                 parentID        = CompactNodeID.Invalid,
                 childOffset     = 0,
                 childCount      = 0
@@ -124,7 +139,7 @@ namespace Chisel.Core
                     operation       = operation,
                     transformation  = transformation,
                 
-                    brushMeshID     = 0
+                    brushMeshID     = Int32.MaxValue
                 },
                 nodeID          = nodeID,
                 parentID        = CompactNodeID.Invalid,
@@ -161,8 +176,6 @@ namespace Chisel.Core
             return nodeID;
         }
         #endregion
-
-        public static readonly CompactNodeID RootID       = new CompactNodeID(id: 0);
 
         public int Count
         {
@@ -256,6 +269,9 @@ namespace Chisel.Core
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNode GetChildAt(CompactNodeID nodeID, int index) { return SafeGetChildRefAtInternal(nodeID, index); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CompactNodeID GetChildIDAt(CompactNodeID nodeID, int index) { return GetChildIDAtInternal(nodeID, index); }
 
         public bool Compact()
         {
@@ -372,6 +388,15 @@ namespace Chisel.Core
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
             return DetachRangeInternal(parentIndex, index, range);
+        }
+
+        public bool DetachAllChildrenFromParent(CompactNodeID parentID)
+        {
+            Debug.Assert(IsCreated);
+            var parentIndex = HierarchyIndexOfInternal(parentID);
+            if (parentIndex < 0)
+                throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
+            return DetachAllInternal(parentIndex);
         }
 
         public void AttachToParent(CompactNodeID parentID, CompactNodeID nodeID)

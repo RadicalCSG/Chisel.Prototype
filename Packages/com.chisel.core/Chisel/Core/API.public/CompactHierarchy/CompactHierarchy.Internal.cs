@@ -10,10 +10,10 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core
+namespace Chisel.Core.New
 {
-    // TODO: Make it possible to modify/set the root
     // TODO: we need to store/manage complete hierarchies somewhere
+    // TODO: Make it possible to modify/set the root
 
     // TODO: create structs around CompactHierarchy to abstract internal mechanisms
     // TODO: also need a way to store unique brushMeshes (use hashes to combine duplicates?)
@@ -31,10 +31,13 @@ namespace Chisel.Core
     // TODO: need way to be able to serialize hierarchy (so we can cache them w/ generators)
 
 
-    [BurstCompatible]
-    [DebuggerDisplay("NodeCount = {Count}")]
     public partial struct CompactHierarchy : IDisposable
     {
+        CompactHierarchyID hierarchyID;
+
+        // TODO: make this more controlled
+        public CompactNodeID RootID;
+
         [BurstCompatible]
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]
         struct Generation
@@ -52,6 +55,8 @@ namespace Chisel.Core
 
         public void Dispose()
         {
+            CompactHierarchyManager.FreeID(hierarchyID);
+            hierarchyID = CompactHierarchyID.Invalid;
             if (compactNodes.IsCreated) compactNodes.Dispose(); compactNodes = default;
             if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
             if (freeIDs.IsCreated) freeIDs.Dispose(); freeIDs = default;
@@ -70,17 +75,18 @@ namespace Chisel.Core
             int lastNodeID;
             if (freeIDs.Length > 0)
             {
-                var freeIndex = freeIDs.Length - 1;
-                lastNodeID = freeIDs[freeIndex];
-                freeIDs.RemoveAt(freeIndex);
-                var prevGeneration = idToIndex[lastNodeID].generation;
-                idToIndex[lastNodeID] = new Generation { index = index, generation = prevGeneration + 1 };
+                var freeID = freeIDs.Length - 1;
+                lastNodeID = freeIDs[freeID];
+                freeIDs.RemoveAt(freeID);
+                var generation = idToIndex[lastNodeID].generation + 1;
+                idToIndex[lastNodeID] = new Generation { index = index, generation = generation };
+                return new CompactNodeID(hierarchyID: hierarchyID, id: lastNodeID, generation: generation);
             } else
             {
                 lastNodeID = idToIndex.Length;
                 idToIndex.Add(new Generation { index = index, generation = 0 });
+                return new CompactNodeID(hierarchyID: hierarchyID, id: lastNodeID, generation: 0);
             }
-            return new CompactNodeID(id: lastNodeID);
         }
 
         void RemoveIDs(int index, uint range)
@@ -258,6 +264,25 @@ namespace Chisel.Core
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe CompactNodeID GetChildIDAtInternal(CompactNodeID parentD, int index)
+        {
+            Debug.Assert(IsCreated);
+            var parentIndex         = SafeHierarchyIndexOfInternal(parentD);
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildOffset   = parentHierarchy.childOffset;
+            var parentChildCount    = parentHierarchy.childCount;
+
+            if (index < 0 || index >= parentChildCount) throw new ArgumentOutOfRangeException(nameof(index));
+
+            var nodeIndex = parentChildOffset + index;
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length) throw new ArgumentOutOfRangeException(nameof(nodeIndex));
+
+            var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+            return compactNodesPtr[nodeIndex].nodeID;
+        }
+
+        // WARNING: The returned reference will become invalid after modifying the hierarchy!
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID parentD, int index)
         {
             Debug.Assert(IsCreated);
@@ -416,6 +441,14 @@ namespace Chisel.Core
             throw new NotImplementedException();
         }
 
+        unsafe bool DetachAllInternal(int parentIndex)
+        {
+            Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildCount    = parentHierarchy.childCount;
+            return DetachRangeInternal(parentIndex, 0, (uint)parentChildCount);
+        }
+            
         unsafe bool DetachRangeInternal(int parentIndex, int siblingIndex, uint range)
         {
             if (range == 0)
