@@ -115,6 +115,12 @@ namespace Chisel.Core
     [Serializable, StructLayout(LayoutKind.Sequential)]
     public unsafe struct SurfaceLayers
     {
+        public static readonly SurfaceLayers Empty = new SurfaceLayers
+        {
+            layerUsage = LayerUsageFlags.None,
+            layerParameters = int3.zero
+        };
+
         /// <value>Describe to what layers this surface belongs.</value>
         /// <remarks>Can be used to define if the surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</remarks>
         public LayerUsageFlags	layerUsage;

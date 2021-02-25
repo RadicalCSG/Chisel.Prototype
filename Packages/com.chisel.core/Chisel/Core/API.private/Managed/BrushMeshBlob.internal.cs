@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -82,8 +82,8 @@ namespace Chisel.Core
                 ref var dstPolygon = ref polygonArray[p];
                 dstPolygon.firstEdge        = srcPolygon.firstEdge;
                 dstPolygon.edgeCount        = srcPolygon.edgeCount;
-                dstPolygon.layerDefinition  = srcPolygon.surface.brushMaterial.LayerDefinition;
-                dstPolygon.UV0              = srcPolygon.surface.surfaceDescription.UV0;
+                dstPolygon.layerDefinition  = srcPolygon.surface?.brushMaterial?.LayerDefinition ?? SurfaceLayers.Empty;
+                dstPolygon.UV0              = srcPolygon.surface?.surfaceDescription.UV0 ?? UVMatrix.identity;
             }
 
             builder.Construct(ref root.localPlanes, brushMesh.planes);

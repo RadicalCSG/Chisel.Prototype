@@ -17,11 +17,11 @@ namespace Chisel.Core
             allTrees = default(JobHandle);
             bool needUpdate = false;
             // Check if we have a tree that needs updates
-            for (int t = 0; t < trees.Count; t++)
+            for (int t = 0; t < CSGManager.trees.Count; t++)
             {
-                var treeNodeID = trees[t];
+                var treeNodeID = CSGManager.trees[t];
                 var treeNodeIndex = treeNodeID - 1;
-                if (nodeFlags[treeNodeIndex].IsNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate))
+                if (CSGManager.nodeFlags[treeNodeIndex].IsNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
                     needUpdate = true;
                     break;
@@ -31,10 +31,10 @@ namespace Chisel.Core
             if (!needUpdate)
                 return false;
 
-            UpdateDelayedHierarchyModifications();
+            CSGManager.UpdateDelayedHierarchyModifications();
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, trees);
+            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, CSGManager.trees);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
@@ -299,7 +299,7 @@ namespace Chisel.Core
                                 int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                                 var otherBrushID    = otherBrushIndex + 1;
 
-                                if (!IsValidNodeID(otherBrushID))
+                                if (!CSGManager.IsValidNodeID(otherBrushID))
                                     continue;
 
                                 // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
@@ -498,7 +498,7 @@ namespace Chisel.Core
                             int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                             var otherBrushID    = otherBrushIndex + 1;
 
-                            if (!IsValidNodeID(otherBrushID))
+                            if (!CSGManager.IsValidNodeID(otherBrushID))
                                 continue;
 
                             // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
@@ -582,7 +582,7 @@ namespace Chisel.Core
                     int nodeID      = allTreeBrushes[nodeOrder];
                     int nodeIndex   = nodeID - 1;
                     int brushMeshID = 0;
-                    if (!IsValidNodeID(nodeID) ||
+                    if (!CSGManager.IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
                         (brushMeshID = CSGManager.brushInfos[nodeIndex].brushMeshInstanceID) == 0)
                     {

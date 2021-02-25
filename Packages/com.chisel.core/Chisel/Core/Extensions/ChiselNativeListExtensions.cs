@@ -233,6 +233,26 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        public static void InsertAt<T>(this NativeList<T> list, int index, T item) where T : unmanaged
+        {
+            if (index < 0 || index > list.Length)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index == list.Length)
+            {
+                list.Add(item);
+                return;
+            }
+
+            var listPtr = (T*)list.GetUnsafePtr();
+            int size = sizeof(T);
+            list.Resize(list.Length + 1, NativeArrayOptions.ClearMemory);
+            UnsafeUtility.MemMove(listPtr + index + 1, listPtr + index, (list.Length - index) * size);
+            listPtr[index] = item;
+        }
+
         public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)
