@@ -113,6 +113,7 @@ namespace Chisel.Core
 
         public CompactNodeID CreateBranch(float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0)
         {
+            Debug.Assert(IsCreated);
             var nodeID = CreateID(compactNodes.Length);
             compactNodes.Add(new CompactChildNode
             {
@@ -139,6 +140,7 @@ namespace Chisel.Core
         
         public CompactNodeID CreateBrush(Int32 brushMeshID, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0)
         {
+            Debug.Assert(IsCreated);
             var nodeID = CreateID(compactNodes.Length);
             compactNodes.Add(new CompactChildNode
             {

@@ -362,7 +362,70 @@ namespace FoundationTests
 
                 // check if children are still attached
                 Assert.AreEqual((branch0_ID, branch0_ID),
-                                (compactHierarchy.ParentOf(branch0_brush0_ID), compactHierarchy.ParentOf(branch0_brush1_ID)));
+                                (compactHierarchy.ParentOf(branch0_brush0_ID), 
+                                 compactHierarchy.ParentOf(branch0_brush1_ID)));
+            }
+        }
+
+        [Test]
+        public void HierarchyWithNodesInBranches_DeleteChild_ChildIDIsNotValid()
+        {
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            {
+                Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
+                Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
+                Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
+                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+
+                compactHierarchy.Delete(branch0_ID);
+                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(1));
+
+                Assert.AreEqual((false, true, true), 
+                                (compactHierarchy.IsValidNodeID(branch0_ID),
+                                 compactHierarchy.IsValidNodeID(branch0_brush0_ID),
+                                 compactHierarchy.IsValidNodeID(branch0_brush1_ID)));
+            }
+        }
+
+        [Test]
+        public void HierarchyWithNodesInBranches_DeleteChildRecursive_ChildIDIsNotValid()
+        {
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            {
+                Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
+                Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
+                Add2Brushes(in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
+                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+
+                compactHierarchy.DeleteRecursive(branch0_ID);
+                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(1));
+
+                Assert.AreEqual((false, false, false),
+                                (compactHierarchy.IsValidNodeID(branch0_ID),
+                                 compactHierarchy.IsValidNodeID(branch0_brush0_ID),
+                                 compactHierarchy.IsValidNodeID(branch0_brush1_ID)));
+            }
+        }
+
+        [Test]
+        public void HierarchyWithNodesInBranches_DeleteChild_ChildOfChildHasNoParent()
+        {
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            {
+                Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
+                Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
+                Add2Brushes(in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
+
+                compactHierarchy.Delete(branch0_ID);
+                Assume.That((false, true, true), 
+                            Is.EqualTo((compactHierarchy.IsValidNodeID(branch0_ID), 
+                                        compactHierarchy.IsValidNodeID(branch0_brush0_ID), 
+                                        compactHierarchy.IsValidNodeID(branch0_brush1_ID))));
+
+                // check if children are still attached
+                Assert.AreEqual((CompactNodeID.Invalid, CompactNodeID.Invalid),
+                                (compactHierarchy.ParentOf(branch0_brush0_ID), 
+                                 compactHierarchy.ParentOf(branch0_brush1_ID)));
             }
         }
 

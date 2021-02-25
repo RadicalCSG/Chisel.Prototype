@@ -13,7 +13,6 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     // TODO: Make it possible to modify/set the root
-    // TODO: implement DeleteRangeInternal
     // TODO: we need to store/manage complete hierarchies somewhere
 
     // TODO: create structs around CompactHierarchy to abstract internal mechanisms
@@ -65,10 +64,9 @@ namespace Chisel.Core
             throw new NotImplementedException();
         }
 
-
+        #region ID / Memory Management
         CompactNodeID CreateID(int index)
         {
-            Debug.Assert(IsCreated);
             int lastNodeID;
             if (freeIDs.Length > 0)
             {
@@ -85,9 +83,26 @@ namespace Chisel.Core
             return new CompactNodeID(id: lastNodeID);
         }
 
-        void FreeIDRange(int index, int count)
+        void RemoveIDs(int index, uint range)
         {
-            for (int i = index, lastNode = index + count; i < lastNode; i++)
+            if (index < 0 || index + range >= compactNodes.Length)
+                throw new ArgumentOutOfRangeException();
+
+            for (int i = index, lastNode = (int)(index + range); i < lastNode; i++)
+            {
+                var id = compactNodes[i].nodeID.ID;
+                var idLookup = idToIndex[id];
+                idLookup.index = -1;
+                idToIndex[id] = idLookup;
+            }
+        }
+
+        void FreeIndexRange(int index, uint range)
+        {
+            if (index < 0 || index + range >= compactNodes.Length)
+                throw new ArgumentOutOfRangeException();
+
+            for (int i = index, lastNode = (int)(index + range); i < lastNode; i++)
             {
                 compactNodes[i] = CompactChildNode.Invalid;
                 freeIDs.Add(i);
@@ -178,7 +193,7 @@ namespace Chisel.Core
 
             return newOffset;
         }
-
+        #endregion
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -275,8 +290,123 @@ namespace Chisel.Core
 
         unsafe bool DeleteRangeInternal(int parentIndex, int siblingIndex, uint range, bool deleteChildren)
         {
-            // TODO: implement
-            throw new NotImplementedException();
+            if (range == 0)
+                return false;
+            
+            Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildOffset   = parentHierarchy.childOffset;
+            var parentChildCount    = parentHierarchy.childCount;
+            var lastNodeIndex       = parentChildCount + parentChildOffset - 1;
+            if (siblingIndex < 0 || siblingIndex + range > parentChildCount)
+                throw new ArgumentOutOfRangeException(nameof(siblingIndex));
+
+            if (deleteChildren)
+            {
+                // Delete all children of the nodes we're going to delete
+                for (int i = parentChildOffset + siblingIndex, lastIndex = (int)(parentChildOffset + siblingIndex + range); i < lastIndex; i++)
+                {
+                    var childHierarchy  = compactNodes[i];
+                    var childCount      = childHierarchy.childCount;
+                    DeleteRangeInternal(i, 0, (uint)childCount, true);
+                }
+            } else
+            {
+                // Detach all children of the nodes we're going to delete
+                for (int i = parentChildOffset + siblingIndex, lastIndex = (int)(parentChildOffset + siblingIndex + range); i < lastIndex; i++)
+                {
+                    var childHierarchy = compactNodes[i];
+                    var childCount = childHierarchy.childCount;
+                    DetachRangeInternal(i, 0, (uint)childCount);
+                }
+            }
+            
+
+            var nodeIndex = siblingIndex + parentChildOffset;
+
+            // Clear the ids of the children we're deleting
+            RemoveIDs(nodeIndex, range);
+
+            // Check if we're deleting from the front of the list of children
+            if (siblingIndex == 0)
+            {
+                // Set our deleted nodes to invalid
+                {
+                    var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                    for (int i = nodeIndex; i < nodeIndex + range; i++)
+                    {
+                        compactNodesPtr[i] = CompactChildNode.Invalid;
+                    }
+                    FreeIndexRange(nodeIndex, range);
+                }
+
+                // If the range is identical to the number of children, we're deleting all the children
+                if (parentChildCount == range)
+                {
+                    parentHierarchy.childCount = 0;
+                    parentHierarchy.childOffset = 0;
+                    compactNodes[parentIndex] = parentHierarchy;
+                } else
+                // Otherwise, we can just move the start offset of the parents' children forward
+                {
+                    parentHierarchy.childCount -= (int)range;
+                    parentHierarchy.childOffset += (int)range;
+                    compactNodes[parentIndex] = parentHierarchy;
+                }
+                return true;
+            } else
+            // Check if we're deleting from the back of the list of children
+            if (siblingIndex == parentChildCount - range)
+            {
+                // Set our deleted nodes to invalid
+                {
+                    var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                    for (int i = nodeIndex; i < nodeIndex + range; i++)
+                    {
+                        compactNodesPtr[i] = CompactChildNode.Invalid;
+                    }
+                    FreeIndexRange(nodeIndex, range);
+                }
+
+                // In that case, we can just decrease the number of children in the list
+                parentHierarchy.childCount -= (int)range;
+                compactNodes[parentIndex] = parentHierarchy;
+                return true;
+            }
+            
+            // If we get here, it means we're deleting children in the center of the list of children
+
+            // Move nodes behind our node on top of the node we're removing
+            var count = parentChildCount - (siblingIndex + range);
+            if (count > 0) // Using a negative value crashes Unity on UnsafeUtility.MemMove
+            {
+                var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                UnsafeUtility.MemMove(compactNodesPtr + nodeIndex, compactNodesPtr + nodeIndex + range, count * sizeof(CompactChildNode));
+            }
+
+
+            // Set the left over nodes to invalid
+            {
+                var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                for (int i = lastNodeIndex; i < lastNodeIndex + range; i++)
+                {
+                    compactNodesPtr[i] = CompactChildNode.Invalid;
+                }
+                FreeIndexRange(lastNodeIndex, range);
+            }
+
+            // Fix up the idToIndex lookup table
+            for (int i = nodeIndex; i < lastNodeIndex; i++)
+            {
+                var id = compactNodes[i].nodeID.ID;
+                var structure = idToIndex[id];
+                structure.index = i;
+                idToIndex[id] = structure;
+            }
+
+            parentHierarchy.childCount -= (int)range;
+            compactNodes[parentIndex] = parentHierarchy;
+            return true;
         }
 
         // "optimize" - remove holes, reorder them in hierarchy order
@@ -288,7 +418,6 @@ namespace Chisel.Core
 
         unsafe bool DetachRangeInternal(int parentIndex, int siblingIndex, uint range)
         {
-            Debug.Assert(IsCreated);
             if (range == 0)
                 return false;
 
@@ -368,7 +497,7 @@ namespace Chisel.Core
             compactNodes.ResizeUninitialized(prevLength);
 
             // Fix up the idToIndex lookup table
-            for (int i = nodeIndex; i <= lastNodeIndex; i++)
+            for (int i = nodeIndex; i <= (int)(lastNodeIndex + range); i++)
             {
                 var id = compactNodes[i].nodeID.ID;
                 var structure = idToIndex[id];
@@ -583,7 +712,7 @@ namespace Chisel.Core
                     }
 
                     // Set all old nodes to invalid
-                    FreeIDRange(originalOffset + firstModifiedIndex, originalCount - firstModifiedIndex);
+                    FreeIndexRange(originalOffset + firstModifiedIndex, (uint)(originalCount - firstModifiedIndex));
                 }
 
                 // Then we copy our node to the new location
