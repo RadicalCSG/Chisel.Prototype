@@ -411,29 +411,29 @@ namespace Chisel.Editors
                     var brush		= obj as ChiselBrush;
                     var composite	= obj as ChiselComposite;
                     var model		= obj as ChiselModel;
-                    int nodeID = CSGTreeNode.InvalidNode.NodeID;
-                    if      (brush    ) nodeID = brush.TopNode.NodeID;
-                    else if (composite) nodeID = composite.Node.NodeID;
-                    else if (model    ) nodeID = model.Node.NodeID;
+                    CSGTreeNode node = CSGTreeNode.InvalidNode;
+                    if      (brush    ) node = brush.TopNode;
+                    else if (composite) node = composite.Node;
+                    else if (model    ) node = model.Node;
                     else
                     {
                         for (int n = 0; n < allNodes.Length; n++)
                         {
                             if (allNodes[n].UserID == instanceID)
                             {
-                                nodeID = allNodes[n].NodeID;
+                                node = allNodes[n];
                                 break;
                             }
                         }
                     }
 
-                    if (nodeID != CSGTreeNode.InvalidNode.NodeID)
+                    if (node != CSGTreeNode.InvalidNode)
                     {
                         var labelArea = itemArea;
                         labelArea.x = 0;
                         labelArea.y = labelArea.height;
                         labelArea.height = kItemHeight;
-                        CSGTreeNode node = CSGTreeNode.Encapsulate(nodeID);
+                        var nodeID = node.NodeID;
                         GUI.Label(labelArea, "NodeID: " + (nodeID - 1)); labelArea.y += kItemHeight;
                         GUI.Label(labelArea, "UserID: " + node.UserID); labelArea.y += kItemHeight;
                         GUI.Label(labelArea, "Operation: " + node.Operation); labelArea.y += kItemHeight;

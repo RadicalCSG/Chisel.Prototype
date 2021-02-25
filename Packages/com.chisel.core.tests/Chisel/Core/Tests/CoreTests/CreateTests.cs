@@ -99,8 +99,8 @@ namespace FoundationTests
             const int branchUserID2 = 12;
             CSGTreeBrush brush = CSGTreeBrush.Create(userID: brushUserID);
             CSGTreeBranch branch1 = CSGTreeBranch.Create(branchUserID1);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch1);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch1.NodeID);
 
 
             CSGTreeBranch branch2 = CSGTreeBranch.Create(branchUserID2, new CSGTreeNode[] { brush, branch1 });
@@ -132,8 +132,8 @@ namespace FoundationTests
             const int treeUserID = 12;
             CSGTreeBrush brush = CSGTreeBrush.Create(userID: brushUserID);
             CSGTreeBranch branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
 
             CSGTree tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { brush, branch });
@@ -161,7 +161,7 @@ namespace FoundationTests
             const int brushUserID = 10;
             const int treeUserID = 12;
             CSGTreeBrush brush = CSGTreeBrush.Create(userID: brushUserID);
-            CSGManager.ClearDirty(brush);
+            CSGManager.ClearDirty(brush.NodeID);
              
 
             LogAssert.Expect(LogType.Error, new Regex("Have duplicate child"));
@@ -184,7 +184,7 @@ namespace FoundationTests
             const int brushUserID = 10;
             const int branchUserID = 12;
             CSGTreeBrush brush = CSGTreeBrush.Create(userID: brushUserID);
-            CSGManager.ClearDirty(brush);
+            CSGManager.ClearDirty(brush.NodeID);
 
             LogAssert.Expect(LogType.Error, new Regex("Have duplicate child"));
             CSGTreeBranch branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush, brush });
@@ -236,7 +236,7 @@ namespace FoundationTests
             const int treeUserID = 10;
             const int branchUserID = 11;
             CSGTree tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(tree.NodeID);
 
 
             CSGTreeBranch branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { CSGTreeNode.InvalidNode, tree });
@@ -258,7 +258,7 @@ namespace FoundationTests
             const int treeUserID1 = 10;
             const int treeUserID2 = 11;
             CSGTree tree1 = CSGTree.Create(treeUserID1);
-            CSGManager.ClearDirty(tree1);
+            CSGManager.ClearDirty(tree1.NodeID);
 
 
             CSGTree tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { CSGTreeNode.InvalidNode, tree1 });

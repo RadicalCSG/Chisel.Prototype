@@ -29,9 +29,9 @@ namespace FoundationTests
             var branch3 = CSGTreeBranch.Create(branchUserID3);
             branch1.Add(branch2);
             branch2.Add(branch3);
-            CSGManager.ClearDirty(branch1);
-            CSGManager.ClearDirty(branch2);
-            CSGManager.ClearDirty(branch3);
+            CSGManager.ClearDirty(branch1.NodeID);
+            CSGManager.ClearDirty(branch2.NodeID);
+            CSGManager.ClearDirty(branch3.NodeID);
 
             branch3.InsertRange(0, new CSGTreeNode[] { branch1 });
 
@@ -64,8 +64,8 @@ namespace FoundationTests
             const int branchUserID = 11;
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             branch.InsertRange(0, new CSGTreeNode[] { brush });
 
@@ -90,8 +90,8 @@ namespace FoundationTests
             const int branchUserID = 11;
             var tree = CSGTree.Create(treeUserID);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(branch.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             branch.InsertRange(0, new CSGTreeNode[] { tree });
 
@@ -115,8 +115,8 @@ namespace FoundationTests
             const int treeUserID2 = 11;
             var tree1 = CSGTree.Create(treeUserID1);
             var tree2 = CSGTree.Create(treeUserID2);
-            CSGManager.ClearDirty(tree1);
-            CSGManager.ClearDirty(tree2);
+            CSGManager.ClearDirty(tree1.NodeID);
+            CSGManager.ClearDirty(tree2.NodeID);
 
             tree2.InsertRange(0, new CSGTreeNode[] { tree1 });
 
@@ -137,7 +137,7 @@ namespace FoundationTests
         {
             const int branchUserID = 11;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(branch.NodeID);
 
             bool result = branch.InsertRange(0, new CSGTreeNode[] { branch });
 
@@ -159,8 +159,8 @@ namespace FoundationTests
             const int treeUserID = 11;
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             tree.InsertRange(0, new CSGTreeNode[] { brush });
 
@@ -185,7 +185,7 @@ namespace FoundationTests
         {
             const int treeUserID = 11;
             var tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(tree.NodeID);
 
             tree.InsertRange(0, new CSGTreeNode[] { tree });
 
@@ -205,8 +205,8 @@ namespace FoundationTests
             const int branchUserID2 = 11;
             var branch1 = CSGTreeBranch.Create(branchUserID1);
             var branch2 = CSGTreeBranch.Create(branchUserID2);
-            CSGManager.ClearDirty(branch1);
-            CSGManager.ClearDirty(branch2);
+            CSGManager.ClearDirty(branch1.NodeID);
+            CSGManager.ClearDirty(branch2.NodeID);
 
             branch2.InsertRange(0, new CSGTreeNode[] { branch1 });
 
@@ -233,8 +233,8 @@ namespace FoundationTests
             const int treeUserID = 11;
             var branch = CSGTreeBranch.Create(branchUserID);
             var tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(branch);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(branch.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             tree.InsertRange(0, new CSGTreeNode[] { branch });
 
@@ -262,9 +262,9 @@ namespace FoundationTests
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var branch = CSGTreeBranch.Create(branchUserID);
             var tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             branch.InsertRange(0, new CSGTreeNode[] { brush });
             tree.InsertRange(0, new CSGTreeNode[] { branch });
@@ -298,9 +298,9 @@ namespace FoundationTests
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var branch = CSGTreeBranch.Create(branchUserID);
             var tree = CSGTree.Create(treeUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             tree.InsertRange(0, new CSGTreeNode[] { branch });
             branch.InsertRange(0, new CSGTreeNode[] { brush });

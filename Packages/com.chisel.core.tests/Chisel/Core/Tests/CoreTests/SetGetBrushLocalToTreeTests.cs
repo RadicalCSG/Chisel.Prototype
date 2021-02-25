@@ -26,8 +26,8 @@ namespace FoundationTests
         {
             var brush1 = CSGTreeBrush.Create();
             var brush2 = CSGTreeBrush.Create();
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
 
             brush1.LocalTransformation = testMatrix1;
             brush2.LocalTransformation = testMatrix2;
@@ -42,7 +42,7 @@ namespace FoundationTests
         public void Brush_SetLocalToTreeToMultipleValues_GetLocalToTreeIsLastSetValue()
         {
             var brush = CSGTreeBrush.Create();
-            CSGManager.ClearDirty(brush);
+            CSGManager.ClearDirty(brush.NodeID);
 
             brush.LocalTransformation = testMatrix1;
             brush.LocalTransformation = testMatrix2;

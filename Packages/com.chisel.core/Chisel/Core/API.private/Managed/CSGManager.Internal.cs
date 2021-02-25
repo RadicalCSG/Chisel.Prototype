@@ -476,7 +476,9 @@ namespace Chisel.Core
             return SetDirtyWithFlag(nodeID, NodeStatusFlags.NeedFullUpdate);
         }
 
-        internal static bool ClearDirty(Int32 nodeID)
+        // Do not use. This method might be removed/renamed in the future
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static bool ClearDirty(Int32 nodeID)
         {
             if (!AssertNodeIDValid(nodeID)) return false;
             var flags = nodeFlags[nodeID - 1];
@@ -1243,60 +1245,6 @@ namespace Chisel.Core
             }
             SetDirtyWithFlag(nodeID);
             return true;
-        }
-
-        internal static CSGTreeNode[] GetChildNodes(Int32 nodeID)
-        {
-            if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return null;
-
-            var srcChildren = nodeHierarchies[nodeID - 1].children;
-            if (srcChildren == null ||
-                srcChildren.Count == 0)
-                return new CSGTreeNode[0];
-
-            var dstChildren	= new CSGTreeNode[srcChildren.Count];
-            for (int i = 0; i < srcChildren.Count; i++)
-                dstChildren[i] = new CSGTreeNode() { nodeID = srcChildren[i] };
-
-            return dstChildren;
-        }
-
-        internal static int         CopyToUnsafe(Int32 nodeID, int childCount, CSGTreeNode[] children, int arrayIndex)
-        {
-            if (!AssertNodeIDValid(nodeID) || !AssertNodeTypeHasChildren(nodeID)) return 0;
-
-            if (children == null)
-                return 0;
-
-            var srcChildren = nodeHierarchies[nodeID - 1].children;
-            if (srcChildren == null ||
-                srcChildren.Count == 0 ||
-                childCount != srcChildren.Count)
-                return 0;
-
-            if (children.Length + arrayIndex < childCount)
-                return 0;
-
-            for (int i = 0; i < childCount; i++)
-                children[arrayIndex + i].nodeID = srcChildren[i];
-
-            return childCount;
-        }
-
-        internal static bool        DestroyAllNodesWithUserID(Int32 userID)
-        {
-            bool found = false;
-            for (int i = 0; i < nodeUserIDs.Count; i++)
-            {
-                if (!AssertNodeIDValid(i))
-                    continue;
-                if (nodeUserIDs[i] == userID)
-                {
-                    found = true;
-                    DestroyNode(nodeUserIDs[i]);
-                }
-            }
-            return found;
         }
 
         static readonly HashSet<int> s_DestroyedNodes = new HashSet<int>();

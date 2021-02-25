@@ -85,10 +85,6 @@ namespace Chisel.Core
         /// <param name="index">The zero-based index of the child to get.</param>
         /// <returns>The element at the specified index.</returns>
         public CSGTreeNode		this[int index]	{ get { return new CSGTreeNode { nodeID = CSGTreeNode.GetChildNodeAtIndex(nodeID, index) }; } }
-
-        /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/> to a new array.</summary>
-        /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/>.</returns>
-        public CSGTreeNode[]	ChildrenToArray() { return CSGTreeNode.GetChildNodes(nodeID); }
         #endregion
 
         #region TreeNode specific
@@ -142,9 +138,9 @@ namespace Chisel.Core
         // TODO: add description
         public Matrix4x4			LocalTransformation		{ get { return GetNodeLocalTransformation(nodeID); } set { SetNodeLocalTransformation(nodeID, ref value); } }		
         // TODO: add description
-        public Matrix4x4			TreeToNodeSpaceMatrix   { get { if (!CSGManager.GetTreeToNodeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+        //public Matrix4x4			TreeToNodeSpaceMatrix   { get { if (!CSGManager.GetTreeToNodeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
-        public Matrix4x4			NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+        //public Matrix4x4			NodeToTreeSpaceMatrix	{ get { if (!CSGManager.GetNodeToTreeSpaceMatrix(nodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         #endregion
 
         #region Comparison

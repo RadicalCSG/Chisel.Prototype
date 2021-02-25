@@ -36,15 +36,6 @@ namespace Chisel.Core
         internal static Int32	GetNodeOperationType(Int32 nodeID)												{ return (int)CSGManager.GetNodeOperationType(nodeID); }
         internal static bool	SetNodeOperationType(Int32 nodeID, CSGOperationType operation)					{ return CSGManager.SetNodeOperationType(nodeID, operation); }
 
-        internal static CSGTreeNode[] GetChildNodes(Int32 nodeID)
-        {
-            return CSGManager.GetChildNodes(nodeID);
-        }
-
-        internal static int CopyToUnsafe(Int32 nodeID, int childCount, CSGTreeNode[] children, int arrayIndex)
-        {
-            return CSGManager.CopyToUnsafe(nodeID, childCount, children, arrayIndex);
-        }
 
         internal static bool InsertChildNodeRange(Int32 nodeID, Int32 index, CSGTreeNode[] children)
         {

@@ -4,7 +4,7 @@ using UnityEngine.TestTools;
 using NUnit.Framework;
 using Unity.Collections;
 using Chisel;
-using Chisel.Core;
+using Chisel.Core.New;
 
 namespace FoundationTests
 {
@@ -18,7 +18,7 @@ namespace FoundationTests
 
         void Add2Branches(in CompactHierarchy compactHierarchy, out CompactNodeID branch0_ID, out CompactNodeID branch1_ID, int userID1 = 1, int userID2 = 2)
         {
-            Add2Branches(in compactHierarchy, CompactHierarchy.RootID, out branch0_ID, out branch1_ID, userID1, userID2);
+            Add2Branches(in compactHierarchy, compactHierarchy.RootID, out branch0_ID, out branch1_ID, userID1, userID2);
         }
 
         void Add2Branches(in CompactHierarchy compactHierarchy, CompactNodeID parentID, out CompactNodeID branch0_ID, out CompactNodeID branch1_ID, int userID1 = 1, int userID2 = 2)
@@ -53,7 +53,7 @@ namespace FoundationTests
 
         void Add3Brushes(in CompactHierarchy compactHierarchy, out CompactNodeID brushID0, out CompactNodeID brushID1, out CompactNodeID brushID2, int userID1 = 1, int userID2 = 2, int userID3 = 3, int brushMeshID1 = 1, int brushMeshID2 = 2, int brushMeshID3 = 3)
         {
-            Add3Brushes(in compactHierarchy, CompactHierarchy.RootID, out brushID0, out brushID1, out brushID2, userID1, userID2, userID3, brushMeshID1, brushMeshID2, brushMeshID3);
+            Add3Brushes(in compactHierarchy, compactHierarchy.RootID, out brushID0, out brushID1, out brushID2, userID1, userID2, userID3, brushMeshID1, brushMeshID2, brushMeshID3);
         }
 
         void Add3Brushes(in CompactHierarchy compactHierarchy, CompactNodeID parentID, out CompactNodeID brushID0, out CompactNodeID brushID1, out CompactNodeID brushID2, int userID1 = 1, int userID2 = 2, int userID3 = 3, int brushMeshID1 = 1, int brushMeshID2 = 2, int brushMeshID3 = 3)
@@ -83,12 +83,12 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                var parentRoot = compactHierarchy.ParentOf(CompactHierarchy.RootID);
+                var parentRoot = compactHierarchy.ParentOf(compactHierarchy.RootID);
                 var parent0 = compactHierarchy.ParentOf(brushID0);
                 var parent1 = compactHierarchy.ParentOf(brushID1);
                 var parent2 = compactHierarchy.ParentOf(brushID2);
 
-                Assert.AreEqual((CompactNodeID.Invalid, CompactHierarchy.RootID, CompactHierarchy.RootID, CompactHierarchy.RootID), 
+                Assert.AreEqual((CompactNodeID.Invalid, compactHierarchy.RootID, compactHierarchy.RootID, compactHierarchy.RootID), 
                                 (parentRoot, parent0, parent1, parent2));
             }
         }
@@ -100,7 +100,7 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                var childcount = compactHierarchy.ChildCount(CompactHierarchy.RootID);
+                var childcount = compactHierarchy.ChildCount(compactHierarchy.RootID);
 
                 Assert.AreEqual(3, childcount);
             }
@@ -113,7 +113,7 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                var siblingIndexRoot = compactHierarchy.SiblingIndexOf(CompactHierarchy.RootID);
+                var siblingIndexRoot = compactHierarchy.SiblingIndexOf(compactHierarchy.RootID);
                 var siblingIndex0 = compactHierarchy.SiblingIndexOf(brushID0);
                 var siblingIndex1 = compactHierarchy.SiblingIndexOf(brushID1);
                 var siblingIndex2 = compactHierarchy.SiblingIndexOf(brushID2);
@@ -129,9 +129,9 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
                 Assume.That(compactHierarchy.ParentOf(brushID0), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID1), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID2), Is.EqualTo(CompactNodeID.Invalid));
@@ -150,9 +150,9 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 2);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 1);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 2);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 1);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
                 Assume.That(compactHierarchy.ParentOf(brushID0), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID1), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID2), Is.EqualTo(CompactNodeID.Invalid));
@@ -171,14 +171,14 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
                 Assume.That(compactHierarchy.ParentOf(brushID0), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID1), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID2), Is.EqualTo(CompactNodeID.Invalid));
 
-                Assert.AreEqual(0, compactHierarchy.ChildCount(CompactHierarchy.RootID));
+                Assert.AreEqual(0, compactHierarchy.ChildCount(compactHierarchy.RootID));
             }
         }
 
@@ -189,14 +189,14 @@ namespace FoundationTests
             {
                 Add3Brushes(in compactHierarchy,  out var brushID0, out var brushID1, out var brushID2);
 
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 2);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 1);
-                compactHierarchy.DetachChildFromParentAt(CompactHierarchy.RootID, 0);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 2);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 1);
+                compactHierarchy.DetachChildFromParentAt(compactHierarchy.RootID, 0);
                 Assume.That(compactHierarchy.ParentOf(brushID0), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID1), Is.EqualTo(CompactNodeID.Invalid));
                 Assume.That(compactHierarchy.ParentOf(brushID2), Is.EqualTo(CompactNodeID.Invalid));
 
-                Assert.AreEqual(0, compactHierarchy.ChildCount(CompactHierarchy.RootID));
+                Assert.AreEqual(0, compactHierarchy.ChildCount(compactHierarchy.RootID));
             }
         }
 
@@ -214,7 +214,7 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ParentOf(branch0_brush1_ID),         Is.EqualTo(branch0_ID));
                 Assume.That(compactHierarchy.ChildCount(branch0_ID),              Is.EqualTo(3));
                 Assume.That(compactHierarchy.ChildCount(branch1_ID),              Is.EqualTo(2));
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(2));
                 
                 Assert.AreEqual((0, 1, 2, 0, 1), 
                                 (compactHierarchy.SiblingIndexOf(branch0_brush0_ID),
@@ -340,10 +340,10 @@ namespace FoundationTests
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(2));
 
                 compactHierarchy.Detach(branch0_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(1));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(1));
 
                 Assert.AreEqual(CompactNodeID.Invalid, compactHierarchy.ParentOf(branch0_ID));
             }
@@ -375,10 +375,10 @@ namespace FoundationTests
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(2));
 
                 compactHierarchy.Delete(branch0_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(1));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(1));
 
                 Assert.AreEqual((false, true, true), 
                                 (compactHierarchy.IsValidNodeID(branch0_ID),
@@ -395,10 +395,10 @@ namespace FoundationTests
                 Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
                 Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
                 Add2Brushes(in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(2));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(2));
 
                 compactHierarchy.DeleteRecursive(branch0_ID);
-                Assume.That(compactHierarchy.ChildCount(CompactHierarchy.RootID), Is.EqualTo(1));
+                Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(1));
 
                 Assert.AreEqual((false, false, false),
                                 (compactHierarchy.IsValidNodeID(branch0_ID),

@@ -29,10 +29,10 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.ChildrenToArray();
 
@@ -72,7 +72,7 @@ namespace FoundationTests
         {
             const int branchUserID = 13;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.ChildrenToArray();
 

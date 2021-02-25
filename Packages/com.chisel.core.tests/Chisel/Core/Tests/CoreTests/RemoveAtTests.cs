@@ -23,7 +23,7 @@ namespace FoundationTests
         {
             const int branchUserID = 10;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(0);
 
@@ -44,8 +44,8 @@ namespace FoundationTests
             const int brushUserID = 11;
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush });
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(0);
 
@@ -72,9 +72,9 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(1);
 
@@ -106,9 +106,9 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(0);
 
@@ -142,10 +142,10 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(1);
 
@@ -184,10 +184,10 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(3);
 
@@ -227,10 +227,10 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var result = branch.RemoveAt(-1);
 

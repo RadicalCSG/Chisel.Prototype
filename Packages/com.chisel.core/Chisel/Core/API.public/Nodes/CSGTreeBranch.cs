@@ -32,7 +32,7 @@ namespace Chisel.Core
                 return new CSGTreeBranch() { branchNodeID = 0 };
             if (children != null && children.Length > 0)
             {
-                if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(userID, operation);
+                if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(branchNodeID, operation);
                 if (!CSGManager.SetChildNodes(branchNodeID, children))
                 {
                     CSGTreeNode.DestroyNode(branchNodeID);
@@ -138,17 +138,6 @@ namespace Chisel.Core
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         public bool InsertRange	(int index, CSGTreeNode[] array){ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.InsertChildNodeRange(branchNodeID, index, array); }
 
-
-        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeBranch"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
-        /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
-        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(CSGTreeNode[] array)			{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.SetChildNodes(branchNodeID, array); }
-
-        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeBranch"/> to the give list of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
-        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The list itself cannot be null.</param>
-        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(List<CSGTreeNode> list)		{ if (list == null) throw new ArgumentNullException("list"); return CSGManager.SetChildNodes(branchNodeID, list); }
-
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
@@ -177,25 +166,15 @@ namespace Chisel.Core
         /// <param name="item">The Object to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, <b>false</b>.</returns>
         public bool Contains	(CSGTreeNode item)				{ return CSGTreeNode.IndexOfChildNode(branchNodeID, item.nodeID) != -1; }
-
-        /// <summary>Copies the immediate children of the <see cref="Chisel.Core.CSGTreeBranch"/> to an Array, starting at a particular Array index.</summary>
-        /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="Chisel.Core.CSGTreeBranch"/>. The Array must have zero-based indexing.</param>
-        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        /// <returns>The number of children copied into <paramref name="array"/>.</returns>
-        public int	CopyChildrenTo(CSGTreeNode[] array, int arrayIndex)	{ return CSGTreeNode.CopyTo(branchNodeID, array, arrayIndex); }
-
-        /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/> to a new array.</summary>
-        /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/>.</returns>
-        public CSGTreeNode[] ChildrenToArray()					{ return CSGTreeNode.GetChildNodes(branchNodeID); }
         #endregion
         
         #region Transformation
         // TODO: add description
 		public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(branchNodeID); } set { CSGTreeNode.SetNodeLocalTransformation(branchNodeID, ref value); } }		
         // TODO: add description
-		public Matrix4x4			TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(branchNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+		//public Matrix4x4			TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(branchNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
-		public Matrix4x4			NodeToTreeSpaceMatrix   { get { if (!CSGManager.GetNodeToTreeSpaceMatrix(branchNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
+		//public Matrix4x4			NodeToTreeSpaceMatrix   { get { if (!CSGManager.GetNodeToTreeSpaceMatrix(branchNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         #endregion
                 
         #region Comparison

@@ -33,10 +33,10 @@ namespace FoundationTests
             var result1 = tree.Add(brush1);
             var result2 = tree.Add(brush2);
             var result3 = tree.Add(brush3);
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             var index1 = tree.IndexOf(brush1);
             var index2 = tree.IndexOf(brush2);
@@ -81,10 +81,10 @@ namespace FoundationTests
             var result1 = branch.Add(brush1);
             var result2 = branch.Add(brush2);
             var result3 = branch.Add(brush3);
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
+            CSGManager.ClearDirty(branch.NodeID);
 
             var index1 = branch.IndexOf(brush1);
             var index2 = branch.IndexOf(brush2);
@@ -129,9 +129,9 @@ namespace FoundationTests
             var tree = CSGTree.Create(treeUserID);
             tree.Add(brush1);
             tree.Add(brush2);
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(tree);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(tree.NodeID);
 
             var index = tree.IndexOf(brush3);
 

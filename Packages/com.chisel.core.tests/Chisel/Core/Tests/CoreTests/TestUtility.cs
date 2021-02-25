@@ -36,7 +36,7 @@ namespace FoundationTests
 
         public static void ExpectValidBrushWithUserID(ref CSGTreeBrush brush, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(brush.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)brush).Type;
 
             Assert.AreEqual(true, brush.Valid);
             Assert.AreNotEqual(0, brush.NodeID);
@@ -46,7 +46,7 @@ namespace FoundationTests
 
         public static void ExpectInvalidBrush(ref CSGTreeBrush brush)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(brush.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)brush).Type;
 
             Assert.AreEqual(false, brush.Valid);
             Assert.AreEqual(0, brush.UserID);
@@ -55,7 +55,7 @@ namespace FoundationTests
 
         public static void ExpectValidBranchWithUserID(ref CSGTreeBranch branch, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)branch).Type;
 
             Assert.AreEqual(true, branch.Valid);
             Assert.AreNotEqual(0, branch.NodeID);
@@ -65,7 +65,7 @@ namespace FoundationTests
 
         public static void ExpectInvalidBranch(ref CSGTreeBranch branch)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)branch).Type;
 
             Assert.AreEqual(false, branch.Valid);
             Assert.AreEqual(0, branch.UserID);
@@ -74,7 +74,7 @@ namespace FoundationTests
 
         public static void ExpectValidTreeWithUserID(ref CSGTree model, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(model.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)model).Type;
 
             Assert.AreEqual(true, model.Valid);
             Assert.AreNotEqual(0, model.NodeID);
@@ -84,7 +84,7 @@ namespace FoundationTests
 
         public static void ExpectInvalidTree(ref CSGTree model)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(model.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)model).Type;
 
             Assert.AreEqual(false, model.Valid);
             Assert.AreEqual(0, model.UserID);

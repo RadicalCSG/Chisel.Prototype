@@ -35,20 +35,6 @@ namespace Chisel.Core
         /// <exception cref="System.ArgumentNullException">Thrown when the <paramref name="nodes"/> is null.</exception>  
         public static bool Destroy(HashSet<CSGTreeNode> nodes) { if (nodes == null) throw new ArgumentNullException("nodes"); return DestroyNodes(nodes); }
 
-        // TODO: add description
-        public static bool	Destroy(int userID) { return DestroyAllNodesWithUserID(userID); }
-
-        /// <summary>Destroy all <see cref="Chisel.Core.CSGTreeNode"/>s contained in <paramref name="nodes"/> and its children.</summary>
-        /// <param name="nodes">The top level <see cref="Chisel.Core.CSGTreeNode"/>s of all <see cref="Chisel.Core.CSGTreeNode"/>s to destroy</param>
-        /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>s. See the log for more information.</returns>
-        /// <exception cref="System.ArgumentNullException">Thrown when the <paramref name="nodes"/> is null.</exception>  
-        public static bool	DeepDestroy(CSGTreeNode[] nodes) { if (nodes == null) throw new ArgumentNullException("nodes"); return DeepDestroyNodes(nodes); }
-
-        /// <summary>Destroy a <see cref="Chisel.Core.CSGTreeNode"/>s and its children.</summary>
-        /// <param name="node">The top level <see cref="Chisel.Core.CSGTreeNode"/> to destroy</param>
-        /// <returns>True on success, false if there was a problem with destroying the <see cref="Chisel.Core.CSGTreeNode"/>. See the log for more information.</returns>
-        public static bool	DeepDestroy(CSGTreeNode node) { return DeepDestroyNode(node); }
-
         /// <value>The number of <see cref="Chisel.Core.CSGTreeNode"/>s.</value>
         public static int	TreeNodeCount			
         {
@@ -96,14 +82,6 @@ namespace Chisel.Core
         {
             get { return GetAllBrushMeshInstances(); }
         }
-
-
-        // TODO: add description
-        public static CSGTreeNode	Duplicate(CSGTreeNode node) { return DuplicateInternal(node); }
-
-        // TODO: add description
-        public static CSGTreeNode[]	Duplicate(CSGTreeNode[] nodes) { return DuplicateInternal(nodes); }
-
 
         /// <value>Version number.</value>
         public static string Version

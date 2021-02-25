@@ -103,16 +103,6 @@ namespace Chisel.Core
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         public bool InsertRange	(int index, params CSGTreeNode[] array)	{ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.InsertChildNodeRange(treeNodeID, index, array); }
 
-        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
-        /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
-        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren	(CSGTreeNode[] array)				{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.SetChildNodes(treeNodeID, array); }
-
-        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
-        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The list itself cannot be null.</param>
-        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool SetChildren(List<CSGTreeNode> list) { if (list == null) throw new ArgumentNullException("list"); return CSGManager.SetChildNodes(treeNodeID, list); }
-
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTree"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
@@ -142,17 +132,6 @@ namespace Chisel.Core
         /// <param name="item">The Object to locate in the <see cref="Chisel.Core.CSGTree"/>.</param>
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTree"/>; otherwise, <b>false</b>.</returns>
         public bool Contains	(CSGTreeNode item)					{ return CSGTreeNode.IndexOfChildNode(treeNodeID, item.nodeID) != -1; }
-        
-
-        /// <summary>Copies the immediate children of the <see cref="Chisel.Core.CSGTree"/> to an Array, starting at a particular Array index.</summary>
-        /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="Chisel.Core.CSGTree"/>. The Array must have zero-based indexing.</param>
-        /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        /// <returns>The number of children copied into <paramref name="array"/>.</returns>
-        public int	CopyChildrenTo(CSGTreeNode[] array, int arrayIndex) { return CSGTreeNode.CopyTo(treeNodeID, array, arrayIndex); }
-        
-        /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTree"/> to a new array.</summary>
-        /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTree"/>.</returns>
-        public CSGTreeNode[] ChildrenToArray() { return CSGTreeNode.GetChildNodes(treeNodeID); }
         #endregion
 
         /*
@@ -172,10 +151,6 @@ namespace Chisel.Core
         /// <seealso cref="Chisel.Core.CSGTree.GetMeshDescriptions"/>
         public bool		                    GetGeneratedMesh	(ref GeneratedMeshDescription meshDescription, ref GeneratedMeshContents generatedMeshContents) { return CSGManager.GetGeneratedMesh(treeNodeID, ref meshDescription, ref generatedMeshContents); }
         */
-
-        // TODO: add description / make this more consistent
-        public static CSGTree	Find(int userID)			{ return new CSGTree { treeNodeID = FindTreeByUserID(userID) }; }
-
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never)]

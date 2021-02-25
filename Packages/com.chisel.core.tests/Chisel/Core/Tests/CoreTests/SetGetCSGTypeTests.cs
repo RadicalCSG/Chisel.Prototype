@@ -24,9 +24,9 @@ namespace FoundationTests
             var branch1 = CSGTreeBranch.Create();
             var branch2 = CSGTreeBranch.Create();
             var branch3 = CSGTreeBranch.Create();
-            CSGManager.ClearDirty(branch1);
-            CSGManager.ClearDirty(branch2);
-            CSGManager.ClearDirty(branch3);
+            CSGManager.ClearDirty(branch1.NodeID);
+            CSGManager.ClearDirty(branch2.NodeID);
+            CSGManager.ClearDirty(branch3.NodeID);
 
             branch1.Operation = CSGOperationType.Additive;
             branch2.Operation = CSGOperationType.Subtractive;
@@ -46,9 +46,9 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create();
             var brush2 = CSGTreeBrush.Create();
             var brush3 = CSGTreeBrush.Create();
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
+            CSGManager.ClearDirty(brush1.NodeID);
+            CSGManager.ClearDirty(brush2.NodeID);
+            CSGManager.ClearDirty(brush3.NodeID);
 
             brush1.Operation = CSGOperationType.Additive;
             brush2.Operation = CSGOperationType.Subtractive;
