@@ -142,9 +142,9 @@ namespace Chisel.Core
                 if (treeNodeID == CSGTreeNode.InvalidNodeID)
                     continue;
 
-                var brushInfo = brushOutlineStates[i];
-                if (brushInfo == null ||
-                    brushInfo.brushMeshInstanceID != brushMeshID)
+                var brushOutlineState = brushOutlineStates[i];
+                if (brushOutlineState == null ||
+                    brushOutlineState.brushMeshInstanceID != brushMeshID)
                     continue;
 
                 if (CSGTreeNode.IsNodeIDValid(treeNodeID))
@@ -162,9 +162,9 @@ namespace Chisel.Core
                 if (treeNodeID == CSGTreeNode.InvalidNodeID)
                     continue;
 
-                var brushInfo = brushOutlineStates[i];
-                if (brushInfo == null ||
-                    !modifiedBrushMeshes.Contains(brushInfo.brushMeshInstanceID))
+                var brushOutlineState = brushOutlineStates[i];
+                if (brushOutlineState == null ||
+                    !modifiedBrushMeshes.Contains(brushOutlineState.brushMeshInstanceID))
                     continue;
 
                 if (CSGTreeNode.IsNodeIDValid(treeNodeID))

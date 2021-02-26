@@ -111,6 +111,8 @@ namespace Chisel.Core
 
         /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
         public Bounds			    Bounds			{ get { return CSGManager.GetBrushBounds(brushNodeID); } }
+
+        public ref BrushOutline     Outline         { get { return ref CSGManager.GetBrushOutline(this); } }
         #endregion
         
 #if UNITY_EDITOR

@@ -105,6 +105,8 @@ namespace Chisel.Core.New
         
         /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
         public MinMaxAABB            Bounds			{ get { return CompactHierarchyManager.GetBrushBounds(brushNodeID); } }
+
+        public ref BrushOutline     Outline         { get { return ref CompactHierarchyManager.GetBrushOutline(this); } }
         #endregion
         
         

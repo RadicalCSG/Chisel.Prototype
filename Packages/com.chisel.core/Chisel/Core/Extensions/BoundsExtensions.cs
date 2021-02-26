@@ -20,14 +20,6 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool Intersects(this AABB left, AABB right, double epsilon)
-        {
-            return  ((right.max.x - left.min.x) >= -epsilon) && ((left.max.x - right.min.x) >= -epsilon) &&
-                    ((right.max.y - left.min.y) >= -epsilon) && ((left.max.y - right.min.y) >= -epsilon) &&
-                    ((right.max.z - left.min.z) >= -epsilon) && ((left.max.z - right.min.z) >= -epsilon);
-        }
-
-
         public static bool Intersects(this MinMaxAABB left, MinMaxAABB right, double epsilon)
         {
             return ((right.Max.x - left.Min.x) >= -epsilon) && ((left.Max.x - right.Min.x) >= -epsilon) &&

@@ -21,6 +21,6 @@ namespace Chisel.Core
         
         // Do not use. This method might be removed/renamed in the future
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public bool		IsInTree(CSGTreeBrush brush)	    { return CSGManager.DoesTreeContainBrush(treeNodeID, brush.NodeID); }
+        public bool		IsInTree(CSGTreeBrush brush)	    { return CSGManager.DoesTreeContainBrush(treeNodeID, brush); }
     }
 }

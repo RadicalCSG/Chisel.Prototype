@@ -150,6 +150,10 @@ namespace Chisel.Core.New
 #endif
         #endregion
 
+        public static ref BrushOutline GetBrushOutline(CSGTreeBrush brush)
+        {
+            throw new NotImplementedException();
+        }
 
         #region CreateHierarchy
         public static CompactHierarchy CreateHierarchy(Int32 userID = 0)

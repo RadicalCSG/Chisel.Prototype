@@ -181,8 +181,8 @@ namespace Chisel.Core
                 {
                     for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                     {
-                        int nodeID = allTreeBrushes[nodeOrder];
-                        int nodeIndex = nodeID - 1;
+                        int nodeID      = allTreeBrushes[nodeOrder].NodeID;
+                        int nodeIndex   = nodeID - 1;
                         nodeIndexMin = math.min(nodeIndexMin, nodeIndex);
                         nodeIndexMax = math.max(nodeIndexMax, nodeIndex);
                     }
@@ -197,7 +197,7 @@ namespace Chisel.Core
                     s_NodeIndexToNodeOrderArray = new int[desiredLength];
                 for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
                 {
-                    int nodeID     = allTreeBrushes[nodeOrder];
+                    int nodeID     = allTreeBrushes[nodeOrder].NodeID;
                     int nodeIndex  = nodeID - 1;
                     s_NodeIndexToNodeOrderArray[nodeIndex - nodeIndexToNodeOrderOffset] = nodeOrder;
                     
@@ -290,12 +290,13 @@ namespace Chisel.Core
                             {
                                 int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                                 var otherBrushID    = otherBrushIndex + 1;
+                                var otherBrush      = new CSGTreeBrush { brushNodeID = otherBrushID };
 
-                                if (!CSGManager.IsValidNodeID(otherBrushID))
+                                if (!otherBrush.Valid)
                                     continue;
 
                                 // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                                if (!allTreeBrushes.Contains(otherBrushID))
+                                if (!allTreeBrushes.Contains(otherBrush))
                                     continue;
 
                                 var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -425,7 +426,7 @@ namespace Chisel.Core
                 var anyHierarchyModified = false;
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
-                    int nodeID      = allTreeBrushes[nodeOrder];
+                    int nodeID      = allTreeBrushes[nodeOrder].NodeID;
                     int nodeIndex   = nodeID - 1;
 
                     var nodeFlags   = CSGManager.nodeFlags[nodeIndex];
@@ -489,12 +490,13 @@ namespace Chisel.Core
                         {
                             int otherBrushIndex = brushIntersections[i].nodeIndexOrder.nodeIndex;
                             var otherBrushID    = otherBrushIndex + 1;
+                            var otherBrush      = new CSGTreeBrush { brushNodeID = otherBrushID };
 
-                            if (!CSGManager.IsValidNodeID(otherBrushID))
+                            if (!otherBrush.Valid)
                                 continue;
 
                             // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                            if (!allTreeBrushes.Contains(otherBrushID))
+                            if (!allTreeBrushes.Contains(otherBrush))
                                 continue;
 
                             var otherBrushOrder = s_NodeIndexToNodeOrderArray[otherBrushIndex - nodeIndexToNodeOrderOffset];
@@ -571,7 +573,7 @@ namespace Chisel.Core
                 // TODO: do this in job, build brushMeshList in same job
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
-                    int nodeID      = allTreeBrushes[nodeOrder];
+                    int nodeID      = allTreeBrushes[nodeOrder].NodeID;
                     int nodeIndex   = nodeID - 1;
                     int brushMeshID = 0;
                     if (!CSGManager.IsValidNodeID(nodeID) ||
@@ -2265,8 +2267,11 @@ namespace Chisel.Core
                     for (int b = 0; b < treeUpdate.allUpdateBrushIndexOrders.Length; b++)
                     {
                         var brushIndexOrder = treeUpdate.allUpdateBrushIndexOrders[b];
-                        int brushNodeIndex = brushIndexOrder.nodeIndex;
-                        CSGManager.brushOutlineStates[brushNodeIndex]?.DirtyOutline();
+                        int brushNodeIndex  = brushIndexOrder.nodeIndex;
+                        int brushNodeID     = brushNodeIndex + 1;
+                        var brush           = new CSGTreeBrush { brushNodeID = brushNodeID };
+
+                        ChiselWireframe.UpdateOutline(brush);
                     }
                 }
                 Profiler.EndSample();

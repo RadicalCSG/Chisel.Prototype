@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
@@ -9,42 +10,7 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
-    internal sealed class Outline
-    {
-        public Int32[] visibleOuterLines;
-        public Int32[] visibleInnerLines;
-        public Int32[] visibleTriangles;
-        public Int32[] invisibleOuterLines;
-        public Int32[] invisibleInnerLines;
-        public Int32[] invalidLines;
-
-        public void Reset()
-        {
-            visibleOuterLines = new Int32[0];
-            visibleInnerLines = new Int32[0];
-            visibleTriangles = new Int32[0];
-            invisibleOuterLines = new Int32[0];
-            invisibleInnerLines = new Int32[0];
-            invalidLines = new Int32[0];
-        }
-    };
-
-    internal sealed class BrushOutline
-    {
-        public Outline brushOutline = new Outline();
-        public Outline[] surfaceOutlines;
-        public float3[] vertices;
-
-        public void Reset()
-        {
-            brushOutline.Reset();
-            surfaceOutlines = new Outline[0];
-            vertices = new float3[0];
-        }
-    };
-
     // TODO: clean up
-
     static partial class CSGManager
     {
         internal const int kDefaultUserID = 0;
@@ -99,8 +65,8 @@ namespace Chisel.Core
         internal sealed class TreeInfo
         {
             public bool dirty = true;
-            public readonly List<int> brushes   = new List<int>();
-            public readonly List<int> nodes     = new List<int>();
+            public readonly List<CSGTreeBrush>  brushes   = new List<CSGTreeBrush>();
+            public readonly List<int>           nodes     = new List<int>();
         }
 
         struct NodeTransform
@@ -182,18 +148,17 @@ namespace Chisel.Core
             }
         }
 
-        internal sealed class BrushOutlineState
+        internal sealed class BrushOutlineState : IDisposable
         {
             public int			brushMeshInstanceID;
-            public UInt64       brushOutlineGeneration;
-            public bool         brushOutlineDirty   = true;
 
-            public BrushOutline brushOutline        = new BrushOutline();
+            public BrushOutline brushOutline;
 
-            public void DirtyOutline()
+            public void Dispose()
             {
-                brushOutlineGeneration++;
-                brushOutlineDirty = true;
+                if (brushOutline.IsCreated) 
+                    brushOutline.Dispose();
+                brushOutline = default;
             }
         }
 
@@ -217,6 +182,12 @@ namespace Chisel.Core
 
         internal static void ClearAllNodes()
         {
+            for (int i = 0; i < brushOutlineStates.Count; i++)
+            {
+                brushOutlineStates[i].Dispose();
+                brushOutlineStates[i] = null;
+            }
+
             nodeUserIDs		    .Clear();
             nodeFlags		    .Clear();	nodeTransforms		.Clear();
             nodeHierarchies	    .Clear();	nodeLocalTransforms	.Clear();
@@ -288,6 +259,8 @@ namespace Chisel.Core
             NodeLocalTransform.Reset(ref nodeLocalTransform);
             nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
 
+
+            brushOutlineStates[nodeIndex].Dispose();
             brushOutlineStates[nodeIndex] = null; 
             treeInfos[nodeIndex] = null;
 
@@ -388,6 +361,8 @@ namespace Chisel.Core
             flags.nodeType      = CSGNodeType.Brush;
             nodeFlags[nodeIndex] = flags;
 
+            if (brushOutlineStates[nodeIndex] != null)
+                brushOutlineStates[nodeIndex].Dispose();
             brushOutlineStates[nodeIndex] = new BrushOutlineState();
 
             brushes.Add(generatedNodeID);
@@ -642,10 +617,17 @@ namespace Chisel.Core
         #endregion
 
 
-        internal static BrushOutlineState GetBrushOutlineState(Int32 brushNodeID)						{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return null; return brushOutlineStates[brushNodeID - 1]; }
+        internal static ref BrushOutline GetBrushOutline(CSGTreeBrush brush)
+        {
+            if (!AssertNodeIDValid(brush.brushNodeID) || !AssertNodeType(brush.brushNodeID, CSGNodeType.Brush))
+                throw new ArgumentNullException(nameof(brush));
+            if (!brushOutlineStates[brush.brushNodeID - 1].brushOutline.IsCreated)
+                brushOutlineStates[brush.brushNodeID - 1].brushOutline = BrushOutline.Create();
+            return ref brushOutlineStates[brush.brushNodeID - 1].brushOutline; 
+        }
         
-        internal static Int32		GetBrushMeshID(Int32 brushNodeID)									{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return BrushMeshInstance.InvalidInstanceID; return brushOutlineStates[brushNodeID-1].brushMeshInstanceID; }
-        internal static bool		SetBrushMeshID(Int32 brushNodeID, Int32 brushMeshID)				{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false; brushOutlineStates[brushNodeID - 1].brushMeshInstanceID = brushMeshID; DirtySelf(brushNodeID); return true; }
+        internal static Int32		GetBrushMeshID(Int32 brushNodeID)						{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return BrushMeshInstance.InvalidInstanceID; return brushOutlineStates[brushNodeID-1].brushMeshInstanceID; }
+        internal static bool		SetBrushMeshID(Int32 brushNodeID, Int32 brushMeshID)	{ if (!AssertNodeIDValid(brushNodeID) || !AssertNodeType(brushNodeID, CSGNodeType.Brush)) return false; brushOutlineStates[brushNodeID - 1].brushMeshInstanceID = brushMeshID; DirtySelf(brushNodeID); return true; }
 
 
         static void                 UpdateTreeNodeList(Int32 treeNodeIndex)
@@ -669,9 +651,9 @@ namespace Chisel.Core
                                          treeInfos[treeNodeIndex].brushes);
         }
 
-        static void RecursiveAddTreeChildren(in NodeHierarchy parent, 
-                                             List<int> nodes, 
-                                             List<int> brushes)
+        static void RecursiveAddTreeChildren(in NodeHierarchy   parent, 
+                                             List<int>          nodes, 
+                                             List<CSGTreeBrush> brushes)
         {
             var children = parent.children;
             for (int i = 0; i < children.Count; i++)
@@ -682,7 +664,7 @@ namespace Chisel.Core
                 var childIndex  = childID - 1;
                 nodes.Add(childID);
                 if (nodeFlags[childIndex].nodeType == CSGNodeType.Brush)
-                    brushes.Add(childID);
+                    brushes.Add(new CSGTreeBrush { brushNodeID = childID });
                 var childHierarchy = nodeHierarchies[childIndex];
                 if (childHierarchy.children != null)
                     RecursiveAddTreeChildren(in childHierarchy, 
@@ -702,18 +684,18 @@ namespace Chisel.Core
             return treeInfos[treeNodeIndex].brushes.Count; 
         }
 
-        internal static bool	    DoesTreeContainBrush(Int32 treeNodeID, Int32 brushNodeID)
+        internal static bool	    DoesTreeContainBrush(Int32 treeNodeID, CSGTreeBrush brush)
         {
             if (!AssertNodeIDValid(treeNodeID) || 
-                !AssertNodeIDValid(brushNodeID) || 
+                !AssertNodeIDValid(brush.NodeID) || 
                 !AssertNodeType(treeNodeID, CSGNodeType.Tree) || 
-                !AssertNodeType(brushNodeID, CSGNodeType.Brush))
+                !AssertNodeType(brush.NodeID, CSGNodeType.Brush))
                 return false;
             var treeNodeIndex = treeNodeID - 1;
             if (treeInfos[treeNodeIndex] == null)
                 return false;
             UpdateTreeNodeList(treeNodeIndex);
-            return treeInfos[treeNodeIndex].brushes.Contains(brushNodeID);
+            return treeInfos[treeNodeIndex].brushes.Contains(brush);
         }
         
         internal static CSGTreeBrush GetChildBrushAtIndex(Int32 treeNodeID, Int32 index)			
@@ -726,7 +708,7 @@ namespace Chisel.Core
             if (index < 0 || index > treeInfos[treeNodeIndex].brushes.Count)
                 return new CSGTreeBrush { brushNodeID = CSGTreeNode.InvalidNodeID };
             UpdateTreeNodeList(treeNodeIndex);
-            return new CSGTreeBrush { brushNodeID = treeInfos[treeNodeIndex].brushes[index] };
+            return treeInfos[treeNodeIndex].brushes[index];
         }
 
         internal static Int32		FindTreeByUserID(Int32 userID)

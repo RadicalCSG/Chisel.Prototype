@@ -7,12 +7,6 @@ using Unity.Collections;
 
 namespace Chisel.Core
 {
-    public struct AABB
-    {
-        public AABB(Bounds bounds) { min = bounds.min; max = bounds.max; }
-        public float3 min, max;
-    }
-
     public struct IndexOrder : IEquatable<IndexOrder>
     {
         public int nodeIndex;
@@ -250,7 +244,7 @@ namespace Chisel.Core
             var maxBrushIndex   = 0;
             for (int b = 0; b < brushes.Count; b++)
             {
-                var brushNodeID = brushes[b];
+                var brushNodeID = brushes[b].NodeID;
                 if (brushNodeID == 0)
                     continue;
 
@@ -272,11 +266,7 @@ namespace Chisel.Core
             // Bottom-up -> per brush list of all ancestors to root
             for (int b = 0; b < brushes.Count; b++)
             {
-                var brushNodeID = brushes[b];
-                if (!CSGManager.IsValidNodeID(brushNodeID))
-                    continue;
-
-                var brush = new CSGTreeNode() { nodeID = brushNodeID };
+                var brush = brushes[b];
                 if (!brush.Valid)
                     continue;
 
@@ -291,7 +281,7 @@ namespace Chisel.Core
                     parent = parent.Parent;
                 }
 
-                var brushNodeIndex  = brushNodeID - 1;
+                var brushNodeIndex  = brush.NodeID - 1;
                 s_BrushIndexToAncestorLegend[brushNodeIndex - minBrushIndex] = s_BrushAncestorLegend.Count;
                 s_BrushIndexToOrder[brushNodeIndex - minBrushIndex] = b;
                 s_BrushAncestorLegend.Add(new BrushAncestorLegend()
