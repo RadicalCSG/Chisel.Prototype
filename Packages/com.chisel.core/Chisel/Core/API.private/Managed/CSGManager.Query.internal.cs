@@ -16,7 +16,7 @@ namespace Chisel.Core
     }
 
     // TODO: clean up
-    static partial class CSGManager
+    public static partial class CSGQueryManager
     {
         // TODO: find a better place
         static bool IsSurfaceVisible(MeshQuery[] meshQueries, ref ChiselSurfaceRenderBuffer surface)
@@ -185,7 +185,6 @@ namespace Chisel.Core
                     tree            = tree,
                     brush           = brush,
 
-                    brushUserID     = CSGManager.GetUserIDOfNode(brush.brushNodeID),
                     surfaceIndex    = result_surfaceIndex,
 
                     surfaceIntersection = new ChiselSurfaceIntersection()
@@ -200,29 +199,6 @@ namespace Chisel.Core
 	        return found;
         }
 
-#if UNITY_EDITOR
-        static Dictionary<int, bool> brushSelectableState = new Dictionary<int, bool>();
-        public static VisibilityState SetBrushState(int brushNodeID, bool visible, bool pickingEnabled)
-        {
-            if (!CSGManager.IsValidNodeID(brushNodeID))
-                return VisibilityState.Unknown;
-
-            var brushNodeIndex = brushNodeID - 1;
-            var selectable = visible && pickingEnabled;
-            brushSelectableState[brushNodeIndex] = selectable;
-
-            if (visible)
-                return VisibilityState.AllVisible;
-            else
-                return VisibilityState.AllInvisible;
-        }
-        
-        static bool IsBrushSelectable(int brushNodeID)
-        {
-            var brushNodeIndex = brushNodeID - 1;
-            return !brushSelectableState.TryGetValue(brushNodeIndex, out bool result) || result;
-        }
-#endif
 
 
         // TODO:	problem with RayCastMulti is that this code is too slow
@@ -271,50 +247,41 @@ namespace Chisel.Core
             }
 
             var foundIntersections  = new List<CSGTreeBrushIntersection>();
-            var bounds = new Bounds();
             
             
-            var treeNodeID          = tree.NodeID;
-            var treeNodeIndex       = treeNodeID - 1;
-            CSGManager.UpdateTreeNodeList(treeNodeIndex);
-            var treeInfo            = CSGManager.treeInfos[treeNodeIndex];
+            var treeNodeID      = tree.NodeID;
+            var treeNodeIndex   = treeNodeID - 1;
+            var brushCount      = tree.CountOfBrushesInTree;
+            if (brushCount == 0)
+                return null;
 
-            var treeSpaceRay        = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
-            var brushRenderBuffers  = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
+            var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
 
             // TODO: optimize
-            var allTreeBrushes = treeInfo.brushes;
-            for (int i = 0; i < allTreeBrushes.Count; i++)
+            for (int i = 0; i < brushCount; i++)
             {
-                var brushNodeID = allTreeBrushes[i];
-                if (!CSGManager.IsValidNodeID(brushNodeID))
+                var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
+#if UNITY_EDITOR
+                if (!CSGManager.IsBrushSelectable(brushNodeID))
+                    continue;
+#endif
+                var brushNodeIndex  = brushNodeID - 1;
+                var bounds          = CSGManager.GetBrushBounds(brushNodeID);
+                if (bounds == default)
                     continue;
 
                 if (s_IgnoreNodeIndices.Contains(brushNodeID) ||
                     (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brushNodeID)))
                     continue;
 
-                //var operation_type_bits = CSGManager.GetNodeOperationByIndex(brushNodeID);
-                //if (((int)operation_type_bits & InfiniteBrushBits) == InfiniteBrushBits)
-                //    continue;
-
-
-                if (!brushRenderBuffers.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
-                    continue;
-
-                bounds = CSGManager.GetBrushBounds(brushNodeID);
-                if (bounds == default)
+                if (!brushRenderBufferLookup.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
                     continue;
 
                 if (!bounds.IntersectRay(treeSpaceRay))
                     continue;
 
                 var brush = new CSGTreeBrush() { brushNodeID = brushNodeID };
-
-#if UNITY_EDITOR
-                if (!IsBrushSelectable(brushNodeID))
-                    continue;
-#endif
 
                 BrushRayCast(meshQueries, tree, brush,
 
@@ -359,11 +326,18 @@ namespace Chisel.Core
             if (brushCount == 0)
                 return null;
 
+            var treeNodeID              = tree.treeNodeID;
+            var treeNodeIndex           = treeNodeID - 1;
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
 
             var foundNodes  = new List<CSGTreeNode>();
             for (int i = 0; i < brushCount; i++)
             {
                 var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
+#if UNITY_EDITOR
+                if (!CSGManager.IsBrushSelectable(brushNodeID))
+                    continue;
+#endif
                 var brushNodeIndex  = brushNodeID - 1;
                 var bounds          = CSGManager.GetBrushBounds(brushNodeID);
                 if (bounds == default)
@@ -382,12 +356,9 @@ namespace Chisel.Core
                 }
 
 
-                var treeNodeID          = nodeHierarchies[brushNodeIndex].treeNodeID;
-                var chiselLookupValues  = ChiselTreeLookup.Value[treeNodeID - 1];
-
                 if (intersectsFrustum)
                 {
-                    if (!chiselLookupValues.brushRenderBufferLookup.TryGetValue(brushNodeIndex, out var brushRenderBuffers) ||
+                    if (!brushRenderBufferLookup.TryGetValue(brushNodeIndex, out var brushRenderBuffers) ||
                         !brushRenderBuffers.IsCreated)
                         continue;
 

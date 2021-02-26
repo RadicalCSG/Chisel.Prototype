@@ -13,15 +13,13 @@ namespace Chisel.Core
         public CSGTreeBrush	brush;
         
         public Int32        surfaceIndex;
-        public Int32        brushUserID;
-
+        
         public ChiselSurfaceIntersection surfaceIntersection;
 
         public readonly static CSGTreeBrushIntersection None = new CSGTreeBrushIntersection()
         {
             tree				= (CSGTree)CSGTreeNode.InvalidNode,
             brush				= (CSGTreeBrush)CSGTreeNode.InvalidNode,
-            brushUserID			= 0,
             surfaceIndex		= -1,
             surfaceIntersection	= ChiselSurfaceIntersection.None
         };

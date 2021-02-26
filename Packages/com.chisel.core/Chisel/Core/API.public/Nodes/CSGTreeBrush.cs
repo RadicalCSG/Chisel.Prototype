@@ -8,19 +8,6 @@ using Unity.Burst;
 
 namespace Chisel.Core
 {
-    /// <summary>Flags to modify default brush behavior.</summary>
-    /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    /// <seealso cref="Chisel.Core.CSGTreeBrush.Flags"/>
-    [Serializable, Flags]
-    public enum CSGTreeBrushFlags : byte
-    {
-        /// <summary>This brush has no special states</summary>
-        Default		= 0,
-
-        /// <summary>When set the brush is infinitely large. This can be used, for instance, to create an inverted world, by putting everything inside an infinitely large brush.</summary>
-        Infinite	= 1
-    }
-
     /// <summary>A leaf node in a CSG tree that has a shape (a <see cref="Chisel.Core.BrushMesh"/>) with which CSG operations can be performed.</summary>
     /// <remarks><note>The internal ID contained in this struct is generated at runtime and is not persistent.</note>
     /// <note>This struct can be converted into a <see cref="Chisel.Core.CSGTreeNode"/> and back again.</note>
@@ -42,14 +29,13 @@ namespace Chisel.Core
         /// <param name="operation">The <see cref="Chisel.Core.CSGOperationType"/> that needs to be performed with this <see cref="Chisel.Core.CSGTreeBrush"/>.</param>
         /// <param name="flags"><see cref="Chisel.Core.CSGTreeBrush"/> specific flags</param>
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
-        public static CSGTreeBrush Create(Int32 userID, Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive, CSGTreeBrushFlags flags = CSGTreeBrushFlags.Default)
+        public static CSGTreeBrush Create(Int32 userID, Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
             int brushNodeID;
             if (GenerateBrush(userID, out brushNodeID))
             { 
                 if (localTransformation != default(Matrix4x4)) CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref localTransformation);
                 if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(brushNodeID, operation);
-                if (flags     != CSGTreeBrushFlags.Default) SetBrushFlags(brushNodeID, flags);
                 if (brushMesh.Valid) CSGManager.SetBrushMeshID(brushNodeID, brushMesh.brushMeshID);
             } else
                 brushNodeID = 0;
@@ -62,9 +48,9 @@ namespace Chisel.Core
         /// <param name="operation">The <see cref="Chisel.Core.CSGOperationType"/> that needs to be performed with this <see cref="Chisel.Core.CSGTreeBrush"/>.</param>
         /// <param name="flags"><see cref="Chisel.Core.CSGTreeBrush"/> specific flags</param>
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
-        public static CSGTreeBrush Create(Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive, CSGTreeBrushFlags flags = CSGTreeBrushFlags.Default)
+        public static CSGTreeBrush Create(Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
-            return Create(0, localTransformation, brushMesh, operation, flags);
+            return Create(0, localTransformation, brushMesh, operation);
         }
 
         /// <summary>Generates a brush and returns a <see cref="Chisel.Core.CSGTreeBrush"/> struct that contains a reference to it.</summary>
@@ -73,9 +59,9 @@ namespace Chisel.Core
         /// <param name="operation">The <see cref="Chisel.Core.CSGOperationType"/> that needs to be performed with this <see cref="Chisel.Core.CSGTreeBrush"/>.</param>
         /// <param name="flags"><see cref="Chisel.Core.CSGTreeBrush"/> specific flags</param>
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
-        public static CSGTreeBrush Create(Int32 userID = 0, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive, CSGTreeBrushFlags flags = CSGTreeBrushFlags.Default)
+        public static CSGTreeBrush Create(Int32 userID = 0, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
-            return Create(userID, default(Matrix4x4), brushMesh, operation, flags);
+            return Create(userID, default(Matrix4x4), brushMesh, operation);
         }
         #endregion
 
@@ -117,9 +103,6 @@ namespace Chisel.Core
         #endregion
 
         #region TreeBrush specific
-        /// <value>Gets or sets <see cref="Chisel.Core.CSGTreeBrush"/> specific flags.</value>
-        public CSGTreeBrushFlags    Flags		    { get { return GetBrushFlags(brushNodeID); } set { SetBrushFlags(brushNodeID, value); } }
-
         /// <value>Sets or gets a <see cref="Chisel.Core.BrushMeshInstance"/></value>
         /// <remarks>By modifying the <see cref="Chisel.Core.BrushMeshInstance"/> you can change the shape of the <see cref="Chisel.Core.CSGTreeBrush"/>
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>

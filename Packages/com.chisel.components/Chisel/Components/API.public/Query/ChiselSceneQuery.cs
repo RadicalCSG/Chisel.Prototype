@@ -316,7 +316,7 @@ namespace Chisel.Components
                     treeRayEnd		= worldRayEnd;
                 }
 
-                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced, ignoreCulled);
+                var treeIntersections = CSGQueryManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced, ignoreCulled);
                 if (treeIntersections == null)
                     continue;
 
@@ -413,7 +413,7 @@ namespace Chisel.Components
                 treeRayEnd = worldRayEnd;
             }
 
-            var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced: true, ignoreCulled: true);
+            var treeIntersections = CSGQueryManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd, s_IgnoreNodes, s_FilterNodes, ignoreBackfaced: true, ignoreCulled: true);
             if (treeIntersections == null)
                 return false;
 
@@ -479,7 +479,7 @@ namespace Chisel.Components
                     planes[p].distance = srcVector.w;
                 }
 
-                var treeNodesInFrustum = CSGManager.GetNodesInFrustum(tree, query, planes);
+                var treeNodesInFrustum = CSGQueryManager.GetNodesInFrustum(tree, query, planes);
                 if (treeNodesInFrustum == null)
                     continue;
 

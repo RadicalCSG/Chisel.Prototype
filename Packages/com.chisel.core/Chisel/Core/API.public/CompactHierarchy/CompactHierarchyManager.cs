@@ -41,6 +41,7 @@ namespace Chisel.Core.New
     }
 
     // TODO: use struct
+    // TODO: rename
     public class CompactHierarchyManager
     {
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]

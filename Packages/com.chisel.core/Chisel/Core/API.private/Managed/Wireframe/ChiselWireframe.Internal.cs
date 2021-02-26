@@ -12,7 +12,7 @@ namespace Chisel.Core
 
         private static UInt64 GetBrushOutlineGeneration(Int32 brushNodeID)
         {
-            var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
+            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
             return brushInfo.brushOutlineGeneration;
         }
 
@@ -65,7 +65,7 @@ namespace Chisel.Core
 
         internal static void UpdateOutline(Int32 brushNodeID)
         {
-            var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
+            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
             var brushMeshInstanceID = CSGManager.GetBrushMeshID(brushNodeID);
             if (BrushMeshManager.IsBrushMeshIDValid(brushMeshInstanceID))
             {
@@ -87,7 +87,7 @@ namespace Chisel.Core
                                                   ref Int32[]       invisibleInnerLines,
                                                   ref Int32[]       invalidLines)
         {
-            var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
+            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
             if (brushInfo == null)
                 return false;
 
@@ -123,7 +123,7 @@ namespace Chisel.Core
                                                     ref Int32[]     invisibleInnerLines,
                                                     ref Int32[]     invalidLines)
         {
-            var brushInfo = CSGManager.GetBrushInfo(brushNodeID);
+            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
             if (brushInfo == null)
                 return false;
 

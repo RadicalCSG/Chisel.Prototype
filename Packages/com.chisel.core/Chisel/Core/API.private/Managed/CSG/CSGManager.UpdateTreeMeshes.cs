@@ -31,19 +31,11 @@ namespace Chisel.Core
             if (!needUpdate)
                 return false;
 
-            CSGManager.UpdateDelayedHierarchyModifications();
+            // TODO: update "previous siblings" when something with an intersection operation has been modified
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
             allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, CSGManager.trees);
             UnityEngine.Profiling.Profiler.EndSample();
-            return true;
-        }
-
-        internal static bool RebuildAll(FinishMeshUpdate finishMeshUpdates)
-        {
-            if (!UpdateAllTreeMeshes(finishMeshUpdates, out JobHandle handle))
-                return false;
-            handle.Complete();
             return true;
         }
         #endregion
@@ -584,7 +576,7 @@ namespace Chisel.Core
                     int brushMeshID = 0;
                     if (!CSGManager.IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
-                        (brushMeshID = CSGManager.brushInfos[nodeIndex].brushMeshInstanceID) == 0)
+                        (brushMeshID = CSGManager.brushOutlineStates[nodeIndex].brushMeshInstanceID) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
                         Debug.LogError($"Brush with ID {nodeID}, index {nodeIndex} has its brushMeshID set to {brushMeshID}, which is invalid.");                        
@@ -2274,7 +2266,7 @@ namespace Chisel.Core
                     {
                         var brushIndexOrder = treeUpdate.allUpdateBrushIndexOrders[b];
                         int brushNodeIndex = brushIndexOrder.nodeIndex;
-                        CSGManager.brushInfos[brushNodeIndex]?.DirtyOutline();
+                        CSGManager.brushOutlineStates[brushNodeIndex]?.DirtyOutline();
                     }
                 }
                 Profiler.EndSample();
