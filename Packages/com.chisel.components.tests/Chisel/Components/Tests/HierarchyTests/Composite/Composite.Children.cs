@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Composite_Children
@@ -542,4 +542,4 @@ namespace HierarchyTests
             Assert.AreEqual(0, composite1.Node.Count);
         }
     }
-}
+}*/

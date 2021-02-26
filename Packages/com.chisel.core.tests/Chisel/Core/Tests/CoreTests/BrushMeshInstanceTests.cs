@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using Chisel;
 using Chisel.Core;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -58,4 +58,4 @@ namespace FoundationTests
             Assert.AreEqual(false, coreBrushMesh.Valid);
         }
     }
-}
+}*/

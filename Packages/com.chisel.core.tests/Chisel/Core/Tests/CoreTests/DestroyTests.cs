@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -18,6 +18,13 @@ namespace FoundationTests
             CSGManager.Clear();
         }
 
+        internal static bool DestroyNodes(CSGTreeNode[] nodeIDs)
+        {
+            bool fail = false;
+            for (int i = 0; i < nodeIDs.Length; i++)
+                fail = nodeIDs[i].Destroy() || fail;
+            return !fail;
+        }
 
         [Test]
         public void DestroyInvalidNode()
@@ -37,7 +44,7 @@ namespace FoundationTests
         [Test]
         public void DestroyNode_InvalidNode_Multiple()
         {
-            var result = CSGManager.Destroy(new CSGTreeNode[] { CSGTreeNode.InvalidNode, CSGTreeNode.InvalidNode });
+            var result = DestroyNodes(new CSGTreeNode[] { CSGTreeNode.InvalidNode, CSGTreeNode.InvalidNode });
 
             Assert.AreEqual(false, result);
             Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
@@ -56,7 +63,7 @@ namespace FoundationTests
             CSGManager.ClearDirty(brush0.NodeID);
             CSGManager.ClearDirty(brush1.NodeID);
 
-            var result = CSGManager.Destroy(new CSGTreeNode[] { brush0, brush1, brush1 });
+            var result = DestroyNodes(new CSGTreeNode[] { brush0, brush1, brush1 });
 
             Assert.AreEqual(true, result);
             TestUtility.ExpectInvalidBrush(ref brush0);
@@ -177,7 +184,7 @@ namespace FoundationTests
             CSGManager.ClearDirty(brush1.NodeID);
             CSGManager.ClearDirty(brush2.NodeID);
 
-            var result = CSGManager.Destroy(new CSGTreeNode[] { brush0, brush1, brush2 });
+            var result = DestroyNodes(new CSGTreeNode[] { brush0, brush1, brush2 });
 
             Assert.AreEqual(true, result);
             TestUtility.ExpectInvalidBrush(ref brush0);
@@ -202,7 +209,7 @@ namespace FoundationTests
             CSGManager.ClearDirty(branch1.NodeID);
             CSGManager.ClearDirty(branch2.NodeID);
 
-            var result = CSGManager.Destroy(new CSGTreeNode[] { branch0, branch1, branch2 });
+            var result = DestroyNodes(new CSGTreeNode[] { branch0, branch1, branch2 });
 
             Assert.AreEqual(true, result);
             TestUtility.ExpectInvalidBranch(ref branch0);
@@ -227,7 +234,7 @@ namespace FoundationTests
             CSGManager.ClearDirty(tree1.NodeID);
             CSGManager.ClearDirty(tree2.NodeID);
 
-            var result = CSGManager.Destroy(new CSGTreeNode[] { tree0, tree1, tree2 });
+            var result = DestroyNodes(new CSGTreeNode[] { tree0, tree1, tree2 });
 
             Assert.AreEqual(true, result);
             TestUtility.ExpectInvalidTree(ref tree0);
@@ -343,4 +350,4 @@ namespace FoundationTests
         }
 
     }
-}
+}*/

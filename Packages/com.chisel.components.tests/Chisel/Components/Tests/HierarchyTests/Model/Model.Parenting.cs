@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Model_Parenting
@@ -712,4 +712,4 @@ namespace HierarchyTests
             Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
         }
     }
-}
+}*/

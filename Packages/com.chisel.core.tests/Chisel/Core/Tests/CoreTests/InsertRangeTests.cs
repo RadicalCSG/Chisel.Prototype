@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -295,4 +295,4 @@ namespace FoundationTests
             Assert.AreEqual(5, CSGManager.TreeNodeCount);
         }
     }
-}
+}*/

@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 using Chisel;
 using Chisel.Core;
 using Chisel.Components;
-
+/*
 namespace HierarchyTests
 {
     public partial class Composite_Scene
@@ -216,4 +216,4 @@ namespace HierarchyTests
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
         }
     }
-}
+}*/

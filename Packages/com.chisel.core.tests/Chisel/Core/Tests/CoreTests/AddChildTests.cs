@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel;
 using UnityEditor.SceneManagement;
 using Chisel.Core;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -669,4 +669,4 @@ namespace FoundationTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
         }
     }
-}
+}*/

@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Model_Children
@@ -496,4 +496,4 @@ namespace HierarchyTests
             Assert.AreEqual(0, model.Node.Count);
         }
     }
-}
+}*/

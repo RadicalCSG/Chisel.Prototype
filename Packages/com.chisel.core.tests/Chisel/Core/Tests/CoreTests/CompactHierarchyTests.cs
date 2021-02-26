@@ -240,11 +240,11 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ChildCount(branch0_ID), Is.EqualTo(3));
                 
                 Assert.AreEqual((1, 2, 3, 4, 5), 
-                                (compactHierarchy.GetChildAt(branch0_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch0_brush1_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch0_brush2_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush1_ID).brushMeshID));
+                                (compactHierarchy.GetChild(branch0_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch0_brush1_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch0_brush2_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush1_ID).brushMeshID));
             }
         }
 
@@ -285,10 +285,10 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ChildCount(branch0_ID), Is.EqualTo(2));
 
                 Assert.AreEqual((1, 3, 4, 5), 
-                                (compactHierarchy.GetChildAt(branch0_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch0_brush2_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush1_ID).brushMeshID));
+                                (compactHierarchy.GetChild(branch0_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch0_brush2_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush1_ID).brushMeshID));
             }
         }
 
@@ -306,10 +306,10 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ChildCount(branch0_ID), Is.EqualTo(2));
 
                 Assert.AreEqual((1, 2, 4, 5), 
-                                (compactHierarchy.GetChildAt(branch0_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch0_brush1_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush0_ID).brushMeshID,
-                                 compactHierarchy.GetChildAt(branch1_brush1_ID).brushMeshID));
+                                (compactHierarchy.GetChild(branch0_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch0_brush1_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush0_ID).brushMeshID,
+                                 compactHierarchy.GetChild(branch1_brush1_ID).brushMeshID));
             }
         }
 

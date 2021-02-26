@@ -7,7 +7,7 @@ using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using System.Text.RegularExpressions;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -339,4 +339,4 @@ namespace FoundationTests
         }
 
     }
-}
+}*/

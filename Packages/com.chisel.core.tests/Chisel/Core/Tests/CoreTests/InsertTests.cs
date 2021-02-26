@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -18,27 +18,25 @@ namespace FoundationTests
             CSGManager.Clear();
         }
 
-        /*
-        [Test]
-        public void InvalidNode_InsertBranch_ReturnsFalse()
-        {
-            const int branchUserID = 10;
-            var branch = CSGTreeBranch.Create(branchUserID);
-            var invalidNode = CSGTreeNode.InvalidNode;
-            CSGUtility.ClearDirty(branch.NodeID);
+        //[Test]
+        //public void InvalidNode_InsertBranch_ReturnsFalse()
+        //{
+         //   const int branchUserID = 10;
+         //   var branch = CSGTreeBranch.Create(branchUserID);
+         //   var invalidNode = CSGTreeNode.InvalidNode;
+         //   CSGUtility.ClearDirty(branch.NodeID);
 
-            var result = invalidNode.Insert(0, branch);
+         //   var result = invalidNode.Insert(0, branch);
 
-            Assert.AreEqual(false, result);
-            TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGUtility.TreeBrushCount);
-            Assert.AreEqual(0, CSGUtility.TreeCount);
-            Assert.AreEqual(1, CSGUtility.TreeBranchCount);
-            Assert.AreEqual(1, CSGUtility.TreeNodeCount);
+            //Assert.AreEqual(false, result);
+            //TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
+            //Assert.AreEqual(false, branch.Dirty);
+            //Assert.AreEqual(0, branch.Count);
+            //Assert.AreEqual(0, CSGUtility.TreeBrushCount);
+            //Assert.AreEqual(0, CSGUtility.TreeCount);
+            //Assert.AreEqual(1, CSGUtility.TreeBranchCount);
+            //Assert.AreEqual(1, CSGUtility.TreeNodeCount);
         }
-        */
 
         [Test]
         public void Branch_InsertInvalidNode_ReturnsFalse()
@@ -494,4 +492,4 @@ namespace FoundationTests
         }
 
     }
-}
+}*/

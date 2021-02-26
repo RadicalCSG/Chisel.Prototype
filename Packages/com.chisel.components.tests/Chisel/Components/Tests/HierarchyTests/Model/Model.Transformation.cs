@@ -7,7 +7,7 @@ using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Model_Transformation
@@ -17,4 +17,4 @@ namespace HierarchyTests
         // TODO: create transformation tests
 
     }
-}
+}*/

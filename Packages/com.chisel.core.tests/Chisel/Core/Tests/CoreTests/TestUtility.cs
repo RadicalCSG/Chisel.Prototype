@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
-
+/*
 namespace FoundationTests
 {
     public sealed class TestUtility
@@ -91,4 +91,4 @@ namespace FoundationTests
             Assert.AreEqual(CSGNodeType.None, type);
         }
     }
-}
+}*/

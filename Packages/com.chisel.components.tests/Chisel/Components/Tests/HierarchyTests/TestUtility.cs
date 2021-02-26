@@ -8,7 +8,7 @@ using Chisel.Components;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 
 namespace HierarchyTests
 {
@@ -113,3 +113,4 @@ namespace HierarchyTests
         }
     }
 }
+*/
