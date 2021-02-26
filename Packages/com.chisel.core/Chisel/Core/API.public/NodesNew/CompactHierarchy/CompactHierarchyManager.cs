@@ -42,7 +42,7 @@ namespace Chisel.Core.New
 
     // TODO: use struct
     // TODO: rename
-    public class CompactHierarchyManager
+    public partial class CompactHierarchyManager
     {
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]
         struct Generation
@@ -56,6 +56,100 @@ namespace Chisel.Core.New
 
         static List<Generation>         idToIndex       = new List<Generation>();
         static List<int>                freeIDs         = new List<int>();
+
+        public static void Clear() 
+        {
+            foreach (var hierarchy in hierarchies)
+                hierarchy.Dispose();
+            hierarchies.Clear();
+            idToIndex.Clear();
+            freeIDs.Clear();
+            brushSelectableState.Clear();
+        }
+        
+        #region Inspector State
+#if UNITY_EDITOR
+        enum BrushVisibilityState
+        {
+            None            = 0,
+            Visible         = 1,
+            PickingEnabled  = 2,
+            Selectable      = Visible | PickingEnabled
+        }
+        static Dictionary<CompactNodeID, BrushVisibilityState> brushSelectableState = new Dictionary<CompactNodeID, BrushVisibilityState>();
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static VisibilityState SetBrushState(CompactNodeID nodeID, bool visible, bool pickingEnabled)
+        {
+            if (!IsValidNodeID(nodeID))
+                return VisibilityState.Unknown;
+
+            var state = (visible        ? BrushVisibilityState.Visible        : BrushVisibilityState.None) |
+                        (pickingEnabled ? BrushVisibilityState.PickingEnabled : BrushVisibilityState.None);
+            brushSelectableState[nodeID] = state;
+
+            if (visible)
+                return VisibilityState.AllVisible;
+            else
+                return VisibilityState.AllInvisible;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static void SetVisibility(CompactNodeID nodeID, bool visible)
+        {
+            if (!IsValidNodeID(nodeID))
+                return;
+
+            var state = (visible ? BrushVisibilityState.Visible : BrushVisibilityState.None);
+            if (brushSelectableState.TryGetValue(nodeID, out var result))
+                state |= (result & BrushVisibilityState.PickingEnabled);
+            brushSelectableState[nodeID] = state;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static void SetPickingEnabled(CompactNodeID nodeID, bool pickingEnabled)
+        {
+            if (!IsValidNodeID(nodeID))
+                return;
+
+            var state = (pickingEnabled ? BrushVisibilityState.PickingEnabled : BrushVisibilityState.None);
+            if (brushSelectableState.TryGetValue(nodeID, out var result))
+                state |= (result & BrushVisibilityState.Visible);
+            brushSelectableState[nodeID] = state;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static bool IsBrushVisible(CompactNodeID nodeID)
+        {
+            if (!IsValidNodeID(nodeID))
+                return false;
+            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+                return false;
+            return (result & BrushVisibilityState.Visible) == BrushVisibilityState.Visible;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static bool IsBrushPickingEnabled(CompactNodeID nodeID)
+        {
+            if (!IsValidNodeID(nodeID))
+                return false;
+            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+                return false;
+            return (result & BrushVisibilityState.PickingEnabled) != BrushVisibilityState.None;
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static bool IsBrushSelectable(CompactNodeID nodeID)
+        {
+            if (!IsValidNodeID(nodeID))
+                return false;
+            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+                return false;
+            return (result & BrushVisibilityState.Selectable) != BrushVisibilityState.None;
+        }
+#endif
+        #endregion
+
 
         #region CreateHierarchy
         public static CompactHierarchy CreateHierarchy(Int32 userID = 0)
@@ -153,17 +247,99 @@ namespace Chisel.Core.New
         {
             throw new NotImplementedException();
         }
+        
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static void NotifyBrushMeshModified(int brushMeshID)
+        {
+            //throw new NotImplementedException();
+        }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)
+        {
+            //throw new NotImplementedException();
+        }
+
+        public static void NotifyBrushMeshRemoved(int brushMeshID)
+        {
+            //throw new NotImplementedException();
+        }
 
         #region Dirty
         internal static bool IsNodeDirty(CompactNodeID nodeID)
         {
-            throw new NotImplementedException();
-        }
+            if (!IsValidNodeID(nodeID))
+                return false;
 
-        internal static void SetDirty(CompactNodeID nodeID)
+            var hierarchy = GetHierarchy(nodeID);
+            ref var node = ref hierarchy.GetChildRef(nodeID);
+            CSGNodeType nodeType;
+            if (hierarchy.RootID != nodeID)
+                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            else
+                nodeType = CSGNodeType.Tree;
+
+            switch (nodeType)
+            {
+                case CSGNodeType.Brush:		return (node.flags & (NodeStatusFlags.NeedCSGUpdate)) != NodeStatusFlags.None;
+                case CSGNodeType.Branch:	return (node.flags & (NodeStatusFlags.BranchNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate)) != NodeStatusFlags.None;
+                case CSGNodeType.Tree:		return (node.flags & (NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate)) != NodeStatusFlags.None;
+            }
+            return false;
+        }
+        
+        internal static bool SetDirty(CompactNodeID nodeID)
         {
-            throw new NotImplementedException();
+            if (!IsValidNodeID(nodeID))
+                return false;
+
+            var hierarchy = GetHierarchy(nodeID);
+            ref var node = ref hierarchy.GetChildRef(nodeID);
+            CSGNodeType nodeType;
+            if (hierarchy.RootID != nodeID)
+                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            else
+                nodeType = CSGNodeType.Tree;
+
+            switch (nodeType)
+            {
+                case CSGNodeType.Brush:
+                {
+                    node.flags |= NodeStatusFlags.NeedFullUpdate;
+                    ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    return true; 
+                }
+                case CSGNodeType.Branch:
+                {
+                    node.flags |= NodeStatusFlags.BranchNeedsUpdate;
+                    ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    return true; 
+                }
+                case CSGNodeType.Tree:
+                {
+                    node.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    return true;
+                }
+                default:
+                {
+                    Debug.LogError("Unknown node type");
+                    return false;
+                }
+            }
+        }
+        
+        // Do not use. This method might be removed/renamed in the future
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static bool ClearDirty(CompactNodeID nodeID)
+        {
+            if (!IsValidNodeID(nodeID))
+                return false;
+
+            GetHierarchy(nodeID).GetChildRef(nodeID).flags = NodeStatusFlags.None;
+            return true;
         }
         #endregion
 
@@ -173,43 +349,43 @@ namespace Chisel.Core.New
             if (hierarchy.RootID == nodeID)
                 return CSGNodeType.Tree;
 
-            return (hierarchy.GetChildRefAt(nodeID).brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            return (hierarchy.GetChildRef(nodeID).brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
         }
 
 
-        internal static bool IsNodeIDValid(CompactNodeID nodeID)
+        internal static bool IsValidNodeID(CompactNodeID nodeID)
         {
             return GetHierarchy(nodeID).IsValidNodeID(nodeID);
         }
 
         internal static int GetUserIDOfNode(CompactNodeID nodeID)
         {
-            return GetHierarchy(nodeID).GetChildRefAt(nodeID).userID;
+            return GetHierarchy(nodeID).GetChildRef(nodeID).userID;
         }
 
         #region Transformations
         internal static float4x4 GetNodeLocalTransformation(CompactNodeID nodeID)
         {
-            return GetHierarchy(nodeID).GetChildRefAt(nodeID).transformation;
+            return GetHierarchy(nodeID).GetChildRef(nodeID).transformation;
         }
 
         internal static bool SetNodeLocalTransformation(CompactNodeID nodeID, ref float4x4 result)
         {
-            GetHierarchy(nodeID).GetChildRefAt(nodeID).transformation = result;
+            GetHierarchy(nodeID).GetChildRef(nodeID).transformation = result;
             return true;
         }
 
         internal static bool GetTreeToNodeSpaceMatrix(CompactNodeID nodeID, out float4x4 result)
         {
             // TODO: fix temporary "solution"
-            result = GetHierarchy(nodeID).GetChildRefAt(nodeID).transformation;
+            result = GetHierarchy(nodeID).GetChildRef(nodeID).transformation;
             return true;
         }
 
         internal static bool GetNodeToTreeSpaceMatrix(CompactNodeID nodeID, out float4x4 result)
         {
             // TODO: fix temporary "solution"
-            result = math.inverse(GetHierarchy(nodeID).GetChildRefAt(nodeID).transformation);
+            result = math.inverse(GetHierarchy(nodeID).GetChildRef(nodeID).transformation);
             return true;
         }
         #endregion
@@ -217,12 +393,12 @@ namespace Chisel.Core.New
         #region BrushMeshID
         internal static Int32 GetBrushMeshID(CompactNodeID nodeID)
         {
-            return GetHierarchy(nodeID).GetChildRefAt(nodeID).brushMeshID;
+            return GetHierarchy(nodeID).GetChildRef(nodeID).brushMeshID;
         }
         
         internal static bool SetBrushMeshID(CompactNodeID nodeID, Int32 brushMeshID)
         {
-            GetHierarchy(nodeID).GetChildRefAt(nodeID).transformation = brushMeshID;
+            GetHierarchy(nodeID).GetChildRef(nodeID).transformation = brushMeshID;
             return true;
         }
         #endregion
@@ -230,12 +406,12 @@ namespace Chisel.Core.New
         #region Operation
         internal static CSGOperationType GetNodeOperationType(CompactNodeID nodeID)
         {
-            return GetHierarchy(nodeID).GetChildRefAt(nodeID).operation;
+            return GetHierarchy(nodeID).GetChildRef(nodeID).operation;
         }
 
         internal static bool SetNodeOperationType(CompactNodeID nodeID, CSGOperationType operation)
         {
-            GetHierarchy(nodeID).GetChildRefAt(nodeID).operation = operation;
+            GetHierarchy(nodeID).GetChildRef(nodeID).operation = operation;
             return true;
         }
         #endregion
@@ -264,6 +440,11 @@ namespace Chisel.Core.New
         internal static CompactNodeID GetChildNodeAtIndex(CompactNodeID parent, int index)
         {
             return GetHierarchy(parent).GetChildIDAt(parent, index);
+        }
+
+        internal static MinMaxAABB GetBrushBounds(CompactNodeID nodeID)
+        {
+            return GetHierarchy(nodeID).GetChildRef(nodeID).bounds;
         }
 
         internal static bool AddChildNode(CompactNodeID parent, CompactNodeID item)

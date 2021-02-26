@@ -429,7 +429,7 @@ namespace Chisel.Core
                     int nodeIndex   = nodeID - 1;
 
                     var nodeFlags   = CSGManager.nodeFlags[nodeIndex];
-                    if (nodeFlags.status != NodeStatusFlags.None)
+                    if (nodeFlags.IsAnyNodeFlagSet())
                     {
                         var indexOrder = allTreeBrushIndexOrders[nodeOrder];
                         if (!s_TempHashSet.Contains(indexOrder.nodeIndex))
@@ -437,24 +437,24 @@ namespace Chisel.Core
                         
                         // Fix up all flags
 
-                        if ((nodeFlags.status & NodeStatusFlags.ShapeModified) != NodeStatusFlags.None)
+                        if (nodeFlags.IsNodeFlagSet(NodeStatusFlags.ShapeModified))
                         {
                             // Need to update the basePolygons for this node
-                            nodeFlags.status &= ~NodeStatusFlags.ShapeModified;
-                            nodeFlags.status |= NodeStatusFlags.NeedAllTouchingUpdated;
+                            nodeFlags.UnSetNodeFlag(NodeStatusFlags.ShapeModified);
+                            nodeFlags.SetNodeFlag(NodeStatusFlags.NeedAllTouchingUpdated);
                         }
 
-                        if ((nodeFlags.status & NodeStatusFlags.HierarchyModified) != NodeStatusFlags.None)
+                        if (nodeFlags.IsNodeFlagSet(NodeStatusFlags.HierarchyModified))
                         {
                             anyHierarchyModified = true;
-                            nodeFlags.status |= NodeStatusFlags.NeedAllTouchingUpdated;
+                            nodeFlags.SetNodeFlag(NodeStatusFlags.NeedAllTouchingUpdated);
                         }
 
-                        if ((nodeFlags.status & NodeStatusFlags.TransformationModified) != NodeStatusFlags.None)
+                        if (nodeFlags.IsNodeFlagSet(NodeStatusFlags.TransformationModified))
                         {
                             s_TransformTreeBrushIndicesList.Add(indexOrder);
-                            nodeFlags.status &= ~NodeStatusFlags.TransformationModified;
-                            nodeFlags.status |= NodeStatusFlags.NeedAllTouchingUpdated;
+                            nodeFlags.UnSetNodeFlag(NodeStatusFlags.TransformationModified);
+                            nodeFlags.SetNodeFlag(NodeStatusFlags.NeedAllTouchingUpdated);
                         }
 
                         CSGManager.nodeFlags[nodeIndex] = nodeFlags;
@@ -476,7 +476,7 @@ namespace Chisel.Core
                         int nodeOrder   = indexOrder.nodeOrder;
 
                         var nodeFlags = CSGManager.nodeFlags[nodeIndex];
-                        if ((nodeFlags.status & NodeStatusFlags.NeedAllTouchingUpdated) == NodeStatusFlags.None)
+                        if (!nodeFlags.IsNodeFlagSet(NodeStatusFlags.NeedAllTouchingUpdated))
                             continue;
 
                         var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
@@ -2150,7 +2150,7 @@ namespace Chisel.Core
                         var brushIndexOrder = treeUpdate.allTreeBrushIndexOrders[b];
                         int brushNodeIndex  = brushIndexOrder.nodeIndex;
                         var nodeFlags = CSGManager.nodeFlags[brushNodeIndex];
-                        nodeFlags.status = NodeStatusFlags.None;
+                        nodeFlags.ClearNodeFlags();
                         CSGManager.nodeFlags[brushNodeIndex] = nodeFlags;
                     }
 

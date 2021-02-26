@@ -60,6 +60,7 @@ namespace Chisel.Core
             {
                 Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
                 CSGManager.NotifyBrushMeshModified(brushMeshID);
+                Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(brushMeshID);
                 Profiler.EndSample();
             }
             return result;

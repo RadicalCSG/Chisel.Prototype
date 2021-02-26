@@ -133,7 +133,17 @@ namespace Chisel.Core
         public static readonly CSGTreeNode InvalidNode = new CSGTreeNode { nodeID = CSGTreeNode.InvalidNodeID };
         internal const Int32 InvalidNodeID = 0;
         #endregion
-        
+          
+#if UNITY_EDITOR
+        #region Inspector State
+
+        public bool Visible         { get { return CSGManager.IsBrushVisible(nodeID); } set { CSGManager.SetVisibility(nodeID, value); } }
+        public bool PickingEnabled  { get { return CSGManager.IsBrushPickingEnabled(nodeID); } set { CSGManager.SetPickingEnabled(nodeID, value); } }
+        public bool IsSelectable    { get { return CSGManager.IsBrushSelectable(nodeID); } }
+
+        #endregion
+#endif
+
         #region Transformation		
         // TODO: add description
         public Matrix4x4			LocalTransformation		{ get { return GetNodeLocalTransformation(nodeID); } set { SetNodeLocalTransformation(nodeID, ref value); } }		

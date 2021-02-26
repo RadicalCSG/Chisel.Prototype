@@ -105,6 +105,7 @@ namespace Chisel.Components
             startTime = Time.realtimeSinceStartup;
             Profiler.BeginSample("CSGManager.Clear");
             CSGManager.Clear();
+            Chisel.Core.New.CompactHierarchyManager.Clear();
             Profiler.EndSample();
 
             Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
@@ -164,7 +165,9 @@ namespace Chisel.Components
 
             reregisterModelQueue.Clear();
 
-            CSGManager.Destroy(destroyNodesList);
+            
+            foreach(var item in destroyNodesList)
+                item.Destroy();
 
             generatedBrushNodes.Clear();
             nodegeneratedBrush.Clear();
@@ -896,6 +899,7 @@ UpdateAgain:
             {
                 firstStart = true;
                 CSGManager.Clear();
+                Chisel.Core.New.CompactHierarchyManager.Clear();
                 ChiselBrushContainerAssetManager.Reset();
                 ChiselBrushMaterialManager.Reset();
 
@@ -1451,10 +1455,11 @@ UpdateAgain:
         
             Profiler.BeginSample("UpdateTrampoline.destroyNodesList");
             if (destroyNodesList.Count > 0)
-            {                
+            {
                 // Destroy all old nodes after we created new nodes, to make sure we don't get conflicting IDs
                 // TODO: add 'generation' to indices to avoid needing to do this
-                CSGManager.Destroy(destroyNodesList.ToArray());
+                foreach (var item in destroyNodesList)
+                    item.Destroy();
                 destroyNodesList.Clear();
             }
             Profiler.EndSample();

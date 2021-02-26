@@ -42,15 +42,22 @@ namespace Chisel.Components
 #if UNITY_EDITOR
         public VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
         {
-            var resultState = VisibilityState.Unknown;
-            var visible = !instance.IsHidden(gameObject);
-            var pickingEnabled = !instance.IsPickingDisabled(gameObject);
-            foreach (var node in Nodes)
+            var resultState     = VisibilityState.Unknown;
+            var visible         = !instance.IsHidden(gameObject);
+            var pickingEnabled  = !instance.IsPickingDisabled(gameObject);
+            for (int i = 0; i < Nodes.Length; i++)
             {
+                var node = Nodes[i];
                 if (!node.Valid)
                     continue;
-                var nodeState = CSGManager.SetBrushState(node.NodeID, visible, pickingEnabled);
-                resultState |= nodeState;
+
+                node.Visible        = visible;
+                node.PickingEnabled = pickingEnabled;
+
+                if (visible)
+                    resultState |= VisibilityState.AllVisible;
+                else
+                    resultState |= VisibilityState.AllInvisible;
             }
             return resultState;
         }

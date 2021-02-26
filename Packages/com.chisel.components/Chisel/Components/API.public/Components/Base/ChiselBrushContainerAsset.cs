@@ -111,12 +111,14 @@ namespace Chisel.Components
             }
         }
 
+        static HashSet<int> modifiedBrushMeshes = new HashSet<int>();
         internal void UpdateInstances()
         {
             if (instances == null) return;						
             if (Empty) { DestroyInstances(); return; }
             if (instances.Length != brushContainer.brushMeshes.Length) { CreateInstances(); return; }
 
+            modifiedBrushMeshes.Clear();
             for (int i = 0; i < instances.Length; i++)
             {
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
@@ -125,10 +127,13 @@ namespace Chisel.Components
                 Profiler.BeginSample("instance.Set");
                 instances[i].Set(brushMesh, notifyBrushMeshNotified: false);
                 Profiler.EndSample();
-                Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
-                CSGManager.NotifyBrushMeshModified(instances[i].BrushMeshID);
-                Profiler.EndSample();
+                modifiedBrushMeshes.Add(instances[i].BrushMeshID);
             }
+
+            Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
+            CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
+            Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
+            Profiler.EndSample();
         }
 
         internal void UpdateInstances(HashSet<int> modifiedBrushMeshes)

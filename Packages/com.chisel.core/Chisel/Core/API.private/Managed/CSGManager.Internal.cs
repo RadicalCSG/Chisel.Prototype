@@ -80,6 +80,9 @@ namespace Chisel.Core
             public CSGNodeType		nodeType;
 
             public void SetOperation	(CSGOperationType operation)	{ this.operationType = operation; }
+
+            public void ClearNodeFlags()			                    { status = NodeStatusFlags.None; }
+            public bool IsAnyNodeFlagSet()			                    { return status != NodeStatusFlags.None; }
             public bool IsAnyNodeFlagSet(NodeStatusFlags flag)			{ return (status & flag) != NodeStatusFlags.None; }
             public bool IsNodeFlagSet	(NodeStatusFlags flag)			{ return (status & flag) == flag; }
             public void UnSetNodeFlag	(NodeStatusFlags flag)			{ status &= ~flag; }
@@ -695,7 +698,7 @@ namespace Chisel.Core
             var treeNodeIndex = treeNodeID - 1;
             if (treeInfos[treeNodeIndex] == null) 
                 return 0;
-            CSGManager.UpdateTreeNodeList(treeNodeIndex); 
+            UpdateTreeNodeList(treeNodeIndex); 
             return treeInfos[treeNodeIndex].brushes.Count; 
         }
 
@@ -709,21 +712,21 @@ namespace Chisel.Core
             var treeNodeIndex = treeNodeID - 1;
             if (treeInfos[treeNodeIndex] == null)
                 return false;
-            CSGManager.UpdateTreeNodeList(treeNodeIndex);
+            UpdateTreeNodeList(treeNodeIndex);
             return treeInfos[treeNodeIndex].brushes.Contains(brushNodeID);
         }
         
-        internal static Int32		GetChildBrushNodeIDAtIndex(Int32 treeNodeID, Int32 index)			
+        internal static CSGTreeBrush GetChildBrushAtIndex(Int32 treeNodeID, Int32 index)			
         { 
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
-                return 0; 
+                return new CSGTreeBrush { brushNodeID = CSGTreeNode.InvalidNodeID }; 
             if (treeInfos[treeNodeID - 1] == null) 
-                return 0;
+                return new CSGTreeBrush { brushNodeID = CSGTreeNode.InvalidNodeID };
             var treeNodeIndex = treeNodeID - 1;
             if (index < 0 || index > treeInfos[treeNodeIndex].brushes.Count)
-                return 0;
-            CSGManager.UpdateTreeNodeList(treeNodeIndex);
-            return treeInfos[treeNodeIndex].brushes[index];
+                return new CSGTreeBrush { brushNodeID = CSGTreeNode.InvalidNodeID };
+            UpdateTreeNodeList(treeNodeIndex);
+            return new CSGTreeBrush { brushNodeID = treeInfos[treeNodeIndex].brushes[index] };
         }
 
         internal static Int32		FindTreeByUserID(Int32 userID)
@@ -1234,45 +1237,6 @@ namespace Chisel.Core
             return true;
         }
 
-        static readonly HashSet<int> s_DestroyedNodes = new HashSet<int>();
-
-        internal static bool        DestroyNodes(CSGTreeNode[] nodeIDs)
-        {
-            if (nodeIDs == null)
-                return false;
-
-            s_DestroyedNodes.Clear();
-            bool fail = false;
-            for (int i = 0; i < nodeIDs.Length; i++)
-            {
-                var nodeID = nodeIDs[i].nodeID;
-                if (!s_DestroyedNodes.Add(nodeID))
-                    continue;
-                if (!DestroyNode(nodeID))
-                    fail = true;
-            }
-            return !fail;
-        }
-
-        internal static bool        DestroyNodes(HashSet<CSGTreeNode> nodeIDs)
-        {
-            if (nodeIDs == null)
-                return false;
-
-            s_DestroyedNodes.Clear();
-            bool fail = false;
-            foreach(var item in nodeIDs)
-            {
-                var nodeID = item.nodeID;
-                if (!s_DestroyedNodes.Add(nodeID))
-                    continue;
-                if (!DestroyNode(nodeID))
-                    fail = true;
-            }
-            return !fail;
-        }
-
-
         static CSGTreeNode[] GetAllTreeNodes()
         {
             var nodeCount = GetNodeCount();
@@ -1330,7 +1294,7 @@ namespace Chisel.Core
                     continue;
 
                 if (CSGTreeNode.IsNodeIDValid(treeNodeID))
-                    CSGManager.SetBrushMeshID(treeNodeID, BrushMeshInstance.InvalidInstance.BrushMeshID);
+                    SetBrushMeshID(treeNodeID, BrushMeshInstance.InvalidInstance.BrushMeshID);
             }
         }
     }

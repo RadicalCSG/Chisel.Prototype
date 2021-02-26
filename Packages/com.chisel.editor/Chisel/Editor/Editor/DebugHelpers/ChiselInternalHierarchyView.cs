@@ -7,6 +7,8 @@ using Chisel.Components;
 
 namespace Chisel.Editors
 {
+// TODO: rebuild this using new API / proper treeview
+/*
 #if true
     // This window is a helper window to see what the CSG tree looks like internally
     sealed class ChiselInternalHierarchyView : EditorWindow
@@ -457,5 +459,6 @@ namespace Chisel.Editors
         }
     }
 #endif
+*/
 }
 

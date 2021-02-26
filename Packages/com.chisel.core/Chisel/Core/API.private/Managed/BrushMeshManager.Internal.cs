@@ -34,7 +34,7 @@ namespace Chisel.Core
         public static Int32			GetBrushMeshUserID		(Int32 brushMeshInstanceID)
         {
             if (!AssertBrushMeshIDValid(brushMeshInstanceID))
-                return CSGManager.kDefaultUserID;
+                return default;
             return userIDs[brushMeshInstanceID - 1];
         }
 
@@ -157,6 +157,7 @@ namespace Chisel.Core
                 return false;
 
             CSGManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
+            Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
 
             var brushMeshIndex = brushMeshInstanceID - 1;
             if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
@@ -166,7 +167,7 @@ namespace Chisel.Core
                     item.Dispose();
             }
             brushMeshes[brushMeshIndex].Reset();
-            userIDs[brushMeshIndex] = CSGManager.kDefaultUserID;
+            userIDs[brushMeshIndex] = default;
             unusedIDs.Add(brushMeshInstanceID);
 
             // TODO: remove elements when last values are invalid

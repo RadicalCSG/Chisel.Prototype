@@ -167,7 +167,17 @@ namespace Chisel.Core
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, <b>false</b>.</returns>
         public bool Contains	(CSGTreeNode item)				{ return CSGTreeNode.IndexOfChildNode(branchNodeID, item.nodeID) != -1; }
         #endregion
-        
+            
+#if UNITY_EDITOR
+        #region Inspector State
+
+        public bool Visible         { get { return CSGManager.IsBrushVisible(branchNodeID); } set { CSGManager.SetVisibility(branchNodeID, value); } }
+        public bool PickingEnabled  { get { return CSGManager.IsBrushPickingEnabled(branchNodeID); } set { CSGManager.SetPickingEnabled(branchNodeID, value); } }
+        public bool IsSelectable    { get { return CSGManager.IsBrushSelectable(branchNodeID); } }
+
+        #endregion
+#endif
+
         #region Transformation
         // TODO: add description
 		public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(branchNodeID); } set { CSGTreeNode.SetNodeLocalTransformation(branchNodeID, ref value); } }		

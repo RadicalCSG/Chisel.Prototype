@@ -62,7 +62,7 @@ namespace Chisel.Core.New
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBrush"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return brushNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsNodeIDValid(brushNodeID); } }
+        public bool				Valid			{ get { return brushNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(brushNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBrush"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
@@ -101,9 +101,23 @@ namespace Chisel.Core.New
         /// <remarks>By modifying the <see cref="Chisel.Core.BrushMeshInstance"/> you can change the shape of the <see cref="Chisel.Core.CSGTreeBrush"/>
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>
         /// <seealso cref="Chisel.Core.BrushMesh" />
-        public BrushMeshInstance    BrushMesh		        { set { CompactHierarchyManager.SetBrushMeshID(brushNodeID, value.brushMeshID); } get { return new BrushMeshInstance { brushMeshID = CompactHierarchyManager.GetBrushMeshID(brushNodeID) }; } }
+        public BrushMeshInstance    BrushMesh		{ set { CompactHierarchyManager.SetBrushMeshID(brushNodeID, value.brushMeshID); } get { return new BrushMeshInstance { brushMeshID = CompactHierarchyManager.GetBrushMeshID(brushNodeID) }; } }
+        
+        /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
+        public MinMaxAABB            Bounds			{ get { return CompactHierarchyManager.GetBrushBounds(brushNodeID); } }
         #endregion
         
+        
+#if UNITY_EDITOR
+        #region Inspector State
+
+        public bool Visible         { get { return CompactHierarchyManager.IsBrushVisible(brushNodeID); } set { CompactHierarchyManager.SetVisibility(brushNodeID, value); } }
+        public bool PickingEnabled  { get { return CompactHierarchyManager.IsBrushPickingEnabled(brushNodeID); } set { CompactHierarchyManager.SetPickingEnabled(brushNodeID, value); } }
+        public bool IsSelectable    { get { return CompactHierarchyManager.IsBrushSelectable(brushNodeID); } }
+
+        #endregion
+#endif
+
         #region Transformation
         // TODO: add description
         public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(brushNodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(brushNodeID, ref value); } }		

@@ -12,6 +12,30 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core.New
 {
+    // TODO: review flags, might not make sense any more
+    public enum NodeStatusFlags : UInt16
+    {
+        None                        = 0,
+        //NeedChildUpdate		    = 1,
+        NeedPreviousSiblingsUpdate  = 2,
+
+        BranchNeedsUpdate           = 4,
+            
+        TreeIsDisabled              = 1024,// TODO: remove, or make more useful
+        TreeNeedsUpdate             = 8,
+        TreeMeshNeedsUpdate         = 16,
+
+            
+        ShapeModified               = 32,
+        TransformationModified      = 64,
+        HierarchyModified           = 128,
+        OutlineModified             = 256,
+        NeedAllTouchingUpdated      = 512,	// all brushes that touch this brush need to be updated,
+        NeedFullUpdate              = ShapeModified | TransformationModified | OutlineModified | HierarchyModified,
+        NeedCSGUpdate               = ShapeModified | TransformationModified | HierarchyModified,
+        NeedUpdateDirectOnly        = TransformationModified | OutlineModified,
+    };
+
 
     [BurstCompatible]
     public readonly struct CompactNodeID
@@ -54,7 +78,9 @@ namespace Chisel.Core.New
 
         public CSGOperationType     operation;
         public float4x4             transformation;
-
+        public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes
+        public MinMaxAABB           bounds;         // TODO: move this somewhere else, depends on brushMeshID
+        
         public Int32                brushMeshID;    // TODO: use hash of mesh as "ID"
     }
 
@@ -256,16 +282,16 @@ namespace Chisel.Core.New
         /// WARNING: The returned reference will become invalid after modifying the hierarchy!
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref CompactNode GetChildRefAt(CompactNodeID nodeID) { return ref SafeGetChildRefAtInternal(nodeID); }
+        public ref CompactNode GetChildRef(CompactNodeID nodeID) { return ref SafeGetChildRefAtInternal(nodeID); }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CompactNode GetChild(CompactNodeID nodeID) { return SafeGetChildRefAtInternal(nodeID); }
 
         /// <summary>
         /// WARNING: The returned reference will become invalid after modifying the hierarchy!
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref CompactNode GetChildRefAt(CompactNodeID nodeID, int index) { return ref SafeGetChildRefAtInternal(nodeID, index); }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CompactNode GetChildAt(CompactNodeID nodeID) { return SafeGetChildRefAtInternal(nodeID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNode GetChildAt(CompactNodeID nodeID, int index) { return SafeGetChildRefAtInternal(nodeID, index); }

@@ -108,8 +108,21 @@ namespace Chisel.Core
         /// <note><see cref="Chisel.Core.BrushMeshInstance"/>s can be shared between <see cref="Chisel.Core.CSGTreeBrush"/>es.</note></remarks>
         /// <seealso cref="Chisel.Core.BrushMesh" />
         public BrushMeshInstance    BrushMesh		{ set { CSGManager.SetBrushMeshID(brushNodeID, value.brushMeshID); } get { return new BrushMeshInstance { brushMeshID = CSGManager.GetBrushMeshID(brushNodeID) }; } }
+
+        /// <value>Gets the bounds of this <see cref="Chisel.Core.CSGTreeBrush"/>.</value>
+        public Bounds			    Bounds			{ get { return CSGManager.GetBrushBounds(brushNodeID); } }
         #endregion
         
+#if UNITY_EDITOR
+        #region Inspector State
+
+        public bool Visible         { get { return CSGManager.IsBrushVisible(brushNodeID); } set { CSGManager.SetVisibility(brushNodeID, value); } }
+        public bool PickingEnabled  { get { return CSGManager.IsBrushPickingEnabled(brushNodeID); } set { CSGManager.SetPickingEnabled(brushNodeID, value); } }
+        public bool IsSelectable    { get { return CSGManager.IsBrushSelectable(brushNodeID); } }
+
+        #endregion
+#endif
+
         #region Transformation
         // TODO: add description
 		public Matrix4x4		LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } [BurstDiscard] set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		

@@ -71,7 +71,7 @@ namespace Chisel.Core.New
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTree"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return treeNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsNodeIDValid(treeNodeID); } }
+        public bool				Valid			{ get { return treeNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(treeNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTree.NodeID"/> of the <see cref="Chisel.Core.CSGTree"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>

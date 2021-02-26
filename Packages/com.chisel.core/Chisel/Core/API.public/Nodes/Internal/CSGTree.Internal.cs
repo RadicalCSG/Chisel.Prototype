@@ -10,24 +10,17 @@ namespace Chisel.Core
         {
             return CSGManager.GenerateTree(userID, out generatedTreeNodeID);
         }
-
-        private static Int32	FindTreeByUserID(Int32 userID)
-        {
-            return CSGManager.FindTreeByUserID(userID);
-        }
-
+                
+        // Do not use. This method might be removed/renamed in the future
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int		CountOfBrushesInTree			    { get { return CSGManager.GetNumberOfBrushesInTree(treeNodeID); } }
         
         // Do not use. This method might be removed/renamed in the future
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int		CountOfBrushesInTree			{ get { return CSGManager.GetNumberOfBrushesInTree(treeNodeID); } }
+        public CSGTreeBrush GetChildBrushAtIndex(int index) { return CSGManager.GetChildBrushAtIndex(treeNodeID, index); }
         
         // Do not use. This method might be removed/renamed in the future
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public int		GetChildBrushNodeIDAtIndex(int index) { return CSGManager.GetChildBrushNodeIDAtIndex(treeNodeID, index); }
-        
-        // Do not use. This method might be removed/renamed in the future
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public bool		IsInTree(CSGTreeBrush brush)	{ return CSGManager.DoesTreeContainBrush(treeNodeID, brush.NodeID); }
-
+        public bool		IsInTree(CSGTreeBrush brush)	    { return CSGManager.DoesTreeContainBrush(treeNodeID, brush.NodeID); }
     }
 }

@@ -460,6 +460,7 @@ namespace Chisel.Components
             if (modifiedBrushMeshes.Count > 0)
             {
                 CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
+                Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             }
 
             Profiler.BeginSample("OnBrushMeshInstanceChanged");

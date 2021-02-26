@@ -44,7 +44,7 @@ namespace Chisel.Core.New
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeNode"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is *false* that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return nodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsNodeIDValid(nodeID); } }
+        public bool				Valid			{ get { return nodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(nodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeNode.NodeID"/> of the <see cref="Chisel.Core.CSGTreeNode"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
@@ -131,7 +131,17 @@ namespace Chisel.Core.New
         public static explicit operator CSGTreeBrush  (CSGTreeNode   node  ) { if (node.Type != CSGNodeType.Brush) return new CSGTreeBrush  { brushNodeID  = CompactNodeID.Invalid }; else return new CSGTreeBrush  { brushNodeID  = node.nodeID }; }
         
         #endregion
-        
+                    
+#if UNITY_EDITOR
+        #region Inspector State
+
+        public bool Visible         { get { return CompactHierarchyManager.IsBrushVisible(nodeID); } set { CompactHierarchyManager.SetVisibility(nodeID, value); } }
+        public bool PickingEnabled  { get { return CompactHierarchyManager.IsBrushPickingEnabled(nodeID); } set { CompactHierarchyManager.SetPickingEnabled(nodeID, value); } }
+        public bool IsSelectable    { get { return CompactHierarchyManager.IsBrushSelectable(nodeID); } }
+
+        #endregion
+#endif
+
         #region Transformation
         // TODO: add description
         public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(nodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(nodeID, ref value); } }		

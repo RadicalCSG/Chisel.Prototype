@@ -261,16 +261,16 @@ namespace Chisel.Core
             // TODO: optimize
             for (int i = 0; i < brushCount; i++)
             {
-                var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
+                var brush = tree.GetChildBrushAtIndex(i);
 #if UNITY_EDITOR
-                if (!CSGManager.IsBrushSelectable(brushNodeID))
+                if (!brush.IsSelectable)
                     continue;
 #endif
-                var brushNodeIndex  = brushNodeID - 1;
-                var bounds          = CSGManager.GetBrushBounds(brushNodeID);
+                var bounds          = brush.Bounds;
                 if (bounds == default)
                     continue;
 
+                var brushNodeID = brush.NodeID;
                 if (s_IgnoreNodeIndices.Contains(brushNodeID) ||
                     (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brushNodeID)))
                     continue;
@@ -280,8 +280,6 @@ namespace Chisel.Core
 
                 if (!bounds.IntersectRay(treeSpaceRay))
                     continue;
-
-                var brush = new CSGTreeBrush() { brushNodeID = brushNodeID };
 
                 BrushRayCast(meshQueries, tree, brush,
 
@@ -333,16 +331,17 @@ namespace Chisel.Core
             var foundNodes  = new List<CSGTreeNode>();
             for (int i = 0; i < brushCount; i++)
             {
-                var brushNodeID     = tree.GetChildBrushNodeIDAtIndex(i);
+                var brush = tree.GetChildBrushAtIndex(i);
 #if UNITY_EDITOR
-                if (!CSGManager.IsBrushSelectable(brushNodeID))
+                if (!brush.IsSelectable)
                     continue;
 #endif
-                var brushNodeIndex  = brushNodeID - 1;
-                var bounds          = CSGManager.GetBrushBounds(brushNodeID);
+                var bounds          = brush.Bounds;
                 if (bounds == default)
                     continue;
 
+                var brushNodeID     = brush.NodeID;
+                var brushNodeIndex  = brushNodeID - 1;
                 // TODO: take transformations into account? (frustum is already in tree space)
 
                 bool intersectsFrustum = false;

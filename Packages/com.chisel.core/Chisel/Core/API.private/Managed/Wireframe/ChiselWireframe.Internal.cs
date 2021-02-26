@@ -9,13 +9,6 @@ namespace Chisel.Core
     {
         // TODO: generate outlines somewhere in managed code
 
-
-        private static UInt64 GetBrushOutlineGeneration(Int32 brushNodeID)
-        {
-            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
-            return brushInfo.brushOutlineGeneration;
-        }
-
         // temporary solution to be able to see a brush wireframe
         static BrushOutline CreateOutline(BrushMesh brushMesh)
         {
@@ -61,6 +54,14 @@ namespace Chisel.Core
             }
             brushOutline.brushOutline.visibleOuterLines = brushVisibleOuterLines.ToArray();
             return brushOutline;
+        }
+
+
+
+        private static UInt64 GetBrushOutlineGeneration(Int32 brushNodeID)
+        {
+            var brushInfo = CSGManager.GetBrushOutlineState(brushNodeID);
+            return brushInfo.brushOutlineGeneration;
         }
 
         internal static void UpdateOutline(Int32 brushNodeID)
