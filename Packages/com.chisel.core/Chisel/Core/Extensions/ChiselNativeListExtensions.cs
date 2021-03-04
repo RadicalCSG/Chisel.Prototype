@@ -430,9 +430,9 @@ namespace Chisel.Core
                 }
             }
         }
-        /*
+
         public static void Remove<T>(this NativeList<T> list, T item) 
-            where T : unmanaged, IEquatable<T> 
+            where T : unmanaged
         {
             for (int index = 0; index < list.Length; index++)
             {
@@ -443,7 +443,7 @@ namespace Chisel.Core
                 }
             }
         }
-        */
+
         public static void Remove(this NativeList<Edge> list, Edge item)
         {
             for (int index = 0; index < list.Length; index++)

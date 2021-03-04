@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine.Profiling;
 
 namespace Chisel.Core
@@ -33,7 +34,9 @@ namespace Chisel.Core
                 result = 0;
             return result;
         }
-        
+
+        private static HashSet<int> s_ModifiedBrushMeshes = new HashSet<int>();
+
         private static bool UpdateBrushMesh(Int32		brushMeshID,
                                             BrushMesh	brushMesh, 
                                             bool        notifyBrushMeshModified = true)
@@ -58,9 +61,12 @@ namespace Chisel.Core
                                          brushMesh.polygons);
             if (notifyBrushMeshModified)
             {
+                s_ModifiedBrushMeshes.Clear();
+                s_ModifiedBrushMeshes.Add(brushMeshID);
                 Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
-                CSGManager.NotifyBrushMeshModified(brushMeshID);
-                Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(brushMeshID);
+                CSGManager.NotifyBrushMeshModified(s_ModifiedBrushMeshes);
+                Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(s_ModifiedBrushMeshes);
+                s_ModifiedBrushMeshes.Clear();
                 Profiler.EndSample();
             }
             return result;

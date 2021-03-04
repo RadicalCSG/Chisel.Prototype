@@ -110,25 +110,6 @@ namespace Chisel.Core
 #endif
         #endregion
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void NotifyBrushMeshModified(int brushMeshID)
-        {
-            // TODO: have some way to lookup this directly instead of going through list
-            for (int i = 0; i < nodeHierarchies.Count; i++)
-            {
-                var treeNodeID = nodeHierarchies[i].treeNodeID;
-                if (treeNodeID == CSGTreeNode.InvalidNodeID)
-                    continue;
-
-                var brushOutlineState = brushOutlineStates[i];
-                if (brushOutlineState == null ||
-                    brushOutlineState.brushMeshInstanceID != brushMeshID)
-                    continue;
-
-                if (CSGTreeNode.IsNodeIDValid(treeNodeID))
-                    CSGTreeNode.SetDirty(treeNodeID);
-            }
-        }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)

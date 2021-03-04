@@ -267,7 +267,8 @@ namespace Chisel.Core
             nodeLocalTransforms[nodeIndex] = nodeLocalTransform;
 
 
-            brushOutlineStates[nodeIndex].Dispose();
+            if (brushOutlineStates[nodeIndex] != null)
+                brushOutlineStates[nodeIndex].Dispose();
             brushOutlineStates[nodeIndex] = null; 
             treeInfos[nodeIndex] = null;
 

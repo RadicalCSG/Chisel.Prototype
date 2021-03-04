@@ -124,20 +124,24 @@ namespace Chisel.Core.New
             var rootID = new CompactNodeID(hierarchyID: hierarchyID, id: 0);
             var compactHierarchy = new CompactHierarchy
             {
-                compactNodes    = new NativeList<CompactChildNode>(allocator),
-                idToIndex       = new NativeList<Generation>(allocator),
-                freeIDs         = new NativeList<int>(allocator),
-                hierarchyID     = hierarchyID,
-                RootID          = rootID,
+                unorderedBrushesInTree  = new NativeList<CompactNodeID>(allocator),
+                brushMeshToBrush        = new NativeMultiHashMap<int, CompactNodeID>(16384, allocator),
+                compactNodes            = new NativeList<CompactChildNode>(allocator),
+                idToIndex               = new NativeList<Generation>(allocator),
+                freeIDs                 = new NativeList<int>(allocator),
+                hierarchyID             = hierarchyID,
+                RootID                  = rootID,
             };
             compactHierarchy.compactNodes.Add(new CompactChildNode
             {
                 nodeInformation = new CompactNode
                 {
                     userID          = userID,
+
                     operation       = CSGOperationType.Additive,
                     transformation  = float4x4.identity,
-                    brushMeshID     = 0
+
+                    brushMeshID     = Int32.MaxValue
                 },
                 nodeID          = rootID,
                 parentID        = CompactNodeID.Invalid,
@@ -199,6 +203,8 @@ namespace Chisel.Core.New
                 childOffset     = 0,
                 childCount      = 0
             });
+            brushMeshToBrush.Add(brushMeshID, nodeID);
+            unorderedBrushesInTree.Add(nodeID);
             return nodeID;
         }
         #endregion

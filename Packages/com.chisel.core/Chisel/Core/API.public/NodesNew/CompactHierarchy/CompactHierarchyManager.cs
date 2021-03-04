@@ -106,12 +106,16 @@ namespace Chisel.Core.New
 
         public static CSGTreeBrush GetChildBrushAtIndex(CSGTree tree, Int32 index)
         {
-            throw new NotImplementedException();
+            if (!IsValidNodeID(tree.NodeID))
+                throw new ArgumentNullException(nameof(tree));
+            return GetHierarchy(tree.NodeID).GetChildBrushAtIndex(index);
         }
         
         public static Int32 GetNumberOfBrushesInTree(CSGTree tree)
         {
-            throw new NotImplementedException();
+            if (!IsValidNodeID(tree.NodeID))
+                throw new ArgumentNullException(nameof(tree));
+            return GetHierarchy(tree.NodeID).GetNumberOfBrushesInTree();
         }
 
         public static void Clear() 
@@ -120,6 +124,7 @@ namespace Chisel.Core.New
 
             foreach (var hierarchy in hierarchies)
                 hierarchy.Dispose();
+            defaultHierarchy = CompactHierarchyID.Invalid;
             hierarchies.Clear();
             idToIndex.Clear();
             freeIDs.Clear();
@@ -299,38 +304,70 @@ namespace Chisel.Core.New
             hierarchies[index] = default;
         }
 
+        static CompactHierarchyID defaultHierarchy = CompactHierarchyID.Invalid;
+
+        static void CreateDefaultHierarchy()
+        {
+            defaultHierarchy = CreateHierarchy().ID;
+        }
 
         internal static bool GenerateTree(Int32 userID, out CompactNodeID generatedTreeNodeID)
         {
-            throw new NotImplementedException();
+            var newHierarchy = CreateHierarchy(userID);
+            generatedTreeNodeID = newHierarchy.RootID;
+            return true;
         }
         
-        internal static bool GenerateBranch(Int32 userID, CSGOperationType operationType, out CompactNodeID generatedBranchNodeID)
+        // TODO: switch userID and operationType
+        internal static bool GenerateBranch(Int32 userID, CSGOperationType operation, out CompactNodeID generatedBranchNodeID)
         {
-            throw new NotImplementedException();
+            // TODO: modify API to not require default hierarchy
+            if (defaultHierarchy == CompactHierarchyID.Invalid)
+                CreateDefaultHierarchy();
+            generatedBranchNodeID = GetHierarchy(defaultHierarchy).CreateBranch(operation, userID);
+            return true;
         }
 
-        internal static bool GenerateBrush(Int32 userID, float4x4 localTransformation, BrushMeshInstance brushMesh, CSGOperationType operation, out CompactNodeID generatedNodeID)
+        internal static bool GenerateBrush(Int32 userID, float4x4 localTransformation, BrushMeshInstance brushMesh, CSGOperationType operation, out CompactNodeID generatedBrushNodeID)
         {
-            throw new NotImplementedException();
+            // TODO: modify API to not require default hierarchy
+            if (defaultHierarchy == CompactHierarchyID.Invalid)
+                CreateDefaultHierarchy();
+            generatedBrushNodeID = GetHierarchy(defaultHierarchy).CreateBrush(brushMesh.brushMeshID, operation, userID);
+            return true;
         }
         
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void NotifyBrushMeshModified(int brushMeshID)
-        {
-            //throw new NotImplementedException();
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [BurstDiscard]
         public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)
         {
-            //throw new NotImplementedException();
+            var hierarchyCount = hierarchies.Count;
+            if (hierarchyCount == 0)
+                return;
+
+            for (int i = 0; i < hierarchyCount; i++)
+            {
+                if (!hierarchies[i].IsCreated)
+                    continue;
+                hierarchies[i].NotifyBrushMeshModified(modifiedBrushMeshes);
+            }
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [BurstDiscard]
         public static void NotifyBrushMeshRemoved(int brushMeshID)
         {
-            //throw new NotImplementedException();
+            var hierarchyCount = hierarchies.Count;
+            if (hierarchyCount == 0)
+                return;
+
+            for (int i = 0; i < hierarchyCount; i++)
+            {
+                if (!hierarchies[i].IsCreated)
+                    continue;
+                hierarchies[i].NotifyBrushMeshRemoved(brushMeshID);
+            }
         }
 
         #region Dirty
