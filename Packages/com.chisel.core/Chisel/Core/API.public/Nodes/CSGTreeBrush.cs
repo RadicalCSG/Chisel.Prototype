@@ -32,7 +32,7 @@ namespace Chisel.Core
         public static CSGTreeBrush Create(Int32 userID, Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
             int brushNodeID;
-            if (GenerateBrush(userID, out brushNodeID))
+            if (CSGManager.GenerateBrush(userID, out brushNodeID))
             { 
                 if (localTransformation != default(Matrix4x4)) CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref localTransformation);
                 if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(brushNodeID, operation);

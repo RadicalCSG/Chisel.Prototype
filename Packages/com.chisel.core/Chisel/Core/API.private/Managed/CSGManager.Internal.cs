@@ -148,6 +148,18 @@ namespace Chisel.Core
             }
         }
 
+        // Temporary hack
+        public static void ClearOutlines()
+        {
+            for (int i = 0; i < brushOutlineStates.Count; i++)
+            {
+                if (brushOutlineStates[i] != null)
+                    brushOutlineStates[i].Dispose();
+                brushOutlineStates[i] = null;
+            }
+            brushOutlineStates.Clear();
+        }
+
         internal sealed class BrushOutlineState : IDisposable
         {
             public int			brushMeshInstanceID;
@@ -155,7 +167,7 @@ namespace Chisel.Core
             public BrushOutline brushOutline;
 
             public void Dispose()
-            {
+            { 
                 if (brushOutline.IsCreated) 
                     brushOutline.Dispose();
                 brushOutline = default;
@@ -174,11 +186,6 @@ namespace Chisel.Core
         private static readonly List<int>	trees			= new List<int>();// TODO: could be CSGTrees
         private static readonly List<int>	branches		= new List<int>();// TODO: could be CSGTreeBranches
         private static readonly List<int>	brushes			= new List<int>();// TODO: could be CSGTreeBrushes
-
-        internal static int GetNodeCount()		{ return Mathf.Max(0, nodeHierarchies.Count - freeNodeIDs.Count); }
-        internal static int GetBrushCount()		{ return brushes.Count; }
-        internal static int GetBranchCount()	{ return branches.Count; }
-        internal static int GetTreeCount()		{ return trees.Count; }
 
         internal static void ClearAllNodes()
         {
@@ -673,8 +680,9 @@ namespace Chisel.Core
             }
         }
 
-        internal static Int32		GetNumberOfBrushesInTree(Int32 treeNodeID)
-        { 
+        internal static Int32		GetNumberOfBrushesInTree(CSGTree tree)
+        {
+            Int32 treeNodeID = tree.NodeID;
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
                 return 0;
             var treeNodeIndex = treeNodeID - 1;
@@ -684,22 +692,9 @@ namespace Chisel.Core
             return treeInfos[treeNodeIndex].brushes.Count; 
         }
 
-        internal static bool	    DoesTreeContainBrush(Int32 treeNodeID, CSGTreeBrush brush)
+        internal static CSGTreeBrush GetChildBrushAtIndex(CSGTree tree, Int32 index)
         {
-            if (!AssertNodeIDValid(treeNodeID) || 
-                !AssertNodeIDValid(brush.NodeID) || 
-                !AssertNodeType(treeNodeID, CSGNodeType.Tree) || 
-                !AssertNodeType(brush.NodeID, CSGNodeType.Brush))
-                return false;
-            var treeNodeIndex = treeNodeID - 1;
-            if (treeInfos[treeNodeIndex] == null)
-                return false;
-            UpdateTreeNodeList(treeNodeIndex);
-            return treeInfos[treeNodeIndex].brushes.Contains(brush);
-        }
-        
-        internal static CSGTreeBrush GetChildBrushAtIndex(Int32 treeNodeID, Int32 index)			
-        { 
+            Int32 treeNodeID = tree.NodeID;
             if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
                 return new CSGTreeBrush { brushNodeID = CSGTreeNode.InvalidNodeID }; 
             if (treeInfos[treeNodeID - 1] == null) 
@@ -1217,45 +1212,6 @@ namespace Chisel.Core
             }
             SetDirtyWithFlag(nodeID);
             return true;
-        }
-
-        static CSGTreeNode[] GetAllTreeNodes()
-        {
-            var nodeCount = GetNodeCount();
-            var allTreeNodeIDs = new CSGTreeNode[nodeCount];
-            if (nodeCount == 0)
-                return allTreeNodeIDs;
-
-            Debug.Assert(nodeUserIDs.Count == nodeHierarchies.Count);
-            Debug.Assert(nodeFlags.Count == nodeHierarchies.Count);
-            Debug.Assert(nodeTransforms.Count == nodeHierarchies.Count);
-            Debug.Assert(nodeLocalTransforms.Count == nodeHierarchies.Count);
-
-            int n = 0;
-            for (int nodeIndex = 0; nodeIndex < nodeHierarchies.Count; nodeIndex++)
-            {
-                var nodeID = nodeIndex + 1;
-                if (!IsValidNodeID(nodeID))
-                    continue;
-                allTreeNodeIDs[n].nodeID = nodeID;
-                n++;
-            }
-            Debug.Assert(n == nodeCount);
-
-            return allTreeNodeIDs;
-        }
-
-        static CSGTree[] GetAllTrees()
-        {
-            var nodeCount = GetTreeCount();
-            var allTrees = new CSGTree[nodeCount];
-            if (nodeCount == 0)
-                return allTrees;
-
-            for (int i = 0; i < trees.Count; i++)
-                allTrees[i].treeNodeID = trees[i];
-
-            return allTrees;
         }
 
         internal static void NotifyBrushMeshRemoved(int brushMeshID)

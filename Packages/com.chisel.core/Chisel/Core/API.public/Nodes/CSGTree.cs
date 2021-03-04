@@ -25,7 +25,7 @@ namespace Chisel.Core
         public static CSGTree Create(Int32 userID, params CSGTreeNode[] children)
         {
             int treeNodeID;
-            if (!GenerateTree(userID, out treeNodeID))
+            if (!CSGManager.GenerateTree(userID, out treeNodeID))
                 return new CSGTree() { treeNodeID = 0 };
             if (children != null && children.Length > 0)
             {

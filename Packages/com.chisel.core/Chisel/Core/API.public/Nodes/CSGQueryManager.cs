@@ -96,7 +96,8 @@ namespace Chisel.Core
             var brushMeshInstanceID = brush.BrushMesh.brushMeshID;
             var brushMesh           = BrushMeshManager.GetBrushMesh(brushMeshInstanceID);
 
-            if (brushMesh.planes == null ||
+            if (brushMesh == null ||
+                brushMesh.planes == null ||
                 brushMesh.planes.Length == 0)
 		        return false;
 
@@ -249,11 +250,12 @@ namespace Chisel.Core
             var foundIntersections  = new List<CSGTreeBrushIntersection>();
             
             
-            var treeNodeID      = tree.NodeID;
-            var treeNodeIndex   = treeNodeID - 1;
-            var brushCount      = tree.CountOfBrushesInTree;
+            var brushCount    = CSGManager.GetNumberOfBrushesInTree(tree);
             if (brushCount == 0)
                 return null;
+            
+            var treeNodeID    = tree.NodeID;
+            var treeNodeIndex = treeNodeID - 1;
 
             var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
             var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
@@ -261,7 +263,7 @@ namespace Chisel.Core
             // TODO: optimize
             for (int i = 0; i < brushCount; i++)
             {
-                var brush = tree.GetChildBrushAtIndex(i);
+                var brush = CSGManager.GetChildBrushAtIndex(tree, i);
 #if UNITY_EDITOR
                 if (!brush.IsSelectable)
                     continue;
@@ -320,7 +322,7 @@ namespace Chisel.Core
                     return null;
             }
 
-            var brushCount  = tree.CountOfBrushesInTree;
+            var brushCount = CSGManager.GetNumberOfBrushesInTree(tree);
             if (brushCount == 0)
                 return null;
 
@@ -331,7 +333,7 @@ namespace Chisel.Core
             var foundNodes  = new List<CSGTreeNode>();
             for (int i = 0; i < brushCount; i++)
             {
-                var brush = tree.GetChildBrushAtIndex(i);
+                var brush = CSGManager.GetChildBrushAtIndex(tree, i);
 #if UNITY_EDITOR
                 if (!brush.IsSelectable)
                     continue;

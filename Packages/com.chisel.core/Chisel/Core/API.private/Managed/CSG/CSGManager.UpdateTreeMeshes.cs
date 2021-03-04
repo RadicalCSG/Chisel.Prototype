@@ -12,14 +12,18 @@ namespace Chisel.Core
     static partial class CSGManager
     {
         #region Update / Rebuild
+        static List<CSGTree> s_AllTrees = new List<CSGTree>();
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
+
+            CSGManager.GetAllTrees(s_AllTrees);
             // Check if we have a tree that needs updates
-            for (int t = 0; t < CSGManager.trees.Count; t++)
+            for (int t = 0; t < s_AllTrees.Count; t++)
             {
-                var treeNodeID = CSGManager.trees[t];
+                var treeNode = s_AllTrees[t];
+                var treeNodeID    = treeNode.NodeID;
                 var treeNodeIndex = treeNodeID - 1;
                 if (CSGManager.nodeFlags[treeNodeIndex].IsNodeFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
@@ -2258,6 +2262,7 @@ namespace Chisel.Core
                 #region Dirty all invalidated outlines (not jobified)
                 // TODO: Jobify this (has dependencies on jobs, so can't be run before finishMeshUpdates)
                 Profiler.BeginSample("CSG_DirtyModifiedOutlines");
+                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
                 for (int t = 0; t < treeUpdateLength; t++)
                 {
                     ref var treeUpdate = ref s_TreeUpdates[t];
@@ -2270,8 +2275,10 @@ namespace Chisel.Core
                         int brushNodeIndex  = brushIndexOrder.nodeIndex;
                         int brushNodeID     = brushNodeIndex + 1;
                         var brush           = new CSGTreeBrush { brushNodeID = brushNodeID };
-
-                        ChiselWireframe.UpdateOutline(brush);
+                        var brushMeshID     = brush.BrushMesh.brushMeshID;
+                        var brushMeshIndex  = brushMeshID - 1;
+                        if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+                            brush.Outline.Fill(ref item.Value);
                     }
                 }
                 Profiler.EndSample();

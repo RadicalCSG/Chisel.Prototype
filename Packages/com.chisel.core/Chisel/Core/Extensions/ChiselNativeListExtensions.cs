@@ -84,6 +84,22 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
+        {
+            if (elements.Length == 0)
+                return;
+            CheckLengthInRange(elements.Length, elements.Length);
+            list.AddRange(elements.GetUnsafePtr(), elements.Length);
+        }
+        
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
+        {
+            if (length == 0)
+                return;
+            CheckLengthInRange(length, elements.Length);
+            list.AddRange(elements.GetUnsafePtr(), length);
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckLengthInRange(int length, int range)
         {
@@ -107,10 +123,18 @@ namespace Chisel.Core
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
-            CheckLengthInRange(length, elements.Length);
             if (length == 0)
                 return;
+            CheckLengthInRange(length, elements.Length);
             list.AddRangeNoResize(elements.GetUnsafePtr(), length);
+        }
+
+        public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
+        {
+            if (elements.Length == 0)
+                return;
+            CheckLengthInRange(elements.Length, elements.Length);
+            list.AddRangeNoResize(elements.GetUnsafePtr(), elements.Length);
         }
 
         public static uint Hash<T>(this NativeList<T> list, int length) where T : unmanaged

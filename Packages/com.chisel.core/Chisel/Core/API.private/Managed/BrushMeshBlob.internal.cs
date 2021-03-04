@@ -48,7 +48,7 @@ namespace Chisel.Core
                 brushMesh.halfEdges.Length < 12)
                 return BlobAssetReference<BrushMeshBlob>.Null;
 
-            ref var srcVertices = ref brushMesh.vertices;
+            var srcVertices             = brushMesh.vertices;
             //var srcPlanes = brushMesh.planes;
             
             var totalPolygonSize        = 16 + (brushMesh.polygons.Length * UnsafeUtility.SizeOf<Polygon>());

@@ -127,116 +127,7 @@ namespace Chisel.Components
             };
         }
 
-        /*
-        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, out ChiselIntersection[] intersections)
-        {
-            return FindMultiWorldIntersection(worldRayStart, worldRayEnd, visibleLayers, null, null, out intersections);
-        }
-
-        public static bool FindMultiWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, GameObject[] ignore, GameObject[] filter, out ChiselIntersection[] intersections)
-        {
-            intersections = null;
-            __foundIntersections.Clear();
-
-            HashSet<int> ignoreInstanceIDs = null;
-            HashSet<int> filterInstanceIDs = null;
-            if (ignore != null)
-            {
-                ignoreInstanceIDs = new HashSet<int>();
-                foreach (var go in ignore)
-                {
-                    var node = go.GetComponent<ChiselNode>();
-                    if (node)
-                        ignoreInstanceIDs.Add(node.GetInstanceID());
-                }
-            }
-            if (filter != null)
-            {
-                filterInstanceIDs = new HashSet<int>();
-                foreach (var go in filter)
-                {
-                    var node = go.GetComponent<ChiselNode>();
-                    if (node)
-                        filterInstanceIDs.Add(node.GetInstanceID());
-                }
-            }
-            
-            var allTrees = CSGManager.AllTrees;
-            for (var t = 0; t < allTrees.Length; t++)
-            {
-                var tree	= allTrees[t];
-                var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!ChiselModelManager.IsVisible(model))
-                    continue;
-                
-                if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(model.GetInstanceID())))
-                    return false;
-
-                if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(model.GetInstanceID())))
-                    return false;
-
-                if (((1 << model.gameObject.layer) & visibleLayers) == 0)
-                    continue;
-
-                var query = ChiselMeshQueryManager.GetMeshQuery(model);
-                var visibleQueries = ChiselMeshQueryManager.GetVisibleQueries(query);
-
-                // We only accept RayCasts into this model if it's visible
-                if (visibleQueries == null ||
-                    visibleQueries.Length == 0)
-                    return false;
-
-                Vector3 treeRayStart;
-                Vector3 treeRayEnd;
-
-                var transform = model.transform;
-                if (transform)
-                {
-                    var worldToLocalMatrix = transform.worldToLocalMatrix;
-                    treeRayStart = worldToLocalMatrix.MultiplyPoint(worldRayStart);
-                    treeRayEnd = worldToLocalMatrix.MultiplyPoint(worldRayEnd);
-                } else
-                {
-                    treeRayStart = worldRayStart;
-                    treeRayEnd = worldRayEnd;
-                }
-
-                var treeIntersections = CSGManager.RayCastMulti(ChiselMeshQueryManager.GetMeshQuery(model), tree, treeRayStart, treeRayEnd);
-                if (treeIntersections == null)
-                    continue;
-
-                for (var i = 0; i < treeIntersections.Length; i++)
-                {
-                    var intersection	= treeIntersections[i];
-                    var brush			= intersection.brush;
-                    var instanceID		= brush.UserID;
-                    if ((filterInstanceIDs != null && !filterInstanceIDs.Contains(instanceID)))
-                        continue;
-
-                    if ((ignoreInstanceIDs != null && ignoreInstanceIDs.Contains(instanceID)))
-                        continue;
-
-                    __foundIntersections[brush] = Convert(intersection);
-                }
-            }
-
-            if (__foundIntersections.Count == 0)
-                return false;
-
-            var sortedIntersections = __foundIntersections.Values.ToArray();
-            Array.Sort(sortedIntersections, (x, y) => (x.brushIntersection.surfaceIntersection.distance < y.brushIntersection.surfaceIntersection.distance) ? -1 : 0);
-
-            __foundIntersections.Clear();
-            intersections = sortedIntersections;
-            return true;
-        }
-        
-        public static bool FindFirstWorldIntersection(Vector3 worldRayStart, Vector3 worldRayEnd, int visibleLayers, out ChiselIntersection foundIntersection)
-        {
-            return FindFirstWorldIntersection(worldRayStart, worldRayEnd, visibleLayers, null, null, out foundIntersection);
-        }
-        */
-
+        static List<CSGTree> s_AllTrees = new List<CSGTree>();
         static HashSet<int> s_IgnoreInstanceIDs = new HashSet<int>();
         static HashSet<int> s_FilterInstanceIDs = new HashSet<int>();
         static List<CSGTreeNode> s_IgnoreNodes = new List<CSGTreeNode>();
@@ -277,10 +168,10 @@ namespace Chisel.Components
                 }
             }
 
-            var allTrees = CSGManager.AllTrees;
-            for (var t = 0; t < allTrees.Length; t++)
+            CSGManager.GetAllTrees(s_AllTrees);
+            for (var t = 0; t < s_AllTrees.Count; t++)
             {
-                var tree	= allTrees[t];
+                var tree	= s_AllTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!ChiselModelManager.IsVisible(model))
                     continue;
@@ -440,12 +331,12 @@ namespace Chisel.Components
         public static bool GetNodesInFrustum(Frustum frustum, int visibleLayers, ref HashSet<CSGTreeNode> rectFoundNodes)
         {
             rectFoundNodes.Clear();
-            var planes			= new Plane[6];
+            var planes = new Plane[6];
             Vector4 srcVector;
-            var allTrees		= CSGManager.AllTrees;
-            for (var t = 0; t < allTrees.Length; t++)
+            CSGManager.GetAllTrees(s_AllTrees);
+            for (var t = 0; t < s_AllTrees.Count; t++)
             {
-                var tree	= allTrees[t];
+                var tree	= s_AllTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
                 if (!ChiselModelManager.IsVisible(model))
                     continue;

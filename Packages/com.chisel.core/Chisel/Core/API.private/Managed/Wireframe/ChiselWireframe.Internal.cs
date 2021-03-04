@@ -15,19 +15,6 @@ namespace Chisel.Core
             return brush.Outline.hash;
         }
 
-        internal static void UpdateOutline(CSGTreeBrush brush)
-        {
-            ref var brushOutline = ref brush.Outline;
-            var brushMeshInstanceID = brush.BrushMesh.BrushMeshID;
-            
-            brushOutline.Reset();
-            if (!BrushMeshManager.IsBrushMeshIDValid(brushMeshInstanceID))
-                return;
-            
-            var brushMesh = BrushMeshManager.GetBrushMesh(brushMeshInstanceID);
-            brushOutline.Fill(brushMesh);
-        }
-
         private static bool GetBrushOutlineValues(CSGTreeBrush      brush,
                                                   ref float3[]      vertices,
                                                   ref Int32[]       visibleOuterLines)

@@ -898,11 +898,12 @@ namespace Chisel.Core
                     brushMeshBlobs = default;
                     brushMeshBlobGeneration = default;
                 }
+                // temporary hack
+                CSGManager.ClearOutlines();
             }
-
         }
 
-        public static void Update()
+        public static void Update() 
         {
             var instance                = ChiselMeshLookup.Value;
             var brushMeshBlobGeneration = instance.brushMeshBlobGeneration;

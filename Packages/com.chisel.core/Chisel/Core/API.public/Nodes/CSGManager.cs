@@ -22,41 +22,19 @@ namespace Chisel.Core
         /// <summary>Destroys all <see cref="Chisel.Core.CSGTreeNode"/>s and all <see cref="Chisel.Core.BrushMesh"/>es.</summary>
         public static void	Clear	()	{ ClearAllNodes(); }
 
+        public static void GetAllTrees(List<CSGTree> allTrees)
+        {
+            allTrees.Clear();
 
-        /// <value>The number of <see cref="Chisel.Core.CSGTreeNode"/>s.</value>
-        public static int	TreeNodeCount
-        {
-            get { return GetNodeCount(); } 
-        }
+            var nodeCount = trees.Count;
+            if (nodeCount == 0)
+                return;
 
-        /// <value>The number of <see cref="Chisel.Core.CSGTreeBrush"/>es.</value>
-        public static int	TreeBrushCount
-        {
-            get { return GetBrushCount(); } 
-        }
-        
-        /// <value>The number of <see cref="Chisel.Core.CSGTreeBranch"/>es.</value>
-        public static int	TreeBranchCount
-        {
-            get { return GetBranchCount(); } 
-        }
+            if (allTrees.Capacity < nodeCount)
+                allTrees.Capacity = nodeCount;
 
-        /// <value>The number of <see cref="Chisel.Core.CSGTree"/>s.</value>
-        public static int	TreeCount
-        {
-            get { return GetTreeCount(); } 
-        }
-
-        /// <value>All the <see cref="Chisel.Core.CSGTreeNode"/>s.</value>
-        public static CSGTreeNode[] AllTreeNodes
-        {
-            get { return GetAllTreeNodes(); }
-        }
-
-        /// <value>All the <see cref="Chisel.Core.CSGTree"/>s.</value>
-        public static CSGTree[] AllTrees
-        {
-            get { return GetAllTrees(); }
+            for (int i = 0; i < nodeCount; i++)
+                allTrees.Add(new CSGTree { treeNodeID = trees[i] });
         }
 
         #region Inspector State

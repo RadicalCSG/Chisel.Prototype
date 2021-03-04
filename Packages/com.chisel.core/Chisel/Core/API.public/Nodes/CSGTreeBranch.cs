@@ -28,7 +28,7 @@ namespace Chisel.Core
         public static CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, params CSGTreeNode[] children)
         {
             int branchNodeID;
-            if (!GenerateBranch(userID, out branchNodeID))
+            if (!CSGManager.GenerateBranch(userID, out branchNodeID))
                 return new CSGTreeBranch() { branchNodeID = 0 };
             if (children != null && children.Length > 0)
             {
@@ -49,7 +49,7 @@ namespace Chisel.Core
         public static CSGTreeBranch Create(Int32 userID, params CSGTreeNode[] children) 
         {
             int branchNodeID;
-            if (!GenerateBranch(userID, out branchNodeID))
+            if (!CSGManager.GenerateBranch(userID, out branchNodeID))
                 return new CSGTreeBranch() { branchNodeID = 0 };
             if (children != null && children.Length > 0)
             {

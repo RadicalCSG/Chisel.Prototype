@@ -67,13 +67,12 @@ namespace Chisel.Core
         }
 
         // TODO: use BrushMeshBlob instead
-        public void Fill(BrushMesh brushMesh)
+        public void Fill(ref BrushMeshBlob brushMesh)
         {
             Reset();
-            if (brushMesh == null)
-                return;
 
-            vertices.AddRange(brushMesh.vertices);
+            vertices.Clear();
+            vertices.AddRange(ref brushMesh.localVertices);
             for (int p = 0; p < brushMesh.polygons.Length; p++)
             {
                 var firstEdge = brushMesh.polygons[p].firstEdge;

@@ -52,13 +52,72 @@ namespace Chisel.Core.New
         }
 
         // TODO: use native containers
-        static List<CompactHierarchy>   hierarchies     = new List<CompactHierarchy>();
+        static readonly List<CompactHierarchy>   hierarchies     = new List<CompactHierarchy>();
 
-        static List<Generation>         idToIndex       = new List<Generation>();
-        static List<int>                freeIDs         = new List<int>();
+        static readonly List<Generation>         idToIndex       = new List<Generation>();
+        static readonly List<int>                freeIDs         = new List<int>();
+
+
+
+
+        internal sealed class BrushOutlineState : IDisposable
+        {
+            public BrushOutline brushOutline;
+            public void Dispose()
+            {
+                if (brushOutline.IsCreated)
+                    brushOutline.Dispose();
+                brushOutline = default;
+            }
+        }
+
+        static readonly Dictionary<int, BrushOutlineState> brushOutlineStates = new Dictionary<int, BrushOutlineState>();
+
+
+        // Temporary hack
+        public static void ClearOutlines()
+        {
+            foreach(var value in brushOutlineStates.Values)
+                value.Dispose();
+            brushOutlineStates.Clear();
+        }
+
+
+
+        public static void GetAllTrees(List<CSGTree> allTrees)
+        {
+            allTrees.Clear();
+
+            var hierarchyCount = hierarchies.Count;
+
+            if (hierarchyCount == 0)
+                return;
+
+            if (allTrees.Capacity < hierarchyCount)
+                allTrees.Capacity = hierarchyCount;
+
+            for (int i = 0; i < hierarchyCount; i++)
+            {
+                if (!hierarchies[i].IsCreated)
+                    continue;
+                allTrees.Add(new Chisel.Core.New.CSGTree { treeNodeID = hierarchies[i].RootID });
+            }
+        }
+
+        public static CSGTreeBrush GetChildBrushAtIndex(CSGTree tree, Int32 index)
+        {
+            throw new NotImplementedException();
+        }
+        
+        public static Int32 GetNumberOfBrushesInTree(CSGTree tree)
+        {
+            throw new NotImplementedException();
+        }
 
         public static void Clear() 
         {
+            ClearOutlines();
+
             foreach (var hierarchy in hierarchies)
                 hierarchy.Dispose();
             hierarchies.Clear();
@@ -150,9 +209,13 @@ namespace Chisel.Core.New
 #endif
         #endregion
 
-        public static ref BrushOutline GetBrushOutline(CSGTreeBrush brush)
+        public static ref BrushOutline GetBrushOutline(CompactNodeID nodeID)
         {
-            throw new NotImplementedException();
+            if (!IsValidNodeID(nodeID))
+                throw new ArgumentNullException(nameof(nodeID));
+            if (!brushOutlineStates.ContainsKey(nodeID.ID))
+                brushOutlineStates[nodeID.ID].brushOutline = BrushOutline.Create();
+            return ref brushOutlineStates[nodeID.ID].brushOutline; 
         }
 
         #region CreateHierarchy
@@ -402,7 +465,7 @@ namespace Chisel.Core.New
         
         internal static bool SetBrushMeshID(CompactNodeID nodeID, Int32 brushMeshID)
         {
-            GetHierarchy(nodeID).GetChildRef(nodeID).transformation = brushMeshID;
+            GetHierarchy(nodeID).GetChildRef(nodeID).brushMeshID = brushMeshID;
             return true;
         }
         #endregion
@@ -420,9 +483,18 @@ namespace Chisel.Core.New
         }
         #endregion
 
+        internal static void DestroyOutline(CompactNodeID nodeID)
+        {
+            if (brushOutlineStates.ContainsKey(nodeID.ID))
+            {
+                brushOutlineStates[nodeID.ID].Dispose();
+                brushOutlineStates.Remove(nodeID.ID);
+            }
+        }
 
         internal static bool DestroyNode(CompactNodeID nodeID)
         {
+            DestroyOutline(nodeID);
             return GetHierarchy(nodeID).Delete(nodeID);
         }
 
