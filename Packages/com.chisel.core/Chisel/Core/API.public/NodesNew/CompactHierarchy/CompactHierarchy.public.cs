@@ -144,7 +144,6 @@ namespace Chisel.Core.New
             var rootID = new CompactNodeID(hierarchyID: hierarchyID, id: 0);
             var compactHierarchy = new CompactHierarchy
             {
-                unorderedBrushesInTree  = new NativeList<CompactNodeID>(allocator),
                 brushMeshToBrush        = new NativeMultiHashMap<int, CompactNodeID>(16384, allocator),
                 compactNodes            = new NativeList<CompactChildNode>(allocator),
                 idToIndex               = new NativeList<Generation>(allocator),
@@ -224,7 +223,6 @@ namespace Chisel.Core.New
                 childCount      = 0
             });
             brushMeshToBrush.Add(brushMeshID, nodeID);
-            unorderedBrushesInTree.Add(nodeID);
             return nodeID;
         }
         #endregion

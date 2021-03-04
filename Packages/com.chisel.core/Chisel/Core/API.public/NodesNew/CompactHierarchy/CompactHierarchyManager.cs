@@ -120,18 +120,11 @@ namespace Chisel.Core.New
             }
         }
 
-        public static CSGTreeBrush GetChildBrushAtIndex(CSGTree tree, Int32 index)
+        public static void GetBrushesInOrder(CSGTree tree, System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
             if (!IsValidNodeID(tree.NodeID))
                 throw new ArgumentNullException(nameof(tree));
-            return GetHierarchy(tree.NodeID).GetChildBrushAtIndex(index);
-        }
-        
-        public static Int32 GetNumberOfBrushesInTree(CSGTree tree)
-        {
-            if (!IsValidNodeID(tree.NodeID))
-                throw new ArgumentNullException(nameof(tree));
-            return GetHierarchy(tree.NodeID).GetNumberOfBrushesInTree();
+            GetHierarchy(tree.NodeID).GetBrushesInOrder(brushes);
         }
 
         public static void Clear() 

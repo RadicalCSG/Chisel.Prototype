@@ -49,7 +49,6 @@ namespace Chisel.Core.New
         // TODO: Should create own container with its own array pointers (fewer indirections)
 
         NativeMultiHashMap<int, CompactNodeID> brushMeshToBrush;
-        NativeList<CompactNodeID>    unorderedBrushesInTree;
 
         NativeList<CompactChildNode> compactNodes;
         
@@ -62,7 +61,6 @@ namespace Chisel.Core.New
         {
             CompactHierarchyManager.FreeID(hierarchyID);
             hierarchyID = CompactHierarchyID.Invalid;
-            if (unorderedBrushesInTree.IsCreated) unorderedBrushesInTree.Dispose(); unorderedBrushesInTree = default;
             if (brushMeshToBrush.IsCreated) brushMeshToBrush.Dispose(); brushMeshToBrush = default;
             if (compactNodes.IsCreated) compactNodes.Dispose(); compactNodes = default;
             if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
@@ -120,7 +118,6 @@ namespace Chisel.Core.New
                             }
                         } while (brushMeshToBrush.TryGetNextValue(out item, ref iterator));
                     }
-                    ChiselNativeListExtensions.Remove(unorderedBrushesInTree, nodeID);
                 }
 
                 var idLookup = idToIndex[id];
@@ -803,15 +800,52 @@ namespace Chisel.Core.New
             throw new NotImplementedException();
         }
 
-        internal CSGTreeBrush GetChildBrushAtIndex(Int32 index)
+
+        internal void GetBrushesInOrder(System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
-            return new CSGTreeBrush { brushNodeID = unorderedBrushesInTree[index] };
+            if (brushes == null)
+                return;
+            UpdateTreeNodeList(null, brushes);
         }
 
-        public unsafe Int32 GetNumberOfBrushesInTree()
+        unsafe void UpdateTreeNodeList(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
-            return unorderedBrushesInTree.Length;
+            if (nodes != null) nodes.Clear();
+            if (brushes != null) brushes.Clear();
+            if (nodes == null && brushes == null)
+                return;
+
+            var nodeIndex       = SafeHierarchyIndexOfInternal(RootID);
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
+                return;
+            
+            if (nodes != null) nodes.Add(RootID);
+            var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+            ref var parent = ref compactNodesPtr[nodeIndex];
+            RecursiveAddTreeChildren(compactNodesPtr, ref parent, nodes, brushes);
         }
+
+        // TODO: rewrite to be non-recursive
+        unsafe void RecursiveAddTreeChildren(CompactChildNode* compactNodesPtr, ref CompactChildNode parent,
+                                             System.Collections.Generic.List<CompactNodeID> nodes,
+                                             System.Collections.Generic.List<CSGTreeBrush> brushes)
+        {
+            for (int i = 0, childIndex = parent.childOffset, childCount = parent.childCount; i < childCount; i++, childIndex++)
+            {
+                ref var child = ref compactNodesPtr[childIndex];
+                if (nodes != null)
+                    nodes.Add(child.nodeID);
+                if (child.childCount > 0)
+                {
+                    RecursiveAddTreeChildren(compactNodesPtr, ref child,
+                                             nodes,
+                                             brushes);
+                } else
+                if (child.nodeInformation.brushMeshID != Int32.MaxValue && brushes != null)
+                    brushes.Add(new CSGTreeBrush { brushNodeID = child.nodeID });
+            }
+        }
+
 
         // TODO: when we change brushMeshIDs to be hashes of meshes, we need to pass along both the 
         // original and the new hash and switch them
@@ -861,7 +895,6 @@ namespace Chisel.Core.New
                         modified = true;
                         // TODO: figure out if this is safe here ...
                         brushMeshToBrush.Remove(iterator);
-                        ChiselNativeListExtensions.Remove(unorderedBrushesInTree, nodeID);
                     }
                     catch (Exception ex) { Debug.LogException(ex); }
                 } while (brushMeshToBrush.TryGetNextValue(out nodeID, ref iterator));

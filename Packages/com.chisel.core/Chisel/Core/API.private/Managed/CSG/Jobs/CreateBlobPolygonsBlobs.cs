@@ -141,8 +141,7 @@ namespace Chisel.Core
         {
             var indexOrder = allUpdateBrushIndexOrders[b];
             int nodeOrder  = indexOrder.nodeOrder;
-            int nodeIndex = indexOrder.nodeIndex;
-
+            
             if (treeSpaceVerticesCache[nodeOrder] == BlobAssetReference<BrushTreeSpaceVerticesBlob>.Null)
                 return;
 
@@ -251,7 +250,6 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BasePolygonsBlob>();
             var polygonArray = builder.Allocate(ref root.polygons, totalSurfaceCount);
-            root.nodeIndex = nodeIndex;
             builder.Construct(ref root.edges,    edges   , totalEdgeCount);
             builder.Construct(ref root.vertices, hashedTreeSpaceVertices);
             var surfaceArray = builder.Allocate(ref root.surfaces, totalSurfaceCount);

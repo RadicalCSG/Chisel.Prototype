@@ -388,8 +388,8 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly        nodeIndexToNodeOrderArray;
-        [NoAlias, ReadOnly] public int                              nodeIndexToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly        nodeIDValueToNodeOrderArray;
+        [NoAlias, ReadOnly] public int                              nodeIDValueToNodeOrderOffset;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -411,7 +411,8 @@ namespace Chisel.Core
                     for (int p = 0; p < polygons.Length; p++)
                     {
                         ref var nodeIndexOrder = ref polygons[p].nodeIndexOrder;
-                        nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
+                        var nodeIDValue = nodeIndexOrder.nodeID.ID;
+                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     basePolygonCache[nodeOrder] = item;
                 }
@@ -427,7 +428,8 @@ namespace Chisel.Core
                     {
                         ref var brushIntersection = ref brushIntersections[b];
                         ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
-                        nodeIndexOrder.nodeOrder = nodeIndexToNodeOrderArray[nodeIndexOrder.nodeIndex - nodeIndexToNodeOrderOffset];
+                        var nodeIDValue = nodeIndexOrder.nodeID.ID;
+                        nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     for (int b0 = 0; b0 < brushIntersections.Length; b0++)
                     {

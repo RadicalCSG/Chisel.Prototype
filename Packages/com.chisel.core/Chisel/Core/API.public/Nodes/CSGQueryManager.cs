@@ -213,6 +213,10 @@ namespace Chisel.Core
         static readonly HashSet<CompactNodeID> s_IgnoreNodeIndices = new HashSet<CompactNodeID>();
         static readonly HashSet<CompactNodeID> s_FilterNodeIndices = new HashSet<CompactNodeID>();
 
+
+        static readonly List<CSGTreeBrushIntersection> s_FoundIntersections = new List<CSGTreeBrushIntersection>();
+        static readonly List<CSGTreeBrush> s_TreeBrushes = new List<CSGTreeBrush>();
+
         public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]       meshQueries, 
                                                               CSGTree           tree,
                                                               Vector3           treeSpaceRayStart,
@@ -247,10 +251,13 @@ namespace Chisel.Core
                 }
             }
 
-            var foundIntersections  = new List<CSGTreeBrushIntersection>();
-            
-            
-            var brushCount    = CSGManager.GetNumberOfBrushesInTree(tree);
+            s_FoundIntersections.Clear();
+            s_TreeBrushes.Clear();
+
+            // TODO: cache this
+            CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+
+            var brushCount    = s_TreeBrushes.Count;
             if (brushCount == 0)
                 return null;
             
@@ -261,7 +268,7 @@ namespace Chisel.Core
             // TODO: optimize
             for (int i = 0; i < brushCount; i++)
             {
-                var brush = CSGManager.GetChildBrushAtIndex(tree, i);
+                var brush = s_TreeBrushes[i];
 #if UNITY_EDITOR
                 if (!brush.IsSelectable)
                     continue;
@@ -291,15 +298,18 @@ namespace Chisel.Core
                                 ignoreBackfaced,
                                 ignoreCulled,
 
-                                foundIntersections);
+                                s_FoundIntersections);
             }
 
-            if (foundIntersections.Count == 0)
+            if (s_FoundIntersections.Count == 0)
                 return null;
 
-            return foundIntersections.ToArray();
+            return s_FoundIntersections.ToArray();
         }
-         
+
+
+        static readonly List<CSGTreeNode> s_FoundNodes = new List<CSGTreeNode>();
+
         public static CSGTreeNode[] GetNodesInFrustum(CSGTree       tree,
                                                       MeshQuery[]   meshQueries, // TODO: add meshquery support here
                                                       Plane[]       planes)
@@ -320,17 +330,19 @@ namespace Chisel.Core
                     return null;
             }
 
-            var brushCount = CSGManager.GetNumberOfBrushesInTree(tree);
+            // TODO: cache this
+            CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+
+            var brushCount = s_TreeBrushes.Count;
             if (brushCount == 0)
                 return null;
 
             var treeNodeID              = tree.treeNodeID;
             var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeID].brushRenderBufferLookup;
 
-            var foundNodes  = new List<CSGTreeNode>();
             for (int i = 0; i < brushCount; i++)
             {
-                var brush = CSGManager.GetChildBrushAtIndex(tree, i);
+                var brush = s_TreeBrushes[i];
 #if UNITY_EDITOR
                 if (!brush.IsSelectable)
                     continue;
@@ -398,15 +410,15 @@ SkipSurface:
 
                 // TODO: handle generators, where we only select a generator when ALL of it's brushes are selected
 
-                foundNodes.Add(CSGTreeNode.Encapsulate(brushNodeID));
+                s_FoundNodes.Add(CSGTreeNode.Encapsulate(brushNodeID));
 SkipBrush:
                 ;
             }
 
-            if (foundNodes.Count == 0)
+            if (s_FoundNodes.Count == 0)
                 return null;
 
-            return foundNodes.ToArray();
+            return s_FoundNodes.ToArray();
         }
     }
 }

@@ -633,8 +633,8 @@ namespace Chisel.Core
             var brushIndexOrder0                = brushPairIntersection0.brushIndexOrder;
             var brushIndexOrder1                = brushPairIntersection1.brushIndexOrder;
 
-            UnityEngine.Debug.Assert(brushPairIntersection0.brushIndexOrder.nodeIndex == brushIndexOrder0.nodeIndex);
-            UnityEngine.Debug.Assert(brushPairIntersection1.brushIndexOrder.nodeIndex == brushIndexOrder1.nodeIndex);
+            UnityEngine.Debug.Assert(brushPairIntersection0.brushIndexOrder.nodeID == brushIndexOrder0.nodeID);
+            UnityEngine.Debug.Assert(brushPairIntersection1.brushIndexOrder.nodeID == brushIndexOrder1.nodeID);
 
             int insideVerticesStream0Capacity   = math.max(1, brushPairIntersection0.usedVerticesLength);
             int insideVerticesStream1Capacity   = math.max(1, brushPairIntersection1.usedVerticesLength);
@@ -772,7 +772,7 @@ namespace Chisel.Core
                                  outputSurfaces);
                 } else
                 {
-                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder0.nodeIndex}");
+                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder0.nodeID}");
                 }
             }
 
@@ -795,7 +795,7 @@ namespace Chisel.Core
                                  outputSurfaces);
                 } else
                 {
-                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder1.nodeIndex}");
+                    UnityEngine.Debug.LogError($"brushTreeSpacePlaneCache not initialized for brush with index {brushIndexOrder1.nodeID}");
                 }
             }
         }

@@ -25,6 +25,6 @@ namespace Chisel.Core
 
 
         public CategoryGroupIndex   Input       { get => (CategoryGroupIndex)(nodeIndexInput >> bitShift); set => nodeIndexInput = (nodeIndexInput & bitMask) | ((int)value << bitShift); }
-        public int                  NodeIndex   { get => nodeIndexInput & bitMask; set => nodeIndexInput = (value & bitMask) | (nodeIndexInput & ~bitMask); }
+        public int                  NodeIDValue      { get => nodeIndexInput & bitMask; set => nodeIndexInput = (value & bitMask) | (nodeIndexInput & ~bitMask); }
     }
 }

@@ -263,9 +263,9 @@ namespace Chisel.Core
                         continue;
 
                     var holeInfo            = allInfos[holeIndex];
-                    int holeBrushNodeIndex  = holeInfo.brushIndexOrder.nodeIndex;/**/
+                    var holeBrushNodeID     = holeInfo.brushIndexOrder.nodeID;/**/
 
-                    bool touches = brushesTouchedByBrushRef.Get(holeBrushNodeIndex) != IntersectionType.NoIntersection;
+                    bool touches = brushesTouchedByBrushRef.Get(holeBrushNodeID) != IntersectionType.NoIntersection;
                     
                     // Only add if they touch
                     if (touches)
@@ -812,8 +812,8 @@ namespace Chisel.Core
 
             
 
-            ref var nodeIndexToTableIndex   = ref routingTableRef.Value.nodeIndexToTableIndex;
-            ref var nodeIndexOffset         = ref routingTableRef.Value.nodeIndexOffset;
+            ref var nodeIDToTableIndex      = ref routingTableRef.Value.nodeIDToTableIndex;
+            ref var nodeIDOffset            = ref routingTableRef.Value.nodeIDOffset;
             ref var routingLookups          = ref routingTableRef.Value.routingLookups;
             var routingLookupsLength        = routingLookups.Length;
 
@@ -821,15 +821,15 @@ namespace Chisel.Core
             int maxIndex = intersectionSurfaceInfos.Length + (surfaceCount * routingLookupsLength);
             for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
             {
-                var surfaceInfo = intersectionSurfaceInfos[i];
-                int brushNodeIndex1 = surfaceInfo.brushIndexOrder.nodeIndex;/**/
+                var surfaceInfo     = intersectionSurfaceInfos[i];
+                var brushNodeID1    = surfaceInfo.brushIndexOrder.nodeID;
 
                 // check if brush does not exist in routing table (will not have any effect)
-                var indexWithOffset = brushNodeIndex1 - nodeIndexOffset;
-                if (indexWithOffset < 0 || indexWithOffset >= nodeIndexToTableIndex.Length)
+                var idWithOffset = brushNodeID1.ID - nodeIDOffset;
+                if (idWithOffset < 0 || idWithOffset >= nodeIDToTableIndex.Length)
                     continue;
 
-                var routingTableIndex = nodeIndexToTableIndex[indexWithOffset];
+                var routingTableIndex = nodeIDToTableIndex[idWithOffset];
                 if (routingTableIndex == -1)
                     continue;
 
@@ -850,15 +850,15 @@ namespace Chisel.Core
 
                 for (int i = 0; i < intersectionSurfaceInfos.Length; i++)
                 {
-                    var surfaceInfo         = intersectionSurfaceInfos[i];
-                    int brushNodeIndex1     = surfaceInfo.brushIndexOrder.nodeIndex;/**/
+                    var surfaceInfo      = intersectionSurfaceInfos[i];
+                    var brushNodeID1     = surfaceInfo.brushIndexOrder.nodeID;
 
                     // check if brush does not exist in routing table (will not have any effect)
-                    var indexWithOffset = brushNodeIndex1 - nodeIndexOffset;
-                    if (indexWithOffset < 0 || indexWithOffset >= nodeIndexToTableIndex.Length)
+                    var idWithOffset = brushNodeID1.ID - nodeIDOffset;
+                    if (idWithOffset < 0 || idWithOffset >= nodeIDToTableIndex.Length)
                         continue;
 
-                    var routingTableIndex = nodeIndexToTableIndex[indexWithOffset];
+                    var routingTableIndex = nodeIDToTableIndex[idWithOffset];
                     if (routingTableIndex == -1)
                         continue;
 

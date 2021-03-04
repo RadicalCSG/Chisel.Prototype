@@ -62,13 +62,6 @@ namespace Chisel.Core
             }
         };
 
-        internal sealed class TreeInfo
-        {
-            public bool dirty = true;
-            public readonly List<CSGTreeBrush>  brushes   = new List<CSGTreeBrush>();
-            public readonly List<CompactNodeID> nodes     = new List<CompactNodeID>();
-        }
-
         struct NodeTransform
         {
             public Matrix4x4 nodeToTree;
@@ -180,7 +173,6 @@ namespace Chisel.Core
         private static readonly List<NodeLocalTransform>	nodeLocalTransforms	= new List<NodeLocalTransform>();
         private static readonly List<NodeHierarchy>			nodeHierarchies		= new List<NodeHierarchy>();
         private static readonly List<BrushOutlineState>		brushOutlineStates	= new List<BrushOutlineState>();
-        private static readonly List<TreeInfo>			    treeInfos		    = new List<TreeInfo>();
 
         private static readonly List<CompactNodeID>	freeNodeIDs	= new List<CompactNodeID>();
         private static readonly List<CompactNodeID>	trees	    = new List<CompactNodeID>();// TODO: could be CSGTrees
@@ -199,7 +191,7 @@ namespace Chisel.Core
             nodeUserIDs		    .Clear();
             statusFlags		    .Clear();	nodeTransforms		.Clear();
             nodeHierarchies	    .Clear();	nodeLocalTransforms	.Clear();
-            brushOutlineStates  .Clear();   treeInfos           .Clear();
+            brushOutlineStates  .Clear();   
 
             freeNodeIDs		.Clear();	trees	.Clear();
             branches		.Clear();	brushes	.Clear();
@@ -246,7 +238,6 @@ namespace Chisel.Core
                         treeNodeHierarchy.RemoveChild(nodeID);
                         nodeHierarchies[oldTreeNodeIndex] = treeNodeHierarchy;
                     }
-                    treeInfos[oldTreeNodeIndex].dirty = true;
                     SetTreeDirtyWithFlag(oldTreeNodeID);
                 }
             }
@@ -273,8 +264,7 @@ namespace Chisel.Core
             if (brushOutlineStates[nodeIndex] != null)
                 brushOutlineStates[nodeIndex].Dispose();
             brushOutlineStates[nodeIndex] = null; 
-            treeInfos[nodeIndex] = null;
-
+            
             var nodeHierarchy = nodeHierarchies[nodeIndex];
             NodeHierarchy.Reset(ref nodeHierarchy);
             nodeHierarchies[nodeIndex] = nodeHierarchy;
@@ -303,7 +293,6 @@ namespace Chisel.Core
                     nodeTransforms		.RemoveAt(nodeIndex);
                     nodeLocalTransforms	.RemoveAt(nodeIndex);
                     brushOutlineStates  .RemoveAt(nodeIndex);
-                    treeInfos           .RemoveAt(nodeIndex);
                     nodeHierarchies		.RemoveAt(nodeIndex);
                     nodeIDValue--;
                 }
@@ -341,7 +330,6 @@ namespace Chisel.Core
                 nodeTransforms		.Add(new NodeTransform());
                 nodeLocalTransforms	.Add(new NodeLocalTransform());
                 brushOutlineStates  .Add(null);
-                treeInfos           .Add(null);
                 nodeHierarchies		.Add(new NodeHierarchy());
 
                 var nodeTransform = nodeTransforms[nodeIndex];
@@ -417,8 +405,6 @@ namespace Chisel.Core
             flags.nodeType = CSGNodeType.Tree;
             statusFlags[nodeIndex] = flags;
 
-            treeInfos[nodeIndex] = new TreeInfo();
-
             var nodeHierarchy = nodeHierarchies[nodeIndex];
             nodeHierarchy.children		= new List<CompactNodeID>();
             nodeHierarchies[nodeIndex]	= nodeHierarchy;
@@ -429,6 +415,27 @@ namespace Chisel.Core
             return true;
         }
         #endregion
+        
+
+        internal static NodeTransformations GetNodeTransformation(CompactNodeID nodeID)
+        {
+            int nodeIndex = nodeID.ID - 1;
+            // TODO: clean this up and make this sensible
+
+            // Note: Currently "localTransformation" is actually nodeToTree, but only for all the brushes. 
+            //       Branches do not have a transformation set at the moment.
+
+            // TODO: should be transformations the way up to the tree (but not above), not just tree vs brush
+            var brushLocalTransformation     = CSGManager.nodeLocalTransforms[nodeIndex].localTransformation;
+            var brushLocalInvTransformation  = CSGManager.nodeLocalTransforms[nodeIndex].invLocalTransformation;
+
+            var nodeTransform                = CSGManager.nodeTransforms[nodeIndex];
+            nodeTransform.nodeToTree = brushLocalTransformation;
+            nodeTransform.treeToNode = brushLocalInvTransformation;
+            CSGManager.nodeTransforms[nodeIndex] = nodeTransform;
+
+            return new NodeTransformations { nodeToTree = nodeTransform.nodeToTree, treeToNode = nodeTransform.treeToNode };
+        }
 
         #region Validation
         internal static bool		IsValidNodeID					(CompactNodeID nodeID)	
@@ -709,25 +716,32 @@ namespace Chisel.Core
             return true;
         }
 
-        static void                 UpdateTreeNodeList(CompactNodeID treeNodeID)
+        internal static void GetBrushesInOrder(CSGTree tree, List<CSGTreeBrush> brushes)
         {
+            var treeNodeID = tree.NodeID;
+            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree))
+                return;
+
+            if (brushes == null) 
+                return;
+            UpdateTreeNodeList(treeNodeID, null, brushes);
+        }
+
+        static void                 UpdateTreeNodeList(CompactNodeID treeNodeID, List<CompactNodeID> nodes, List<CSGTreeBrush> brushes)
+        {
+            if (nodes   != null) nodes.Clear();
+            if (brushes != null) brushes.Clear();
+            if (nodes == null && brushes == null)
+                return;
+
             var treeNodeIndex = treeNodeID.ID - 1;
             if (!IsValidNodeID(treeNodeID))
                 return;
 
-            if (treeInfos[treeNodeIndex] == null ||
-                !treeInfos[treeNodeIndex].dirty)
-                return;
-            
-            treeInfos[treeNodeIndex].dirty = false;
             var nodeHierarchy = nodeHierarchies[treeNodeIndex];
-            treeInfos[treeNodeIndex].nodes.Clear();
-            treeInfos[treeNodeIndex].brushes.Clear();
-            treeInfos[treeNodeIndex].nodes.Add(treeNodeID);
+            if (nodes != null) nodes.Add(treeNodeID);
             if (nodeHierarchy.children != null)
-                RecursiveAddTreeChildren(in nodeHierarchy, 
-                                         treeInfos[treeNodeIndex].nodes, 
-                                         treeInfos[treeNodeIndex].brushes);
+                RecursiveAddTreeChildren(in nodeHierarchy, nodes, brushes);
         }
 
         static void RecursiveAddTreeChildren(in NodeHierarchy       parent, 
@@ -741,8 +755,10 @@ namespace Chisel.Core
                 if (!IsValidNodeID(childID))
                     continue;
                 var childIndex  = childID.ID - 1;
-                nodes.Add(childID);
-                if (statusFlags[childIndex].nodeType == CSGNodeType.Brush)
+                if (nodes != null) 
+                    nodes.Add(childID);
+                if (statusFlags[childIndex].nodeType == CSGNodeType.Brush &&
+                    brushes != null)
                     brushes.Add(new CSGTreeBrush { brushNodeID = childID });
                 var childHierarchy = nodeHierarchies[childIndex];
                 if (childHierarchy.children != null)
@@ -750,46 +766,6 @@ namespace Chisel.Core
                                              nodes, 
                                              brushes);
             }
-        }
-
-        internal static Int32		GetNumberOfBrushesInTree(CSGTree tree)
-        {
-            var treeNodeID = tree.NodeID;
-            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
-                return 0;
-            var treeNodeIndex = treeNodeID.ID - 1;
-            if (treeInfos[treeNodeIndex] == null) 
-                return 0;
-            UpdateTreeNodeList(treeNodeID); 
-            return treeInfos[treeNodeIndex].brushes.Count; 
-        }
-
-        internal static CSGTreeBrush GetChildBrushAtIndex(CSGTree tree, Int32 index)
-        {
-            var treeNodeID = tree.NodeID;
-            if (!AssertNodeIDValid(treeNodeID) || !AssertNodeType(treeNodeID, CSGNodeType.Tree)) 
-                return new CSGTreeBrush { brushNodeID = CompactNodeID.Invalid }; 
-            var treeNodeIndex = treeNodeID.ID - 1;
-            if (treeInfos[treeNodeIndex] == null) 
-                return new CSGTreeBrush { brushNodeID = CompactNodeID.Invalid };
-            if (index < 0 || index > treeInfos[treeNodeIndex].brushes.Count)
-                return new CSGTreeBrush { brushNodeID = CompactNodeID.Invalid };
-            UpdateTreeNodeList(treeNodeID);
-            return treeInfos[treeNodeIndex].brushes[index];
-        }
-
-        internal static CompactNodeID   FindTreeByUserID(Int32 userID)
-        {
-            if (userID == kDefaultUserID)
-                return CompactNodeID.Invalid;
-            for (var i = 0; i < trees.Count; i++)
-            {
-                var treeNodeID = trees[i];
-                var treeNodeIndex = treeNodeID.ID - 1;
-                if (nodeUserIDs[treeNodeIndex] == userID)
-                    return treeNodeID;
-            }
-            return CompactNodeID.Invalid;
         }
 
 
@@ -846,16 +822,6 @@ namespace Chisel.Core
                 nodeHierarchy.SetTreeNodeID(treeNodeID);
                 nodeHierarchies[childNodeIndex] = nodeHierarchy;
 
-                if (IsValidNodeID(nodeHierarchy.treeNodeID))
-                {
-                    var treeNodeIndex = nodeHierarchy.treeNodeID.ID - 1;
-                    treeInfos[treeNodeIndex].dirty = true;
-                }
-                if (IsValidNodeID(treeNodeID))
-                {
-                    var treeNodeIndex = treeNodeID.ID - 1;
-                    treeInfos[treeNodeIndex].dirty = true;
-                }
                 if (!AssertNodeTypeHasChildren(childNodeID))
                     continue;
                 if (!passed.Add(childNodeID))
@@ -911,14 +877,10 @@ namespace Chisel.Core
                 if (nodeType == CSGNodeType.Branch)
                     SetChildrenTree(childNodeID, newTreeNodeID);
                 if (IsValidNodeID(oldTreeNodeID))
-                {
-                    treeInfos[oldTreeNodeIndex].dirty = true;
                     SetTreeDirtyWithFlag(oldTreeNodeID);
-                }
                 if (IsValidNodeID(newTreeNodeID))
                 {
                     var newTreeNodeIndex = newTreeNodeID.ID - 1;
-                    treeInfos[newTreeNodeIndex].dirty = true;
                     SetTreeDirtyWithFlag(newTreeNodeID);
                 }
             }
@@ -954,10 +916,7 @@ namespace Chisel.Core
             if (nodeType == CSGNodeType.Branch)
                 SetChildrenTree(childNodeID, CompactNodeID.Invalid);
             if (IsValidNodeID(oldTreeNodeID))
-            {
-                treeInfos[oldTreeNodeIndex].dirty = true;
                 SetTreeDirtyWithFlag(oldTreeNodeID);
-            }
 
             if (IsValidNodeID(oldParentNodeID))
             {
@@ -1176,10 +1135,6 @@ namespace Chisel.Core
                     treeNodeHierarchy.RemoveChild(childNodeID);
                     nodeHierarchies[oldTreeNodeIndex] = treeNodeHierarchy;
                 }
-                if (oldTreeNodeID != newTreeNodeID)
-                {
-                    treeInfos[oldTreeNodeIndex].dirty = true;
-                }
                 SetTreeDirtyWithFlag(oldTreeNodeID);
             }
 
@@ -1240,10 +1195,6 @@ namespace Chisel.Core
                     var treeNodeHierarchy = nodeHierarchies[oldTreeNodeIndex];
                     treeNodeHierarchy.RemoveChild(childNodeID);
                     nodeHierarchies[oldTreeNodeIndex] = treeNodeHierarchy;
-                }
-                if (oldTreeNodeID != newTreeNodeID)
-                {
-                    treeInfos[oldTreeNodeIndex].dirty = true;
                 }
                 SetTreeDirtyWithFlag(oldTreeNodeID);
             }
