@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -59,12 +59,19 @@ namespace Chisel.Core.New
 
         public void Dispose()
         {
-            CompactHierarchyManager.FreeID(hierarchyID);
-            hierarchyID = CompactHierarchyID.Invalid;
             if (brushMeshToBrush.IsCreated) brushMeshToBrush.Dispose(); brushMeshToBrush = default;
             if (compactNodes.IsCreated) compactNodes.Dispose(); compactNodes = default;
             if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
-            if (freeIDs.IsCreated) freeIDs.Dispose(); freeIDs = default;
+
+            try
+            {
+                CompactHierarchyManager.FreeID(hierarchyID);
+            }
+            finally
+            {
+                hierarchyID = CompactHierarchyID.Invalid;
+                if (freeIDs.IsCreated) freeIDs.Dispose(); freeIDs = default;
+            }
         }
 
 

@@ -9,7 +9,13 @@ using Unity.Mathematics;
 
 namespace Chisel.Core
 {
-    static partial class CSGManager
+    public delegate int FinishMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents,
+                                         UnityEngine.Mesh.MeshDataArray meshDataArray,
+                                         NativeList<ChiselMeshUpdate> colliderMeshUpdates,
+                                         NativeList<ChiselMeshUpdate> debugHelperMeshes,
+                                         NativeList<ChiselMeshUpdate> renderMeshes,
+                                         JobHandle dependencies);
+
     {
         #region Update / Rebuild
         static List<CSGTree> s_AllTrees = new List<CSGTree>();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using Unity.Mathematics;
@@ -153,6 +153,15 @@ namespace Chisel.Core.New
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return brushNodeID.GetHashCode(); }
         #endregion
+
+
+        // Temporary workaround until we can switch to hashes
+        internal bool IsAnyStatusFlagSet()                  { return CompactHierarchyManager.IsAnyStatusFlagSet(brushNodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CompactHierarchyManager.IsStatusFlagSet(brushNodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag)   { CompactHierarchyManager.SetStatusFlag(brushNodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(brushNodeID, flag); }
+        internal void ClearAllStatusFlags()                 { CompactHierarchyManager.ClearAllStatusFlags(brushNodeID); }
+
 
         [SerializeField] // Useful to be able to handle selection in history
         internal CompactNodeID brushNodeID;

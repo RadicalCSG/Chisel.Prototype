@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -127,11 +128,19 @@ namespace Chisel.Core.New
             GetHierarchy(tree.NodeID).GetBrushesInOrder(brushes);
         }
 
+        public static void UpdateTreeNodeList(CompactNodeID treeNodeID, System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
+        {
+            if (!IsValidNodeID(treeNodeID))
+                throw new ArgumentNullException(nameof(treeNodeID));
+            GetHierarchy(treeNodeID).UpdateTreeNodeList(nodes, brushes);
+        }
+
         public static void Clear() 
         {
             ClearOutlines();
 
-            foreach (var hierarchy in hierarchies)
+            var oldHierarchies = hierarchies.ToArray();
+            foreach (var hierarchy in oldHierarchies)
                 hierarchy.Dispose();
             defaultHierarchy = CompactHierarchyID.Invalid;
             hierarchies.Clear();
@@ -228,7 +237,10 @@ namespace Chisel.Core.New
             if (!IsValidNodeID(nodeID))
                 throw new ArgumentNullException(nameof(nodeID));
             if (!brushOutlineStates.ContainsKey(nodeID.ID))
-                brushOutlineStates[nodeID.ID].brushOutline = BrushOutline.Create();
+                brushOutlineStates[nodeID.ID] = new BrushOutlineState
+                    { 
+                        brushOutline = BrushOutline.Create()
+                    };
             return ref brushOutlineStates[nodeID.ID].brushOutline; 
         }
 
@@ -468,7 +480,14 @@ namespace Chisel.Core.New
 
         internal static bool IsValidNodeID(CompactNodeID nodeID)
         {
-            return GetHierarchy(nodeID).IsValidNodeID(nodeID);
+            if (nodeID == CompactNodeID.Invalid)
+                return false;
+
+            var hierarchyID = nodeID.hierarchyID;
+            if (hierarchyID == CompactHierarchyID.Invalid)
+                return false;
+
+            return GetHierarchy(hierarchyID).IsValidNodeID(nodeID);
         }
 
         internal static int GetUserIDOfNode(CompactNodeID nodeID)
@@ -686,6 +705,17 @@ namespace Chisel.Core.New
         {
             var hierarchy = GetHierarchy(nodeID);
             hierarchy.ClearStatusFlag(nodeID, flag);
+        }
+        
+
+        internal static NodeTransformations GetNodeTransformation(CompactNodeID nodeID)
+        {
+            var node = new CSGTreeNode { nodeID = nodeID };
+            return new NodeTransformations
+            {
+                nodeToTree = node.NodeToTreeSpaceMatrix,
+                treeToNode = node.TreeToNodeSpaceMatrix
+            };
         }
     }
 }

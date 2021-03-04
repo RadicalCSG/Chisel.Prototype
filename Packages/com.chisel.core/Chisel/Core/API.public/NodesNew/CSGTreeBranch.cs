@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -29,7 +29,7 @@ namespace Chisel.Core.New
         /// <param name="childrenArray">The length of an array of child nodes that are children of this branch. </param>
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBranch"/>. May be an invalid node if it failed to create it.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static unsafe CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, CSGTreeNode* childrenArray = null, int childrenArrayLength = 0)
+        public static unsafe CSGTreeBranch CreateUnsafe(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, CSGTreeNode* childrenArray = null, int childrenArrayLength = 0)
         {
             if (!CompactHierarchyManager.GenerateBranch(userID, operation, out var branchNodeID))
                 return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
@@ -52,13 +52,13 @@ namespace Chisel.Core.New
         public static unsafe CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, params CSGTreeNode[] children)
         {
             if (children == null || children.Length == 0)
-                return Create(userID, operation, null, 0);
+                return CreateUnsafe(userID, operation, null, 0);
 
             var length = children.Length;
             var arrayPtr = (CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(children, out var handle);
             try
             {
-                return Create(userID, operation, arrayPtr, length);
+                return CreateUnsafe(userID, operation, arrayPtr, length);
             }
             finally { Unity.Collections.LowLevel.Unsafe.UnsafeUtility.ReleaseGCObject(handle); }
         }
@@ -241,7 +241,16 @@ namespace Chisel.Core.New
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return branchNodeID.GetHashCode(); }
         #endregion
+
+
+        // Temporary workaround until we can switch to hashes
+        internal bool IsAnyStatusFlagSet()                  { return CompactHierarchyManager.IsAnyStatusFlagSet(branchNodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CompactHierarchyManager.IsStatusFlagSet(branchNodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag)   { CompactHierarchyManager.SetStatusFlag(branchNodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(branchNodeID, flag); }
+        internal void ClearAllStatusFlags()                 { CompactHierarchyManager.ClearAllStatusFlags(branchNodeID); }
         
+
         [SerializeField] // Useful to be able to handle selection in history
         internal CompactNodeID branchNodeID;
     }

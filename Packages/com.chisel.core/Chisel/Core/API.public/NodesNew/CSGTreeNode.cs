@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -131,7 +131,10 @@ namespace Chisel.Core.New
         public static explicit operator CSGTreeBrush  (CSGTreeNode   node  ) { if (node.Type != CSGNodeType.Brush) return new CSGTreeBrush  { brushNodeID  = CompactNodeID.Invalid }; else return new CSGTreeBrush  { brushNodeID  = node.nodeID }; }
         
         #endregion
-                    
+        
+        /// <value>An invalid node</value>
+        public static readonly CSGTreeNode InvalidNode = new CSGTreeNode { nodeID = CompactNodeID.Invalid };
+        
 #if UNITY_EDITOR
         #region Inspector State
 
@@ -146,9 +149,9 @@ namespace Chisel.Core.New
         // TODO: add description
         public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(nodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(nodeID, ref value); } }		
         // TODO: add description
-        //public float4x4             TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(nodeID, out var result) ? result : float4x4.identity; } }
+        public float4x4             TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(nodeID, out var result) ? result : float4x4.identity; } }
         // TODO: add description
-        //public float4x4             NodeToTreeSpaceMatrix	{ get { return CompactHierarchyManager.GetNodeToTreeSpaceMatrix(nodeID, out var result) ? result : float4x4.identity; } }
+        public float4x4             NodeToTreeSpaceMatrix	{ get { return CompactHierarchyManager.GetNodeToTreeSpaceMatrix(nodeID, out var result) ? result : float4x4.identity; } }
         #endregion
 
         #region Comparison
@@ -168,7 +171,16 @@ namespace Chisel.Core.New
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return nodeID.GetHashCode(); }
         #endregion
-        
+
+
+        // Temporary workaround until we can switch to hashes
+        internal bool IsAnyStatusFlagSet() { return CompactHierarchyManager.IsAnyStatusFlagSet(nodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CompactHierarchyManager.IsStatusFlagSet(nodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.SetStatusFlag(nodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(nodeID, flag); }
+        internal void ClearAllStatusFlags() { CompactHierarchyManager.ClearAllStatusFlags(nodeID); }
+
+
         [SerializeField] // Useful to be able to handle selection in history
         internal CompactNodeID nodeID;
 

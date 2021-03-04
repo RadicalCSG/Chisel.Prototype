@@ -5,13 +5,6 @@ using Unity.Jobs;
 
 namespace Chisel.Core
 {
-    public delegate int FinishMeshUpdate(CSGTree tree, ref VertexBufferContents vertexBufferContents, 
-                                         UnityEngine.Mesh.MeshDataArray meshDataArray, 
-                                         NativeList<ChiselMeshUpdate>   colliderMeshUpdates,
-                                         NativeList<ChiselMeshUpdate>   debugHelperMeshes,
-                                         NativeList<ChiselMeshUpdate>   renderMeshes,
-                                         JobHandle                      dependencies);
-
     /// <summary>This class is manager class for all <see cref="Chisel.Core.CSGTreeNode"/>s.</summary>	
     public static partial class CSGManager
     {
