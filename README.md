@@ -49,6 +49,7 @@ Packages overview:
 Extensions:
 * [Source Engine 2006 Map Importer for Chisel Editor]( https://github.com/Henry00IS/Chisel.Import.Source)
   * [Decal support for importer](https://github.com/Henry00IS/Chisel.Decals)
+* [Quake1 Importer](https://github.com/Quixotic7/Chisel.Import.Quake1)
 
 Known issues:
 * [There are some cases where triangulation fails](https://github.com/RadicalCSG/Chisel.Prototype/issues/187)
