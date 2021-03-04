@@ -600,7 +600,7 @@ namespace Chisel.Editors
                     {
                         Matrix4x4 transformation;
                         if (modelTransform)
-                            transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                            transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                         else
                             transformation = brush.NodeToTreeSpaceMatrix;
 
@@ -671,7 +671,7 @@ namespace Chisel.Editors
 
                     Matrix4x4 transformation;
                     if (modelTransform)
-                        transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                        transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                     else
                         transformation = brush.NodeToTreeSpaceMatrix;
 
@@ -697,7 +697,7 @@ namespace Chisel.Editors
 
                     Matrix4x4 transformation;
                     if (modelTransform)
-                        transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                        transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                     else
                         transformation = brush.NodeToTreeSpaceMatrix;
 

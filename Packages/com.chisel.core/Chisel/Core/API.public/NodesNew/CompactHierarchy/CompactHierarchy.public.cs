@@ -12,7 +12,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core.New
 {
-    // TODO: review flags, might not make sense any more
+    // Temporary workaround until we can switch to hashes
     public enum NodeStatusFlags : UInt16
     {
         None                        = 0,
@@ -38,7 +38,7 @@ namespace Chisel.Core.New
 
 
     [BurstCompatible]
-    public readonly struct CompactNodeID
+    public readonly struct CompactNodeID : IComparable<CompactNodeID>, IEquatable<CompactNodeID>
     {
         public static readonly CompactNodeID Invalid = new CompactNodeID(hierarchyID: CompactHierarchyID.Invalid, id: -1);
 
@@ -49,7 +49,7 @@ namespace Chisel.Core.New
 
         internal CompactNodeID(CompactHierarchyID hierarchyID, Int32 id, Int32 generation = 0) { this.hierarchyID = hierarchyID; this.ID = id; this.generation = generation; }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
         public override string ToString() { return $"NodeID = {ID}, Generation = {generation}"; }
 
         #region Comparison
@@ -65,6 +65,26 @@ namespace Chisel.Core.New
         }
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
         public override int GetHashCode() { return ID.GetHashCode(); }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int CompareTo(CompactNodeID other)
+        {
+            var diff = hierarchyID.CompareTo(other.hierarchyID);
+            if (diff != 0)
+                return diff;
+
+            diff = ID - other.ID;
+            if (diff != 0)
+                return diff;
+
+            return generation - other.generation;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool Equals(CompactNodeID other)
+        {
+            return ID == other.ID && generation == other.generation && hierarchyID == other.hierarchyID;
+        }
         #endregion
     }
 

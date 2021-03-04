@@ -9,12 +9,13 @@ namespace Chisel.Core
 {
     public struct IndexOrder : IEquatable<IndexOrder>
     {
+        public CompactNodeID nodeID;
         public int nodeIndex;
         public int nodeOrder;
 
         public bool Equals(IndexOrder other)
         {
-            return nodeIndex == other.nodeIndex;
+            return nodeID == other.nodeID;
         }
 
         public override bool Equals(object obj)
@@ -26,7 +27,7 @@ namespace Chisel.Core
 
         public override int GetHashCode()
         {
-            return nodeIndex.GetHashCode();
+            return nodeID.GetHashCode();
         }
     }
 
@@ -174,10 +175,11 @@ namespace Chisel.Core
         public CSGNodeType      Type;
         public CSGOperationType Operation;
         public int              nodeIndex;
+        public CompactNodeID    nodeID;
         public int              childCount;
         public int              childOffset;
 
-        public override string ToString() { return $"({nameof(Type)}: {Type}, {nameof(childCount)}: {childCount}, {nameof(childOffset)}: {childOffset}, {nameof(Operation)}: {Operation}, {nameof(nodeIndex)}: {nodeIndex})"; }
+        public override string ToString() { return $"({nameof(Type)}: {Type}, {nameof(childCount)}: {childCount}, {nameof(childOffset)}: {childOffset}, {nameof(Operation)}: {Operation}, {nameof(nodeID)}: {nodeID})"; }
     }
 
     struct BrushAncestorLegend
@@ -213,7 +215,7 @@ namespace Chisel.Core
         static int[]    s_BrushIndexToAncestorLegend;
         static int[]    s_BrushIndexToOrder;
 
-        internal static BlobAssetReference<CompactTree> Create(CSGManager.TreeInfo treeInfo, int treeNodeIndex)
+        internal static BlobAssetReference<CompactTree> Create(CSGManager.TreeInfo treeInfo, CompactNodeID treeNodeID)
         {
             var brushes = treeInfo.brushes;
             if (brushes.Count == 0)
@@ -228,10 +230,10 @@ namespace Chisel.Core
             for (int b = 0; b < nodes.Count; b++)
             {
                 var nodeID = nodes[b];
-                if (nodeID == 0)
+                if (nodeID == CompactNodeID.Invalid)
                     continue;
 
-                var nodeIndex = nodeID - 1;
+                var nodeIndex = nodeID.ID - 1;
 
                 minNodeIndex = math.min(nodeIndex, minNodeIndex);
                 maxNodeIndex = math.max(nodeIndex, maxNodeIndex);
@@ -245,11 +247,12 @@ namespace Chisel.Core
             for (int b = 0; b < brushes.Count; b++)
             {
                 var brushNodeID = brushes[b].NodeID;
-                if (brushNodeID == 0)
+                if (brushNodeID == CompactNodeID.Invalid)
                     continue;
 
-                minBrushIndex = math.min(brushNodeID - 1, minBrushIndex);
-                maxBrushIndex = math.max(brushNodeID - 1, maxBrushIndex);
+                var brushNodeIndex = brushNodeID.ID - 1;
+                minBrushIndex = math.min(brushNodeIndex, minBrushIndex);
+                maxBrushIndex = math.max(brushNodeIndex, maxBrushIndex);
             }
 
             if (minBrushIndex == int.MaxValue)
@@ -263,6 +266,8 @@ namespace Chisel.Core
                 s_BrushIndexToOrder = new int[desiredBrushIndexToBottomUpLength];
             }
 
+            var treeNodeIndex = treeNodeID.ID - 1;
+
             // Bottom-up -> per brush list of all ancestors to root
             for (int b = 0; b < brushes.Count; b++)
             {
@@ -273,15 +278,14 @@ namespace Chisel.Core
                 var parentStart = s_BrushAncestors.Count;
 
                 var parent      = brush.Parent;
-                var treeNodeID  = treeNodeIndex + 1;
                 while (parent.Valid && parent.NodeID != treeNodeID)
                 {
-                    var parentIndex = parent.NodeID - 1;
+                    var parentIndex = parent.NodeID.ID - 1;
                     s_BrushAncestors.Add(parentIndex);
                     parent = parent.Parent;
                 }
 
-                var brushNodeIndex  = brush.NodeID - 1;
+                var brushNodeIndex  = brush.NodeID.ID - 1;
                 s_BrushIndexToAncestorLegend[brushNodeIndex - minBrushIndex] = s_BrushAncestorLegend.Count;
                 s_BrushIndexToOrder[brushNodeIndex - minBrushIndex] = b;
                 s_BrushAncestorLegend.Add(new BrushAncestorLegend()
@@ -298,12 +302,13 @@ namespace Chisel.Core
             s_NodeQueue.Clear();
             s_HierarchyNodes.Clear(); // TODO: set capacity to number of nodes in tree
 
-            s_NodeQueue.Enqueue(new CompactTopDownBuilderNode() { node = new CSGTreeNode() { nodeID =  treeNodeIndex + 1 }, index = 0 });
+            s_NodeQueue.Enqueue(new CompactTopDownBuilderNode() { node = new CSGTreeNode() { nodeID = treeNodeID }, index = 0 });
             s_HierarchyNodes.Add(new CompactHierarchyNode()
             {
                 Type        = CSGNodeType.Tree,
                 Operation   = CSGOperationType.Additive,
                 nodeIndex   = treeNodeIndex,
+                nodeID      = treeNodeID
             });
 
             while (s_NodeQueue.Count > 0)
@@ -342,12 +347,14 @@ namespace Chisel.Core
                             node = child,
                             index = s_HierarchyNodes.Count
                         });
-                    var nodeIndex = child.NodeID - 1;
+                    var nodeID      = child.NodeID;
+                    var nodeIndex   = child.NodeID.ID - 1;
                     s_HierarchyNodes.Add(new CompactHierarchyNode()
                     {
                         Type        = childType,
                         Operation   = child.Operation,
-                        nodeIndex   = nodeIndex
+                        nodeIndex   = nodeIndex,
+                        nodeID      = nodeID
                     });
                 }
 
@@ -407,7 +414,7 @@ namespace Chisel.Core
 
     public struct ChiselQuerySurfaces
     {
-        public int                              brushNodeIndex;
+        public CompactNodeID                    brushNodeID;
         public BlobArray<ChiselQuerySurface>    surfaces;
     }
 
@@ -544,8 +551,8 @@ namespace Chisel.Core
             public NativeList<NodeTransformations>                              transformationCache;
             public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
             
-            public NativeHashMap<int, MinMaxAABB>                                   brushTreeSpaceBoundLookup;
-            public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferLookup;
+            public NativeHashMap<CompactNodeID, MinMaxAABB>                                     brushTreeSpaceBoundLookup;
+            public NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
 
             public BlobAssetReference<CompactTree>                              compactTree;
 
@@ -553,8 +560,8 @@ namespace Chisel.Core
             {
                 brushIndices = new NativeList<int>(1000, Allocator.Persistent);
                 
-                brushTreeSpaceBoundLookup    = new NativeHashMap<int, MinMaxAABB>(1000, Allocator.Persistent);
-                brushRenderBufferLookup      = new NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundLookup    = new NativeHashMap<CompactNodeID, MinMaxAABB>(1000, Allocator.Persistent);
+                brushRenderBufferLookup      = new NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 // brushIndex
                 basePolygonCache            = new NativeList<BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
@@ -727,14 +734,14 @@ namespace Chisel.Core
             }
         }
 
-        public Data this[int index]
+        public Data this[CompactNodeID nodeID]
         {
             get
             {
-                if (!chiselTreeLookup.TryGetValue(index, out int dataIndex))
+                if (!chiselTreeLookup.TryGetValue(nodeID, out int dataIndex))
                 {
                     dataIndex = chiselTreeData.Count;
-                    chiselTreeLookup[index] = dataIndex;
+                    chiselTreeLookup[nodeID] = dataIndex;
                     chiselTreeData.Add(new Data());
                     chiselTreeData[dataIndex].Initialize();
                 }
@@ -742,19 +749,19 @@ namespace Chisel.Core
             }
         }
 
-        readonly Dictionary<int, int>   chiselTreeLookup    = new Dictionary<int, int>();
-        readonly List<Data>             chiselTreeData      = new List<Data>();
+        readonly Dictionary<CompactNodeID, int> chiselTreeLookup    = new Dictionary<CompactNodeID, int>();
+        readonly List<Data>                     chiselTreeData      = new List<Data>();
 
-        public void Remove(int index)
+        public void Remove(CompactNodeID nodeID)
         {
-            if (!chiselTreeLookup.TryGetValue(index, out int dataIndex))
+            if (!chiselTreeLookup.TryGetValue(nodeID, out int dataIndex))
                 return;
 
             var data = chiselTreeData[dataIndex];
             data.Dispose();
             // TODO: remove null entry and fix up indices
             chiselTreeData[dataIndex] = default;
-            chiselTreeLookup.Remove(index);
+            chiselTreeLookup.Remove(nodeID);
         }
 
         public void Clear()

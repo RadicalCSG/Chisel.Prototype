@@ -31,14 +31,14 @@ namespace Chisel.Core
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
         public static CSGTreeBrush Create(Int32 userID, Matrix4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
-            int brushNodeID;
+            CompactNodeID brushNodeID;
             if (CSGManager.GenerateBrush(userID, out brushNodeID))
             { 
-                if (localTransformation != default(Matrix4x4)) CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref localTransformation);
-                if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(brushNodeID, operation);
+                if (localTransformation != default(Matrix4x4)) CSGManager.SetNodeLocalTransformation(brushNodeID, ref localTransformation);
+                if (operation != CSGOperationType.Additive) CSGManager.SetNodeOperationType(brushNodeID, operation);
                 if (brushMesh.Valid) CSGManager.SetBrushMeshID(brushNodeID, brushMesh.brushMeshID);
             } else
-                brushNodeID = 0;
+                brushNodeID = CompactNodeID.Invalid;
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
         }
 
@@ -68,38 +68,38 @@ namespace Chisel.Core
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBrush"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return brushNodeID != CSGTreeNode.InvalidNodeID && CSGTreeNode.IsNodeIDValid(brushNodeID); } }
+        public bool				Valid			{ get { return brushNodeID != CompactNodeID.Invalid && CSGManager.IsValidNodeID(brushNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBrush"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
-        public Int32			NodeID			{ get { return brushNodeID; } }
+        public CompactNodeID    NodeID          { get { return brushNodeID; } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.UserID"/> set to the <see cref="Chisel.Core.CSGTreeBrush"/> at creation time.</value>
-        public Int32			UserID			{ get { return CSGTreeNode.GetUserIDOfNode(brushNodeID); } }
+        public Int32			UserID			{ get { return CSGManager.GetUserIDOfNode(brushNodeID); } }
 
         /// <value>Returns the dirty flag of the <see cref="Chisel.Core.CSGTreeBrush"/>. When the it's dirty, then it means (some of) its generated meshes have been modified.</value>
-        public bool				Dirty			{ get { return CSGTreeNode.IsNodeDirty(brushNodeID); } }
+        public bool				Dirty			{ get { return CSGManager.IsNodeDirty(brushNodeID); } }
 
         /// <summary>Force set the dirty flag of the <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
-        public void SetDirty	()				{ CSGTreeNode.SetDirty(brushNodeID); }
+        public void SetDirty	()				{ CSGManager.SetDirty(brushNodeID); }
 
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeBrush"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Destroy		()				{ var prevBrushNodeID = brushNodeID; brushNodeID = CSGTreeNode.InvalidNodeID; return CSGTreeNode.DestroyNode(prevBrushNodeID); }
+        public bool Destroy		()				{ var prevBrushNodeID = brushNodeID; brushNodeID = CompactNodeID.Invalid; return CSGManager.DestroyNode(prevBrushNodeID); }
 
         /// <summary>Sets the state of this struct to invalid.</summary>
-        public void SetInvalid	()				{ brushNodeID = CSGTreeNode.InvalidNodeID; }
+        public void SetInvalid	()				{ brushNodeID = CompactNodeID.Invalid; }
         #endregion
 
         #region ChildNode
         /// <value>Returns the parent <see cref="Chisel.Core.CSGTreeBranch"/> this <see cref="Chisel.Core.CSGTreeBrush"/> is a child of. Returns an invalid node if it's not a child of any <see cref="Chisel.Core.CSGTreeBranch"/>.</value>
-        public CSGTreeBranch	Parent				{ get { return new CSGTreeBranch { branchNodeID = CSGTreeNode.GetParentOfNode(brushNodeID) }; } }
+        public CSGTreeBranch	Parent				{ get { return new CSGTreeBranch { branchNodeID = CSGManager.GetParentOfNode(brushNodeID) }; } }
         
         /// <value>Returns tree this <see cref="Chisel.Core.CSGTreeBrush"/> belongs to.</value>
-        public CSGTree			Tree				{ get { return new CSGTree       { treeNodeID   = CSGTreeNode.GetTreeOfNode(brushNodeID) }; } }
+        public CSGTree			Tree				{ get { return new CSGTree       { treeNodeID   = CSGManager.GetTreeOfNode(brushNodeID) }; } }
 
         /// <value>The CSG operation that this <see cref="Chisel.Core.CSGTreeBrush"/> will use.</value>
-        public CSGOperationType Operation			{ get { return (CSGOperationType)CSGTreeNode.GetNodeOperationType(brushNodeID); } set { CSGTreeNode.SetNodeOperationType(brushNodeID, value); } }
+        public CSGOperationType Operation			{ get { return (CSGOperationType)CSGManager.GetNodeOperationType(brushNodeID); } set { CSGManager.SetNodeOperationType(brushNodeID, value); } }
         #endregion
 
         #region TreeBrush specific
@@ -124,10 +124,15 @@ namespace Chisel.Core
 
         #endregion
 #endif
+        internal bool IsAnyStatusFlagSet()                  { return CSGManager.IsAnyStatusFlagSet(brushNodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CSGManager.IsStatusFlagSet(brushNodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag)   { CSGManager.SetStatusFlag(brushNodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CSGManager.ClearStatusFlag(brushNodeID, flag); }
+        internal void ClearAllStatusFlags()                 { CSGManager.ClearAllStatusFlags(brushNodeID); }
 
         #region Transformation
         // TODO: add description
-		public Matrix4x4		LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(brushNodeID); } [BurstDiscard] set { CSGTreeNode.SetNodeLocalTransformation(brushNodeID, ref value); } }		
+        public Matrix4x4		LocalTransformation		{ get { return CSGManager.GetNodeLocalTransformation(brushNodeID, out var result) ? result : Matrix4x4.identity; } [BurstDiscard] set { CSGManager.SetNodeLocalTransformation(brushNodeID, ref value); } }		
         // TODO: add description
 		public Matrix4x4		TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(brushNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
@@ -160,7 +165,7 @@ namespace Chisel.Core
         #endregion
 
         [SerializeField] // Useful to be able to handle selection in history
-        internal Int32 brushNodeID;
+        internal CompactNodeID brushNodeID;
 
         public override string ToString() { return $"({NodeID})"; }
 

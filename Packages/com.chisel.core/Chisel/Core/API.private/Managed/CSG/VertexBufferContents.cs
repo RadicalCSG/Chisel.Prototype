@@ -40,8 +40,8 @@ namespace Chisel.Core
         public NativeList<GeneratedMeshDescription> meshDescriptions;
         public NativeList<SubMeshSection>           subMeshSections;
         
-        public NativeListArray<int> 	        triangleBrushIndices;
-        public NativeList<Mesh.MeshData>        meshes;
+        public NativeListArray<CompactNodeID> 	    triangleBrushIndices;
+        public NativeList<Mesh.MeshData>            meshes;
 
         public NativeArray<VertexAttributeDescriptor> renderDescriptors;
         public NativeArray<VertexAttributeDescriptor> colliderDescriptors;
@@ -53,7 +53,7 @@ namespace Chisel.Core
             if (!subMeshSections.IsCreated) subMeshSections     = new NativeList<SubMeshSection>(Allocator.Persistent);
             else subMeshSections.Clear();
             if (!meshes              .IsCreated) meshes               = new NativeList<Mesh.MeshData>(Allocator.Persistent);
-            if (!triangleBrushIndices.IsCreated) triangleBrushIndices = new NativeListArray<int>(Allocator.Persistent);
+            if (!triangleBrushIndices.IsCreated) triangleBrushIndices = new NativeListArray<CompactNodeID>(Allocator.Persistent);
 
             if (!renderDescriptors.IsCreated)
                 renderDescriptors = new NativeArray<VertexAttributeDescriptor>(s_RenderDescriptors, Allocator.Persistent);

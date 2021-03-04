@@ -123,8 +123,8 @@ namespace Chisel.Components
         }
 
 #if UNITY_EDITOR
-        static Dictionary<int, VisibilityState> visibilityStateLookup = new Dictionary<int, VisibilityState>();
-        public static bool IsBrushVisible(int brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
+        static Dictionary<CompactNodeID, VisibilityState> visibilityStateLookup = new Dictionary<CompactNodeID, VisibilityState>();
+        public static bool IsBrushVisible(CompactNodeID brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
 
         static bool updateVisibilityFlag = false;
         public static void OnVisibilityChanged()

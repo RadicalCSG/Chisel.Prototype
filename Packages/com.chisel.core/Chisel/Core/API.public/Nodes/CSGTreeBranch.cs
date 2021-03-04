@@ -27,16 +27,15 @@ namespace Chisel.Core
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBranch"/>. May be an invalid node if it failed to create it.</returns>
         public static CSGTreeBranch Create(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, params CSGTreeNode[] children)
         {
-            int branchNodeID;
-            if (!CSGManager.GenerateBranch(userID, out branchNodeID))
-                return new CSGTreeBranch() { branchNodeID = 0 };
+            if (!CSGManager.GenerateBranch(userID, out var branchNodeID))
+                return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
             if (children != null && children.Length > 0)
             {
-                if (operation != CSGOperationType.Additive) CSGTreeNode.SetNodeOperationType(branchNodeID, operation);
+                if (operation != CSGOperationType.Additive) CSGManager.SetNodeOperationType(branchNodeID, operation);
                 if (!CSGManager.SetChildNodes(branchNodeID, children))
                 {
-                    CSGTreeNode.DestroyNode(branchNodeID);
-                    return new CSGTreeBranch() { branchNodeID = 0 };
+                    CSGManager.DestroyNode(branchNodeID);
+                    return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
                 }
             }
             return new CSGTreeBranch() { branchNodeID = branchNodeID };
@@ -48,15 +47,14 @@ namespace Chisel.Core
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBranch"/>. May be an invalid node if it failed to create it.</returns>
         public static CSGTreeBranch Create(Int32 userID, params CSGTreeNode[] children) 
         {
-            int branchNodeID;
-            if (!CSGManager.GenerateBranch(userID, out branchNodeID))
-                return new CSGTreeBranch() { branchNodeID = 0 };
+            if (!CSGManager.GenerateBranch(userID, out var branchNodeID))
+                return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
             if (children != null && children.Length > 0)
             {
                 if (!CSGManager.SetChildNodes(branchNodeID, children))
                 {
-                    CSGTreeNode.DestroyNode(branchNodeID);
-                    return new CSGTreeBranch() { branchNodeID = 0 };
+                    CSGManager.DestroyNode(branchNodeID);
+                    return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
                 }
             }
             return new CSGTreeBranch() { branchNodeID = branchNodeID };
@@ -72,100 +70,100 @@ namespace Chisel.Core
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBranch"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return branchNodeID != CSGTreeNode.InvalidNodeID && CSGTreeNode.IsNodeIDValid(branchNodeID); } }
+        public bool				Valid			{ get { return branchNodeID != CompactNodeID.Invalid && CSGManager.IsValidNodeID(branchNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBranch.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBranch"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
-        public Int32			NodeID			{ get { return branchNodeID; } }
+        public CompactNodeID    NodeID          { get { return branchNodeID; } }
         
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBranch.UserID"/> set to the <see cref="Chisel.Core.CSGTreeBranch"/> at creation time.</value>
-        public Int32			UserID			{ get { return CSGTreeNode.GetUserIDOfNode(branchNodeID); } }
+        public Int32			UserID			{ get { return CSGManager.GetUserIDOfNode(branchNodeID); } }
         
         /// <value>Returns the dirty flag of the <see cref="Chisel.Core.CSGTreeBranch"/>. When the it's dirty, then it means (some of) its generated meshes have been modified.</value>
-        public bool				Dirty			{ get { return CSGTreeNode.IsNodeDirty(branchNodeID); } }
+        public bool				Dirty			{ get { return CSGManager.IsNodeDirty(branchNodeID); } }
 
         /// <summary>Force set the dirty flag of the <see cref="Chisel.Core.CSGTreeNode"/>.</summary>
-        public void SetDirty	()				{ CSGTreeNode.SetDirty(branchNodeID); }
+        public void SetDirty	()				{ CSGManager.SetDirty(branchNodeID); }
 
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeNode"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Destroy		()				{ var prevBranchNodeID = branchNodeID; branchNodeID = CSGTreeNode.InvalidNodeID; return CSGTreeNode.DestroyNode(prevBranchNodeID); }
+        public bool Destroy		()				{ var prevBranchNodeID = branchNodeID; branchNodeID = CompactNodeID.Invalid; return CSGManager.DestroyNode(prevBranchNodeID); }
 
         /// <summary>Sets the state of this struct to invalid.</summary>
-        public void SetInvalid	()				{ branchNodeID = CSGTreeNode.InvalidNodeID; }
+        public void SetInvalid	()				{ branchNodeID = CompactNodeID.Invalid; }
         #endregion
 
         #region ChildNode
         /// <value>Returns the parent <see cref="Chisel.Core.CSGTreeBranch"/> this <see cref="Chisel.Core.CSGTreeBranch"/> is a child of. Returns an invalid node if it's not a child of any <see cref="Chisel.Core.CSGTreeBranch"/>.</value>
-        public CSGTreeBranch	Parent			{ get { return new CSGTreeBranch { branchNodeID = CSGTreeNode.GetParentOfNode(branchNodeID) }; } }
+        public CSGTreeBranch	Parent			{ get { return new CSGTreeBranch { branchNodeID = CSGManager.GetParentOfNode(branchNodeID) }; } }
 
         /// <value>Returns tree this <see cref="Chisel.Core.CSGTreeBranch"/> belongs to.</value>
-        public CSGTree			Tree			{ get { return new CSGTree       { treeNodeID   = CSGTreeNode.GetTreeOfNode(branchNodeID)  }; } }
+        public CSGTree			Tree			{ get { return new CSGTree       { treeNodeID   = CSGManager.GetTreeOfNode(branchNodeID) }; } }
 
         /// <value>The CSG operation that this <see cref="Chisel.Core.CSGTreeBranch"/> will use.</value>
-        public CSGOperationType Operation		{ get { return (CSGOperationType)CSGTreeNode.GetNodeOperationType(branchNodeID); } set { CSGTreeNode.SetNodeOperationType(branchNodeID, value); } }
+        public CSGOperationType Operation		{ get { return (CSGOperationType)CSGManager.GetNodeOperationType(branchNodeID); } set { CSGManager.SetNodeOperationType(branchNodeID, value); } }
         #endregion
 
         #region ChildNodeContainer
         /// <value>Gets the number of elements contained in the <see cref="Chisel.Core.CSGTreeBranch"/>.</value>
-        public Int32			Count			{ get { return CSGTreeNode.GetChildNodeCount(branchNodeID); } }
+        public Int32			Count			{ get { return CSGManager.GetChildNodeCount(branchNodeID); } }
 
         /// <summary>Gets child at the specified index.</summary>
         /// <param name="index">The zero-based index of the child to get.</param>
         /// <returns>The element at the specified index.</returns>
-        public CSGTreeNode		this[int index]	{ get { return new CSGTreeNode { nodeID = CSGTreeNode.GetChildNodeAtIndex(branchNodeID, index) }; } }
+        public CSGTreeNode		this[int index]	{ get { return new CSGTreeNode { nodeID = CSGManager.GetChildNodeAtIndex(branchNodeID, index) }; } }
 
 
         /// <summary>Adds a <see cref="Chisel.Core.CSGTreeNode"/> to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Add			(CSGTreeNode item)				{ return CSGTreeNode.AddChildNode(branchNodeID, item.nodeID); }
+        public bool Add			(CSGTreeNode item)				{ return CSGManager.AddChildNode(branchNodeID, item.nodeID); }
 
         /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the  <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool AddRange	(CSGTreeNode[] array)			{ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.InsertChildNodeRange(branchNodeID, Count, array); }
+        public bool AddRange	(CSGTreeNode[] array)			{ if (array == null) throw new ArgumentNullException("array"); return CSGManager.InsertChildNodeRange(branchNodeID, Count, array); }
 
         /// <summary>Inserts an element into the <see cref="Chisel.Core.CSGTreeNode"/> at the specified index.</summary>
         /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to insert.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Insert		(int index, CSGTreeNode item)	{ return CSGTreeNode.InsertChildNode(branchNodeID, index, item.nodeID); }
+        public bool Insert		(int index, CSGTreeNode item)	{ return CSGManager.InsertChildNode(branchNodeID, index, item.nodeID); }
 
         /// <summary>Inserts the <see cref="Chisel.Core.CSGTreeNode"/>s of an array into the <see cref="Chisel.Core.CSGTreeBranch"/> at the specified index.</summary>
         /// <param name="index">The zero-based index at which the new <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted.</param>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool InsertRange	(int index, CSGTreeNode[] array){ if (array == null) throw new ArgumentNullException("array"); return CSGTreeNode.InsertChildNodeRange(branchNodeID, index, array); }
+        public bool InsertRange	(int index, CSGTreeNode[] array){ if (array == null) throw new ArgumentNullException("array"); return CSGManager.InsertChildNodeRange(branchNodeID, index, array); }
 
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Remove		(CSGTreeNode item)				{ return CSGTreeNode.RemoveChildNode(branchNodeID, item.nodeID); }
+        public bool Remove		(CSGTreeNode item)				{ return CSGManager.RemoveChildNode(branchNodeID, item.nodeID); }
 
         /// <summary>Removes the child at the specified index of the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="index">The zero-based index of the child to remove.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool RemoveAt	(int index)						{ return CSGTreeNode.RemoveChildNodeAt(branchNodeID, index); }
+        public bool RemoveAt	(int index)						{ return CSGManager.RemoveChildNodeAt(branchNodeID, index); }
 
         /// <summary>Removes a range of children from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="index">The zero-based starting index of the range of children to remove.</param>
         /// <param name="count">The number of children to remove.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool RemoveRange	(int index, int count)			{ return CSGTreeNode.RemoveChildNodeRange(branchNodeID, index, count); }
+        public bool RemoveRange	(int index, int count)			{ return CSGManager.RemoveChildNodeRange(branchNodeID, index, count); }
 
         /// <summary>Removes all children from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
-        public void Clear		()								{ CSGTreeNode.ClearChildNodes(branchNodeID); }
+        public void Clear		()								{ CSGManager.ClearChildNodes(branchNodeID); }
 
         /// <summary>Determines the index of a specific child in the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns>The index of <paramref name="item"/> if found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, –1.</returns>
-        public int  IndexOf		(CSGTreeNode item)				{ return CSGTreeNode.IndexOfChildNode(branchNodeID, item.nodeID); }
+        public int  IndexOf		(CSGTreeNode item)				{ return CSGManager.IndexOfChildNode(branchNodeID, item.nodeID); }
 
         /// <summary>Determines whether the <see cref="Chisel.Core.CSGTreeBranch"/> contains a specific value.</summary>
         /// <param name="item">The Object to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, <b>false</b>.</returns>
-        public bool Contains	(CSGTreeNode item)				{ return CSGTreeNode.IndexOfChildNode(branchNodeID, item.nodeID) != -1; }
+        public bool Contains	(CSGTreeNode item)				{ return CSGManager.IndexOfChildNode(branchNodeID, item.nodeID) != -1; }
         #endregion
             
 #if UNITY_EDITOR
@@ -177,10 +175,15 @@ namespace Chisel.Core
 
         #endregion
 #endif
+        internal bool IsAnyStatusFlagSet()                  { return CSGManager.IsAnyStatusFlagSet(branchNodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CSGManager.IsStatusFlagSet(branchNodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag)   { CSGManager.SetStatusFlag(branchNodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CSGManager.ClearStatusFlag(branchNodeID, flag); }
+        internal void ClearAllStatusFlags()                 { CSGManager.ClearAllStatusFlags(branchNodeID); }
 
         #region Transformation
         // TODO: add description
-		public Matrix4x4			LocalTransformation		{ get { return CSGTreeNode.GetNodeLocalTransformation(branchNodeID); } set { CSGTreeNode.SetNodeLocalTransformation(branchNodeID, ref value); } }		
+		public Matrix4x4			LocalTransformation		{ get { return CSGManager.GetNodeLocalTransformation(branchNodeID, out var result) ? result : Matrix4x4.identity; } set { CSGManager.SetNodeLocalTransformation(branchNodeID, ref value); } }		
         // TODO: add description
 		//public Matrix4x4			TreeToNodeSpaceMatrix	{ get { if (!CSGManager.GetTreeToNodeSpaceMatrix(branchNodeID, out Matrix4x4 result)) return Matrix4x4.identity; return result; } }
         // TODO: add description
@@ -213,6 +216,6 @@ namespace Chisel.Core
         #endregion
         
         [SerializeField] // Useful to be able to handle selection in history
-        internal Int32 branchNodeID;
+        internal CompactNodeID branchNodeID;
     }
 }

@@ -13,7 +13,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core.New
 {
-    public struct CompactHierarchyID
+    public struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
     {
         public static readonly CompactHierarchyID Invalid = new CompactHierarchyID(id: -1);
 
@@ -37,6 +37,22 @@ namespace Chisel.Core.New
         }
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
         public override int GetHashCode() { return ID.GetHashCode(); }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int CompareTo(CompactHierarchyID other)
+        {
+            var diff = ID - other.ID;
+            if (diff != 0)
+                return diff;
+
+            return generation - other.generation;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool Equals(CompactHierarchyID other)
+        {
+            return ID == other.ID && generation == other.generation;
+        }
         #endregion
     }
 
@@ -645,6 +661,38 @@ namespace Chisel.Core.New
                 throw new ArgumentException(nameof(parent));
 
             return hierarchy.SiblingIndexOf(item);
+        }
+
+
+        // Temporary workaround until we can switch to hashes
+        internal static bool IsAnyStatusFlagSet(CompactNodeID nodeID)
+        {
+            var hierarchy = GetHierarchy(nodeID);
+            return hierarchy.IsAnyStatusFlagSet(nodeID);
+        }
+
+        internal static bool IsStatusFlagSet(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            var hierarchy = GetHierarchy(nodeID);
+            return hierarchy.IsStatusFlagSet(nodeID, flag);
+        }
+
+        internal static void SetStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            var hierarchy = GetHierarchy(nodeID);
+            hierarchy.SetStatusFlag(nodeID, flag);
+        }
+
+        internal static void ClearAllStatusFlags(CompactNodeID nodeID)
+        {
+            var hierarchy = GetHierarchy(nodeID);
+            hierarchy.ClearAllStatusFlags(nodeID);
+        }
+
+        internal static void ClearStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            var hierarchy = GetHierarchy(nodeID);
+            hierarchy.ClearStatusFlag(nodeID, flag);
         }
     }
 }

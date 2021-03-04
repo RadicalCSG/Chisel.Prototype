@@ -41,7 +41,7 @@ namespace Chisel.Components
         public MeshFilter       meshFilter;
         public MeshRenderer     meshRenderer;
         public Material[]       renderMaterials;
-        public int[]            triangleBrushes = Array.Empty<int>();
+        public CompactNodeID[]  triangleBrushes = Array.Empty<CompactNodeID>();
         
         public ulong            geometryHashValue;
         public ulong            surfaceHashValue;
@@ -262,7 +262,7 @@ namespace Chisel.Components
             bool meshIsModified = false;
             {
                 Profiler.BeginSample("Clear");
-                triangleBrushes = Array.Empty<int>();
+                triangleBrushes = Array.Empty<CompactNodeID>();
 
                 if (sharedMesh.vertexCount > 0)
                 {
@@ -305,8 +305,8 @@ namespace Chisel.Components
                 var instance            = objectUpdate.instance;
                 var brushIndicesArray   = vertexBufferContents.triangleBrushIndices[meshUpdate.contentsIndex].AsArray();
                 if (instance.triangleBrushes.Length < brushIndicesArray.Length)
-                    instance.triangleBrushes = new int[brushIndicesArray.Length];
-                NativeArray<int>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
+                    instance.triangleBrushes = new CompactNodeID[brushIndicesArray.Length];
+                NativeArray<CompactNodeID>.Copy(brushIndicesArray, instance.triangleBrushes, brushIndicesArray.Length);
             }
             Profiler.EndSample();
 
@@ -439,7 +439,7 @@ namespace Chisel.Components
                 {
                     if (n < triangleBrushes.Length)
                     { 
-                        int     brushID         = triangleBrushes[n];
+                        var     brushID         = triangleBrushes[n];
                         bool    isBrushVisible  = ChiselGeneratedComponentManager.IsBrushVisible(brushID);
                         if (!isBrushVisible)
                             continue;

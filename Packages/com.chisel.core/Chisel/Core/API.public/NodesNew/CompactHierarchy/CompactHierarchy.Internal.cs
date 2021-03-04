@@ -872,5 +872,59 @@ namespace Chisel.Core.New
                 rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
             }
         }
+
+
+
+
+        // Temporary workaround until we can switch to hashes
+        internal bool IsAnyStatusFlagSet(CompactNodeID nodeID)
+        {
+            Debug.Assert(IsCreated);
+            if (nodeID == CompactNodeID.Invalid)
+                return false;
+
+            ref var node = ref GetChildRef(nodeID);
+            return node.flags != NodeStatusFlags.None;
+        }
+
+        internal bool IsStatusFlagSet(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            Debug.Assert(IsCreated);
+            if (nodeID == CompactNodeID.Invalid)
+                return false;
+
+            ref var node = ref GetChildRef(nodeID);
+            return (node.flags & flag) == flag;
+        }
+
+        internal void SetStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            Debug.Assert(IsCreated);
+            if (nodeID == CompactNodeID.Invalid)
+                return;
+
+            ref var node = ref GetChildRef(nodeID);
+            node.flags |= flag;
+        }
+
+        internal void ClearAllStatusFlags(CompactNodeID nodeID)
+        {
+            Debug.Assert(IsCreated);
+            if (nodeID == CompactNodeID.Invalid)
+                return;
+
+            ref var node = ref GetChildRef(nodeID);
+            node.flags = NodeStatusFlags.None;
+        }
+
+        internal void ClearStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        {
+            Debug.Assert(IsCreated);
+            if (nodeID == CompactNodeID.Invalid)
+                return;
+
+            ref var node = ref GetChildRef(nodeID);
+            node.flags &= ~flag;
+        }
     }
 }

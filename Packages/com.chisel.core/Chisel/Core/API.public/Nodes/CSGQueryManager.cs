@@ -101,8 +101,8 @@ namespace Chisel.Core
                 brushMesh.planes.Length == 0)
 		        return false;
 
-            var treeToNodeSpace = brush.TreeToNodeSpaceMatrix;
-            var nodeToTreeSpace = brush.NodeToTreeSpaceMatrix;
+            var treeToNodeSpace = (Matrix4x4)brush.TreeToNodeSpaceMatrix;
+            var nodeToTreeSpace = (Matrix4x4)brush.NodeToTreeSpaceMatrix;
 
             var brushRayStart	= treeToNodeSpace.MultiplyPoint(treeSpaceRayStart);
             var brushRayEnd     = treeToNodeSpace.MultiplyPoint(treeSpaceRayEnd);
@@ -210,8 +210,8 @@ namespace Chisel.Core
         //							(in fact, we could still cache the generated table w/ ignored brushes while moving the mouse)
         //						3.	have a ray-brush acceleration data structure so that we reduce the number of brushes to 'try'
         //							to only the ones that the ray actually intersects with (instead of -all- brushes)
-        static readonly HashSet<int> s_IgnoreNodeIndices = new HashSet<int>();
-        static readonly HashSet<int> s_FilterNodeIndices = new HashSet<int>();
+        static readonly HashSet<CompactNodeID> s_IgnoreNodeIndices = new HashSet<CompactNodeID>();
+        static readonly HashSet<CompactNodeID> s_FilterNodeIndices = new HashSet<CompactNodeID>();
 
         public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]       meshQueries, 
                                                               CSGTree           tree,
@@ -254,11 +254,9 @@ namespace Chisel.Core
             if (brushCount == 0)
                 return null;
             
-            var treeNodeID    = tree.NodeID;
-            var treeNodeIndex = treeNodeID - 1;
-
+            var treeNodeID              = tree.NodeID;
             var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeID].brushRenderBufferLookup;
 
             // TODO: optimize
             for (int i = 0; i < brushCount; i++)
@@ -277,7 +275,7 @@ namespace Chisel.Core
                     (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brushNodeID)))
                     continue;
 
-                if (!brushRenderBufferLookup.TryGetValue(brushNodeID - 1, out var brushRenderBuffer))
+                if (!brushRenderBufferLookup.TryGetValue(brushNodeID, out var brushRenderBuffer))
                     continue;
 
                 if (!bounds.IntersectRay(treeSpaceRay))
@@ -327,8 +325,7 @@ namespace Chisel.Core
                 return null;
 
             var treeNodeID              = tree.treeNodeID;
-            var treeNodeIndex           = treeNodeID - 1;
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeIndex].brushRenderBufferLookup;
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeID].brushRenderBufferLookup;
 
             var foundNodes  = new List<CSGTreeNode>();
             for (int i = 0; i < brushCount; i++)
@@ -343,7 +340,6 @@ namespace Chisel.Core
                     continue;
 
                 var brushNodeID     = brush.NodeID;
-                var brushNodeIndex  = brushNodeID - 1;
                 // TODO: take transformations into account? (frustum is already in tree space)
 
                 bool intersectsFrustum = false;
@@ -359,7 +355,7 @@ namespace Chisel.Core
 
                 if (intersectsFrustum)
                 {
-                    if (!brushRenderBufferLookup.TryGetValue(brushNodeIndex, out var brushRenderBuffers) ||
+                    if (!brushRenderBufferLookup.TryGetValue(brushNodeID, out var brushRenderBuffers) ||
                         !brushRenderBuffers.IsCreated)
                         continue;
 

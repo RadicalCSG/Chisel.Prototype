@@ -204,7 +204,15 @@ namespace Chisel.Core.New
         public override int GetHashCode() { return treeNodeID.GetHashCode(); }
         #endregion
 
-        
+
+        // Temporary workaround until we can switch to hashes
+        internal bool IsAnyStatusFlagSet()                  { return CompactHierarchyManager.IsAnyStatusFlagSet(treeNodeID); }
+        internal bool IsStatusFlagSet(NodeStatusFlags flag) { return CompactHierarchyManager.IsStatusFlagSet(treeNodeID, flag); }
+        internal void SetStatusFlag(NodeStatusFlags flag)   { CompactHierarchyManager.SetStatusFlag(treeNodeID, flag); }
+        internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(treeNodeID, flag); }
+        internal void ClearAllStatusFlags()                 { CompactHierarchyManager.ClearAllStatusFlags(treeNodeID); }
+
+
         [SerializeField] // Useful to be able to handle selection in history
         internal CompactNodeID treeNodeID;
     }

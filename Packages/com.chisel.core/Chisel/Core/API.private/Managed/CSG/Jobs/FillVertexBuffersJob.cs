@@ -102,15 +102,15 @@ namespace Chisel.Core
 
     public struct SubMeshSurface
     {
-        public int      brushNodeIndex;
-        public int      surfaceIndex;
-        public int      surfaceParameter;
+        public CompactNodeID    brushNodeID;
+        public int              surfaceIndex;
+        public int              surfaceParameter;
 
-        public int      vertexCount;
-        public int      indexCount;
+        public int              vertexCount;
+        public int              indexCount;
 
-        public uint     surfaceHash;
-        public uint     geometryHash;
+        public uint             surfaceHash;
+        public uint             geometryHash;
         public BlobAssetReference<ChiselBrushRenderBuffer> brushRenderBuffer;
     }
 
@@ -166,14 +166,14 @@ namespace Chisel.Core
                 var brushRenderBuffer   = brushData.brushRenderBuffer;
                 ref var querySurfaces   = ref brushRenderBuffer.Value.querySurfaces[t]; // <-- 1. somehow this needs to 
                                                                                         //     be in outer loop
-                ref var brushNodeIndex  = ref querySurfaces.brushNodeIndex;
+                ref var brushNodeID     = ref querySurfaces.brushNodeID;
                 ref var surfaces        = ref querySurfaces.surfaces;
 
                 for (int s = 0; s < surfaces.Length; s++) 
                 {
                     subMeshSurfaceList.AddNoResize(new SubMeshSurface
                     {
-                        brushNodeIndex      = brushNodeIndex,
+                        brushNodeID         = brushNodeID,
                         surfaceIndex        = surfaces[s].surfaceIndex,
                         surfaceParameter    = surfaces[s].surfaceParameter, // <-- 2. store array per surfaceParameter => no sort
                         vertexCount         = surfaces[s].vertexCount,
@@ -388,7 +388,7 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>                      subMeshSections;
 
         // Read / Write
-        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<int> 	triangleBrushIndices;
+        [NativeDisableParallelForRestriction, NoAlias] public NativeListArray<CompactNodeID> triangleBrushIndices;
 
         public void Execute()
         {
@@ -402,11 +402,11 @@ namespace Chisel.Core
                 if (section.meshQuery.LayerParameterIndex != LayerParameterIndex.None &&
                     section.meshQuery.LayerParameterIndex != LayerParameterIndex.RenderMaterial)
                     continue;
-                 
-                var totalIndexCount     = section.totalIndexCount;
-                triangleBrushIndices    .AllocateWithCapacityForIndex(i, totalIndexCount / 3);                        
-                triangleBrushIndices    [i].Clear();
-                triangleBrushIndices    [i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
+
+                var totalIndexCount = section.totalIndexCount;
+                triangleBrushIndices.AllocateWithCapacityForIndex(i, totalIndexCount / 3);                        
+                triangleBrushIndices[i].Clear();
+                triangleBrushIndices[i].Resize(totalIndexCount / 3, NativeArrayOptions.ClearMemory);
             }
         }
     }
@@ -586,8 +586,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<ChiselMeshUpdate>             renderMeshes;
 
         // Read / Write
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeListArray<int>      triangleBrushIndices;
-        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData> meshes;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeListArray<CompactNodeID>    triangleBrushIndices;
+        [NativeDisableContainerSafetyRestriction, NoAlias] public NativeList<Mesh.MeshData>         meshes;
 
         public void Execute(int renderIndex)
         {
@@ -644,7 +644,7 @@ namespace Chisel.Core
                         ++surfaceIndex)
                 {
                     var subMeshSurface      = subMeshSurfaceArray[surfaceIndex];
-                    var brushNodeIndex      = subMeshSurface.brushNodeIndex;
+                    var brushNodeID         = subMeshSurface.brushNodeID;
                     ref var sourceBuffer    = ref subMeshSurface.brushRenderBuffer.Value.surfaces[subMeshSurface.surfaceIndex];
                             
                     ref var sourceIndices   = ref sourceBuffer.indices;
@@ -658,7 +658,6 @@ namespace Chisel.Core
                         sourceVertexCount == 0)
                         continue;
                         
-                    var brushNodeID = brushNodeIndex + 1;                        
                     for (int last = brushIDIndexOffset + sourceBrushCount; brushIDIndexOffset < last; brushIDIndexOffset++)
                         triangleBrushIndices[brushIDIndexOffset] = brushNodeID;
 

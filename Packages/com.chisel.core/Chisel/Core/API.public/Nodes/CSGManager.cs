@@ -50,12 +50,12 @@ namespace Chisel.Core
 
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void SetVisibility(int brushNodeID, bool visible)
+        public static void SetVisibility(CompactNodeID brushNodeID, bool visible)
         {
             if (!IsValidNodeID(brushNodeID))
                 return;
 
-            var brushNodeIndex = brushNodeID - 1;
+            var brushNodeIndex = brushNodeID.ID - 1;
             var state = (visible ? BrushVisibilityState.Visible : BrushVisibilityState.None);
             if (brushSelectableState.TryGetValue(brushNodeIndex, out var result))
                 state |= (result & BrushVisibilityState.PickingEnabled);
@@ -63,12 +63,12 @@ namespace Chisel.Core
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static void SetPickingEnabled(int brushNodeID, bool pickingEnabled)
+        public static void SetPickingEnabled(CompactNodeID brushNodeID, bool pickingEnabled)
         {
             if (!IsValidNodeID(brushNodeID))
                 return;
 
-            var brushNodeIndex = brushNodeID - 1;
+            var brushNodeIndex = brushNodeID.ID - 1;
             var state = (pickingEnabled ? BrushVisibilityState.PickingEnabled : BrushVisibilityState.None);
             if (brushSelectableState.TryGetValue(brushNodeIndex, out var result))
                 state |= (result & BrushVisibilityState.Visible);
@@ -76,33 +76,33 @@ namespace Chisel.Core
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static bool IsBrushVisible(int brushNodeID)
+        public static bool IsBrushVisible(CompactNodeID brushNodeID)
         {
             if (!IsValidNodeID(brushNodeID))
                 return false;
-            var brushNodeIndex = brushNodeID - 1;
+            var brushNodeIndex = brushNodeID.ID - 1;
             if (!brushSelectableState.TryGetValue(brushNodeIndex, out var result))
                 return false;
             return (result & BrushVisibilityState.Visible) == BrushVisibilityState.Visible;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static bool IsBrushPickingEnabled(int brushNodeID)
+        public static bool IsBrushPickingEnabled(CompactNodeID brushNodeID)
         {
             if (!IsValidNodeID(brushNodeID))
                 return false;
-            var brushNodeIndex = brushNodeID - 1;
+            var brushNodeIndex = brushNodeID.ID - 1;
             if (!brushSelectableState.TryGetValue(brushNodeIndex, out var result))
                 return false;
             return (result & BrushVisibilityState.PickingEnabled) != BrushVisibilityState.None;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static bool IsBrushSelectable(int brushNodeID)
+        public static bool IsBrushSelectable(CompactNodeID brushNodeID)
         {
             if (!IsValidNodeID(brushNodeID))
                 return false;
-            var brushNodeIndex = brushNodeID - 1;
+            var brushNodeIndex = brushNodeID.ID - 1;
             if (!brushSelectableState.TryGetValue(brushNodeIndex, out var result))
                 return false;
             return (result & BrushVisibilityState.Selectable) == BrushVisibilityState.Selectable;
@@ -118,7 +118,7 @@ namespace Chisel.Core
             for (int i = 0; i < nodeHierarchies.Count; i++)
             {
                 var treeNodeID = nodeHierarchies[i].treeNodeID;
-                if (treeNodeID == CSGTreeNode.InvalidNodeID)
+                if (treeNodeID == CompactNodeID.Invalid)
                     continue;
 
                 var brushOutlineState = brushOutlineStates[i];
@@ -126,24 +126,9 @@ namespace Chisel.Core
                     !modifiedBrushMeshes.Contains(brushOutlineState.brushMeshInstanceID))
                     continue;
 
-                if (CSGTreeNode.IsNodeIDValid(treeNodeID))
-                    CSGTreeNode.SetDirty(treeNodeID);
+                if (IsValidNodeID(treeNodeID))
+                    SetDirty(treeNodeID);
             }
-        }
-
-        // Do not use. This method might be removed/renamed in the future
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        public static bool ClearDirty(Int32 nodeID)
-        {
-            if (!AssertNodeIDValid(nodeID)) return false;
-            var flags = nodeFlags[nodeID - 1];
-            switch (flags.nodeType)
-            {
-                case CSGNodeType.Brush:		flags.UnSetNodeFlag(NodeStatusFlags.NeedFullUpdate); nodeFlags[nodeID - 1] = flags; return true;
-                case CSGNodeType.Branch:	flags.UnSetNodeFlag(NodeStatusFlags.BranchNeedsUpdate); nodeFlags[nodeID - 1] = flags; return true;
-                case CSGNodeType.Tree:		flags.UnSetNodeFlag(NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate); nodeFlags[nodeID - 1] = flags; return true;
-            }
-            return false;
         }
     }
 }

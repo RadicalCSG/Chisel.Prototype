@@ -312,8 +312,8 @@ namespace Chisel.Editors
             var instanceID = node.Component.GetInstanceID();
             var obj = node.Transform;
             if (!obj)
-                return string.Format("<unknown> [{0}:{1}]", (nodeID - 1), instanceID);
-            return obj.name + string.Format(" [{0}:{1}]", (nodeID - 1), instanceID);
+                return string.Format("<unknown> [{0}:{1}]", nodeID, instanceID);
+            return obj.name + string.Format(" [{0}:{1}]", nodeID, instanceID);
         }
 
 

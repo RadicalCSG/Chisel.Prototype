@@ -25,8 +25,8 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferCache;
 
         // Read, Write
-        [NoAlias] public NativeHashMap<int, MinMaxAABB> brushTreeSpaceBoundLookup;
-        [NoAlias] public NativeHashMap<int, BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
+        [NoAlias] public NativeHashMap<CompactNodeID, MinMaxAABB> brushTreeSpaceBoundLookup;
+        [NoAlias] public NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>> brushRenderBufferLookup;
 
         public void Execute()
         {
@@ -34,9 +34,9 @@ namespace Chisel.Core
             brushRenderBufferLookup.Clear();
             for (int i = 0; i < allTreeBrushIndexOrders.Length; i++)
             {
-                var nodeIndex = allTreeBrushIndexOrders[i].nodeIndex;
-                brushTreeSpaceBoundLookup[nodeIndex] = brushTreeSpaceBoundCache[i];
-                brushRenderBufferLookup[nodeIndex] = brushRenderBufferCache[i];
+                var nodeID = allTreeBrushIndexOrders[i].nodeID;
+                brushTreeSpaceBoundLookup[nodeID] = brushTreeSpaceBoundCache[i];
+                brushRenderBufferLookup[nodeID] = brushRenderBufferCache[i];
             }
         }
     }

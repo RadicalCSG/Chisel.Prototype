@@ -338,8 +338,8 @@ namespace Chisel.Editors
                 var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
-                var worldToNode     = csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
+                var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
                 
                 var brushRayStart       = worldToNode.MultiplyPoint(worldRayStart);
                 var brushRayDirection   = worldToNode.MultiplyVector(worldRayDirection).normalized;
@@ -496,8 +496,8 @@ namespace Chisel.Editors
 
                 // TODO: store this information with brush 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
-                var worldToNode     = csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * csgBrush.NodeToTreeSpaceMatrix;
+                var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)csgBrush.NodeToTreeSpaceMatrix;
                 
                 var brushPoint      = worldToNode.MultiplyPoint(currentWorldPoint);
                 var brushPlane      = worldToNode.TransformPlane(worldSlidePlane);
@@ -819,8 +819,8 @@ namespace Chisel.Editors
 
         static readonly List<Vector3> s_PolygonVertices = new List<Vector3>();
 
-        static readonly HashSet<(int, int)> s_usedVertices = new HashSet<(int, int)>();
-        static readonly HashSet<(int, int)> s_usedSurfaces = new HashSet<(int, int)>();
+        static readonly HashSet<(CompactNodeID, int)> s_usedVertices = new HashSet<(CompactNodeID, int)>();
+        static readonly HashSet<(CompactNodeID, int)> s_usedSurfaces = new HashSet<(CompactNodeID, int)>();
         static void DrawCustomSnappedEvent()
         {
 #if false
@@ -891,7 +891,7 @@ namespace Chisel.Editors
                 }
                 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(brush.Tree.UserID) as ChiselModel;
-                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                var nodeToWorld     = model.hierarchyItem.LocalToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                 ChiselOutlineRenderer.DrawLineLoop(nodeToWorld, s_PolygonVertices, Handles.color, thickness: 2);
             }
 

@@ -447,7 +447,7 @@ namespace Chisel.Components
             return Nodes;
         }
 
-        public override int NodeID								{ get { return TopNode.NodeID; } }
+        public override CompactNodeID NodeID								{ get { return TopNode.NodeID; } }
         
         public override void SetDirty()
         {
@@ -500,7 +500,7 @@ namespace Chisel.Components
             {
                 if (!brush.Valid)
                     continue;
-                var transformation  = modelMatrix * brush.NodeToTreeSpaceMatrix;
+                var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                 var childBounds     = brushContainerAsset.CalculateBounds(transformation);
                 var magnitude       = childBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
@@ -535,7 +535,7 @@ namespace Chisel.Components
             {
                 if (!brush.Valid)
                     continue;
-                var transformation  = modelMatrix * brush.NodeToTreeSpaceMatrix * boundsTransformation;
+                var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix * boundsTransformation;
                 var childBounds     = brushContainerAsset.CalculateBounds(transformation);
                 var magnitude       = childBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
