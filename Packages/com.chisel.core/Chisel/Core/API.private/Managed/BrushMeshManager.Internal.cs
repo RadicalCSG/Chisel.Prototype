@@ -156,8 +156,8 @@ namespace Chisel.Core
             if (!AssertBrushMeshIDValid(brushMeshInstanceID))
                 return false;
 
-            CSGManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
-            Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
+            //CSGManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
+            Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
 
             var brushMeshIndex = brushMeshInstanceID - 1;
             if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))

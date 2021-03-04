@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     /// <summary>This class is manager class for all <see cref="Chisel.Core.CSGTreeNode"/>s.</summary>	
     public static partial class CSGManager
@@ -124,4 +124,4 @@ namespace Chisel.Core
             }
         }
     }
-}
+}*/

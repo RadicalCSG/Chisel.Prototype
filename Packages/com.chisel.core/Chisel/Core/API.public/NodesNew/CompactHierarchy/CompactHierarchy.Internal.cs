@@ -10,7 +10,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     // TODO: we need to store/manage complete hierarchies somewhere
     // TODO: Make it possible to modify/set the root

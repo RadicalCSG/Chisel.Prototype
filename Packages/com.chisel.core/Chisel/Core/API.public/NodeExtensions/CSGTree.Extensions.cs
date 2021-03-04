@@ -8,15 +8,16 @@ namespace Chisel.Core
 {
     public static class CSGTreeExtensions
     {
+        /*
         /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTree"/> to a new array.</summary>
         /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTree"/>.</returns>
-        public static CSGTreeNode[] ChildrenToArray(in this CSGTree tree)
+        public static Chisel.Core.Old.CSGTreeNode[] ChildrenToArray(in this Chisel.Core.Old.CSGTree tree)
         {
             var count = tree.Count;
             if (count == 0)
-                return Array.Empty<CSGTreeNode>();
+                return Array.Empty<Chisel.Core.Old.CSGTreeNode>();
 
-            var result = new CSGTreeNode[count];
+            var result = new Chisel.Core.Old.CSGTreeNode[count];
             for (int i = 0; i < count; i++)
                 result[i] = tree[i];
             return result;
@@ -24,13 +25,13 @@ namespace Chisel.Core
 
         /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/> to a new array.</summary>
         /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/>.</returns>
-        public static CSGTreeNode[] ChildrenToArray(in this CSGTreeBranch branch)
+        public static Chisel.Core.Old.CSGTreeNode[] ChildrenToArray(in this Chisel.Core.Old.CSGTreeBranch branch)
         {
             var count = branch.Count;
             if (count == 0)
-                return Array.Empty<CSGTreeNode>();
+                return Array.Empty<Chisel.Core.Old.CSGTreeNode>();
 
-            var result = new CSGTreeNode[count];
+            var result = new Chisel.Core.Old.CSGTreeNode[count];
             for (int i = 0; i < count; i++)
                 result[i] = branch[i];
             return result;
@@ -38,13 +39,13 @@ namespace Chisel.Core
 
         /// <summary>Copies the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/> to a new array.</summary>
         /// <returns>An array containing the <see cref="Chisel.Core.CSGTreeNode"/>s of the <see cref="Chisel.Core.CSGTreeBranch"/>.</returns>
-        public static CSGTreeNode[] ChildrenToArray(in this CSGTreeNode branch)
+        public static Chisel.Core.Old.CSGTreeNode[] ChildrenToArray(in this Chisel.Core.Old.CSGTreeNode branch)
         {
             var count = branch.Count;
             if (count == 0)
-                return Array.Empty<CSGTreeNode>();
+                return Array.Empty<Chisel.Core.Old.CSGTreeNode>();
 
-            var result = new CSGTreeNode[count];
+            var result = new Chisel.Core.Old.CSGTreeNode[count];
             for (int i = 0; i < count; i++)
                 result[i] = branch[i];
             return result;
@@ -56,7 +57,7 @@ namespace Chisel.Core
         /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="Chisel.Core.CSGTree"/>. The Array must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         /// <returns>The number of children copied into <paramref name="array"/>.</returns>
-        public static int CopyChildrenTo(in this CSGTree tree, CSGTreeNode[] array, int arrayIndex)
+        public static int CopyChildrenTo(in this Chisel.Core.Old.CSGTree tree, Chisel.Core.Old.CSGTreeNode[] array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -80,7 +81,7 @@ namespace Chisel.Core
         /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="Chisel.Core.CSGTreeBranch"/>. The Array must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         /// <returns>The number of children copied into <paramref name="array"/>.</returns>
-        public static int CopyChildrenTo(in this CSGTreeBranch branch, CSGTreeNode[] array, int arrayIndex)
+        public static int CopyChildrenTo(in this Chisel.Core.Old.CSGTreeBranch branch, Chisel.Core.Old.CSGTreeNode[] array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -104,7 +105,7 @@ namespace Chisel.Core
         /// <param name="array">The one-dimensional Array that is the destination of the elements copied from <see cref="Chisel.Core.CSGTreeNode"/>. The Array must have zero-based indexing.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
         /// <returns>The number of children copied into <paramref name="array"/>.</returns>
-        public static int CopyChildrenTo(in this CSGTreeNode treeNode, CSGTreeNode[] array, int arrayIndex)
+        public static int CopyChildrenTo(in this Chisel.Core.Old.CSGTreeNode treeNode, Chisel.Core.Old.CSGTreeNode[] array, int arrayIndex)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -121,7 +122,7 @@ namespace Chisel.Core
 
             return childCount;
         }
-
+        */
 
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
@@ -186,12 +187,12 @@ namespace Chisel.Core
         /// <param name="index">The zero-based index at which the new <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted.</param>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public static unsafe bool InsertRange(in this Chisel.Core.New.CSGTree tree, int index, params Chisel.Core.New.CSGTreeNode[] array)
+        public static unsafe bool InsertRange(in this Chisel.Core.CSGTree tree, int index, params Chisel.Core.CSGTreeNode[] array)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             var length = array.Length;
             if (length == 0) return true;
-            var arrayPtr = (Chisel.Core.New.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
+            var arrayPtr = (Chisel.Core.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
             try
             {
                 return tree.InsertRange(index, arrayPtr, length);
@@ -207,12 +208,12 @@ namespace Chisel.Core
         /// <param name="index">The zero-based index at which the new <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted.</param>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public static unsafe bool InsertRange(in this Chisel.Core.New.CSGTreeBranch branch, int index, params Chisel.Core.New.CSGTreeNode[] array)
+        public static unsafe bool InsertRange(in this Chisel.Core.CSGTreeBranch branch, int index, params Chisel.Core.CSGTreeNode[] array)
         {
             if (array == null) throw new ArgumentNullException(nameof(array));
             var length = array.Length;
             if (length == 0) return true;
-            var arrayPtr = (Chisel.Core.New.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
+            var arrayPtr = (Chisel.Core.CSGTreeNode*)Unity.Collections.LowLevel.Unsafe.UnsafeUtility.PinGCArrayAndGetDataAddress(array, out var handle);
             try
             {
                 return branch.InsertRange(index, arrayPtr, length);
@@ -227,7 +228,7 @@ namespace Chisel.Core
         /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public static unsafe bool AddRange(in this Chisel.Core.New.CSGTree tree, params Chisel.Core.New.CSGTreeNode[] array)
+        public static unsafe bool AddRange(in this Chisel.Core.CSGTree tree, params Chisel.Core.CSGTreeNode[] array)
         {
             return InsertRange(tree, tree.Count, array);
         }
@@ -236,7 +237,7 @@ namespace Chisel.Core
         /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the  <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public static unsafe bool AddRange(in this Chisel.Core.New.CSGTreeBranch branch, params Chisel.Core.New.CSGTreeNode[] array)
+        public static unsafe bool AddRange(in this Chisel.Core.CSGTreeBranch branch, params Chisel.Core.CSGTreeNode[] array)
         {
             return InsertRange(branch, branch.Count, array);
         }

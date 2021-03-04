@@ -255,7 +255,8 @@ namespace Chisel.Core
             s_TreeBrushes.Clear();
 
             // TODO: cache this
-            CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+            //CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+            CompactHierarchyManager.GetBrushesInOrder(tree, s_TreeBrushes);
 
             var brushCount    = s_TreeBrushes.Count;
             if (brushCount == 0)
@@ -273,8 +274,8 @@ namespace Chisel.Core
                 if (!brush.IsSelectable)
                     continue;
 #endif
-                var bounds          = brush.Bounds;
-                if (bounds == default)
+                var minMaxAABB = brush.Bounds;
+                if (minMaxAABB.IsEmpty)
                     continue;
 
                 var brushNodeID = brush.NodeID;
@@ -285,6 +286,7 @@ namespace Chisel.Core
                 if (!brushRenderBufferLookup.TryGetValue(brushNodeID, out var brushRenderBuffer))
                     continue;
 
+                var bounds = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
                 if (!bounds.IntersectRay(treeSpaceRay))
                     continue;
 
@@ -331,7 +333,8 @@ namespace Chisel.Core
             }
 
             // TODO: cache this
-            CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+            //CSGManager.GetBrushesInOrder(tree, s_TreeBrushes);
+            CompactHierarchyManager.GetBrushesInOrder(tree, s_TreeBrushes);
 
             var brushCount = s_TreeBrushes.Count;
             if (brushCount == 0)
@@ -347,10 +350,11 @@ namespace Chisel.Core
                 if (!brush.IsSelectable)
                     continue;
 #endif
-                var bounds          = brush.Bounds;
-                if (bounds == default)
+                var minMaxAABB = brush.Bounds;
+                if (minMaxAABB.IsEmpty)
                     continue;
 
+                var bounds          = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
                 var brushNodeID     = brush.NodeID;
                 // TODO: take transformations into account? (frustum is already in tree space)
 

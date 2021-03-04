@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Matrix4x4 = UnityEngine.Matrix4x4;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     /// <summary>Enum which describes the type of a node</summary>
     public enum CSGNodeType : byte
@@ -227,4 +227,4 @@ namespace Chisel.Core
 
         public override string ToString() { return $"{Type} ({nodeID})"; }
     }
-}
+}*/

@@ -896,7 +896,8 @@ namespace Chisel.Core
                     brushMeshBlobGeneration = default;
                 }
                 // temporary hack
-                CSGManager.ClearOutlines();
+                //CSGManager.ClearOutlines();
+                CompactHierarchyManager.ClearOutlines();
             }
         }
 

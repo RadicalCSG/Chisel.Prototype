@@ -131,8 +131,8 @@ namespace Chisel.Components
             }
 
             Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
-            CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
-            Chisel.Core.New.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
+            //CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
+            Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             Profiler.EndSample();
         }
 

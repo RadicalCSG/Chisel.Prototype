@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using Unity.Mathematics;
@@ -6,7 +6,7 @@ using Bounds = UnityEngine.Bounds;
 using UnityEngine;
 using Unity.Collections;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     /// <summary>A leaf node in a CSG tree that has a shape (a <see cref="Chisel.Core.BrushMesh"/>) with which CSG operations can be performed.</summary>
     /// <remarks><note>The internal ID contained in this struct is generated at runtime and is not persistent.</note>

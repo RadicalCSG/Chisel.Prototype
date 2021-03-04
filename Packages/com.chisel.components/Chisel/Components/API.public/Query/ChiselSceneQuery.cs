@@ -168,7 +168,8 @@ namespace Chisel.Components
                 }
             }
 
-            CSGManager.GetAllTrees(s_AllTrees);
+            //CSGManager.GetAllTrees(s_AllTrees);
+            CompactHierarchyManager.GetAllTrees(s_AllTrees);
             for (var t = 0; t < s_AllTrees.Count; t++)
             {
                 var tree	= s_AllTrees[t];
@@ -333,7 +334,8 @@ namespace Chisel.Components
             rectFoundNodes.Clear();
             var planes = new Plane[6];
             Vector4 srcVector;
-            CSGManager.GetAllTrees(s_AllTrees);
+            //CSGManager.GetAllTrees(s_AllTrees);
+            CompactHierarchyManager.GetAllTrees(s_AllTrees);
             for (var t = 0; t < s_AllTrees.Count; t++)
             {
                 var tree	= s_AllTrees[t];

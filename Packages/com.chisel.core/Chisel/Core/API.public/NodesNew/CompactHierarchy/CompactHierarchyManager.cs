@@ -12,7 +12,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     public struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
     {
@@ -100,6 +100,15 @@ namespace Chisel.Core.New
         }
 
 
+        /// <summary>Updates all pending changes to all <see cref="Chisel.Core.CSGTree"/>s.</summary>
+        /// <returns>True if any <see cref="Chisel.Core.CSGTree"/>s have been updated, false if no changes have been found.</returns>
+        public static bool Flush(FinishMeshUpdate finishMeshUpdates) 
+        { 
+            if (!UpdateAllTreeMeshes(finishMeshUpdates, out JobHandle handle)) 
+                return false; 
+            handle.Complete(); 
+            return true; 
+        }
 
         public static void GetAllTrees(List<CSGTree> allTrees)
         {
@@ -117,7 +126,7 @@ namespace Chisel.Core.New
             {
                 if (!hierarchies[i].IsCreated)
                     continue;
-                allTrees.Add(new Chisel.Core.New.CSGTree { treeNodeID = hierarchies[i].RootID });
+                allTrees.Add(new CSGTree { treeNodeID = hierarchies[i].RootID });
             }
         }
 
@@ -602,6 +611,8 @@ namespace Chisel.Core.New
             if (itemHierarchyID == CompactHierarchyID.Invalid)
                 return false;
 
+            // ** FAILURE POINT HERE **
+            // TODO: make it possible to remove from old hierarchy, before adding to new hierarchy
             if (itemHierarchyID != parentHierarchyID)
                 return false;
 

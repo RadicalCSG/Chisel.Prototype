@@ -5,8 +5,8 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Bounds = UnityEngine.Bounds;
 using UnityEngine;
 using Unity.Burst;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     /// <summary>A leaf node in a CSG tree that has a shape (a <see cref="Chisel.Core.BrushMesh"/>) with which CSG operations can be performed.</summary>
     /// <remarks><note>The internal ID contained in this struct is generated at runtime and is not persistent.</note>
@@ -170,4 +170,4 @@ namespace Chisel.Core
         public override string ToString() { return $"({NodeID})"; }
 
     }
-}
+}*/

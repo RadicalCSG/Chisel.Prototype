@@ -4,7 +4,7 @@ using UnityEngine.TestTools;
 using NUnit.Framework;
 using Unity.Collections;
 using Chisel;
-using Chisel.Core.New;
+using Chisel.Core;
 
 namespace FoundationTests
 {

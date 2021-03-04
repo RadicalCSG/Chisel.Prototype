@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     /// <summary>The root of a CSG tree which is used to generate meshes with. All other types of nodes are children of this node.</summary>
     /// <remarks><note>The internal ID contained in this struct is generated at runtime and is not persistent.</note>
@@ -169,4 +169,4 @@ namespace Chisel.Core
         internal CompactNodeID treeNodeID;
     }
 
-}
+}*/

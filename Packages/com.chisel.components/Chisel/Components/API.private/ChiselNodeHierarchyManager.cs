@@ -104,8 +104,8 @@ namespace Chisel.Components
 
             startTime = Time.realtimeSinceStartup;
             Profiler.BeginSample("CSGManager.Clear");
-            CSGManager.Clear();
-            Chisel.Core.New.CompactHierarchyManager.Clear();
+            //CSGManager.Clear();
+            Chisel.Core.CompactHierarchyManager.Clear();
             Profiler.EndSample();
 
             Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
@@ -898,8 +898,8 @@ UpdateAgain:
             if (!firstStart)
             {
                 firstStart = true;
-                CSGManager.Clear();
-                Chisel.Core.New.CompactHierarchyManager.Clear();
+                //CSGManager.Clear();
+                Chisel.Core.CompactHierarchyManager.Clear();
                 ChiselBrushContainerAssetManager.Reset();
                 ChiselBrushMaterialManager.Reset();
 

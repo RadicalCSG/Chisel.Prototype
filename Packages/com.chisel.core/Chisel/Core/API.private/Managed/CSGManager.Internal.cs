@@ -7,8 +7,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Profiling;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     // TODO: review flags, might not make sense any more
     public enum NodeStatusFlags : UInt16
@@ -1341,4 +1341,4 @@ namespace Chisel.Core
             }
         }
     }
-}
+}*/

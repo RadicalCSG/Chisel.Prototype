@@ -10,7 +10,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     // Temporary workaround until we can switch to hashes
     public enum NodeStatusFlags : UInt16

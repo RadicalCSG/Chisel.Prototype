@@ -4,8 +4,8 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Matrix4x4 = UnityEngine.Matrix4x4;
-
-namespace Chisel.Core
+/*
+namespace Chisel.Core.Old
 {
     /// <summary>A branch in a CSG tree, used to encapsulate other <see cref="Chisel.Core.CSGTreeBranch"/>es and <see cref="Chisel.Core.CSGTreeBrush"/>es and perform operations with them as a whole.</summary>
     /// <remarks>A branch can be used to combine multiple branches and/or brushes, each with different <see cref="Chisel.Core.CSGOperationType"/>s, 
@@ -218,4 +218,4 @@ namespace Chisel.Core
         [SerializeField] // Useful to be able to handle selection in history
         internal CompactNodeID branchNodeID;
     }
-}
+}*/

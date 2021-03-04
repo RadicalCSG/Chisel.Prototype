@@ -16,23 +16,26 @@ namespace Chisel.Core
                                          NativeList<ChiselMeshUpdate> renderMeshes,
                                          JobHandle dependencies);
 
+    static partial class CompactHierarchyManager
     {
         #region Update / Rebuild
         static List<CSGTree> s_AllTrees = new List<CSGTree>();
+        static List<CompactNodeID> treeNodeIDs = new List<CompactNodeID>();
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
 
-            CSGManager.GetAllTrees(s_AllTrees);
+            CompactHierarchyManager.GetAllTrees(s_AllTrees);
+            //CSGManager.GetAllTrees(s_AllTrees);
             // Check if we have a tree that needs updates
             for (int t = 0; t < s_AllTrees.Count; t++)
             {
-                var treeNode      = s_AllTrees[t];
+                var treeNode = s_AllTrees[t];
                 if (treeNode.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
+                    treeNodeIDs.Add(treeNode.NodeID);
                     needUpdate = true;
-                    break;
                 }
             }
 
@@ -42,7 +45,7 @@ namespace Chisel.Core
             // TODO: update "previous siblings" when something with an intersection operation has been modified
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, CSGManager.trees);
+            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, treeNodeIDs);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
@@ -104,8 +107,10 @@ namespace Chisel.Core
                 var treeNodeID      = treeNodeIDs[t];
                 if (currentTree.nodes == null) currentTree.nodes = new List<CompactNodeID>(); else currentTree.nodes.Clear();
                 if (currentTree.brushes == null) currentTree.brushes = new List<CSGTreeBrush>(); else currentTree.brushes.Clear();
-                CSGManager.UpdateTreeNodeList(treeNodeID, currentTree.nodes, currentTree.brushes);
-                
+                //CSGManager.UpdateTreeNodeList(treeNodeID, currentTree.nodes, currentTree.brushes);
+                CompactHierarchyManager.UpdateTreeNodeList(treeNodeID, currentTree.nodes, currentTree.brushes);
+
+
                 var allTreeBrushes  = currentTree.brushes;
                 var nodes           = currentTree.nodes;
 
@@ -521,7 +526,8 @@ namespace Chisel.Core
                     for (int b = 0; b < s_TransformTreeBrushIndicesList.Count; b++)
                     {
                         var nodeIndexOrder = s_TransformTreeBrushIndicesList[b];
-                        transformationCache[nodeIndexOrder.nodeOrder] = CSGManager.GetNodeTransformation(nodeIndexOrder.nodeID);
+                        //transformationCache[nodeIndexOrder.nodeOrder] = CSGManager.GetNodeTransformation(nodeIndexOrder.nodeID);
+                        transformationCache[nodeIndexOrder.nodeOrder] = CompactHierarchyManager.GetNodeTransformation(nodeIndexOrder.nodeID);
                     }
                 }
                 Profiler.EndSample();
@@ -580,7 +586,8 @@ namespace Chisel.Core
                 {
                     var nodeID      = allTreeBrushes[nodeOrder].NodeID;
                     int brushMeshID = 0;
-                    if (!CSGManager.IsValidNodeID(nodeID) ||
+                    if (//CSGManager.IsValidNodeID(nodeID) ||
+                        !CompactHierarchyManager.IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
                         (brushMeshID = new CSGTreeBrush { brushNodeID = nodeID }.BrushMesh.brushMeshID) == 0)
                     {

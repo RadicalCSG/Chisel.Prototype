@@ -6,7 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using UnityEngine;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     /// <summary>The root of a CSG tree which is used to generate meshes with. All other types of nodes are children of this node.</summary>
     /// <remarks><note>The internal ID contained in this struct is generated at runtime and is not persistent.</note>

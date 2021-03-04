@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
 
-namespace Chisel.Core.New
+namespace Chisel.Core
 {
     /// <summary>Enum which describes the type of a node</summary>
     public enum CSGNodeType : byte
