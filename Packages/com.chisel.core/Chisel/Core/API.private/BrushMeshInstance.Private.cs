@@ -64,7 +64,6 @@ namespace Chisel.Core
                 s_ModifiedBrushMeshes.Clear();
                 s_ModifiedBrushMeshes.Add(brushMeshID);
                 Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
-                //CSGManager.NotifyBrushMeshModified(s_ModifiedBrushMeshes);
                 Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(s_ModifiedBrushMeshes);
                 s_ModifiedBrushMeshes.Clear();
                 Profiler.EndSample();

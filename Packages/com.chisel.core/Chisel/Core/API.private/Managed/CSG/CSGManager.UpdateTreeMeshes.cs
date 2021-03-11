@@ -16,7 +16,7 @@ namespace Chisel.Core
                                          NativeList<ChiselMeshUpdate> renderMeshes,
                                          JobHandle dependencies);
 
-    static partial class CompactHierarchyManager
+    partial class CompactHierarchyManager
     {
         #region Update / Rebuild
         static List<CSGTree>    s_AllTrees      = new List<CSGTree>();

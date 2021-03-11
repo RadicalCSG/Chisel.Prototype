@@ -50,7 +50,7 @@ namespace Chisel.Core
         internal CompactNodeID(CompactHierarchyID hierarchyID, Int32 value, Int32 generation = 0) { this.hierarchyID = hierarchyID; this.value = value; this.generation = generation; }
 
         [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
-        public override string ToString() { return $"NodeID = {value}, Generation = {generation}"; }
+        public override string ToString() { return $"{nameof(value)} = {value}, {nameof(generation)} = {generation}, {nameof(hierarchyID)} = {hierarchyID}"; }
 
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,7 +91,6 @@ namespace Chisel.Core
     [Serializable]
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("BrushMeshID = {brushMeshID}, Operation = {operation}, UserID = {userID}, Transformation = {transformation}")]
     public struct CompactNode
     {
         public Int32                userID;
@@ -102,11 +101,15 @@ namespace Chisel.Core
         public MinMaxAABB           bounds;         // TODO: move this somewhere else, depends on brushMeshID
         
         public Int32                brushMeshID;    // TODO: use hash of mesh as "ID"
+
+        public override string ToString()
+        {
+            return $"{nameof(brushMeshID)} = {brushMeshID}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}";
+        }
     }
 
     [BurstCompatible]
     [StructLayout(LayoutKind.Sequential)]
-    [DebuggerDisplay("NodeID = {nodeID.ID}, Parent = {parentID.ID}, UserID = {nodeInformation.userID}, ChildCount = {childCount}, ChildOffset = {childOffset}, BrushMeshID = {nodeInformation.brushMeshID}, Operation = {nodeInformation.operation}, Transformation = {nodeInformation.transformation}")]
     public struct CompactChildNode // TODO: rename
     {
         // TODO: probably need to split this up into multiple pieces, figure out how this will actually be used in practice first
@@ -119,18 +122,26 @@ namespace Chisel.Core
         public Int32            childOffset;
 
         public static readonly CompactChildNode Invalid = default;
+
+        public override string ToString()
+        {
+            return $"{nameof(nodeID)} = {nodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}";
+        }
     }
 
     [BurstCompatible]
-    [DebuggerDisplay("NodeCount = {Count}")]
+    // TODO: have some way to test consistency of the data, use that in tests
+    // TODO: make sure everything is covered in tests
     public partial struct CompactHierarchy : IDisposable
     {
         #region CreateHierarchy
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CompactHierarchy CreateHierarchy(NodeID nodeID, Int32 userID, Allocator allocator)
         {
             return CreateHierarchy(CompactHierarchyID.Invalid, nodeID, userID, allocator);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CompactHierarchy CreateHierarchy(NodeID nodeID, Allocator allocator)
         {
             return CreateHierarchy(CompactHierarchyID.Invalid, nodeID, 0, allocator);
@@ -142,9 +153,7 @@ namespace Chisel.Core
             {
                 brushMeshToBrush = new NativeMultiHashMap<int, CompactNodeID>(16384, allocator),
                 compactNodes     = new NativeList<CompactChildNode>(allocator),
-                sectionManager   = SectionManager.Create(allocator),
-                idToIndex        = new NativeList<IndexLookup>(allocator),
-                freeIDs          = new NativeList<int>(allocator),
+                idManager        = IDManager.Create(allocator),
                 hierarchyID      = hierarchyID
             };
             compactHierarchy.RootID = compactHierarchy.CreateNode(nodeID, new CompactNode
@@ -155,12 +164,14 @@ namespace Chisel.Core
                 brushMeshID     = Int32.MaxValue
             });
             return compactHierarchy;
-        } 
+        }
         #endregion
 
         #region CreateBranch
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID CreateBranch(NodeID nodeID, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0) { return CreateBranch(nodeID, float4x4.identity, operation, userID); }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID CreateBranch(NodeID nodeID, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0)
         {
             return CreateNode(nodeID, new CompactNode
@@ -174,8 +185,10 @@ namespace Chisel.Core
         #endregion
 
         #region CreateBrush
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID CreateBrush(NodeID nodeID, Int32 brushMeshID, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0) { return CreateBrush(nodeID, brushMeshID, float4x4.identity, operation, userID); }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID CreateBrush(NodeID nodeID, Int32 brushMeshID, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, Int32 userID = 0)
         {
             return CreateNode(nodeID, new CompactNode
@@ -189,43 +202,23 @@ namespace Chisel.Core
         }
         #endregion
 
-        public int Count
-        {
-            get
-            {
-                return compactNodes.Length - freeIDs.Length;
-            }
-        }
-
         public bool IsCreated
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return idToIndex.IsCreated && freeIDs.IsCreated && compactNodes.IsCreated && sectionManager.IsCreated;
+                return idManager.IsCreated && compactNodes.IsCreated;
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
-            if (compactNodeID == CompactNodeID.Invalid)
-                return false;
-
-            var valueIndex = compactNodeID.value - 1;
-            if (valueIndex < 0 || valueIndex >= idToIndex.Length)
-                return false;
-
-            var nodeIndex = idToIndex[valueIndex].index;
-            if (nodeIndex == -1)
-                return false;
-
-            var generation = idToIndex[valueIndex].generation;
-            if (generation != compactNodeID.generation)
-                return false;
-
-            return sectionManager.IsAllocatedIndex(nodeIndex);
+            return idManager.IsValid(compactNodeID.value, compactNodeID.generation, out _);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int SiblingIndexOf(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -241,7 +234,8 @@ namespace Chisel.Core
             Debug.Assert(parentIndex != -1);
             return SiblingIndexOfInternal(parentIndex, nodeIndex);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NodeID GetNodeID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -255,6 +249,7 @@ namespace Chisel.Core
             return compactNodes[nodeIndex].nodeID;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID ParentOf(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -268,6 +263,7 @@ namespace Chisel.Core
             return compactNodes[nodeIndex].parentID;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ChildCount(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -306,6 +302,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CompactNodeID GetChildIDAt(CompactNodeID compactNodeID, int index) { return GetChildIDAtInternal(compactNodeID, index); }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Compact()
         {
             Debug.Assert(IsCreated);
@@ -328,8 +325,7 @@ namespace Chisel.Core
             {
                 // node doesn't have a parent, so it cannot be removed from its parent
                 var childCount = ChildCount(compactNodeID);
-                if (childCount > 0) DetachRangeInternal(nodeIndex, 0, (uint)childCount);
-                RemoveIDs(nodeIndex, 1);
+                if (childCount > 0) DetachRangeInternal(nodeIndex, 0, childCount);
                 FreeIndexRange(nodeIndex, 1);
                 return true;
             }
@@ -354,8 +350,7 @@ namespace Chisel.Core
             {
                 // node doesn't have a parent, so it cannot be removed from its parent
                 var childCount = ChildCount(compactNodeID);
-                if (childCount > 0) DeleteRangeInternal(nodeIndex, 0, (uint)childCount, true);
-                RemoveIDs(nodeIndex, 1);
+                if (childCount > 0) DeleteRangeInternal(nodeIndex, 0, childCount, true);
                 FreeIndexRange(nodeIndex, 1);
                 return true; 
             }
@@ -364,6 +359,7 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range: 1, true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DeleteChildFromParentAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -373,6 +369,7 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range: 1, false);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DeleteChildFromParentRecursiveAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -382,7 +379,8 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range: 1, true);
         }
 
-        public bool DeleteChildrenFromParentAt(CompactNodeID parentID, int index, uint range)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DeleteChildrenFromParentAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
@@ -391,7 +389,8 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range, false);
         }
 
-        public bool DeleteChildrenFromParentRecursiveAt(CompactNodeID parentID, int index, uint range)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DeleteChildrenFromParentRecursiveAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
@@ -400,6 +399,7 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range, true);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Detach(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -419,6 +419,7 @@ namespace Chisel.Core
             return DetachRangeInternal(parentIndex, index, range: 1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DetachChildFromParentAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -428,7 +429,8 @@ namespace Chisel.Core
             return DetachRangeInternal(parentIndex, index, range: 1);
         }
 
-        public bool DetachChildrenFromParentAt(CompactNodeID parentID, int index, uint range)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DetachChildrenFromParentAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
@@ -437,6 +439,7 @@ namespace Chisel.Core
             return DetachRangeInternal(parentIndex, index, range);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool DetachAllChildrenFromParent(CompactNodeID parentID)
         {
             Debug.Assert(IsCreated);
@@ -446,6 +449,7 @@ namespace Chisel.Core
             return DetachAllInternal(parentIndex);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AttachToParent(CompactNodeID parentID, CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -461,6 +465,7 @@ namespace Chisel.Core
             AttachInternal(parentID, parentIndex, parentChildCount, compactNodeID);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AttachToParentAt(CompactNodeID parentID, int index, CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);

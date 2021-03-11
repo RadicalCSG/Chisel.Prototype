@@ -14,9 +14,10 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
+    // TODO: make sure everything is covered in tests
     public struct SectionManager : IDisposable
     {
-        // TODO: use uints instead
+        // TODO: use uints instead?
         [StructLayout(LayoutKind.Sequential)]
         struct Section
         {
@@ -222,7 +223,7 @@ namespace Chisel.Core
             SetRange(sections.Length, offset, length, false);
             return offset;
         }
-        
+
         void SetRange(int sectionIndex, int offset, int length, bool desiredFree)
         {
             if (sectionIndex < 0) throw new ArgumentException($"{nameof(sectionIndex)} cannot be negative", nameof(sectionIndex));

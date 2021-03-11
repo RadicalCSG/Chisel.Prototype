@@ -73,144 +73,6 @@ namespace Chisel.Core
         #endregion
     }
 
-    // TODO: use native containers, make hierarchy use this as well
-    internal struct IDManager : IDisposable
-    {
-        [DebuggerDisplay("Index = {index}, Generation = {generation}")]
-        struct IndexLookup
-        {
-            public Int32 index;
-            public Int32 generation;
-        }
-
-        int maxIndex;
-        NativeList<IndexLookup> idToIndex;
-        SectionManager          sectionManager;
-        NativeList<int>         freeIDs;
-        
-        public bool IsCreated
-        {
-            get
-            {
-                return idToIndex.IsCreated &&
-                       sectionManager.IsCreated &&
-                       freeIDs.IsCreated;
-            }
-        }
-
-        public static IDManager Create(Allocator allocator)
-        {
-            return new IDManager
-            {
-                maxIndex        = -1,
-                idToIndex       = new NativeList<IndexLookup>(allocator),
-                sectionManager  = SectionManager.Create(allocator),
-                freeIDs         = new NativeList<int>(allocator)
-            };
-        }
-
-        public void Clear()
-        {
-            maxIndex = -1;
-            if (idToIndex.IsCreated) idToIndex.Clear();
-            if (sectionManager.IsCreated) sectionManager.Clear();
-            if (freeIDs.IsCreated) freeIDs.Clear();
-        }
-
-        public void Dispose()
-        {
-            if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
-            if (sectionManager.IsCreated) sectionManager.Dispose(); sectionManager = default;
-            if (freeIDs.IsCreated) freeIDs.Dispose(); freeIDs = default;
-            maxIndex = -1;
-        }
-
-        public int CreateID(out int id, out int generation)
-        {
-            var index = sectionManager.AllocateRange(1);
-            AllocateID(index, out id, out generation);
-            return index;
-        }
-
-        internal void AllocateID(int index, out int id, out int generation)
-        {
-            if (freeIDs.Length > 0)
-            {
-                var freeID = freeIDs.Length - 1;
-                id = freeIDs[freeID];
-                freeIDs.RemoveAt(freeID);
-                generation = idToIndex[id].generation + 1;
-                idToIndex[id] = new IndexLookup { index = index, generation = generation };
-            } else
-            {
-                id = idToIndex.Length;
-                generation = 1;
-                idToIndex.Add(new IndexLookup { index = index, generation = generation });
-            }
-            maxIndex = math.max(maxIndex, index);
-
-            id++; // We don't want 0 to be a valid id
-        }
-
-        public bool IsValid(int id, int generation, out int index)
-        {
-            id--; // We don't want 0 to be a valid id
-
-            index = -1;
-            if (id < 0 || id >= idToIndex.Length)
-                return false;
-
-            var idLookup = idToIndex[id];
-            if (idLookup.generation != generation)
-                return false;
-
-            index = idLookup.index;
-            if (index < 0 || index > maxIndex)
-                return false;
-
-            return true;
-        }
-
-        public int GetIndex(int id, int generation)
-        {
-            id--; // We don't want 0 to be a valid id
-
-            if (id < 0 || id >= idToIndex.Length)
-                throw new ArgumentOutOfRangeException($"Id ({id}) must be between 0 and {idToIndex.Length}");
-
-            var idLookup = idToIndex[id];
-            if (idLookup.generation != generation)
-                throw new ArgumentException($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
-
-            var index = idLookup.index;
-            if (index < 0 || index > maxIndex)
-            {
-                if (maxIndex == -1)
-                    throw new ArgumentException($"The given id ({id}) does not point to an valid index. This lookup table does not contain any valid indices at the moment.");
-                throw new ArgumentException($"The given id ({id}) does not point to an valid index. It must be above 0 and below {maxIndex + 1}.");
-            }
-
-            return idLookup.index;
-        }
-
-        public int FreeID(int id, int generation)
-        {
-            int index = GetIndex(id, generation);
-            if (index < 0)
-                return -1;
-
-            sectionManager.FreeRange(index, 1);
-
-            id--; // We don't want 0 to be a valid id
-
-            if (!freeIDs.Contains(id)) freeIDs.Add(id);
-            var idLookup = idToIndex[id];
-            idLookup.index = -1;
-            idToIndex[id] = idLookup;
-            return index;
-        }
-    }
-
     // TODO: use struct
     // TODO: rename
     public partial class CompactHierarchyManager
@@ -415,7 +277,7 @@ namespace Chisel.Core
         public static ref BrushOutline GetBrushOutline(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
             if (!brushOutlineStates.ContainsKey(nodeID.value))
                 brushOutlineStates[nodeID.value] = new BrushOutlineState
                     { 
@@ -428,8 +290,8 @@ namespace Chisel.Core
         public static CompactHierarchy CreateHierarchy(Int32 userID = 0)
         {
             var rootNodeID = CreateNodeID(out var rootNodeIndex);
-            var id = CreateHierarchyID(out var hierarchyIndex);
-            var hierarchy = CompactHierarchy.CreateHierarchy(id, rootNodeID, userID, Allocator.Persistent);
+            var hierarchyID = CreateHierarchyID(out var hierarchyIndex);
+            var hierarchy = CompactHierarchy.CreateHierarchy(hierarchyID, rootNodeID, userID, Allocator.Persistent);
             hierarchies[hierarchyIndex] = hierarchy;
             nodes[rootNodeIndex] = hierarchy.RootID;
             return hierarchy;
@@ -522,11 +384,11 @@ namespace Chisel.Core
         internal static void FreeNodeID(NodeID nodeID)
         {
             if (nodeID == NodeID.Invalid)
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var index = nodeIDLookup.FreeID(nodeID.value, nodeID.generation);
             if (index < 0 || index >= nodes.Count)
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             nodes[index] = CompactNodeID.Invalid;
         }
@@ -787,11 +649,11 @@ namespace Chisel.Core
         internal static float4x4 GetNodeLocalTransformation(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             return GetHierarchy(compactNodeID).GetChildRef(compactNodeID).transformation;
         }
@@ -800,7 +662,7 @@ namespace Chisel.Core
         internal static NodeTransformations GetNodeTransformation(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var node = new CSGTreeNode { nodeID = nodeID };
             var localTransformations = node.LocalTransformation;
@@ -866,11 +728,11 @@ namespace Chisel.Core
         internal static Int32 GetBrushMeshID(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             return GetHierarchy(compactNodeID).GetChildRef(compactNodeID).brushMeshID;
         }
@@ -878,11 +740,11 @@ namespace Chisel.Core
         internal static bool SetBrushMeshID(NodeID nodeID, Int32 brushMeshID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             ref var nodeRef = ref hierarchy.GetChildRef(compactNodeID);
@@ -913,11 +775,11 @@ namespace Chisel.Core
         internal static bool SetNodeOperationType(NodeID nodeID, CSGOperationType operation)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             ref var nodeRef = ref hierarchy.GetChildRef(compactNodeID);
@@ -942,11 +804,11 @@ namespace Chisel.Core
         public static bool DestroyNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             FreeNodeID(nodeID);
 
@@ -974,11 +836,11 @@ namespace Chisel.Core
         internal static CompactNodeID GetParentOfCompactNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             return GetHierarchy(compactNodeID).ParentOf(compactNodeID);
         }
@@ -1001,11 +863,11 @@ namespace Chisel.Core
         public static Int32 GetChildNodeCount(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             return GetHierarchy(compactNodeID).ChildCount(compactNodeID);
         }
@@ -1030,15 +892,15 @@ namespace Chisel.Core
         internal static MinMaxAABB GetBrushBounds(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             ref var nodeRef = ref GetHierarchy(compactNodeID).GetChildRef(compactNodeID);
             if (nodeRef.brushMeshID == Int32.MaxValue)
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             return nodeRef.bounds;
         }
@@ -1050,10 +912,10 @@ namespace Chisel.Core
             var srcCompactNodeID    = sourceNode.compactNodeID;
             var nodeID              = sourceNode.nodeID;
             var newCompactNodeID    = destinationHierarchy.CreateNode(sourceNode.nodeID, nodeIndex, in sourceNode.nodeInformation, destinationParentCompactNodeID);
-            var childCount = sourceHierarchy.ChildCount(srcCompactNodeID);
+            var childCount          = sourceHierarchy.ChildCount(srcCompactNodeID);
             if (childCount > 0)
             {
-                var offset = destinationHierarchy.SetSize(nodeIndex, childCount);
+                var offset = destinationHierarchy.AllocateSize(nodeIndex, childCount);
                 for (int i = 0; i < childCount; i++)
                 {
                     var srcChildID = sourceHierarchy.GetChildIDAt(srcCompactNodeID, i);
@@ -1093,21 +955,21 @@ namespace Chisel.Core
         public static CompactNodeID MoveChildNode(NodeID nodeID, CompactHierarchyID destinationParentID, bool recursive = true)
         {
             if (!IsValidNodeID(nodeID, out var index))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[index];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             if (destinationParentID == CompactHierarchyID.Invalid)
                 throw new ArgumentException(nameof(destinationParentID));
 
             if (compactNodeID == CompactNodeID.Invalid)
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var itemHierarchyID = compactNodeID.hierarchyID;
             if (itemHierarchyID == CompactHierarchyID.Invalid)
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             // nothing to do
             if (itemHierarchyID == destinationParentID)
@@ -1155,7 +1017,6 @@ namespace Chisel.Core
             var childCompactNodeID = nodes[childIndex];
             if (!IsValidCompactNodeID(childCompactNodeID))
                 return false;
-
 
             var newParentHierarchyID = newParentCompactNodeID.hierarchyID;
             if (newParentHierarchyID == CompactHierarchyID.Invalid)
@@ -1298,7 +1159,7 @@ namespace Chisel.Core
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(parent)} (value: {parentCompactNodeID.value}, generation: {parentCompactNodeID.generation}) is invalid", nameof(parent));
 
             var hierarchy = GetHierarchy(parentCompactNodeID);
-            var result = hierarchy.DetachChildrenFromParentAt(parentCompactNodeID, index, (uint)range);
+            var result = hierarchy.DetachChildrenFromParentAt(parentCompactNodeID, index, range);
             if (result)
                 SetDirty(parent);
             return result;
@@ -1347,11 +1208,11 @@ namespace Chisel.Core
         internal static bool IsAnyStatusFlagSet(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var nodeIndex))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[nodeIndex];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             return hierarchy.IsAnyStatusFlagSet(compactNodeID);
@@ -1373,11 +1234,11 @@ namespace Chisel.Core
         internal static void SetStatusFlag(NodeID nodeID, NodeStatusFlags flag)
         {
             if (!IsValidNodeID(nodeID, out var nodeIndex))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[nodeIndex];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             hierarchy.SetStatusFlag(compactNodeID, flag);
@@ -1386,11 +1247,11 @@ namespace Chisel.Core
         internal static void ClearAllStatusFlags(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var nodeIndex))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[nodeIndex];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             hierarchy.ClearAllStatusFlags(compactNodeID);
@@ -1399,11 +1260,11 @@ namespace Chisel.Core
         internal static void ClearStatusFlag(NodeID nodeID, NodeStatusFlags flag)
         {
             if (!IsValidNodeID(nodeID, out var nodeIndex))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var compactNodeID = nodes[nodeIndex];
             if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException(nameof(nodeID));
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
 
             var hierarchy = GetHierarchy(compactNodeID);
             hierarchy.ClearStatusFlag(compactNodeID, flag);
