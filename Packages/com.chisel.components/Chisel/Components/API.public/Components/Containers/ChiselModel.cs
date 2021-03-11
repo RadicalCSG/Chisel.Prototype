@@ -184,7 +184,7 @@ namespace Chisel.Components
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
-        public override CompactNodeID NodeID                      { get { return Node.NodeID; } }
+        public override NodeID      NodeID                      { get { return Node.NodeID; } }
         public override bool        CanHaveChildNodes           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)

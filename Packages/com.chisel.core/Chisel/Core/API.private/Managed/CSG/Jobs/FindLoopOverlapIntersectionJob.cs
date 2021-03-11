@@ -244,7 +244,7 @@ namespace Chisel.Core
                             {
                                 var brushIntersectionLoop   = brushIntersections[l];
                                 ref var surfaceInfo         = ref brushIntersectionLoop.surfaceInfo;
-                                UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.nodeID == brushIndexOrder.nodeID);
+                                UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.compactNodeID == brushIndexOrder.compactNodeID);
                                 //UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
 
                                 var basePlaneIndex = surfaceInfo.basePlaneIndex;

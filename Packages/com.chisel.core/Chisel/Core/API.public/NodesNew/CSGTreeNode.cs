@@ -39,16 +39,17 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBranch"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [System.Diagnostics.DebuggerDisplay("{Type} ({nodeID})")]
     public partial struct CSGTreeNode 
     {
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeNode"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is *false* that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return nodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(nodeID); } }
+        public bool				Valid			{ get { return nodeID != NodeID.Invalid && CompactHierarchyManager.IsValidNodeID(nodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeNode.NodeID"/> of the <see cref="Chisel.Core.CSGTreeNode"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
-        public CompactNodeID    NodeID			{ get { return nodeID; } }
+        public NodeID           NodeID			{ get { return nodeID; } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeNode.UserID"/> set to the <see cref="Chisel.Core.CSGTreeNode"/> at creation time.</value>
         public Int32			UserID			{ get { return CompactHierarchyManager.GetUserIDOfNode(nodeID); } }
@@ -61,10 +62,10 @@ namespace Chisel.Core
 
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeNode"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool	Destroy		()				{ var prevNodeID = nodeID; nodeID = CompactNodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevNodeID); }
+        public bool	Destroy		()				{ var prevNodeID = nodeID; nodeID = NodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevNodeID); }
 
         /// <summary>Sets the state of this struct to invalid.</summary>
-        public void SetInvalid	()				{ nodeID = CompactNodeID.Invalid; }
+        public void SetInvalid	()				{ nodeID = NodeID.Invalid; }
         #endregion
 
         #region ChildNode
@@ -72,7 +73,7 @@ namespace Chisel.Core
         public CSGTreeBranch	Parent			{ get { return new CSGTreeBranch { branchNodeID = CompactHierarchyManager.GetParentOfNode(nodeID) }; } }
 
         /// <value>Returns tree this <see cref="Chisel.Core.CSGTreeNode"/> belongs to.</value>
-        public CSGTree			Tree			{ get { return new CSGTree		 { treeNodeID   = CompactHierarchyManager.GetRootOfNode(nodeID)  }; } }
+        public CSGTree			Tree			{ get { return new CSGTree		 { treeNodeID   = CompactHierarchyManager.GetRootOfNode(nodeID) }; } }
 
         /// <value>The CSG operation that this <see cref="Chisel.Core.CSGTreeNode"/> will use. Will not do anything if the <see cref="Chisel.Core.CSGTreeNode"/> is a <see cref="Chisel.Core.CSGTree"/>.</value>
         public CSGOperationType Operation		{ get { return (CSGOperationType)CompactHierarchyManager.GetNodeOperationType(nodeID); } set { CompactHierarchyManager.SetNodeOperationType(nodeID, value); } }
@@ -95,7 +96,7 @@ namespace Chisel.Core
         /// <summary>Creates a <see cref="Chisel.Core.CSGTreeNode"/> from a given nodeID.</summary>
         /// <param name="id">ID of the node to create a <see cref="Chisel.Core.CSGTreeNode"/> from</param>
         /// <returns>A <see cref="Chisel.Core.CSGTreeNode"/> with the givenID. If the ID is not known, this will result in an invalid <see cref="Chisel.Core.CSGTreeNode"/>.</returns>
-        public static CSGTreeNode Encapsulate(CompactNodeID id) { return new CSGTreeNode { nodeID = id }; }
+        public static CSGTreeNode Encapsulate(NodeID id) { return new CSGTreeNode { nodeID = id }; }
 
         /// <summary>Operator to implicitly convert a <see cref="Chisel.Core.CSGTree"/> into a <see cref="Chisel.Core.CSGTreeNode"/>.</summary>
         /// <param name="tree">The <see cref="Chisel.Core.CSGTree"/> to convert into a <see cref="Chisel.Core.CSGTreeNode"/>.</param>
@@ -118,22 +119,22 @@ namespace Chisel.Core
         /// <summary>Operator to allow a <see cref="Chisel.Core.CSGTreeNode"/> to be explicitly converted into a <see cref="Chisel.Core.CSGTree"/>.</summary>
         /// <param name="node">The <see cref="Chisel.Core.CSGTreeNode"/> to be convert into a <see cref="Chisel.Core.CSGTree"/></param>
         /// <returns>A valid <see cref="Chisel.Core.CSGTree"/> if <paramref name="node"/> actually was one, otherwise an invalid node.</returns>
-        public static explicit operator CSGTree       (CSGTreeNode   node  ) { if (node.Type != CSGNodeType.Tree) return new CSGTree       { treeNodeID   = CompactNodeID.Invalid }; else return new CSGTree       { treeNodeID   = node.nodeID }; }
+        public static explicit operator CSGTree       (CSGTreeNode   node  ) { if (node.nodeID == NodeID.Invalid || node.Type != CSGNodeType.Tree) return new CSGTree       { treeNodeID   = NodeID.Invalid }; else return new CSGTree       { treeNodeID   = node.nodeID }; }
 
         /// <summary>Operator to allow a <see cref="Chisel.Core.CSGTreeNode"/> to be explicitly converted into a <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="node">The <see cref="Chisel.Core.CSGTreeNode"/> to be convert into a <see cref="Chisel.Core.CSGTreeBranch"/></param>
         /// <returns>A valid <see cref="Chisel.Core.CSGTreeBranch"/> if <paramref name="node"/> actually was one, otherwise an invalid node.</returns>
-        public static explicit operator CSGTreeBranch (CSGTreeNode   node  ) { if (node.Type != CSGNodeType.Branch) return new CSGTreeBranch { branchNodeID = CompactNodeID.Invalid }; else return new CSGTreeBranch { branchNodeID = node.nodeID }; }
+        public static explicit operator CSGTreeBranch (CSGTreeNode   node  ) { if (node.nodeID == NodeID.Invalid || node.Type != CSGNodeType.Branch) return new CSGTreeBranch { branchNodeID = NodeID.Invalid }; else return new CSGTreeBranch { branchNodeID = node.nodeID }; }
 
         /// <summary>Operator to allow a <see cref="Chisel.Core.CSGTreeNode"/> to be explicitly converted into a <see cref="Chisel.Core.CSGTreeBrush"/>.</summary>
         /// <param name="node">The <see cref="Chisel.Core.CSGTreeNode"/> to be convert into a <see cref="Chisel.Core.CSGTreeBrush"/></param>
         /// <returns>A valid <see cref="Chisel.Core.CSGTreeBrush"/> if <paramref name="node"/> actually was one, otherwise an invalid node.</returns>
-        public static explicit operator CSGTreeBrush  (CSGTreeNode   node  ) { if (node.Type != CSGNodeType.Brush) return new CSGTreeBrush  { brushNodeID  = CompactNodeID.Invalid }; else return new CSGTreeBrush  { brushNodeID  = node.nodeID }; }
+        public static explicit operator CSGTreeBrush  (CSGTreeNode   node  ) { if (node.nodeID == NodeID.Invalid || node.Type != CSGNodeType.Brush) return new CSGTreeBrush  { brushNodeID  = NodeID.Invalid }; else return new CSGTreeBrush  { brushNodeID  = node.nodeID }; }
         
         #endregion
         
         /// <value>An invalid node</value>
-        public static readonly CSGTreeNode InvalidNode = new CSGTreeNode { nodeID = CompactNodeID.Invalid };
+        public static readonly CSGTreeNode InvalidNode = new CSGTreeNode { nodeID = NodeID.Invalid };
         
 #if UNITY_EDITOR
         #region Inspector State
@@ -147,7 +148,7 @@ namespace Chisel.Core
 
         #region Transformation
         // TODO: add description
-        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(nodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(nodeID, ref value); } }		
+        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(nodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(nodeID, in value); } }		
         // TODO: add description
         public float4x4             TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(nodeID, out var result) ? result : float4x4.identity; } }
         // TODO: add description
@@ -182,8 +183,6 @@ namespace Chisel.Core
 
 
         [SerializeField] // Useful to be able to handle selection in history
-        internal CompactNodeID nodeID;
-
-        public override string ToString() { return $"{Type} ({nodeID})"; }
+        internal NodeID nodeID;
     }
 }

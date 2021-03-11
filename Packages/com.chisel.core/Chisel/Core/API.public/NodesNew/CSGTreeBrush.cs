@@ -19,6 +19,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.BrushMesh"/>
     /// <seealso cref="Chisel.Core.BrushMeshInstance"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [System.Diagnostics.DebuggerDisplay("Brush ({brushNodeID})")]
     public partial struct CSGTreeBrush 
     {
         #region Create
@@ -32,7 +33,8 @@ namespace Chisel.Core
         public static CSGTreeBrush Create(Int32 userID, float4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
             if (!CompactHierarchyManager.GenerateBrush(userID, localTransformation, brushMesh, operation, out var brushNodeID))
-                brushNodeID = CompactNodeID.Invalid;
+                brushNodeID = NodeID.Invalid;
+            Debug.Assert(CompactHierarchyManager.IsValidNodeID(brushNodeID));
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
         }
 
@@ -62,11 +64,11 @@ namespace Chisel.Core
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBrush"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return brushNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(brushNodeID); } }
+        public bool				Valid			{ get { return brushNodeID != NodeID.Invalid && CompactHierarchyManager.IsValidNodeID(brushNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBrush"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
-        public CompactNodeID    NodeID			{ get { return brushNodeID; } }
+        public NodeID           NodeID			{ get { return brushNodeID; } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.UserID"/> set to the <see cref="Chisel.Core.CSGTreeBrush"/> at creation time.</value>
         public Int32			UserID			{ get { return CompactHierarchyManager.GetUserIDOfNode(brushNodeID); } }
@@ -79,10 +81,10 @@ namespace Chisel.Core
 
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeBrush"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Destroy		()				{ var prevBrushNodeID = brushNodeID; brushNodeID = CompactNodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevBrushNodeID); }
+        public bool Destroy		()				{ var prevBrushNodeID = brushNodeID; brushNodeID = NodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevBrushNodeID); }
 
         /// <summary>Sets the state of this struct to invalid.</summary>
-        public void SetInvalid	()				{ brushNodeID = CompactNodeID.Invalid; }
+        public void SetInvalid	()				{ brushNodeID = NodeID.Invalid; }
         #endregion
 
         #region ChildNode
@@ -122,7 +124,7 @@ namespace Chisel.Core
 
         #region Transformation
         // TODO: add description
-        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(brushNodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(brushNodeID, ref value); } }		
+        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(brushNodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(brushNodeID, in value); } }		
         // TODO: add description
         public float4x4             TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(brushNodeID, out var result) ? result : float4x4.identity; } }
         // TODO: add description
@@ -164,8 +166,6 @@ namespace Chisel.Core
 
 
         [SerializeField] // Useful to be able to handle selection in history
-        internal CompactNodeID brushNodeID;
-
-        public override string ToString() { return $"({NodeID})"; }
+        internal NodeID brushNodeID;
     }
 }

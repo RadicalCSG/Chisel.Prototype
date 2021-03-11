@@ -409,6 +409,7 @@ namespace Chisel.Components
                         brushContainerAsset.DestroyInstances();
                 }
             }
+
             Profiler.BeginSample("OnBrushMeshInstanceDestroyed");
             if (OnBrushMeshInstanceDestroyed != null)
             {
@@ -459,7 +460,6 @@ namespace Chisel.Components
 
             if (modifiedBrushMeshes.Count > 0)
             {
-                //CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
                 Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             }
 

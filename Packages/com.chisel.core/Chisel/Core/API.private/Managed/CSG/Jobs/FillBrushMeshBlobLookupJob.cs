@@ -47,7 +47,7 @@ namespace Chisel.Core
                     // *should* never happen
                     
                     var indexOrder  = allTreeBrushIndexOrders[nodeOrder];
-                    var nodeID      = indexOrder.nodeID;
+                    var nodeID      = indexOrder.compactNodeID;
                 
                     Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshID}, which is not initialized.");
                     brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;

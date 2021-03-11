@@ -156,7 +156,6 @@ namespace Chisel.Core
             if (!AssertBrushMeshIDValid(brushMeshInstanceID))
                 return false;
 
-            //CSGManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
             Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
 
             var brushMeshIndex = brushMeshInstanceID - 1;

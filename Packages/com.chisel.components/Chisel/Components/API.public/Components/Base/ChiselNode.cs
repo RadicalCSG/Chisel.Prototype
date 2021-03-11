@@ -82,7 +82,7 @@ namespace Chisel.Components
         }
     
         public bool				Dirty					{ get { return ChiselNodeHierarchyManager.IsNodeDirty(this); } }
-        public virtual CompactNodeID NodeID				{ get { return CSGTreeNode.InvalidNode.NodeID; } }
+        public virtual NodeID   NodeID				    { get { return CSGTreeNode.InvalidNode.NodeID; } }
         internal virtual bool	IsActive			    { get { return isActiveAndEnabled; } }
 
         // Can this Node contain child CSGNodes?

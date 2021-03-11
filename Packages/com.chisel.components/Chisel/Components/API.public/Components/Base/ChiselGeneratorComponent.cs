@@ -447,7 +447,7 @@ namespace Chisel.Components
             return Nodes;
         }
 
-        public override CompactNodeID NodeID								{ get { return TopNode.NodeID; } }
+        public override NodeID NodeID { get { return TopNode.NodeID; } }
         
         public override void SetDirty()
         {

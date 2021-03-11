@@ -124,7 +124,10 @@ namespace Chisel.Components
 
 #if UNITY_EDITOR
         static Dictionary<CompactNodeID, VisibilityState> visibilityStateLookup = new Dictionary<CompactNodeID, VisibilityState>();
-        public static bool IsBrushVisible(CompactNodeID brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
+        public static bool IsBrushVisible(CompactNodeID brushID) 
+        { 
+            return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; 
+        }
 
         static bool updateVisibilityFlag = false;
         public static void OnVisibilityChanged()
@@ -208,20 +211,26 @@ namespace Chisel.Components
                 if (!generator)
                     continue;
 
-                if (!visibilityStateLookup.TryGetValue(generator.hierarchyItem.Model.NodeID, out VisibilityState prevState))
+                if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
+                    continue;
+
+                var compactNodeID   = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
+                var modelNodeID     = CompactHierarchyManager.GetCompactNodeID(generator.hierarchyItem.Model.NodeID);
+                if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
                     prevState = VisibilityState.Unknown;
                 var state = generator.UpdateVisibility(sceneVisibilityManager);
-                visibilityStateLookup[node.NodeID] = state;
-                visibilityStateLookup[generator.hierarchyItem.Model.NodeID] = state | prevState;
+                visibilityStateLookup[compactNodeID] = state;
+                visibilityStateLookup[modelNodeID] = state | prevState;
             }
 
             foreach (var model in models)
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                if (!visibilityStateLookup.TryGetValue(model.NodeID, out VisibilityState state))
+                var modelNodeID = CompactHierarchyManager.GetCompactNodeID(model.NodeID);
+                if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState state))
                 {
-                    visibilityStateLookup[model.NodeID] = VisibilityState.AllVisible;
+                    visibilityStateLookup[modelNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
                     continue;
                 }

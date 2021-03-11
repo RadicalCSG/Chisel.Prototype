@@ -411,7 +411,7 @@ namespace Chisel.Core
                     for (int p = 0; p < polygons.Length; p++)
                     {
                         ref var nodeIndexOrder = ref polygons[p].nodeIndexOrder;
-                        var nodeIDValue = nodeIndexOrder.nodeID.ID;
+                        var nodeIDValue = nodeIndexOrder.compactNodeID.value;
                         nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     basePolygonCache[nodeOrder] = item;
@@ -428,7 +428,7 @@ namespace Chisel.Core
                     {
                         ref var brushIntersection = ref brushIntersections[b];
                         ref var nodeIndexOrder = ref brushIntersection.nodeIndexOrder;
-                        var nodeIDValue = nodeIndexOrder.nodeID.ID;
+                        var nodeIDValue = nodeIndexOrder.compactNodeID.value;
                         nodeIndexOrder.nodeOrder = nodeIDValueToNodeOrderArray[nodeIDValue - nodeIDValueToNodeOrderOffset];
                     }
                     for (int b0 = 0; b0 < brushIntersections.Length; b0++)

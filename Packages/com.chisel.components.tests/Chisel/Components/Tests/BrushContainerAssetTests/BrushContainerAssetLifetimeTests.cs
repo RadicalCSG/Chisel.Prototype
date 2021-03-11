@@ -261,9 +261,9 @@ namespace BrushContainerAssetTests
             using (var newBrushMaterial = ChiselBrushMaterial.CreateInstance())
             {
                 var newBrushContainerAsset	= CreateBox(Vector3.one, newBrushMaterial);
-                var brushGameObject		= EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
-                var brush				= brushGameObject.AddComponent<ChiselBrush>();
-                brush.BrushContainerAsset = newBrushContainerAsset;
+                var brushGameObject		    = EditorUtility.CreateGameObjectWithHideFlags("Brush", HideFlags.None);
+                var brush				    = brushGameObject.AddComponent<ChiselBrush>();
+                brush.BrushContainerAsset   = newBrushContainerAsset;
             
                 yield return null;
                 ChiselBrushContainerAssetManager.Update();

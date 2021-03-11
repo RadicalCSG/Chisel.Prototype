@@ -20,6 +20,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTree"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
+    [System.Diagnostics.DebuggerDisplay("Branch ({branchNodeID})")]
     public partial struct CSGTreeBranch
     {
         #region Create
@@ -32,13 +33,14 @@ namespace Chisel.Core
         public static unsafe CSGTreeBranch CreateUnsafe(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, CSGTreeNode* childrenArray = null, int childrenArrayLength = 0)
         {
             if (!CompactHierarchyManager.GenerateBranch(userID, operation, out var branchNodeID))
-                return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
+                return new CSGTreeBranch() { branchNodeID = NodeID.Invalid };
+            Debug.Assert(CompactHierarchyManager.IsValidNodeID(branchNodeID));
             if (childrenArray != null && childrenArrayLength > 0)
             {
                 if (!CompactHierarchyManager.SetChildNodes(branchNodeID, childrenArray, childrenArrayLength))
                 {
                     CompactHierarchyManager.DestroyNode(branchNodeID);
-                    return new CSGTreeBranch() { branchNodeID = CompactNodeID.Invalid };
+                    return new CSGTreeBranch() { branchNodeID = NodeID.Invalid };
                 }
             }
             return new CSGTreeBranch() { branchNodeID = branchNodeID };
@@ -81,11 +83,11 @@ namespace Chisel.Core
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBranch"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return branchNodeID != CompactNodeID.Invalid && CompactHierarchyManager.IsValidNodeID(branchNodeID); } }
+        public bool				Valid			{ get { return branchNodeID != NodeID.Invalid && CompactHierarchyManager.IsValidNodeID(branchNodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBranch.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBranch"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
-        public CompactNodeID    NodeID			{ get { return branchNodeID; } }
+        public NodeID           NodeID			{ get { return branchNodeID; } }
         
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBranch.UserID"/> set to the <see cref="Chisel.Core.CSGTreeBranch"/> at creation time.</value>
         public Int32			UserID			{ get { return CompactHierarchyManager.GetUserIDOfNode(branchNodeID); } }
@@ -98,10 +100,10 @@ namespace Chisel.Core
 
         /// <summary>Destroy this <see cref="Chisel.Core.CSGTreeNode"/>. Sets the state to invalid.</summary>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
-        public bool Destroy		()				{ var prevBranchNodeID = branchNodeID; branchNodeID = CompactNodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevBranchNodeID); }
+        public bool Destroy		()				{ var prevBranchNodeID = branchNodeID; branchNodeID = NodeID.Invalid; return CompactHierarchyManager.DestroyNode(prevBranchNodeID); }
 
         /// <summary>Sets the state of this struct to invalid.</summary>
-        public void SetInvalid	()				{ branchNodeID = CompactNodeID.Invalid; }
+        public void SetInvalid	()				{ branchNodeID = NodeID.Invalid; }
         #endregion
 
         #region ChildNode
@@ -109,7 +111,7 @@ namespace Chisel.Core
         public CSGTreeBranch	Parent			{ get { return new CSGTreeBranch { branchNodeID = CompactHierarchyManager.GetParentOfNode(branchNodeID) }; } }
 
         /// <value>Returns tree this <see cref="Chisel.Core.CSGTreeBranch"/> belongs to.</value>
-        public CSGTree			Tree			{ get { return new CSGTree       { treeNodeID   = CompactHierarchyManager.GetRootOfNode(branchNodeID)  }; } }
+        public CSGTree			Tree			{ get { return new CSGTree       { treeNodeID   = CompactHierarchyManager.GetRootOfNode(branchNodeID) }; } }
 
         /// <value>The CSG operation that this <see cref="Chisel.Core.CSGTreeBranch"/> will use.</value>
         public CSGOperationType Operation		{ get { return (CSGOperationType)CompactHierarchyManager.GetNodeOperationType(branchNodeID); } set { CompactHierarchyManager.SetNodeOperationType(branchNodeID, value); } }
@@ -190,12 +192,12 @@ namespace Chisel.Core
         /// <summary>Determines the index of a specific child in the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns>The index of <paramref name="item"/> if found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, –1.</returns>
-        public int  IndexOf		(CSGTreeNode item)				{ return CompactHierarchyManager.IndexOfChildNode(branchNodeID, item.nodeID); }
+        public int  IndexOf		(CSGTreeNode item)				{ return CompactHierarchyManager.SiblingIndexOf(branchNodeID, item.nodeID); }
 
         /// <summary>Determines whether the <see cref="Chisel.Core.CSGTreeBranch"/> contains a specific value.</summary>
         /// <param name="item">The Object to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, <b>false</b>.</returns>
-        public bool Contains	(CSGTreeNode item)				{ return CompactHierarchyManager.IndexOfChildNode(branchNodeID, item.nodeID) != -1; }
+        public bool Contains	(CSGTreeNode item)				{ return CompactHierarchyManager.SiblingIndexOf(branchNodeID, item.nodeID) != -1; }
         #endregion
         
 #if UNITY_EDITOR
@@ -210,11 +212,11 @@ namespace Chisel.Core
 
         #region Transformation
         // TODO: add description
-        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(branchNodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(branchNodeID, ref value); } }		
+        public float4x4			    LocalTransformation		{ get { return CompactHierarchyManager.GetNodeLocalTransformation(branchNodeID); } set { CompactHierarchyManager.SetNodeLocalTransformation(branchNodeID, in value); } }		
         // TODO: add description
-        //public float4x4             TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(branchNodeID, out var result) ? result : float4x4.identity; } }
+        //public float4x4           TreeToNodeSpaceMatrix   { get { return CompactHierarchyManager.GetTreeToNodeSpaceMatrix(branchNodeID, out var result) ? result : float4x4.identity; } }
         // TODO: add description
-        //public float4x4             NodeToTreeSpaceMatrix	{ get { return CompactHierarchyManager.GetNodeToTreeSpaceMatrix(branchNodeID, out var result) ? result : float4x4.identity; } }
+        //public float4x4           NodeToTreeSpaceMatrix	{ get { return CompactHierarchyManager.GetNodeToTreeSpaceMatrix(branchNodeID, out var result) ? result : float4x4.identity; } }
         #endregion
                 
         #region Comparison
@@ -252,6 +254,6 @@ namespace Chisel.Core
         
 
         [SerializeField] // Useful to be able to handle selection in history
-        internal CompactNodeID branchNodeID;
+        internal NodeID branchNodeID;
     }
 }

@@ -34,7 +34,7 @@ namespace Chisel.Core
             brushRenderBufferLookup.Clear();
             for (int i = 0; i < allTreeBrushIndexOrders.Length; i++)
             {
-                var nodeID = allTreeBrushIndexOrders[i].nodeID;
+                var nodeID = allTreeBrushIndexOrders[i].compactNodeID;
                 brushTreeSpaceBoundLookup[nodeID] = brushTreeSpaceBoundCache[i];
                 brushRenderBufferLookup[nodeID] = brushRenderBufferCache[i];
             }

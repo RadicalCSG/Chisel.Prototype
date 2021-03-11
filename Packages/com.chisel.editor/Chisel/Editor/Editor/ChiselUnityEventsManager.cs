@@ -233,6 +233,7 @@ namespace Chisel.Editors
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
             ChiselNodeHierarchyManager.Update();
+            ChiselNodeHierarchyManager.Update();
             ChiselGeneratedModelMeshManager.UpdateModels();
             ChiselNodeEditorBase.HandleCancelEvent();
         }

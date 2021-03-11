@@ -104,7 +104,6 @@ namespace Chisel.Components
 
             startTime = Time.realtimeSinceStartup;
             Profiler.BeginSample("CSGManager.Clear");
-            //CSGManager.Clear();
             Chisel.Core.CompactHierarchyManager.Clear();
             Profiler.EndSample();
 
@@ -898,7 +897,6 @@ UpdateAgain:
             if (!firstStart)
             {
                 firstStart = true;
-                //CSGManager.Clear();
                 Chisel.Core.CompactHierarchyManager.Clear();
                 ChiselBrushContainerAssetManager.Reset();
                 ChiselBrushMaterialManager.Reset();
@@ -1479,7 +1477,15 @@ UpdateAgain:
                     GetChildrenOfHierachyItem(__childNodes, item);
                     if (__childNodes.Count == 0)
                         continue;
-                    item.Component.SetChildren(__childNodes);
+                    try 
+                    {
+                        item.Component.SetChildren(__childNodes);
+                    }
+                    catch(Exception ex)
+                    {
+                        Debug.Log($"{item.Component}", item.Component);
+                        Debug.LogException(ex, item.Component);
+                    }
                 }
                 updateChildrenQueue.Clear();
             }
@@ -1554,7 +1560,7 @@ UpdateAgain:
             for (int i = 0; i < item.Children.Count; i++)
             {
                 var childComponent = item.Children[i].Component;
-                if (!childComponent)
+                if (!childComponent && childComponent.isActiveAndEnabled)
                     continue;
 
                 childComponent.CollectCSGTreeNodes(childNodes);

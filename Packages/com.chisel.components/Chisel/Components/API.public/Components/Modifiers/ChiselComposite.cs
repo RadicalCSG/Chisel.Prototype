@@ -74,7 +74,7 @@ namespace Chisel.Components
 
         public override bool	CanHaveChildNodes	{ get { return IsActive; } }
 
-        public override CompactNodeID NodeID			    { get { return Node.NodeID; } }
+        public override NodeID  NodeID			    { get { return Node.NodeID; } }
 
 
         public override void	SetDirty()		    { if (Node.Valid) Node.SetDirty(); }

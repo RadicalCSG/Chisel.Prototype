@@ -819,8 +819,8 @@ namespace Chisel.Editors
 
         static readonly List<Vector3> s_PolygonVertices = new List<Vector3>();
 
-        static readonly HashSet<(CompactNodeID, int)> s_usedVertices = new HashSet<(CompactNodeID, int)>();
-        static readonly HashSet<(CompactNodeID, int)> s_usedSurfaces = new HashSet<(CompactNodeID, int)>();
+        static readonly HashSet<(NodeID, int)> s_usedVertices = new HashSet<(NodeID, int)>();
+        static readonly HashSet<(NodeID, int)> s_usedSurfaces = new HashSet<(NodeID, int)>();
         static void DrawCustomSnappedEvent()
         {
 #if false

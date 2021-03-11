@@ -31,15 +31,15 @@ namespace Chisel.Core
 
         static void SetUsedNodesBits([NoAlias] BlobAssetReference<CompactTree> compactTree, [NoAlias] in NativeList<BrushIntersection> brushIntersections, CompactNodeID brushNodeID, CompactNodeID rootNodeID, [NoAlias] ref BrushIntersectionLookup bitset)
         {
-            var brushNodeIDValue = brushNodeID.ID;
-            var rootNodeIDValue  = rootNodeID.ID;
+            var brushNodeIDValue = brushNodeID.value;
+            var rootNodeIDValue  = rootNodeID.value;
 
             bitset.Clear();
             bitset.Set(brushNodeIDValue, IntersectionType.Intersection);
             bitset.Set(rootNodeIDValue, IntersectionType.Intersection);
 
-            ref var compactTreeRef      = ref compactTree.Value;
-            var minBrushIDValue         = compactTreeRef.minBrushIDValue;
+            ref var compactTreeRef = ref compactTree.Value;
+            var minBrushIDValue    = compactTreeRef.minBrushIDValue;
             ref var brushAncestors                  = ref compactTreeRef.brushAncestors;
             ref var brushAncestorLegend             = ref compactTreeRef.brushAncestorLegend;
             ref var brushIDValueToAncestorLegend    = ref compactTreeRef.brushIDValueToAncestorLegend;
@@ -58,8 +58,8 @@ namespace Chisel.Core
             for (int i = 0; i < brushIntersections.Length; i++)
             {
                 var otherIntersectionInfo = brushIntersections[i];
-                var otherNodeID           = otherIntersectionInfo.nodeIndexOrder.nodeID;
-                var otherNodeIDValue      = otherNodeID.ID;
+                var otherNodeID           = otherIntersectionInfo.nodeIndexOrder.compactNodeID;
+                var otherNodeIDValue      = otherNodeID.value;
                 bitset.Set(otherNodeIDValue, otherIntersectionInfo.type);
                 for (int b = otherIntersectionInfo.bottomUpStart; b < otherIntersectionInfo.bottomUpEnd; b++)
                     bitset.Set(brushAncestors[b], IntersectionType.Intersection);
@@ -85,11 +85,10 @@ namespace Chisel.Core
             if (!compactTree.IsCreated)
                 return BlobAssetReference<BrushesTouchedByBrush>.Null;
 
-            var brushNodeID         = brushIndexOrder.nodeID;
-            
-            var minBrushIDValue     = compactTree.Value.minBrushIDValue;
-            var minNodeIDValue      = compactTree.Value.minNodeIDValue;
-            var maxNodeIDValue      = compactTree.Value.maxNodeIDValue;
+            var brushNodeID     = brushIndexOrder.compactNodeID;            
+            var minBrushIDValue = compactTree.Value.minBrushIDValue;
+            var minNodeIDValue  = compactTree.Value.minNodeIDValue;
+            var maxNodeIDValue  = compactTree.Value.maxNodeIDValue;
             ref var brushAncestorLegend             = ref compactTree.Value.brushAncestorLegend;
             ref var brushIDValueToAncestorLegend    = ref compactTree.Value.brushIDValueToAncestorLegend;
 
@@ -103,15 +102,15 @@ namespace Chisel.Core
                     //Debug.Assert(touchingBrush.brushIndexOrder0.nodeOrder == brushNodeOrder);
 
                     var otherIndexOrder     = touchingBrush.brushNodeOrder1;
-                    var otherBrushID        = allTreeBrushIndexOrders[otherIndexOrder].nodeID;
-                    var otherBrushIDValue   = otherBrushID.ID;
+                    var otherBrushID        = allTreeBrushIndexOrders[otherIndexOrder].compactNodeID;
+                    var otherBrushIDValue   = otherBrushID.value;
                     if ((otherBrushIDValue < minBrushIDValue || (otherBrushIDValue - minBrushIDValue) >= brushIDValueToAncestorLegend.Length))
                         continue;
                     
                     var otherBottomUpIDValue    = brushIDValueToAncestorLegend[otherBrushIDValue - minBrushIDValue];
                     brushIntersections.AddNoResize(new BrushIntersection
                     {
-                        nodeIndexOrder  = new IndexOrder { nodeID = otherBrushID, nodeOrder = otherIndexOrder },
+                        nodeIndexOrder  = new IndexOrder { compactNodeID = otherBrushID, nodeOrder = otherIndexOrder },
                         type            = touchingBrush.type,
                         bottomUpStart   = brushAncestorLegend[otherBottomUpIDValue].ancestorStartIDValue, 
                         bottomUpEnd     = brushAncestorLegend[otherBottomUpIDValue].ancestorEndIDValue

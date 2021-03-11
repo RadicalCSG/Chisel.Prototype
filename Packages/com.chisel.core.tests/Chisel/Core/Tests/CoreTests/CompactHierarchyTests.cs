@@ -9,11 +9,12 @@ using Chisel.Core;
 namespace FoundationTests
 {
     [TestFixture]
-    class CompactHierarchyTests
+    class CompactHierarchyTests 
     {
         [SetUp]
         public void Init()
         {
+            CompactHierarchyManager.Clear();
         }
 
         void Add2Branches(in CompactHierarchy compactHierarchy, out CompactNodeID branch0_ID, out CompactNodeID branch1_ID, int userID1 = 1, int userID2 = 2)
@@ -23,8 +24,8 @@ namespace FoundationTests
 
         void Add2Branches(in CompactHierarchy compactHierarchy, CompactNodeID parentID, out CompactNodeID branch0_ID, out CompactNodeID branch1_ID, int userID1 = 1, int userID2 = 2)
         {
-            branch0_ID = compactHierarchy.CreateBranch(userID: userID1);
-            branch1_ID = compactHierarchy.CreateBranch(userID: userID2);
+            branch0_ID = compactHierarchy.CreateBranch(NodeID.Invalid, userID: userID1);
+            branch1_ID = compactHierarchy.CreateBranch(NodeID.Invalid, userID: userID2);
             compactHierarchy.AttachToParent(parentID, branch0_ID);
             compactHierarchy.AttachToParent(parentID, branch1_ID);
             var siblingIndex0 = compactHierarchy.SiblingIndexOf(branch0_ID);
@@ -38,8 +39,8 @@ namespace FoundationTests
 
         void Add2Brushes(in CompactHierarchy compactHierarchy, CompactNodeID parentID, out CompactNodeID brushID0, out CompactNodeID brushID1, int userID1 = 1, int userID2 = 2, int brushMeshID1 = 1, int brushMeshID2 = 2)
         {
-            brushID0 = compactHierarchy.CreateBrush(brushMeshID1, userID: userID1);
-            brushID1 = compactHierarchy.CreateBrush(brushMeshID2, userID: userID2);
+            brushID0 = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID1, userID: userID1);
+            brushID1 = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID2, userID: userID2);
             compactHierarchy.AttachToParent(parentID, brushID0);
             compactHierarchy.AttachToParent(parentID, brushID1);
             var siblingIndex0 = compactHierarchy.SiblingIndexOf(brushID0);
@@ -58,9 +59,9 @@ namespace FoundationTests
 
         void Add3Brushes(in CompactHierarchy compactHierarchy, CompactNodeID parentID, out CompactNodeID brushID0, out CompactNodeID brushID1, out CompactNodeID brushID2, int userID1 = 1, int userID2 = 2, int userID3 = 3, int brushMeshID1 = 1, int brushMeshID2 = 2, int brushMeshID3 = 3)
         {
-            brushID0 = compactHierarchy.CreateBrush(brushMeshID1, userID: userID1);
-            brushID1 = compactHierarchy.CreateBrush(brushMeshID2, userID: userID2);
-            brushID2 = compactHierarchy.CreateBrush(brushMeshID3, userID: userID3);
+            brushID0 = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID1, userID: userID1);
+            brushID1 = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID2, userID: userID2);
+            brushID2 = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID3, userID: userID3);
             compactHierarchy.AttachToParent(parentID, brushID0);
             compactHierarchy.AttachToParent(parentID, brushID1);
             compactHierarchy.AttachToParent(parentID, brushID2);
@@ -79,7 +80,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_GetParentsOfChildren_ParentsAreRoot()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -96,7 +97,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_GetChildCount_ChildCountIs3()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -109,7 +110,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_GetSiblingIndices_HaveExpectedValues()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -125,7 +126,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_DetachAllChildrenInFrontAndGetSiblingIndices_SiblingIndicesAreInvalid()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -146,7 +147,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_DetachAllChildrenAtBackAndGetSiblingIndices_SiblingIndicesAreInvalid()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -167,7 +168,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_DetachAllChildrenInFrontAndGetChildCount_ChildCountIs0()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy, out var brushID0, out var brushID1, out var brushID2);
 
@@ -185,7 +186,7 @@ namespace FoundationTests
         [Test]
         public void RootWith3Children_DetachAllChildrenAtBackAndGetChildCount_ChildCountIs0()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add3Brushes(in compactHierarchy,  out var brushID0, out var brushID1, out var brushID2);
 
@@ -203,12 +204,12 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_InsertChildInBetweenChildren_SiblingIndicesAreInOrder()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID,        userID1: 1, userID2: 2);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush2_ID, userID1: 3, userID2: 4);
                 Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID, userID1: 5, userID2: 6);
-                var branch0_brush1_ID = compactHierarchy.CreateBrush(7, userID: 7);
+                var branch0_brush1_ID = compactHierarchy.CreateBrush(NodeID.Invalid, 7, userID: 7);
 
                 compactHierarchy.AttachToParentAt(branch0_ID, 1, branch0_brush1_ID);
                 Assume.That(compactHierarchy.ParentOf(branch0_brush1_ID),         Is.EqualTo(branch0_ID));
@@ -228,12 +229,12 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_InsertChildInBetweenChildren_ChildrenHaveShifted()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush2_ID, brushMeshID1: 1, brushMeshID2: 3);
                 Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID, brushMeshID1: 4, brushMeshID2: 5);
-                var branch0_brush1_ID = compactHierarchy.CreateBrush(brushMeshID: 2);
+                var branch0_brush1_ID = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID: 2);
 
                 compactHierarchy.AttachToParentAt(branch0_ID, 1, branch0_brush1_ID);
                 Assume.That(compactHierarchy.ParentOf(branch0_brush1_ID), Is.EqualTo(branch0_ID));
@@ -251,12 +252,12 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_InsertChildAtEnd_SiblingIndicesAreInOrder()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID);
-                var branch0_brush2_ID = compactHierarchy.CreateBrush(0);
+                var branch0_brush2_ID = compactHierarchy.CreateBrush(NodeID.Invalid, 0);
 
                 compactHierarchy.AttachToParentAt(branch0_ID, 2, branch0_brush2_ID);
                 Assume.That(compactHierarchy.ParentOf(branch0_brush1_ID), Is.EqualTo(branch0_ID));
@@ -274,7 +275,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DetachChildInBetweenChildren_ChildrenHaveShifted()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add3Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID, out var branch0_brush2_ID, brushMeshID1: 1, brushMeshID2: 2, brushMeshID3: 3);
@@ -295,7 +296,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DetachChildAtEnd_RemainingChildrenHaveBeenUnchanged()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add3Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID, out var branch0_brush2_ID, brushMeshID1: 1, brushMeshID2: 2, brushMeshID3: 3);
@@ -316,7 +317,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DetachChildInBetweenChildren_SiblingIndicesAreInOrder()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add3Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID, out var branch0_brush2_ID);
@@ -335,7 +336,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DetachChild_ChildHasNoParent()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
@@ -352,7 +353,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DetachChild_ChildOfChildIsUnchanged()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
                 Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
@@ -370,7 +371,7 @@ namespace FoundationTests
         [Test]
         public void HierarchyWithNodesInBranches_DeleteChild_ChildIDIsNotValid()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy,                       out var branch0_ID,        out var branch1_ID);
                 Add2Brushes (in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
@@ -381,16 +382,16 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(1));
 
                 Assert.AreEqual((false, true, true), 
-                                (compactHierarchy.IsValidNodeID(branch0_ID),
-                                 compactHierarchy.IsValidNodeID(branch0_brush0_ID),
-                                 compactHierarchy.IsValidNodeID(branch0_brush1_ID)));
+                                (compactHierarchy.IsValidCompactNodeID(branch0_ID),
+                                 compactHierarchy.IsValidCompactNodeID(branch0_brush0_ID),
+                                 compactHierarchy.IsValidCompactNodeID(branch0_brush1_ID)));
             }
         }
 
         [Test]
         public void HierarchyWithNodesInBranches_DeleteChildRecursive_ChildIDIsNotValid()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
                 Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
@@ -401,16 +402,16 @@ namespace FoundationTests
                 Assume.That(compactHierarchy.ChildCount(compactHierarchy.RootID), Is.EqualTo(1));
 
                 Assert.AreEqual((false, false, false),
-                                (compactHierarchy.IsValidNodeID(branch0_ID),
-                                 compactHierarchy.IsValidNodeID(branch0_brush0_ID),
-                                 compactHierarchy.IsValidNodeID(branch0_brush1_ID)));
+                                (compactHierarchy.IsValidCompactNodeID(branch0_ID),
+                                 compactHierarchy.IsValidCompactNodeID(branch0_brush0_ID),
+                                 compactHierarchy.IsValidCompactNodeID(branch0_brush1_ID)));
             }
         }
 
         [Test]
         public void HierarchyWithNodesInBranches_DeleteChild_ChildOfChildHasNoParent()
         {
-            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(Allocator.Temp))
+            using (var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp))
             {
                 Add2Branches(in compactHierarchy, out var branch0_ID, out var branch1_ID);
                 Add2Brushes(in compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush1_ID);
@@ -418,9 +419,9 @@ namespace FoundationTests
 
                 compactHierarchy.Delete(branch0_ID);
                 Assume.That((false, true, true), 
-                            Is.EqualTo((compactHierarchy.IsValidNodeID(branch0_ID), 
-                                        compactHierarchy.IsValidNodeID(branch0_brush0_ID), 
-                                        compactHierarchy.IsValidNodeID(branch0_brush1_ID))));
+                            Is.EqualTo((compactHierarchy.IsValidCompactNodeID(branch0_ID), 
+                                        compactHierarchy.IsValidCompactNodeID(branch0_brush0_ID), 
+                                        compactHierarchy.IsValidCompactNodeID(branch0_brush1_ID))));
 
                 // check if children are still attached
                 Assert.AreEqual((CompactNodeID.Invalid, CompactNodeID.Invalid),
@@ -428,25 +429,5 @@ namespace FoundationTests
                                  compactHierarchy.ParentOf(branch0_brush1_ID)));
             }
         }
-
-        // Test Delete -> completely remove it from hierarchy (children would be dangling)
-        // Test DeleteRecursive -> delete all child nodes as well
-
-        // Test iterating through all (dangling) nodes in hierarchy
-        // Test iterating through children of branch (GetChildAt)
-
-        // Test modifying the root
-
-        // Test adding nodeids to wrong hierarchy
-
-        // Tests attaching brushes that are already a child of another branch
-
-        // Add reordering tests
-        // Add tests for id generations
-
-        // Add tests for hierarchy compacting
-        // Add tests to merge in hierarchies as branches
-
-        // (dangling) node count / unused nodes
     }
 }

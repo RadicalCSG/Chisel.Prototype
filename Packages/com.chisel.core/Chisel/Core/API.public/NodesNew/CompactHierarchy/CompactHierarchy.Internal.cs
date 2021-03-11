@@ -24,11 +24,22 @@ namespace Chisel.Core
     // TODO: need way to count root nodes (no parent)
     // TODO: need way to count unused elements in hierarchy
 
-    // TODO: implement AttachInternal
     // TODO: implement CompactInternal
 
     // TODO: how do generator nodes fit into this?
     // TODO: need way to be able to serialize hierarchy (so we can cache them w/ generators)
+
+    /*
+    make IDManager record ranges in freeIndices + easy lookup of desired range (but prefer reallocating range)
+    use IDManager for compactNodeIDs
+
+    --- make things work without NodeIDs, or remove need for compactNodeID
+
+    move hierarchyID out of compactNodeID
+    remove need for compactNodeIDs
+    (store data directly in data referenced by NodeIDs)
+    make CompactHierarchyManager usable with burst
+    */
 
 
     public partial struct CompactHierarchy : IDisposable
@@ -40,7 +51,7 @@ namespace Chisel.Core
 
         [BurstCompatible]
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]
-        struct Generation
+        struct IndexLookup
         {
             public Int32 index;
             public Int32 generation;
@@ -52,28 +63,93 @@ namespace Chisel.Core
 
         NativeList<CompactChildNode> compactNodes;
         
-        NativeList<Generation>       idToIndex;
+        NativeList<IndexLookup>      idToIndex;
+        SectionManager               sectionManager;
         NativeList<int>              freeIDs; // TODO: should work with ranges so we can easily find chunks of available memory
 
-        public CompactHierarchyID ID { get { return hierarchyID; } }
+        public CompactHierarchyID HierarchyID { get { return hierarchyID; } }
 
         public void Dispose()
         {
+            //Debug.Log($"Dispose (value: {hierarchyID.value}, generation {hierarchyID.generation})");
             if (brushMeshToBrush.IsCreated) brushMeshToBrush.Dispose(); brushMeshToBrush = default;
             if (compactNodes.IsCreated) compactNodes.Dispose(); compactNodes = default;
             if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
 
             try
             {
-                CompactHierarchyManager.FreeID(hierarchyID);
+                CompactHierarchyManager.FreeHierarchyID(hierarchyID);
             }
             finally
             {
                 hierarchyID = CompactHierarchyID.Invalid;
                 if (freeIDs.IsCreated) freeIDs.Dispose(); freeIDs = default;
-            }
+                if (sectionManager.IsCreated) sectionManager.Dispose(); sectionManager = default;
+            } 
         }
 
+        internal CompactNodeID CreateNode(NodeID nodeID, CompactNode nodeInformation)
+        {
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            return CreateNode(nodeID, Int32.MaxValue, in nodeInformation, CompactNodeID.Invalid);
+        }
+
+        internal CompactNodeID CreateNode(NodeID nodeID, in CompactNode nodeInformation, CompactNodeID parentID)
+        {
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            return CreateNode(nodeID, Int32.MaxValue, in nodeInformation, parentID);
+        }
+
+        internal CompactNodeID CreateNode(NodeID nodeID, int index, in CompactNode nodeInformation, CompactNodeID parentID)
+        {
+            if (index == Int32.MaxValue)
+                index = sectionManager.AllocateRange(1);
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            var compactNodeID = CreateID(index);
+            if (index >= compactNodes.Length)
+                compactNodes.Resize(index + 1, NativeArrayOptions.ClearMemory);
+            compactNodes[index] = new CompactChildNode
+            {
+                nodeInformation = nodeInformation,
+                nodeID          = nodeID,
+                compactNodeID   = compactNodeID,
+                parentID        = parentID,
+                childOffset     = 0,
+                childCount      = 0
+            };
+            if (nodeInformation.brushMeshID != Int32.MaxValue)
+                brushMeshToBrush.Add(nodeInformation.brushMeshID, compactNodeID);
+            Debug.Assert(IsValidCompactNodeID(compactNodeID), "newly created ID is invalid");
+            Debug.Assert(GetChildRef(compactNodeID).userID == nodeInformation.userID, "newly created ID is invalid");
+            return compactNodeID;
+        }
+
+        // TODO: move somewhere else
+        public static MinMaxAABB CalculateBounds(int brushMeshID, in float4x4 transformation)
+        {
+            if (!BrushMeshManager.IsBrushMeshIDValid(brushMeshID))
+                return default;
+
+            var brushMesh = BrushMeshManager.GetBrushMesh(brushMeshID);
+            if (brushMesh == null)
+                return default;
+
+            var vertices = brushMesh.vertices;
+            if (vertices == null ||
+                vertices.Length == 0)
+                return default;
+
+            var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                var vert = math.mul(transformation, new float4(vertices[i], 1)).xyz;
+                min = math.min(min, vert);
+                max = math.max(max, vert); 
+            }
+            return new MinMaxAABB { Min = min, Max = max };
+        }
 
         public uint GetHash()
         {
@@ -84,75 +160,119 @@ namespace Chisel.Core
         #region ID / Memory Management
         CompactNodeID CreateID(int index)
         {
-            int lastNodeID;
+            int lastID;
             if (freeIDs.Length > 0)
             {
                 var freeID = freeIDs.Length - 1;
-                lastNodeID = freeIDs[freeID];
+                lastID = freeIDs[freeID];
                 freeIDs.RemoveAt(freeID);
-                var generation = idToIndex[lastNodeID].generation + 1;
-                idToIndex[lastNodeID] = new Generation { index = index, generation = generation };
-                return new CompactNodeID(hierarchyID: hierarchyID, id: lastNodeID, generation: generation);
+                if (lastID >= idToIndex.Length)
+                {
+                    var prevLength = idToIndex.Length;
+                    idToIndex.ResizeUninitialized(lastID + 1);
+                    for (int i = prevLength; i < idToIndex.Length; i++)
+                        idToIndex[i] = new IndexLookup { index = -1, generation = 0 };
+                }
+                var generation = idToIndex[lastID].generation + 1;
+                idToIndex[lastID] = new IndexLookup { index = index, generation = generation };
+
+                //Debug.Log($"Created id (value: {lastNodeValue}, generation: {generation}) at index ({index}) on hierarchy (value: {hierarchyID.value}, generation: {hierarchyID.generation})");
+                return new CompactNodeID(hierarchyID: hierarchyID, value: lastID + 1, generation: generation);
             } else
             {
-                lastNodeID = idToIndex.Length;
-                idToIndex.Add(new Generation { index = index, generation = 0 });
-                return new CompactNodeID(hierarchyID: hierarchyID, id: lastNodeID, generation: 0);
+                lastID = idToIndex.Length;
+                var generation = 1;
+                idToIndex.Add(new IndexLookup { index = index, generation = generation });
+                //Debug.Log($"Created id (value: {lastNodeValue}, generation: {generation}) at index ({index}) on hierarchy (value: {hierarchyID.value}, generation: {hierarchyID.generation})");
+                return new CompactNodeID(hierarchyID: hierarchyID, value: lastID + 1, generation: generation);
+            } 
+        }
+
+        void RemoveMeshReference(CompactNodeID compactNodeID, int brushMeshID)
+        {
+            if (brushMeshID == Int32.MaxValue)
+                return;
+            var value = compactNodeID.value;
+
+            bool found = true;
+            while (found)
+            {
+                found = false;
+                if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var item, out var iterator))
+                {
+                    do
+                    {
+                        if (item.value == value)
+                        {
+                            found = true;
+                            brushMeshToBrush.Remove(iterator);
+                            break;
+                        }
+                    } while (brushMeshToBrush.TryGetNextValue(out item, ref iterator));
+                }
             }
         }
 
         void RemoveIDs(int index, uint range)
         {
-            if (index < 0 || index + range >= compactNodes.Length)
+            if (index < 0 || index + range > compactNodes.Length)
                 throw new ArgumentOutOfRangeException();
 
             for (int i = index, lastNode = (int)(index + range); i < lastNode; i++)
             {
-                var nodeID = compactNodes[i].nodeID;
-                var id = nodeID.ID;
-                var brushMeshID = compactNodes[i].nodeInformation.brushMeshID;
+                var compactNodeID   = compactNodes[i].compactNodeID;
+                var brushMeshID     = compactNodes[i].nodeInformation.brushMeshID;
+                
+                var valueIndex = compactNodeID.value - 1;
 
-                if (brushMeshID != Int32.MaxValue)
-                {
-                    if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var item, out var iterator))
-                    {
-                        do
-                        {
-                            if (item.ID == id)
-                            {
-                                brushMeshToBrush.Remove(iterator);
-                                break;
-                            }
-                        } while (brushMeshToBrush.TryGetNextValue(out item, ref iterator));
-                    }
-                }
+                //Debug.Log($"Removed id (value: {value}, generation: {compactNodeID.generation}) at index ({index}) on hierarchy (value: {hierarchyID.value}, generation: {hierarchyID.generation})");
+                RemoveMeshReference(compactNodeID, brushMeshID);
 
-                var idLookup = idToIndex[id];
+                var idLookup = idToIndex[valueIndex];
                 idLookup.index = -1;
-                idToIndex[id] = idLookup;
+                idToIndex[valueIndex] = idLookup;
+
+                Debug.Assert(!IsValidCompactNodeID(compactNodeID), "destroyed ID is still valid");
             }
         }
 
         void FreeIndexRange(int index, uint range)
         {
-            if (index < 0 || index + range >= compactNodes.Length)
+            if (index < 0 || index + range > compactNodes.Length)
                 throw new ArgumentOutOfRangeException();
 
+            sectionManager.FreeRange(index, (int)range);
             for (int i = index, lastNode = (int)(index + range); i < lastNode; i++)
             {
                 compactNodes[i] = CompactChildNode.Invalid;
                 freeIDs.Add(i);
             }
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe int ReserveCapacityAndReturnOffset(int parentNodeIndex, int capacity)
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int SetSize(int parentNodeIndex, int length)
+        {
+            if (length < 0)
+                throw new ArgumentException(nameof(length));
+
+            if (parentNodeIndex < 0 || parentNodeIndex >= compactNodes.Length)
+                throw new ArgumentException(nameof(parentNodeIndex));
+
+            var node = compactNodes[parentNodeIndex];
+            node.childOffset = sectionManager.ReallocateRange(node.childOffset, node.childCount, (int)length);
+            node.childCount = length;
+            compactNodes[parentNodeIndex] = node;
+            return node.childOffset;
+        }
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe int ReserveCapacityAndReturnOffset(int parentNodeIndex, int desiredLength)
         {
             // TODO: use ranges w/ "freeIDs" to find chunks
             // TODO: see if we can safely not set all these nodes to invalid here
 
-            if (capacity < 0)
-                throw new ArgumentException(nameof(capacity));
+            if (desiredLength < 0)
+                throw new ArgumentException(nameof(desiredLength));
 
             if (parentNodeIndex < 0 || parentNodeIndex >= compactNodes.Length) 
                 throw new ArgumentException(nameof(parentNodeIndex));
@@ -160,143 +280,110 @@ namespace Chisel.Core
             var parentNode  = compactNodes[parentNodeIndex];
             int offset      = parentNode.childOffset;
             int count       = parentNode.childCount;
-            if (count > 0)
-            { 
-                if (capacity < count)
-                    throw new Exception(); // we cannot decrease capacity to less than our count
 
-                int extraNodes = capacity - count;
-
-                // Try to see if the nodes behind this list of children are unused, 
-                // in which case we can use those
-                int backIndex   = offset + count;
-                while (extraNodes > 0)
+            var newOffset   = sectionManager.ReallocateRange(offset, count, (int)desiredLength);
+            /*
+            if (count > 0 && newOffset != offset)
+            {
+                // We first move the last nodes to the correct new offset ..
+                var items = count;
+                if (items > 0)
                 {
-                    if (backIndex == compactNodes.Length)
-                        break;
-
-                    if (compactNodes[backIndex].nodeID != CompactNodeID.Invalid)
-                        break;
-
-                    extraNodes--;
-                    backIndex++;
-                }
-
-                // If we still need space, try to see if we can find unused nodes *in front* of our list of children
-                int frontIndex = offset;
-                while (frontIndex > 0 && extraNodes > 0)
-                {
-                    if (compactNodes[frontIndex - 1].nodeID != CompactNodeID.Invalid)
-                        break;
-
-                    extraNodes--;
-                    frontIndex--;
-                }
-
-                // See if we're at the end of compactNodes, in which case we can just extend compactNodes and be done with it
-                if (extraNodes > 0 && backIndex == compactNodes.Length)
-                {
-                    var startPos = compactNodes.Length;
-                    compactNodes.ResizeUninitialized(compactNodes.Length + extraNodes);
-
-                    // Set all newly created nodes to Invalid
-                    for (int i = startPos, lastNode = compactNodes.Length; i < lastNode; i++)
-                        compactNodes[i] = CompactChildNode.Invalid;
-                    extraNodes = 0;
-                }
-
-                // We've managed to find all the extraNodes we need
-                if (extraNodes == 0)
-                {
-                    // Move our list of children backwards if we font any unused nodes there
-                    if (frontIndex == offset)
-                        return offset;
-
-                    Debug.Assert(frontIndex < offset);
-                    return frontIndex;
+                    var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                    UnsafeUtility.MemMove(compactNodesPtr + newOffset, compactNodesPtr + offset, items * sizeof(CompactChildNode));
                 }
             }
 
-            // We couldn't find the extra nodes we need and we need to move our node list to the end of compactNodes
-            // OR our child count was 0, and we need to create a new list at the end of compactNodes
-
-            var newOffset = compactNodes.Length;
-            compactNodes.ResizeUninitialized(compactNodes.Length + capacity);
+            for (int i = offset, lastNode = offset + count; i < lastNode; i++)
+            {
+                if (i >= newOffset && i <= newOffset + desiredLength)
+                    continue;
+                compactNodes[i] = CompactChildNode.Invalid;
+            }
 
             // Set all newly created nodes to invalid
-            for (int i = newOffset, lastNode = newOffset + capacity; i < lastNode; i++)
+            for (int i = newOffset, lastNode = newOffset + desiredLength; i < lastNode; i++)
                 compactNodes[i] = CompactChildNode.Invalid;
+            */
 
             return newOffset;
         }
         #endregion
 
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int HierarchyIndexOfInternal(CompactNodeID nodeID)
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int HierarchyIndexOfInternal(CompactNodeID compactNodeID)
         {
-            if (nodeID == CompactNodeID.Invalid)
+            if (compactNodeID == CompactNodeID.Invalid)
                 return -1;
 
-            var id = nodeID.ID;
-            if (id < 0 || id >= idToIndex.Length)
-                throw new ArgumentException(nameof(nodeID), "invalid ID");
+            var valueIndex = compactNodeID.value - 1;
+            if (valueIndex < 0 || valueIndex >= idToIndex.Length)
+                throw new ArgumentException($"{nameof(CompactNodeID)} (value: {valueIndex}, generation: {compactNodeID.generation}) out of bounds [0..{idToIndex.Length}], are you using an old reference?", nameof(compactNodeID));
 
-            var generation = idToIndex[id].generation;
-            Debug.Assert(generation == nodeID.generation);
-            if (generation != nodeID.generation)
-                return -1;
-
-            var nodeIndex = idToIndex[id].index;
+            var nodeIndex = idToIndex[valueIndex].index;
             if (nodeIndex == -1)
-                return -1;
+                throw new ArgumentException($"{nameof(CompactNodeID)} (value: {valueIndex}, generation: {compactNodeID.generation}, index: {nodeIndex}) doesn't lead to a valid index ({nodeIndex}), are you using an old reference?", nameof(compactNodeID));
+
+            var expectedGeneration = idToIndex[valueIndex].generation;
+            if (expectedGeneration != compactNodeID.generation)
+                throw new ArgumentException($"Generation mismatch on {nameof(CompactNodeID)} (value: {valueIndex}, index: {nodeIndex}) whose generation ({compactNodeID.generation}), is not the expected generation ({expectedGeneration}) in the hierarchy (value: {hierarchyID.value}, generation: {hierarchyID.generation}), are you using an old reference?", nameof(compactNodeID));
 
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
-                throw new ArgumentException(nameof(nodeID), "internal index is out of bounds");
+                throw new ArgumentException("internal index is out of bounds", nameof(compactNodeID));
 
             return nodeIndex;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int SafeHierarchyIndexOfInternal(CompactNodeID nodeID)
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int SafeHierarchyIndexOfInternal(CompactNodeID compactNodeID)
         {
-            if (nodeID == CompactNodeID.Invalid)
-                throw new ArgumentException(nameof(nodeID), "invalid ID");
+            if (compactNodeID == CompactNodeID.Invalid)
+                throw new ArgumentException($"{nameof(CompactNodeID)} is invalid", nameof(compactNodeID));
 
-            var id = nodeID.ID;
-            if (id < 0 || id >= idToIndex.Length)
-                throw new ArgumentException(nameof(nodeID), "invalid ID");
+            var valueIndex = compactNodeID.value - 1;
+            if (valueIndex < 0 || valueIndex >= idToIndex.Length)
+                throw new ArgumentException($"{nameof(CompactNodeID)} (value: {valueIndex}, generation: {compactNodeID.generation}) out of bounds [0..{idToIndex.Length}], are you using an old reference?", nameof(compactNodeID));
 
-            var generation = idToIndex[id].generation;
-            Debug.Assert(generation == nodeID.generation);
-            if (generation != nodeID.generation)
-                throw new ArgumentException(nameof(nodeID), "invalid ID");
-
-            var nodeIndex = idToIndex[id].index;
+            var nodeIndex = idToIndex[valueIndex].index;
             if (nodeIndex == -1)
-                throw new ArgumentException(nameof(nodeID), "invalid ID");
+                throw new ArgumentException($"{nameof(CompactNodeID)} (value: {valueIndex}, generation: {compactNodeID.generation}, index: {nodeIndex}) doesn't lead to a valid index ({nodeIndex}), are you using an old reference?", nameof(compactNodeID));
+
+            var expectedGeneration = idToIndex[valueIndex].generation;
+            if (expectedGeneration != compactNodeID.generation)
+                throw new ArgumentException($"Generation mismatch on {nameof(CompactNodeID)} (value: {valueIndex}, index: {nodeIndex}) whose generation ({compactNodeID.generation}), is not the expected generation ({expectedGeneration}) in the hierarchy (value: {hierarchyID.value}, generation: {hierarchyID.generation}), are you using an old reference?", nameof(compactNodeID));
 
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
-                throw new ArgumentException(nameof(nodeID), "internal index is out of bounds");
+                throw new ArgumentException("Internal index is out of bounds", nameof(compactNodeID));
 
             return nodeIndex;
         }
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID nodeID)
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe ref CompactChildNode SafeGetNodeRefAtInternal(CompactNodeID compactNodeID)
         {
-            Debug.Assert(IsCreated);
-            var nodeIndex = SafeHierarchyIndexOfInternal(nodeID);
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            var nodeIndex = SafeHierarchyIndexOfInternal(compactNodeID);
+            var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+            return ref compactNodesPtr[nodeIndex];
+        }
+
+        // WARNING: The returned reference will become invalid after modifying the hierarchy!
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID compactNodeID)
+        {
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            var nodeIndex = SafeHierarchyIndexOfInternal(compactNodeID);
             var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
             return ref compactNodesPtr[nodeIndex].nodeInformation;
         }
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe CompactNodeID GetChildIDAtInternal(CompactNodeID parentD, int index)
         {
-            Debug.Assert(IsCreated);
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var parentIndex         = SafeHierarchyIndexOfInternal(parentD);
             var parentHierarchy     = compactNodes[parentIndex];
             var parentChildOffset   = parentHierarchy.childOffset;
@@ -308,14 +395,14 @@ namespace Chisel.Core
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length) throw new ArgumentOutOfRangeException(nameof(nodeIndex));
 
             var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
-            return compactNodesPtr[nodeIndex].nodeID;
+            return compactNodesPtr[nodeIndex].compactNodeID;
         }
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID parentD, int index)
         {
-            Debug.Assert(IsCreated);
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var parentIndex         = SafeHierarchyIndexOfInternal(parentD);
             var parentHierarchy     = compactNodes[parentIndex];
             var parentChildOffset   = parentHierarchy.childOffset;
@@ -330,7 +417,7 @@ namespace Chisel.Core
             return ref compactNodesPtr[nodeIndex].nodeInformation;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         int SiblingIndexOfInternal(int parentIndex, int nodeIndex)
         {
             var parentHierarchy = compactNodes[parentIndex];
@@ -386,14 +473,7 @@ namespace Chisel.Core
             if (siblingIndex == 0)
             {
                 // Set our deleted nodes to invalid
-                {
-                    var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
-                    for (int i = nodeIndex; i < nodeIndex + range; i++)
-                    {
-                        compactNodesPtr[i] = CompactChildNode.Invalid;
-                    }
-                    FreeIndexRange(nodeIndex, range);
-                }
+                FreeIndexRange(nodeIndex, range);
 
                 // If the range is identical to the number of children, we're deleting all the children
                 if (parentChildCount == range)
@@ -414,14 +494,7 @@ namespace Chisel.Core
             if (siblingIndex == parentChildCount - range)
             {
                 // Set our deleted nodes to invalid
-                {
-                    var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
-                    for (int i = nodeIndex; i < nodeIndex + range; i++)
-                    {
-                        compactNodesPtr[i] = CompactChildNode.Invalid;
-                    }
-                    FreeIndexRange(nodeIndex, range);
-                }
+                FreeIndexRange(nodeIndex, range);
 
                 // In that case, we can just decrease the number of children in the list
                 parentHierarchy.childCount -= (int)range;
@@ -439,24 +512,20 @@ namespace Chisel.Core
                 UnsafeUtility.MemMove(compactNodesPtr + nodeIndex, compactNodesPtr + nodeIndex + range, count * sizeof(CompactChildNode));
             }
 
-
             // Set the left over nodes to invalid
-            {
-                var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
-                for (int i = lastNodeIndex; i < lastNodeIndex + range; i++)
-                {
-                    compactNodesPtr[i] = CompactChildNode.Invalid;
-                }
-                FreeIndexRange(lastNodeIndex, range);
-            }
+            FreeIndexRange(lastNodeIndex, range);
 
             // Fix up the idToIndex lookup table
             for (int i = nodeIndex; i < lastNodeIndex; i++)
             {
-                var id = compactNodes[i].nodeID.ID;
-                var structure = idToIndex[id];
+                var value = compactNodes[i].compactNodeID.value;
+                if (value == 0)
+                    continue;
+
+                var valueIndex = value - 1;
+                var structure = idToIndex[valueIndex];
                 structure.index = i;
-                idToIndex[id] = structure;
+                idToIndex[valueIndex] = structure;
             }
 
             parentHierarchy.childCount -= (int)range;
@@ -560,12 +629,16 @@ namespace Chisel.Core
             compactNodes.ResizeUninitialized(prevLength);
 
             // Fix up the idToIndex lookup table
-            for (int i = nodeIndex; i <= (int)(lastNodeIndex + range); i++)
+            for (int i = nodeIndex; i < (int)(lastNodeIndex + range); i++)
             {
-                var id = compactNodes[i].nodeID.ID;
-                var structure = idToIndex[id];
+                var value = compactNodes[i].compactNodeID.value;
+                if (value == 0)
+                    continue;
+
+                var valueIndex = value - 1;
+                var structure = idToIndex[valueIndex];
                 structure.index = i;
-                idToIndex[id] = structure;
+                idToIndex[valueIndex] = structure;
             }
 
             parentHierarchy.childCount -= (int)range;
@@ -573,8 +646,9 @@ namespace Chisel.Core
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe void AttachInternal(CompactNodeID parentID, int parentIndex, int index, CompactNodeID nodeID)
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe void AttachInternal(CompactNodeID parentID, int parentIndex, int index, CompactNodeID compactNodeID)
         {
             Debug.Assert(parentID != CompactNodeID.Invalid);
 
@@ -582,10 +656,9 @@ namespace Chisel.Core
             var parentChildCount  = parentHierarchy.childCount;
             if (index < 0 || index > parentChildCount) throw new IndexOutOfRangeException();
 
-            var nodeIndex = HierarchyIndexOfInternal(nodeID);
+            var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
-                throw new ArgumentException(nameof(nodeID), $"{nameof(nodeID)} is invalid");
-
+                throw new ArgumentException($"{nameof(CompactNodeID)} is invalid", nameof(compactNodeID));
 
             // Make a temporary copy of our node in case we need to move it
             var nodeItem        = compactNodes[nodeIndex];
@@ -594,13 +667,14 @@ namespace Chisel.Core
             // If the node is already a child of a different parent, then we need to remove it from that parent
             if (oldParentID != CompactNodeID.Invalid && oldParentID != parentID)
             { 
-                var oldParentIndex       = HierarchyIndexOfInternal(nodeID);
+                var oldParentIndex       = HierarchyIndexOfInternal(oldParentID);
                 var oldParent            = compactNodes[oldParentIndex];
                 var oldParentChildCount  = oldParent.childCount;
                 var oldParentChildOffset = oldParent.childOffset;
                 var lastOldNodeIndex     = oldParentChildOffset + oldParentChildCount - 1;
 
                 Debug.Assert(oldParentChildCount > 0);
+                Debug.Assert(oldParent.compactNodeID == oldParentID);
                 Debug.Assert(nodeIndex >= oldParentChildOffset && nodeIndex <= lastOldNodeIndex);
 
                 // If our node is the last node in the parent, we don't need to move any of the existing nodes
@@ -618,10 +692,14 @@ namespace Chisel.Core
                     // We then fixup the idToIndex table to ensure that our ids keep pointing to the right indices
                     for (int i = nodeIndex; i <= lastOldNodeIndex; i++)
                     {
-                        var id = compactNodes[i].nodeID.ID;
-                        var structure = idToIndex[id];
+                        var value = compactNodes[i].compactNodeID.value;
+                        if (value == 0)
+                            continue;
+
+                        var valueIndex = value - 1;
+                        var structure = idToIndex[valueIndex];
                         structure.index = i;
-                        idToIndex[id] = structure;
+                        idToIndex[valueIndex] = structure;
                     }
 
                     // Finally, we set our node to the index of what used to be the last child of our parent (but is now a duplicate)
@@ -723,12 +801,16 @@ namespace Chisel.Core
                 }
 
                 // We then fixup the idToIndex table to ensure that our ids keep pointing to the right indices
-                for (int i = index1; i <= index2; i++)
+                for (int i = index1; i < index2; i++)
                 {
-                    var id = compactNodes[i].nodeID.ID;
-                    var structure = idToIndex[id];
+                    var value = compactNodes[i].compactNodeID.value;
+                    if (value == 0)
+                        continue;
+
+                    var valueIndex = value - 1;
+                    var structure = idToIndex[valueIndex];
                     structure.index = i;
-                    idToIndex[id] = structure;
+                    idToIndex[valueIndex] = structure;
                 }
 
                 // Finally, we copy our node to the desired index, which is at the end of the section we just moved
@@ -750,6 +832,9 @@ namespace Chisel.Core
                 parentChildCount++;
                 parentChildOffset = ReserveCapacityAndReturnOffset(parentIndex, parentChildCount);
                 Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + parentChildCount);
+
+                if (compactNodes.Length < parentChildOffset + parentChildCount)
+                    compactNodes.Resize(parentChildOffset + parentChildCount, NativeArrayOptions.ClearMemory);
 
                 int firstModifiedIndex = index; // We want to keep track of which ids will be invalidated
 
@@ -773,9 +858,6 @@ namespace Chisel.Core
                         UnsafeUtility.MemMove(compactNodesPtr + parentChildOffset, compactNodesPtr + originalOffset, items * sizeof(CompactChildNode));
                         firstModifiedIndex = 0;
                     }
-
-                    // Set all old nodes to invalid
-                    FreeIndexRange(originalOffset + firstModifiedIndex, (uint)(originalCount - firstModifiedIndex));
                 }
 
                 // Then we copy our node to the new location
@@ -786,27 +868,21 @@ namespace Chisel.Core
                 // We then fixup the idToIndex table to ensure that our ids keep pointing to the right indices
                 for (int i = parentChildOffset + firstModifiedIndex, lastNodeIndex = parentChildOffset + parentChildCount; i < lastNodeIndex; i++)
                 {
-                    var id = compactNodes[i].nodeID.ID;
-                    var structure = idToIndex[id];
-                    structure.index = i;
-                    idToIndex[id] = structure;
-                }
+                    var value = compactNodes[i].compactNodeID.value;
+                    if (value == 0)
+                        continue;
 
+                    var valueIndex = value - 1;
+                    var structure = idToIndex[valueIndex];
+                    structure.index = i;
+                    idToIndex[valueIndex] = structure;
+                }
                 
                 parentHierarchy.childOffset = parentChildOffset; // We make sure we set the parent child offset correctly
                 parentHierarchy.childCount++;                    // And we increase the childCount of our parent
                 compactNodes[parentIndex] = parentHierarchy;
             }
         }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe void AttachInternal(CompactNodeID parentID, int parentIndex, int index, CompactHierarchy sourceHierarchy, CompactNodeID nodeID)
-        {
-            // TODO: implement
-            throw new NotImplementedException();
-        }
-
 
         internal void GetBrushesInOrder(System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
@@ -815,7 +891,7 @@ namespace Chisel.Core
             UpdateTreeNodeList(null, brushes);
         }
 
-        unsafe void UpdateTreeNodeList(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
+        internal unsafe void UpdateTreeNodeList(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
             if (nodes != null) nodes.Clear();
             if (brushes != null) brushes.Clear();
@@ -841,7 +917,7 @@ namespace Chisel.Core
             {
                 ref var child = ref compactNodesPtr[childIndex];
                 if (nodes != null)
-                    nodes.Add(child.nodeID);
+                    nodes.Add(child.compactNodeID);
                 if (child.childCount > 0)
                 {
                     RecursiveAddTreeChildren(compactNodesPtr, ref child,
@@ -849,7 +925,7 @@ namespace Chisel.Core
                                              brushes);
                 } else
                 if (child.nodeInformation.brushMeshID != Int32.MaxValue && brushes != null)
-                    brushes.Add(new CSGTreeBrush { brushNodeID = child.nodeID });
+                    brushes.Add(new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(child.compactNodeID) });
             }
         }
 
@@ -861,26 +937,39 @@ namespace Chisel.Core
         public void NotifyBrushMeshModified(System.Collections.Generic.HashSet<int> modifiedBrushMeshes)
         {
             bool modified = false;
+            var failedItems = new System.Collections.Generic.List<(CompactNodeID,int)>();
             foreach (var brushMeshID in modifiedBrushMeshes)
             {
-                if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var nodeID, out var iterator))
+                if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var item, out var iterator))
                 {
                     do
                     {
                         try
                         {
-                            var node = GetChildRef(nodeID);
+                            var node = GetChildRef(item);
                             node.flags |= NodeStatusFlags.NeedFullUpdate;
                             modified = true;
                         }
-                        catch (Exception ex) { Debug.LogException(ex); }
-                    } while (brushMeshToBrush.TryGetNextValue(out nodeID, ref iterator));
+                        catch (Exception ex) { Debug.LogException(ex); failedItems.Add((item, brushMeshID)); }
+                    } while (brushMeshToBrush.TryGetNextValue(out item, ref iterator));
                 }
             }
             if (modified)
             {
-                ref var rootNode = ref GetChildRef(RootID);
-                rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                try
+                {
+                    ref var rootNode = ref GetChildRef(RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                }
+                catch (Exception ex) { Debug.LogException(ex); }
+            }
+            if (failedItems.Count > 0)
+            {
+                for (int i = 0; i < failedItems.Count; i++)
+                {
+                    var (item, brushMeshID) = failedItems[i];
+                    RemoveMeshReference(item, brushMeshID);
+                }
             }
         }
 
@@ -889,82 +978,101 @@ namespace Chisel.Core
         public void NotifyBrushMeshRemoved(int brushMeshID)
         {
             bool modified = false;
-            if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var nodeID, out var iterator))
+            bool found = false;
+            while (found)
             {
-                do
+                found = false;
+                if (brushMeshToBrush.TryGetFirstValue(brushMeshID, out var item, out var iterator))
                 {
                     try
                     {
-                        var node = GetChildRef(nodeID);
+                        var node = GetChildRef(item);
                         // TODO: Make it impossible to change this in other places without us detecting this so we can update brushMeshToBrush
                         node.brushMeshID = 0;
                         node.flags |= NodeStatusFlags.NeedFullUpdate;
-                        modified = true;
-                        // TODO: figure out if this is safe here ...
-                        brushMeshToBrush.Remove(iterator);
                     }
-                    catch (Exception ex) { Debug.LogException(ex); }
-                } while (brushMeshToBrush.TryGetNextValue(out nodeID, ref iterator));
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
+                    modified = true;
+                    found = true;
+                    brushMeshToBrush.Remove(iterator);
+                }
             }
             if (modified)
             {
-                ref var rootNode = ref GetChildRef(RootID);
-                rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                try
+                {
+                    ref var rootNode = ref GetChildRef(RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
             }
         }
 
 
-
+        internal int CompactNodeCount
+        {
+            get
+            {
+                return compactNodes.Length;
+            }
+        }
 
         // Temporary workaround until we can switch to hashes
-        internal bool IsAnyStatusFlagSet(CompactNodeID nodeID)
+        internal bool IsAnyStatusFlagSet(CompactNodeID compactNodeID)
         {
-            Debug.Assert(IsCreated);
-            if (nodeID == CompactNodeID.Invalid)
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            if (compactNodeID == CompactNodeID.Invalid)
                 return false;
 
-            ref var node = ref GetChildRef(nodeID);
+            ref var node = ref GetChildRef(compactNodeID);
             return node.flags != NodeStatusFlags.None;
         }
 
-        internal bool IsStatusFlagSet(CompactNodeID nodeID, NodeStatusFlags flag)
+        internal bool IsStatusFlagSet(CompactNodeID compactNodeID, NodeStatusFlags flag)
         {
-            Debug.Assert(IsCreated);
-            if (nodeID == CompactNodeID.Invalid)
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            if (compactNodeID == CompactNodeID.Invalid)
                 return false;
 
-            ref var node = ref GetChildRef(nodeID);
+            ref var node = ref GetChildRef(compactNodeID);
             return (node.flags & flag) == flag;
         }
 
-        internal void SetStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        internal void SetStatusFlag(CompactNodeID compactNodeID, NodeStatusFlags flag)
         {
-            Debug.Assert(IsCreated);
-            if (nodeID == CompactNodeID.Invalid)
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            if (compactNodeID == CompactNodeID.Invalid)
                 return;
 
-            ref var node = ref GetChildRef(nodeID);
+            ref var node = ref GetChildRef(compactNodeID);
             node.flags |= flag;
         }
 
-        internal void ClearAllStatusFlags(CompactNodeID nodeID)
+        internal void ClearAllStatusFlags(CompactNodeID compactNodeID)
         {
-            Debug.Assert(IsCreated);
-            if (nodeID == CompactNodeID.Invalid)
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            if (compactNodeID == CompactNodeID.Invalid)
                 return;
 
-            ref var node = ref GetChildRef(nodeID);
+            ref var node = ref GetChildRef(compactNodeID);
             node.flags = NodeStatusFlags.None;
         }
 
-        internal void ClearStatusFlag(CompactNodeID nodeID, NodeStatusFlags flag)
+        internal void ClearStatusFlag(CompactNodeID compactNodeID, NodeStatusFlags flag)
         {
-            Debug.Assert(IsCreated);
-            if (nodeID == CompactNodeID.Invalid)
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            if (compactNodeID == CompactNodeID.Invalid)
                 return;
 
-            ref var node = ref GetChildRef(nodeID);
+            ref var node = ref GetChildRef(compactNodeID);
             node.flags &= ~flag;
         }
+
     }
 }

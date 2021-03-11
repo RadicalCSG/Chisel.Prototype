@@ -397,7 +397,7 @@ namespace Chisel.Core
                 querySurfaceList.Sort(compareSortByBasePlaneIndex);
 
                 builder.Construct(ref querySurfaces[t].surfaces, querySurfaceList);
-                querySurfaces[t].brushNodeID = brushIndexOrder.nodeID;
+                querySurfaces[t].brushNodeID = brushIndexOrder.compactNodeID;
             }
 
             root.surfaceOffset = 0;
