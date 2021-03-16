@@ -1,5 +1,8 @@
 using Chisel.Core;
 using System.Collections.Generic;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 using XNode;
 
@@ -58,4 +61,6 @@ namespace Chisel.Nodes
             UpdateProperties();
         }
     }
+
+    
 }

@@ -187,9 +187,6 @@ MonoBehaviour:
       - fieldName: output
         node: {fileID: 3873916941957806223}
         reroutePoints: []
-      - fieldName: output
-        node: {fileID: 6932176701218924448}
-        reroutePoints: []
       _direction: 0
       _connectionType: 0
       _typeConstraint: 0
@@ -212,7 +209,7 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  localPosition: {x: -0.17, y: 0, z: 1.21}
+  localPosition: {x: 0.17, y: 0, z: 1.21}
   localRotation: {x: 0, y: 42.19, z: 0}
   operation: 0
   center: {x: 0, y: 0.39, z: 0}
@@ -408,7 +405,7 @@ MonoBehaviour:
   - {fileID: -2623054864538869351}
   - {fileID: 7746474342110482381}
   - {fileID: 6932176701218924448}
-  active: {fileID: -3665420030514838893}
+  active: {fileID: 6932176701218924448}
   instance: {fileID: 0}
 --- !u!114 &3873916941957806223
 MonoBehaviour:
@@ -602,7 +599,7 @@ MonoBehaviour:
   m_Name: Cylinder
   m_EditorClassIdentifier: 
   graph: {fileID: 11400000}
-  position: {x: -168, y: 440}
+  position: {x: 904, y: 424}
   ports:
     keys:
     - diameter
@@ -626,7 +623,10 @@ MonoBehaviour:
       _node: {fileID: 6932176701218924448}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections: []
+      connections:
+      - fieldName: output
+        node: {fileID: 7746474342110482381}
+        reroutePoints: []
       _direction: 0
       _connectionType: 0
       _typeConstraint: 0
@@ -635,10 +635,7 @@ MonoBehaviour:
       _node: {fileID: 6932176701218924448}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections:
-      - fieldName: input
-        node: {fileID: -3665420030514838893}
-        reroutePoints: []
+      connections: []
       _direction: 1
       _connectionType: 0
       _typeConstraint: 0
@@ -679,12 +676,12 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  localPosition: {x: 0, y: -0.19, z: 0}
-  localRotation: {x: 0.1, y: 0, z: 0}
+  localPosition: {x: -0.07, y: 0.73, z: -1.39}
+  localRotation: {x: 90, y: 0, z: 0}
   operation: 1
   diameter: 1.08
-  height: 1.24
-  sides: 12
+  height: 2.9
+  sides: 11
 --- !u!114 &7746474342110482381
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -719,7 +716,10 @@ MonoBehaviour:
       _node: {fileID: 7746474342110482381}
       _typeQualifiedName: Chisel.Nodes.ChiselGraphNode+CSG, ChiselNode, Version=0.0.0.0,
         Culture=neutral, PublicKeyToken=null
-      connections: []
+      connections:
+      - fieldName: input
+        node: {fileID: 6932176701218924448}
+        reroutePoints: []
       _direction: 1
       _connectionType: 0
       _typeConstraint: 0
@@ -742,7 +742,7 @@ MonoBehaviour:
       _connectionType: 0
       _typeConstraint: 0
       _dynamic: 0
-  localPosition: {x: 2.06, y: 2.27, z: -0.49}
-  localRotation: {x: 0.16, y: 0, z: 0}
+  localPosition: {x: -1.4, y: 2.27, z: -0.49}
+  localRotation: {x: 0.16, y: 0.91, z: 0}
   operation: 0
   subgraph: {fileID: 11400000, guid: fcd800f03725c234c8d479a178882e4e, type: 2}

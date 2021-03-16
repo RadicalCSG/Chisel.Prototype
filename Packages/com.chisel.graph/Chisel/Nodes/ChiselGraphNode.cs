@@ -2,10 +2,12 @@ using System;
 using UnityEngine;
 using XNode;
 using Chisel.Core;
+using Unity.Collections;
+using Unity.Burst;
 
 namespace Chisel.Nodes
 {
-    public abstract class ChiselGraphNode : Node
+    public abstract class ChiselGraphNode : Node, IRuntimeNode
     {
         [Input, HideInInspector] public CSG input;
         [Output, HideInInspector] public CSG output;
@@ -72,6 +74,15 @@ namespace Chisel.Nodes
         {
             return chiselGraph.nodes.IndexOf(this);
         }
+
+        public void AddNode(NativeStream stream)
+        {
+            OnAddNode(stream);
+        }
+
+        public FunctionPointer<FunctionDelegate> GetFunction() { throw new NotImplementedException(); }
+
+        protected virtual void OnAddNode(NativeStream stream) { }
 
         [Serializable]
         public class CSG { }
