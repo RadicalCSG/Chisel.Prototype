@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using UnityEngine;
 using Vector2 = UnityEngine.Vector2;
 using Debug = UnityEngine.Debug;
-using System.Linq;
-using Unity.Mathematics;
-using UnityEngine;
 
 namespace Chisel.Core
 {
