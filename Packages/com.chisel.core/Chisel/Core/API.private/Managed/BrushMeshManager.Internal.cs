@@ -53,6 +53,18 @@ namespace Chisel.Core
             return brushMesh;
         }
 
+        public static MinMaxAABB    CalculateBounds         (Int32 brushMeshInstanceID, in float4x4 transformation)
+        {
+            if (!IsBrushMeshIDValid(brushMeshInstanceID))
+                return default;
+
+            var brushMesh = GetBrushMesh(brushMeshInstanceID);
+            if (brushMesh == null)
+                return default;
+
+            return BoundsExtensions.Create(transformation, brushMesh.vertices);
+        }
+
         public static Int32 CreateBrushMesh(Int32				 userID,
                                             float3[]			 vertices,
                                             BrushMesh.HalfEdge[] halfEdges,

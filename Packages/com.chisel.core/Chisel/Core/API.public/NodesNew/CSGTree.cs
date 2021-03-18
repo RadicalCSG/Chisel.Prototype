@@ -29,8 +29,7 @@ namespace Chisel.Core
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe CSGTree Create(Int32 userID, CSGTreeNode* childrenArray, int childrenArrayLength)
         {
-            if (!CompactHierarchyManager.GenerateTree(userID, out var treeNodeID))
-                return new CSGTree() { treeNodeID = NodeID.Invalid };
+            var treeNodeID = CompactHierarchyManager.CreateTree(userID);
             Debug.Assert(CompactHierarchyManager.IsValidNodeID(treeNodeID));
             if (childrenArray != null && childrenArrayLength > 0)
             {

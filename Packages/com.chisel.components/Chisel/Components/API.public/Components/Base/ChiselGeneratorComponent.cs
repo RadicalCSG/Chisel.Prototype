@@ -329,13 +329,19 @@ namespace Chisel.Components
                 if (Nodes.Length == 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;
-                    brush.BrushMesh = brushContainerAsset.Instances[0];
-                    brush.Operation = brushContainerAsset.Operations[0];
+                    if (brush.Valid)
+                    {
+                        brush.BrushMesh = brushContainerAsset.Instances[0];
+                        brush.Operation = brushContainerAsset.Operations[0];
+                    }
                 } else
                 {
                     for (int i = 0; i < instances.Length; i++)
                     {
                         var brush = (CSGTreeBrush)Nodes[i + 1];
+                        if (!brush.Valid)
+                            continue;
+                        
                         brush.BrushMesh = brushContainerAsset.Instances[i];
                         brush.Operation = brushContainerAsset.Operations[i];
                     }
@@ -347,16 +353,22 @@ namespace Chisel.Components
                 if (Nodes.Length == 1)
                 {
                     var brush = (CSGTreeBrush)TopNode;
-                    if (brush.BrushMesh != BrushMeshInstance.InvalidInstance)
+                    if (brush.Valid)
                     {
-                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                        brush.Operation = CSGOperationType.Additive;
+                        if (brush.BrushMesh != BrushMeshInstance.InvalidInstance)
+                        {
+                            brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                            brush.Operation = CSGOperationType.Additive;
+                        }
                     }
                 } else
                 {
                     for (int i = 1; i < Nodes.Length; i++)
                     {
                         var brush = (CSGTreeBrush)Nodes[i];
+                        if (!brush.Valid)
+                            continue;
+                        
                         if (brush.BrushMesh != BrushMeshInstance.InvalidInstance)
                         {
                             brush.BrushMesh = BrushMeshInstance.InvalidInstance;
@@ -410,7 +422,8 @@ namespace Chisel.Components
             InitializeBrushMeshInstances();
             SetDirty();
             
-            if (Nodes[0].Operation != operation)
+            if (Nodes[0].Valid &&
+                Nodes[0].Operation != operation)
                 Nodes[0].Operation = operation;
         }
 

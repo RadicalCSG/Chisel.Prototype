@@ -43,6 +43,13 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetSectionEnd(int sectionIndex) { return sections[sectionIndex].end; }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsIndexFree(int index)
+        {
+            if (!FindSectionByOffset(index, out var sectionIndex))
+                return true;
+            return ((sectionIndex & 1) == 0) ? firstElementFree : !firstElementFree; 
+        }
 
         public bool IsCreated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return sections.IsCreated; } }
 
@@ -77,6 +84,8 @@ namespace Chisel.Core
             return FindSectionByOffset(index, out _);
         }
 
+        struct SectionFindStack { public int first, last; }
+
         // Find section by offset using binary search
         unsafe bool FindSectionByOffset(int findOffset, out int foundSection)
         {
@@ -87,27 +96,26 @@ namespace Chisel.Core
             if (findOffset < 0 || findOffset > sections[sections.Length - 1].end)
                 return false;
 
-            var searchStack = stackalloc int2[8]; // should be be more than enough, we'd be running into integer size issues before then
+            var searchStack = stackalloc SectionFindStack[8]; // should be be more than enough, we'd be running into integer size issues before then
             int searchLength;
 
-            searchStack[0] = new int2(0, sections.Length);
+            searchStack[0] = new SectionFindStack { first = 0, last = sections.Length - 1 };
             searchLength = 1;
 
             while (searchLength > 0)
             {
-                var sectionIndex = searchStack[searchLength - 1].x;
-                var sectionCount = searchStack[searchLength - 1].y;
-                searchStack[searchLength - 1] = int2.zero;
+                var sectionFirstIndex = searchStack[searchLength - 1].first;
+                var sectionLastIndex  = searchStack[searchLength - 1].last;
+                searchStack[searchLength - 1] = new SectionFindStack { };
                 searchLength--;
 
-                var halfSectionCount    = (sectionCount / 2);
-                var centerSectionIndex  = sectionIndex + halfSectionCount;
+                var centerSectionIndex  = sectionFirstIndex + ((sectionLastIndex - sectionFirstIndex) / 2);
                 var section             = sections[centerSectionIndex];
                 var difference          = (findOffset < section.start) ? -1 : 
                                           (findOffset > section.end  ) ?  1 : 
                                           0;
 
-                // Check if this is the section we need
+                // Check if this is the section we need 
                 if (difference == 0)
                 {
                     foundSection = centerSectionIndex;
@@ -115,19 +123,28 @@ namespace Chisel.Core
                 }
 
                 // If we still have ranges to check on the left or right, add them to the stack
-                if (sectionCount > 1)
+                if (difference < 0)
                 {
-                    if (difference < 0)
-                    {
-                        searchStack[searchLength] = new int2(sectionIndex, centerSectionIndex);
-                        searchLength++;
-                    } else
-                    {
-                        searchStack[searchLength] = new int2(centerSectionIndex + 1, sectionCount - (centerSectionIndex + 1));
-                        searchLength++;
-                    }
+                    if (centerSectionIndex == sectionFirstIndex)
+                        break;
+
+                    var firstNode = sectionFirstIndex;
+                    var lastNode  = centerSectionIndex - 1;
+
+                    searchStack[searchLength] = new SectionFindStack { first = firstNode, last = lastNode };
+                    searchLength++;
+                } else
+                {
+                    if (centerSectionIndex == sectionLastIndex)
+                        break;
+
+                    var firstNode = centerSectionIndex + 1;
+                    var lastNode  = sectionLastIndex;
+
+                    searchStack[searchLength] = new SectionFindStack { first = firstNode, last = lastNode };
+                    searchLength++;
                 }
-            }
+            } 
             return false;
         }
 
@@ -148,7 +165,7 @@ namespace Chisel.Core
             if (GetSectionLength(sectionIndex) < length)
                 throw new IndexOutOfRangeException("Free section at offset is not large enough");
 
-            SetRange(sectionIndex, offset, length, true);
+            SetRange(sectionIndex, offset, length, desiredFree: true);
             if (sections.Length > 0 && 
                 IsSectionFree(sections.Length - 1))
                 sections.RemoveAt(sections.Length - 1);
@@ -250,6 +267,7 @@ namespace Chisel.Core
                     });
                     if (sectionIndex == 0)
                         firstElementFree = desiredFree;
+                    Debug.Assert(IsSectionFree(sectionIndex) == desiredFree);
                 } else
                 {
                     // Otherwise, we can merge our allocation with the previous allocated section ...
@@ -319,7 +337,7 @@ namespace Chisel.Core
                         // ... and remove the first item in the list (the found section)
                         sections.RemoveAt(sectionIndex);
                         
-                        firstElementFree = !firstElementFree;
+                        firstElementFree = desiredFree;
                     } else
                     {
                         // We have both a previous and a next section, and we can merge all 
@@ -432,12 +450,14 @@ namespace Chisel.Core
                         length  = middleSectionLength
                     });
 
-                    // Add the last left-over
-                    sections.InsertAt(sectionIndex + 2, new Section
+                    var lastSection = new Section
                     {
                         start   = offset + middleSectionLength,
                         length  = lastSectionLength
-                    });
+                    };
+
+                    // Add the last left-over
+                    sections.InsertAt(sectionIndex + 2, lastSection);
                 }
             }
         }

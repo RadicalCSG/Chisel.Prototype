@@ -14,7 +14,6 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
-    // TODO: have some way to test consistency of the data, use that in tests
     // TODO: make sure everything is covered in tests
     // TODO: use native containers, make hierarchy use this as well
     internal struct IDManager : IDisposable
@@ -31,6 +30,82 @@ namespace Chisel.Core
         SectionManager          sectionManager;
         NativeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
         
+
+        public bool CheckConsistency()
+        {
+            for (int id = 0; id < idToIndex.Length; id++)
+            {
+                var index = idToIndex[id].index;
+                if (index == -1)
+                {
+                    if (!freeIDs.Contains(id))
+                    {
+                        Debug.LogError($"!freeIDs.Contains({id})");
+                        return false;
+                    }
+                    continue;
+                }
+
+                if (index < 0 || index >= indexToID.Length)
+                {
+                    Debug.LogError($"{index} < 0 || {index} >= {indexToID.Length}");
+                    return false;
+                }
+
+                if ((indexToID[index] - 1) != id)
+                {
+                    Debug.LogError($"indexToID[{index}] - 1 ({(indexToID[index] - 1)}) == {id}");
+                    return false;
+                }
+
+                if (sectionManager.IsIndexFree(index))
+                {
+                    Debug.LogError($"sectionManager.IsIndexFree({index})");
+                    return false;
+                }
+            }
+
+            for (int index = 0; index < indexToID.Length; index++)
+            {
+                var id = indexToID[index];
+                if (id == 0)
+                {
+                    if (!sectionManager.IsIndexFree(index))
+                    {
+                        Debug.LogError($"!sectionManager.IsIndexFree({index})");
+                        return false;
+                    }
+                    continue;
+                }
+
+                id--;
+
+                if (id < 0 || id >= idToIndex.Length)
+                {
+                    Debug.LogError($"{id} < 0 || {id} >= {idToIndex.Length}");
+                    return false;
+                }
+
+                if (idToIndex[id].index != index)
+                {
+                    Debug.LogError($"idToIndex[{id}].index ({idToIndex[id].index}) == {index}");
+                    return false;
+                }
+
+                if (sectionManager.IsIndexFree(index))
+                {
+                    Debug.LogError($"sectionManager.IsIndexFree({index})");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Note: not all indices might be in use
+        public int IndexCount   { get { return indexToID.Length; } }
+
+        public bool IsIndexFree(int index) { return sectionManager.IsIndexFree(index); }
+
         public bool IsCreated
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -64,6 +139,7 @@ namespace Chisel.Core
             if (freeIDs.IsCreated) freeIDs.Clear();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
             if (idToIndex.IsCreated) idToIndex.Dispose(); idToIndex = default;
@@ -93,7 +169,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsValid(int id, int generation, out int index)
+        public bool IsValidID(int id, int generation, out int index)
         {
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
@@ -110,8 +186,30 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsValidIndex(int index, out int id, out int generation)
+        {
+            id = default; //out
+            generation = default;//out
+
+            if (!sectionManager.IsAllocatedIndex(index))
+                return false;
+
+            var idInternal = indexToID[index] - 1;
+            if (idInternal < 0 || idInternal >= idToIndex.Length)
+                return false;
+
+            generation = idToIndex[idInternal].generation;
+            if (idToIndex[idInternal].index != index)
+                return false;
+
+            id = idInternal + 1;//out
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetIndex(int id, int generation)
         {
+            Debug.Assert(IsCreated);
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
             if (idInternal < 0 || idInternal >= idToIndex.Length)
@@ -126,7 +224,7 @@ namespace Chisel.Core
             {
                 if (indexToID.Length == 0)
                     throw new ArgumentException($"{nameof(id)} ({id}) does not point to an valid index. This lookup table does not contain any valid indices at the moment.");
-                throw new ArgumentException($"{nameof(id)} ({id}) does not point to an valid index. It must be above 0 and below {indexToID.Length + 1}.");
+                throw new ArgumentException($"{nameof(id)} ({id}) does not point to an valid index. It must be >= 0 and < {indexToID.Length}.");
             }
 
             return idLookup.index;
@@ -154,20 +252,21 @@ namespace Chisel.Core
             if (range == 0)
                 return -1;
 
-            var index = sectionManager.AllocateRange((int)range);
+            var index = sectionManager.AllocateRange(range);
             AllocateIndexRange(index, range);
             return index;
         }
 
         internal void AllocateIndexRange(int index, int range)
         {
-            if ((int)(index + range) > indexToID.Length)
-                indexToID.Resize((int)(index + range), NativeArrayOptions.ClearMemory);
+            if ((index + range) > indexToID.Length)
+                indexToID.Resize((index + range), NativeArrayOptions.ClearMemory);
 
             int idInternal, generation;
             // TODO: should make it possible to allocate ids in a range as well, for cache locality
             if (freeIDs.Length > 0)
             {
+                var childIndex = index;
                 while (range > 0)
                 {
                     var freeID = freeIDs.Length - 1;
@@ -175,12 +274,12 @@ namespace Chisel.Core
                     freeIDs.RemoveAt(freeID);
                     
                     generation = idToIndex[idInternal].generation + 1;
-                    idToIndex[idInternal] = new IndexLookup { index = index, generation = generation };
+                    idToIndex[idInternal] = new IndexLookup { index = childIndex, generation = generation };
 
-                    indexToID[index] = idInternal + 1;
+                    indexToID[childIndex] = idInternal + 1;
 
                     range--;
-                    index++;
+                    childIndex++;
                 }
             }
 
@@ -189,16 +288,16 @@ namespace Chisel.Core
             
             generation = 1;
             idInternal = idToIndex.Length;
-            idToIndex.Resize((int)(idInternal + range), NativeArrayOptions.ClearMemory);
+            idToIndex.Resize((idInternal + range), NativeArrayOptions.ClearMemory);
 
-            for (var lastID = (int)(idInternal + range); idInternal < lastID; idInternal++)
+            for (int childIndex = index, lastID = (idInternal + range); idInternal < lastID; idInternal++, childIndex++)
             {
-                indexToID[index] = idInternal + 1;
-                idToIndex[idInternal] = new IndexLookup { index = index, generation = generation };
+                indexToID[childIndex] = idInternal + 1;
+                idToIndex[idInternal] = new IndexLookup { index = childIndex, generation = generation };                    
             }
         }
 
-        public unsafe void SwapIndexRangeToBack(int sectionIndex, int sectionLength, int swapIndex, int swapRange)
+        public void SwapIndexRangeToBack(int sectionIndex, int sectionLength, int swapIndex, int swapRange)
         {
             if (sectionIndex < 0)
                 throw new ArgumentException($"{nameof(sectionIndex)} must be 0 or higher.");
@@ -224,14 +323,11 @@ namespace Chisel.Core
             //        |___________|
 
             // Copy the original indices to beyond the end of the list
-            {
-                // Make space for these indices, hopefully the index list already has the capacity for 
-                // this and no allocation needs to be made
-                indexToID.ResizeUninitialized(tempOffset + swapRange);
-                var indexToIDPtr = ((int*)indexToID.GetUnsafePtr());
-                UnsafeUtility.MemMove(indexToIDPtr + tempOffset, indexToIDPtr + sectionIndex + swapIndex, swapRange * sizeof(int));
-            }
-
+            // Make space for these indices, hopefully the index list already has the capacity for 
+            // this and no allocation needs to be made
+            indexToID.ResizeUninitialized(tempOffset + swapRange);
+            indexToID.MemMove(tempOffset, sectionIndex + swapIndex, swapRange);
+            
             // aaaaaabbbbcc .... bbbb
             // aaaaaaccbbcc .... bbbb
             //        ^  |       
@@ -239,21 +335,15 @@ namespace Chisel.Core
 
             // Move indices behind our swapIndex/swapRange on top of where our swap region begins
             var count = lengthBehindSwapIndex - swapRange;
-            {
-                var indexToIDPtr = ((int*)indexToID.GetUnsafePtr()) + sectionIndex + swapIndex;
-                UnsafeUtility.MemMove(indexToIDPtr, indexToIDPtr + swapRange, count * sizeof(int));
-            }
-
+            indexToID.MemMove(sectionIndex + swapIndex, sectionIndex + swapIndex + swapRange, count);
+            
             // aaaaaaccbbcc .... bbbb
             // aaaaaaccbbbb .... bbbb
             //         ^           |
             //         |___________|
 
             // Copy the original indices to the end
-            {
-                var indexToIDPtr = ((int*)indexToID.GetUnsafePtr());
-                UnsafeUtility.MemMove(indexToIDPtr + sectionIndex + swapIndex + count, indexToIDPtr + tempOffset, swapRange * sizeof(int));
-            }
+            indexToID.MemMove(sectionIndex + swapIndex + count, tempOffset, swapRange);
 
             // aaaaaaccbbbb .... bbbb
             // aaaaaaccbbbb .... 
@@ -286,28 +376,28 @@ namespace Chisel.Core
             indexToID[srcIndex] = 0;
 
             // We first move the front part (when necesary)
-            var items = insertIndex;
-            if (items > 0)
-            {
-                var indexToIDPtr = (int*)indexToID.GetUnsafePtr();
-                UnsafeUtility.MemMove(indexToIDPtr + newOffset, indexToIDPtr + offset, items * sizeof(int));
-            }
+            var range = insertIndex;
+            if (range > 0)
+                indexToID.MemMove(newOffset, offset, range);
 
             // Then we move the back part to the correct new offset (when necesary) ..
-            items = count - insertIndex;
-            if (items > 0)
-            {
-                var indexToIDPtr = (int*)indexToID.GetUnsafePtr();
-                UnsafeUtility.MemMove(indexToIDPtr + newOffset + insertIndex + 1, indexToIDPtr + offset + insertIndex, items * sizeof(int));
-            }
+            range = count - insertIndex;
+            if (range > 0)
+                indexToID.MemMove(newOffset + insertIndex + 1, offset + insertIndex, range);
 
             // Then we copy srcIndex to the new location
             var newNodeIndex = newOffset + insertIndex;
             indexToID[newNodeIndex] = originalID;
 
             // Then we set the old indices to 0
+            if (srcIndex < newOffset || srcIndex >= newOffset + newCount)
+            {
+                sectionManager.FreeRange(srcIndex, 1);
+                indexToID[srcIndex] = default;
+            }
             for (int index = offset, lastIndex = (offset + count); index < lastIndex; index++)
             {
+                // TODO: figure out if there's an off by one here
                 if (index >= newOffset && index < newOffset + newCount)
                     continue;
 
@@ -325,6 +415,62 @@ namespace Chisel.Core
             }
 
             return newOffset;
+        }
+
+        internal unsafe void RemoveIndexRange(int offset, int count, int removeIndex, int removeRange)
+        {
+            if (offset < 0) throw new ArgumentException($"{nameof(offset)} must be positive");
+            if (count < 0) throw new ArgumentException($"{nameof(count)} must be positive");
+            if (removeIndex < 0) throw new ArgumentException($"{nameof(removeIndex)} must be positive");
+            if (removeRange < 0) throw new ArgumentException($"{nameof(removeRange)} must be positive");
+            if (removeRange == 0) throw new ArgumentException($"{nameof(removeRange)} must be above 0");
+            if (count == 0) throw new ArgumentException($"{nameof(count)} must be above 0");
+            if (removeIndex < offset)
+                throw new ArgumentException($"{nameof(removeIndex)} ({removeIndex}) < {nameof(offset)} ({offset})");
+            if (removeIndex + removeRange > offset + count) 
+                throw new ArgumentException($"{nameof(removeIndex)} ({removeIndex}) + {nameof(removeRange)} ({removeRange}) > {nameof(count)} ({count})");
+
+            // Remove the range of indices we want to remove
+            for (int i = removeIndex, lastIndex = removeIndex + removeRange; i < lastIndex; i++)
+            {
+                var idInternal = indexToID[i] - 1;
+
+                Debug.Assert(!freeIDs.Contains(idInternal));
+                freeIDs.Add(idInternal);
+
+                var idLookup = idToIndex[idInternal];
+                idLookup.index = -1;
+                idToIndex[idInternal] = idLookup;
+
+                indexToID[i] = 0;
+            }
+
+            var leftOver = (offset + count) - (removeIndex + removeRange);
+            if (leftOver < 0)
+            {
+                throw new ArgumentException($"{nameof(leftOver)} ({leftOver}) < 0");
+            }
+            if (removeIndex + leftOver > indexToID.Length)
+            {
+                throw new ArgumentException($"{nameof(removeIndex)} ({removeIndex}) + {nameof(leftOver)} ({leftOver}) < {nameof(indexToID)}.Length ({indexToID.Length})");
+            }
+            indexToID.MemMove(removeIndex, removeIndex + removeRange, leftOver);
+
+            // Then fixup the id to index lookup
+            for (int i = removeIndex, lastIndex = removeIndex + leftOver; i < lastIndex; i++)
+            {
+                var idInternal = indexToID[i] - 1;
+
+                var idLookup = idToIndex[idInternal];
+                idLookup.index = i;
+                idToIndex[idInternal] = idLookup;
+            }
+
+            // And we set the old indices to 0
+            for (int i = offset + count - removeRange; i < offset + count; i++)
+                indexToID[i] = 0;
+
+            sectionManager.FreeRange(offset + count - removeRange, removeRange);
         }
 
         public int FreeID(int id, int generation)
@@ -355,7 +501,7 @@ namespace Chisel.Core
 
         public void FreeIndexRange(int startIndex, int range)
         {
-            var lastIndex = (int)(startIndex + range);
+            var lastIndex = startIndex + range;
             if (startIndex < 0 || lastIndex > indexToID.Length)
                 throw new ArgumentOutOfRangeException($"StartIndex {startIndex} with range {range}, must be between 0 and {indexToID.Length}");
 
@@ -374,8 +520,7 @@ namespace Chisel.Core
                 idLookup.index = -1;
                 idToIndex[idInternal] = idLookup;
             }
-
-            sectionManager.FreeRange(startIndex, (int)range);
+            sectionManager.FreeRange(startIndex, range);
         }
     }
 }

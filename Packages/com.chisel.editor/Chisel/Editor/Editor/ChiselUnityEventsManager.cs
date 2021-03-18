@@ -232,10 +232,17 @@ namespace Chisel.Editors
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
-            ChiselNodeHierarchyManager.Update();
-            ChiselNodeHierarchyManager.Update();
-            ChiselGeneratedModelMeshManager.UpdateModels();
-            ChiselNodeEditorBase.HandleCancelEvent();
+            try
+            {
+                ChiselNodeHierarchyManager.Update();
+                ChiselNodeHierarchyManager.Update();
+                ChiselGeneratedModelMeshManager.UpdateModels();
+                ChiselNodeEditorBase.HandleCancelEvent();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(ex);
+            }
         }
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)

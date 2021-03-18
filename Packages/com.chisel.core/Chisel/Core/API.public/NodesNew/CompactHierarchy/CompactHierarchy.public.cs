@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -21,7 +21,7 @@ namespace Chisel.Core
 
         BranchNeedsUpdate           = 4,
             
-        TreeIsDisabled              = 1024,// TODO: remove, or make more useful
+        TreeIsDisabled              = 1024,
         TreeNeedsUpdate             = 8,
         TreeMeshNeedsUpdate         = 16,
 
@@ -88,28 +88,22 @@ namespace Chisel.Core
         #endregion
     }
 
-    [Serializable]
     [BurstCompatible]
-    [StructLayout(LayoutKind.Sequential)]
     public struct CompactNode
     {
         public Int32                userID;
 
         public CSGOperationType     operation;
         public float4x4             transformation;
-        public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes
-        public MinMaxAABB           bounds;         // TODO: move this somewhere else, depends on brushMeshID
+        public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes        
         
         public Int32                brushMeshID;    // TODO: use hash of mesh as "ID"
+        public MinMaxAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
-        public override string ToString()
-        {
-            return $"{nameof(brushMeshID)} = {brushMeshID}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}";
-        }
+        public override string ToString() { return $"{nameof(brushMeshID)} = {brushMeshID}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
     }
 
     [BurstCompatible]
-    [StructLayout(LayoutKind.Sequential)]
     public struct CompactChildNode // TODO: rename
     {
         // TODO: probably need to split this up into multiple pieces, figure out how this will actually be used in practice first
@@ -117,21 +111,17 @@ namespace Chisel.Core
         public CompactNode      nodeInformation;
         public NodeID           nodeID;         // TODO: figure out how to get rid of this
         public CompactNodeID    compactNodeID;     
-        public CompactNodeID    parentID;       // TODO: figure out how to get rid of these IDs and use index instead
+        public CompactNodeID    parentID;       // TODO: rewrite updating code to use index here instead of ID (removes indirection)
         public Int32            childCount;
         public Int32            childOffset;
 
         public static readonly CompactChildNode Invalid = default;
 
-        public override string ToString()
-        {
-            return $"{nameof(nodeID)} = {nodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}";
-        }
+        public override string ToString() { return $"{nameof(nodeID)} = {nodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}"; }
     }
 
-    [BurstCompatible]
-    // TODO: have some way to test consistency of the data, use that in tests
     // TODO: make sure everything is covered in tests
+    [BurstCompatible]
     public partial struct CompactHierarchy : IDisposable
     {
         #region CreateHierarchy
@@ -154,7 +144,7 @@ namespace Chisel.Core
                 brushMeshToBrush = new NativeMultiHashMap<int, CompactNodeID>(16384, allocator),
                 compactNodes     = new NativeList<CompactChildNode>(allocator),
                 idManager        = IDManager.Create(allocator),
-                hierarchyID      = hierarchyID
+                HierarchyID      = hierarchyID
             };
             compactHierarchy.RootID = compactHierarchy.CreateNode(nodeID, new CompactNode
             {
@@ -197,25 +187,20 @@ namespace Chisel.Core
                 operation       = operation,
                 transformation  = transformation,
                 brushMeshID     = brushMeshID, 
-                bounds          = CalculateBounds(brushMeshID, in transformation)
+                bounds          = BrushMeshManager.CalculateBounds(brushMeshID, in transformation)
             });
         }
         #endregion
-
-        public bool IsCreated
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return idManager.IsCreated && compactNodes.IsCreated;
-            }
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
-            return idManager.IsValid(compactNodeID.value, compactNodeID.generation, out _);
+            if (!idManager.IsValidID(compactNodeID.value, compactNodeID.generation, out var index))
+                return false;
+            if (compactNodes[index].compactNodeID != compactNodeID)
+                return false;
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -331,12 +316,11 @@ namespace Chisel.Core
             }
 
             var index = SiblingIndexOfInternal(parentIndex, nodeIndex);
-            return DeleteRangeInternal(parentIndex, index, range: 1, false);
+            return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: false);
         }
 
         public bool DeleteRecursive(CompactNodeID compactNodeID)
         {
-            Debug.Assert(IsCreated);
             if (compactNodeID == RootID) // Cannot remove root
                 return false;
 
@@ -350,13 +334,13 @@ namespace Chisel.Core
             {
                 // node doesn't have a parent, so it cannot be removed from its parent
                 var childCount = ChildCount(compactNodeID);
-                if (childCount > 0) DeleteRangeInternal(nodeIndex, 0, childCount, true);
+                if (childCount > 0) DeleteRangeInternal(nodeIndex, 0, childCount, deleteChildren: true);
                 FreeIndexRange(nodeIndex, 1);
                 return true; 
             }
 
             var index = SiblingIndexOfInternal(parentIndex, nodeIndex);
-            return DeleteRangeInternal(parentIndex, index, range: 1, true);
+            return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: true); 
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -366,7 +350,7 @@ namespace Chisel.Core
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
-            return DeleteRangeInternal(parentIndex, index, range: 1, false);
+            return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: false);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -376,7 +360,7 @@ namespace Chisel.Core
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
-            return DeleteRangeInternal(parentIndex, index, range: 1, true);
+            return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -386,7 +370,7 @@ namespace Chisel.Core
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
-            return DeleteRangeInternal(parentIndex, index, range, false);
+            return DeleteRangeInternal(parentIndex, index, range, deleteChildren: false);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -396,7 +380,7 @@ namespace Chisel.Core
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
-            return DeleteRangeInternal(parentIndex, index, range, true);
+            return DeleteRangeInternal(parentIndex, index, range, deleteChildren: true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -32,8 +32,7 @@ namespace Chisel.Core
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static unsafe CSGTreeBranch CreateUnsafe(Int32 userID = 0, CSGOperationType operation = CSGOperationType.Additive, CSGTreeNode* childrenArray = null, int childrenArrayLength = 0)
         {
-            if (!CompactHierarchyManager.GenerateBranch(userID, operation, out var branchNodeID))
-                return new CSGTreeBranch() { branchNodeID = NodeID.Invalid };
+            var branchNodeID = CompactHierarchyManager.CreateBranch(operation, userID);
             Debug.Assert(CompactHierarchyManager.IsValidNodeID(branchNodeID));
             if (childrenArray != null && childrenArrayLength > 0)
             {

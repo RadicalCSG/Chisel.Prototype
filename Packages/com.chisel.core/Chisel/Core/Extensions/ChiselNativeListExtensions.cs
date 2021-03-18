@@ -244,15 +244,15 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
-        public static void CopyFrom<T>(this NativeSlice<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
+        public static void CopyFrom<T>(this NativeSlice<T> dstSlice, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             CheckLengthInRange(srcCount, srcArray.Length);
-            CheckLengthInRange(srcCount, dstArray.Length);
-            CheckIndexInRangeInc(dstIndex, dstArray.Length - srcCount);
+            CheckLengthInRange(srcCount, dstSlice.Length);
+            CheckIndexInRangeInc(dstIndex, dstSlice.Length - srcCount);
             CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
 
             var srcPtr = (T*)srcArray.GetUnsafePtr() + srcIndex;
-            var dstPtr = (T*)dstArray.GetUnsafePtr() + dstIndex;
+            var dstPtr = (T*)dstSlice.GetUnsafePtr() + dstIndex;
 
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
@@ -270,11 +270,9 @@ namespace Chisel.Core
                 return;
             }
 
-            var listPtr = (T*)list.GetUnsafePtr();
-            int size = sizeof(T);
             list.Resize(list.Length + 1, NativeArrayOptions.ClearMemory);
-            UnsafeUtility.MemMove(listPtr + index + 1, listPtr + index, (list.Length - index) * size);
-            listPtr[index] = item;
+            list.MemMove(index + 1, index, list.Length - (index + 1));
+            list[index] = item;
         }
 
         public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
@@ -293,11 +291,7 @@ namespace Chisel.Core
             }
 
             if (index + count < list.Length)
-            {
-                var listPtr = (T*)list.GetUnsafePtr();
-                int size = sizeof(T);
-                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (list.Length - (index + count)) * size);
-            }
+                list.MemMove(index, index + count, list.Length - (index + count));
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
 
@@ -322,11 +316,7 @@ namespace Chisel.Core
             }
 
             if (index + count < arrayLength)
-            {
-                var listPtr = (T*)array.GetUnsafePtr();
-                int size = sizeof(T);
-                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (arrayLength - (index + count)) * size);
-            }
+                array.MemMove(index, index + count, arrayLength - (index + count));
             arrayLength -= count;
         }
 
@@ -346,11 +336,7 @@ namespace Chisel.Core
             }
 
             if (index + count < arrayLength)
-            {
-                var listPtr = (T*)array.GetUnsafePtr();
-                int size = sizeof(T);
-                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (arrayLength - (index + count)) * size);
-            }
+                array.MemMove(index, index + count, arrayLength - (index + count));
             arrayLength -= count;
         }
 
@@ -379,11 +365,7 @@ namespace Chisel.Core
             }
 
             if (index + count < list.Length)
-            {
-                var listPtr = (T*)list.GetUnsafePtr();
-                int size = sizeof(T);
-                UnsafeUtility.MemMove(listPtr + index, listPtr + (index + count), (list.Length - (index + count)) * size);
-            }
+                list.MemMove(index, index + count, list.Length - (index + count));
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
         /*

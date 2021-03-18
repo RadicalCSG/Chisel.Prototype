@@ -32,8 +32,7 @@ namespace Chisel.Core
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
         public static CSGTreeBrush Create(Int32 userID, float4x4 localTransformation, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
-            if (!CompactHierarchyManager.GenerateBrush(userID, localTransformation, brushMesh, operation, out var brushNodeID))
-                brushNodeID = NodeID.Invalid;
+            var brushNodeID = CompactHierarchyManager.CreateBrush(brushMesh, localTransformation, operation, userID);
             Debug.Assert(CompactHierarchyManager.IsValidNodeID(brushNodeID));
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
         }

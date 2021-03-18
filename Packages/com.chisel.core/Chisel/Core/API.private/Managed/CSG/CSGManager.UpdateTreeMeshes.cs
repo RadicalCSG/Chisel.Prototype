@@ -32,7 +32,8 @@ namespace Chisel.Core
             for (int t = 0; t < s_AllTrees.Count; t++)
             {
                 var treeNode = s_AllTrees[t];
-                if (treeNode.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
+                if (treeNode.Valid &&
+                    treeNode.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
                     s_TreeNodeIDs.Add(treeNode.NodeID);
                     needUpdate = true;
@@ -2185,7 +2186,8 @@ namespace Chisel.Core
                     ref var treeUpdate = ref s_TreeUpdates[t];
 
                     var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeID };
-                    if (!tree.IsStatusFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
+                    if (!tree.Valid ||
+                        !tree.IsStatusFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
                     {
                         treeUpdate.updateCount = 0;
                         continue;
