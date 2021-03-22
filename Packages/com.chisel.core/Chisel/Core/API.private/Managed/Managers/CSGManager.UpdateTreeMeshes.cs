@@ -102,7 +102,7 @@ namespace Chisel.Core
                 var treeCompactNodeID   = CompactHierarchyManager.GetCompactNodeID(treeNodeID);
                 if (currentTree.nodes == null) currentTree.nodes = new List<CompactNodeID>(); else currentTree.nodes.Clear();
                 if (currentTree.brushes == null) currentTree.brushes = new List<CSGTreeBrush>(); else currentTree.brushes.Clear();
-                CompactHierarchyManager.UpdateTreeNodeList(treeNodeID, currentTree.nodes, currentTree.brushes);
+                CompactHierarchyManager.GetTreeNodes(treeNodeID, currentTree.nodes, currentTree.brushes);
 
 
                 var allTreeBrushes  = currentTree.brushes;

@@ -12,15 +12,19 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
-    // TODO: need debug visualization (editor window)
-    // TODO: properly calculate transformation hierarchy
-    // TODO: properly generate wireframes (remove redundant stuff)
+    // TODO: add test for when adding a node itself as a parent
+    // TODO: add tests to make sure we're not adding children to brushes
+
     // TODO: need a way to store unique brushMeshes 
     //          use hashes to combine duplicates
     //          hash == id
     //          replace brushManager with this
+    // TODO: properly calculate transformation hierarchy
+    // TODO: properly generate wireframes (remove redundant stuff)
     // TODO: move queries to non managed code
     // TODO: need unmanaged Decomposition
+
+    // TODO: need debug visualization (editor window)
 
     // TODO: clean up IsValidNodeIDs etc (implicit call to IsValidCompactNodeID)
 
@@ -398,6 +402,8 @@ namespace Chisel.Core
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
                 return -1;
+            if (compactNodeID.hierarchyID != HierarchyID)
+                return -1;
             return idManager.GetIndex(compactNodeID.value, compactNodeID.generation);
         }
 
@@ -429,7 +435,7 @@ namespace Chisel.Core
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe CompactNodeID GetChildIDAtInternal(CompactNodeID parentD, int index)
+        public unsafe CompactNodeID GetChildIDAtInternal(CompactNodeID parentD, int index)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var parentIndex         = UnsafeHierarchyIndexOfInternal(parentD);
@@ -665,27 +671,39 @@ namespace Chisel.Core
         }
 
 
-        unsafe void AttachInternal(CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID)
+        unsafe bool AttachInternal(CompactNodeID parentID, int parentIndex, int insertIndex, CompactNodeID compactNodeID)
         {
             Debug.Assert(parentID != CompactNodeID.Invalid);
 
             var parentHierarchy   = compactNodes[parentIndex];
             var parentChildCount  = parentHierarchy.childCount;
-            if (insertIndex < 0 || insertIndex > parentChildCount) throw new IndexOutOfRangeException();
+            if (insertIndex < 0 || insertIndex > parentChildCount)
+            {
+                Debug.LogError($"Index ({insertIndex}) must be between 0 .. {parentChildCount}");
+                return false;
+            }
 
             var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
                 throw new ArgumentException($"{nameof(CompactNodeID)} is invalid", nameof(compactNodeID));
 
             // Make a temporary copy of our node in case we need to move it
-            var nodeItem    = compactNodes[nodeIndex];
-            var oldParentID = nodeItem.parentID;
+            var nodeItem            = compactNodes[nodeIndex];
+            var oldParentID         = nodeItem.parentID;
+            var parentChildOffset   = parentHierarchy.childOffset;
+            var desiredIndex        = parentChildOffset + insertIndex;
 
             // If the node is already a child of a parent, then we need to remove it from that parent
             if (oldParentID != CompactNodeID.Invalid)
             {
                 // inline & optimize this
                 Detach(compactNodeID);
+                if (desiredIndex > nodeIndex)
+                {
+                    desiredIndex--;
+                    insertIndex--;
+                }
+                Debug.Assert(CheckConsistency());
             }
 
             // If our new parent doesn't have any child nodes yet, we don't need to move our node and just set 
@@ -698,15 +716,13 @@ namespace Chisel.Core
                 
                 nodeItem.parentID = parentID;
                 compactNodes[nodeIndex] = nodeItem;
-                return;
+                return true;
             }
             
-            var parentChildOffset = parentHierarchy.childOffset;
-            var desiredIndex      = parentChildOffset + insertIndex;
 
             // Check if our node is already a child of the right parent and at the correct position
             if (oldParentID == parentID && desiredIndex == nodeIndex)
-                return;
+                return true;
 
             // If the desired index of our node is already at the index we want it to be, things are simple
             if (desiredIndex == nodeIndex)
@@ -716,7 +732,7 @@ namespace Chisel.Core
 
                 nodeItem.parentID = parentID;
                 compactNodes[nodeIndex] = nodeItem;
-                return;
+                return true;
             }
 
             // If, however, the desired index of our node is NOT at the index we want it to be, 
@@ -779,6 +795,7 @@ namespace Chisel.Core
                 parentHierarchy.childCount++;                    // And we increase the childCount of our parent
                 compactNodes[parentIndex] = parentHierarchy;
             }
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -786,10 +803,10 @@ namespace Chisel.Core
         {
             if (brushes == null)
                 return;
-            UpdateTreeNodeList(null, brushes);
+            GetTreeNodes(null, brushes);
         }
 
-        internal unsafe void UpdateTreeNodeList(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
+        internal unsafe void GetTreeNodes(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
         {
             if (nodes != null) nodes.Clear();
             if (brushes != null) brushes.Clear();
@@ -812,7 +829,8 @@ namespace Chisel.Core
                     var nodeIndex = nodeStack[lastNodeStackIndex];
                     nodeStack.RemoveAt(lastNodeStackIndex);
                     ref var node = ref compactNodesPtr[nodeIndex];
-                    if (nodes != null)
+                    if (nodes != null &&
+                        node.compactNodeID != RootID)
                         nodes.Add(node.compactNodeID);
                     if (node.childCount > 0)
                     {
@@ -828,6 +846,24 @@ namespace Chisel.Core
             finally
             {
                 nodeStack.Dispose();
+            }
+        }
+
+        internal unsafe void GetAllNodes(System.Collections.Generic.List<CSGTreeNode> nodes)
+        {
+            if (nodes == null)
+                return;
+            
+            nodes.Clear();
+
+            var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+            for (int i = 0, count = this.compactNodes.Length; i < count; i++)
+            {
+                ref var node = ref compactNodesPtr[i];
+                if (node.nodeID == NodeID.Invalid)
+                    continue;
+
+                nodes.Add(new CSGTreeNode { nodeID = node.nodeID });
             }
         }
 

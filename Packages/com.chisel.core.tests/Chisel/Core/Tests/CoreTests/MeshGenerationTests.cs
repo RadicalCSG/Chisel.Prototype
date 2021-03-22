@@ -39,7 +39,7 @@ namespace FoundationTests
 
             materialID1 = material1.GetInstanceID();
             materialID2 = material2.GetInstanceID();
-            CSGManager.Clear();
+            CompactHierarchyManager.Clear();
         }
 
         #region Helpers
@@ -71,7 +71,7 @@ namespace FoundationTests
             bool treeIsDirtyAfter = true;
 
             tree.SetDirty();
-            bool haveChanges = CSGManager.Flush(); // Note: optional
+            bool haveChanges = CompactHierarchyManager.Flush(); // Note: optional
             if (haveChanges)
             {
                 treeWasDirtyBefore = tree.Dirty; // Note: optional

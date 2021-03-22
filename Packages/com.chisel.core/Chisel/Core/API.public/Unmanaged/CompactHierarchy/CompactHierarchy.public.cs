@@ -450,19 +450,22 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AttachToParentAt(CompactNodeID parentID, int index, CompactNodeID compactNodeID)
+        public bool AttachToParentAt(CompactNodeID parentID, int index, CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
             if (index < 0)
-                throw new IndexOutOfRangeException();
+            {
+                Debug.LogError("The index must be positive");
+                return false;
+            }
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex == -1)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
 
             if (!IsValidCompactNodeID(compactNodeID))
-                return;
+                return false;
 
-            AttachInternal(parentID, parentIndex, index, compactNodeID);
+            return AttachInternal(parentID, parentIndex, index, compactNodeID);
         }
     }
 }

@@ -39,6 +39,7 @@ namespace Chisel.Core
                     return new CSGTree() { treeNodeID = NodeID.Invalid };
                 }
             }
+            CompactHierarchyManager.SetDirty(treeNodeID);
             return new CSGTree() { treeNodeID = treeNodeID };
         }
 

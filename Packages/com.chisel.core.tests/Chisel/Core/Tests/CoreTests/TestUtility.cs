@@ -6,7 +6,9 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
-/*
+using System;
+using System.Collections.Generic;
+
 namespace FoundationTests
 {
     public sealed class TestUtility
@@ -72,23 +74,41 @@ namespace FoundationTests
             Assert.AreEqual(CSGNodeType.None, type);
         }
 
-        public static void ExpectValidTreeWithUserID(ref CSGTree model, int userID)
+        public static void ExpectValidTreeWithUserID(ref CSGTree tree, int userID)
         {
-            CSGNodeType type = ((CSGTreeNode)model).Type;
+            CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(true, model.Valid);
-            Assert.AreNotEqual(0, model.NodeID);
-            Assert.AreEqual(userID, model.UserID);
+            Assert.AreEqual(true, tree.Valid);
+            Assert.AreNotEqual(0, tree.NodeID);
+            Assert.AreEqual(userID, tree.UserID);
             Assert.AreEqual(CSGNodeType.Tree, type);
         }
 
-        public static void ExpectInvalidTree(ref CSGTree model)
+        public static void ExpectInvalidTree(ref CSGTree tree)
         {
-            CSGNodeType type = ((CSGTreeNode)model).Type;
+            CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(false, model.Valid);
-            Assert.AreEqual(0, model.UserID);
+            Assert.AreEqual(false, tree.Valid);
+            Assert.AreEqual(0, tree.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
+        
+        static readonly List<CSGTreeBrush> brushes = new List<CSGTreeBrush>();
+
+        public static int CountOfBrushesInTree(CSGTree tree)
+        {
+            brushes.Clear();
+            CompactHierarchyManager.GetTreeNodes(tree.NodeID, null, brushes);
+            return brushes.Count;
+        }
+
+
+        public static bool IsInTree(CSGTree tree, CSGTreeBrush brush)
+        {
+            brushes.Clear();
+            CompactHierarchyManager.GetTreeNodes(tree.NodeID, null, brushes);
+            return brushes.Contains(brush);
+        }
+
     }
-}*/
+}

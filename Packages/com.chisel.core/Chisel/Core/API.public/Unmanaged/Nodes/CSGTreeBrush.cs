@@ -34,6 +34,7 @@ namespace Chisel.Core
         {
             var brushNodeID = CompactHierarchyManager.CreateBrush(brushMesh, localTransformation, operation, userID);
             Debug.Assert(CompactHierarchyManager.IsValidNodeID(brushNodeID));
+            CompactHierarchyManager.SetDirty(brushNodeID);
             return new CSGTreeBrush() { brushNodeID = brushNodeID };
         }
 
