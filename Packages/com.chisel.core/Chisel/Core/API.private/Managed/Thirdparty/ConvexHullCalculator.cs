@@ -305,12 +305,16 @@ namespace Chisel.Core
 		/// </summary>
 		public void GenerateHull(
 			IReadOnlyList<Vector3> points,
-			ref List<float4> planes)
+			ref List<float4> planes,
+			out Bounds bounds)
 		{
 			// note: the convex hull has duplicate polygons, degenerate triangles and T-Junctions.
-
 			var verts = new List<Vector3>();
 			GenerateHull(points, ref verts);
+
+			// prepare to calculate the bounds of the convex hull.
+			bounds = new Bounds();
+			bool resetBounds = true;
 
 			// prevent very small cuts.
 			const float epsilon = 0.001f;
@@ -346,7 +350,26 @@ namespace Chisel.Core
 				}
 
 				// add unique planes to the result.
-				if (!skip) planes.Add(new float4(p.normal, p.distance));
+				if (!skip)
+				{
+					planes.Add(new float4(p.normal, p.distance));
+
+					// calculate the bounds of the convex hull.
+					if (resetBounds)
+                    {
+						// re-center the bounding box to a known point.
+						resetBounds = false;
+						bounds.center = a;
+						bounds.Encapsulate(b);
+						bounds.Encapsulate(c);
+					}
+                    else
+                    {
+						bounds.Encapsulate(a);
+						bounds.Encapsulate(b);
+						bounds.Encapsulate(c);
+					}
+				}
 			}
 		}
 

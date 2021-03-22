@@ -9,6 +9,7 @@ using Matrix4x4 = UnityEngine.Matrix4x4;
 using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Bounds = UnityEngine.Bounds;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
@@ -1238,17 +1239,17 @@ namespace Chisel.Core
         /// Creates a brush out of a set of planes. A brush consists of several faces, each of which can be defined by a plane (of which there must be at least four).
         /// Each plane defines a half space, that is, an infinite set of points that is bounded by a plane. The intersection of these half spaces forms a convex polyhedron.
         /// The brush geometry is not centered unless your planes are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
-        /// <para>Note: The current algorithm only works within a limited range of +-4096 world units from the world center. If possible, perform your operations near the center of the world for optimal accuracy.</para>
+        /// <para>Note: The current algorithm only works within a limited working area, specified by the <paramref name="bounds"/> parameter.
+        /// If you do not know the size of the resulting brush beforehand, this can also be oversized. For example +-4096 world units from the world center.
+        /// If possible, perform your operations near the center of the world for optimal accuracy.</para>
         /// </summary>
-        public static void CreateFromPlanes(ref BrushMesh brushMesh, float4[] planes, in ChiselSurfaceDefinition surfaceDefinition)
+        public static void CreateFromPlanes(ref BrushMesh brushMesh, float4[] planes, Bounds bounds, in ChiselSurfaceDefinition surfaceDefinition)
         {
             Debug.Assert(planes != null && planes.Length >= 4);
 
-            // TODO: check if we can cut up a box with infinite dimensions to get around the size constraint.
-
-            // build a very large cube brush.
+            // create a box brush with the size of the specified bounds.
             surfaceDefinition.EnsureSize(6);
-            CreateBox(ref brushMesh, new Vector3(-4096, -4096, -4096), new Vector3(4096, 4096, 4096), in surfaceDefinition);
+            CreateBox(ref brushMesh, bounds.min, bounds.max, in surfaceDefinition);
 
             // cut the brush using the given planes.
             brushMesh.Cut(planes);
@@ -1257,7 +1258,7 @@ namespace Chisel.Core
         /// <summary>
         /// Creates a brush out of a set of points. A convex hull is generated that encompasses all points (of which there must be at least four).
         /// The brush geometry is not centered unless your points are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
-        /// <para>Note: The current algorithm only works within a limited range of +-4096 world units from the world center. If possible, perform your operations near the center of the world for optimal accuracy.</para>
+        /// <para>If possible, place your points near the center of the world for optimal accuracy.</para>
         /// </summary>
         public static void CreateFromPoints(ref BrushMesh brushMesh, Vector3[] points, in ChiselSurfaceDefinition surfaceDefinition)
         {
@@ -1270,10 +1271,10 @@ namespace Chisel.Core
 
             // calculate a convex hull out of the points.
             ConvexHullCalculator convexHullCalculator = new ConvexHullCalculator();
-            convexHullCalculator.GenerateHull(points, ref planes);
+            convexHullCalculator.GenerateHull(points, ref planes, out Bounds bounds);
 
             // create a brush out of the convex hull.
-            CreateFromPlanes(ref brushMesh, planes.ToArray(), in surfaceDefinition);
+            CreateFromPlanes(ref brushMesh, planes.ToArray(), bounds, in surfaceDefinition);
         }
     }
 }
