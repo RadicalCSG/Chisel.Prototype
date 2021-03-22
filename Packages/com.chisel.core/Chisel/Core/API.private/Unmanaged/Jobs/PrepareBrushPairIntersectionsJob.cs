@@ -21,7 +21,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct PrepareBrushPairIntersectionsJob : IJobParallelFor
+    struct PrepareBrushPairIntersectionsJob : IJobParallelForDefer
     {
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
         const float kPlaneWAlignEpsilon         = CSGConstants.kPlaneDAlignEpsilon;

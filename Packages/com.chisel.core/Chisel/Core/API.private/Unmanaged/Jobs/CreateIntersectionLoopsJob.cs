@@ -11,7 +11,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    unsafe struct CreateIntersectionLoopsJob : IJobParallelFor
+    unsafe struct CreateIntersectionLoopsJob : IJobParallelForDefer
     {
         const float kFatPlaneWidthEpsilon = CSGConstants.kFatPlaneWidthEpsilon;
 

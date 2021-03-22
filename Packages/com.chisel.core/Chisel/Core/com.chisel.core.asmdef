@@ -8,7 +8,8 @@
         "Unity.Collections",
         "Unity.Entities",
         "Unity.Mathematics.Extensions",
-        "Unity.Entities.Hybrid"
+        "Unity.Entities.Hybrid",
+        "Unity.Jobs"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

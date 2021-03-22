@@ -11,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct PerformCSGJob : IJobParallelFor
+    struct PerformCSGJob : IJobParallelForDefer
     {
         // Read
         // 'Required' for scheduling with index count

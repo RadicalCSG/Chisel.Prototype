@@ -563,7 +563,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct CopyToRenderMeshJob : IJobParallelFor
+    struct CopyToRenderMeshJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;
@@ -682,7 +682,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct CopyToColliderMeshJob : IJobParallelFor
+    struct CopyToColliderMeshJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<SubMeshSection>              subMeshSections;

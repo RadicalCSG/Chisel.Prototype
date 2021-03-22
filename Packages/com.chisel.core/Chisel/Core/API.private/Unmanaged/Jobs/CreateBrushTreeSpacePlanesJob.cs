@@ -11,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateBrushTreeSpacePlanesJob : IJobParallelFor   
+    struct CreateBrushTreeSpacePlanesJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  allUpdateBrushIndexOrders;

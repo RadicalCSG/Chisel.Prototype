@@ -10,7 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelFor
+    struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;

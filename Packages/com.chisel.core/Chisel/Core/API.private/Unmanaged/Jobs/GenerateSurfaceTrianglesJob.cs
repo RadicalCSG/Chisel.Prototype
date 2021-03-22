@@ -13,7 +13,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)] // Fails for some reason    
-    struct GenerateSurfaceTrianglesJob : IJobParallelFor
+    struct GenerateSurfaceTrianglesJob : IJobParallelForDefer
     {
         // Read
         // 'Required' for scheduling with index count

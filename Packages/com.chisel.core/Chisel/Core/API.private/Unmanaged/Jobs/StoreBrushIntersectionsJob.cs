@@ -11,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct StoreBrushIntersectionsJob : IJobParallelFor
+    struct StoreBrushIntersectionsJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public CompactNodeID                    treeNodeID;

@@ -15,7 +15,7 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateRoutingTableJob : IJobParallelFor
+    struct CreateRoutingTableJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;

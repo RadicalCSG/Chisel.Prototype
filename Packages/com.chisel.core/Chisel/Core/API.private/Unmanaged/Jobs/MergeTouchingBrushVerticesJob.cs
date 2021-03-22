@@ -65,7 +65,7 @@ namespace Chisel.Core
     }
     
     [BurstCompile(CompileSynchronously = true)]
-    struct MergeTouchingBrushVerticesIndirectJob : IJobParallelFor
+    struct MergeTouchingBrushVerticesIndirectJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                      allUpdateBrushIndexOrders;

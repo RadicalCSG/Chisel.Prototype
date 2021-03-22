@@ -11,7 +11,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct FindAllBrushIntersectionPairsJob : IJobParallelFor
+    struct FindAllBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly             allTreeBrushIndexOrders;
@@ -179,7 +179,7 @@ namespace Chisel.Core
 
     // TODO: make this a parallel job somehow
     [BurstCompile(CompileSynchronously = true)]
-    struct FindAllIndirectBrushIntersectionPairsJob : IJobParallelFor
+    struct FindAllIndirectBrushIntersectionPairsJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly         allTreeBrushIndexOrders;
@@ -241,7 +241,7 @@ namespace Chisel.Core
         }
     }
     [BurstCompile(CompileSynchronously = true)]
-    struct InvalidateBrushCacheJob : IJobParallelFor
+    struct InvalidateBrushCacheJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly rebuildTreeBrushIndexOrders;
@@ -312,7 +312,7 @@ namespace Chisel.Core
     
 
     [BurstCompile(CompileSynchronously = true)]
-    struct InvalidateIndirectBrushCacheJob : IJobParallelFor
+    struct InvalidateIndirectBrushCacheJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder> brushesThatNeedIndirectUpdate;
@@ -382,7 +382,7 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    struct FixupBrushCacheIndicesJob : IJobParallelFor
+    struct FixupBrushCacheIndicesJob : IJobParallelForDefer
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly allTreeBrushIndexOrders;
