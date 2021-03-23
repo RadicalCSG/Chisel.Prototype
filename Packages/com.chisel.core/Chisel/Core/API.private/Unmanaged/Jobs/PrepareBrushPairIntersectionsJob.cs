@@ -134,6 +134,7 @@ namespace Chisel.Core
         void FindPlanePairs(IntersectionType                        type,
                             [NoAlias] ref BrushMeshBlob             mesh,
                             [NoAlias] NativeArray<int>              intersectingPlanes,
+                            int                                     intersectingPlanesLength,
                             [NoAlias] NativeArray<float4>           localSpacePlanesPtr,
                             [NoAlias] ref NativeArray<int>          vertexUsed,
                             float4x4                                vertexTransform,
@@ -167,7 +168,7 @@ namespace Chisel.Core
             usedVerticesLength = 0;
             usedPlanePairsLength = 0;
             
-            for (int p = 0; p < intersectingPlanes.Length; p++)
+            for (int p = 0; p < intersectingPlanesLength; p++)
                 planeAvailable.Set(intersectingPlanes[p], true);
 
             for (int e = 0; e < halfEdges.Length; e++)
@@ -235,8 +236,7 @@ namespace Chisel.Core
                                       ref NativeArray<SurfaceInfo>  surfaceInfos0,
                                       ref NativeArray<int>          intersectingPlaneIndices1, int intersectingPlanesLength1,
                                       ref NativeArray<float4>       localSpacePlanes1, int localSpacePlanes1Length,
-                                      ref NativeArray<SurfaceInfo> surfaceInfos1
-                                      )
+                                      ref NativeArray<SurfaceInfo> surfaceInfos1)
         {
             NativeCollectionHelpers.EnsureMinimumSize(ref surfaceInfos0, localSpacePlanes0Length);
             for (int i = 0; i < localSpacePlanes0Length; i++)
@@ -412,8 +412,8 @@ namespace Chisel.Core
                                       ref intersectingPlaneIndices0, intersectingPlanesLength0, ref intersectingLocalSpacePlanes0,
                                       ref intersectingPlaneIndices1, intersectingPlanesLength1, ref intersectingLocalSpacePlanes1);
 
-            FindPlanePairs(type, ref mesh0, intersectingPlaneIndices0, localSpacePlanes0, ref vertexUsed, float4x4.identity, false, ref usedPlanePairs0, ref usedVertices0, out int usedPlanePairsLength0, out int usedVerticesLength0);
-            FindPlanePairs(type, ref mesh1, intersectingPlaneIndices1, localSpacePlanes1, ref vertexUsed, node1ToNode0,      true,  ref usedPlanePairs1, ref usedVertices1, out int usedPlanePairsLength1, out int usedVerticesLength1);
+            FindPlanePairs(type, ref mesh0, intersectingPlaneIndices0, intersectingPlanesLength0, localSpacePlanes0, ref vertexUsed, float4x4.identity, false, ref usedPlanePairs0, ref usedVertices0, out int usedPlanePairsLength0, out int usedVerticesLength0);
+            FindPlanePairs(type, ref mesh1, intersectingPlaneIndices1, intersectingPlanesLength1, localSpacePlanes1, ref vertexUsed, node1ToNode0,      true,  ref usedPlanePairs1, ref usedVertices1, out int usedPlanePairsLength1, out int usedVerticesLength1);
             
             FindAlignedPlanes(type, ref intersectingPlaneIndices0, intersectingPlanesLength0, ref localSpacePlanes0, mesh0.localPlanes.Length, ref surfaceInfos0,
                                     ref intersectingPlaneIndices1, intersectingPlanesLength1, ref localSpacePlanes1, mesh1.localPlanes.Length, ref surfaceInfos1);
