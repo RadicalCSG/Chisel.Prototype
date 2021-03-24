@@ -62,7 +62,7 @@ namespace BrushContainerAssetTests
         {
             var newBrushContainerAsset = ScriptableObject.CreateInstance<ChiselBrushContainerAsset>();
             yield return null;
-            ChiselBrushMaterialManager.Update();
+            ChiselBrushContainerAssetManager.Update();
 
             UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             yield return null;

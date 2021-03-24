@@ -6,7 +6,7 @@ using System;
 
 namespace Chisel.Core
 {
-    public class ChiselMaterialManager : ScriptableObject
+    public sealed partial class ChiselMaterialManager : ScriptableObject
     {
         #region Instance
         static ChiselMaterialManager _instance;

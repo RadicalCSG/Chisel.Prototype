@@ -1,6 +1,6 @@
 {
     "name": "com.chisel.core",
-    "rootNamespace": "",
+    "rootNamespace": "Chisel.Core",
     "references": [
         "Unity.Burst",
         "com.scene.handle.extensions.runtime",
@@ -15,7 +15,9 @@
     "excludePlatforms": [],
     "allowUnsafeCode": true,
     "overrideReferences": false,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        ""
+    ],
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],

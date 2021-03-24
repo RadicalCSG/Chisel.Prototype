@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using Unity.Mathematics;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -14,62 +16,74 @@ namespace Chisel.Core
         public const string kRenderMaterialFieldName  = nameof(renderMaterial);
         public const string kPhysicsMaterialFieldName = nameof(physicsMaterial);
 
-        public ChiselBrushMaterial()    { ChiselBrushMaterialManager.Register(this); }
-        public void OnDestroy()         { Dispose(); }
-        public void Dispose()           { ChiselBrushMaterialManager.Unregister(this); }
-        ~ChiselBrushMaterial()          { Dispose(); }
+        public void Dispose()           { }
         
 
         [SerializeField] LayerUsageFlags  layerUsage = LayerUsageFlags.RenderReceiveCastShadows | LayerUsageFlags.Collidable;
         [SerializeField] Material         renderMaterial;
         [SerializeField] PhysicMaterial   physicsMaterial;
 
-        public LayerUsageFlags	LayerUsage		            { get { return layerUsage;      } set { if (layerUsage      == value) return; var prevValue = layerUsage;      layerUsage      = value; ChiselBrushMaterialManager.OnLayerUsageFlagsChanged(this, prevValue, value); } }
-        public Material			RenderMaterial	            { get { return renderMaterial;  } set { if (renderMaterial  == value) return; var prevValue = renderMaterial;  renderMaterial  = value; ChiselBrushMaterialManager.OnRenderMaterialChanged(this, prevValue, value); } }
-        public PhysicMaterial	PhysicsMaterial             { get { return physicsMaterial; } set { if (physicsMaterial == value) return; var prevValue = physicsMaterial; physicsMaterial = value; ChiselBrushMaterialManager.OnPhysicsMaterialChanged(this, prevValue, value); } }
-        public int				RenderMaterialInstanceID	{ get { return renderMaterial  ? renderMaterial .GetInstanceID() : 0; } }
-        public int				PhysicsMaterialInstanceID	{ get { return physicsMaterial ? physicsMaterial.GetInstanceID() : 0; } }
+        public LayerUsageFlags	LayerUsage		            { get { return layerUsage;      } set { layerUsage      = value; } }
+        public Material			RenderMaterial	            { get { return renderMaterial;  } set { renderMaterial  = value; } }
+        public PhysicMaterial	PhysicsMaterial             { get { return physicsMaterial; } set { physicsMaterial = value; } }
+        public int				RenderMaterialInstanceID	{ [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return ChiselMaterialManager.Instance.GetID(renderMaterial); } }
+        public int				PhysicsMaterialInstanceID	{ [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return ChiselMaterialManager.Instance.GetID(physicsMaterial); } }
 
         public SurfaceLayers    LayerDefinition
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
+                var materialManager = ChiselMaterialManager.Instance;
                 return new SurfaceLayers()
                 {
                     layerUsage      = layerUsage,
-                    layerParameter1 = RenderMaterialInstanceID,
-                    layerParameter2 = PhysicsMaterialInstanceID
+                    layerParameter1 = materialManager.GetID(renderMaterial),
+                    layerParameter2 = materialManager.GetID(physicsMaterial)
                 };
             }
         }
 
-        public void SetDirty()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override unsafe int GetHashCode()
         {
-            ChiselBrushMaterialManager.OnSetDirty(this);
+            unchecked
+            {
+                uint hash = 
+                    math.hash(new uint3(
+                        (uint)layerUsage,
+                        (uint)PhysicsMaterialInstanceID,
+                        (uint)RenderMaterialInstanceID
+                    ));
+                return (int)hash;
+            }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBrushMaterial CreateInstance(ChiselBrushMaterial other)
         {
             return CreateInstance(other.renderMaterial, other.physicsMaterial, other.layerUsage);
         }
 
-  
-        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBrushMaterial CreateInstance(LayerUsageFlags layerUsage = LayerUsageFlags.None)
         {
             return CreateInstance(null, null, layerUsage);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBrushMaterial CreateInstance(Material renderMaterial, LayerUsageFlags layerUsage = LayerUsageFlags.RenderReceiveCastShadows)
         {
             return CreateInstance(renderMaterial, null, layerUsage);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBrushMaterial CreateInstance(PhysicMaterial physicsMaterial, LayerUsageFlags layerUsage = LayerUsageFlags.Collidable)
         {
             return CreateInstance(null, physicsMaterial, layerUsage);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ChiselBrushMaterial CreateInstance(Material renderMaterial, PhysicMaterial physicsMaterial, LayerUsageFlags layerUsage = LayerUsageFlags.RenderReceiveCastShadows | LayerUsageFlags.Collidable)
         {
             return new ChiselBrushMaterial

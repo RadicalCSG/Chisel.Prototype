@@ -613,7 +613,7 @@ namespace Chisel.Core
             if (defaultHierarchyID == CompactHierarchyID.Invalid)
                 Initialize();
             var generatedBrushNodeID = CreateNodeID(out var index);
-            nodes[index] = GetHierarchy(defaultHierarchyID).CreateBrush(generatedBrushNodeID, brushMesh.brushMeshID, localTransformation, operation, userID);
+            nodes[index] = GetHierarchy(defaultHierarchyID).CreateBrush(generatedBrushNodeID, brushMesh.brushMeshHash, localTransformation, operation, userID);
             return generatedBrushNodeID;
         }
         
@@ -1585,6 +1585,7 @@ namespace Chisel.Core
                 Debug.LogError($"{nameof(index)} + {nameof(range)} must be below or equal to {count}");
                 return false;
             }
+
             var list = new NativeList<CompactNodeID>(count, Allocator.Temp);
             try
             {

@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -7,202 +10,198 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Core
 {
-    public partial class BrushMeshManager
+    public static partial class BrushMeshManager
     {
-        static List<BrushMesh>	brushMeshes		= new List<BrushMesh>();
-        static List<int>		userIDs			= new List<int>();
-        static List<int>		unusedIDs		= new List<int>();
+        internal static NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobs; // same as ChiselMeshLookup.Value.brushMeshBlobs
 
-        internal static bool		IsBrushMeshIDValid		(Int32 brushMeshInstanceID)	{ return brushMeshInstanceID > 0 && brushMeshInstanceID <= brushMeshes.Count; }
-
-        private static bool			AssertBrushMeshIDValid	(Int32 brushMeshInstanceID)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static void Convert(in BrushMesh.Polygon srcPolygon, ref BrushMeshBlob.Polygon dstPolygon)
         {
-            if (!IsBrushMeshIDValid(brushMeshInstanceID))
-            {
-                var nodeIndex = brushMeshInstanceID - 1;
-                if (nodeIndex >= 0 && nodeIndex < brushMeshes.Count)
-                    Debug.LogError($"Invalid ID {brushMeshInstanceID}");
-                else
-                    Debug.LogError($"Invalid ID {brushMeshInstanceID}, outside of bounds (min 1, max {brushMeshes.Count})");
-                return false;
-            }
-            return true;
+            dstPolygon.firstEdge        = srcPolygon.firstEdge;
+            dstPolygon.edgeCount        = srcPolygon.edgeCount;
+            dstPolygon.layerDefinition  = srcPolygon.surface?.brushMaterial?.LayerDefinition ?? SurfaceLayers.Empty;
+            dstPolygon.UV0              = srcPolygon.surface?.surfaceDescription.UV0 ?? UVMatrix.identity;
         }
 
-        internal static int			GetBrushMeshCount		()					{ return brushMeshes.Count - unusedIDs.Count; }
-
-        public static Int32			GetBrushMeshUserID		(Int32 brushMeshInstanceID)
+        public unsafe static BlobAssetReference<BrushMeshBlob> BuildBrushMeshBlob(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
         {
-            if (!AssertBrushMeshIDValid(brushMeshInstanceID))
-                return default;
-            return userIDs[brushMeshInstanceID - 1];
-        }
+            if (brushMesh == null ||
+                brushMesh.vertices == null ||
+                brushMesh.polygons == null ||
+                brushMesh.halfEdges == null ||
+                brushMesh.vertices.Length < 4 ||
+                brushMesh.polygons.Length < 4 ||
+                brushMesh.halfEdges.Length < 12)
+                return BlobAssetReference<BrushMeshBlob>.Null;
 
-        public static BrushMesh		GetBrushMesh			(BrushMeshInstance instance)
-        {
-            return GetBrushMesh(instance.brushMeshID);
-        }
-
-        public static BrushMesh		GetBrushMesh			(Int32 brushMeshInstanceID)
-        {
-            if (!AssertBrushMeshIDValid(brushMeshInstanceID))
-                return null;
-            var brushMesh = brushMeshes[brushMeshInstanceID - 1];
-            if (brushMesh == null)
-                return null;
-            return brushMesh;
-        }
-
-        public static MinMaxAABB    CalculateBounds         (Int32 brushMeshInstanceID, in float4x4 transformation)
-        {
-            if (!IsBrushMeshIDValid(brushMeshInstanceID))
-                return default;
-
-            var brushMesh = GetBrushMesh(brushMeshInstanceID);
-            if (brushMesh == null)
-                return default;
-
-            return BoundsExtensions.Create(transformation, brushMesh.vertices);
-        }
-
-        public static Int32 CreateBrushMesh(Int32				 userID,
-                                            float3[]			 vertices,
-                                            BrushMesh.HalfEdge[] halfEdges,
-                                            BrushMesh.Polygon[]	 polygons)
-        {
-            int			brushMeshID		= CreateBrushMeshID(userID);
-            BrushMesh	brushMesh		= GetBrushMesh(brushMeshID);
-
-            if (brushMesh == null)
-            {
-                Debug.LogWarning("brushMesh == nullptr");
-                DestroyBrushMesh(brushMeshID);
-                return BrushMeshInstance.InvalidInstanceID;
-            }
-
-            if (!brushMesh.Set(vertices, halfEdges, polygons))
-            {
-                Debug.LogWarning("GenerateMesh failed");
-                DestroyBrushMesh(brushMeshID);
-                return BrushMeshInstance.InvalidInstanceID;
-            }
-
-            var brushMeshIndex = brushMeshID - 1;
-            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
-            {
-                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
-                if (item.IsCreated)
-                    item.Dispose();
-            }
-
-            ChiselMeshLookup.Value.brushMeshUpdateList.Add(brushMeshIndex);
-            /*
-            Profiler.BeginSample("BrushMeshBlob.Build");
-            ChiselMeshLookup.Value.brushMeshBlobs[brushMeshIndex] = BrushMeshBlob.Build(brushMesh);
-            Profiler.EndSample();*/
-            return brushMeshID;
-        }
-
-
-        public static bool UpdateBrushMesh(Int32				brushMeshInstanceID,
-                                           float3[]			    vertices,
-                                           BrushMesh.HalfEdge[] halfEdges,
-                                           BrushMesh.Polygon[]	polygons)
-        {
-            if (vertices == null || halfEdges == null || polygons == null) return false;
+            var srcVertices             = brushMesh.vertices;
             
-            if (!AssertBrushMeshIDValid(brushMeshInstanceID))
-                return false;
+            var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
+            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
+            var totalPolygonSize        = 16 + (brushMesh.polygons.Length  * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
+            var totalPlaneSize          = 16 + (brushMesh.planes.Length    * UnsafeUtility.SizeOf<float4>());
+            var totalVertexSize         = 16 + (srcVertices.Length         * UnsafeUtility.SizeOf<float3>());
+            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
 
-            BrushMesh brushMesh = GetBrushMesh(brushMeshInstanceID);
-            if (brushMesh == null)
+            var min = srcVertices[0];
+            var max = srcVertices[0];
+            for (int i = 1; i < srcVertices.Length; i++)
             {
-                Debug.LogWarning("Brush has no BrushMeshInstance set");
-                return false;
+                min = math.min(min, srcVertices[i]);
+                max = math.max(max, srcVertices[i]);
+            }
+            var localBounds = new MinMaxAABB { Min = min, Max = max };
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+            root.localBounds = localBounds;
+            builder.Construct(ref root.localVertices, srcVertices);
+            builder.Construct(ref root.halfEdges, brushMesh.halfEdges);
+            builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
+            var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
+            for (int p = 0; p < brushMesh.polygons.Length; p++)
+            {
+                ref var srcPolygon = ref brushMesh.polygons[p];
+                ref var dstPolygon = ref polygonArray[p];
+                Convert(in srcPolygon, ref dstPolygon);
             }
 
-            if (!brushMesh.Set(vertices, halfEdges, polygons))
+            builder.Construct(ref root.localPlanes, brushMesh.planes);
+            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+            builder.Dispose();
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool		IsBrushMeshIDValid		(Int32 brushMeshHash)
+        {
+            return brushMeshBlobs.ContainsKey(brushMeshHash);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool			AssertBrushMeshIDValid	(Int32 brushMeshHash)
+        {
+            if (!IsBrushMeshIDValid(brushMeshHash))
             {
-                Debug.LogWarning("GenerateMesh failed");
+                Debug.LogError($"Invalid ID {brushMeshHash}");
                 return false;
             }
-
-            var brushMeshIndex = brushMeshInstanceID - 1;
-            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
-            {
-                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
-                if (item.IsCreated)
-                    item.Dispose();
-            }
-            ChiselMeshLookup.Value.brushMeshUpdateList.Add(brushMeshIndex);
             return true;
         }
 
-        private static int CreateBrushMeshID(Int32 userID)
+        public static MinMaxAABB CalculateBounds(Int32 brushMeshHash, in float4x4 transformation)
         {
-            if (unusedIDs.Count == 0)
-            {
-                int index = brushMeshes.Count;
-                brushMeshes.Add(new BrushMesh());
-                userIDs.Add(userID);
-                return index + 1;
-            }
+            if (!IsBrushMeshIDValid(brushMeshHash))
+                return default;
 
-            unusedIDs.Sort(); // sorry!
-            var brushMeshID		= unusedIDs[0];
-            var brushMeshIndex	= brushMeshID - 1;
-            unusedIDs.RemoveAt(0); // sorry again
-            brushMeshes[brushMeshIndex].Reset();
-            userIDs[brushMeshIndex] = userID;
-            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
-            {
-                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
-                if (item.IsCreated)
-                    item.Dispose();
-            }
-            return brushMeshID;
+            var brushMeshBlob = GetBrushMeshBlob(brushMeshHash);
+            if (!brushMeshBlob.IsCreated)
+                return default;
+
+            return BoundsExtensions.Create(transformation, ref brushMeshBlob.Value.localVertices);
         }
 
-        public static bool DestroyBrushMesh(Int32 brushMeshInstanceID)
+        public static BlobAssetReference<BrushMeshBlob> GetBrushMeshBlob(Int32 brushMeshHash)
         {
-            if (!AssertBrushMeshIDValid(brushMeshInstanceID))
+            if (!AssertBrushMeshIDValid(brushMeshHash))
+                return BlobAssetReference<BrushMeshBlob>.Null;
+            if (!brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
+                return BlobAssetReference<BrushMeshBlob>.Null;
+            return refCountedBrushMeshBlob.brushMeshBlob;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BlobAssetReference<BrushMeshBlob> GetBrushMeshBlob(BrushMeshInstance instance)
+        {
+            return GetBrushMeshBlob(instance.brushMeshHash);
+        }
+
+        public static Int32 CreateBrushMesh(BrushMesh brushMesh, Int32 oldBrushMeshHash = 0)
+        {
+            if (brushMesh			== null ||
+                brushMesh.vertices	== null ||
+                brushMesh.halfEdges	== null ||
+                brushMesh.polygons	== null)
+                return 0;
+
+            var edgeCount       = brushMesh.halfEdges.Length;
+            var polygonCount    = brushMesh.polygons.Length;
+            var vertexCount     = brushMesh.vertices.Length;
+            if (edgeCount < 12 || polygonCount < 4 || vertexCount < 4)
+                return 0;
+
+            int brushMeshHash = brushMesh.GetHashCode();
+            if (oldBrushMeshHash != 0)
+            {
+                if (oldBrushMeshHash == brushMeshHash) return oldBrushMeshHash;
+                DecreaseRefCount(oldBrushMeshHash);
+            }
+
+            ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
+            if (!brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
+            {
+                refCountedBrushMeshBlob = new RefCountedBrushMeshBlob
+                {
+                    refCount        = 1,
+                    brushMeshBlob   = BuildBrushMeshBlob(brushMesh, Allocator.Persistent),
+                };
+            } else
+                refCountedBrushMeshBlob.refCount++;
+
+            brushMeshBlobs[brushMeshHash] = refCountedBrushMeshBlob;
+            return brushMeshHash;
+        }
+
+        public static Int32 CreateBrushMesh(BlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Int32 oldBrushMeshHash = 0)
+        {
+            if (!brushMeshBlobRef.IsCreated)
+                return 0;
+
+            ref var brushMeshBlob   = ref brushMeshBlobRef.Value;
+            var edgeCount           = brushMeshBlob.halfEdges.Length;
+            var polygonCount        = brushMeshBlob.polygons.Length;
+            var vertexCount         = brushMeshBlob.localVertices.Length;
+            if (edgeCount < 12 || polygonCount < 4 || vertexCount < 4)
+                return 0;
+
+            int brushMeshHash = brushMeshBlob.GetHashCode();
+            if (oldBrushMeshHash != 0)
+            {
+                if (oldBrushMeshHash == brushMeshHash) return oldBrushMeshHash;
+                DecreaseRefCount(oldBrushMeshHash);
+            }
+
+            if (!brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
+            {
+                refCountedBrushMeshBlob = new RefCountedBrushMeshBlob
+                {
+                    refCount = 1,
+                    brushMeshBlob = brushMeshBlobRef,
+                };
+            } else
+                refCountedBrushMeshBlob.refCount++;
+
+            brushMeshBlobs[brushMeshHash] = refCountedBrushMeshBlob;
+            return brushMeshHash;
+        }
+
+        internal static bool DecreaseRefCount(Int32 brushMeshHash)
+        {
+            if (!AssertBrushMeshIDValid(brushMeshHash))
                 return false;
 
-            Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshInstanceID);
-
-            var brushMeshIndex = brushMeshInstanceID - 1;
-            if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
+            if (brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
             {
-                ChiselMeshLookup.Value.brushMeshBlobs.Remove(brushMeshIndex);
-                if (item.IsCreated)
-                    item.Dispose();
+                refCountedBrushMeshBlob.refCount--;
+                if (refCountedBrushMeshBlob.refCount <= 0)
+                {
+                    Chisel.Core.CompactHierarchyManager.NotifyBrushMeshRemoved(brushMeshHash);
+                    refCountedBrushMeshBlob.brushMeshBlob.Dispose();
+                    brushMeshBlobs.Remove(brushMeshHash);
+                }
             }
-            brushMeshes[brushMeshIndex].Reset();
-            userIDs[brushMeshIndex] = default;
-            unusedIDs.Add(brushMeshInstanceID);
-
-            // TODO: remove elements when last values are invalid
 
             return true;
-        }
-        
-        internal static BrushMeshInstance[] GetAllBrushMeshInstances()
-        {
-            var instanceCount = GetBrushMeshCount();
-            var allInstances = new BrushMeshInstance[instanceCount];
-            if (instanceCount == 0)
-                return allInstances;
-            
-            int index = 0;
-            for (int i = 0; i < brushMeshes.Count; i++)
-            {
-                if (IsBrushMeshIDValid(i))
-                    continue;
-                
-                allInstances[index] = new BrushMeshInstance() { brushMeshID = i };
-                index++;
-            }
-            return allInstances;
         }
     }
 }

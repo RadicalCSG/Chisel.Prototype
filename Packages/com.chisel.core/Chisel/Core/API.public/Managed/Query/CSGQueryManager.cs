@@ -70,12 +70,14 @@ namespace Chisel.Core
 
                                   List<CSGTreeBrushIntersection> foundIntersections)
         {
-            var brushMeshInstanceID = brush.BrushMesh.brushMeshID;
-            var brushMesh           = BrushMeshManager.GetBrushMesh(brushMeshInstanceID);
+            var brushMeshInstanceID = brush.BrushMesh.brushMeshHash;
+            var brushMeshBlob       = BrushMeshManager.GetBrushMeshBlob(brushMeshInstanceID);
+            if (!brushMeshBlob.IsCreated)
+                return false;
 
-            if (brushMesh == null ||
-                brushMesh.planes == null ||
-                brushMesh.planes.Length == 0)
+            ref var brushMesh = ref brushMeshBlob.Value;
+            ref var planes = ref brushMesh.localPlanes;
+            if (planes.Length == 0)
 		        return false;
 
             var treeToNodeSpace = (Matrix4x4)brush.TreeToNodeSpaceMatrix;
@@ -89,7 +91,7 @@ namespace Chisel.Core
 
             var brush_ray_start	= brushRayStart;
             var brush_ray_end	= brushRayEnd;
-            for (var s = 0; s < brushMesh.planes.Length; s++)
+            for (var s = 0; s < planes.Length; s++)
             {
                 // Compare surface with 'current' meshquery (is this surface even being rendered???)
                 if (ignoreCulled)
@@ -103,7 +105,7 @@ namespace Chisel.Core
                     Debug.Assert(surfaces[s].surfaceIndex == s);
                 }
 
-                var plane = new Plane(brushMesh.planes[s].xyz, brushMesh.planes[s].w);
+                var plane = new Plane(planes[s].xyz, planes[s].w);
                 var s_dist = plane.GetDistanceToPoint(brush_ray_start);
                 var e_dist = plane.GetDistanceToPoint(brush_ray_end);
                 var length = s_dist - e_dist;
@@ -120,12 +122,12 @@ namespace Chisel.Core
                 //if (!brushMesh.localBounds.Contains(intersection))
                 //    continue;
                 bool skipSurface = false;
-                for (var s2 = 0; s2 < brushMesh.planes.Length; s2++)
+                for (var s2 = 0; s2 < planes.Length; s2++)
                 {
                     if (s == s2)
                         continue;
 
-                    var plane2 = new Plane(brushMesh.planes[s2].xyz, brushMesh.planes[s2].w);
+                    var plane2 = new Plane(planes[s2].xyz, planes[s2].w);
                     var pl_dist = plane2.GetDistanceToPoint(intersection);
                     if (pl_dist > MathExtensions.kDistanceEpsilon) { skipSurface = true; break; }
                 }

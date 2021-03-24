@@ -329,13 +329,17 @@ namespace Chisel.Editors
 
             foreach (var intersection in s_FoundIntersections)
             {
-                var csgBrush    = intersection.brushIntersection.brush;
-                var csgTree     = intersection.brushIntersection.tree;
-                var brushMesh   = BrushMeshManager.GetBrushMesh(csgBrush.BrushMesh);
-                var polygons    = brushMesh.polygons;
-                var halfEdges   = brushMesh.halfEdges;
-                var vertices    = brushMesh.vertices;
-                var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
+                var csgBrush        = intersection.brushIntersection.brush;
+                var csgTree         = intersection.brushIntersection.tree;
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh               = ref brushMeshBlob.Value;
+                ref var polygons                = ref brushMesh.polygons;
+                ref var halfEdges               = ref brushMesh.halfEdges;
+                ref var vertices                = ref brushMesh.localVertices;
+                ref var halfEdgePolygonIndices  = ref brushMesh.halfEdgePolygonIndices;
 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
                 var worldToNode     = (Matrix4x4)csgBrush.TreeToNodeSpaceMatrix * model.hierarchyItem.WorldToLocalMatrix;
@@ -487,12 +491,16 @@ namespace Chisel.Editors
             foreach (var csgBrush in s_SelectedBrushes)
             {
                 var csgTree     = csgBrush.Tree;
-                var brushMesh   = BrushMeshManager.GetBrushMesh(csgBrush.BrushMesh);
-                var polygons    = brushMesh.polygons;
-                var halfEdges   = brushMesh.halfEdges;
-                var vertices    = brushMesh.vertices;
-                var planes      = brushMesh.planes;
-                var halfEdgePolygonIndices = brushMesh.halfEdgePolygonIndices;
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(csgBrush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh   = ref brushMeshBlob.Value;
+                ref var polygons    = ref brushMesh.polygons;
+                ref var halfEdges   = ref brushMesh.halfEdges;
+                ref var vertices    = ref brushMesh.localVertices;
+                ref var planes      = ref brushMesh.localPlanes;
+                ref var halfEdgePolygonIndices = ref brushMesh.halfEdgePolygonIndices;
 
                 // TODO: store this information with brush 
                 var model           = ChiselNodeHierarchyManager.FindChiselNodeByInstanceID(csgTree.UserID) as ChiselModel;
@@ -879,14 +887,18 @@ namespace Chisel.Editors
 
                 var brush           = surfaceSnapEvent.brush;
                 var surfaceIndex    = surfaceSnapEvent.surfaceIndex;
-                var brushMesh       = BrushMeshManager.GetBrushMesh(brush.BrushMesh);
+                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh);
+                if (!brushMeshBlob.IsCreated)
+                    continue;
+
+                ref var brushMesh   = ref brushMeshBlob.Value;
                 var polygon         = brushMesh.polygons[surfaceIndex];
                 var firstEdge       = polygon.firstEdge;
                 var lastEdge        = firstEdge + polygon.edgeCount;
                 s_PolygonVertices.Clear();
                 for (int e = firstEdge; e < lastEdge; e++)
                 {
-                    var vertex = brushMesh.vertices[brushMesh.halfEdges[e].vertexIndex];
+                    var vertex = brushMesh.localVertices[brushMesh.halfEdges[e].vertexIndex];
                     s_PolygonVertices.Add(vertex);
                 }
                 

@@ -90,7 +90,6 @@ namespace Chisel.Components
                     instances[i] = BrushMeshInstance.InvalidInstance;
             }
 
-            var userID = GetInstanceID();
             for (int i = 0; i < instances.Length; i++)
             {
                 ref var brushMesh = ref brushContainer.brushMeshes[i];
@@ -102,10 +101,10 @@ namespace Chisel.Components
                 {
                     if (instances[i] == BrushMeshInstance.InvalidInstance)
                     {
-                        instances[i] = BrushMeshInstance.Create(brushMesh, userID: userID);
+                        instances[i] = BrushMeshInstance.Create(brushMesh);
                     } else
                     {
-                        instances[i].Set(brushMesh, false);
+                        instances[i].Set(brushMesh);
                     }
                 }
             }
@@ -125,13 +124,12 @@ namespace Chisel.Components
                 if (!brushMesh.Validate(logErrors: true))
                     brushMesh.Clear();
                 Profiler.BeginSample("instance.Set");
-                instances[i].Set(brushMesh, notifyBrushMeshNotified: false);
+                instances[i].Set(brushMesh);
                 Profiler.EndSample();
                 modifiedBrushMeshes.Add(instances[i].BrushMeshID);
             }
 
             Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
-            //CSGManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
             Profiler.EndSample();
         }
@@ -150,7 +148,7 @@ namespace Chisel.Components
                     if (!brushMesh.Validate(logErrors: true))
                         brushMesh.Clear();
                     Profiler.BeginSample("instance.Set");
-                    instances[i].Set(brushMesh, notifyBrushMeshNotified: false);
+                    instances[i].Set(brushMesh);
                     Profiler.EndSample();
                 }
             }

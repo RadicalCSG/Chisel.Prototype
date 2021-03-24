@@ -12,7 +12,7 @@ namespace Chisel.Core
     struct FillBrushMeshBlobLookupJob : IJob
     {
         // Read
-        [NoAlias, ReadOnly] public NativeHashMap<int, BlobAssetReference<BrushMeshBlob>> brushMeshBlobs;        
+        [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobs;        
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>   allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>          allBrushMeshInstanceIDs;
 
@@ -25,16 +25,16 @@ namespace Chisel.Core
             int surfaceCount = 0;
             for (int nodeOrder = 0; nodeOrder < allBrushMeshInstanceIDs.Length; nodeOrder++)
             {
-                int brushMeshID = allBrushMeshInstanceIDs[nodeOrder];
-                if (brushMeshID == 0)
+                int brushMeshHash = allBrushMeshInstanceIDs[nodeOrder];
+                if (brushMeshHash == 0)
                 {
                     // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
                     brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
                 } else
-                if (brushMeshBlobs.TryGetValue(brushMeshID - 1, out var item))
+                if (brushMeshBlobs.TryGetValue(brushMeshHash, out var item))
                 {
-                    surfaceCount += item.Value.polygons.Length;
-                    brushMeshLookup[nodeOrder] = item;
+                    surfaceCount += item.brushMeshBlob.Value.polygons.Length;
+                    brushMeshLookup[nodeOrder] = item.brushMeshBlob;
                 } else
                 {
                     // *should* never happen
@@ -42,7 +42,7 @@ namespace Chisel.Core
                     var indexOrder  = allTreeBrushIndexOrders[nodeOrder];
                     var nodeID      = indexOrder.compactNodeID;
                 
-                    Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshID}, which is not initialized.");
+                    Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is not initialized.");
                     brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
                 }
             }

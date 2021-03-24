@@ -25,7 +25,7 @@ namespace Chisel.Core
     [Serializable, StructLayout(LayoutKind.Sequential)]
     public struct SmoothingGroup
     {
-        public UInt32           value;
+        public UInt32 value;
 
         public static implicit operator uint(SmoothingGroup smoothingGroup) { return smoothingGroup.value; }
         public static implicit operator SmoothingGroup(uint smoothingGroup) { return new SmoothingGroup() { value = smoothingGroup }; }
@@ -42,12 +42,28 @@ namespace Chisel.Core
 
         public ChiselBrushMaterial  brushMaterial;
         public SurfaceDescription   surfaceDescription;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override unsafe int GetHashCode()
+        {
+            unchecked
+            {
+                uint hash = 0;
+                fixed (SurfaceDescription* surfaceDescriptionPtr = &surfaceDescription)
+                {
+                    hash = math.hash(surfaceDescriptionPtr, sizeof(SurfaceDescription));
+                }
+                hash = math.hash(new uint2(hash, (uint)brushMaterial.GetHashCode()));
+                return (int)hash;
+            }
+        }
     }
 
     /// <summary>Describes how the texture coordinates and normals are generated and if a surface is, for example, <see cref="Chisel.Core.LayerUsageFlags.Renderable"/> and/or <see cref="Chisel.Core.LayerUsageFlags.Collidable" /> etc.</summary>
     /// <seealso cref="Chisel.Core.BrushMesh.Polygon"/>
     /// <seealso cref="Chisel.Core.BrushMesh"/>
     [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     public struct SurfaceDescription
     {
         public const string kSmoothingGroupName = nameof(smoothingGroup);
@@ -91,6 +107,27 @@ namespace Chisel.Core
         [HideInInspector]
         [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
                                                         // new instances will have the latest version
+
+        static BrushMeshBlob.Polygon[] s_TempPolygons;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override unsafe int GetHashCode()
+        {
+            unchecked
+            {
+                if (s_TempPolygons == null || s_TempPolygons.Length < polygons.Length)
+                    s_TempPolygons = new BrushMeshBlob.Polygon[polygons.Length];
+                for (int i = 0; i < polygons.Length; i++)
+                    BrushMeshManager.Convert(in polygons[i], ref s_TempPolygons[i]);
+                fixed (BrushMeshBlob.Polygon* polygonsPtr  = s_TempPolygons)
+                fixed (float3*                verticesPtr  = vertices)
+                fixed (HalfEdge*              halfEdgesPtr = halfEdges)
+                {
+                    return (int)math.hash(new uint3(math.hash(polygonsPtr,  sizeof(BrushMeshBlob.Polygon) * polygons.Length),
+                                                    math.hash(verticesPtr,  sizeof(float3  ) * vertices.Length),
+                                                    math.hash(halfEdgesPtr, sizeof(HalfEdge) * halfEdges.Length)));
+                }
+            }
+        }
 
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)

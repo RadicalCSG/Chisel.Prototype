@@ -332,7 +332,8 @@ namespace Chisel.Components
                     for (int i = 0; i < desiredCapacity; i++)
                     {
                         var meshDescription = vertexBufferContents.meshDescriptions[startIndex + i];
-                        var renderMaterial  = ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
+                        var renderMaterial  = ChiselMaterialManager.Instance.GetMaterial(meshDescription.surfaceParameter);
+                        //ChiselBrushMaterialManager.GetRenderMaterialByInstanceID(meshDescription.surfaceParameter);
 
                         instance.renderMaterials[i] = renderMaterial;
                     }

@@ -27,18 +27,6 @@ namespace Chisel.Components
         static readonly Dictionary<ChiselBrushMaterial, List<ChiselBrushContainerAsset>>    surfaceBrushMeshes = new Dictionary<ChiselBrushMaterial, List<ChiselBrushContainerAsset>>();
         
 
-        static ChiselBrushContainerAssetManager()
-        {
-            ChiselBrushMaterialManager.OnBrushMaterialChanged -= OnChiselBrushMaterialChanged;
-            ChiselBrushMaterialManager.OnBrushMaterialChanged += OnChiselBrushMaterialChanged;
-
-            ChiselBrushMaterialManager.OnBrushMaterialRemoved -= OnChiselBrushMaterialRemoved;
-            ChiselBrushMaterialManager.OnBrushMaterialRemoved += OnChiselBrushMaterialRemoved;
-
-            ChiselBrushMaterialManager.OnBrushMaterialsReset -= OnChiselBrushMaterialsReset;
-            ChiselBrushMaterialManager.OnBrushMaterialsReset += OnChiselBrushMaterialsReset;
-        }
-
         static List<ChiselBrushContainerAsset>  sRemoveChiselBrushContainerAsset   = new List<ChiselBrushContainerAsset>();
         static List<ChiselBrushMaterial>        sRemoveChiselBrushMaterial         = new List<ChiselBrushMaterial>();
         static void Clear()
@@ -135,59 +123,6 @@ namespace Chisel.Components
             return updateQueueLookup.Contains(brushContainerAsset);
         }
 
-        public static void UnregisterAllSurfaces(ChiselBrushContainerAsset brushContainerAsset)
-        {
-            if (!brushContainerAsset || brushContainerAsset.SubMeshCount == 0)
-                return;
-            foreach (var brushMesh in brushContainerAsset.BrushMeshes)
-            {
-                if (brushMesh.polygons == null)
-                    continue;
-                foreach (var polygon in brushMesh.polygons)
-                {
-                    if (polygon.surface == null ||
-                        polygon.surface.brushMaterial == null)
-                        continue;
-                    ChiselBrushMaterialManager.Unregister(polygon.surface.brushMaterial);
-                }
-            }
-        }
-
-        public static void RegisterAllSurfaces(ChiselBrushContainerAsset brushContainerAsset)
-        {
-            if (!brushContainerAsset || brushContainerAsset.SubMeshCount == 0)
-                return;
-            foreach (var brushMesh in brushContainerAsset.BrushMeshes)
-            {
-                if (brushMesh.polygons == null)
-                    continue;
-                foreach (var polygon in brushMesh.polygons)
-                {
-                    if (polygon.surface == null)
-                        continue;
-                    if (polygon.surface.brushMaterial == null)
-                    {
-                        polygon.surface.brushMaterial = ChiselBrushMaterial.CreateInstance();
-                        if (polygon.surface.brushMaterial != null)
-                        {
-                            polygon.surface.brushMaterial.LayerUsage        = polygon.surface.brushMaterial.LayerUsage;
-                            polygon.surface.brushMaterial.PhysicsMaterial   = polygon.surface.brushMaterial.PhysicsMaterial;
-                            polygon.surface.brushMaterial.RenderMaterial    = polygon.surface.brushMaterial.RenderMaterial;
-                        }
-                    }
-                    ChiselBrushMaterialManager.Register(polygon.surface.brushMaterial);
-                }
-            }
-        }
-
-        public static void RegisterAllSurfaces()
-        {
-            foreach (var brushContainerAsset in registeredLookup)
-            {
-                RegisterAllSurfaces(brushContainerAsset);
-            }
-        }
-
         public static bool IsBrushMeshUnique(ChiselBrushContainerAsset currentBrushMesh)
         {
 #if UNITY_EDITOR
@@ -236,13 +171,6 @@ namespace Chisel.Components
 
             if (updateQueueLookup.Add(brushContainerAsset)) 
                 updateQueue.Add(brushContainerAsset);
-        }
-
-        static void OnChiselBrushMaterialsReset()
-        {
-            // TODO: what about the previously registered surfaces for this brush??
-
-            ChiselBrushContainerAssetManager.RegisterAllSurfaces();
         }
 
         static void OnChiselBrushMaterialChanged(ChiselBrushMaterial brushMaterial)
@@ -400,7 +328,6 @@ namespace Chisel.Components
             {
                 var brushContainerAsset = unregisterQueue[i];
                 RemoveSurfaces(brushContainerAsset);
-                UnregisterAllSurfaces(brushContainerAsset);
 
                 if (brushContainerAsset)
                 {
@@ -439,15 +366,11 @@ namespace Chisel.Components
                         Profiler.EndSample();
                     } else
                     {
-                        //UnregisterAllSurfaces(brushContainerAsset); // TODO: should we?
                         Profiler.BeginSample("UpdateInstances");
                         brushContainerAsset.UpdateInstances(modifiedBrushMeshes);
                         Profiler.EndSample();
                     }
 
-                    Profiler.BeginSample("RegisterAllSurfaces");
-                    RegisterAllSurfaces(brushContainerAsset);
-                    Profiler.EndSample();
                     Profiler.BeginSample("UpdateSurfaces");
                     UpdateSurfaces(brushContainerAsset);
                     Profiler.EndSample();

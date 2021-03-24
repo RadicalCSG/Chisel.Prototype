@@ -111,9 +111,6 @@ namespace Chisel.Components
             ChiselBrushContainerAssetManager.Reset();
             Profiler.EndSample();
 
-            Profiler.BeginSample("ChiselBrushMaterialManager.Reset");
-            ChiselBrushMaterialManager.Reset();
-            Profiler.EndSample();
             endTime = Time.realtimeSinceStartup;
             Debug.Log($"  Reset done in {((endTime - startTime) * 1000)} ms. ");
 
@@ -748,11 +745,6 @@ UpdateAgain:
                 Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
                 ChiselBrushContainerAssetManager.Update();
                 Profiler.EndSample();
-
-                Profiler.BeginSample("ChiselBrushMaterialManager.Update");
-                ChiselBrushMaterialManager.Update();
-                Profiler.EndSample();
-
                 Profiler.BeginSample("UpdateTrampoline");
                 haveCreatedTreeNodes = UpdateTrampoline();
                 Profiler.EndSample();
@@ -762,10 +754,6 @@ UpdateAgain:
                 {
                     Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
                     try { ChiselBrushContainerAssetManager.Update(); }
-                    finally { Profiler.EndSample(); }
-
-                    Profiler.BeginSample("ChiselBrushMaterialManager.Update");
-                    try { ChiselBrushMaterialManager.Update(); }
                     finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("UpdateTrampoline");
@@ -899,14 +887,12 @@ UpdateAgain:
                 firstStart = true;
                 Chisel.Core.CompactHierarchyManager.Clear();
                 ChiselBrushContainerAssetManager.Reset();
-                ChiselBrushMaterialManager.Reset();
 
                 // Prefabs can fire events that look like objects have been loaded/created ..
                 // Also, starting up in the editor can swallow up events and cause some nodes to not be registered properly
                 // So to ensure that the first state is correct, we get it explicitly
                 FindAndReregisterAllNodes();
                 ChiselBrushContainerAssetManager.Update();
-                ChiselBrushMaterialManager.Update();
 #if UNITY_EDITOR
                 ChiselGeneratedComponentManager.OnVisibilityChanged();
 #endif

@@ -37,7 +37,6 @@ namespace Chisel.Editors
             SurfaceReference.BrushSurface.surfaceDescription.smoothingGroup     = BrushSurface.surfaceDescription.smoothingGroup;
             SurfaceReference.BrushSurface.surfaceDescription.surfaceFlags       = BrushSurface.surfaceDescription.surfaceFlags;
             SurfaceReference.BrushSurface.surfaceDescription.UV0                = BrushSurface.surfaceDescription.UV0;
-            BrushSurface.brushMaterial.SetDirty();
             SurfaceReference.SetDirty();
         }
     }

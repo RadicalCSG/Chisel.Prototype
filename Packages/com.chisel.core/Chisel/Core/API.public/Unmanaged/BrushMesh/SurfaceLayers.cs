@@ -117,7 +117,7 @@ namespace Chisel.Core
     {
         public static readonly SurfaceLayers Empty = new SurfaceLayers
         {
-            layerUsage = LayerUsageFlags.None,
+            layerUsage      = LayerUsageFlags.None,
             layerParameters = int3.zero
         };
 

@@ -12,38 +12,36 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
-    // TODO: add test for when adding a node itself as a parent
-    // TODO: add tests to make sure we're not adding children to brushes
-
     // TODO: need a way to store unique brushMeshes 
     //          use hashes to combine duplicates
     //          hash == id
     //          replace brushManager with this
-    // TODO: properly calculate transformation hierarchy
-    // TODO: properly generate wireframes (remove redundant stuff)
-    // TODO: move queries to non managed code
-    // TODO: need unmanaged Decomposition
 
     // TODO: need debug visualization (editor window)
+    //      TODO: need way to iterate through all valid nodes in hierarchy
+    //      TODO: need way to iterate through all "root nodes" (no parent)
+    //      TODO: need way to count valid nodes
+    //      TODO: need way to count root nodes (no parent)
+    //      TODO: need way to count unused elements in hierarchy
 
-    // TODO: clean up IsValidNodeIDs etc (implicit call to IsValidCompactNodeID)
-
-    // TODO: find a way to avoid requiring a default hierarchy?
+    // TODO: need way to be able to serialize hierarchy (so we can cache them w/ generators)
 
     // TODO: CompactHierarchy.CreateHierarchy needs to add to CompactHierarchyManager?
     // TODO: implement CompactInternal
     //          -> create new hierarchy, add everything in order, destroy old hierarchy
     // TODO: implement GetHash()
 
-
-    // TODO: need way to iterate through all valid nodes in hierarchy
-    // TODO: need way to iterate through all "root nodes" (no parent)
-    // TODO: need way to count valid nodes
-    // TODO: need way to count root nodes (no parent)
-    // TODO: need way to count unused elements in hierarchy
+    // TODO: clean up IsValidNodeIDs etc (implicit call to IsValidCompactNodeID)
+    // TODO: clean up error handling
 
     // TODO: how do generator nodes fit into this?
-    // TODO: need way to be able to serialize hierarchy (so we can cache them w/ generators)
+
+    // TODO: find a way to avoid requiring a default hierarchy?
+
+    // TODO: properly calculate transformation hierarchy
+    // TODO: properly generate wireframes (remove redundant stuff)
+    // TODO: move queries to non managed code
+    // TODO: need unmanaged Decomposition
 
     /*
 
@@ -867,6 +865,7 @@ namespace Chisel.Core
             }
         }
 
+
         // TODO: when we change brushMeshIDs to be hashes of meshes, 
         //       we need to pass along both the original and the new hash and switch them
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -945,14 +944,8 @@ namespace Chisel.Core
             }
         }
 
-        internal int CompactNodeCount
-        {
-            get
-            {
-                return compactNodes.Length;
-            }
-        }
 
+        
         // Temporary workaround until we can switch to hashes
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsAnyStatusFlagSet(CompactNodeID compactNodeID)

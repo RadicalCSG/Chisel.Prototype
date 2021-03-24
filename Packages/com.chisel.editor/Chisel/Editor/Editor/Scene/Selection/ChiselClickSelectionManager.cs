@@ -463,7 +463,6 @@ namespace Chisel.Editors
 
             if (ChiselGeneratedComponentManager.IsValidModelToBeSelected(model))
             { 
-                //int filterLayerParameter0 = (sharedMaterial) ? sharedMaterial.GetInstanceID() : 0;
                 {
                     var worldRay		= camera.ScreenPointToRay(pickposition);
                     var worldRayStart	= worldRay.origin;

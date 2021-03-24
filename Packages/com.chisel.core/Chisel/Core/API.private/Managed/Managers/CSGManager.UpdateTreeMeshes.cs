@@ -76,13 +76,6 @@ namespace Chisel.Core
             #region Do the setup for the CSG Jobs (not jobified)
             Profiler.BeginSample("CSG_Prepare");
 
-            #region Update Unique BrushMeshBlobs
-            // This cache stores all brushMeshes of all trees
-            Profiler.BeginSample("CSG_BrushMeshBlob_Generation");
-            ChiselMeshLookup.Update();
-            Profiler.EndSample();
-            #endregion
-
             #region Prepare Trees
             Profiler.BeginSample("CSG_TreeUpdate_Allocate");
             if (s_TreeUpdates == null || s_TreeUpdates.Length < treeNodeIDs.Count)
@@ -570,47 +563,26 @@ namespace Chisel.Core
                 ref var parameters1 = ref chiselLookupValues.parameters1;
                 ref var parameters2 = ref chiselLookupValues.parameters2;
                 var allKnownBrushMeshIndices    = chiselLookupValues.allKnownBrushMeshIndices;
-                var previousMeshIDGeneration    = chiselLookupValues.previousMeshIDGeneration;
 
-                ref var brushMeshBlobGeneration = ref ChiselMeshLookup.Value.brushMeshBlobGeneration;
                 ref var allBrushMeshInstanceIDs = ref currentTree.allBrushMeshInstanceIDs;
 
-                bool rebuildParameterList = false;
+                bool rebuildParameterList = true;
                 s_FoundBrushMeshIndices.Clear();
-                // TODO: just store CSGManager.brushInfos[xx].brushMeshInstanceID as a NativeList to begin with
-                // TODO: do this in job, build brushMeshList in same job
                 for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                 {
                     var nodeID      = allTreeBrushes[nodeOrder].NodeID;
-                    int brushMeshID = 0;
+                    int brushMeshHash = 0;
                     if (!CompactHierarchyManager.IsValidNodeID(nodeID) ||
                         // NOTE: Assignment is intended, this is not supposed to be a comparison
-                        (brushMeshID = new CSGTreeBrush { brushNodeID = nodeID }.BrushMesh.brushMeshID) == 0)
+                        (brushMeshHash = new CSGTreeBrush { brushNodeID = nodeID }.BrushMesh.brushMeshHash) == 0)
                     {
                         // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                        Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshID}, which is invalid.");                        
+                        Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is invalid.");                        
                         allBrushMeshInstanceIDs[nodeOrder] = 0;
                     } else
                     {
-                        if (!previousMeshIDGeneration.TryGetValue(brushMeshID, out var currentGeneration))
-                        {
-                            if (!brushMeshBlobGeneration.TryGetValue(brushMeshID - 1, out var newGeneration))
-                                newGeneration = 0;
-                            previousMeshIDGeneration[brushMeshID] = newGeneration;
-                        } else
-                        {
-                            if (!brushMeshBlobGeneration.TryGetValue(brushMeshID - 1, out var newGeneration))
-                                newGeneration = 0;
-                            if (currentGeneration != newGeneration)
-                            {
-                                // TODO: we do not have the previous parameters for this mesh to unregister .. 
-                                //       if we did, we could unregister those, and register the new ones instead
-                                rebuildParameterList = true;
-                                previousMeshIDGeneration[brushMeshID] = newGeneration;
-                            }
-                        }
-                        allBrushMeshInstanceIDs[nodeOrder] = brushMeshID;
-                        s_FoundBrushMeshIndices.Add(brushMeshID - 1);
+                        allBrushMeshInstanceIDs[nodeOrder] = brushMeshHash;
+                        s_FoundBrushMeshIndices.Add(brushMeshHash);
                     }
                 }
 
@@ -638,7 +610,7 @@ namespace Chisel.Core
                     parameters2.Clear();
                     foreach (var brushMeshIndex in allKnownBrushMeshIndices)
                     {
-                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].brushMeshBlob.Value.polygons;
                         for (int p = 0; p < polygons.Length; p++)
                         {
                             ref var polygon = ref polygons[p];
@@ -647,11 +619,11 @@ namespace Chisel.Core
                             if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.layerDefinition.layerParameter2);
                         }
                     }
-                } else
+                }/* else
                 {
                     foreach (int brushMeshIndex in s_RemoveBrushMeshIndices)
                     {
-                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].brushMeshBlob.Value.polygons;
                         for (int p = 0; p < polygons.Length; p++)
                         {
                             ref var polygon = ref polygons[p];
@@ -663,7 +635,7 @@ namespace Chisel.Core
                     }
                     foreach (int brushMeshIndex in s_FoundBrushMeshIndices)
                     {
-                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].Value.polygons;
+                        ref var polygons = ref brushMeshBlobs[brushMeshIndex].brushMeshBlob.Value.polygons;
                         for (int p = 0; p < polygons.Length; p++)
                         {
                             ref var polygon = ref polygons[p];
@@ -672,7 +644,7 @@ namespace Chisel.Core
                             if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.layerDefinition.layerParameter2);
                         }
                     }
-                }
+                }*/
                 
                 foreach (int brushMeshIndex in s_FoundBrushMeshIndices)
                     allKnownBrushMeshIndices.Add(brushMeshIndex);
@@ -2271,10 +2243,9 @@ namespace Chisel.Core
                         var brushIndexOrder = treeUpdate.allUpdateBrushIndexOrders[b];
                         var brushNodeID     = brushIndexOrder.compactNodeID;
                         var brush           = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(brushNodeID) };
-                        var brushMeshID     = brush.BrushMesh.brushMeshID;
-                        var brushMeshIndex  = brushMeshID - 1;
-                        if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshIndex, out BlobAssetReference<BrushMeshBlob> item))
-                            brush.Outline.Fill(ref item.Value);
+                        var brushMeshHash   = brush.BrushMesh.brushMeshHash;
+                        if (ChiselMeshLookup.Value.brushMeshBlobs.TryGetValue(brushMeshHash, out var item))
+                            brush.Outline.Fill(ref item.brushMeshBlob.Value);
                     }
                 }
                 Profiler.EndSample();
