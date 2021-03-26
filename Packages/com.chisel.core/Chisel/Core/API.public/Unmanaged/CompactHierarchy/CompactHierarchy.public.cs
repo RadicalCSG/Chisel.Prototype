@@ -35,8 +35,67 @@ namespace Chisel.Core
         NeedCSGUpdate               = ShapeModified | TransformationModified | HierarchyModified,
         NeedUpdateDirectOnly        = TransformationModified | OutlineModified,
     };
+    
+    [BurstCompatible]
+    public readonly struct NodeID : IComparable<NodeID>, IEquatable<NodeID>
+    {
+        public static readonly NodeID Invalid = default;
 
+        public readonly Int32 value;
+        public readonly Int32 generation;
+        internal NodeID(Int32 value, Int32 generation = 0) { this.value = value; this.generation = generation; }
 
+        #region Overhead
+        [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard] public override string ToString() { return $"NodeID = {value}"; }
+        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool operator ==(NodeID left, NodeID right) { return left.value == right.value && left.generation == right.generation; }
+        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool operator !=(NodeID left, NodeID right) { return left.value != right.value || left.generation != right.generation; }
+        [EditorBrowsable(EditorBrowsableState.Never)] public override bool Equals(object obj) { if (obj is NodeID) return this == ((NodeID)obj); return false; }
+        [EditorBrowsable(EditorBrowsableState.Never)] public override int GetHashCode() { return value; }
+        [EditorBrowsable(EditorBrowsableState.Never)] public int CompareTo(NodeID other) { var diff = value - other.value; if (diff != 0) return diff; return generation - other.generation; }
+        [EditorBrowsable(EditorBrowsableState.Never)] public bool Equals(NodeID other) { return value == other.value && generation == other.generation; }
+        #endregion
+    }
+
+    [BurstCompatible]
+    public struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
+    {
+        public static readonly CompactHierarchyID Invalid = default;
+
+        public readonly Int32 value;
+        public readonly Int32 generation;
+        internal CompactHierarchyID(Int32 value, Int32 generation = 0) { this.value = value; this.generation = generation; }
+
+        [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard]
+        public override string ToString() { return $"HierarchyID = {value}, Generation = {generation}"; }
+
+        #region Comparison
+        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(CompactHierarchyID left, CompactHierarchyID right) { return left.value == right.value && left.generation == right.generation; }
+        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(CompactHierarchyID left, CompactHierarchyID right) { return left.value != right.value || left.generation != right.generation; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override bool Equals(object obj) { if (obj is CompactHierarchyID) return this == ((CompactHierarchyID)obj); return false; }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override int GetHashCode() { return value; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int CompareTo(CompactHierarchyID other)
+        {
+            var diff = value - other.value;
+            if (diff != 0)
+                return diff;
+
+            return generation - other.generation;
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool Equals(CompactHierarchyID other)
+        {
+            return value == other.value && generation == other.generation;
+        }
+        #endregion
+    }
+    
     [BurstCompatible]
     public readonly struct CompactNodeID : IComparable<CompactNodeID>, IEquatable<CompactNodeID>
     {

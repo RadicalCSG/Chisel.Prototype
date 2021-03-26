@@ -172,13 +172,8 @@ namespace Chisel.Core
             }
 
             if (!brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
-            {
-                refCountedBrushMeshBlob = new RefCountedBrushMeshBlob
-                {
-                    refCount = 1,
-                    brushMeshBlob = brushMeshBlobRef,
-                };
-            } else
+                refCountedBrushMeshBlob = new RefCountedBrushMeshBlob { refCount = 1, brushMeshBlob = brushMeshBlobRef };
+            else
                 refCountedBrushMeshBlob.refCount++;
 
             brushMeshBlobs[brushMeshHash] = refCountedBrushMeshBlob;
