@@ -227,4 +227,29 @@ namespace Chisel.Editors
             }
         }
     }
+
+
+
+    [CanEditMultipleObjects]
+    public abstract class ChiselBrushGeneratorDefinitionEditor<ComponentType, DefinitionType> 
+        : ChiselBrushGeneratorEditor<ComponentType>
+        where ComponentType  : ChiselDefinedBrushGeneratorComponent<DefinitionType>
+        where DefinitionType : IChiselGenerator, IBrushGenerator, new()
+    {
+        protected override void OnScene(IChiselHandles handles, ComponentType generator)
+        {
+            generator.definition.OnEdit(handles);
+        }
+
+        protected override void OnMessages(IChiselMessages messages)
+        {
+            foreach (var target in targets)
+            {
+                var generator = target as ComponentType;
+                if (!generator)
+                    continue;
+                generator.definition.OnMessages(messages);
+            }
+        }
+    }
 }

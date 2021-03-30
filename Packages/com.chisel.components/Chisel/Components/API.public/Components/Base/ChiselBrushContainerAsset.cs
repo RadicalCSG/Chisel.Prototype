@@ -128,10 +128,10 @@ namespace Chisel.Components
                 Profiler.EndSample();
                 modifiedBrushMeshes.Add(instances[i].BrushMeshID);
             }
-
+            /*
             Profiler.BeginSample("CSGManager.NotifyBrushMeshModified");
             Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
-            Profiler.EndSample();
+            Profiler.EndSample();*/
         }
 
         internal void UpdateInstances(HashSet<int> modifiedBrushMeshes)

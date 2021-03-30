@@ -26,7 +26,7 @@ namespace Chisel.Components
         }
         */
         public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
-        protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
+        protected virtual void OnDestroy() { ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         public void OnValidate()	{ OnValidateInternal(); }
 
         protected virtual void OnValidateInternal() { SetDirty(); }

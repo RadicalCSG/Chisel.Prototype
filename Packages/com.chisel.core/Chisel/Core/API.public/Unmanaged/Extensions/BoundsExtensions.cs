@@ -21,6 +21,20 @@ namespace Chisel.Core
             return true;
         }
 
+        public static bool IsValid(float3 min, float3 max)
+        {
+            const float kMinSize = 0.0001f;
+            if (math.abs(max.x - min.x) < kMinSize ||
+                math.abs(max.y - min.y) < kMinSize ||
+                math.abs(max.z - min.z) < kMinSize ||
+                !math.isfinite(min.x) || !math.isfinite(min.y) || !math.isfinite(min.z) ||
+                !math.isfinite(max.x) || !math.isfinite(max.y) || !math.isfinite(max.z) ||
+                math.isnan(min.x) || math.isnan(min.y) || math.isnan(min.z) ||
+                math.isnan(max.x) || math.isnan(max.y) || math.isnan(max.z))
+                return false;
+            return true;
+        }
+
         public static bool Intersects(this MinMaxAABB left, MinMaxAABB right, double epsilon)
         {
             return ((right.Max.x - left.Min.x) >= -epsilon) && ((left.Max.x - right.Min.x) >= -epsilon) &&

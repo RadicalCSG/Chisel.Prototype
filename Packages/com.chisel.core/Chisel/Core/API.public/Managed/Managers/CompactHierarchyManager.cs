@@ -136,6 +136,29 @@ namespace Chisel.Core
             return new CSGTree { treeNodeID = CompactHierarchyManager.GetNodeID(hierarchy.RootID) };
         }
 
+        public static void GetAllTreeNodes(List<CSGTreeNode> allNodes)
+        {
+            allNodes.Clear();
+
+            var hierarchyCount = hierarchies.Count;
+            if (hierarchyCount == 0)
+                return;
+
+            if (allNodes.Capacity < hierarchyCount)
+                allNodes.Capacity = hierarchyCount;
+
+            var tempNodes = new List<CSGTreeNode>();
+            for (int i = 0; i < hierarchyCount; i++)
+            {
+                if (!hierarchies[i].IsCreated)
+                    continue;
+                allNodes.Add(new CSGTree { treeNodeID = CompactHierarchyManager.GetNodeID(hierarchies[i].RootID) });
+                tempNodes.Clear();
+                GetHierarchyNodes(hierarchies[i].HierarchyID, tempNodes);
+                allNodes.AddRange(tempNodes);
+            }
+        }
+
         public static void GetAllTrees(List<CSGTree> allTrees)
         {
             allTrees.Clear();
@@ -151,7 +174,10 @@ namespace Chisel.Core
             {
                 if (!hierarchies[i].IsCreated)
                     continue;
-                allTrees.Add(new CSGTree { treeNodeID = CompactHierarchyManager.GetNodeID(hierarchies[i].RootID) });
+                var tree = new CSGTree { treeNodeID = CompactHierarchyManager.GetNodeID(hierarchies[i].RootID) };
+                if (!tree.Valid)
+                    continue;
+                allTrees.Add(tree);
             }
         }
 
@@ -558,6 +584,7 @@ namespace Chisel.Core
         }
         
 
+        /*
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [BurstDiscard]
         public static void NotifyBrushMeshModified(HashSet<int> modifiedBrushMeshes)
@@ -588,7 +615,7 @@ namespace Chisel.Core
                     continue;
                 hierarchies[i].NotifyBrushMeshRemoved(brushMeshID);
             }
-        }
+        }*/
 
         #region Dirty
         internal static bool IsNodeDirty(CompactNodeID compactNodeID)
@@ -1063,6 +1090,21 @@ namespace Chisel.Core
             return nodeRef.bounds;
         }
 
+        internal static MinMaxAABB GetBrushBounds(NodeID nodeID, float4x4 transformation)
+        {
+            if (!IsValidNodeID(nodeID, out var index))
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+
+            ref var nodeRef = ref GetHierarchy(compactNodeID).GetChildRef(compactNodeID);
+            if (nodeRef.brushMeshID == Int32.MaxValue)
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
+            
+            return BrushMeshManager.CalculateBounds(nodeRef.brushMeshID, in transformation);
+        }
         
         static CompactNodeID DeepMove(int nodeIndex, CompactNodeID destinationParentCompactNodeID, ref CompactHierarchy destinationHierarchy, ref CompactHierarchy sourceHierarchy, ref CompactChildNode sourceNode)
         {

@@ -180,7 +180,8 @@ namespace Chisel.Core
                 var nodeIDValueMin = int.MaxValue;
                 var nodeIDValueMax = 0;
                 if (brushCount > 0)
-                { 
+                {
+                    Debug.Assert(brushCount == allTreeBrushes.Count);
                     for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
                     {
                         var brush              = allTreeBrushes[nodeOrder];
@@ -614,9 +615,9 @@ namespace Chisel.Core
                         for (int p = 0; p < polygons.Length; p++)
                         {
                             ref var polygon = ref polygons[p];
-                            var layerUsage = polygon.layerDefinition.layerUsage;
-                            if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.RegisterParameter(polygon.layerDefinition.layerParameter1);
-                            if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.layerDefinition.layerParameter2);
+                            var layerUsage = polygon.surface.layerDefinition.layerUsage;
+                            if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.RegisterParameter(polygon.surface.layerDefinition.layerParameter1);
+                            if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.surface.layerDefinition.layerParameter2);
                         }
                     }
                 }/* else

@@ -207,20 +207,36 @@ namespace Chisel.Components
             {
                 if (!node || !node.isActiveAndEnabled)
                     continue;
+
                 var generator = node as ChiselGeneratorComponent;
-                if (!generator)
-                    continue;
+                if (generator)
+                { 
+                    if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
+                        continue;
 
-                if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
-                    continue;
+                    var compactNodeID   = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
+                    var modelNodeID     = CompactHierarchyManager.GetCompactNodeID(generator.hierarchyItem.Model.NodeID);
+                    if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
+                        prevState = VisibilityState.Unknown;
+                    var state = generator.UpdateVisibility(sceneVisibilityManager);
+                    visibilityStateLookup[compactNodeID] = state;
+                    visibilityStateLookup[modelNodeID] = state | prevState;
+                }
 
-                var compactNodeID   = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
-                var modelNodeID     = CompactHierarchyManager.GetCompactNodeID(generator.hierarchyItem.Model.NodeID);
-                if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
-                    prevState = VisibilityState.Unknown;
-                var state = generator.UpdateVisibility(sceneVisibilityManager);
-                visibilityStateLookup[compactNodeID] = state;
-                visibilityStateLookup[modelNodeID] = state | prevState;
+                var brushGenerator = node as ChiselBrushGeneratorComponent;
+                if (brushGenerator)
+                {
+                    if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
+                        continue;
+
+                    var compactNodeID = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
+                    var modelNodeID = CompactHierarchyManager.GetCompactNodeID(brushGenerator.hierarchyItem.Model.NodeID);
+                    if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
+                        prevState = VisibilityState.Unknown;
+                    var state = brushGenerator.UpdateVisibility(sceneVisibilityManager);
+                    visibilityStateLookup[compactNodeID] = state;
+                    visibilityStateLookup[modelNodeID] = state | prevState;
+                }
             }
 
             foreach (var model in models)

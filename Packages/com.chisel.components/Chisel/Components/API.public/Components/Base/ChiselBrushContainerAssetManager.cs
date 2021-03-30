@@ -380,11 +380,11 @@ namespace Chisel.Components
                     Debug.LogException(ex);
                 }
             }
-
+            /*
             if (modifiedBrushMeshes.Count > 0)
             {
                 Chisel.Core.CompactHierarchyManager.NotifyBrushMeshModified(modifiedBrushMeshes);
-            }
+            }*/
 
             Profiler.BeginSample("OnBrushMeshInstanceChanged");
             if (OnBrushMeshInstanceChanged != null)

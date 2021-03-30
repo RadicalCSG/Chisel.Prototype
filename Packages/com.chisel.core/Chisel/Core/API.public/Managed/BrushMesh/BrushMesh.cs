@@ -180,7 +180,7 @@ namespace Chisel.Core
             public ChiselSurface surface;
 
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public override string ToString() { return string.Format("{{ firstEdge = {0}, edgeCount = {1}, surfaceID = {2} }}", firstEdge, edgeCount, surfaceID); }
+            public override string ToString() { return $"{{ firstEdge = {firstEdge}, edgeCount = {edgeCount}, surfaceID = {surfaceID} }}"; }
         }
 
         /// <summary>Defines a half edge of a <see cref="Chisel.Core.BrushMesh"/>.</summary>
@@ -195,7 +195,7 @@ namespace Chisel.Core
             public Int32 twinIndex;
 
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public override string ToString() { return string.Format("{{ twinIndex = {0}, vertexIndex = {1} }}", twinIndex, vertexIndex); }
+            public override string ToString() { return $"{{ twinIndex = {twinIndex}, vertexIndex = {vertexIndex} }}"; }
         }
 
         /// <value>The vertices of this <see cref="Chisel.Core.BrushMesh"/>.</value> 

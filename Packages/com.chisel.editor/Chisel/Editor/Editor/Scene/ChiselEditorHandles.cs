@@ -25,7 +25,7 @@ namespace Chisel.Editors
     // TODO: add support for "editors" to have an init/shutdown/update part so we can cache handles
     public sealed class ChiselEditorHandles : IChiselHandles
     {
-        public void Start(ChiselGeneratorComponent generator, SceneView sceneView = null)
+        public void Start(ChiselNode generator, SceneView sceneView = null)
         {
             this.focusControl = UnitySceneExtensions.SceneHandleUtility.focusControl;
             this.disabled = UnitySceneExtensions.SceneHandles.disabled;
@@ -105,7 +105,7 @@ namespace Chisel.Editors
 
         int focusControl;
 
-        ChiselGeneratorComponent generator;
+        ChiselNode generator;
         Transform generatorTransform;
         public bool modified { get; private set; }
 
@@ -134,7 +134,7 @@ namespace Chisel.Editors
             }
         }
 
-        public readonly Dictionary<ChiselGeneratorComponent, object> generatorStateLookup = new Dictionary<ChiselGeneratorComponent, object>();
+        public readonly Dictionary<ChiselNode, object> generatorStateLookup = new Dictionary<ChiselNode, object>();
 
         public object generatorState 
         { 
@@ -1237,7 +1237,11 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, 90);
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
+                    else
+                    if (generator is ChiselBrushGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
                     return true;
                 }
                 case TurnState.AntiClockWise:
@@ -1248,7 +1252,11 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, -90);
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
+                    else
+                    if (generator is ChiselBrushGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
                     return true;
                 }
             }

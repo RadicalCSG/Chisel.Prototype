@@ -3,12 +3,16 @@ using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
     // TODO: beveled edges?
     [Serializable]
-    public struct ChiselBoxDefinition : IChiselGenerator
+    public struct ChiselBoxDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Box";
 
@@ -16,13 +20,13 @@ namespace Chisel.Core
 
         public UnityEngine.Bounds       bounds;
 
-        [NamedItems("Top", "Bottom", "Right", "Left", "Front", "Back", fixedSize = 6)]
+        [NamedItems("Top", "Bottom", "Right", "Left", "Back", "Front", fixedSize = 6)]
         public ChiselSurfaceDefinition  surfaceDefinition;
-        
-        public Vector3                  min		{ get { return bounds.min; } set { bounds.min = value; } }
-        public Vector3			        max	    { get { return bounds.max; } set { bounds.max = value; } }
-        public Vector3			        size    { get { return bounds.size; } set { bounds.size = value; } }
-        public Vector3			        center  { get { return bounds.center; } set { bounds.center = value; } }
+                
+        public Vector3      min		{ get { return bounds.min; } set { bounds.min = value; } }
+        public Vector3		max	    { get { return bounds.max; } set { bounds.max = value; } }
+        public Vector3		size    { get { return bounds.size; } set { bounds.size = value; } }
+        public Vector3		center  { get { return bounds.center; } set { bounds.center = value; } }
         
         public void Reset()
         {
@@ -42,6 +46,34 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (int)math.hash(new uint3(math.hash(bounds.min), 
+                                                math.hash(bounds.max),
+                                                (uint)surfaceDefinition.GetHashCode()));
+            }
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(CSGTreeBrush brush)
+        {
+            // TODO: create "hierarchy", insert brush, somehow make it possible to insert this hierarchy in higher level hierarchy
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                if (!BrushMeshFactory.CreateBox(bounds.min, bounds.max,
+                                                in surfaceDefinitionBlob,
+                                                out var brushMesh,
+                                                Allocator.Persistent))
+                    return false;
+
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            }
+            return true;
+        }
+
         public void OnEdit(IChiselHandles handles)
         {
             handles.DoBoundsHandle(ref bounds);
@@ -56,5 +88,4 @@ namespace Chisel.Core
                 messages.Warning(kDimensionCannotBeZero);
         }
     }
-
 }

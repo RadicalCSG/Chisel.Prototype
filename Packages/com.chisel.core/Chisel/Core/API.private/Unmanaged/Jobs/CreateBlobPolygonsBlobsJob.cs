@@ -265,9 +265,9 @@ namespace Chisel.Core
                 };
                 surfaceArray[i] = new BaseSurface
                 {
-                    layers      = polygon.layerDefinition,
+                    layers      = polygon.surface.layerDefinition,
                     localPlane  = localPlanes[validPolygons[i].basePlaneIndex],
-                    UV0         = polygon.UV0
+                    UV0         = polygon.surface.UV0
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);

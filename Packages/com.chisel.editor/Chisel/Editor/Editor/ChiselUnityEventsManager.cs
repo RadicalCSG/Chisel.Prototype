@@ -97,6 +97,7 @@ namespace Chisel.Editors
 
             // TODO: clean this up
             ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
+            ChiselBrushGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
         }
 
         private static void OnPickingChanged()
@@ -238,6 +239,7 @@ namespace Chisel.Editors
                 ChiselNodeHierarchyManager.Update();
                 ChiselGeneratedModelMeshManager.UpdateModels();
                 ChiselNodeEditorBase.HandleCancelEvent();
+                ChiselGeneratedComponentManager.UpdateVisibility();
             }
             catch (Exception ex)
             {

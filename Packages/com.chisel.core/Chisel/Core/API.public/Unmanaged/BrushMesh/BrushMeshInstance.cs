@@ -23,7 +23,7 @@ namespace Chisel.Core
         /// <summary>Create a <see cref="Chisel.Core.BrushMeshInstance"/> from a given <see cref="Chisel.Core.BrushMesh"/></summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to create an instance with</param>
         /// <returns>A newly created <see cref="Chisel.Core.BrushMeshInstance"/> on success, or an invalid <see cref="Chisel.Core.BrushMeshInstance"/> on failure.</returns>
-        public static BrushMeshInstance Create(BrushMesh brushMesh) { return new BrushMeshInstance { brushMeshHash = BrushMeshManager.CreateBrushMesh(brushMesh) }; }
+        public static BrushMeshInstance Create(BrushMesh brushMesh) { return new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) }; }
 
         /// <summary>Destroy the <see cref="Chisel.Core.BrushMeshInstance"/> and release the memory used by this instance.</summary>
         public void	Destroy		()					{ var prevBrushMeshID = brushMeshHash; brushMeshHash = BrushMeshInstance.InvalidInstanceID; BrushMeshManager.DecreaseRefCount(prevBrushMeshID); }
@@ -33,7 +33,7 @@ namespace Chisel.Core
         /// <returns><b>true</b> on success, <b>false</b> on failure. In case of failure the brush will keep using the previously set <see cref="Chisel.Core.BrushMesh"/>.</returns>
         public bool Set			(BrushMesh brushMesh)	
         {
-            brushMeshHash = BrushMeshManager.CreateBrushMesh(brushMesh, oldBrushMeshHash: brushMeshHash);
+            brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, oldBrushMeshHash: brushMeshHash);
             return Valid;
         }
         

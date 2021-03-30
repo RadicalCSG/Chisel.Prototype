@@ -71,6 +71,6 @@ namespace Chisel.Editors
             if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
                 return nodeDetails.HasValidState(node);
             return generatorDefaultDetails.HasValidState(node);
-        }
+        } 
     }
 }
