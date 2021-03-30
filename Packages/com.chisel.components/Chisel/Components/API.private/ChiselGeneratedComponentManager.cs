@@ -129,7 +129,7 @@ namespace Chisel.Components
             return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; 
         }
 
-        static bool updateVisibilityFlag = false;
+        static bool updateVisibilityFlag = true;
         public static void OnVisibilityChanged()
         {
             updateVisibilityFlag = true;
@@ -191,9 +191,9 @@ namespace Chisel.Components
             }
         }
 
-        public static void UpdateVisibility()
-        {
-            if (!updateVisibilityFlag)
+        public static void UpdateVisibility(bool force = false)
+        { 
+            if (!updateVisibilityFlag && !force)
                 return;
 
             updateVisibilityFlag = false;

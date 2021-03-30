@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Unity.Entities;
@@ -205,6 +205,9 @@ namespace Chisel.Core
                                                               bool              ignoreBackfaced = true, 
                                                               bool              ignoreCulled = true)
         {
+            if (!tree.Valid)
+                return null;
+
             s_IgnoreNodeIndices.Clear();
             if (ignoreNodes != null)
             {

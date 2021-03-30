@@ -144,6 +144,8 @@ namespace Chisel.Components
             Profiler.EndSample();
             endTime = Time.realtimeSinceStartup;
             Debug.Log($"  UpdateModels done in {((endTime - startTime) * 1000)} ms. ");
+
+            ChiselGeneratedComponentManager.UpdateVisibility(force: true);
         }
 
         // TODO: Probably needs to be internal?
@@ -1443,7 +1445,10 @@ UpdateAgain:
                 // Destroy all old nodes after we created new nodes, to make sure we don't get conflicting IDs
                 // TODO: add 'generation' to indices to avoid needing to do this
                 foreach (var item in destroyNodesList)
-                    item.Destroy();
+                {
+                    if (item.Valid)
+                        item.Destroy();
+                }
                 destroyNodesList.Clear();
             }
             Profiler.EndSample();

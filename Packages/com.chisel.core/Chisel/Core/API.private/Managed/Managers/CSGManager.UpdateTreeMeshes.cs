@@ -93,8 +93,8 @@ namespace Chisel.Core
 
                 var treeNodeID          = treeNodeIDs[t];
                 var treeCompactNodeID   = CompactHierarchyManager.GetCompactNodeID(treeNodeID);
-                if (currentTree.nodes == null) currentTree.nodes = new List<CompactNodeID>(); else currentTree.nodes.Clear();
-                if (currentTree.brushes == null) currentTree.brushes = new List<CSGTreeBrush>(); else currentTree.brushes.Clear();
+                if (currentTree.nodes   == null) currentTree.nodes   = new List<CompactNodeID>(); else currentTree.nodes.Clear();
+                if (currentTree.brushes == null) currentTree.brushes = new List<CSGTreeBrush>();  else currentTree.brushes.Clear();
                 CompactHierarchyManager.GetTreeNodes(treeNodeID, currentTree.nodes, currentTree.brushes);
 
 
@@ -489,8 +489,8 @@ namespace Chisel.Core
                         ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;
                         for (int i = 0; i < brushIntersections.Length; i++)
                         {
-                            var otherBrushID        = brushIntersections[i].nodeIndexOrder.compactNodeID;
-                            var otherBrush          = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID) };
+                            var otherBrushID = brushIntersections[i].nodeIndexOrder.compactNodeID;
+                            var otherBrush   = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID) };
 
                             if (!otherBrush.Valid)
                                 continue;
@@ -2517,9 +2517,6 @@ namespace Chisel.Core
                 loopVerticesLookup.ResizeExact(brushCount);
 
                 meshDatas.Clear();
-
-                if (brushes == null) brushes = new List<CSGTreeBrush>(); else brushes.Clear();
-                if (nodes == null) nodes = new List<CompactNodeID>(); else nodes.Clear();
             }
 
             // TODO: We're not reusing buffers, so clear is useless?
