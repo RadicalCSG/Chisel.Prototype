@@ -6,11 +6,14 @@ using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using UnityEngine.Profiling;
+using Unity.Burst;
+using Unity.Mathematics;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselHemisphereDefinition : IChiselGenerator
+    public struct ChiselHemisphereDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Hemisphere";
 
@@ -56,7 +59,36 @@ namespace Chisel.Core
         {
             return BrushMeshFactory.GenerateHemisphere(ref brushContainer, ref this);
         }
+        
 
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                Validate();
+
+                if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ, rotation, horizontalSegments, verticalSegments, in surfaceDefinitionBlob,
+                                                         out var brushMesh, Allocator.Persistent))
+                {
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    return false;
+                }
+
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                return true;
+            }
+        }
 
         //
         // TODO: code below needs to be cleaned up & simplified 

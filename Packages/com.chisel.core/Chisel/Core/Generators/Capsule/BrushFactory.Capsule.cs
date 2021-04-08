@@ -10,12 +10,161 @@ using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Entities;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+
+        [BurstCompile]
+        public static bool GenerateCapsule(in ChiselCapsuleDefinition.Settings                  settings,
+                                           in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
+                                           out BlobAssetReference<BrushMeshBlob>                brushMesh,
+                                           Allocator                                            allocator)
+        {
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new BlobBuilder(Allocator.Temp))
+            {
+                ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                if (!GenerateCapsuleVertices(in settings, in builder, ref root, out var localVertices))
+                    return false;
+
+                var bottomCap		= !settings.HaveRoundedBottom;
+                var topCap			= !settings.HaveRoundedTop;
+                var sides			= settings.sides;
+                var segments		= settings.Segments;
+                var bottomVertex	= settings.BottomVertex;
+                var topVertex		= settings.TopVertex;
+
+                if (!GenerateSegmentedSubMesh(sides, segments,
+                                              topCap, bottomCap,
+                                              topVertex, bottomVertex,
+                                              in localVertices, 
+                                              ref surfaceDefinition.Value,
+                                              in builder, ref root,
+                                              out var polygons,
+                                              out var halfEdges))
+                    return false;
+
+                var localPlanes             = builder.Allocate(ref root.localPlanes, polygons.Length);
+                var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
+                root.localBounds = CalculateBounds(in localVertices);
+                brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+                return true;
+            }
+        }
+
+        [BurstCompile]
+        public static bool GenerateCapsuleVertices(in ChiselCapsuleDefinition.Settings  settings,
+                                                   in BlobBuilder                       builder, 
+                                                   ref BrushMeshBlob                    root,
+                                                   out BlobBuilderArray<float3>         localVertices)
+        {
+            var haveTopHemisphere		= settings.HaveRoundedTop;
+            var haveBottomHemisphere	= settings.HaveRoundedBottom;
+            var haveMiddleCylinder		= settings.HaveCylinder;
+
+            localVertices = default;
+            if (!haveBottomHemisphere && !haveTopHemisphere && !haveMiddleCylinder)
+                return false;
+            
+            var radiusX				= settings.diameterX * 0.5f;
+            var radiusZ				= settings.diameterZ * 0.5f;
+            var topHeight			= haveTopHemisphere    ? settings.topHeight    : 0;
+            var bottomHeight		= haveBottomHemisphere ? settings.bottomHeight : 0;
+
+            var sides				= settings.sides;
+            
+            var extraVertices		= settings.ExtraVertexCount;
+
+            var bottomRings			= settings.BottomRingCount;
+            var topRings			= settings.TopRingCount;
+            var ringCount			= settings.RingCount;
+            var vertexCount			= settings.VertexCount;
+
+            var bottomVertex		= settings.BottomVertex;
+            var topVertex			= settings.TopVertex;
+
+            var topOffset			= settings.TopOffset    + settings.offsetY;
+            var bottomOffset		= settings.BottomOffset + settings.offsetY;
+
+            localVertices = builder.Allocate(ref root.localVertices, vertexCount);
+            if (haveBottomHemisphere) localVertices[bottomVertex] = new Vector3(0, 1, 0) * (bottomOffset - bottomHeight); // bottom
+            if (haveTopHemisphere   ) localVertices[topVertex   ] = new Vector3(0, 1, 0) * (topOffset    + topHeight   ); // top
+
+            var degreePerSegment	= (360.0f / sides) * Mathf.Deg2Rad;
+            var angleOffset			= settings.rotation + (((sides & 1) == 1) ? 0.0f : 0.5f * degreePerSegment);
+
+            var topVertexOffset		= extraVertices + ((topRings - 1) * sides);
+            var bottomVertexOffset	= extraVertices + ((ringCount - bottomRings) * sides);
+            var unitCircleOffset	= topVertexOffset;
+            var vertexIndex			= unitCircleOffset;
+            {
+                for (int h = sides - 1; h >= 0; h--, vertexIndex++)
+                {
+                    var hRad = (h * degreePerSegment) + angleOffset;
+                    localVertices[vertexIndex] = new Vector3(math.cos(hRad) * radiusX,  
+                                                             0.0f, 
+                                                             math.sin(hRad) * radiusZ);
+                }
+            }
+            for (int v = 1; v < topRings; v++)
+            {
+                vertexIndex			= topVertexOffset - (v * sides);
+                var segmentFactor	= ((v - (topRings * 0.5f)) / topRings) + 0.5f;	// [0.0f ... 1.0f]
+                var segmentDegree	= (segmentFactor * 90);							// [0 .. 90]
+                var segmentHeight	= topOffset + 
+                                        (math.sin(segmentDegree * Mathf.Deg2Rad) * 
+                                            topHeight);
+                var segmentRadius	= math.cos(segmentDegree * Mathf.Deg2Rad);		// [0 .. 0.707 .. 1 .. 0.707 .. 0]
+                for (int h = 0; h < sides; h++, vertexIndex++)
+                {
+                    localVertices[vertexIndex].x = localVertices[h + unitCircleOffset].x * segmentRadius;
+                    localVertices[vertexIndex].y = segmentHeight;
+                    localVertices[vertexIndex].z = localVertices[h + unitCircleOffset].z * segmentRadius; 
+                }
+            }
+            vertexIndex = bottomVertexOffset;
+            {
+                for (int h = 0; h < sides; h++, vertexIndex++)
+                {
+                    localVertices[vertexIndex] = new Vector3(localVertices[h + unitCircleOffset].x,  
+                                                             bottomOffset,
+                                                             localVertices[h + unitCircleOffset].z);
+                }
+            }
+            for (int v = 1; v < bottomRings; v++)
+            {
+                var segmentFactor	= ((v - (bottomRings * 0.5f)) / bottomRings) + 0.5f;	// [0.0f ... 1.0f]
+                var segmentDegree	= (segmentFactor * 90);									// [0 .. 90]
+                var segmentHeight	= bottomOffset - bottomHeight + 
+                                        ((1-math.sin(segmentDegree * Mathf.Deg2Rad)) * 
+                                            bottomHeight);
+                var segmentRadius	= math.cos(segmentDegree * Mathf.Deg2Rad);				// [0 .. 0.707 .. 1 .. 0.707 .. 0]
+                for (int h = 0; h < sides; h++, vertexIndex++)
+                {
+                    localVertices[vertexIndex].x = localVertices[h + unitCircleOffset].x * segmentRadius;
+                    localVertices[vertexIndex].y = segmentHeight;
+                    localVertices[vertexIndex].z = localVertices[h + unitCircleOffset].z * segmentRadius; 
+                }
+            }
+            {
+                for (int h = 0; h < sides; h++, vertexIndex++)
+                {
+                    localVertices[h + unitCircleOffset].y = topOffset;
+                }
+            }
+            return true;
+        }
+
+
+
         public static bool GenerateCapsule(ref ChiselBrushContainer brushContainer, ref ChiselCapsuleDefinition definition)
         {
             definition.Validate();
@@ -23,13 +172,14 @@ namespace Chisel.Core
             if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))
                 return false;
 
+            ref var settings = ref definition.settings;
             // TODO: share this with GenerateCapsuleVertices
-            var bottomCap		= !definition.haveRoundedBottom;
-            var topCap			= !definition.haveRoundedTop;
-            var sides			= definition.sides;
-            var segments		= definition.segments;
-            var bottomVertex	= definition.bottomVertex;
-            var topVertex		= definition.topVertex;
+            var bottomCap		= !settings.HaveRoundedBottom;
+            var topCap			= !settings.HaveRoundedTop;
+            var sides			= settings.sides;
+            var segments		= settings.Segments;
+            var bottomVertex	= settings.BottomVertex;
+            var topVertex		= settings.TopVertex;
 
             brushContainer.EnsureSize(1);
 
@@ -51,12 +201,13 @@ namespace Chisel.Core
             }
 
             // TODO: share this with GenerateCapsuleVertices
-            var bottomCap		= !definition.haveRoundedBottom;
-            var topCap			= !definition.haveRoundedTop;
-            var sides			= definition.sides;
-            var segments		= definition.segments;
-            var bottomVertex	= definition.bottomVertex;
-            var topVertex		= definition.topVertex;
+            ref var settings = ref definition.settings;
+            var bottomCap		= !settings.HaveRoundedBottom;
+            var topCap			= !settings.HaveRoundedTop;
+            var sides			= settings.sides;
+            var segments		= settings.Segments;
+            var bottomVertex	= settings.BottomVertex;
+            var topVertex		= settings.TopVertex;
             
             if (!BrushMeshFactory.GenerateSegmentedSubMesh(ref brushMesh, 
                                                            sides, segments, 
@@ -79,34 +230,35 @@ namespace Chisel.Core
         public static bool GenerateCapsuleVertices(ref ChiselCapsuleDefinition definition, ref Vector3[] vertices)
         {
             definition.Validate();
-            var haveTopHemisphere		= definition.haveRoundedTop;
-            var haveBottomHemisphere	= definition.haveRoundedBottom;
-            var haveMiddleCylinder		= definition.haveCylinder;
+            ref var settings = ref definition.settings;
+            var haveTopHemisphere		= settings.HaveRoundedTop;
+            var haveBottomHemisphere	= settings.HaveRoundedBottom;
+            var haveMiddleCylinder		= settings.HaveCylinder;
 
             if (!haveBottomHemisphere && !haveTopHemisphere && !haveMiddleCylinder)
                 return false;
             
-            var radiusX				= definition.diameterX * 0.5f;
-            var radiusZ				= definition.diameterZ * 0.5f;
-            var topHeight			= haveTopHemisphere    ? definition.topHeight    : 0;
-            var bottomHeight		= haveBottomHemisphere ? definition.bottomHeight : 0;
-            var totalHeight			= definition.height;
-            var cylinderHeight		= definition.cylinderHeight;
+            var radiusX				= settings.diameterX * 0.5f;
+            var radiusZ				= settings.diameterZ * 0.5f;
+            var topHeight			= haveTopHemisphere    ? settings.topHeight    : 0;
+            var bottomHeight		= haveBottomHemisphere ? settings.bottomHeight : 0;
+            var totalHeight			= settings.height;
+            var cylinderHeight		= settings.CylinderHeight;
             
-            var sides				= definition.sides;
+            var sides				= settings.sides;
             
-            var extraVertices		= definition.extraVertexCount;
+            var extraVertices		= settings.ExtraVertexCount;
 
-            var bottomRings			= definition.bottomRingCount;
-            var topRings			= definition.topRingCount;
-            var ringCount			= definition.ringCount;
-            var vertexCount			= definition.vertexCount;
+            var bottomRings			= settings.BottomRingCount;
+            var topRings			= settings.TopRingCount;
+            var ringCount			= settings.RingCount;
+            var vertexCount			= settings.VertexCount;
 
-            var bottomVertex		= definition.bottomVertex;
-            var topVertex			= definition.topVertex;
+            var bottomVertex		= settings.BottomVertex;
+            var topVertex			= settings.TopVertex;
 
-            var topOffset			= definition.topOffset    + definition.offsetY;
-            var bottomOffset		= definition.bottomOffset + definition.offsetY;
+            var topOffset			= settings.TopOffset    + settings.offsetY;
+            var bottomOffset		= settings.BottomOffset + settings.offsetY;
             
             if (vertices == null ||
                 vertices.Length != vertexCount)
@@ -116,7 +268,7 @@ namespace Chisel.Core
             if (haveTopHemisphere   ) vertices[topVertex   ] = new Vector3(0, 1, 0) * (topOffset    + topHeight   ); // top
 
             var degreePerSegment	= (360.0f / sides) * Mathf.Deg2Rad;
-            var angleOffset			= definition.rotation + (((sides & 1) == 1) ? 0.0f : 0.5f * degreePerSegment);
+            var angleOffset			= settings.rotation + (((sides & 1) == 1) ? 0.0f : 0.5f * degreePerSegment);
 
             var topVertexOffset		= extraVertices + ((topRings - 1) * sides);
             var bottomVertexOffset	= extraVertices + ((ringCount - bottomRings) * sides);

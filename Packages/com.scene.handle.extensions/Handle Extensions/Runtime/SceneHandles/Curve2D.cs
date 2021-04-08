@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,8 +18,8 @@ namespace UnitySceneExtensions
     [Serializable]
     public struct CurveControlPoint2D
     {
-        public CurveControlPoint2D(Vector2 position) { this.position = position; this.tangent1 = Vector3.zero; this.tangent2 = Vector3.zero; constraint1 = ControlPointConstraint.Straight; constraint2 = ControlPointConstraint.Straight; }
-        public CurveControlPoint2D(float x, float y) { this.position = new Vector2(x,y); this.tangent1 = Vector3.zero; this.tangent2 = Vector3.zero; constraint1 = ControlPointConstraint.Straight; constraint2 = ControlPointConstraint.Straight; }
+        public CurveControlPoint2D(Vector2 position) { this.position = position; this.tangent1 = Vector2.zero; this.tangent2 = Vector2.zero; constraint1 = ControlPointConstraint.Straight; constraint2 = ControlPointConstraint.Straight; }
+        public CurveControlPoint2D(float x, float y) { this.position = new Vector2(x,y); this.tangent1 = Vector2.zero; this.tangent2 = Vector2.zero; constraint1 = ControlPointConstraint.Straight; constraint2 = ControlPointConstraint.Straight; }
 
         [PositionValue] public Vector2 position;
         [DistanceValue] public Vector2 tangent1;
@@ -69,6 +70,7 @@ namespace UnitySceneExtensions
         }
         public void	SetConstraint(int index, ControlPointConstraint value) { if (index == 0) constraint1 = value; else constraint2 = value; }
     }
+
 
     [Serializable]
     public class Curve2D

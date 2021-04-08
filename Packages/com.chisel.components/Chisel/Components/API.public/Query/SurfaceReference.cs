@@ -165,9 +165,18 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                var generator = node as ChiselGeneratorComponent;
-                if (generator != null)
-                    return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation; 
+                {
+                    var generator = node as ChiselBrushGeneratorComponent;
+                    if (generator != null)
+                        return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation;
+                }
+
+                {
+                    var generator = node as ChiselGeneratorComponent;
+                    if (generator != null)
+                        return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation;
+                }
+
                 return node.hierarchyItem.LocalToWorldMatrix;
             }
         }
@@ -179,9 +188,18 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                var generator = node as ChiselGeneratorComponent;
-                if (generator != null)
-                    return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
+                {
+                    var generator = node as ChiselBrushGeneratorComponent;
+                    if (generator != null)
+                        return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
+                }
+
+                {
+                    var generator = node as ChiselGeneratorComponent;
+                    if (generator != null)
+                        return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
+                }
+
                 return node.hierarchyItem.WorldToLocalMatrix;
             }
         }

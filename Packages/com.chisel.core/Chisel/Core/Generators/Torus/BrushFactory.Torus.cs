@@ -1,89 +1,161 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
-using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
-using Mathf = UnityEngine.Mathf;
-using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static NativeArray<float3> GenerateTorusVertices(float   outerDiameter,
+                                                                float   tubeWidth, float tubeHeight, 
+                                                                float   tubeRotation, float startAngle, float totalAngle,
+                                                                int     verticalSegments, int horizontalSegments,
+                                                                bool    fitCircle,
+                                                                Allocator allocator)
+        {
+            var tubeRadiusX		= (tubeWidth  * 0.5f);
+            var tubeRadiusY		= (tubeHeight * 0.5f);
+            var torusRadius		= (outerDiameter * 0.5f) - tubeRadiusX;
+            
+            var horzSegments	= horizontalSegments;
+            var vertSegments	= verticalSegments;
+
+            var horzRadiansPerSegment = math.radians(totalAngle / horzSegments);
+            var vertRadiansPerSegment = math.radians(360.0f / vertSegments);
+
+            var circleVertices = new NativeArray<float2>(vertSegments, Allocator.Temp);
+            try
+            { 
+                var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
+                var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
+                var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + tubeRotation);
+                for (int v = 0; v < vertSegments; v++)
+                {
+                    var vRad = tubeAngleOffset + (v * vertRadiansPerSegment);
+                    circleVertices[v] = new float2((math.sin(vRad) * tubeRadiusX) - torusRadius, 
+                                                   (math.cos(vRad) * tubeRadiusY));
+                    min.x = math.min(min.x, circleVertices[v].x);
+                    min.y = math.min(min.y, circleVertices[v].y);
+                    max.x = math.max(max.x, circleVertices[v].x);
+                    max.y = math.max(max.y, circleVertices[v].y);
+                }
+
+                if (fitCircle)
+                {
+                    var center = (max + min) * 0.5f;
+                    var size   = (max - min) * 0.5f;
+                    size.x = tubeRadiusX / size.x;
+                    size.y = tubeRadiusY / size.y;
+                    for (int v = 0; v < vertSegments; v++)
+                    {
+                        var x = ((circleVertices[v].x - center.x) * size.x) - torusRadius;
+                        var y = ((circleVertices[v].y - center.y) * size.y); 
+                        circleVertices[v] = new float2(x, y);
+                    }
+                }
+
+                horzSegments++;
+
+                var horzOffset	= startAngle;
+                var vertexCount = vertSegments * horzSegments;
+                var vertices = new NativeArray<float3>(vertexCount, allocator);
+                for (int h = 0, v = 0; h < horzSegments; h++)
+                {
+                    var hRadians = (h * horzRadiansPerSegment) + horzOffset;
+                    var rotation = quaternion.AxisAngle(new float3(0, 1, 0), hRadians);
+                    for (int i = 0; i < vertSegments; i++, v++)
+                        vertices[v] = math.mul(rotation, new float3(circleVertices[i], 0));
+                }
+                return vertices;
+            }
+            finally { circleVertices.Dispose(); }
+        }
+
+              
+        public static unsafe bool GenerateTorus(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
+                                                in NativeArray<float3> vertices, int verticalSegments, int horizontalSegments,
+                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                Allocator allocator)
+        {
+            var segmentIndices = new NativeArray<int>(2 + verticalSegments, Allocator.Temp);
+            try
+            {
+                segmentIndices[0] = 0;
+                segmentIndices[1] = 1;
+
+                for (int v = 0; v < verticalSegments; v++)
+                    segmentIndices[v + 2] = 2;
+
+                for (int n1 = 1, n0 = 0; n1 < horizontalSegments + 1; n0 = n1, n1++)
+                {
+
+                    brushMeshes[n0] = BlobAssetReference<BrushMeshBlob>.Null;
+
+                    using (var builder = new BlobBuilder(Allocator.Temp))
+                    {
+                        ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+
+                        var localVertices = builder.Allocate(ref root.localVertices, verticalSegments * 2);
+                        for (int v = 0; v < verticalSegments; v++)
+                        {
+                            localVertices[v                   ] = vertices[(n0 * verticalSegments) + v];
+                            localVertices[v + verticalSegments] = vertices[(n1 * verticalSegments) + v];
+                        }
+
+                        // TODO: could probably just create one torus section and repeat that with different transformations
+                        CreateExtrudedSubMesh(verticalSegments, (int*)segmentIndices.GetUnsafePtr(), 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out var polygons, out var halfEdges);
+                        
+                        if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
+                            return false;
+
+                        var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
+                        var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                        CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                        UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
+                        root.localBounds = CalculateBounds(in localVertices);
+                        brushMeshes[n0] = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+                    }
+                }
+            }
+            finally
+            {
+                segmentIndices.Dispose();
+            }
+            return true;
+        }
+
         public static bool GenerateTorus(ref ChiselBrushContainer brushContainer, ref ChiselTorusDefinition definition)
         {
-            definition.Validate();
-            Vector3[] vertices = null;
+            float3[] vertices = null;
             if (!GenerateTorusVertices(definition, ref vertices))
                 return false;
             
-            var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
-            var tubeRadiusY		= (definition.tubeHeight * 0.5f);
-            var torusRadius		= (definition.outerDiameter * 0.5f) - tubeRadiusX;
-        
-    
             var horzSegments	= definition.horizontalSegments;
             var vertSegments	= definition.verticalSegments;
 
             brushContainer.EnsureSize(horzSegments);
 
-
-            var horzDegreePerSegment	= (definition.totalAngle / horzSegments);
-            var vertDegreePerSegment	= math.radians(360.0f / vertSegments);
             var descriptionIndex		= new int[2 + vertSegments];
             
             descriptionIndex[0] = 0;
             descriptionIndex[1] = 1;
-            
-            var circleVertices	= new Vector3[vertSegments];
 
-            var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
-            var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
-            var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation);
             for (int v = 0; v < vertSegments; v++)
-            {
-                var vRad = tubeAngleOffset + (v * vertDegreePerSegment);
-                circleVertices[v] = new Vector3((math.cos(vRad) * tubeRadiusX) - torusRadius, 
-                                               (math.sin(vRad) * tubeRadiusY), 0);
-                min.x = math.min(min.x, circleVertices[v].x);
-                min.y = math.min(min.y, circleVertices[v].y);
-                max.x = math.max(max.x, circleVertices[v].x);
-                max.y = math.max(max.y, circleVertices[v].y);
                 descriptionIndex[v + 2] = 2;
-            }
 
-            if (definition.fitCircle)
+            for (int n1 = 1, n0 = 0; n1 < horzSegments + 1; n0 = n1, n1++)
             {
-                var center = (max + min) * 0.5f;
-                var size   = (max - min) * 0.5f;
-                size.x = tubeRadiusX / size.x;
-                size.y = tubeRadiusY / size.y;
+                var subMeshVertices	= new float3[vertSegments * 2];
                 for (int v = 0; v < vertSegments; v++)
                 {
-                    circleVertices[v].x = (circleVertices[v].x - center.x) * size.x;
-                    circleVertices[v].y = (circleVertices[v].y - center.y) * size.y;
-                    circleVertices[v].x -= torusRadius;
-                }
-            }
-
-            var horzOffset	= definition.startAngle;
-            for (int h = 1, p = 0; h < horzSegments + 1; p = h, h++)
-            {
-                var hDegree0 = (p * horzDegreePerSegment) + horzOffset;
-                var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                var rotation0 = quaternion.AxisAngle(new Vector3(0,1,0), hDegree0);
-                var rotation1 = quaternion.AxisAngle(new Vector3(0, 1, 0), hDegree1);
-                var subMeshVertices	= new Vector3[vertSegments * 2];
-                for (int v = 0; v < vertSegments; v++)
-                {
-                    subMeshVertices[v + vertSegments] = math.mul(rotation0, circleVertices[v]);
-                    subMeshVertices[v] = math.mul(rotation1, circleVertices[v]);
+                    subMeshVertices[v               ] = vertices[(n0 * vertSegments) + v];
+                    subMeshVertices[v + vertSegments] = vertices[(n1 * vertSegments) + v];
                 }
                 
                 var brushMesh = new BrushMesh();
@@ -91,16 +163,15 @@ namespace Chisel.Core
                 if (!brushMesh.Validate())
                     return false;
 
-                brushContainer.brushMeshes[h-1] = brushMesh;
+                brushContainer.brushMeshes[n0] = brushMesh;
             }
             return true;
         }
 
-        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref float3[] vertices)
         {
             definition.Validate();
-            //var surfaces		= definition.brushMaterials;
-            //var descriptions	= definition.surfaceDescriptions;
+
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);
             var torusRadius		= (definition.outerDiameter * 0.5f) - tubeRadiusX;
@@ -109,19 +180,19 @@ namespace Chisel.Core
             var horzSegments	= definition.horizontalSegments;
             var vertSegments	= definition.verticalSegments;
 
-            var horzDegreePerSegment	= (definition.totalAngle / horzSegments);
-            var vertDegreePerSegment	= math.radians(360.0f / vertSegments);
+            var horzRadiansPerSegment = math.radians(definition.totalAngle / horzSegments);
+            var vertRadiansPerSegment = math.radians(360.0f / vertSegments);
             
-            var circleVertices	= new Vector3[vertSegments];
+            var circleVertices	= new float3[vertSegments];
 
             var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
             var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
             var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation);
             for (int v = 0; v < vertSegments; v++)
             {
-                var vRad = tubeAngleOffset + (v * vertDegreePerSegment);
-                circleVertices[v] = new Vector3((math.cos(vRad) * tubeRadiusX) - torusRadius, 
-                                               (math.sin(vRad) * tubeRadiusY), 0);
+                var vRad = tubeAngleOffset + (v * vertRadiansPerSegment);
+                circleVertices[v] = new float3((math.sin(vRad) * tubeRadiusX) - torusRadius, 
+                                               (math.cos(vRad) * tubeRadiusY), 0);
                 min.x = math.min(min.x, circleVertices[v].x);
                 min.y = math.min(min.y, circleVertices[v].y);
                 max.x = math.max(max.x, circleVertices[v].x);
@@ -142,18 +213,18 @@ namespace Chisel.Core
                 }
             }
 
-            if (definition.totalAngle != 360)
-                horzSegments++;
+            horzSegments++;
             
             var horzOffset	= definition.startAngle;
             var vertexCount = vertSegments * horzSegments;
             if (vertices == null ||
                 vertices.Length != vertexCount)
-                vertices = new Vector3[vertexCount];
+                vertices = new float3[vertexCount];
+            float3 up = new float3(0, 1, 0);
             for (int h = 0, v = 0; h < horzSegments; h++)
             {
-                var hDegree1 = (h * horzDegreePerSegment) + horzOffset;
-                var rotation1 = quaternion.AxisAngle(new Vector3(0, 1, 0), hDegree1);
+                var hRadians1 = (h * horzRadiansPerSegment) + horzOffset;
+                var rotation1 = quaternion.AxisAngle(up, hRadians1);
                 for (int i = 0; i < vertSegments; i++, v++)
                 {
                     vertices[v] = math.mul(rotation1, circleVertices[i]);

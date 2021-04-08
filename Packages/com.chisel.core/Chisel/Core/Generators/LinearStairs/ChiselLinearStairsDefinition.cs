@@ -6,6 +6,10 @@ using Mathf   = UnityEngine.Mathf;
 using Vector3 = UnityEngine.Vector3;
 using UnitySceneExtensions;
 using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Entities;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -35,7 +39,7 @@ namespace Chisel.Core
     // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
     // https://en.wikipedia.org/wiki/Stairs
     [Serializable]
-    public struct ChiselLinearStairsDefinition : IChiselGenerator
+    public struct ChiselLinearStairsDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Linear Stairs";
 
@@ -53,7 +57,7 @@ namespace Chisel.Core
             TotalSides
         }
 
-        const float kStepSmudgeValue = 0.0001f;
+        const float kStepSmudgeValue = BrushMeshFactory.LineairStairsData.kStepSmudgeValue;
 
         public const float	kMinStepHeight			= 0.01f;
         public const float	kMinStepDepth			= 0.01f;
@@ -222,6 +226,105 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateLinearStairs(ref brushContainer, ref this);
+        }
+
+
+        static void ClearBrushes(CSGTreeBranch branch)
+        {
+            for (int i = branch.Count - 1; i >= 0; i--)
+                branch[i].Destroy();
+            branch.Clear();
+        }
+
+        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+        {
+            if (branch.Count < desiredBrushCount)
+            {
+                var newBrushCount = desiredBrushCount - branch.Count;
+                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
+                try
+                {
+                    for (int i = 0; i < newBrushCount; i++)
+                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
+                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                }
+                finally { newRange.Dispose(); }
+            } else
+            {
+                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
+                {
+                    var oldBrush = branch[i];
+                    branch.RemoveAt(i);
+                    oldBrush.Destroy();
+                }
+            }
+        }
+
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var branch = (CSGTreeBranch)node;
+            if (!branch.Valid)
+            {
+                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (branch.Operation != operation)
+                    branch.Operation = operation;
+            }
+
+            Validate();
+
+            if (!HasVolume)
+            {
+                ClearBrushes(branch);
+                return false;
+            }
+
+            if (surfaceDefinition.surfaces.Length != (int)SurfaceSides.TotalSides)
+            {
+                ClearBrushes(branch);
+                return false;
+            }
+
+            var description = new BrushMeshFactory.LineairStairsData(new MinMaxAABB { Min = this.bounds.min, Max = this.bounds.max },
+                                                                        stepHeight, stepDepth,
+                                                                        treadHeight,
+                                                                        nosingDepth, nosingWidth,
+                                                                        plateauHeight,
+                                                                        riserType, riserDepth,
+                                                                        leftSide, rightSide,
+                                                                        sideWidth, sideHeight, sideDepth);
+            int requiredSubMeshCount = description.subMeshCount;
+            if (requiredSubMeshCount == 0)
+            {
+                ClearBrushes(branch);
+                return false;
+            }
+
+            if (branch.Count != requiredSubMeshCount)
+                BuildBrushes(branch, requiredSubMeshCount);
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                {
+                    const int subMeshOffset = 0;
+
+                    if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
+                    {
+                        ClearBrushes(branch);
+                        return false;
+                    }
+
+                    for (int i = 0; i < requiredSubMeshCount; i++)
+                    {
+                        var brush = (CSGTreeBrush)branch[i];
+                        brush.LocalTransformation = float4x4.identity;
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                    }
+                    return true;
+                }
+            }
         }
 
 

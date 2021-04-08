@@ -72,6 +72,7 @@ namespace Chisel.Core
                 brushMesh.vertices == null ||
                 brushMesh.polygons == null ||
                 brushMesh.halfEdges == null ||
+                brushMesh.halfEdgePolygonIndices == null ||
                 brushMesh.vertices.Length < 4 ||
                 brushMesh.polygons.Length < 4 ||
                 brushMesh.halfEdges.Length < 12)

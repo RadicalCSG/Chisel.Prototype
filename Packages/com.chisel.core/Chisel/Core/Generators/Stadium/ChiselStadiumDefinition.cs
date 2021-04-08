@@ -4,15 +4,18 @@ using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
 using Mathf = UnityEngine.Mathf;
 using UnityEngine.Profiling;
+using Unity.Mathematics;
+using Unity.Burst;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselStadiumDefinition : IChiselGenerator
+    public struct ChiselStadiumDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Stadium";
 
-        const float         kNoCenterEpsilon            = 0.0001f;
+        internal const float kNoCenterEpsilon           = 0.0001f;
 
         public const float	kMinDiameter				= 0.01f;
         public const float	kMinLength					= 0.01f;
@@ -22,13 +25,12 @@ namespace Chisel.Core
         public const float	kDefaultLength				= 1.0f;
         public const float	kDefaultTopLength			= 0.25f;
         public const float	kDefaultBottomLength		= 0.25f;
-        public const float	kDefaultDiameter			= 1.0f;
+        public const float	kDefaultWidth			    = 1.0f;
         
         public const int	kDefaultTopSides			= 4;
         public const int	SidesVertices				= 4;
         
-        public float                diameter;
-        
+        public float                width;        
         public float                height;
         public float                length;
         public float                topLength;
@@ -54,7 +56,7 @@ namespace Chisel.Core
 
         public void Reset()
         {
-            diameter			= kDefaultDiameter;
+            width			    = kDefaultWidth;
 
             height				= kDefaultHeight;
 
@@ -79,7 +81,7 @@ namespace Chisel.Core
             length				= Mathf.Max(Mathf.Abs(length), kMinLength);
             
             height				= Mathf.Max(Mathf.Abs(height), kMinHeight);
-            diameter			= Mathf.Max(Mathf.Abs(diameter), kMinDiameter);
+            width			    = Mathf.Max(Mathf.Abs(width), kMinDiameter);
             
             topSides			= Mathf.Max(topSides,	 1);
             bottomSides			= Mathf.Max(bottomSides, 1);
@@ -91,6 +93,39 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateStadium(ref brushContainer, ref this);
+        }
+
+
+
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                Validate();
+
+                if (!BrushMeshFactory.GenerateStadium(width, height, length,
+                                                      topLength, topSides,
+                                                      bottomLength, bottomSides,
+                                                      in surfaceDefinitionBlob, out var brushMesh, Allocator.Persistent))
+                {
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    return false;
+                }
+
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                return true;
+            }
         }
 
 
@@ -164,7 +199,7 @@ namespace Chisel.Core
 
             var height		        = this.height;
             var length		        = this.length;
-            var diameter	        = this.diameter;
+            var diameter	        = this.width;
             var sides		        = this.sides;
             
             var firstTopSide	    = this.firstTopSide;
@@ -282,7 +317,7 @@ namespace Chisel.Core
             {
                 this.height		= topPoint.y - bottomPoint.y;
                 this.length		= Mathf.Max(0, frontPoint.z - backPoint.z);
-                this.diameter	= leftPoint.x - rightPoint.x;
+                this.width	= leftPoint.x - rightPoint.x;
                 // TODO: handle sizing in some directions (needs to modify transformation?)
             }
         }

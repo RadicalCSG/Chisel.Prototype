@@ -198,31 +198,6 @@ namespace Chisel.Core
                 return true;
             }
         }
-        
-        static float4 CalculatePlane(in BrushMeshBlob.Polygon polygon, in BlobBuilderArray<BrushMeshBlob.HalfEdge> halfEdges, in BlobBuilderArray<float3> vertices)
-        {
-            // Newell's algorithm to create a plane for concave polygons.
-            // NOTE: doesn't work well for self-intersecting polygons
-            var lastEdge	= polygon.firstEdge + polygon.edgeCount;
-            var normal		= double3.zero;
-            var prevVertex	= (double3)vertices[halfEdges[lastEdge - 1].vertexIndex];
-            for (int n = polygon.firstEdge; n < lastEdge; n++)
-            {
-                var currVertex = (double3)vertices[halfEdges[n].vertexIndex];
-                normal.x = normal.x + ((prevVertex.y - currVertex.y) * (prevVertex.z + currVertex.z));
-                normal.y = normal.y + ((prevVertex.z - currVertex.z) * (prevVertex.x + currVertex.x));
-                normal.z = normal.z + ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-                prevVertex = currVertex;
-            }
-            normal = math.normalize(normal);
-
-            var d = 0.0;
-            for (int n = polygon.firstEdge; n < lastEdge; n++)
-                d -= math.dot(normal, vertices[halfEdges[n].vertexIndex]);
-            d /= polygon.edgeCount;
-
-            return new float4((float3)normal, (float)d);
-        }
 
         public static bool GenerateBox(ref ChiselBrushContainer brushContainer, ref ChiselBoxDefinition definition)
         {

@@ -4,6 +4,10 @@ using Quaternion = UnityEngine.Quaternion;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -21,7 +25,7 @@ namespace Chisel.Core
     // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
     //          the quad triangulation needs to be reversed (figure out how to detect this)
     [Serializable]
-    public struct ChiselCylinderDefinition : IChiselGenerator
+    public struct ChiselCylinderDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Cylinder";
 
@@ -262,6 +266,56 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
+        }
+
+
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                Validate();
+
+                var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
+                var topHeight       = height + bottomOffset;
+                var bottomHeight    = bottomOffset;
+
+                float2 topDiameter;
+                const Allocator allocator = Allocator.Persistent;
+                switch (type)
+                {
+                    case CylinderShapeType.ConicalFrustum:  topDiameter = new float2(topDiameterX, topDiameterZ); break;
+                    case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
+                    case CylinderShapeType.Cone:            topDiameter = float2.zero; break; 
+                    default: throw new NotImplementedException();
+                }
+
+                if (!isEllipsoid)
+                {
+                    topDiameter.y    = topDiameter.x;
+                    bottomDiameter.y = bottomDiameter.x;
+                }
+
+                if (surfaceDefinition.surfaces.Length != sides + 2 ||
+                    !BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter, topHeight, bottomDiameter, bottomHeight, rotation, sides, fitToBounds, in surfaceDefinitionBlob, out var brushMesh, allocator))
+                {
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    return false;
+                }
+
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                return true;
+            }
         }
 
 

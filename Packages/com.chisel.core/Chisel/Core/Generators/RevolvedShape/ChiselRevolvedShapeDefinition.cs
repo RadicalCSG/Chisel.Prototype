@@ -7,6 +7,7 @@ using UnitySceneExtensions;
 using UnityEngine.Profiling;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
@@ -31,11 +32,11 @@ namespace Chisel.Core
         public void Reset()
         {
             // TODO: create constants
-            shape				= kDefaultShape;
-            startAngle			= 0.0f;
-            totalAngle			= 360.0f;
-            curveSegments		= kDefaultCurveSegments;
-            revolveSegments		= kDefaultRevolveSegments;
+            shape			= kDefaultShape;
+            startAngle		= 0.0f;
+            totalAngle		= 360.0f;
+            curveSegments	= kDefaultCurveSegments;
+            revolveSegments	= kDefaultRevolveSegments;
             
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
@@ -45,10 +46,10 @@ namespace Chisel.Core
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
 
-            curveSegments		= Mathf.Max(curveSegments, 2);
-            revolveSegments		= Mathf.Max(revolveSegments, 1);
+            curveSegments	= Mathf.Max(curveSegments, 2);
+            revolveSegments	= Mathf.Max(revolveSegments, 1);
 
-            totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
+            totalAngle		= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
 
             surfaceDefinition.EnsureSize(6);
         }
@@ -77,9 +78,8 @@ namespace Chisel.Core
 
             var controlPoints	= shape.controlPoints;
             
-            var shapeVertices		= new List<Vector2>();
-            var shapeSegmentIndices = new List<int>();
-            BrushMeshFactory.GetPathVertices(this.shape, this.curveSegments, shapeVertices, shapeSegmentIndices);
+            var shapeVertices		= new List<SegmentVertex>();
+            BrushMeshFactory.GetPathVertices(this.shape, this.curveSegments, shapeVertices);
 
             
             var horzSegments			= this.revolveSegments;
@@ -111,8 +111,8 @@ namespace Chisel.Core
 
                 for (int v0 = shapeVertices.Count - 1, v1 = 0; v1 < shapeVertices.Count; v0=v1, v1++)
                 {
-                    var point0	= shapeVertices[v0];
-                    var point1	= shapeVertices[v1];
+                    var point0	= shapeVertices[v0].position;
+                    var point1	= shapeVertices[v1].position;
                     var vertexA	= rotation0 * new Vector3(point0.x, 0, point0.y);
                     var vertexB	= rotation0 * new Vector3(point1.x, 0, point1.y);
 

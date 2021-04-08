@@ -3,12 +3,16 @@ using Bounds = UnityEngine.Bounds;
 using Vector3 = UnityEngine.Vector3;
 using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
+using Unity.Mathematics;
+using Unity.Collections;
+using Unity.Entities;
 using UnityEngine.Profiling;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselTorusDefinition : IChiselGenerator
+    public struct ChiselTorusDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Torus";
 
@@ -86,6 +90,85 @@ namespace Chisel.Core
         }
 
 
+        static void ClearBrushes(CSGTreeBranch branch)
+        {
+            for (int i = branch.Count - 1; i >= 0; i--)
+                branch[i].Destroy();
+            branch.Clear();
+        }
+
+        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+        {
+            if (branch.Count < desiredBrushCount)
+            {
+                var newBrushCount = desiredBrushCount - branch.Count;
+                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
+                try
+                {
+                    for (int i = 0; i < newBrushCount; i++)
+                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
+                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                }
+                finally { newRange.Dispose(); }
+            } else
+            {
+                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
+                {
+                    var oldBrush = branch[i];
+                    branch.RemoveAt(i);
+                    oldBrush.Destroy();
+                }
+            }
+        }
+
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var branch = (CSGTreeBranch)node;
+            if (!branch.Valid)
+            {
+                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (branch.Operation != operation)
+                    branch.Operation = operation;
+            }
+
+            Validate();
+
+            int requiredSubMeshCount = horizontalSegments;
+            if (requiredSubMeshCount == 0)
+            {
+                ClearBrushes(branch);
+                return false;
+            }
+
+            if (branch.Count != requiredSubMeshCount)
+                BuildBrushes(branch, requiredSubMeshCount);
+
+            using (var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter, tubeWidth, tubeHeight, tubeRotation, startAngle, totalAngle, verticalSegments, horizontalSegments, fitCircle, Allocator.Temp))
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                {
+                    if (!BrushMeshFactory.GenerateTorus(brushMeshes, in vertices, verticalSegments, horizontalSegments,
+                                                in surfaceDefinitionBlob, Allocator.Persistent))
+                    {
+                        ClearBrushes(branch);
+                        return false;
+                    }
+
+                    for (int i = 0; i < requiredSubMeshCount; i++)
+                    {
+                        var brush = (CSGTreeBrush)branch[i];
+                        brush.LocalTransformation = float4x4.identity;
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                    }
+                    return true;
+                }
+            }
+        }
+
+
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -97,7 +180,7 @@ namespace Chisel.Core
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        static void DrawOutline(IChiselHandleRenderer renderer, ChiselTorusDefinition definition, Vector3[] vertices, LineMode lineMode)
+        static void DrawOutline(IChiselHandleRenderer renderer, ChiselTorusDefinition definition, float3[] vertices, LineMode lineMode)
         {
             var horzSegments	= definition.horizontalSegments;
             var vertSegments	= definition.verticalSegments;
@@ -133,7 +216,7 @@ namespace Chisel.Core
         {
             var normal			= Vector3.up;
 
-            Vector3[] vertices = null;
+            float3[] vertices = null;
             if (BrushMeshFactory.GenerateTorusVertices(this, ref vertices))
             {
                 var baseColor = handles.color;
@@ -149,8 +232,8 @@ namespace Chisel.Core
             var topPoint	= normal * (this.tubeHeight * 0.5f);
             var bottomPoint	= normal * (-this.tubeHeight * 0.5f);
 
-            handles.DoRadiusHandle(ref outerRadius, normal, Vector3.zero);
-            handles.DoRadiusHandle(ref innerRadius, normal, Vector3.zero);
+            handles.DoRadiusHandle(ref outerRadius, normal, float3.zero);
+            handles.DoRadiusHandle(ref innerRadius, normal, float3.zero);
             handles.DoDirectionHandle(ref bottomPoint, -normal);
             handles.DoDirectionHandle(ref topPoint, normal);
             if (handles.modified)

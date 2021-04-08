@@ -239,7 +239,6 @@ namespace Chisel.Editors
                 ChiselNodeHierarchyManager.Update();
                 ChiselGeneratedModelMeshManager.UpdateModels();
                 ChiselNodeEditorBase.HandleCancelEvent();
-                ChiselGeneratedComponentManager.UpdateVisibility();
             }
             catch (Exception ex)
             {

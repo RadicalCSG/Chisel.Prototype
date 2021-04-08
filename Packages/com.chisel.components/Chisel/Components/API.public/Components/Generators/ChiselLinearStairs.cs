@@ -6,7 +6,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselLinearStairs : ChiselDefinedGeneratorComponent<ChiselLinearStairsDefinition>
+    public sealed class ChiselLinearStairs : ChiselDefinedBrushGeneratorComponent<ChiselLinearStairsDefinition>
     {
         public const string kNodeTypeName = ChiselLinearStairsDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
@@ -106,16 +106,6 @@ namespace Chisel.Components
         {
             get { return definition.plateauHeight; }
             set { if (definition.plateauHeight == value) return; definition.plateauHeight = value; OnValidateInternal(); }
-        }
-
-        public int StepCount
-        {
-            get { return definition.StepCount; }
-        }
-
-        public float StepDepthOffset
-        {
-            get { return definition.StepDepthOffset; }
         }
 
         public Bounds Bounds

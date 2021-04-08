@@ -11,11 +11,15 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselExtrudedShapeDefinition : IChiselGenerator
+    public struct ChiselExtrudedShapeDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Extruded Shape";
 
@@ -53,6 +57,99 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateExtrudedShape(ref brushContainer, ref this);
+        }
+
+        
+        static void ClearBrushes(CSGTreeBranch branch)
+        {
+            for (int i = branch.Count - 1; i >= 0; i--)
+                branch[i].Destroy();
+            branch.Clear();
+        }
+
+        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+        {
+            if (branch.Count < desiredBrushCount)
+            {
+                var newBrushCount = desiredBrushCount - branch.Count;
+                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
+                try
+                {
+                    for (int i = 0; i < newBrushCount; i++)
+                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
+                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                }
+                finally { newRange.Dispose(); }
+            } else
+            {
+                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
+                {
+                    var oldBrush = branch[i];
+                    branch.RemoveAt(i);
+                    oldBrush.Destroy();
+                }
+            }
+        }
+
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var branch = (CSGTreeBranch)node;
+            if (!branch.Valid)
+            {
+                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (branch.Operation != operation)
+                    branch.Operation = operation;
+            }
+
+            Validate();
+
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
+            {
+                // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
+
+                ref var curve = ref curveBlob.Value;
+                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesArray, out var polygonVerticesSegments, Allocator.Temp))
+                {
+                    ClearBrushes(branch);
+                    return false;
+                }
+
+                int requiredSubMeshCount = polygonVerticesSegments.Length;
+                if (requiredSubMeshCount == 0)
+                {
+                    ClearBrushes(branch);
+                    return false;
+                }
+
+                if (branch.Count != requiredSubMeshCount)
+                    BuildBrushes(branch, requiredSubMeshCount);
+
+
+                // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
+                using (var pathBlob = ChiselPathBlob.Convert(path, Allocator.Temp))
+                using (var pathMatrices = pathBlob.Value.GetMatrices(Allocator.Temp))
+                using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+                {
+                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                    {
+                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes, in polygonVerticesArray, in polygonVerticesSegments, in pathMatrices, in surfaceDefinitionBlob, Allocator.Persistent))
+                        {
+                            ClearBrushes(branch);
+                            return false;
+                        }
+
+                        for (int i = 0; i < requiredSubMeshCount; i++)
+                        {
+                            var brush = (CSGTreeBrush)branch[i];
+                            brush.LocalTransformation = float4x4.identity;
+                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                        }
+                        return true;
+                    }
+                }
+            }
         }
 
 

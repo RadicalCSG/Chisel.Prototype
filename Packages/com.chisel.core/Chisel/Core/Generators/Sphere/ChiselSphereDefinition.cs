@@ -6,11 +6,14 @@ using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using UnityEngine.Profiling;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Mathematics;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselSphereDefinition : IChiselGenerator
+    public struct ChiselSphereDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Sphere";
 
@@ -60,6 +63,37 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateSphere(ref brushContainer, ref this);
+        }
+        
+
+
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                Validate();
+
+                if (!BrushMeshFactory.GenerateSphere(diameterXYZ, offsetY, rotation, generateFromCenter, horizontalSegments, verticalSegments, in surfaceDefinitionBlob,
+                                                         out var brushMesh, Allocator.Persistent))
+                {
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    return false;
+                }
+
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                return true;
+            }
         }
 
 

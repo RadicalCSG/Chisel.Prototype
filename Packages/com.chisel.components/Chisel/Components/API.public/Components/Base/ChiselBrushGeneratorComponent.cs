@@ -19,7 +19,7 @@ namespace Chisel.Components
 
         protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
         protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }
-        protected override bool UpdateGeneratorInternal(CSGTreeBrush brush) { return definition.Generate(brush); }
+        protected override bool UpdateGeneratorInternal(ref CSGTreeNode node, int userID) { return definition.Generate(ref node, userID, operation); }
     }
 
     public abstract class ChiselBrushGeneratorComponent : ChiselNode
@@ -28,7 +28,7 @@ namespace Chisel.Components
         public const string kOperationFieldName         = nameof(operation);
 
 
-        [HideInInspector] CSGTreeBrush Node = default;
+        [HideInInspector] CSGTreeNode Node = default;
 
         [SerializeField, HideInInspector] protected CSGOperationType operation;		    // NOTE: do not rename, name is directly used in editors
         [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
@@ -235,7 +235,18 @@ namespace Chisel.Components
             if (!ValidNodes)
                 return;
 
-            Node.LocalTransformation = LocalTransformationWithPivot;
+            if (Node.Type == CSGNodeType.Brush)
+            {
+                Node.LocalTransformation = LocalTransformationWithPivot;
+            } else
+            {
+                // TODO: Remove this once we have a proper transformation pipeline
+                for (int i = 0; i < Node.Count; i++)
+                {
+                    var child = Node[i];
+                    child.LocalTransformation = LocalTransformationWithPivot;
+                }
+            }
         }
 
 
@@ -245,34 +256,6 @@ namespace Chisel.Components
             if (Node.Valid)
                 Node.Destroy();
             Node = default;
-        }
-
-        public void GenerateAllTreeNodes()
-        {
-            var instanceID			= GetInstanceID();
-
-            if (Node.Valid)
-            {
-                Node.Destroy();
-                Node = default;
-            }
-            
-            Node = CSGTreeBrush.Create(userID: instanceID, operation: operation);
-            Node.Operation = operation;
-        }
-
-        public override void UpdateBrushMeshInstances()
-        {
-            // Update the Node (if it exists)
-            if (!ValidNodes)
-                return;
-
-            ChiselNodeHierarchyManager.RebuildTreeNodes(this);
-            SetDirty();
-            
-            if (Node.Valid &&
-                Node.Operation != operation)
-                Node.Operation = operation;
         }
 
         internal override void ClearTreeNodes(bool clearCaches = false)
@@ -353,7 +336,7 @@ namespace Chisel.Components
                     continue;
 
                 var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
-                var childBounds     = Node.Bounds;
+                var childBounds     = brush.Bounds;
                 var size            = childBounds.Max - childBounds.Min;
                 var magnitude       = math.lengthsq(size);
                 if (float.IsInfinity(magnitude) ||
@@ -395,7 +378,7 @@ namespace Chisel.Components
                 if (!brush.Valid)
                     continue;
                 var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix * boundsTransformation;
-                var childBounds     = Node.GetBounds(transformation);
+                var childBounds     = brush.GetBounds(transformation);
                 var size            = childBounds.Max - childBounds.Min;
                 var magnitude       = math.lengthsq(size);
                 if (float.IsInfinity(magnitude) ||
@@ -433,15 +416,47 @@ namespace Chisel.Components
                 !Node.Valid)
                 return;
 
-#if UNITY_EDITOR
-            if (ignoreSynchronizedBrushes)
+            var brush = (CSGTreeBrush)Node;
+            if (brush.Valid)
             {
-                var result = GetSelectedVariantsOfBrushOrSelf(Node);
-                if (result != null)
-                    foundBrushes.AddRange(result);
-            } else
+#if UNITY_EDITOR
+                if (ignoreSynchronizedBrushes)
+                {
+                    var result = GetSelectedVariantsOfBrushOrSelf(brush);
+                    if (result != null)
+                        foundBrushes.AddRange(result);
+                } else
 #endif
-                foundBrushes.Add(Node);
+                    foundBrushes.Add(brush);
+            } else
+            {
+                var nodes = new List<CSGTreeNode>();
+                nodes.Add(Node);
+                while (nodes.Count > 0)
+                {
+                    var lastIndex = nodes.Count - 1;
+                    var current = nodes[lastIndex];
+                    nodes.RemoveAt(lastIndex);
+                    var nodeType = current.Type;
+                    if (nodeType == CSGNodeType.Brush)
+                    {
+                        brush = (CSGTreeBrush)current;
+#if UNITY_EDITOR
+                        if (ignoreSynchronizedBrushes)
+                        {
+                            var result = GetSelectedVariantsOfBrushOrSelf(brush);
+                            if (result != null)
+                                foundBrushes.AddRange(result);
+                        } else
+#endif
+                            foundBrushes.Add(brush);
+                    } else
+                    {
+                        for (int i = current.Count - 1; i >= 0; i--)
+                            nodes.Add(current[i]);
+                    }
+                }
+            }
         }
 
         public override ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeBrush brush, int surfaceID)
@@ -541,7 +556,8 @@ namespace Chisel.Components
 
         public override SurfaceReference[] GetAllSurfaceReferences()
         {
-            throw new NotImplementedException();
+            Debug.LogError("NotImplementedException");
+            return null;
             /*
             if (!Node.Valid)
                 return null;
@@ -595,10 +611,28 @@ namespace Chisel.Components
             base.AddPivotOffset(worldSpaceDelta);
         }
 
+        public void GenerateAllTreeNodes()
+        {
+            if (Node.Valid)
+            {
+                Node.Destroy();
+                Node = default;
+            }
+        }
+
+        public override void UpdateBrushMeshInstances()
+        {
+            // Update the Node (if it exists)
+            if (!ValidNodes)
+                return;
+
+            ChiselNodeHierarchyManager.RebuildTreeNodes(this);
+            SetDirty();
+        }
+
         public virtual void UpdateGenerator()
         {
-            if (!Node.Valid)
-                return;
+            var instanceID = GetInstanceID();
 
             /*
             // BrushMeshes of generators must always be unique
@@ -612,8 +646,11 @@ namespace Chisel.Components
             finally { Profiler.EndSample(); }
             */
             Profiler.BeginSample("UpdateGeneratorInternal");
-            try { UpdateGeneratorInternal(Node); }
+            try { UpdateGeneratorInternal(ref Node, userID: instanceID); }
             finally { Profiler.EndSample(); }
+
+            if (!Node.Valid)
+                return;
 
             //brushContainerAsset.SetDirty();
 
@@ -622,7 +659,7 @@ namespace Chisel.Components
             finally { Profiler.EndSample(); }
         }
 
-        protected abstract bool UpdateGeneratorInternal(CSGTreeBrush brush);
+        protected abstract bool UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
 
 #if UNITY_EDITOR
         public override bool ConvertToBrushes()

@@ -1084,7 +1084,17 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.DrawContinuousLines(points, 0, points.Length, lineMode, thickness, dashSize);
         }
 
+        public void DrawContinuousLines(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawContinuousLines(points, 0, points.Length, lineMode, thickness, dashSize);
+        }
+
         public void DrawContinuousLines(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize);
+        }
+
+        public void DrawContinuousLines(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
         {
             ChiselOutlineRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize);
         }
@@ -1094,7 +1104,17 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize);
         }
 
+        public void DrawLineLoop(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize);
+        }
+
         public void DrawLineLoop(Vector3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawLineLoop(points, 0, points.Length, lineMode, thickness, dashSize);
+        }
+
+        public void DrawLineLoop(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
         {
             ChiselOutlineRenderer.DrawLineLoop(points, 0, points.Length, lineMode, thickness, dashSize);
         }

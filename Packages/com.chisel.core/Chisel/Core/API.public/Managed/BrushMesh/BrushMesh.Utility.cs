@@ -1908,7 +1908,6 @@ namespace Chisel.Core
             var min = new float3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
             var max = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
 
-            var center = float3.zero;
             for (int e = firstEdge; e < lastEdge; e++)
             {
                 var vertexIndex = halfEdges[e].vertexIndex;

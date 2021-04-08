@@ -256,7 +256,7 @@ namespace Chisel.Core
 
             int idInternal, generation;
             // TODO: should make it possible to allocate ids in a range as well, for cache locality
-            if (freeIDs.Length > 0)
+            if (freeIDs.Length >= range)
             {
                 var childIndex = index;
                 while (range > 0)

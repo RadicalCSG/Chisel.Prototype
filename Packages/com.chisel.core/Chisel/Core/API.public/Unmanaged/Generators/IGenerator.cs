@@ -12,9 +12,9 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
-    // TODO: merge with IChiselGenerator
+    // TODO: merge with IChiselGenerator / rename
     public interface IBrushGenerator
     {
-        bool Generate(CSGTreeBrush brush);
+        bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation);
     }
 }

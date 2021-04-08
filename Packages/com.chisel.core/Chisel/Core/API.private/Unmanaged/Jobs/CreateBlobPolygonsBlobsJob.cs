@@ -233,6 +233,8 @@ namespace Chisel.Core
             }
 
 
+            Debug.Assert(localPlanes.Length > 0);
+
             // TODO: the topology information could possibly just be used from the original mesh? (just with worldspace vertices?)
             // TODO: preallocate some structure to store data in?
 
@@ -263,10 +265,11 @@ namespace Chisel.Core
                     startEdgeIndex  = validPolygons[i].startEdgeIndex,
                     endEdgeIndex    = validPolygons[i].endEdgeIndex
                 };
+                ref var localPlane = ref localPlanes[validPolygons[i].basePlaneIndex];
                 surfaceArray[i] = new BaseSurface
                 {
                     layers      = polygon.surface.layerDefinition,
-                    localPlane  = localPlanes[validPolygons[i].basePlaneIndex],
+                    localPlane  = localPlane,
                     UV0         = polygon.surface.UV0
                 };
             }

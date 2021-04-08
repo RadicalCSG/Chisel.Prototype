@@ -1,49 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Chisel.Core.External;
+using Unity.Collections;
 using Unity.Mathematics;
-using Vector2 = UnityEngine.Vector2;
+using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
+    // TODO: move somewhere else
+    struct Range
+    {
+        public int start;
+        public int end;
+        public int Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return end - start; }
+        }
+
+        public int Center
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return start + ((end - start) / 2); }
+        }
+
+    }
+
+
     // TODO: replace with complete managed solution, clean up
     public partial class Decomposition
     {
-        static Dictionary<Vector2, int> s_PointToIndex = new Dictionary<Vector2, int>();
-        public static bool ConvexPartition(List<Vector2>	inputVertices2D,
-                                           List<int>		segmentIndices,
-                                           out Vector2[][]	outputPolygonVertices2D,
-                                           out int[][]		outputPolygonIndices)
+        public static bool ConvexPartition(List<SegmentVertex> 	    inputVertices2D,
+                                           out SegmentVertex[][]    outputPolygonVertices2D)
         {
+            var outputVertices = new List<SegmentVertex>();
+            var outputRanges = new List<int>();
+
             // TODO: Optimize all these useless allocations away (Note: ConvexPartition can modify the given list under some circumstances)
-            var points = inputVertices2D.ToArray();
-            outputPolygonVertices2D = BayazitDecomposer.ConvexPartition(points.ToList());
-            if (outputPolygonVertices2D == null)
+            if (!BayazitDecomposer.ConvexPartition(inputVertices2D, outputVertices, outputRanges))
             {
-                outputPolygonIndices = null;
+                outputPolygonVertices2D = null;
                 return false;
             }
 
-            s_PointToIndex.Clear();
-            for (int i = 0; i < points.Length; i++)
-                s_PointToIndex[points[i]] = i;
-
-            outputPolygonIndices = new int[outputPolygonVertices2D.Length][];
-            for (int i = 0; i < outputPolygonVertices2D.Length; i++)
+            outputPolygonVertices2D = new SegmentVertex[outputRanges.Count][];
+            for (int i = 0; i < outputRanges.Count; i++)
             {
-                var polygonVertices = outputPolygonVertices2D[i];
-                var polygonIndices	= new int[polygonVertices.Length];
-
-                for (int p = 0; p < polygonVertices.Length; p++)
-                {
-                    var point = polygonVertices[p];
-                    if (!s_PointToIndex.TryGetValue(point, out var index))
-                        polygonIndices[p] = segmentIndices[0];
-                    else
-                        polygonIndices[p] = segmentIndices[index];
-                }
-
-                outputPolygonIndices[i] = polygonIndices;
+                var start           = (i == 0) ? 0 : outputRanges[i - 1];
+                var end             = outputRanges[i];
+                var count           = end - start;
+                var polygonVertices = new SegmentVertex[count];
+                for (int d = 0, p = start; p < end; p++, d++)
+                    polygonVertices[d] = outputVertices[p];                
+                outputPolygonVertices2D[i] = polygonVertices;
             }
             return true;
         }

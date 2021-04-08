@@ -12,14 +12,21 @@ using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
 {
+
+    // TODO: how do generator nodes fit into this?
+    //      TODO: make generators work with unmanaged hierarchy/brushMeshBlob etc.
+    //      TODO: make sure all components work with it
+    //      TODO: make sure all editor functionality works with it
+    //          TODO: show options
+    //          TODO: convert to brush(es)
+    //          TODO: get surfaces etc.
+
     // TODO: need debug visualization (editor window)
     //      TODO: need way to iterate through all valid nodes in hierarchy
     //      TODO: need way to iterate through all "root nodes" (no parent)
     //      TODO: need way to count valid nodes
     //      TODO: need way to count root nodes (no parent)
     //      TODO: need way to count unused elements in hierarchy
-
-    // TODO: how do generator nodes fit into this?
 
     // TODO: need way to be able to serialize hierarchy (so we can cache them w/ generators)
 

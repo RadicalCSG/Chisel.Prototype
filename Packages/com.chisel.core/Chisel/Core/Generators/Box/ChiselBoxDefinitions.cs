@@ -31,7 +31,7 @@ namespace Chisel.Core
         public void Reset()
         {
             bounds = kDefaultBounds;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
+            surfaceDefinition?.Reset();
         }
 
         public void Validate()
@@ -58,16 +58,28 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(CSGTreeBrush brush)
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
-            // TODO: create "hierarchy", insert brush, somehow make it possible to insert this hierarchy in higher level hierarchy
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
                 if (!BrushMeshFactory.CreateBox(bounds.min, bounds.max,
                                                 in surfaceDefinitionBlob,
                                                 out var brushMesh,
                                                 Allocator.Persistent))
+                {
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
                     return false;
+                }
 
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             }

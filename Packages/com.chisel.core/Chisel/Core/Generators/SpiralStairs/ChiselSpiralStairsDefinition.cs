@@ -171,8 +171,8 @@ namespace Chisel.Core
             var originalRotation		= this.rotation;
             var originalHeight			= this.height;
             var originalOrigin			= this.origin;
-            var cylinderTop				= new BrushMeshFactory.ChiselCircleDefinition(1, originalOrigin.y + originalHeight);
-            var cylinderLow				= new BrushMeshFactory.ChiselCircleDefinition (1, originalOrigin.y);
+            var cylinderTop				= new BrushMeshFactory.ChiselCircleDefinition { diameterX = 1, diameterZ = 1, height = originalOrigin.y + originalHeight };
+            var cylinderLow				= new BrushMeshFactory.ChiselCircleDefinition { diameterX = 1, diameterZ = 1, height = originalOrigin.y };
             var originalTopPoint		= normal * cylinderTop.height;
             var originalLowPoint		= normal * cylinderLow.height;
             var originalMidPoint		= (originalTopPoint + originalLowPoint) * 0.5f;

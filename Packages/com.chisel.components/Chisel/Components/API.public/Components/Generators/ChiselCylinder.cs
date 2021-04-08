@@ -9,7 +9,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselCylinder : ChiselDefinedGeneratorComponent<ChiselCylinderDefinition>
+    public sealed class ChiselCylinder : ChiselDefinedBrushGeneratorComponent<ChiselCylinderDefinition>
     {
         public const string kNodeTypeName = ChiselCylinderDefinition.kNodeTypeName;
         public override string NodeTypeName { get { return kNodeTypeName; } }
