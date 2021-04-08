@@ -15,22 +15,24 @@ using UnityEngine.Profiling;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Burst;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        static float CalculateOrientation(NativeList<SegmentVertex> vertices, Range range)
+        [BurstCompile]
+        static float CalculateOrientation(NativeList<SegmentVertex> vertices, int start, int end)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
             var direction = 0.0f;
-            var prevVertex = vertices[range.end - 1].position;
-            for (int n = range.start; n < range.end; n++)
+            var prevVertex = vertices[end - 1].position;
+            for (int n = start; n < end; n++)
             {
                 var currVertex = vertices[n].position;
-                direction += ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
+                direction += (prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y);
                 prevVertex = currVertex;
             }
             return direction;
@@ -58,6 +60,7 @@ namespace Chisel.Core
             return true;
         }
 
+        [BurstCompile]
         public static unsafe bool GenerateExtrudedShape(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                         in NativeList<SegmentVertex> polygonVerticesArray, 
                                                         in NativeList<int> polygonVerticesSegments,
@@ -87,9 +90,9 @@ namespace Chisel.Core
                 var range = new Range
                 { 
                     start = p == 0 ? 0 : polygonVerticesSegments[p - 1],
-                    end   = polygonVerticesSegments[p]
+                    end   =              polygonVerticesSegments[p    ]
                 };
-                
+
                 for (int s = 0; s < pathMatrices.Length - 1; s++)
                 {
                     var matrix0 = pathMatrices[s];
@@ -97,14 +100,9 @@ namespace Chisel.Core
 
                     // TODO: this doesn't work if top and bottom polygons intersect
                     //			=> need to split into two brushes then, invert one of the two brushes
-                    var polygonVertex = polygonVerticesArray[range.start].position;
-                    var forwardVector = math.normalizesafe(math.mul(matrix0, new float4(0, 0, 1, 1)).xyz);
-                    var vec0 = math.mul(matrix1, new float4(polygonVertex.x, polygonVertex.y, 0, 1)).xyz;
-                    var vec1 = math.mul(matrix0, new float4(polygonVertex.x, polygonVertex.y, 0, 1)).xyz;
-                    var invertDot = math.dot(forwardVector, math.normalizesafe(vec0 - vec1));
-
-                    if (invertDot < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
-
+                    var polygonVertex4      = new float4(polygonVerticesArray[range.start].position, 0, 1);
+                    var distanceToBottom    = math.mul(math.inverse(matrix0), math.mul(matrix1, polygonVertex4)).z;
+                    if (distanceToBottom < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
 
                     brushMeshes[brushMeshIndex] = BlobAssetReference<BrushMeshBlob>.Null;
 
@@ -141,22 +139,6 @@ namespace Chisel.Core
             Profiler.EndSample();
             return true;
         }
-        
-
-        static float CalculateOrientation(List<SegmentVertex> vertices, Range range)
-        {        
-            // Newell's algorithm to create a plane for concave polygons.
-            // NOTE: doesn't work well for self-intersecting polygons
-            var direction = 0.0f;
-            var prevVertex	= vertices[range.end - 1].position;
-            for (int n = range.start; n < range.end; n++)
-            {
-                var currVertex = vertices[n].position;
-                direction += ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
-                prevVertex = currVertex;
-            }
-            return direction;
-        }
 
         static List<SegmentVertex> shapeVertices = new List<SegmentVertex>();
         public static bool ConvexPartition(Curve2D shape, int curveSegments, out List<SegmentVertex> polygonVerticesArray, out List<int> polygonVerticesSegments)
@@ -185,6 +167,21 @@ namespace Chisel.Core
             }
             Profiler.EndSample();
             return true;
+        }
+
+        static float CalculateOrientation(List<SegmentVertex> vertices, int start, int end)
+        {
+            // Newell's algorithm to create a plane for concave polygons.
+            // NOTE: doesn't work well for self-intersecting polygons
+            var direction = 0.0f;
+            var prevVertex = vertices[end - 1].position;
+            for (int n = start; n < end; n++)
+            {
+                var currVertex = vertices[n].position;
+                direction += (prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y);
+                prevVertex = currVertex;
+            }
+            return direction;
         }
 
         static List<BrushMesh>      brushMeshesList = new List<BrushMesh>();
@@ -228,7 +225,7 @@ namespace Chisel.Core
                     end             = polygonVerticesSegments[p]
                 };
                 
-                if (CalculateOrientation(polygonVerticesArray, range) < 0)
+                if (CalculateOrientation(polygonVerticesArray, range.start, range.end) < 0)
                 {
                     External.BayazitDecomposer.Reverse(polygonVerticesArray, range);
                 }

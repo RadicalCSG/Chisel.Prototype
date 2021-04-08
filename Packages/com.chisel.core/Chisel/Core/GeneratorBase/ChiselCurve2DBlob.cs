@@ -1,4 +1,5 @@
 ﻿using System;
+using Debug = System.Diagnostics.Debug;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -98,7 +99,7 @@ namespace Chisel.Core
             for (int n = range.start; n < range.end; n++)
             {
                 var currVertex = vertices[n].position;
-                direction += ((prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y));
+                direction += (prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y);
                 prevVertex = currVertex;
             }
             return direction;
@@ -111,20 +112,21 @@ namespace Chisel.Core
             {
                 GetPathVertices(curveSegments, shapeVertices);
 
+                polygonVerticesArray = new NativeList<SegmentVertex>(allocator);
+                polygonVerticesSegments = new NativeList<int>(allocator);
+
                 Profiler.BeginSample("ConvexPartition");
                 if (shapeVertices.Length == 3)
                 {
-                    polygonVerticesArray = new NativeList<SegmentVertex>(3, allocator)
-                    {
-                        [0] = shapeVertices[0],
-                        [1] = shapeVertices[1],
-                        [2] = shapeVertices[2]
-                    };
-                    polygonVerticesSegments = new NativeList<int>(1, allocator) { [0] = 3 };
+                    polygonVerticesArray.ResizeUninitialized(3);
+                    polygonVerticesArray[0] = shapeVertices[0];
+                    polygonVerticesArray[1] = shapeVertices[1];
+                    polygonVerticesArray[2] = shapeVertices[2];
+
+                    polygonVerticesSegments.ResizeUninitialized(1);
+                    polygonVerticesSegments[0] = polygonVerticesArray.Length;
                 } else
                 {
-                    polygonVerticesArray    = new NativeList<SegmentVertex>(allocator);
-                    polygonVerticesSegments = new NativeList<int>(allocator);
                     if (!External.BayazitDecomposerBursted.ConvexPartition(shapeVertices,
                                                                            polygonVerticesArray,
                                                                            polygonVerticesSegments))
@@ -141,7 +143,7 @@ namespace Chisel.Core
                         var range = new Range
                         {
                             start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
-                            end     = polygonVerticesSegments[i]
+                            end     =              polygonVerticesSegments[i    ]
                         };
 
                         if (CalculateOrientation(polygonVerticesArray, range) < 0)
@@ -149,6 +151,8 @@ namespace Chisel.Core
                     }
                 }
                 Profiler.EndSample();
+
+                Debug.Assert(polygonVerticesArray.Length == 0 || polygonVerticesArray.Length == polygonVerticesSegments[polygonVerticesSegments.Length - 1]);
                 return true;
             }
         }

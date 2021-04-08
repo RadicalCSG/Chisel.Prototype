@@ -134,7 +134,12 @@ namespace Chisel.Core
                 {
                     using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                     {
-                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes, in polygonVerticesArray, in polygonVerticesSegments, in pathMatrices, in surfaceDefinitionBlob, Allocator.Persistent))
+                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes, 
+                                                                    in polygonVerticesArray, 
+                                                                    in polygonVerticesSegments, 
+                                                                    in pathMatrices, 
+                                                                    in surfaceDefinitionBlob, 
+                                                                    Allocator.Persistent))
                         {
                             ClearBrushes(branch);
                             return false;

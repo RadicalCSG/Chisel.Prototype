@@ -37,7 +37,9 @@ namespace Chisel.Core
             for (int i = 0; i < localPlanes.Length; i++)
             {
                 var localPlane = localPlanes[i];
-                treeSpacePlaneArray[i] = math.mul(nodeToTreeInverseTransposed, localPlane);
+                var treePlane = math.mul(nodeToTreeInverseTransposed, localPlane);
+                treePlane /= math.length(treePlane.xyz);
+                treeSpacePlaneArray[i] = treePlane;
             }
             var result = builder.CreateBlobAssetReference<BrushTreeSpacePlanes>(Allocator.Persistent);
             builder.Dispose();

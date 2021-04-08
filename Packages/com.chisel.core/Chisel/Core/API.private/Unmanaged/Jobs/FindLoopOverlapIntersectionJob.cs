@@ -16,6 +16,7 @@ namespace Chisel.Core
     { 
         public const int kMaxVertexCount        = short.MaxValue;
         const float kSqrVertexEqualEpsilon      = CSGConstants.kSqrVertexEqualEpsilon;
+        const float kEdgeIntersectionEpsilon    = CSGConstants.kEdgeIntersectionEpsilon;
         const float kFatPlaneWidthEpsilon       = CSGConstants.kFatPlaneWidthEpsilon;
 
         // Read
@@ -60,6 +61,8 @@ namespace Chisel.Core
                 return x.indexOrder1.nodeOrder - y.indexOrder1.nodeOrder;
             }
         }
+
+        static readonly CompareSortByBasePlaneIndex kCompareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
 
         void CopyFrom(NativeListArray<Edge> dst, int index, ref BrushIntersectionLoop brushIntersectionLoop, HashedVertices hashedTreeSpaceVertices, int extraCapacity)
         {
@@ -208,70 +211,66 @@ namespace Chisel.Core
 
                 NativeCollectionHelpers.EnsureSizeAndClear(ref intersectionEdges, brushIntersections.Length);
 
-                var compareSortByBasePlaneIndex = new CompareSortByBasePlaneIndex();
-                brushIntersections.Sort(compareSortByBasePlaneIndex);
+                brushIntersections.Sort(kCompareSortByBasePlaneIndex);
 
                 NativeCollectionHelpers.EnsureMinimumSize(ref intersectionSurfaceSegments, surfaceCount + 1);
                 {
+                    for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
                     {
-                        for (int s = 0; s < basePolygonBlob.polygons.Length; s++)
+                        ref var input = ref basePolygonBlob.polygons[s];
+
+                        ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
+                        ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
+                        basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
                         {
-                            ref var input = ref basePolygonBlob.polygons[s];
+                            brushIndexOrder     = nodeIndexOrder,
+                            interiorCategory    = surfaceInfo.interiorCategory,
+                            basePlaneIndex      = surfaceInfo.basePlaneIndex
+                        };
 
-                            ref var surfaceInfo = ref basePolygonBlob.polygons[s].surfaceInfo;
-                            ref var nodeIndexOrder = ref basePolygonBlob.polygons[s].nodeIndexOrder;
-                            basePolygonSurfaceInfos[s] = new IndexSurfaceInfo
-                            {
-                                brushIndexOrder     = nodeIndexOrder,
-                                interiorCategory    = surfaceInfo.interiorCategory,
-                                basePlaneIndex  = surfaceInfo.basePlaneIndex
-                            };
+                        if (input.endEdgeIndex == input.startEdgeIndex)
+                            continue;
 
-                            if (input.endEdgeIndex == input.startEdgeIndex)
-                                continue;
-
-                            var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersections.Length * 4));
-                            for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
-                                edges.AddNoResize(basePolygonBlob.edges[e]);
-                        }
-
-                        { 
-                            int prevBasePlaneIndex = 0;
-                            int startIndex = 0;
-                            for (int l = 0; l < brushIntersections.Length; l++)
-                            {
-                                var brushIntersectionLoop   = brushIntersections[l];
-                                ref var surfaceInfo         = ref brushIntersectionLoop.surfaceInfo;
-                                UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.compactNodeID == brushIndexOrder.compactNodeID);
-                                //UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
-
-                                var basePlaneIndex = surfaceInfo.basePlaneIndex;
-                                if (prevBasePlaneIndex != basePlaneIndex)
-                                {
-                                    intersectionSurfaceSegments[prevBasePlaneIndex] = new int2(startIndex, l - startIndex);
-                                    startIndex = l;
-                                    for (int s = prevBasePlaneIndex + 1; s < basePlaneIndex; s++)
-                                        intersectionSurfaceSegments[s] = new int2(startIndex, 0);
-                                    prevBasePlaneIndex = basePlaneIndex;
-                                }
-                                CopyFrom(intersectionEdges, l, ref brushIntersectionLoop, hashedTreeSpaceVertices, brushIntersections.Length * 4);
-                            }
-                            {
-                                intersectionSurfaceSegments[prevBasePlaneIndex] = new int2(startIndex, brushIntersections.Length - startIndex);
-                                startIndex = brushIntersections.Length;
-                                for (int s = prevBasePlaneIndex + 1; s < surfaceCount; s++)
-                                    intersectionSurfaceSegments[s] = new int2(startIndex, 0);
-                            }
-                        }
+                        var edges = basePolygonEdges.AllocateWithCapacityForIndex(s, (input.endEdgeIndex - input.startEdgeIndex) + (brushIntersections.Length * 4));
+                        for (int e = input.startEdgeIndex; e < input.endEdgeIndex; e++)
+                            edges.AddNoResize(basePolygonBlob.edges[e]);
                     }
 
+
+                    int prevBasePlaneIndex = 0;
+                    int startIndex = 0;
+                    for (int l = 0; l < brushIntersections.Length; l++)
+                    {
+                        var brushIntersectionLoop   = brushIntersections[l];
+                        ref var surfaceInfo         = ref brushIntersectionLoop.surfaceInfo;
+                        UnityEngine.Debug.Assert(brushIntersectionLoop.indexOrder0.compactNodeID == brushIndexOrder.compactNodeID);
+                        //UnityEngine.Debug.Assert(surfaceInfo.nodeIndex == brushIndexOrder.nodeIndex);
+
+                        var basePlaneIndex = surfaceInfo.basePlaneIndex;
+                        if (prevBasePlaneIndex != basePlaneIndex)
+                        {
+                            intersectionSurfaceSegments[prevBasePlaneIndex] = new int2(startIndex, l - startIndex);
+                            startIndex = l;
+                            for (int s = prevBasePlaneIndex + 1; s < basePlaneIndex; s++)
+                                intersectionSurfaceSegments[s] = new int2(startIndex, 0);
+                            prevBasePlaneIndex = basePlaneIndex;
+                        }
+                        CopyFrom(intersectionEdges, l, ref brushIntersectionLoop, hashedTreeSpaceVertices, brushIntersections.Length * 4);
+                    }
+
+                    intersectionSurfaceSegments[prevBasePlaneIndex] = new int2(startIndex, brushIntersections.Length - startIndex);
+                    startIndex = brushIntersections.Length;
+                    for (int s = prevBasePlaneIndex + 1; s < surfaceCount; s++)
+                        intersectionSurfaceSegments[s] = new int2(startIndex, 0);
+
+                    
                     for (int s = 0; s < surfaceCount; s++)
                     {
                         var intersectionSurfaceCount    = intersectionSurfaceSegments[s].y;
                         var intersectionSurfaceOffset   = intersectionSurfaceSegments[s].x;
                         for (int l0 = intersectionSurfaceCount - 1; l0 >= 0; l0--)
                         {
-                            int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].indexOrder1.nodeOrder;
+                            //int intersectionBrushOrder0 = brushIntersections[intersectionSurfaceOffset + l0].indexOrder1.nodeOrder;
                             var edges                   = intersectionEdges[intersectionSurfaceOffset + l0];
                             for (int l1 = 0; l1 < intersectionSurfaceCount; l1++)
                             {
@@ -280,7 +279,10 @@ namespace Chisel.Core
                             
                                 int intersectionBrushOrder1 = brushIntersections[intersectionSurfaceOffset + l1].indexOrder1.nodeOrder;// intersectionIndex1.w;
 
-                                FindLoopPlaneIntersections(brushTreeSpacePlaneCache, intersectionBrushOrder1, intersectionBrushOrder0, hashedTreeSpaceVertices, edges);
+                                FindLoopPlaneIntersections(brushTreeSpacePlaneCache, 
+                                                           intersectionBrushOrder1, 
+                                                           //intersectionBrushOrder0, 
+                                                           hashedTreeSpaceVertices, edges);
 
                                 // TODO: merge these so that intersections will be identical on both loops (without using math, use logic)
                                 // TODO: make sure that intersections between loops will be identical on OTHER brushes (without using math, use logic)
@@ -298,6 +300,8 @@ namespace Chisel.Core
                         if (!usedNodeOrders.IsSet(otherBrushNodeOrder) ||
                             otherBrushNodeOrder == brushNodeOrder)
                             continue;
+
+                        ref var otherPlanes = ref brushTreeSpacePlaneCache[otherBrushNodeOrder].Value.treeSpacePlanes;
                         for (int b = 0; b < basePolygonEdges.Length; b++)
                         {
                             if (!basePolygonEdges.IsIndexCreated(b))
@@ -305,8 +309,8 @@ namespace Chisel.Core
                             var selfEdges = basePolygonEdges[b];
                             //var before = selfEdges.Length;
 
-                            ref var otherPlanes   = ref brushTreeSpacePlaneCache[otherBrushNodeOrder].Value.treeSpacePlanes;
-                            FindBasePolygonPlaneIntersections(ref otherPlanes, ref selfPlanes, selfEdges, hashedTreeSpaceVertices);
+                            FindBasePolygonPlaneIntersections(ref otherPlanes, //ref selfPlanes, 
+                                                              selfEdges, hashedTreeSpaceVertices);
                         }
                     }
 
@@ -414,7 +418,7 @@ namespace Chisel.Core
         }
 
         public void FindLoopPlaneIntersections(NativeArray<BlobAssetReference<BrushTreeSpacePlanes>> brushTreeSpacePlanes,
-                                               int intersectionBrushOrder1, int intersectionBrushOrder0,
+                                               int intersectionBrushOrder1, //int intersectionBrushOrder0,
                                                HashedVertices hashedTreeSpaceVertices, NativeListArray<Edge>.NativeList edges)
         {
             if (edges.Length < 3)
@@ -430,10 +434,10 @@ namespace Chisel.Core
             int4 tempVertices = int4.zero;
 
             ref var otherPlanes    = ref brushTreeSpacePlanes[intersectionBrushOrder1].Value.treeSpacePlanes;
-            ref var selfPlanes     = ref brushTreeSpacePlanes[intersectionBrushOrder0].Value.treeSpacePlanes;
+            //ref var selfPlanes     = ref brushTreeSpacePlanes[intersectionBrushOrder0].Value.treeSpacePlanes;
 
             var otherPlaneCount = otherPlanes.Length;
-            var selfPlaneCount  = selfPlanes.Length;
+            //var selfPlaneCount  = selfPlanes.Length;
 
             hashedTreeSpaceVertices.ReserveAdditionalVertices(otherPlaneCount); // ensure we have at least this many extra vertices in capacity
 
@@ -490,16 +494,16 @@ namespace Chisel.Core
                         newVertex = vertex1 - (vector * delta);
                     }
 
-                    // Check if the new vertex is identical to one of our existing vertices
+                    // Check if the new vertex is identical to one of the edge vertices
                     if (math.lengthsq(vertex0 - newVertex) <= kSqrVertexEqualEpsilon ||
                         math.lengthsq(vertex1 - newVertex) <= kSqrVertexEqualEpsilon)
                         continue;
 
-                    var newVertexw = new float4(newVertex, 1);
+                    var newVertex4 = new float4(newVertex, 1);
                     for (int p2 = 0; p2 < otherPlaneCount; p2++)
                     {
                         otherPlane = otherPlanes[p2];
-                        var distance = math.dot(otherPlane, newVertexw);
+                        var distance = math.dot(otherPlane, newVertex4);
                         if (distance > kFatPlaneWidthEpsilon)
                             goto SkipEdge;
                     }
@@ -562,7 +566,7 @@ namespace Chisel.Core
         }
         
         public void FindBasePolygonPlaneIntersections(ref BlobArray<float4>             otherPlanes,
-                                                      ref BlobArray<float4>             selfPlanes,
+                                                      //ref BlobArray<float4>           selfPlanes,
                                                       NativeListArray<Edge>.NativeList  selfEdges,
                                                       HashedVertices                    combinedVertices)
         {
@@ -579,7 +583,7 @@ namespace Chisel.Core
             int4 tempVertices = int4.zero;
 
             var otherPlaneCount = otherPlanes.Length;
-            var selfPlaneCount  = selfPlanes.Length;
+            //var selfPlaneCount  = selfPlanes.Length;
 
             combinedVertices.ReserveAdditionalVertices(otherPlaneCount); // ensure we have at least this many extra vertices in capacity
 
@@ -725,6 +729,7 @@ namespace Chisel.Core
                 var vertexIndex = otherEdges[v].index1; // <- assumes no gaps
                 for (int e = 0; e < selfEdges.Length; e++)
                 {
+                    // If the exact edge already exists in other polygon, skip it
                     if (selfEdges[e].index1 == vertexIndex ||
                         selfEdges[e].index2 == vertexIndex)
                         goto NextVertex;
@@ -788,7 +793,7 @@ namespace Chisel.Core
                         var dot = math.dot(otherVertex - vertex0, delta);
                         if (dot <= 0 || dot >= max)
                             continue;
-                        if (!GeometryMath.IsPointOnLineSegment(otherVertex, vertex0, vertex1))
+                        if (!GeometryMath.IsPointOnLineSegment(otherVertex, vertex0, vertex1, CSGConstants.kVertexEqualEpsilon, CSGConstants.kEdgeIntersectionEpsilon))
                             continue;
 
                         // Note: the otherVertices array cannot contain any indices that are part in 

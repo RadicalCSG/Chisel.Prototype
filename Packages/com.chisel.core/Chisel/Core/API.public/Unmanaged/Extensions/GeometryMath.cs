@@ -1,11 +1,13 @@
 using UnityEngine;
 using Unity.Mathematics;
+using System.Runtime.CompilerServices;
 
 // TODO: remove redundancy, clean up
 namespace Chisel.Core
 {
     public static class GeometryMath
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool PointInTriangle(float3 p, float3 a, float3 b, float3 c)
         {
             var cp1A = math.cross(c - b, p - b);
@@ -28,12 +30,14 @@ namespace Chisel.Core
                     sameSideC;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetTriangleArraySize(int size)
         {
             int n = size - 1;
             return ((n * n) + n) / 2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int2 GetTriangleArrayIndex(int index, int size)
         {
             int n = size - 1;
@@ -45,6 +49,7 @@ namespace Chisel.Core
             return new int2(x, y);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 ProjectPointLine(in Vector3 point, in Vector3 lineStart, in Vector3 lineEnd)
         {
             Vector3 relativePoint = point - lineStart;
@@ -60,6 +65,7 @@ namespace Chisel.Core
             return lineStart + normalizedLineDirection * dot;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 ProjectPointRay(in Vector3 point, in Vector3 start, in Vector3 direction)
         {
             Vector3 relativePoint = point - start;
@@ -72,6 +78,7 @@ namespace Chisel.Core
             return start + normalizedDirection * dot;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
         {
             float unsignedAngle = Vector3.Angle(from, to);
@@ -79,6 +86,7 @@ namespace Chisel.Core
             return unsignedAngle * sign;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SignedAngle(Vector2 from, Vector2 to)
         {
             float unsigned_angle = Vector3.Angle(from, to);
@@ -89,9 +97,9 @@ namespace Chisel.Core
 
         // Finds the minimum 3D distance from a point to a line segment
 
-        public static bool IsPointOnLineSegment(float3 point, float3 lineVertexA, float3 lineVertexB)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPointOnLineSegment(float3 point, float3 lineVertexA, float3 lineVertexB, float vertexEpsilon, float edgeEpsilon)
         {
-            const float kEpsilon = 0.00001f;
             var b = (point.x - lineVertexA.x) * (lineVertexB.x - lineVertexA.x) +
                     (point.y - lineVertexA.y) * (lineVertexB.y - lineVertexA.y) +
                     (point.z - lineVertexA.z) * (lineVertexB.z - lineVertexA.z);
@@ -113,17 +121,50 @@ namespace Chisel.Core
                 dx = lineVertexA.x - point.x;
                 dy = lineVertexA.y - point.y;
                 dz = lineVertexA.z - point.z;
+                var e = dx * dx + dy * dy + dz * dz;
 
                 dx = lineVertexB.x - point.x;
                 dy = lineVertexB.y - point.y;
                 dz = lineVertexB.z - point.z;
 
-                var e = dx * dx + dy * dy + dz * dz;
                 var f = dx * dx + dy * dy + dz * dz;
                 if (e < f)
-                    return e < kEpsilon;
+                    return e < vertexEpsilon;
                 else
-                    return f < kEpsilon;
+                    return f < vertexEpsilon;
+            }
+            
+            // Closest point to line is on the segment
+            var d1 = (lineVertexB.y - lineVertexA.y) * (point.z - lineVertexA.z) - (point.y - lineVertexA.y) * (lineVertexB.z - lineVertexA.z);
+            var d2 = (lineVertexB.x - lineVertexA.x) * (point.z - lineVertexA.z) - (point.x - lineVertexA.x) * (lineVertexB.z - lineVertexA.z);
+            var d3 = (lineVertexB.x - lineVertexA.x) * (point.y - lineVertexA.y) - (point.x - lineVertexA.x) * (lineVertexB.y - lineVertexA.y);
+            var a = math.sqrt(d1 * d1 + d2 * d2 + d3 * d3);
+            var csqrt = math.sqrt(c);
+            a /= csqrt;
+            return (a * a) < edgeEpsilon;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPointOnLineSegmentButNotOnVertex(float3 point, float3 lineVertexA, float3 lineVertexB, float edgeEpsilon)
+        {
+            var b = (point.x - lineVertexA.x) * (lineVertexB.x - lineVertexA.x) +
+                    (point.y - lineVertexA.y) * (lineVertexB.y - lineVertexA.y) +
+                    (point.z - lineVertexA.z) * (lineVertexB.z - lineVertexA.z);
+
+            var dx = (lineVertexB.x - lineVertexA.x);
+            var dy = (lineVertexB.y - lineVertexA.y);
+            var dz = (lineVertexB.z - lineVertexA.z);
+            var c = dx * dx + dy * dy + dz * dz;
+            if (c == 0.0)
+            {
+                // Point1 and Point2 are the same
+                return false;
+            }
+
+            var d = b / c;
+            if (d <= 0.0 || d >= 1.0)
+            {
+                return false;
             }
 
             // Closest point to line is on the segment
@@ -133,12 +174,13 @@ namespace Chisel.Core
             var a = math.sqrt(d1 * d1 + d2 * d2 + d3 * d3);
             var csqrt = math.sqrt(c);
             a /= csqrt;
-            return (a * a) < kEpsilon;
+            return (a * a) < edgeEpsilon;
         }
 
 
         // Finds the minimum 3D distance from a point to a line segment
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SqrDistanceFromPointToLineSegment(float3 point, float3 lineVertexA, float3 lineVertexB)
         {
             var b = (point.x - lineVertexA.x) * (lineVertexB.x - lineVertexA.x) +
@@ -162,12 +204,12 @@ namespace Chisel.Core
                 dx = lineVertexA.x - point.x;
                 dy = lineVertexA.y - point.y;
                 dz = lineVertexA.z - point.z;
+                var e = dx * dx + dy * dy + dz * dz;
 
                 dx = lineVertexB.x - point.x;
                 dy = lineVertexB.y - point.y;
                 dz = lineVertexB.z - point.z;
 
-                var e = dx * dx + dy * dy + dz * dz;
                 var f = dx * dx + dy * dy + dz * dz;
                 if (e < f)
                     return e;
@@ -191,6 +233,7 @@ namespace Chisel.Core
         // Returns false if two lines (P1:P2 and P3:P4) are parallel
         // Also returns false if bSegment is true and either intersection does not occur within segment
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LineLineIntersection(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4,
                                                 out Vector3 intersectionPoint1, double epsilon)
         {
@@ -274,6 +317,7 @@ namespace Chisel.Core
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsPoint(Vector2[] polyPoints, Vector2 p)
         {
             var j = polyPoints.Length - 1;
@@ -288,6 +332,8 @@ namespace Chisel.Core
             }
             return inside;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane CalculatePlane(Vector3[] vertices)
         {        
             // Newell's algorithm to create a plane for concave polygons.
@@ -312,6 +358,7 @@ namespace Chisel.Core
             return new Plane(normal, d);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool FindCircleHorizon(Matrix4x4 matrix, float diameter, Vector3 center, Vector3 normal, out Vector3 pointA, out Vector3 pointB)
         {
             pointA = Vector3.zero;
@@ -385,7 +432,8 @@ namespace Chisel.Core
             return true;
             //*/
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool PointInCameraCircle(Matrix4x4 transform, Vector3 point, float diameter, Vector3 center, Vector3 normal)
         {
             var camera          = UnityEngine.Camera.current;

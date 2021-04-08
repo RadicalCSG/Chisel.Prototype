@@ -17,6 +17,7 @@ namespace Chisel.Core
         public const float  kBoundsDistanceEpsilon	    = (float)kBoundsDistanceEpsilonDouble;
 
         public const float  kFatPlaneWidthEpsilon	    = (float)kFatPlaneWidthEpsilonDouble;
+        public const float  kEdgeIntersectionEpsilon    = (float)kEdgeDistanceEpsilonDouble;
         public const float  kSqrEdgeDistanceEpsilon	    = (float)(kEdgeDistanceEpsilonDouble * kEdgeDistanceEpsilonDouble);
         
         public const float  kVertexEqualEpsilon	        = (float)(kVertexEqualEpsilonDouble * 2.5f);
