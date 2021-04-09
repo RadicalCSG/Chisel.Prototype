@@ -238,59 +238,93 @@ namespace Chisel.Core
             PickingEnabled  = 2,
             Selectable      = Visible | PickingEnabled
         }
-        static Dictionary<NodeID, BrushVisibilityState> brushSelectableState = new Dictionary<NodeID, BrushVisibilityState>();
+        static Dictionary<int, BrushVisibilityState> brushSelectableState = new Dictionary<int, BrushVisibilityState>();
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void SetVisibility(NodeID nodeID, bool visible)
         {
-            if (!IsValidNodeID(nodeID))
+            if (!IsValidNodeID(nodeID, out var index))
                 return;
 
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
+                return;
+
+            var userID = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).userID;
+
             var state = (visible ? BrushVisibilityState.Visible : BrushVisibilityState.None);
-            if (brushSelectableState.TryGetValue(nodeID, out var result))
+            if (brushSelectableState.TryGetValue(userID, out var result))
                 state |= (result & BrushVisibilityState.PickingEnabled);
-            brushSelectableState[nodeID] = state;
+
+            brushSelectableState[userID] = state;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static void SetPickingEnabled(NodeID nodeID, bool pickingEnabled)
         {
-            if (!IsValidNodeID(nodeID))
+            if (!IsValidNodeID(nodeID, out var index))
                 return;
 
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
+                return;
+
+            var userID = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).userID;
+
             var state = (pickingEnabled ? BrushVisibilityState.PickingEnabled : BrushVisibilityState.None);
-            if (brushSelectableState.TryGetValue(nodeID, out var result))
+            if (brushSelectableState.TryGetValue(userID, out var result))
                 state |= (result & BrushVisibilityState.Visible);
-            brushSelectableState[nodeID] = state;
+            brushSelectableState[userID] = state;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static bool IsBrushVisible(NodeID nodeID)
         {
-            if (!IsValidNodeID(nodeID))
+            if (!IsValidNodeID(nodeID, out var index))
                 return false;
-            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
                 return false;
+
+            var userID = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).userID;
+            if (!brushSelectableState.TryGetValue(userID, out var result))
+                return false;
+
             return (result & BrushVisibilityState.Visible) == BrushVisibilityState.Visible;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static bool IsBrushPickingEnabled(NodeID nodeID)
         {
-            if (!IsValidNodeID(nodeID))
+            if (!IsValidNodeID(nodeID, out var index))
                 return false;
-            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
                 return false;
+
+            var userID = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).userID;
+            if (!brushSelectableState.TryGetValue(userID, out var result))
+                return false;
+
             return (result & BrushVisibilityState.PickingEnabled) != BrushVisibilityState.None;
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static bool IsBrushSelectable(NodeID nodeID)
         {
-            if (!IsValidNodeID(nodeID))
+            if (!IsValidNodeID(nodeID, out var index))
                 return false;
-            if (!brushSelectableState.TryGetValue(nodeID, out var result))
+
+            var compactNodeID = nodes[index];
+            if (!IsValidCompactNodeID(compactNodeID))
                 return false;
+
+            var userID = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).userID;
+            if (!brushSelectableState.TryGetValue(userID, out var result))
+                return false;
+
             return (result & BrushVisibilityState.Selectable) != BrushVisibilityState.None;
         }
 #endif
