@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -13,17 +14,20 @@ namespace Chisel.Core
             public float3       position;
             public quaternion   rotation;
             public float2       scale;
-            
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static float4x4 ToMatrix(float3 position, quaternion rotation, float2 scale)
             {
                 return float4x4.TRS(position, math.inverse(rotation), new float3(scale.x,scale.y,-1)); 
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public float4x4 ToMatrix()
             {
                 return ToMatrix(position, rotation, scale); 
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static float4x4 Lerp(ref Point A, ref Point B, float t)
             {
                 var position = MathExtensions.Lerp(A.position, B.position, t);
@@ -34,6 +38,7 @@ namespace Chisel.Core
         }
 
         // TODO: move somewhere else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float3 NormalizeAngles(float3 angles)
         {
             angles.x = NormalizeAngle(angles.x);
@@ -43,6 +48,7 @@ namespace Chisel.Core
         }
 
         // TODO: move somewhere else
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float NormalizeAngle(float angle)
         {
             while (angle > math.PI * 2f)
@@ -54,6 +60,7 @@ namespace Chisel.Core
 
         // TODO: move somewhere else
         // From: https://forum.unity.com/threads/is-there-a-conversion-method-from-quaternion-to-euler.624007/#post-5805985
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float3 GetQuaternionEulerAngles(quaternion rot)
         {
             float4 q1 = rot.value;
@@ -128,6 +135,7 @@ namespace Chisel.Core
 
         public BlobArray<Point> segments;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Point Convert(ChiselPathPoint srcPoint)
         {
             return new Point

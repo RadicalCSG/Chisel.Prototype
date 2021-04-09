@@ -8,11 +8,14 @@ using UnityEngine.Profiling;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : IChiselGenerator// TODO: make this a struct
+    public struct ChiselRevolvedShapeDefinition : IChiselGenerator, IBrushGenerator // TODO: make this a struct
     {
         public const string kNodeTypeName = "Revolved Shape";
 
@@ -59,6 +62,102 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateRevolvedShape(ref brushContainer, ref this);
         }
 
+        static void ClearBrushes(CSGTreeBranch branch)
+        {
+            for (int i = branch.Count - 1; i >= 0; i--)
+                branch[i].Destroy();
+            branch.Clear();
+        }
+
+        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+        {
+            if (branch.Count < desiredBrushCount)
+            {
+                var newBrushCount = desiredBrushCount - branch.Count;
+                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
+                try
+                {
+                    for (int i = 0; i < newBrushCount; i++)
+                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
+                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                }
+                finally { newRange.Dispose(); }
+            } else
+            {
+                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
+                {
+                    var oldBrush = branch[i];
+                    branch.RemoveAt(i);
+                    oldBrush.Destroy();
+                }
+            }
+        }
+
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var branch = (CSGTreeBranch)node;
+            if (!branch.Valid)
+            {
+                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (branch.Operation != operation)
+                    branch.Operation = operation;
+            }
+
+            Validate();
+
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
+            {
+                // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
+
+                ref var curve = ref curveBlob.Value;
+                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
+                {
+                    ClearBrushes(branch);
+                    return false;
+                }
+
+                BrushMeshFactory.Split2DPolygonAlongOriginXAxis(polygonVerticesList, polygonVerticesSegments);
+
+                int requiredSubMeshCount = polygonVerticesSegments.Length * revolveSegments;
+                if (requiredSubMeshCount == 0)
+                {
+                    ClearBrushes(branch);
+                    return false;
+                }
+
+                if (branch.Count != requiredSubMeshCount)
+                    BuildBrushes(branch, requiredSubMeshCount);
+
+                using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0,1,0), Allocator.Temp))
+                using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+                {
+                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                    {
+                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                                                                    in polygonVerticesList,
+                                                                    in polygonVerticesSegments,
+                                                                    in pathMatrices,
+                                                                    in surfaceDefinitionBlob,
+                                                                    Allocator.Persistent))
+                        {
+                            ClearBrushes(branch);
+                            return false;
+                        }
+
+                        for (int i = 0; i < requiredSubMeshCount; i++)
+                        {
+                            var brush = (CSGTreeBrush)branch[i];
+                            brush.LocalTransformation = float4x4.identity;
+                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+
 
         //
         // TODO: code below needs to be cleaned up & simplified 
@@ -74,7 +173,7 @@ namespace Chisel.Core
         public void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
-            var normal			= Vector3.forward;
+            var normal			= Vector3.up;
 
             var controlPoints	= shape.controlPoints;
             
@@ -98,8 +197,8 @@ namespace Chisel.Core
                 {
                     var point0	= controlPoints[p0].position;
                     //var point1	= controlPoints[p1].position;
-                    var vertexA	= rotation0 * new Vector3(point0.x, 0, point0.y);
-                    var vertexB	= rotation1 * new Vector3(point0.x, 0, point0.y);
+                    var vertexA	= rotation0 * new Vector3(point0.x, point0.y, 0);
+                    var vertexB	= rotation1 * new Vector3(point0.x, point0.y, 0);
                     //var vertexC	= rotation0 * new Vector3(point1.x, 0, point1.y);
 
                     handles.color = noZTestcolor;
@@ -113,8 +212,8 @@ namespace Chisel.Core
                 {
                     var point0	= shapeVertices[v0].position;
                     var point1	= shapeVertices[v1].position;
-                    var vertexA	= rotation0 * new Vector3(point0.x, 0, point0.y);
-                    var vertexB	= rotation0 * new Vector3(point1.x, 0, point1.y);
+                    var vertexA	= rotation0 * new Vector3(point0.x, point0.y, 0);
+                    var vertexB	= rotation0 * new Vector3(point1.x, point1.y, 0);
 
                     handles.color = noZTestcolor;
                     handles.DrawLine(vertexA, vertexB, lineMode: LineMode.NoZTest, thickness: kHorzLineThickness, dashSize: kLineDash);
@@ -127,7 +226,7 @@ namespace Chisel.Core
 
             {
                 // TODO: make this work non grid aligned so we can place it upwards
-                handles.DoShapeHandle(ref shape);
+                handles.DoShapeHandle(ref shape, float4x4.identity);
                 handles.DrawLine(normal * 10, normal * -10, dashSize: 4.0f);
             }
         }

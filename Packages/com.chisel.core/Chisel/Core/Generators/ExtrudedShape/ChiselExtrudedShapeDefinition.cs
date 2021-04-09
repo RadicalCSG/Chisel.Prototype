@@ -110,7 +110,7 @@ namespace Chisel.Core
                 // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
 
                 ref var curve = ref curveBlob.Value;
-                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesArray, out var polygonVerticesSegments, Allocator.Temp))
+                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
                 {
                     ClearBrushes(branch);
                     return false;
@@ -135,7 +135,7 @@ namespace Chisel.Core
                     using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                     {
                         if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes, 
-                                                                    in polygonVerticesArray, 
+                                                                    in polygonVerticesList, 
                                                                     in polygonVerticesSegments, 
                                                                     in pathMatrices, 
                                                                     in surfaceDefinitionBlob, 
