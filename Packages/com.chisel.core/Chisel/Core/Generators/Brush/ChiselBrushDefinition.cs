@@ -3,11 +3,13 @@ using System.Linq;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.Profiling;
+using Unity.Burst;
+using Unity.Collections;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselBrushDefinition : IChiselGenerator
+    public class ChiselBrushDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Brush";
 
@@ -155,9 +157,41 @@ namespace Chisel.Core
             }
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!IsValid)
+            {
+                if (brush.Valid)
+                    brush.Destroy();
+                node = default;
+                return false;
+            }
+            
+            Validate();
+
+            if (!brush.Valid)
+            {
+                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (brush.Operation != operation)
+                    brush.Operation = operation;
+            }
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                var brushMesh = BrushMeshManager.BuildBrushMeshBlob(brushOutline, Allocator.Persistent);
+                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            }
+            return true;
+        }
+
         public void OnEdit(IChiselHandles handles)
         {
         }
+
         public void OnMessages(IChiselMessages messages)
         {
         }

@@ -11,7 +11,7 @@ using Chisel.Components;
 using System.Collections.Generic;
 
 namespace BrushContainerAssetTests
-{
+{/*
     public sealed class BrushContainerAssetLifetimeTests
     {
         [SetUp] public void Setup() {  }
@@ -376,5 +376,5 @@ namespace BrushContainerAssetTests
                 UnityEngine.Object.DestroyImmediate(newBrushContainerAsset);
             }
         }
-    }
+    }*/
 }

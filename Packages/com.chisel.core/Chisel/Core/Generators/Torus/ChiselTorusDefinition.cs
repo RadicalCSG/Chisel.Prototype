@@ -89,38 +89,6 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
         }
 
-
-        static void ClearBrushes(CSGTreeBranch branch)
-        {
-            for (int i = branch.Count - 1; i >= 0; i--)
-                branch[i].Destroy();
-            branch.Clear();
-        }
-
-        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
-        {
-            if (branch.Count < desiredBrushCount)
-            {
-                var newBrushCount = desiredBrushCount - branch.Count;
-                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
-                try
-                {
-                    for (int i = 0; i < newBrushCount; i++)
-                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
-                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
-                }
-                finally { newRange.Dispose(); }
-            } else
-            {
-                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
-                {
-                    var oldBrush = branch[i];
-                    branch.RemoveAt(i);
-                    oldBrush.Destroy();
-                }
-            }
-        }
-
         public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -138,12 +106,12 @@ namespace Chisel.Core
             int requiredSubMeshCount = horizontalSegments;
             if (requiredSubMeshCount == 0)
             {
-                ClearBrushes(branch);
+                this.ClearBrushes(branch);
                 return false;
             }
 
             if (branch.Count != requiredSubMeshCount)
-                BuildBrushes(branch, requiredSubMeshCount);
+                this.BuildBrushes(branch, requiredSubMeshCount);
 
             using (var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter, tubeWidth, tubeHeight, tubeRotation, startAngle, totalAngle, verticalSegments, horizontalSegments, fitCircle, Allocator.Temp))
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
@@ -153,7 +121,7 @@ namespace Chisel.Core
                     if (!BrushMeshFactory.GenerateTorus(brushMeshes, in vertices, verticalSegments, horizontalSegments,
                                                 in surfaceDefinitionBlob, Allocator.Persistent))
                     {
-                        ClearBrushes(branch);
+                        this.ClearBrushes(branch);
                         return false;
                     }
 

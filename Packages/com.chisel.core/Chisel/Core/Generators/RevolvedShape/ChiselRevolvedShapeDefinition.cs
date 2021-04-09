@@ -62,37 +62,6 @@ namespace Chisel.Core
             return BrushMeshFactory.GenerateRevolvedShape(ref brushContainer, ref this);
         }
 
-        static void ClearBrushes(CSGTreeBranch branch)
-        {
-            for (int i = branch.Count - 1; i >= 0; i--)
-                branch[i].Destroy();
-            branch.Clear();
-        }
-
-        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
-        {
-            if (branch.Count < desiredBrushCount)
-            {
-                var newBrushCount = desiredBrushCount - branch.Count;
-                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
-                try
-                {
-                    for (int i = 0; i < newBrushCount; i++)
-                        newRange[i] = CSGTreeBrush.Create(userID: branch.UserID, operation: CSGOperationType.Additive);
-                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
-                }
-                finally { newRange.Dispose(); }
-            } else
-            {
-                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
-                {
-                    var oldBrush = branch[i];
-                    branch.RemoveAt(i);
-                    oldBrush.Destroy();
-                }
-            }
-        }
-
         public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -114,7 +83,7 @@ namespace Chisel.Core
                 ref var curve = ref curveBlob.Value;
                 if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
                 {
-                    ClearBrushes(branch);
+                    this.ClearBrushes(branch);
                     return false;
                 }
 
@@ -123,12 +92,12 @@ namespace Chisel.Core
                 int requiredSubMeshCount = polygonVerticesSegments.Length * revolveSegments;
                 if (requiredSubMeshCount == 0)
                 {
-                    ClearBrushes(branch);
+                    this.ClearBrushes(branch);
                     return false;
                 }
 
                 if (branch.Count != requiredSubMeshCount)
-                    BuildBrushes(branch, requiredSubMeshCount);
+                    this.BuildBrushes(branch, requiredSubMeshCount);
 
                 using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0,1,0), Allocator.Temp))
                 using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
@@ -142,7 +111,7 @@ namespace Chisel.Core
                                                                     in surfaceDefinitionBlob,
                                                                     Allocator.Persistent))
                         {
-                            ClearBrushes(branch);
+                            this.ClearBrushes(branch);
                             return false;
                         }
 
