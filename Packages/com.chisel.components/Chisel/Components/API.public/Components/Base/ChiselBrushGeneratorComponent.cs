@@ -304,7 +304,8 @@ namespace Chisel.Components
 
         public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
-            childNodes.Add(TopNode);
+            if (TopNode.Valid)
+                childNodes.Add(TopNode);
         }
 
         public override bool GetUsedGeneratedBrushes(List<ChiselBrushContainerAsset> usedBrushes)

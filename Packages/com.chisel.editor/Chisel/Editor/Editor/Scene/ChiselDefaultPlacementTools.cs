@@ -24,8 +24,8 @@ namespace Chisel.Editors
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
         where PlacementToolDefinitionType : ChiselShapePlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType    : IChiselGenerator, new()
-        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType    : IChiselGenerator, IBrushGenerator, new()
+        where Generator         : ChiselDefinedBrushGeneratorComponent<DefinitionType>
     {
         public ChiselShapePlacementToolInstance(string toolName, string group)
         {
@@ -102,8 +102,8 @@ namespace Chisel.Editors
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
         where PlacementToolDefinitionType : ChiselBoundsPlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType    : IChiselGenerator, new()
-        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType    : IChiselGenerator, IBrushGenerator, new()
+        where Generator         : ChiselDefinedBrushGeneratorComponent<DefinitionType>
     {
         public ChiselBoundsPlacementToolInstance(string toolName, string group)
         {
@@ -207,9 +207,9 @@ namespace Chisel.Editors
 
     [CanEditMultipleObjects]
     public abstract class ChiselGeneratorDefinitionEditor<ComponentType, DefinitionType> 
-        : ChiselGeneratorEditor<ComponentType>
-        where ComponentType  : ChiselDefinedGeneratorComponent<DefinitionType>
-        where DefinitionType : IChiselGenerator, new()
+        : ChiselBrushGeneratorEditor<ComponentType>
+        where ComponentType  : ChiselDefinedBrushGeneratorComponent<DefinitionType>
+        where DefinitionType : IChiselGenerator, IBrushGenerator, new()
     {
         protected override void OnScene(IChiselHandles handles, ComponentType generator)
         {

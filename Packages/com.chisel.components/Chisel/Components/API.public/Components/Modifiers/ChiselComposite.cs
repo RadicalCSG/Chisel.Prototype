@@ -92,7 +92,7 @@ namespace Chisel.Components
 
         public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
         {
-            if (!PassThrough)
+            if (!PassThrough && Node.Valid)
                 childNodes.Add(Node);
         }
 
