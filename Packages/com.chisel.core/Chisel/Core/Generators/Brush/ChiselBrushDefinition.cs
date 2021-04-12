@@ -182,7 +182,7 @@ namespace Chisel.Core
 
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
-                var brushMesh = BrushMeshManager.BuildBrushMeshBlob(brushOutline, Allocator.Persistent);
+                var brushMesh = BrushMeshFactory.CreateBrushBlob(brushOutline);
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             }
             return true;

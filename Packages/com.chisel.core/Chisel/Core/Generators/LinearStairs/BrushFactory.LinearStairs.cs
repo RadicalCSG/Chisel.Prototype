@@ -85,16 +85,16 @@ namespace Chisel.Core
                         if (description.riserType == StairsRiserType.ThinRiser)
                             min.z = max.z - description.riserDepth;
                         else
-                            min.z = min.z + description.stepDepthOffset;
+                            min.z += description.stepDepthOffset;
                         if (description.thickRiser)
                             min.z -= description.offsetZ;
                     }
                     min.y = max.y - description.stepHeight;
                     min.y -= description.treadHeight;
                     max.y -= description.treadHeight;
-                    min.x += description.haveRightSideDown ? description.sideWidth : 0;
-                    max.x -= description.haveLeftSideDown  ? description.sideWidth : 0;
-                    
+                    min.x += (description.leftSideType  != StairsSideType.None) ? description.sideWidth : 0;
+                    max.x -= (description.rightSideType != StairsSideType.None) ? description.sideWidth : 0;
+
                     var extrusion = new float3(max.x - min.x, 0, 0);
                     for (int i = 0; i < description.stepCount; i++)
                     {
@@ -144,7 +144,7 @@ namespace Chisel.Core
                     for (int i = 0; i < description.stepCount; i++)
                     {
                         min.x = description.bounds.Min.x - ((i == 0) ? description.rightTopNosingWidth : description.rightNosingWidth);
-                        max.x = description.bounds.Max.x + ((i == 0) ? description.leftTopNosingWidth : description.leftNosingWidth);
+                        max.x = description.bounds.Max.x + ((i == 0) ? description.leftTopNosingWidth  : description.leftNosingWidth );
                         if (i == 1)
                         {
                             min.z = max.z - (description.stepDepth + description.nosingDepth);
@@ -1537,6 +1537,8 @@ namespace Chisel.Core
 
             public bool haveLeftSideDown;
             public bool haveRightSideDown;
+            public bool haveLeftSideUp;
+            public bool haveRightSideUp;
 
             public float sideWidth;
             public bool thickRiser;
@@ -1642,10 +1644,10 @@ namespace Chisel.Core
                 this.haveRiser           = this.riserType != StairsRiserType.None;
 
                 this.haveLeftSideDown    = this.riserType != StairsRiserType.FillDown && (this.leftSideType == StairsSideType.Down || this.leftSideType == StairsSideType.DownAndUp) && plateauHeight > 0;
-                var haveLeftSideUp       = (this.leftSideType == StairsSideType.Up || this.leftSideType == StairsSideType.DownAndUp);
+                this.haveLeftSideUp      = (this.leftSideType == StairsSideType.Up || this.leftSideType == StairsSideType.DownAndUp);
                 this.haveRightSideDown   = this.riserType != StairsRiserType.FillDown && (this.rightSideType == StairsSideType.Down || this.rightSideType == StairsSideType.DownAndUp) && plateauHeight > 0;
-                var haveRightSideUp      = (this.rightSideType == StairsSideType.Up || this.rightSideType == StairsSideType.DownAndUp);
-
+                this.haveRightSideUp     = (this.rightSideType == StairsSideType.Up || this.rightSideType == StairsSideType.DownAndUp);
+                
                 this.sideWidth           = sideWidth;
                 this.thickRiser          = this.riserType == StairsRiserType.ThickRiser || this.riserType == StairsRiserType.Smooth;
                 this.riserDepth          = (this.haveRiser && !this.thickRiser) ? riserDepth : 0;
@@ -1720,8 +1722,8 @@ namespace Chisel.Core
                     min.y = max.y - definition.stepHeight;
                     min.y -= description.treadHeight;
                     max.y -= description.treadHeight;
-                    min.x += description.haveRightSideDown ? description.sideWidth : 0;
-                    max.x -= description.haveLeftSideDown  ? description.sideWidth : 0;
+                    min.x += (description.leftSideType  != StairsSideType.None) ? description.sideWidth : 0;
+                    max.x -= (description.rightSideType != StairsSideType.None) ? description.sideWidth : 0;
                     
                     var extrusion = new Vector3(max.x - min.x, 0, 0);
                     for (int i = 0; i < description.stepCount; i++)

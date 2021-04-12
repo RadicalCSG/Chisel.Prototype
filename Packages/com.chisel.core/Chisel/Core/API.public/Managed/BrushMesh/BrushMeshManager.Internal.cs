@@ -31,6 +31,67 @@ namespace Chisel.Core
             dstPolygon.edgeCount        = srcPolygon.edgeCount;
             dstPolygon.surface          = Convert(srcPolygon.surface);
         }
+        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static BlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
+                                                                                                          NativeChiselSurface surface1,
+                                                                                                          NativeChiselSurface surface2,
+                                                                                                          NativeChiselSurface surface3,
+                                                                                                          NativeChiselSurface surface4,
+                                                                                                          Allocator allocator)
+        {
+            var surfaceCount = 5;
+
+            using (var builder = new BlobBuilder(Allocator.Temp, surfaceCount * UnsafeUtility.SizeOf<NativeChiselSurface>()))
+            {
+                ref var root    = ref builder.ConstructRoot<NativeChiselSurfaceDefinition>();
+                var surfaces    = builder.Allocate(ref root.surfaces, surfaceCount);
+                surfaces[0] = surface0;
+                surfaces[1] = surface1;
+                surfaces[2] = surface2;
+                surfaces[3] = surface3;
+                surfaces[4] = surface4;
+                return builder.CreateBlobAssetReference<NativeChiselSurfaceDefinition>(allocator);
+            }
+        }
+        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static BlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
+                                                                                                          NativeChiselSurface surface1,
+                                                                                                          NativeChiselSurface surface2,
+                                                                                                          NativeChiselSurface surface3,
+                                                                                                          NativeChiselSurface surface4,
+                                                                                                          NativeChiselSurface surface5,
+                                                                                                          Allocator allocator)
+        {
+            var surfaceCount = 6;
+
+            using (var builder = new BlobBuilder(Allocator.Temp, surfaceCount * UnsafeUtility.SizeOf<NativeChiselSurface>()))
+            {
+                ref var root    = ref builder.ConstructRoot<NativeChiselSurfaceDefinition>();
+                var surfaces    = builder.Allocate(ref root.surfaces, surfaceCount);
+                surfaces[0] = surface0;
+                surfaces[1] = surface1;
+                surfaces[2] = surface2;
+                surfaces[3] = surface3;
+                surfaces[4] = surface4;
+                surfaces[5] = surface5;
+                return builder.CreateBlobAssetReference<NativeChiselSurfaceDefinition>(allocator);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static BlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(int surfaceCount, Allocator allocator)
+        {
+            using (var builder = new BlobBuilder(Allocator.Temp, surfaceCount * UnsafeUtility.SizeOf<NativeChiselSurface>()))
+            {
+                ref var root = ref builder.ConstructRoot<NativeChiselSurfaceDefinition>();
+                var surfaces = builder.Allocate(ref root.surfaces, surfaceCount);
+                return builder.CreateBlobAssetReference<NativeChiselSurfaceDefinition>(allocator);
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static BlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(in ChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
@@ -125,6 +186,8 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool		IsBrushMeshIDValid		(Int32 brushMeshHash)
         {
+            if (!brushMeshBlobs.IsCreated)
+                return false;
             return brushMeshBlobs.ContainsKey(brushMeshHash);
         }
 

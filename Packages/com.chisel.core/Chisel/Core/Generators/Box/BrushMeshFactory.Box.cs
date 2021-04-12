@@ -9,6 +9,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -26,6 +27,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CreateBox(float3 min, float3 max, 
                                      in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
                                      out BlobAssetReference<BrushMeshBlob> brushMesh,
@@ -46,6 +48,15 @@ namespace Chisel.Core
             if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
             if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
 
+            var vertex0 = new float3(min.x, min.y, max.z);
+            var vertex1 = new float3(min.x, min.y, min.z);
+            var vertex2 = new float3(max.x, min.y, min.z);
+            var vertex3 = new float3(max.x, min.y, max.z);
+            var vertex4 = new float3(min.x, max.y, max.z);
+            var vertex5 = new float3(min.x, max.y, min.z);
+            var vertex6 = new float3(max.x, max.y, min.z);
+            var vertex7 = new float3(max.x, max.y, max.z);
+
             using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
@@ -55,24 +66,24 @@ namespace Chisel.Core
                 var polygons                = builder.Allocate(ref root.polygons,                6);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,             6);
                 
-                const int vert0 = 0;
-                const int vert1 = 1;
-                const int vert2 = 2;
-                const int vert3 = 3;
-                const int vert4 = 4;
-                const int vert5 = 5;
-                const int vert6 = 6;
-                const int vert7 = 7;
+                const int vertIndex0 = 0;
+                const int vertIndex1 = 1;
+                const int vertIndex2 = 2;
+                const int vertIndex3 = 3;
+                const int vertIndex4 = 4;
+                const int vertIndex5 = 5;
+                const int vertIndex6 = 6;
+                const int vertIndex7 = 7;
 
-                localVertices[vert0] = new float3(min.x, min.y, max.z);
-                localVertices[vert1] = new float3(min.x, min.y, min.z);
-                localVertices[vert2] = new float3(max.x, min.y, min.z);
-                localVertices[vert3] = new float3(max.x, min.y, max.z);
-                localVertices[vert4] = new float3(min.x, max.y, max.z);
-                localVertices[vert5] = new float3(min.x, max.y, min.z);
-                localVertices[vert6] = new float3(max.x, max.y, min.z);
-                localVertices[vert7] = new float3(max.x, max.y, max.z);
-                
+                localVertices[vertIndex0] = vertex0;
+                localVertices[vertIndex1] = vertex1;
+                localVertices[vertIndex2] = vertex2;
+                localVertices[vertIndex3] = vertex3;
+                localVertices[vertIndex4] = vertex4;
+                localVertices[vertIndex5] = vertex5;
+                localVertices[vertIndex6] = vertex6;
+                localVertices[vertIndex7] = vertex7;
+
                 const int polygon0 = 0;
                 const int polygon1 = 1;
                 const int polygon2 = 2;
@@ -113,40 +124,40 @@ namespace Chisel.Core
 
 
                 // polygon 0
-                halfEdges[edge0_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_3, vertexIndex = vert1 };
-                halfEdges[edge0_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_2, vertexIndex = vert0 };
-                halfEdges[edge0_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_1, vertexIndex = vert4 };
-                halfEdges[edge0_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_0, vertexIndex = vert5 };
+                halfEdges[edge0_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_3, vertexIndex = vertIndex1 };
+                halfEdges[edge0_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_2, vertexIndex = vertIndex0 };
+                halfEdges[edge0_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_1, vertexIndex = vertIndex4 };
+                halfEdges[edge0_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_0, vertexIndex = vertIndex5 };
 
                 // polygon 1
-                halfEdges[edge1_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_1, vertexIndex = vert3 };
-                halfEdges[edge1_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_2, vertexIndex = vert0 };
-                halfEdges[edge1_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_1, vertexIndex = vert1 };
-                halfEdges[edge1_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_2, vertexIndex = vert2 };
+                halfEdges[edge1_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_1, vertexIndex = vertIndex3 };
+                halfEdges[edge1_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_2, vertexIndex = vertIndex0 };
+                halfEdges[edge1_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_1, vertexIndex = vertIndex1 };
+                halfEdges[edge1_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_2, vertexIndex = vertIndex2 };
 
                 // polygon 2
-                halfEdges[edge2_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_3, vertexIndex = vert6 };
-                halfEdges[edge2_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_2, vertexIndex = vert2 };
-                halfEdges[edge2_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_3, vertexIndex = vert1 };
-                halfEdges[edge2_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_0, vertexIndex = vert5 };
+                halfEdges[edge2_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_3, vertexIndex = vertIndex6 };
+                halfEdges[edge2_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_2, vertexIndex = vertIndex2 };
+                halfEdges[edge2_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_3, vertexIndex = vertIndex1 };
+                halfEdges[edge2_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_0, vertexIndex = vertIndex5 };
 
                 // polygon 3
-                halfEdges[edge3_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_3, vertexIndex = vert3 };
-                halfEdges[edge3_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_0, vertexIndex = vert2 };
-                halfEdges[edge3_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_1, vertexIndex = vert6 };
-                halfEdges[edge3_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_2, vertexIndex = vert7 };
+                halfEdges[edge3_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_3, vertexIndex = vertIndex3 };
+                halfEdges[edge3_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_0, vertexIndex = vertIndex2 };
+                halfEdges[edge3_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_1, vertexIndex = vertIndex6 };
+                halfEdges[edge3_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_2, vertexIndex = vertIndex7 };
 
                 // polygon 4
-                halfEdges[edge4_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_3, vertexIndex = vert4 };
-                halfEdges[edge4_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_0, vertexIndex = vert7 };
-                halfEdges[edge4_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_3, vertexIndex = vert6 };
-                halfEdges[edge4_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_0, vertexIndex = vert5 };
+                halfEdges[edge4_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_3, vertexIndex = vertIndex4 };
+                halfEdges[edge4_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_0, vertexIndex = vertIndex7 };
+                halfEdges[edge4_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_3, vertexIndex = vertIndex6 };
+                halfEdges[edge4_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_0, vertexIndex = vertIndex5 };
 
                 // polygon 5
-                halfEdges[edge5_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_1, vertexIndex = vert4 };
-                halfEdges[edge5_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_2, vertexIndex = vert0 };
-                halfEdges[edge5_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_1, vertexIndex = vert3 };
-                halfEdges[edge5_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_0, vertexIndex = vert7 };
+                halfEdges[edge5_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_1, vertexIndex = vertIndex4 };
+                halfEdges[edge5_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_2, vertexIndex = vertIndex0 };
+                halfEdges[edge5_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_1, vertexIndex = vertIndex3 };
+                halfEdges[edge5_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_0, vertexIndex = vertIndex7 };
 
                 halfEdgePolygonIndices[edge0_0] = polygon0;
                 halfEdgePolygonIndices[edge0_1] = polygon0;
@@ -196,6 +207,172 @@ namespace Chisel.Core
                 root.localBounds = new MinMaxAABB { Min = min, Max = max };
                 brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
                 return true;
+            }
+        }
+
+        
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BlobAssetReference<BrushMeshBlob> CreateBox(float3 vertex0,
+                                                                  float3 vertex1,
+                                                                  float3 vertex2,
+                                                                  float3 vertex3,
+                                                                  float3 vertex4,
+                                                                  float3 vertex5,
+                                                                  float3 vertex6,
+                                                                  float3 vertex7,
+                                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition, 
+                                                                  Allocator allocator)
+        {
+            if (surfaceDefinition == BlobAssetReference<NativeChiselSurfaceDefinition>.Null)
+                return BlobAssetReference<BrushMeshBlob>.Null;
+
+            ref var surfaces = ref surfaceDefinition.Value.surfaces;
+            if (surfaces.Length < 6)
+                return BlobAssetReference<BrushMeshBlob>.Null;
+
+            using (var builder = new BlobBuilder(Allocator.Temp))
+            {
+                ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                var localVertices           = builder.Allocate(ref root.localVertices,           8);
+                var halfEdges               = builder.Allocate(ref root.halfEdges,              24);
+                var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, 24);
+                var polygons                = builder.Allocate(ref root.polygons,                6);
+                var localPlanes             = builder.Allocate(ref root.localPlanes,             6);
+                
+                const int vertIndex0 = 0;
+                const int vertIndex1 = 1;
+                const int vertIndex2 = 2;
+                const int vertIndex3 = 3;
+                const int vertIndex4 = 4;
+                const int vertIndex5 = 5;
+                const int vertIndex6 = 6;
+                const int vertIndex7 = 7;
+
+                localVertices[vertIndex0] = vertex0;
+                localVertices[vertIndex1] = vertex1;
+                localVertices[vertIndex2] = vertex2;
+                localVertices[vertIndex3] = vertex3;
+                localVertices[vertIndex4] = vertex4;
+                localVertices[vertIndex5] = vertex5;
+                localVertices[vertIndex6] = vertex6;
+                localVertices[vertIndex7] = vertex7;
+
+                const int polygon0 = 0;
+                const int polygon1 = 1;
+                const int polygon2 = 2;
+                const int polygon3 = 3;
+                const int polygon4 = 4;
+                const int polygon5 = 5;
+
+                const int edge0_0 = (polygon0 * 4) + 0;
+                const int edge0_1 = (polygon0 * 4) + 1;
+                const int edge0_2 = (polygon0 * 4) + 2;
+                const int edge0_3 = (polygon0 * 4) + 3;
+
+                const int edge1_0 = (polygon1 * 4) + 0;
+                const int edge1_1 = (polygon1 * 4) + 1;
+                const int edge1_2 = (polygon1 * 4) + 2; 
+                const int edge1_3 = (polygon1 * 4) + 3;
+
+                const int edge2_0 = (polygon2 * 4) + 0;
+                const int edge2_1 = (polygon2 * 4) + 1;
+                const int edge2_2 = (polygon2 * 4) + 2;
+                const int edge2_3 = (polygon2 * 4) + 3;
+
+                const int edge3_0 = (polygon3 * 4) + 0;
+                const int edge3_1 = (polygon3 * 4) + 1;
+                const int edge3_2 = (polygon3 * 4) + 2;
+                const int edge3_3 = (polygon3 * 4) + 3;
+
+                const int edge4_0 = (polygon4 * 4) + 0;
+                const int edge4_1 = (polygon4 * 4) + 1;
+                const int edge4_2 = (polygon4 * 4) + 2;
+                const int edge4_3 = (polygon4 * 4) + 3;
+
+                const int edge5_0 = (polygon5 * 4) + 0;
+                const int edge5_1 = (polygon5 * 4) + 1;
+                const int edge5_2 = (polygon5 * 4) + 2;
+                const int edge5_3 = (polygon5 * 4) + 3;
+
+
+
+                // polygon 0
+                halfEdges[edge0_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_3, vertexIndex = vertIndex1 };
+                halfEdges[edge0_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_2, vertexIndex = vertIndex0 };
+                halfEdges[edge0_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_1, vertexIndex = vertIndex4 };
+                halfEdges[edge0_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_0, vertexIndex = vertIndex5 };
+
+                // polygon 1
+                halfEdges[edge1_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_1, vertexIndex = vertIndex3 };
+                halfEdges[edge1_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_2, vertexIndex = vertIndex0 };
+                halfEdges[edge1_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_1, vertexIndex = vertIndex1 };
+                halfEdges[edge1_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_2, vertexIndex = vertIndex2 };
+
+                // polygon 2
+                halfEdges[edge2_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_3, vertexIndex = vertIndex6 };
+                halfEdges[edge2_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_2, vertexIndex = vertIndex2 };
+                halfEdges[edge2_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_3, vertexIndex = vertIndex1 };
+                halfEdges[edge2_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_0, vertexIndex = vertIndex5 };
+
+                // polygon 3
+                halfEdges[edge3_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_3, vertexIndex = vertIndex3 };
+                halfEdges[edge3_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_0, vertexIndex = vertIndex2 };
+                halfEdges[edge3_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_1, vertexIndex = vertIndex6 };
+                halfEdges[edge3_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_2, vertexIndex = vertIndex7 };
+
+                // polygon 4
+                halfEdges[edge4_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_3, vertexIndex = vertIndex4 };
+                halfEdges[edge4_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge5_0, vertexIndex = vertIndex7 };
+                halfEdges[edge4_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_3, vertexIndex = vertIndex6 };
+                halfEdges[edge4_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge2_0, vertexIndex = vertIndex5 };
+
+                // polygon 5
+                halfEdges[edge5_0] = new BrushMeshBlob.HalfEdge { twinIndex = edge4_1, vertexIndex = vertIndex4 };
+                halfEdges[edge5_1] = new BrushMeshBlob.HalfEdge { twinIndex = edge0_2, vertexIndex = vertIndex0 };
+                halfEdges[edge5_2] = new BrushMeshBlob.HalfEdge { twinIndex = edge1_1, vertexIndex = vertIndex3 };
+                halfEdges[edge5_3] = new BrushMeshBlob.HalfEdge { twinIndex = edge3_0, vertexIndex = vertIndex7 };
+
+                halfEdgePolygonIndices[edge0_0] = polygon0;
+                halfEdgePolygonIndices[edge0_1] = polygon0;
+                halfEdgePolygonIndices[edge0_2] = polygon0;
+                halfEdgePolygonIndices[edge0_3] = polygon0;
+
+                halfEdgePolygonIndices[edge1_0] = polygon1;
+                halfEdgePolygonIndices[edge1_1] = polygon1;
+                halfEdgePolygonIndices[edge1_2] = polygon1;
+                halfEdgePolygonIndices[edge1_3] = polygon1;
+
+                halfEdgePolygonIndices[edge2_0] = polygon2;
+                halfEdgePolygonIndices[edge2_1] = polygon2;
+                halfEdgePolygonIndices[edge2_2] = polygon2;
+                halfEdgePolygonIndices[edge2_3] = polygon2;
+
+                halfEdgePolygonIndices[edge3_0] = polygon3;
+                halfEdgePolygonIndices[edge3_1] = polygon3;
+                halfEdgePolygonIndices[edge3_2] = polygon3;
+                halfEdgePolygonIndices[edge3_3] = polygon3;
+
+                halfEdgePolygonIndices[edge4_0] = polygon4;
+                halfEdgePolygonIndices[edge4_1] = polygon4;
+                halfEdgePolygonIndices[edge4_2] = polygon4;
+                halfEdgePolygonIndices[edge4_3] = polygon4;
+
+                halfEdgePolygonIndices[edge5_0] = polygon5;
+                halfEdgePolygonIndices[edge5_1] = polygon5;
+                halfEdgePolygonIndices[edge5_2] = polygon5;
+                halfEdgePolygonIndices[edge5_3] = polygon5;
+
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge = polygon0 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Left  ] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge = polygon1 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Bottom] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge = polygon2 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Back  ] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = polygon3 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Right ] };
+                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = polygon4 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Top   ] };
+                polygons[polygon5] = new BrushMeshBlob.Polygon { firstEdge = polygon5 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Front ] };
+
+                CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                root.localBounds = CalculateBounds(in localVertices);
+                return builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             }
         }
 

@@ -5,6 +5,11 @@ using Vector3 = UnityEngine.Vector3;
 using Color   = UnityEngine.Color;
 using UnitySceneExtensions;
 using UnityEngine.Profiling;
+using Unity.Mathematics;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+
 
 namespace Chisel.Core
 {
@@ -14,7 +19,7 @@ namespace Chisel.Core
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DTs7Bc10UxKpWM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DPwskqkaN7e_wM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     [Serializable]
-    public struct ChiselSpiralStairsDefinition : IChiselGenerator
+    public struct ChiselSpiralStairsDefinition : IChiselGenerator, IBrushGenerator
     {
         public const string kNodeTypeName = "Spiral Stairs";
 
@@ -147,6 +152,90 @@ namespace Chisel.Core
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
+        }
+
+        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var branch = (CSGTreeBranch)node;
+            if (!branch.Valid)
+            {
+                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
+            } else
+            {
+                if (branch.Operation != operation)
+                    branch.Operation = operation;
+            }
+
+            Validate();
+
+            // TODO: expose this to user
+            var smoothSubDivisions		= 3;
+
+            const float kEpsilon = 0.001f;
+            var haveInnerCylinder	    = (innerDiameter >= kEpsilon);
+            var haveTread		        = (nosingDepth < kEpsilon) ? false : (treadHeight >= kEpsilon);
+
+            var cylinderSubMeshCount	= haveInnerCylinder ? 2 : 1;
+            var subMeshPerRiser			= (riserType == StairsRiserType.None  ) ? 0 : 
+                                          (riserType == StairsRiserType.Smooth) ? (2 * smoothSubDivisions)
+                                                                                : 1;
+            var riserSubMeshCount		= (StepCount * subMeshPerRiser) + ((riserType == StairsRiserType.None  ) ? 0 : cylinderSubMeshCount);
+            var treadSubMeshCount		= (haveTread ? StepCount + cylinderSubMeshCount : 0);
+            var requiredSubMeshCount    = (treadSubMeshCount + riserSubMeshCount);
+
+            if (requiredSubMeshCount == 0)
+            {
+                this.ClearBrushes(branch);
+                return false;
+            }
+
+            if (branch.Count != requiredSubMeshCount)
+                this.BuildBrushes(branch, requiredSubMeshCount);
+            
+            var haveRiser		= riserType != StairsRiserType.None;
+            var treadStart      = !haveRiser ? 0 : riserSubMeshCount;
+
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            {
+                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                {
+                    if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes, ref this, in surfaceDefinitionBlob, Allocator.Persistent))
+                    {
+                        this.ClearBrushes(branch);
+                        return false;
+                    }
+
+                    for (int i = 0; i < requiredSubMeshCount; i++)
+                    {
+                        var brush = (CSGTreeBrush)branch[i];
+                        brush.LocalTransformation = float4x4.identity;
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                    }
+
+                    {
+                        var subMeshIndex = treadStart - cylinderSubMeshCount;
+                        var brush = (CSGTreeBrush)branch[subMeshIndex];
+                        brush.Operation = CSGOperationType.Intersecting;
+            
+                        subMeshIndex = requiredSubMeshCount - cylinderSubMeshCount;
+                        brush = (CSGTreeBrush)branch[subMeshIndex];
+                        brush.Operation = CSGOperationType.Intersecting;
+                    }
+
+                    if (haveInnerCylinder)
+                    {
+                        var subMeshIndex = treadStart - 1;
+                        var brush = (CSGTreeBrush)branch[subMeshIndex];
+                        brush.Operation = CSGOperationType.Subtractive;
+
+                        subMeshIndex = requiredSubMeshCount - 1;
+                        brush = (CSGTreeBrush)branch[subMeshIndex];
+                        brush.Operation = CSGOperationType.Subtractive;
+                    }
+
+                    return true;
+                }
+            }
         }
 
 

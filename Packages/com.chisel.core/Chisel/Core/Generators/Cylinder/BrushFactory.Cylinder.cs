@@ -30,6 +30,24 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GenerateCylinderSubMesh(float    diameter,
+                                                   float    topHeight, 
+                                                   float    bottomHeight, 
+                                                   float    rotation, 
+                                                   int      sides, 
+                                                   bool     fitToBounds, 
+                                                   in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                   out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                                   Allocator allocator)
+        {
+            return GenerateConicalFrustumSubMesh(new float2(diameter, diameter), topHeight, 
+                                                 new float2(diameter, diameter), bottomHeight, 
+                                                 rotation, sides, fitToBounds, 
+                                                 in surfaceDefinitionBlob, out brushMesh, allocator);
+        }
+
+        [BurstCompile]
         public static unsafe bool GenerateConicalFrustumSubMesh(float2 topDiameter,    float topHeight,
                                                                 float2 bottomDiameter, float bottomHeight, 
                                                                 float                  rotation, 
