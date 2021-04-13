@@ -1,12 +1,15 @@
 {
     "name": "com.chisel.components.tests",
+    "rootNamespace": "",
     "references": [
         "com.chisel.components",
         "com.chisel.core",
         "com.scene.handle.extensions.runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Entities",
+        "Unity.Mathematics.Extensions"
     ],
     "includePlatforms": [
         "Editor"

@@ -22,7 +22,9 @@ namespace Chisel.Core
 
         [NamedItems("Top", "Bottom", "Right", "Left", "Back", "Front", fixedSize = 6)]
         public ChiselSurfaceDefinition  surfaceDefinition;
-                
+
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
         public Vector3      min		{ get { return bounds.min; } set { bounds.min = value; } }
         public Vector3		max	    { get { return bounds.max; } set { bounds.max = value; } }
         public Vector3		size    { get { return bounds.size; } set { bounds.size = value; } }

@@ -37,7 +37,11 @@ namespace Chisel.Core
 
                 // TODO: do something more intelligent with surface assignment, and put it inside CreateSphere
                 for (int i = 0; i < polygons.Length; i++)
-                    polygons[i].surface = i < surfaceDefinition.surfaces.Length ? surfaceDefinition.surfaces[i] : surfaceDefinition.surfaces[0];
+                {
+                    var surfaceID = i < surfaceDefinition.surfaces.Length ? i : 0;
+                    polygons[i].descriptionIndex = surfaceID;
+                    polygons[i].surface = surfaceDefinition.surfaces[surfaceID];
+                }
 
                 // TODO: eventually remove when it's more battle tested
                 if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))

@@ -149,11 +149,11 @@ namespace Chisel.Core
                 halfEdgePolygonIndices[edge4_1] = polygon4;
                 halfEdgePolygonIndices[edge4_2] = polygon4;
 
-                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 4, surface = surfaces[0] };
-                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  4, edgeCount = 3, surface = surfaces[1] };
-                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  7, edgeCount = 3, surface = surfaces[2] };
-                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = 10, edgeCount = 3, surface = surfaces[3] };
-                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = 13, edgeCount = 3, surface = surfaces[3] };// TODO: figure out if this should be [4]
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 4, descriptionIndex = 0, surface = surfaces[0] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  4, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  7, edgeCount = 3, descriptionIndex = 2, surface = surfaces[2] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = 10, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] };
+                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = 13, edgeCount = 3, descriptionIndex = 4, surface = surfaces[3] };// TODO: figure out if this should be [4]
 
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 root.localBounds = CalculateBounds(in localVertices);
@@ -172,11 +172,11 @@ namespace Chisel.Core
 
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, surface = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 3, surface = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  7, edgeCount = 3, surface = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 3, surface = surfaces[3] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 13, edgeCount = 3, surface = surfaces[3] } // TODO: figure out if this should be [4]
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, descriptionIndex = 0, surface = surfaces[0] },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  7, edgeCount = 3, descriptionIndex = 2, surface = surfaces[2] },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 13, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] } // TODO: figure out if this should be [4]
             };
         }
         
@@ -317,10 +317,10 @@ namespace Chisel.Core
                 halfEdgePolygonIndices[edge3_1] = polygon3;
                 halfEdgePolygonIndices[edge3_2] = polygon3;
 
-                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 3, surface = surfaces[0] };
-                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  3, edgeCount = 3, surface = surfaces[1] };
-                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  6, edgeCount = 3, surface = surfaces[2] };
-                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge =  9, edgeCount = 3, surface = surfaces[3] };
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 3, descriptionIndex = 0, surface = surfaces[0] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  3, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  6, edgeCount = 3, descriptionIndex = 2, surface = surfaces[2] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge =  9, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] };
 
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 root.localBounds = CalculateBounds(in localVertices);
@@ -339,10 +339,10 @@ namespace Chisel.Core
 
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, surface = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, surface = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 3, surface = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge =  9, edgeCount = 3, surface = surfaces[3] }
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, descriptionIndex = 0, surface = surfaces[0] },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 3, descriptionIndex = 2, surface = surfaces[2] },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge =  9, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] }
             };
         }
         
@@ -515,11 +515,11 @@ namespace Chisel.Core
                 halfEdgePolygonIndices[edge4_2] = polygon4;
                 halfEdgePolygonIndices[edge4_3] = polygon4;
 
-                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 3, surface = surfaces[0] };
-                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  3, edgeCount = 3, surface = surfaces[1] };
-                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  6, edgeCount = 3, surface = surfaces[2] };
-                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = 10, edgeCount = 3, surface = surfaces[3] };
-                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = 14, edgeCount = 3, surface = surfaces[4] };
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge =  0, edgeCount = 3, descriptionIndex = 0, surface = surfaces[0] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge =  3, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge =  6, edgeCount = 3, descriptionIndex = 2, surface = surfaces[2] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = 10, edgeCount = 3, descriptionIndex = 3, surface = surfaces[3] };
+                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = 14, edgeCount = 3, descriptionIndex = 4, surface = surfaces[4] };
 
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 root.localBounds = CalculateBounds(in localVertices);
@@ -539,11 +539,11 @@ namespace Chisel.Core
 
             return new[]
             {
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, surface = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, surface = surfaces[1] },
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 4, surface = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 4, surface = surfaces[3] },
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, surface = surfaces[4] }
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 3, descriptionIndex = 0, surface = surfaces[0] },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  3, edgeCount = 3, descriptionIndex = 1, surface = surfaces[1] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  6, edgeCount = 4, descriptionIndex = 2, surface = surfaces[2] },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 10, edgeCount = 4, descriptionIndex = 3, surface = surfaces[3] },
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 14, edgeCount = 4, descriptionIndex = 4, surface = surfaces[4] }
             };
         }
 
@@ -687,21 +687,21 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  9, vertexIndex = 3 }	// 23 (3-7)
         };
 
-        static BrushMesh.Polygon[] CreateBoxPolygons(in ChiselSurface surface)
+        static BrushMesh.Polygon[] CreateBoxPolygons(int descriptionIndex, in ChiselSurface surface)
         {
             return new[]
             {
                 // left/right
-                new BrushMesh.Polygon{ surfaceID = 0, firstEdge =  0, edgeCount = 4, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 1, firstEdge =  4, edgeCount = 4, surface = surface },
+                new BrushMesh.Polygon{ surfaceID = 0, firstEdge =  0, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
+                new BrushMesh.Polygon{ surfaceID = 1, firstEdge =  4, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
                 
                 // front/back
-                new BrushMesh.Polygon{ surfaceID = 2, firstEdge =  8, edgeCount = 4, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 3, firstEdge = 12, edgeCount = 4, surface = surface },
+                new BrushMesh.Polygon{ surfaceID = 2, firstEdge =  8, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
+                new BrushMesh.Polygon{ surfaceID = 3, firstEdge = 12, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
                 
                 // top/down
-                new BrushMesh.Polygon{ surfaceID = 4, firstEdge = 16, edgeCount = 4, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 5, firstEdge = 20, edgeCount = 4, surface = surface }
+                new BrushMesh.Polygon{ surfaceID = 4, firstEdge = 16, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
+                new BrushMesh.Polygon{ surfaceID = 5, firstEdge = 20, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface }
             };
         }
 
@@ -720,16 +720,16 @@ namespace Chisel.Core
                 polygons = new BrushMesh.Polygon[6];
 
             // left/right
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, surface = surfaces[0] };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, surface = surfaces[1] };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, descriptionIndex = 0, surface = surfaces[0] };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, descriptionIndex = 1, surface = surfaces[1] };
                 
                 // front/back
-            polygons[2] = new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, surface = surfaces[2] };
-            polygons[3] = new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, surface = surfaces[3] };
+            polygons[2] = new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, descriptionIndex = 2, surface = surfaces[2] };
+            polygons[3] = new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, descriptionIndex = 3, surface = surfaces[3] };
                 
             // top/down
-            polygons[4] = new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, surface = surfaces[4] };
-            polygons[5] = new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, surface = surfaces[5] };
+            polygons[4] = new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, descriptionIndex = 4, surface = surfaces[4] };
+            polygons[5] = new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, descriptionIndex = 5, surface = surfaces[5] };
 
             return true;                 
         }
@@ -746,16 +746,16 @@ namespace Chisel.Core
             return new[]
             {
                 // left/right
-                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, surface = surfaces[0] },
-                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, surface = surfaces[1] },
+                new BrushMesh.Polygon { surfaceID = 0, firstEdge =  0, edgeCount = 4, descriptionIndex = 0, surface = surfaces[0] },
+                new BrushMesh.Polygon { surfaceID = 1, firstEdge =  4, edgeCount = 4, descriptionIndex = 1, surface = surfaces[1] },
                 
                 // front/back
-                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, surface = surfaces[2] },
-                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, surface = surfaces[3] },
+                new BrushMesh.Polygon { surfaceID = 2, firstEdge =  8, edgeCount = 4, descriptionIndex = 2, surface = surfaces[2] },
+                new BrushMesh.Polygon { surfaceID = 3, firstEdge = 12, edgeCount = 4, descriptionIndex = 3, surface = surfaces[3] },
                 
                 // top/down
-                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, surface = surfaces[4] },
-                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, surface = surfaces[5] }
+                new BrushMesh.Polygon { surfaceID = 4, firstEdge = 16, edgeCount = 4, descriptionIndex = 4, surface = surfaces[4] },
+                new BrushMesh.Polygon { surfaceID = 5, firstEdge = 20, edgeCount = 4, descriptionIndex = 5, surface = surfaces[5] }
             };
         }
 

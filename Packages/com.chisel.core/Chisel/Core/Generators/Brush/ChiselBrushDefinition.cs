@@ -23,7 +23,9 @@ namespace Chisel.Core
 
         [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
-        
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
+
         [HideInInspector]
         [SerializeField] bool           isInsideOut = false;
         [HideInInspector]

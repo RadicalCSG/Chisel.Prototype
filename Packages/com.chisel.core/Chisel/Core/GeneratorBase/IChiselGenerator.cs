@@ -9,7 +9,7 @@ namespace Chisel.Core
     {
         void Reset();
         void Validate();
-        bool Generate(ref ChiselBrushContainer brushContainer);
+        //bool Generate(ref ChiselBrushContainer brushContainer);
         void OnEdit(IChiselHandles handles);
         void OnMessages(IChiselMessages messages);
     }

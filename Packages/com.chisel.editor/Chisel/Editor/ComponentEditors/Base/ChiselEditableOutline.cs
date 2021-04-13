@@ -697,17 +697,17 @@ namespace Chisel.Editors
         // This is possible when not all vertices on a polygon actually lie on the same plane and we're forced to split that polygon
         #region FindSoftEdges
         static List<int> s_TempPolygon1ToPolygon2 = new List<int>();
-        static readonly List<ChiselBrushContainerAsset> brushContainers = new List<ChiselBrushContainerAsset>();
+        //static readonly List<ChiselBrushContainerAsset> brushContainers = new List<ChiselBrushContainerAsset>();
         void FindSoftEdges()
         {
             softEdges = new SoftEdge[0];
-            brushContainers.Clear();
-            if (!brush.GetUsedGeneratedBrushes(brushContainers))
-                return;
+            //brushContainers.Clear();
+            //if (!brush.GetUsedGeneratedBrushes(brushContainers))
+            //    return;
 
             // TODO: for now, just assume we have one submesh
-            var brushMeshes = (brushContainers == null || brushContainers.Count != 1) ? null : brushContainers[0].BrushMeshes;
-            var afterBrushMesh = (brushMeshes == null || brushMeshes.Length == 0) ? null : brushMeshes[0];
+            //var brushMeshes = (brushContainers == null || brushContainers.Count != 1) ? null : brushContainers[0].BrushMeshes;
+            var afterBrushMesh = brush.BrushMesh;
             if (afterBrushMesh == null)
                 return;
 
@@ -1003,13 +1003,13 @@ namespace Chisel.Editors
 
         bool IsPointInsideOutline(Vector3 point)
         {
-            brushContainers.Clear();
-            if (!brush.GetUsedGeneratedBrushes(brushContainers))
-                return false;
+            //brushContainers.Clear();
+            //if (!brush.GetUsedGeneratedBrushes(brushContainers))
+            //    return false;
 
             // TODO: for now, just assume we have one submesh
-            var brushMeshes = (brushContainers.Count != 1) ? null : brushContainers[0].BrushMeshes;
-            var afterBrushMesh = (brushMeshes == null) ? null : brushMeshes[0];
+            //var brushMeshes = (brushContainers.Count != 1) ? null : brushContainers[0].BrushMeshes;
+            var afterBrushMesh = brush.BrushMesh;// (brushMeshes == null) ? null : brushMeshes[0];
             if (afterBrushMesh == null)
                 return false;
 

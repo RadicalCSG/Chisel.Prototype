@@ -78,6 +78,8 @@ namespace Chisel.Core
         [NamedItems("Tread Top", "Tread Bottom", "Tread Front", "Tread Back", "Riser Front", "Riser Back", "Inner", "Outer", overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
         public int StepCount
         {
             get

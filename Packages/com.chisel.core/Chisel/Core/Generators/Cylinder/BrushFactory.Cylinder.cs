@@ -212,15 +212,22 @@ namespace Chisel.Core
                                       out BlobBuilderArray<BrushMeshBlob.HalfEdge>          halfEdges)
         {
             ref var surfaceDefinition   = ref surfaceDefinitionBlob.Value;
-            ref var chiselSurface0      = ref surfaceDefinition.surfaces[0];
+            const int descriptionIndex0 = 0;
+            ref var chiselSurface0      = ref surfaceDefinition.surfaces[descriptionIndex0];
 
             polygons = builder.Allocate(ref root.polygons, segments + 1);
-            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0, edgeCount = segments, surface = chiselSurface0 };
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0, edgeCount = segments, descriptionIndex = descriptionIndex0, surface = chiselSurface0 };
 
             for (int s = 0, surfaceID = 1; s < segments; s++)
             {
                 var descriptionIndex = s + 2;
-                polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = segments + (s * 3), edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                polygons[surfaceID] = new BrushMeshBlob.Polygon 
+                { 
+                    firstEdge           = segments + (s * 3), 
+                    edgeCount           = 3, 
+                    descriptionIndex    = descriptionIndex,
+                    surface             = surfaceDefinition.surfaces[descriptionIndex] 
+                };
                 surfaceID++;
             }
 
@@ -586,15 +593,23 @@ namespace Chisel.Core
 
         static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, float3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
         {
-            ref var chiselSurface0 = ref surfaceDefinition.surfaces[0];
+            const int descriptionIndex0 = 0;
+            ref var chiselSurface0 = ref surfaceDefinition.surfaces[descriptionIndex0];
 
             var polygons = new BrushMesh.Polygon[segments + 1];
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, surface = chiselSurface0 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, descriptionIndex = descriptionIndex0, surface = chiselSurface0 };
 
             for (int s = 0, surfaceID = 1; s < segments; s++)
             {
                 var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
-                polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = segments + (s * 3), edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                polygons[surfaceID] = new BrushMesh.Polygon 
+                { 
+                    surfaceID           = surfaceID, 
+                    firstEdge           = segments + (s * 3), 
+                    edgeCount           = 3,
+                    descriptionIndex    = descriptionIndex,
+                    surface             = surfaceDefinition.surfaces[descriptionIndex] 
+                };
                 surfaceID++;
             }
 

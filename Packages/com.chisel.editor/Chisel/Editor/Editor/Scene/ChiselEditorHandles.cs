@@ -1257,9 +1257,10 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
+                    /*
                     if (generator is ChiselGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
-                    else
+                    else*/
                     if (generator is ChiselBrushGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
                     return true;
@@ -1272,9 +1273,10 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
+                    /*
                     if (generator is ChiselGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
-                    else
+                    else*/
                     if (generator is ChiselBrushGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
                     return true;

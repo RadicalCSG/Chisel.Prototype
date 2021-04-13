@@ -26,6 +26,8 @@ namespace Chisel.Core
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         public ChiselLinearStairsDefinition stairs;
 
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return stairs.surfaceDefinition; } }
+
         public void Reset()
         {
             shape           = kDefaultShape;

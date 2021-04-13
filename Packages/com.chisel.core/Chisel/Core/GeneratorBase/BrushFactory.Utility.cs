@@ -187,7 +187,7 @@ namespace Chisel.Core
                     halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -253,7 +253,7 @@ namespace Chisel.Core
                         halfEdges[edgeIndex + 3] = new BrushMeshBlob.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                    polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -269,7 +269,7 @@ namespace Chisel.Core
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
                     halfEdges[currEdgeIndex] = new BrushMeshBlob.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMeshBlob.Polygon { firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
             }
             return true;
         }
@@ -375,11 +375,11 @@ namespace Chisel.Core
 
             polygons = builder.Allocate(ref root.polygons, polygonCount);
 
-            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
-            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop = surfaceDefinition.surfaces[segmentTopIndex];
+            var surfaceBottom = surfaceDefinition.surfaces[segmentBottomIndex];
             
-            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0,        edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
+            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -389,7 +389,7 @@ namespace Chisel.Core
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -399,15 +399,15 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -753,8 +753,8 @@ namespace Chisel.Core
             var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
             var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
-            polygons[0] = new BrushMeshBlob.Polygon { firstEdge =        0, edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge =        0, edgeCount = segments, descriptionIndex = surfaceIndex0, surface = surface0 };
+            polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = surfaceIndex1, surface = surface1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -762,15 +762,15 @@ namespace Chisel.Core
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID++;
                 } else
                 {
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                    polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 0] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 1] = new BrushMeshBlob.Polygon { firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID += 2;
                 }
             }
@@ -982,7 +982,7 @@ namespace Chisel.Core
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p };
                     twins[h] = currEdgeIndex;
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                 edgeIndex += polygonEdgeCount;
                 polygonIndex++;
             }
@@ -1048,7 +1048,7 @@ namespace Chisel.Core
                         halfEdges[edgeIndex + 3] = new BrushMesh.HalfEdge { twinIndex = -1, vertexIndex = startVertex + (horzSegments - 1) - p + horzSegments};
                         twins[h] = edgeIndex + 3;
                     }
-                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                    polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
                     edgeIndex += polygonEdgeCount;
                     polygonIndex++;
                 }
@@ -1064,7 +1064,7 @@ namespace Chisel.Core
                     halfEdges[twins[h]].twinIndex = currEdgeIndex;
                     halfEdges[currEdgeIndex] = new BrushMesh.HalfEdge { twinIndex = twins[h], vertexIndex = startVertex + (horzSegments - 1) - h };
                 }
-                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, surface = surfaceDefinition.surfaces[0] };
+                polygons[polygonIndex] = new BrushMesh.Polygon { surfaceID = polygonIndex, firstEdge = edgeIndex, edgeCount = polygonEdgeCount, descriptionIndex = 0, surface = surfaceDefinition.surfaces[0] };
             }
             
             brushMesh.polygons	= polygons;
@@ -1188,11 +1188,11 @@ namespace Chisel.Core
 
             var polygons = new BrushMesh.Polygon[polygonCount];
 
-            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
-            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop = surfaceDefinition.surfaces[segmentTopIndex];
+            var surfaceBottom = surfaceDefinition.surfaces[segmentBottomIndex];
             
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -1202,7 +1202,7 @@ namespace Chisel.Core
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -1212,15 +1212,15 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -1588,11 +1588,11 @@ namespace Chisel.Core
                 polygons.Length != polygonCount)
                 polygons = new BrushMesh.Polygon[polygonCount];
 
-            var surface0 = surfaceDefinition.surfaces[segmentTopIndex];
-            var surface1 = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop = surfaceDefinition.surfaces[segmentTopIndex];
+            var surfaceBottom = surfaceDefinition.surfaces[segmentBottomIndex];
             
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -1602,7 +1602,7 @@ namespace Chisel.Core
                 {
                     case SegmentTopology.Quad:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -1612,15 +1612,15 @@ namespace Chisel.Core
                         var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                             //			unless there's already a smoothing group for this edge; then use that
 
-                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge,     edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID += 2;
                         break;
                     }
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
-                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                        polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
                     }
@@ -1964,8 +1964,8 @@ namespace Chisel.Core
             var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
             var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, surface = surface0 };
-            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, surface = surface1 };
+            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge =        0, edgeCount = segments, descriptionIndex = surfaceIndex0, surface = surface0 };
+            polygons[1] = new BrushMesh.Polygon { surfaceID = 1, firstEdge = segments, edgeCount = segments, descriptionIndex = surfaceIndex1, surface = surface1 };
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
@@ -1973,15 +1973,15 @@ namespace Chisel.Core
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {
-                    polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = firstEdge, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID++;
                 } else
                 {
                     var smoothingGroup = surfaceID + 1; // TODO: create an unique smoothing group for faceted surfaces that are split in two, 
                                                         //			unless there's already a smoothing group for this edge; then use that
 
-                    polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                    polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 0] = new BrushMesh.Polygon { surfaceID = surfaceID + 0, firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
+                    polygons[surfaceID + 1] = new BrushMesh.Polygon { surfaceID = surfaceID + 1, firstEdge = firstEdge + 3, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                     surfaceID += 2;
                 }
             }

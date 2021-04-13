@@ -16,6 +16,8 @@ namespace Chisel.Core
     public interface IBrushGenerator
     {
         bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation);
+
+        ChiselSurfaceDefinition SurfaceDefinition { get; }
     }
 
 

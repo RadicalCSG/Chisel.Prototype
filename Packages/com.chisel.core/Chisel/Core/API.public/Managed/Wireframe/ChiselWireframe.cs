@@ -20,7 +20,7 @@ namespace Chisel.Core
         public bool	Dirty { get { return outlineHash != GetBrushOutlineHash(originBrush); }  }
 
         public static ChiselWireframe CreateWireframe(CSGTreeBrush brush) { if (!brush.Valid) return null; return CreateBrushWireframe(brush); }
-        public static ChiselWireframe CreateWireframe(CSGTreeBrush brush, int surfaceID) { if (!brush.Valid) return null; return CreateSurfaceWireframe(brush, surfaceID); }
+        public static ChiselWireframe CreateWireframe(CSGTreeBrush brush, int surfaceIndex) { if (!brush.Valid) return null; return CreateSurfaceWireframe(brush, surfaceIndex); }
         public bool UpdateWireframe() { if (originSurfaceID == 0) return UpdateBrushWireframe(this); else  return UpdateSurfaceWireframe(this);  }
     }
 }

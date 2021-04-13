@@ -189,12 +189,12 @@ namespace Chisel.Core
                 halfEdgePolygonIndices[edge5_2] = polygon5;
                 halfEdgePolygonIndices[edge5_3] = polygon5;
 
-                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge = polygon0 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Left  ] };
-                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge = polygon1 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Bottom] };
-                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge = polygon2 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Back  ] };
-                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = polygon3 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Right ] };
-                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = polygon4 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Top   ] };
-                polygons[polygon5] = new BrushMeshBlob.Polygon { firstEdge = polygon5 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Front ] };
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge = polygon0 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Left,    surface = surfaces[(int)BoxSides.Left  ] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge = polygon1 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Bottom,  surface = surfaces[(int)BoxSides.Bottom] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge = polygon2 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Back,    surface = surfaces[(int)BoxSides.Back  ] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = polygon3 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Right,   surface = surfaces[(int)BoxSides.Right ] };
+                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = polygon4 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Top,     surface = surfaces[(int)BoxSides.Top   ] };
+                polygons[polygon5] = new BrushMeshBlob.Polygon { firstEdge = polygon5 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Front,   surface = surfaces[(int)BoxSides.Front ] };
 
                 // xyz is the normal, w is the distance, in the inverse direction of the normal, to the origin
                 localPlanes[polygon0] = new float4(-1f,  0f,  0f,  min.x);
@@ -363,12 +363,12 @@ namespace Chisel.Core
                 halfEdgePolygonIndices[edge5_2] = polygon5;
                 halfEdgePolygonIndices[edge5_3] = polygon5;
 
-                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge = polygon0 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Left  ] };
-                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge = polygon1 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Bottom] };
-                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge = polygon2 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Back  ] };
-                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = polygon3 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Right ] };
-                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = polygon4 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Top   ] };
-                polygons[polygon5] = new BrushMeshBlob.Polygon { firstEdge = polygon5 * 4, edgeCount = 4, surface = surfaces[(int)BoxSides.Front ] };
+                polygons[polygon0] = new BrushMeshBlob.Polygon { firstEdge = polygon0 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Left,    surface = surfaces[(int)BoxSides.Left  ] };
+                polygons[polygon1] = new BrushMeshBlob.Polygon { firstEdge = polygon1 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Bottom,  surface = surfaces[(int)BoxSides.Bottom] };
+                polygons[polygon2] = new BrushMeshBlob.Polygon { firstEdge = polygon2 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Back,    surface = surfaces[(int)BoxSides.Back  ] };
+                polygons[polygon3] = new BrushMeshBlob.Polygon { firstEdge = polygon3 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Right,   surface = surfaces[(int)BoxSides.Right ] };
+                polygons[polygon4] = new BrushMeshBlob.Polygon { firstEdge = polygon4 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Top,     surface = surfaces[(int)BoxSides.Top   ] };
+                polygons[polygon5] = new BrushMeshBlob.Polygon { firstEdge = polygon5 * 4, edgeCount = 4, descriptionIndex = (int)BoxSides.Front,   surface = surfaces[(int)BoxSides.Front ] };
 
                 CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                 root.localBounds = CalculateBounds(in localVertices);
@@ -466,7 +466,7 @@ namespace Chisel.Core
             return vertices;
         }
 
-        public static void CreateBox(Vector3 min, Vector3 max, in ChiselSurface surface, out BrushMesh box)
+        public static void CreateBox(Vector3 min, Vector3 max, int descriptionIndex, in ChiselSurface surface, out BrushMesh box)
         {
             if (!BoundsExtensions.IsValid(min, max))
             {
@@ -485,7 +485,7 @@ namespace Chisel.Core
 
             box = new BrushMesh
             {
-                polygons	= CreateBoxPolygons(in surface),
+                polygons	= CreateBoxPolygons(descriptionIndex, in surface),
                 halfEdges	= boxHalfEdges.ToArray(),
                 vertices	= vertices
             };
@@ -497,10 +497,10 @@ namespace Chisel.Core
         /// <param name="size">The size of the box</param>
         /// <param name="material">The [UnityEngine.Material](https://docs.unity3d.com/ScriptReference/Material.html) that will be set to all surfaces of the box (optional)</param>
         /// <returns>A <see cref="Chisel.Core.BrushMesh"/> on success, null on failure</returns>
-        public static void CreateBox(Vector3 size, in ChiselSurface surface, out BrushMesh box)
+        public static void CreateBox(Vector3 size, int descriptionIndex, in ChiselSurface surface, out BrushMesh box)
         {
             var halfSize = size * 0.5f;
-            CreateBox(-halfSize, halfSize, in surface, out box);
+            CreateBox(-halfSize, halfSize, descriptionIndex, in surface, out box);
         }
     }
 }

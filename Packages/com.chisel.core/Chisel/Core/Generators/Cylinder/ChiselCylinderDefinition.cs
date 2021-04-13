@@ -67,6 +67,8 @@ namespace Chisel.Core
         [NamedItems("Top", "Bottom", overflow = "Side {0}")]
         public ChiselSurfaceDefinition surfaceDefinition;
 
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
 
         [UnityEngine.HideInInspector]
         public uint smoothingGroup; // TODO: show when we actually have normal smoothing + have custom property drawer for this

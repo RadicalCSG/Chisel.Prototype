@@ -29,6 +29,7 @@ namespace Chisel.Core
         {
             dstPolygon.firstEdge        = srcPolygon.firstEdge;
             dstPolygon.edgeCount        = srcPolygon.edgeCount;
+            dstPolygon.descriptionIndex = srcPolygon.descriptionIndex;
             dstPolygon.surface          = Convert(srcPolygon.surface);
         }
         
@@ -178,6 +179,32 @@ namespace Chisel.Core
             }
 
             builder.Construct(ref root.localPlanes, brushMesh.planes);
+            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+            builder.Dispose();
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BlobAssetReference<BrushMeshBlob> Copy(BlobAssetReference<BrushMeshBlob> srcBrushMeshBlob, Allocator allocator)
+        {
+            ref var brushMesh = ref srcBrushMeshBlob.Value;
+            
+            var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
+            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length      * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
+            var totalPolygonSize        = 16 + (brushMesh.polygons.Length       * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
+            var totalPlaneSize          = 16 + (brushMesh.localPlanes.Length    * UnsafeUtility.SizeOf<float4>());
+            var totalVertexSize         = 16 + (brushMesh.localVertices.Length  * UnsafeUtility.SizeOf<float3>());
+            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+            root.localBounds = brushMesh.localBounds;
+            builder.Construct(ref root.localVertices,           ref brushMesh.localVertices);
+            builder.Construct(ref root.halfEdges,               ref brushMesh.halfEdges);
+            builder.Construct(ref root.halfEdgePolygonIndices,  ref brushMesh.halfEdgePolygonIndices);
+            builder.Construct(ref root.polygons,                ref brushMesh.polygons);
+            builder.Construct(ref root.localPlanes,             ref brushMesh.localPlanes);
+
             var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();
             return result;

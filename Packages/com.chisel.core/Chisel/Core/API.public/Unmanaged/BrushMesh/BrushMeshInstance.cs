@@ -12,7 +12,7 @@ namespace Chisel.Core
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public partial struct BrushMeshInstance
     {
-        internal Int32			brushMeshHash;
+        public Int32			brushMeshHash;
 
         /// <value>Is the current <see cref="Chisel.Core.BrushMeshInstance"/> in a correct state</value>
         public bool				Valid				{ get { return brushMeshHash != BrushMeshInstance.InvalidInstanceID && BrushMeshManager.IsBrushMeshIDValid(brushMeshHash); } }

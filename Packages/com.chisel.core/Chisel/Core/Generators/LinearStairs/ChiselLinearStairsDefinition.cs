@@ -109,6 +109,8 @@ namespace Chisel.Core
         [NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
         public bool     HasVolume
         {
             get

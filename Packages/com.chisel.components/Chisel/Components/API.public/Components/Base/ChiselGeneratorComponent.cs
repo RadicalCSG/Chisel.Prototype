@@ -8,6 +8,7 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
+/*
     public abstract class ChiselDefinedGeneratorComponent<DefinitionType> : ChiselGeneratorComponent
         where DefinitionType : IChiselGenerator, new()
     {
@@ -86,7 +87,7 @@ namespace Chisel.Components
             return true;
         }
 
-        //**Temporary hack to ensure that a BrushContainerAsset remains unique when duplicated so that we can control when we share a BrushContainerAsset**//
+        //**Temporary hack to ensure that a BrushContainerAsset remains unique when duplicated so that we can control when we share a BrushContainerAsset** //
         #region HandleDuplication
         void HandleDuplication()
         {
@@ -107,7 +108,7 @@ namespace Chisel.Components
 #endif
         }
         #endregion
-        //**//
+        //** //
 
         protected override void OnValidateInternal()
         {
@@ -958,4 +959,5 @@ namespace Chisel.Components
 #endif
 
     }
+*/
 }

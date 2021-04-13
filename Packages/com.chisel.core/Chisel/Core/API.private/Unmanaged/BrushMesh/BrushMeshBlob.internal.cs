@@ -21,6 +21,7 @@ namespace Chisel.Core
         {
             public Int32                firstEdge;
             public Int32                edgeCount;
+            public Int32                descriptionIndex; // An ID that can be used to identify the material of a generator
             public NativeChiselSurface  surface;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

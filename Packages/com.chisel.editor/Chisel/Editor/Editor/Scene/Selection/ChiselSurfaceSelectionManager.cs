@@ -87,20 +87,7 @@ namespace Chisel.Editors
                 return uniqueNodes;
             }
         }
-        
-        public static HashSet<ChiselBrushContainerAsset> SelectedBrushMeshes
-        {
-            get
-            {
-                var selectedSurfaces		= Data.selectedSurfaces;
-                var uniqueBrushContainerAssets	= new HashSet<ChiselBrushContainerAsset>();
 
-                foreach (var selectedSurface in selectedSurfaces)
-                    uniqueBrushContainerAssets.Add(selectedSurface.brushContainerAsset);
-                return uniqueBrushContainerAssets;
-            }
-        }
-        
         public static HashSet<ChiselBrushMaterial> SelectedBrushMaterials	
         {
             get
@@ -266,6 +253,7 @@ namespace Chisel.Editors
             return true;
         }
 
+        static readonly List<SurfaceReference> s_TempSurfaces = new List<SurfaceReference>();
 
         static void OnSelectionChanged()
         {
@@ -293,14 +281,17 @@ namespace Chisel.Editors
                 if (!node)
                     continue;
 
-                var surfaces = node.GetAllSurfaceReferences();
-                // It's possible that the node has not (yet) been set up correctly ...
-                if (surfaces == null)
+                s_TempSurfaces.Clear();
+                if (!node.GetAllSurfaceReferences(s_TempSurfaces))
                     continue;
 
-                newSelectedSurfaces.AddRange(node.GetAllSurfaceReferences());
-            }
+                // It's possible that the node has not (yet) been set up correctly ...
+                if (s_TempSurfaces.Count == 0)
+                    continue;
 
+                newSelectedSurfaces.AddRange(s_TempSurfaces);
+            }
+            s_TempSurfaces.Clear();
             UpdateSelection(SelectionType.Replace, newSelectedSurfaces);
         }
 

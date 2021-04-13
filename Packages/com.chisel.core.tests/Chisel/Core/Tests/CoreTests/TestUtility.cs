@@ -33,7 +33,7 @@ namespace FoundationTests
         {
             var chiselSurface = new ChiselSurface();
             chiselSurface.brushMaterial = brushMaterial;
-            BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface, out box);
+            BrushMeshFactory.CreateBox(Vector3.one, 0, in chiselSurface, out box);
         }
 
         public static void ExpectValidBrushWithUserID(ref CSGTreeBrush brush, int userID)

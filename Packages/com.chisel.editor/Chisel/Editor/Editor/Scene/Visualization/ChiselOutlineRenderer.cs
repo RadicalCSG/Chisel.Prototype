@@ -514,7 +514,7 @@ namespace Chisel.Editors
         {
             if (!surfaceOutlineCache.TryGetValue(surface, out ChiselWireframe wireframe))
             {
-                wireframe = ChiselWireframe.CreateWireframe(surface.TreeBrush, surface.surfaceID);
+                wireframe = ChiselWireframe.CreateWireframe(surface.TreeBrush, surface.surfaceIndex);
                 surfaceOutlineCache[surface] = wireframe;
             }
             return wireframe;

@@ -25,9 +25,9 @@ namespace Chisel.Components
             set { }
         }
         */
-        public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
-        protected virtual void OnDestroy() { ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
-        public void OnValidate()	{ OnValidateInternal(); }
+        public ChiselNode()			        { hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
+        protected virtual void OnDestroy()  { ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
+        public void OnValidate()	        { OnValidateInternal(); }
 
         protected virtual void OnValidateInternal() { SetDirty(); }
 
@@ -80,7 +80,9 @@ namespace Chisel.Components
         {
             ChiselNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
-    
+
+
+
         public bool				Dirty					{ get { return ChiselNodeHierarchyManager.IsNodeDirty(this); } }
         public virtual NodeID   NodeID				    { get { return CSGTreeNode.InvalidNode.NodeID; } }
         internal virtual bool	IsActive			    { get { return isActiveAndEnabled; } }
@@ -108,8 +110,6 @@ namespace Chisel.Components
 
         public virtual void CollectCSGTreeNodes(List<CSGTreeNode> childNodes) { }
 
-        public virtual bool GetUsedGeneratedBrushes(List<ChiselBrushContainerAsset> usedBrushes) { return false; }
-        
         public abstract int GetAllTreeBrushCount();
 
         // Get all brushes directly contained by this CSGNode
@@ -120,9 +120,9 @@ namespace Chisel.Components
             return null;
         }
 
-        public virtual ChiselBrushMaterial[] GetAllBrushMaterials(CSGTreeBrush brush)
+        public virtual bool GetAllBrushMaterials(CSGTreeBrush brush, List<ChiselBrushMaterial> brushMaterials)
         {
-            return null;
+            return false;
         }
         
         public virtual SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
@@ -130,14 +130,14 @@ namespace Chisel.Components
             return null;
         }   
 
-        public virtual SurfaceReference[] GetAllSurfaceReferences(CSGTreeBrush brush)
+        public virtual bool GetAllSurfaceReferences(CSGTreeBrush brush, List<SurfaceReference> surfaces)
         {
-            return null;
+            return false;
         }
         
-        public virtual SurfaceReference[] GetAllSurfaceReferences()
+        public virtual bool GetAllSurfaceReferences(List<SurfaceReference> surfaces)
         {
-            return null;
+            return false;
         }
 
 

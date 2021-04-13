@@ -46,7 +46,7 @@ namespace Chisel.Editors
             if (!gameObject)
                 return;
 
-            var generator = gameObject.GetComponent<ChiselGeneratorComponent>();
+            var generator = gameObject.GetComponent<ChiselBrushGeneratorComponent>();
             if (generator && generator.Operation != operationType)
             {
                 Undo.RecordObject(generator, "Modified Operation");
@@ -67,7 +67,7 @@ namespace Chisel.Editors
             if (!gameObject)
                 return false;
 
-            return gameObject.GetComponent<ChiselGeneratorComponent>() ||
+            return gameObject.GetComponent<ChiselBrushGeneratorComponent>() ||
                    gameObject.GetComponent<ChiselComposite>();
         }
 
@@ -121,7 +121,7 @@ namespace Chisel.Editors
 
             for (int i = 0; i < gameObjects.Length; i++)
             {
-                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
+                if (gameObjects[i].GetComponent<ChiselBrushGeneratorComponent>() ||
                     gameObjects[i].GetComponent<ChiselComposite>())
                     continue;
                 return false;
@@ -242,7 +242,7 @@ namespace Chisel.Editors
             // If we used the command object on a generator, choose it's parent to prevent us from 
             // adding a generator as a child to a generator
             if (parentTransform &&
-                parentTransform.GetComponent<ChiselGeneratorComponent>())
+                parentTransform.GetComponent<ChiselBrushGeneratorComponent>())
             {
                 parentTransform = parentTransform.parent;
                 parentGameObject = (parentTransform == null) ? null : parentTransform.gameObject;
@@ -650,7 +650,7 @@ namespace Chisel.Editors
             if (brushGenerator != null)
                 return GetHierarchyIcon(brushGenerator.Operation, node.NodeTypeName);
 
-            var generator = node as ChiselGeneratorComponent;
+            var generator = node as ChiselBrushGeneratorComponent;
             if (generator == null)
                 return GUIContent.none;
 
@@ -663,14 +663,14 @@ namespace Chisel.Editors
             if (brushGenerator != null)
                 return node.HasValidState();
 
-            var generator = node as ChiselGeneratorComponent;
+            var generator = node as ChiselBrushGeneratorComponent;
             if (generator == null)
                 return false;
 
             return node.HasValidState();
         }
     }
-
+    /*
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselGeneratorComponent
     {
@@ -1063,7 +1063,7 @@ namespace Chisel.Editors
             }
         }
     }
-
+    */
     
     public abstract class ChiselBrushGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselBrushGeneratorComponent
@@ -1076,7 +1076,7 @@ namespace Chisel.Editors
         }
 
         // Note: name is the same for every generator, but is hidden inside a generic class, hence the use of ChiselBrushDefinition
-        const string kDefinitionName = ChiselDefinedGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
+        const string kDefinitionName = ChiselDefinedBrushGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
 
         List<SerializedProperty> children = new List<SerializedProperty>();
         SerializedProperty definitionSerializedProperty;

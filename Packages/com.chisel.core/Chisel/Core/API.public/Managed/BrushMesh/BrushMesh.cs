@@ -175,7 +175,8 @@ namespace Chisel.Core
             
             /// <value>An ID that can be used to identify the <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
             public Int32 surfaceID; // TODO: replace with surfaceID (leading to BrushMaterial uniqueID) and polygonIndex
-            
+            public Int32 descriptionIndex;
+
             /// <value>Describes what the surface of a polygon looks like & behaves.</value>
             public ChiselSurface surface;
 

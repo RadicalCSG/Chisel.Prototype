@@ -28,7 +28,7 @@ namespace Chisel.Core
         }
 
         private static bool GetSurfaceOutlineValues(CSGTreeBrush    brush,
-                                                    Int32           surfaceID,
+                                                    Int32           surfaceIndex,
                                                     ref float3[]    vertices,
                                                     ref Int32[]     visibleOuterLines)
         {
@@ -37,11 +37,11 @@ namespace Chisel.Core
                 return false;
 
             var surfaceOutlineRanges = brushOutline.surfaceVisibleOuterLineRanges;
-            if (!surfaceOutlineRanges.IsCreated || surfaceID < 0 || surfaceID >= surfaceOutlineRanges.Length)
+            if (!surfaceOutlineRanges.IsCreated || surfaceIndex < 0 || surfaceIndex >= surfaceOutlineRanges.Length)
                 return false;
 
-            var startIndex  = surfaceID == 0 ? 0 : surfaceOutlineRanges[surfaceID - 1];
-            var lastIndex   = surfaceOutlineRanges[surfaceID];
+            var startIndex  = surfaceIndex == 0 ? 0 : surfaceOutlineRanges[surfaceIndex - 1];
+            var lastIndex   = surfaceOutlineRanges[surfaceIndex];
             var count       = lastIndex - startIndex;
             if (count <= 0)
                 return false;

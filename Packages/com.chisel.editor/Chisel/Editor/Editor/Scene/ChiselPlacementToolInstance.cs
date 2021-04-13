@@ -51,9 +51,9 @@ namespace Chisel.Editors
                 return placementToolDefinitionInternal;
             }
         }
-        protected CSGOperationType?                                 forceOperation  = null;
-        protected Type                                              generatorType   = typeof(Generator);
-        protected ChiselDefinedGeneratorComponent<DefinitionType>   generatedComponent;
+        protected CSGOperationType?                                     forceOperation  = null;
+        protected Type                                                  generatorType   = typeof(Generator);
+        protected ChiselDefinedBrushGeneratorComponent<DefinitionType>  generatedComponent;
 
         static readonly string[] excludeProperties = new[] { "m_Script" };
 

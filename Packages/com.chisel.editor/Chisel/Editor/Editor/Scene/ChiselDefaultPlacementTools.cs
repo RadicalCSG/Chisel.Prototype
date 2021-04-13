@@ -61,7 +61,7 @@ namespace Chisel.Editors
                             if (model != null) parentTransform = model.transform;
                             generatedComponent = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform,
                                                                                   transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
-                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
+                                                as ChiselDefinedBrushGeneratorComponent<DefinitionType>;
                             shape.Center = Vector2.zero;
                             generatedComponent.definition.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
@@ -150,7 +150,7 @@ namespace Chisel.Editors
                             var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
                             if (model != null) parentTransform = model.transform;
                             generatedComponent  = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform, transformation) 
-                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
+                                                as ChiselDefinedBrushGeneratorComponent<DefinitionType>;
                             componentPosition   = generatedComponent.transform.localPosition;
                             upAxis              = generatedComponent.transform.up;
 

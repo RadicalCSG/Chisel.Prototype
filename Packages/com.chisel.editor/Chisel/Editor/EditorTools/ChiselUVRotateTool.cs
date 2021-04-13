@@ -97,7 +97,7 @@ namespace Chisel.Editors
             // Get the rotation on that plane, around 'worldStartPosition'
             var worldspaceRotation = MathExtensions.RotateAroundAxis(center, normal, rotateAngle);
 
-            Undo.RecordObjects(ChiselUVToolCommon.selectedBrushContainerAsset, "Rotate UV coordinates");
+            Undo.RecordObjects(ChiselUVToolCommon.selectedNodes, "Rotate UV coordinates");
             for (int i = 0; i < ChiselUVToolCommon.selectedSurfaceReferences.Length; i++)
             {
                 var rotationInPlaneSpace = ChiselUVToolCommon.selectedSurfaceReferences[i].WorldSpaceToPlaneSpace(in worldspaceRotation);

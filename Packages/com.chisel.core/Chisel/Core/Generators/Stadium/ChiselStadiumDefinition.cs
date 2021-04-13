@@ -54,6 +54,8 @@ namespace Chisel.Core
         [NamedItems(overflow = "Surface {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
 
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+
         public void Reset()
         {
             width			    = kDefaultWidth;

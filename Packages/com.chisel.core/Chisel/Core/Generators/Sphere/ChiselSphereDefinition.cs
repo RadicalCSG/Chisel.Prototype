@@ -33,6 +33,7 @@ namespace Chisel.Core
 
         [NamedItems(overflow = "Side {0}")]
         public ChiselSurfaceDefinition  surfaceDefinition;
+        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
 
         public void Reset()
         {

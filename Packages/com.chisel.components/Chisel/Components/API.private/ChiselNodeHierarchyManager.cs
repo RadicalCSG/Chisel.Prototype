@@ -70,8 +70,8 @@ namespace Chisel.Components
         static readonly HashSet<ChiselNode> onHierarchyChangeCalled = new HashSet<ChiselNode>();
 
         // Dictionaries used to keep track which brushContainerAssets are used by which nodes, which is necessary to update the right nodes when an brushContainerAsset has been changed
-        static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes = new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
-        static readonly Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>> nodegeneratedBrush = new Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>>();
+//      static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes = new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
+//      static readonly Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>> nodegeneratedBrush = new Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>>();
 
 
         public static bool ignoreNextChildrenChanged = false;
@@ -89,12 +89,13 @@ namespace Chisel.Components
         public static void Initialize()
         {
             ChiselNodeHierarchyManager.firstStart = false;
-
+            /*
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceChanged -= OnBrushMeshInstanceChanged;
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceChanged += OnBrushMeshInstanceChanged;
 
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed -= OnBrushMeshInstanceDestroyed;
             ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed += OnBrushMeshInstanceDestroyed;
+            */
         }
 
         // TODO: Clean up API
@@ -107,9 +108,9 @@ namespace Chisel.Components
             Chisel.Core.CompactHierarchyManager.Clear();
             Profiler.EndSample();
 
-            Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
-            ChiselBrushContainerAssetManager.Reset();
-            Profiler.EndSample();
+            //Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
+            //ChiselBrushContainerAssetManager.Reset();
+            //Profiler.EndSample();
 
             endTime = Time.realtimeSinceStartup;
             Debug.Log($"  Reset done in {((endTime - startTime) * 1000)} ms. ");
@@ -167,8 +168,8 @@ namespace Chisel.Components
             foreach(var item in destroyNodesList)
                 item.Destroy();
 
-            generatedBrushNodes.Clear();
-            nodegeneratedBrush.Clear();
+            //generatedBrushNodes.Clear();
+            //nodegeneratedBrush.Clear();
 
             reregisterModelQueue.Clear();
             ClearQueues();
@@ -348,7 +349,7 @@ namespace Chisel.Components
             UpdateGeneratedBrushes(node);
         }
 
-
+/*
         private static void OnBrushMeshInstanceChanged(ChiselBrushContainerAsset brushContainerAsset)
         {
             if (!generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
@@ -399,10 +400,10 @@ namespace Chisel.Components
             } else
                 uniqueGeneratedBrushes = new HashSet<ChiselBrushContainerAsset>();
             return uniqueGeneratedBrushes;
-        }
+        }*/
 
         static void UpdateGeneratedBrushes(ChiselNode node)
-        {
+        {/*
             if (!node)
             {
                 RemoveBrushReference(node);
@@ -428,12 +429,12 @@ namespace Chisel.Components
                     nodes.Add(node);
                 }
             }
-            nodegeneratedBrush[node] = uniqueGeneratedBrushes;
+            nodegeneratedBrush[node] = uniqueGeneratedBrushes;*/
             node.UpdateBrushMeshInstances();
         }
 
         static void RemoveGeneratedBrushes(ChiselNode node)
-        {
+        {/*
             // NOTE: node is likely destroyed at this point, it can still be used as a lookup key however.
 
             HashSet<ChiselBrushContainerAsset> nodeGeneratedBrushes;
@@ -447,7 +448,7 @@ namespace Chisel.Components
                 }
                 nodeGeneratedBrushes.Clear();
             }
-            nodegeneratedBrush.Remove(node);
+            nodegeneratedBrush.Remove(node);*/
         }
 
         public static void OnTransformChildrenChanged(ChiselNode component)
@@ -744,9 +745,9 @@ UpdateAgain:
             try
             {
                 bool haveCreatedTreeNodes = false;
-                Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                ChiselBrushContainerAssetManager.Update();
-                Profiler.EndSample();
+                //Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
+                //ChiselBrushContainerAssetManager.Update();
+                //Profiler.EndSample();
                 Profiler.BeginSample("UpdateTrampoline");
                 haveCreatedTreeNodes = UpdateTrampoline();
                 Profiler.EndSample();
@@ -754,9 +755,9 @@ UpdateAgain:
                 // TODO: fix that generators create brushes inside the trampoline, requiring us to call things twice
                 if (haveCreatedTreeNodes)
                 {
-                    Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                    try { ChiselBrushContainerAssetManager.Update(); }
-                    finally { Profiler.EndSample(); }
+                    //Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
+                    //try { ChiselBrushContainerAssetManager.Update(); }
+                    //finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("UpdateTrampoline");
                     try { UpdateTrampoline(); }
@@ -888,13 +889,13 @@ UpdateAgain:
             {
                 firstStart = true;
                 Chisel.Core.CompactHierarchyManager.Clear();
-                ChiselBrushContainerAssetManager.Reset();
+                //ChiselBrushContainerAssetManager.Reset();
 
                 // Prefabs can fire events that look like objects have been loaded/created ..
                 // Also, starting up in the editor can swallow up events and cause some nodes to not be registered properly
                 // So to ensure that the first state is correct, we get it explicitly
                 FindAndReregisterAllNodes();
-                ChiselBrushContainerAssetManager.Update();
+                //ChiselBrushContainerAssetManager.Update();
 #if UNITY_EDITOR
                 ChiselGeneratedComponentManager.OnVisibilityChanged();
 #endif

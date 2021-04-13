@@ -17,6 +17,42 @@ namespace Chisel.Core
     public sealed class ChiselSurfaceDefinition
     {
         public ChiselSurface[] surfaces;
+        
+
+        public ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) 
+        {
+            if (descriptionIndex < 0 || descriptionIndex >= surfaces.Length)
+                return null;
+            return surfaces[descriptionIndex].brushMaterial;
+        }
+        
+        public SurfaceDescription GetSurfaceDescription(int descriptionIndex)
+        {
+            if (descriptionIndex < 0 || descriptionIndex >= surfaces.Length)
+                return SurfaceDescription.Default;
+            return surfaces[descriptionIndex].surfaceDescription;
+        }
+        
+        public void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description)
+        {
+            if (descriptionIndex < 0 || descriptionIndex >= surfaces.Length)
+                return;
+            surfaces[descriptionIndex].surfaceDescription = description;
+        }
+        
+        public UVMatrix GetSurfaceUV0(int descriptionIndex)
+        {
+            if (descriptionIndex < 0 || descriptionIndex >= surfaces.Length)
+                return UVMatrix.identity;
+            return surfaces[descriptionIndex].surfaceDescription.UV0; 
+        }
+
+        public void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0)
+        {
+            if (descriptionIndex < 0 || descriptionIndex >= surfaces.Length)
+                return;
+            surfaces[descriptionIndex].surfaceDescription.UV0 = uv0;
+        }
 
         public void Reset() { surfaces = null; }
 

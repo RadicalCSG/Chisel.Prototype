@@ -379,10 +379,10 @@ namespace Chisel.Editors
             return GetPlaneIntersection(mousePosition);
         }
 
-        public static bool FindBrushMaterials(Vector2 position, out ChiselBrushMaterial[] brushMaterials, List<ChiselBrushContainerAsset> brushContainerAssets, bool selectAllSurfaces)
+        public static bool FindBrushMaterials(Vector2 position, List<ChiselBrushMaterial> outBrushMaterials, List<ChiselNode> nodes, bool selectAllSurfaces)
         {
-            brushMaterials = null;
-            brushContainerAssets.Clear();
+            outBrushMaterials.Clear();
+            nodes.Clear();
             try
             {
                 ChiselIntersection intersection;
@@ -397,20 +397,19 @@ namespace Chisel.Editors
 
                 if (selectAllSurfaces)
                 {
-                    brushContainerAssets.Clear();
-                    if (!node.GetUsedGeneratedBrushes(brushContainerAssets))
+                    nodes.Clear();
+                    nodes.Add(node);
+                    if (!node.GetAllBrushMaterials(brush, outBrushMaterials))
                         return false;
-                    brushMaterials = node.GetAllBrushMaterials(brush);
                     return true;
                 } else
                 {
                     var surface = node.FindBrushMaterialBySurfaceIndex(brush, intersection.brushIntersection.surfaceIndex);
                     if (surface == null)
                         return false;
-                    brushContainerAssets.Clear();
-                    if (!node.GetUsedGeneratedBrushes(brushContainerAssets))
-                        return false;
-                    brushMaterials =  new ChiselBrushMaterial[] { surface };
+                    nodes.Clear();
+                    nodes.Add(node);
+                    outBrushMaterials.Add(surface);
                     return true;
                 }
             }
@@ -421,33 +420,35 @@ namespace Chisel.Editors
             }
         }
         
-        public static SurfaceReference[] FindSurfaceReferences(Vector2 position, bool selectAllSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
+        public static bool FindSurfaceReferences(List<SurfaceReference> foundSurfaces, Vector2 position, bool selectAllSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
         {
             intersection = ChiselIntersection.None;
             surfaceReference = null;
             try
             {
                 if (!PickFirstGameObject(position, out intersection))
-                    return null;
+                    return false;
     
                 var node = intersection.node;
                 if (!node)
-                    return null;
+                    return false;
 
                 var brush = intersection.brushIntersection.brush;
 
                 surfaceReference = node.FindSurfaceReference(brush, intersection.brushIntersection.surfaceIndex);
                 if (selectAllSurfaces)
-                    return node.GetAllSurfaceReferences(brush);
+                    return node.GetAllSurfaceReferences(brush, foundSurfaces);
 
                 if (surfaceReference == null)
-                    return null;
-                return new SurfaceReference[] { surfaceReference };
+                    return false;
+
+                foundSurfaces.Add(surfaceReference);
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
-                return null;
+                return false;
             }
         }
         

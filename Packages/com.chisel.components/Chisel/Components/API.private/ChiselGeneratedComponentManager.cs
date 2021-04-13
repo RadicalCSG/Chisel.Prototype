@@ -207,7 +207,7 @@ namespace Chisel.Components
             {
                 if (!node || !node.isActiveAndEnabled)
                     continue;
-
+                /*
                 var generator = node as ChiselGeneratorComponent;
                 if (generator)
                 { 
@@ -222,7 +222,7 @@ namespace Chisel.Components
                     visibilityStateLookup[compactNodeID] = state;
                     visibilityStateLookup[modelNodeID] = state | prevState;
                 }
-
+                */
                 var brushGenerator = node as ChiselBrushGeneratorComponent;
                 if (brushGenerator)
                 {

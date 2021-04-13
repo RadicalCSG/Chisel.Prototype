@@ -692,10 +692,11 @@ namespace Chisel.Core
 
                 var newFirstEdge = newPolygons[newPolygonIndex - 1].firstEdge + newPolygons[newPolygonIndex - 1].edgeCount;
 
-                newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
-                newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
-                newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
+                newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
+                newPolygons[newPolygonIndex].edgeCount          = newEdgeCount;
+                newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
+                newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex].descriptionIndex;
+                newPolygons[newPolygonIndex].surface            = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexIn;
                 newPolygons[polygonIndex].edgeCount = segment2;
@@ -759,10 +760,11 @@ namespace Chisel.Core
 
                 var newFirstEdge = newPolygons[newPolygonIndex - 1].firstEdge + newPolygons[newPolygonIndex - 1].edgeCount;
 
-                newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
-                newPolygons[newPolygonIndex].edgeCount      = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
-                newPolygons[newPolygonIndex].surface        = polygons[polygonIndex].surface;
+                newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
+                newPolygons[newPolygonIndex].edgeCount          = newEdgeCount;
+                newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
+                newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex].descriptionIndex;
+                newPolygons[newPolygonIndex].surface            = polygons[polygonIndex].surface;
 
                 newPolygons[polygonIndex].firstEdge = indexOut;
                 newPolygons[polygonIndex].edgeCount = segment2;
@@ -852,10 +854,11 @@ namespace Chisel.Core
 
                     polygons.Add(new Polygon
                     {
-                        firstEdge      = newFirstEdge,
-                        edgeCount      = newEdgeCount,
-                        surfaceID      = polygons[newPolygonIndex - 1].surfaceID + 1,
-                        surface        = originalPolygon.surface
+                        firstEdge           = newFirstEdge,
+                        edgeCount           = newEdgeCount,
+                        surfaceID           = polygons[newPolygonIndex - 1].surfaceID + 1,
+                        descriptionIndex    = originalPolygon.descriptionIndex,
+                        surface             = originalPolygon.surface
                     });
                 }
 
@@ -951,10 +954,11 @@ namespace Chisel.Core
                     polygons[polygonIndex] = originalPolygon;
 
                     polygons.Add(new Polygon { 
-                        firstEdge      = newFirstEdge,
-                        edgeCount      = newEdgeCount,
-                        surfaceID      = polygons[newPolygonIndex - 1].surfaceID + 1,
-                        surface        = originalPolygon.surface
+                        firstEdge           = newFirstEdge,
+                        edgeCount           = newEdgeCount,
+                        surfaceID           = polygons[newPolygonIndex - 1].surfaceID + 1,
+                        descriptionIndex    = originalPolygon.descriptionIndex,
+                        surface             = originalPolygon.surface
                     });
                 }
 
@@ -1053,10 +1057,11 @@ namespace Chisel.Core
             Array.Copy(halfEdges, newHalfEdges, halfEdges.Length);
 
             var newPolygonIndex = polygons.Length;
-            newPolygons[newPolygonIndex].edgeCount      = newCount;
-            newPolygons[newPolygonIndex].firstEdge      = newFirstEdge;
-            newPolygons[newPolygonIndex].surfaceID      = polygons[polygons.Length - 1].surfaceID + 1;
-            newPolygons[newPolygonIndex].surface        = polygons[polygonIndex1].surface;
+            newPolygons[newPolygonIndex].edgeCount          = newCount;
+            newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
+            newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
+            newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex1].descriptionIndex;
+            newPolygons[newPolygonIndex].surface            = polygons[polygonIndex1].surface;
 
             var edgeCount1 = polygons[polygonIndex1].edgeCount;
             var firstEdge1 = polygons[polygonIndex1].firstEdge;
@@ -1718,18 +1723,20 @@ namespace Chisel.Core
                         
                         polygons.Add(new Polygon
                         {
-                            firstEdge   = polygonStart1,
-                            edgeCount   = newEdgeCount,
-                            surface     = chiselSurface,
-                            surfaceID   = polygonIndex1
+                            firstEdge           = polygonStart1,
+                            edgeCount           = newEdgeCount,
+                            surface             = chiselSurface,
+                            descriptionIndex    = srcIndex,
+                            surfaceID           = polygonIndex1
                         });
 
                         polygons.Add(new Polygon
                         {
-                            firstEdge   = polygonStart2,
-                            edgeCount   = newEdgeCount,
-                            surface     = chiselSurface,
-                            surfaceID   = polygonIndex2
+                            firstEdge           = polygonStart2,
+                            edgeCount           = newEdgeCount,
+                            surface             = chiselSurface,
+                            descriptionIndex    = srcIndex,
+                            surfaceID           = polygonIndex2
                         });
 
                         var desiredHalfEdgePolygonIndicesCapacity = halfEdgePolygonIndices.Count + (2 * newEdgeCount);
