@@ -5,7 +5,7 @@ using UnityEditor;
 namespace Chisel.Editors
 {
     [CustomEditor(typeof(ChiselLinearStairs))]
-    public sealed class ChiselLinearStairsEditor : ChiselBrushGeneratorDefinitionEditor<ChiselLinearStairs, ChiselLinearStairsDefinition>
+    public sealed class ChiselLinearStairsEditor : ChiselGeneratorDefinitionEditor<ChiselLinearStairs, ChiselLinearStairsDefinition>
     {
         [MenuItem("GameObject/Chisel/Create/" + ChiselLinearStairs.kNodeTypeName, false, 0)]
         static void CreateAsGameObject(MenuCommand menuCommand) { CreateAsGameObjectMenuCommand(menuCommand, ChiselLinearStairs.kNodeTypeName); }

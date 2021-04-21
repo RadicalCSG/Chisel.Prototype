@@ -24,8 +24,8 @@ namespace Chisel.Editors
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
         where PlacementToolDefinitionType : ChiselShapePlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType    : IChiselGenerator, IBrushGenerator, new()
-        where Generator         : ChiselDefinedBrushGeneratorComponent<DefinitionType>
+        where DefinitionType    : IChiselGenerator, new()
+        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
     {
         public ChiselShapePlacementToolInstance(string toolName, string group)
         {
@@ -61,7 +61,7 @@ namespace Chisel.Editors
                             if (model != null) parentTransform = model.transform;
                             generatedComponent = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform,
                                                                                   transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
-                                                as ChiselDefinedBrushGeneratorComponent<DefinitionType>;
+                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
                             shape.Center = Vector2.zero;
                             generatedComponent.definition.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
@@ -102,8 +102,8 @@ namespace Chisel.Editors
         // PlacementToolDefinition needs to be a ScriptableObject so we can create an Editor for it
         where PlacementToolDefinitionType : ChiselBoundsPlacementTool<DefinitionType>
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType    : IChiselGenerator, IBrushGenerator, new()
-        where Generator         : ChiselDefinedBrushGeneratorComponent<DefinitionType>
+        where DefinitionType    : IChiselGenerator, new()
+        where Generator         : ChiselDefinedGeneratorComponent<DefinitionType>
     {
         public ChiselBoundsPlacementToolInstance(string toolName, string group)
         {
@@ -150,7 +150,7 @@ namespace Chisel.Editors
                             var model = ChiselModelManager.GetActiveModelOrCreate(modelBeneathCursor);
                             if (model != null) parentTransform = model.transform;
                             generatedComponent  = ChiselComponentFactory.Create(generatorType, ToolName, parentTransform, transformation) 
-                                                as ChiselDefinedBrushGeneratorComponent<DefinitionType>;
+                                                as ChiselDefinedGeneratorComponent<DefinitionType>;
                             componentPosition   = generatedComponent.transform.localPosition;
                             upAxis              = generatedComponent.transform.up;
 
@@ -207,34 +207,9 @@ namespace Chisel.Editors
 
     [CanEditMultipleObjects]
     public abstract class ChiselGeneratorDefinitionEditor<ComponentType, DefinitionType> 
-        : ChiselBrushGeneratorEditor<ComponentType>
-        where ComponentType  : ChiselDefinedBrushGeneratorComponent<DefinitionType>
-        where DefinitionType : IChiselGenerator, IBrushGenerator, new()
-    {
-        protected override void OnScene(IChiselHandles handles, ComponentType generator)
-        {
-            generator.definition.OnEdit(handles);
-        }
-
-        protected override void OnMessages(IChiselMessages messages)
-        {
-            foreach (var target in targets)
-            {
-                var generator = target as ComponentType;
-                if (!generator)
-                    continue;
-                generator.definition.OnMessages(messages);
-            }
-        }
-    }
-
-
-
-    [CanEditMultipleObjects]
-    public abstract class ChiselBrushGeneratorDefinitionEditor<ComponentType, DefinitionType> 
-        : ChiselBrushGeneratorEditor<ComponentType>
-        where ComponentType  : ChiselDefinedBrushGeneratorComponent<DefinitionType>
-        where DefinitionType : IChiselGenerator, IBrushGenerator, new()
+        : ChiselGeneratorEditor<ComponentType>
+        where ComponentType  : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType : IChiselGenerator, new()
     {
         protected override void OnScene(IChiselHandles handles, ComponentType generator)
         {

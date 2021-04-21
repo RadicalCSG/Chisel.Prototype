@@ -189,7 +189,7 @@ namespace Chisel.Core
         }
 
         /// <summary>
-        /// Implements parallel writer. Use AsParallelWriter to obtain it from container.
+        /// Implements parallel writer. Use AsParallelWriterExt to obtain it from container.
         /// </summary>
         [NativeContainer]
         [NativeContainerIsAtomicWriteOnly]

@@ -39,7 +39,7 @@ namespace Chisel.Core
     // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
     // https://en.wikipedia.org/wiki/Stairs
     [Serializable]
-    public struct ChiselLinearStairsDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselLinearStairsDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Linear Stairs";
 

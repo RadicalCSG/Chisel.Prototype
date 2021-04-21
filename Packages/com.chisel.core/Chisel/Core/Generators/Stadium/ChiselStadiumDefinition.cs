@@ -11,7 +11,7 @@ using Unity.Collections;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselStadiumDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselStadiumDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Stadium";
 

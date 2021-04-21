@@ -32,12 +32,12 @@ namespace Chisel.Editors
             generatorComponentLookup = new Dictionary<Type, Type>();
             foreach (var type in ReflectionExtensions.AllNonAbstractClasses)
             {
-                if (!ReflectionExtensions.HasBaseClass<ChiselBrushGeneratorComponent>(type))
+                if (!ReflectionExtensions.HasBaseClass<ChiselGeneratorComponent>(type))
                     continue;
 
                 // Our generator component needs to inherit from ChiselDefinedGeneratorComponent<DefinitionType>
                 //  in the type definition we pass along the definition type we belong to
-                var baseType = type.GetGenericBaseClass(typeof(ChiselDefinedBrushGeneratorComponent<>));
+                var baseType = type.GetGenericBaseClass(typeof(ChiselDefinedGeneratorComponent<>));
                 if (baseType == null)
                     continue;
 

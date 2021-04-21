@@ -9,7 +9,7 @@ using Unity.Collections;
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselBrushDefinition : IChiselGenerator, IBrushGenerator
+    public class ChiselBrushDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Brush";
 

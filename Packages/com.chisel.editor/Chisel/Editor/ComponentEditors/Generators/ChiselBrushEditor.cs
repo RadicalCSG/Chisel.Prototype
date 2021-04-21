@@ -11,7 +11,7 @@ namespace Chisel.Editors
 {
     [CustomEditor(typeof(ChiselBrush))]
     [CanEditMultipleObjects]
-    public sealed class ChiselBrushEditor : ChiselBrushGeneratorEditor<ChiselBrush>
+    public sealed class ChiselBrushEditor : ChiselGeneratorEditor<ChiselBrush>
     {
         static Dictionary<ChiselBrush, ChiselEditableOutline> activeOutlines = new Dictionary<ChiselBrush, ChiselEditableOutline>();
 

@@ -46,7 +46,7 @@ namespace Chisel.Editors
             if (!gameObject)
                 return;
 
-            var generator = gameObject.GetComponent<ChiselBrushGeneratorComponent>();
+            var generator = gameObject.GetComponent<ChiselGeneratorComponent>();
             if (generator && generator.Operation != operationType)
             {
                 Undo.RecordObject(generator, "Modified Operation");
@@ -67,7 +67,7 @@ namespace Chisel.Editors
             if (!gameObject)
                 return false;
 
-            return gameObject.GetComponent<ChiselBrushGeneratorComponent>() ||
+            return gameObject.GetComponent<ChiselGeneratorComponent>() ||
                    gameObject.GetComponent<ChiselComposite>();
         }
 
@@ -121,7 +121,7 @@ namespace Chisel.Editors
 
             for (int i = 0; i < gameObjects.Length; i++)
             {
-                if (gameObjects[i].GetComponent<ChiselBrushGeneratorComponent>() ||
+                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
                     gameObjects[i].GetComponent<ChiselComposite>())
                     continue;
                 return false;
@@ -242,7 +242,7 @@ namespace Chisel.Editors
             // If we used the command object on a generator, choose it's parent to prevent us from 
             // adding a generator as a child to a generator
             if (parentTransform &&
-                parentTransform.GetComponent<ChiselBrushGeneratorComponent>())
+                parentTransform.GetComponent<ChiselGeneratorComponent>())
             {
                 parentTransform = parentTransform.parent;
                 parentGameObject = (parentTransform == null) ? null : parentTransform.gameObject;
@@ -646,11 +646,11 @@ namespace Chisel.Editors
         
         public GUIContent GetHierarchyIconForGenericNode(ChiselNode node)
         {
-            var brushGenerator = node as ChiselBrushGeneratorComponent;
+            var brushGenerator = node as ChiselGeneratorComponent;
             if (brushGenerator != null)
                 return GetHierarchyIcon(brushGenerator.Operation, node.NodeTypeName);
 
-            var generator = node as ChiselBrushGeneratorComponent;
+            var generator = node as ChiselGeneratorComponent;
             if (generator == null)
                 return GUIContent.none;
 
@@ -659,18 +659,18 @@ namespace Chisel.Editors
 
         public bool HasValidState(ChiselNode node)
         {
-            var brushGenerator = node as ChiselBrushGeneratorComponent;
+            var brushGenerator = node as ChiselGeneratorComponent;
             if (brushGenerator != null)
                 return node.HasValidState();
 
-            var generator = node as ChiselBrushGeneratorComponent;
+            var generator = node as ChiselGeneratorComponent;
             if (generator == null)
                 return false;
 
             return node.HasValidState();
         }
     }
-    /*
+
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
         where T : ChiselGeneratorComponent
     {
@@ -847,401 +847,7 @@ namespace Chisel.Editors
             }
             Profiler.EndSample();
             Profiler.BeginSample("FindProperty");
-            operationProp = serializedObject.FindProperty(ChiselBrushGeneratorComponent.kOperationFieldName);
-            Profiler.EndSample();
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateSelection");
-            UpdateSelection();
-            Profiler.EndSample();
-
-            Profiler.BeginSample("InitInspector");
-            InitInspector();
-            Profiler.EndSample();
-        }
-
-        void OnToolModeChanged()
-        {
-            if (Tools.current != Tool.Custom)
-            {
-                ChiselEditToolBase.ClearLastRememberedType();
-                return;
-            }
-            if (!typeof(ChiselEditToolBase).IsAssignableFrom(ToolManager.activeToolType))
-            {
-                ChiselEditToolBase.ClearLastRememberedType();
-            }
-        }
-
-        protected bool HasValidState()
-        {
-            foreach (var target in targets)
-            {
-                var generator = target as T;
-                if (!generator)
-                    continue;
-                if (!generator.HasValidState())
-                    return false;
-            }
-            return true;
-        }
-
-        static readonly HashSet<System.Object> s_FoundObjects = new HashSet<System.Object>();
-        static readonly HashSet<T> s_RemoveTargets = new HashSet<T>();
-        static readonly HashSet<GameObject> s_SelectedGameObject = new HashSet<GameObject>();
-        void UpdateSelection()
-        {
-            s_SelectedGameObject.Clear();
-            foreach (var item in Selection.gameObjects)
-                s_SelectedGameObject.Add(item);
-            s_RemoveTargets.Clear();
-            s_FoundObjects.Clear();
-            foreach (var target in targets)
-            {
-                if (!target)
-                    continue;
-
-                s_FoundObjects.Add(target);
-                if (!knownTargets.Add(target))
-                    continue;
-
-                var generator = target as T;
-                if (!OnGeneratorActive(generator))
-                    continue;
-
-                OnGeneratorSelected(target as T);
-                validTargets.Add(generator);
-            }
-
-            foreach (var knownTarget in knownTargets)
-            {
-                if (!s_FoundObjects.Contains(knownTarget))
-                {
-                    var removeTarget = target as T;
-                    if (validTargets.Contains(removeTarget))
-                    {
-                        handles.generatorStateLookup.Remove(removeTarget);
-                        OnGeneratorDeselected(removeTarget);
-                        validTargets.Remove(removeTarget);
-                    }
-                    s_RemoveTargets.Add(removeTarget);
-                } else
-                {
-                    var removeTarget = target as T;
-                    if (removeTarget == null ||
-                        !s_SelectedGameObject.Contains(removeTarget.gameObject))
-                    {
-                        handles.generatorStateLookup.Remove(removeTarget);
-                        OnGeneratorDeselected(removeTarget);
-                        validTargets.Remove(removeTarget);
-                        s_RemoveTargets.Add(removeTarget);
-                    }
-                }
-            }
-            s_FoundObjects.Clear();
-
-            foreach (var removeTarget in s_RemoveTargets)
-                knownTargets.Remove(removeTarget);
-            s_SelectedGameObject.Clear();
-            s_RemoveTargets.Clear();
-            s_FoundObjects.Clear();
-        }
-
-        public override void OnInspectorGUI()
-        {
-            if (!target)
-                return;
-            Profiler.BeginSample("OnInspectorGUI");
-            serializedObject.Update();
-
-            base.OnInspectorGUI();
-            try
-            {
-                EditorGUI.BeginChangeCheck();
-                {
-                    ShowInspectorHeader(operationProp);
-                    OnInspector();
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serializedObject.ApplyModifiedProperties();
-                }
-            }
-            catch (ExitGUIException) { }
-            catch (Exception ex) { Debug.LogException(ex); }
-
-            if (PreviewTextureManager.Update())
-                Repaint();
-            Profiler.EndSample();
-        }
-
-        static readonly ChiselEditorHandles handles = new ChiselEditorHandles();
-
-        public override void OnSceneGUI()
-        {
-            if (!target)
-                return;
-
-            if (Tools.current != Tool.Custom || !ChiselEditGeneratorTool.IsActive())
-            {
-                OnDefaultSceneTools();
-                return;
-            }
-
-            // Skip some events, to prevent scalability issues (when selecting thousands of brushes at the same time)
-            // Could happen when doing control-A (select all)
-            switch (Event.current.type)
-            {
-                case EventType.MouseEnterWindow:
-                case EventType.MouseLeaveWindow:
-                case EventType.Ignore:
-                case EventType.Used:
-                    return;
-
-                case EventType.MouseDown:
-                case EventType.MouseUp:
-                case EventType.MouseDrag:
-                case EventType.DragExited:
-                case EventType.DragPerform:
-                case EventType.DragUpdated:
-                {
-                    // Mouse messages don't make sense when the mouse is not over the current window
-                    if (SceneView.currentDrawingSceneView != EditorWindow.mouseOverWindow)
-                        return;
-                    break;
-                }
-            }
-
-            var generator   = target as T;
-            var sceneView   = SceneView.currentDrawingSceneView;
-            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
-            
-            // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
-
-            // NOTE: could loop over multiple instances from here, once we support that
-            {
-                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, modelMatrix * generator.LocalTransformationWithPivot))
-                {
-                    handles.Start(generator, sceneView);
-                    {
-                        if (GUIUtility.hotControl == 0)
-                        {
-                            if (!OnGeneratorActive(generator))
-                            {
-                                if (validTargets.Contains(generator))
-                                {
-                                    handles.generatorStateLookup.Remove(generator);
-                                    OnGeneratorDeselected(generator);
-                                    validTargets.Remove(generator);
-                                }
-                                return;
-                            }
-                            if (!validTargets.Contains(generator))
-                            {
-                                handles.generatorStateLookup.Remove(generator);
-                                OnGeneratorDeselected(generator);
-                                validTargets.Add(generator);
-                            }
-                        }
-
-                        EditorGUI.BeginChangeCheck();
-                        try
-                        {
-                            OnScene(handles, generator);
-                        }
-                        finally
-                        {
-                            if (EditorGUI.EndChangeCheck())
-                            {
-                                generator.OnValidate();
-                                OnTargetModifiedInScene();
-                            }
-                            handles.End();
-                        }
-                    }
-                }
-            }
-        }
-    }
-    */
-    
-    public abstract class ChiselBrushGeneratorEditor<T> : ChiselNodeEditor<T>
-        where T : ChiselBrushGeneratorComponent
-    {
-        protected void ResetDefaultInspector()
-        {
-            definitionSerializedProperty = null;
-            position = Vector2.zero;
-            children.Clear();
-        }
-
-        // Note: name is the same for every generator, but is hidden inside a generic class, hence the use of ChiselBrushDefinition
-        const string kDefinitionName = ChiselDefinedBrushGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
-
-        List<SerializedProperty> children = new List<SerializedProperty>();
-        SerializedProperty definitionSerializedProperty;
-        protected void InitDefaultInspector()
-        {
-            ResetDefaultInspector();
-
-            var iterator = serializedObject.GetIterator();
-            if (iterator.NextVisible(true))
-            {
-                do
-                {
-                    if (iterator.name == kDefinitionName)
-                    {
-                        definitionSerializedProperty = iterator.Copy();
-                        break;
-                    }
-                } while (iterator.NextVisible(false));
-            }
-
-            if (definitionSerializedProperty == null)
-                return;
-
-            iterator = definitionSerializedProperty.Copy();
-            if (iterator.NextVisible(true))
-            {
-                do
-                {
-                    //Debug.Log(iterator.name);
-                    children.Add(iterator.Copy());
-                } while (iterator.NextVisible(false));
-            }
-        }
-
-        protected void OnDefaultInspector()
-        {
-            EditorGUI.BeginChangeCheck();
-            {
-                for (int i = 0; i < children.Count; i++)
-                    EditorGUILayout.PropertyField(children[i], true);
-            }
-            if (EditorGUI.EndChangeCheck())
-            {
-                OnTargetModifiedInInspector();
-            }
-        }
-
-        protected void OnDefaultSettingsGUI(System.Object target, SceneView sceneView)
-        {
-            InSceneSettingsContext = true;
-            try
-            {
-                if (serializedObject == null ||
-                    !serializedObject.targetObject)
-                    return;
-                serializedObject.Update();
-                EditorGUI.BeginChangeCheck();
-                {
-                    for (int i = 0; i < children.Count; i++)
-                    {
-                        EditorGUILayout.PropertyField(children[i], true);
-                    }
-                }
-                if (EditorGUI.EndChangeCheck())
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    OnTargetModifiedInInspector();
-                }
-            }
-            finally
-            {
-                InSceneSettingsContext = false;
-            }
-        }
-
-
-        protected virtual void ResetInspector() { ResetDefaultInspector(); } 
-        protected override void InitInspector() { base.InitInspector(); InitDefaultInspector(); }
-
-
-        static Vector2 position = Vector2.zero;
-
-        protected override void OnEditSettingsGUI(SceneView sceneView)
-        {
-            if (Tools.current != Tool.Custom)
-                return;
-
-            GUILayoutUtility.GetRect(298, 0);
-
-            // TODO: figure out how to make this work with multiple (different) editors when selecting a combination of nodes
-            using (var scope = new EditorGUILayout.ScrollViewScope(position, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(150)))
-            {
-                OnDefaultSettingsGUI(target, sceneView);
-                position = scope.scrollPosition;
-            }
-            ShowInspectorHeader(operationProp);
-        }
-
-        static readonly ChiselEditorMessages warnings = new ChiselEditorMessages();
-        protected virtual void OnMessages(IChiselMessages warnings) { }
-
-
-        protected virtual void OnInspector() 
-        { 
-            OnDefaultInspector(); 
-            OnMessages(warnings); 
-        }
-
-        protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
-        protected virtual void OnTargetModifiedInScene() { OnShapeChanged(); }
-        protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
-        protected virtual void OnGeneratorSelected(T generator) { }
-        protected virtual void OnGeneratorDeselected(T generator) { }
-        protected abstract void OnScene(IChiselHandles handles, T generator);
-
-        SerializedProperty operationProp;
-        void Reset() { operationProp = null; ResetInspector(); }
-        protected virtual void OnUndoRedoPerformed() { }
-
-        private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
-        private HashSet<UnityEngine.Object> validTargets = new HashSet<UnityEngine.Object>();
-
-        void OnDisable()
-        {
-            UpdateSelection();
-            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            PreviewTextureManager.CleanUp();
-            Reset();
-            ChiselEditGeneratorTool.OnEditSettingsGUI = null;
-            ChiselEditGeneratorTool.CurrentEditorName = null;
-            Tools.hidden = false;
-
-            ToolManager.activeToolChanged -= OnToolModeChanged;
-            ShutdownInspector();
-        }
-
-        void OnEnable()
-        {
-            if (!target)
-            {
-                Profiler.BeginSample("Reset");
-                Reset();
-                Profiler.EndSample();
-                return;
-            }
-
-            Profiler.BeginSample("Setup");
-            ToolManager.activeToolChanged -= OnToolModeChanged;
-            ToolManager.activeToolChanged += OnToolModeChanged;
-            UnityEditor.Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            UnityEditor.Undo.undoRedoPerformed += OnUndoRedoPerformed;
-
-            Profiler.BeginSample("CurrentEditorName");
-            if (targets.Length > 1)
-            {
-                ChiselEditGeneratorTool.OnEditSettingsGUI = null;
-                ChiselEditGeneratorTool.CurrentEditorName = string.Empty;
-            } else
-            {
-                ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
-                ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
-            }
-            Profiler.EndSample();
-            Profiler.BeginSample("FindProperty");
-            operationProp = serializedObject.FindProperty(ChiselBrushGeneratorComponent.kOperationFieldName);
+            operationProp = serializedObject.FindProperty(ChiselGeneratorComponent.kOperationFieldName);
             Profiler.EndSample();
             Profiler.EndSample();
 

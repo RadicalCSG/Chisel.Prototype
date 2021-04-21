@@ -13,7 +13,7 @@ using Unity.Mathematics;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselPathedStairsDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselPathedStairsDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Pathed Stairs";
 

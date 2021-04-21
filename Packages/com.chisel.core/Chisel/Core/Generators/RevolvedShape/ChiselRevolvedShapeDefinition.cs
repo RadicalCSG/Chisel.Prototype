@@ -15,7 +15,7 @@ using Unity.Entities;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : IChiselGenerator, IBrushGenerator // TODO: make this a struct
+    public struct ChiselRevolvedShapeDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Revolved Shape";
 

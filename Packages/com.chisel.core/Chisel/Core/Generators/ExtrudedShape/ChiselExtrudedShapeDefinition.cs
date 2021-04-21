@@ -19,7 +19,7 @@ using Unity.Mathematics;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselExtrudedShapeDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselExtrudedShapeDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Extruded Shape";
 

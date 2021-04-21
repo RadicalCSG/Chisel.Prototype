@@ -25,7 +25,7 @@ namespace Chisel.Core
     // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
     //          the quad triangulation needs to be reversed (figure out how to detect this)
     [Serializable]
-    public struct ChiselCylinderDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselCylinderDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Cylinder";
 

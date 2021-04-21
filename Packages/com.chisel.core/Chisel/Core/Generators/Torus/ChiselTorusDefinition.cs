@@ -12,7 +12,7 @@ using Unity.Collections.LowLevel.Unsafe;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselTorusDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselTorusDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Torus";
 

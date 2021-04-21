@@ -13,7 +13,7 @@ using Unity.Collections;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselHemisphereDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselHemisphereDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Hemisphere";
 

@@ -20,7 +20,6 @@ namespace Chisel.Core
                 nativeStream.Write(array[i]);
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Read<T>([NoAlias] ref NativeStream.Reader nativeStream, [NoAlias] ref T item) where T : unmanaged
         {

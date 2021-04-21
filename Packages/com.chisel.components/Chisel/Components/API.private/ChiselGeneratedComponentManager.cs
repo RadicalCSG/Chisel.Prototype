@@ -223,7 +223,7 @@ namespace Chisel.Components
                     visibilityStateLookup[modelNodeID] = state | prevState;
                 }
                 */
-                var brushGenerator = node as ChiselBrushGeneratorComponent;
+                var brushGenerator = node as ChiselGeneratorComponent;
                 if (brushGenerator)
                 {
                     if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))

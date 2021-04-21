@@ -12,7 +12,7 @@ namespace Chisel.Components
     [Serializable]
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
-        public ChiselBrushGeneratorComponent    node;
+        public ChiselGeneratorComponent    node;
         public CSGTreeBrush                     brush;
         //public ChiselBrushContainerAsset      brushContainerAsset;
 
@@ -29,7 +29,7 @@ namespace Chisel.Components
                                                 int surfaceIndex//, int surfaceID
             )
         {
-            this.node                   = node as ChiselBrushGeneratorComponent;
+            this.node                   = node as ChiselGeneratorComponent;
             this.brush                  = brush;
             //this.brushContainerAsset  = brushContainerAsset;
             //this.subNodeIndex         = subNodeIndex;
@@ -356,7 +356,7 @@ namespace Chisel.Components
                     return Matrix4x4.identity;
 
                 {
-                    var generator = node as ChiselBrushGeneratorComponent;
+                    var generator = node as ChiselGeneratorComponent;
                     if (generator != null)
                         return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation;
                 }
@@ -379,7 +379,7 @@ namespace Chisel.Components
                     return Matrix4x4.identity;
 
                 {
-                    var generator = node as ChiselBrushGeneratorComponent;
+                    var generator = node as ChiselGeneratorComponent;
                     if (generator != null)
                         return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
                 }

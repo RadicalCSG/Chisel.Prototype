@@ -1261,8 +1261,8 @@ namespace Chisel.Editors
                     if (generator is ChiselGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
                     else*/
-                    if (generator is ChiselBrushGeneratorComponent)
-                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
                     return true;
                 }
                 case TurnState.AntiClockWise:
@@ -1277,8 +1277,8 @@ namespace Chisel.Editors
                     if (generator is ChiselGeneratorComponent)
                         generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
                     else*/
-                    if (generator is ChiselBrushGeneratorComponent)
-                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselBrushGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
                     return true;
                 }
             }

@@ -12,7 +12,7 @@ namespace Chisel.Core
 {
     // TODO: beveled edges?
     [Serializable]
-    public struct ChiselBoxDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselBoxDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Box";
 

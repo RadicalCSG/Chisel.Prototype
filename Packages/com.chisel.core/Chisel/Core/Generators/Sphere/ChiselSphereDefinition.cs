@@ -13,7 +13,7 @@ using Unity.Mathematics;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselSphereDefinition : IChiselGenerator, IBrushGenerator
+    public struct ChiselSphereDefinition : IChiselGenerator
     {
         public const string kNodeTypeName = "Sphere";
 
