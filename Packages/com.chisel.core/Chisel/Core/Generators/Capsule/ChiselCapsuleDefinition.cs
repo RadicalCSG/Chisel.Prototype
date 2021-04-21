@@ -98,11 +98,9 @@ namespace Chisel.Core
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             settings = kDefaultSettings;
-
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

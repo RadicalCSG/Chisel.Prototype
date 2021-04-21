@@ -32,13 +32,12 @@ namespace Chisel.Core
         //[NamedItems("Bottom", overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             diameterXYZ			= kDefaultDiameter;
             rotation			= kDefaultRotation;
             horizontalSegments	= kDefaultHorizontalSegments;
             verticalSegments	= kDefaultVerticalSegments;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

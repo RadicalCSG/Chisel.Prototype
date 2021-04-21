@@ -55,7 +55,7 @@ namespace Chisel.Core
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             width			    = kDefaultWidth;
 
@@ -67,8 +67,6 @@ namespace Chisel.Core
             
             topSides			= kDefaultTopSides;
             bottomSides			= SidesVertices;
-            
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

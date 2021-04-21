@@ -10,7 +10,7 @@ namespace Chisel.Core
         public PlacementFlags placement = PlacementFlags.None;
         public override PlacementFlags PlacementFlags => placement;
 
-        public override void OnUpdate(ref ChiselBoxDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds) 
+        public override void OnUpdate(ref ChiselBoxDefinition definition, Bounds bounds) 
         {
             definition.bounds = new MinMaxAABB { Min = bounds.min, Max = bounds.max }; 
         }

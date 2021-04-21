@@ -96,7 +96,7 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             origin		    = Vector3.zero;
 
@@ -120,7 +120,6 @@ namespace Chisel.Core
             riserDepth	    = kDefaultRiserDepth;
 
             bottomSmoothingGroup    = 0;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

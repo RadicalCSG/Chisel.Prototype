@@ -49,10 +49,9 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             brushOutline = null;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public bool EnsurePlanarPolygons()

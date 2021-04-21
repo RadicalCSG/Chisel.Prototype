@@ -27,11 +27,11 @@ namespace Chisel.Core
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         public ChiselLinearStairsDefinition stairs;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             shape           = kDefaultShape;
             curveSegments   = kDefaultCurveSegments;
-            stairs.Reset(ref surfaceDefinition);
+            stairs.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

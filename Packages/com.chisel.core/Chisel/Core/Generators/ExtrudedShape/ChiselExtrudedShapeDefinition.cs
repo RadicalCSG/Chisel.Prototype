@@ -34,13 +34,11 @@ namespace Chisel.Core
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             curveSegments   = kDefaultCurveSegments;
             path			= new ChiselPath(ChiselPath.Default);
             shape			= new Curve2D(kDefaultShape);
-            
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

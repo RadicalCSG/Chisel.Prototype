@@ -19,7 +19,7 @@ namespace Chisel.Core
             definition.horizontalSegments   = horizontalSegments;
         }
 
-        public override void OnUpdate(ref ChiselHemisphereDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
+        public override void OnUpdate(ref ChiselHemisphereDefinition definition, Bounds bounds)
         {
             definition.diameterXYZ = bounds.size;
         }

@@ -145,7 +145,7 @@ namespace Chisel.Core
             get { return Mathf.Max(0, absDepth - (StepCount * stepDepth)); }
         }
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             // TODO: set defaults using attributes?
             stepHeight		= kDefaultStepHeight;
@@ -167,8 +167,6 @@ namespace Chisel.Core
             sideDepth		= kDefaultSideDepth;
             sideWidth		= kDefaultSideWidth;
             sideHeight		= kDefaultSideHeight;
-
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

@@ -207,7 +207,7 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             topDiameterX = 1.0f;
             topDiameterZ = 1.0f;
@@ -223,8 +223,6 @@ namespace Chisel.Core
             sides = 16;
             smoothingGroup = 1;
             type = CylinderShapeType.Cylinder;
-
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

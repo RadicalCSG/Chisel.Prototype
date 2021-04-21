@@ -10,7 +10,7 @@ namespace Chisel.Core
 {
     public interface IChiselGenerator
     {
-        void Reset(ref ChiselSurfaceDefinition surfaceDefinition);
+        void Reset();
         void Validate(ref ChiselSurfaceDefinition surfaceDefinition);
         void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles);
         void OnMessages(IChiselMessages messages);

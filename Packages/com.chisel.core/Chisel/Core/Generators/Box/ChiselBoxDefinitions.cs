@@ -53,10 +53,9 @@ namespace Chisel.Core
             } 
         }
         
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             bounds = kDefaultBounds;
-            surfaceDefinition?.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

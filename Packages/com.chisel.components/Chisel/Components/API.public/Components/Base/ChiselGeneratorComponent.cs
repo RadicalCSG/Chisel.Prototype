@@ -26,7 +26,7 @@ namespace Chisel.Components
         public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return surfaceDefinition.GetSurfaceUV0(descriptionIndex); }
         public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { surfaceDefinition.SetSurfaceUV0(descriptionIndex, uv0); }
 
-        protected override void OnResetInternal()           { definition.Reset(ref surfaceDefinition); base.OnResetInternal(); }
+        protected override void OnResetInternal()           { definition.Reset(); surfaceDefinition?.Reset(); base.OnResetInternal(); }
         protected override void OnValidateInternal()        { definition.Validate(ref surfaceDefinition); base.OnValidateInternal(); }
         protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID) 
         { 

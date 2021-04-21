@@ -33,7 +33,7 @@ namespace Chisel.Core
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             // TODO: create constants
             shape			= kDefaultShape;
@@ -41,8 +41,6 @@ namespace Chisel.Core
             totalAngle		= 360.0f;
             curveSegments	= kDefaultCurveSegments;
             revolveSegments	= kDefaultRevolveSegments;
-            
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

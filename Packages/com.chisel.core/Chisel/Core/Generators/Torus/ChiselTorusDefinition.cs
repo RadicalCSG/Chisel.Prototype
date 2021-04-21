@@ -52,7 +52,7 @@ namespace Chisel.Core
             return Mathf.Max(kMinTubeDiameter, tubeWidth);
         }
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             // TODO: create constants
             tubeWidth			= 0.5f;
@@ -65,8 +65,6 @@ namespace Chisel.Core
             verticalSegments	= kDefaultVerticalSegments;
 
             fitCircle			= true;
-
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

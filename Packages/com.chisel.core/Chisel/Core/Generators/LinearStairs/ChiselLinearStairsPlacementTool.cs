@@ -9,9 +9,9 @@ namespace Chisel.Core
         public PlacementFlags placement = PlacementFlags.AlwaysFaceUp | PlacementFlags.AlwaysFaceCameraXZ;
         public override PlacementFlags PlacementFlags => placement;
 
-        public override void OnUpdate(ref ChiselLinearStairsDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
+        public override void OnUpdate(ref ChiselLinearStairsDefinition definition, Bounds bounds)
         {
-            definition.Reset(ref surfaceDefinition);
+            definition.Reset();
             definition.bounds = bounds;
         }
 

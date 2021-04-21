@@ -35,7 +35,7 @@ namespace Chisel.Core
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
+        public void Reset()
         {
             diameterXYZ		    = kDefaultDiameter;
             offsetY             = 0;
@@ -43,7 +43,6 @@ namespace Chisel.Core
             horizontalSegments  = kDefaultHorizontalSegments;
             verticalSegments    = kDefaultVerticalSegments;
             generateFromCenter  = kDefaultGenerateFromCenter;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
         public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)

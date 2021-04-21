@@ -24,7 +24,7 @@ namespace Chisel.Core
             settings.bottomSegments  = bottomSegments;
         }
 
-        public override void OnUpdate(ref ChiselCapsuleDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
+        public override void OnUpdate(ref ChiselCapsuleDefinition definition, Bounds bounds)
         {
             ref var settings = ref definition.settings;
             var height              = bounds.size[(int)Axis.Y];
