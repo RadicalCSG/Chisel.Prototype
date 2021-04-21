@@ -18,7 +18,7 @@ namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
-    {
+    {/*
         public static bool GenerateLinearStairs(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                 MinMaxAABB      bounds,
 
@@ -62,7 +62,7 @@ namespace Chisel.Core
 
             return GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob);
         }
-        
+        */
         // TODO: Fix all overlapping brushes
         internal static unsafe bool GenerateLinearStairsSubMeshes(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
         {
@@ -811,46 +811,6 @@ namespace Chisel.Core
             }
         }
 
-
-        public static bool GenerateLinearStairs(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselLinearStairsDefinition definition)
-        {
-            definition.Validate(ref surfaceDefinition);
-
-            if (!definition.HasVolume)
-            {
-                brushContainer.Reset();
-                return false;
-            }
-
-            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
-            {
-                brushContainer.Reset();
-                return false;
-            }
-
-            var minMaxAABB = new MinMaxAABB { Min = definition.bounds.min, Max = definition.bounds.max };
-            var description = new LineairStairsData(minMaxAABB,
-                                                    definition.stepHeight, definition.stepDepth,
-                                                    definition.treadHeight,
-                                                    definition.nosingDepth, definition.nosingWidth,
-                                                    definition.plateauHeight,
-                                                    definition.riserType, definition.riserDepth,
-                                                    definition.leftSide, definition.rightSide,
-                                                    definition.sideWidth, definition.sideHeight, definition.sideDepth);
-            int requiredSubMeshCount = description.subMeshCount;
-            if (requiredSubMeshCount == 0)
-            {
-                brushContainer.Reset();
-                return false;
-            }
-            
-            int subMeshOffset = 0;
-
-            brushContainer.EnsureSize(requiredSubMeshCount);
-
-            return GenerateLinearStairsSubMeshes(ref brushContainer, ref surfaceDefinition, ref description, definition, definition.leftSide, definition.rightSide, subMeshOffset);
-        }
-
         internal struct LinearStairsSideData
         {
             public bool enabled;        // TODO: just check if subMeshCount == 0
@@ -910,7 +870,7 @@ namespace Chisel.Core
                     this.subMeshCount = 0;
             }
         }
-
+        /*
         private static void GenerateStairsSide(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, ChiselLinearStairsDefinition definition, in LineairStairsData description, in LinearStairsSideData side)
         {
             var min = new Vector3(minX, description.bounds.Max.y - definition.treadHeight - definition.stepHeight, description.bounds.Min.z + definition.StepDepthOffset);
@@ -1519,7 +1479,7 @@ namespace Chisel.Core
                 }
             }
         }
-
+        */
         internal struct LineairStairsData
         {
 
@@ -1690,151 +1650,6 @@ namespace Chisel.Core
                 this.startLeftSide       = this.subMeshCount; if (leftSideDescription.enabled)  this.subMeshCount += leftSideDescription.subMeshCount;
                 this.startRightSide      = this.subMeshCount; if (rightSideDescription.enabled) this.subMeshCount += rightSideDescription.subMeshCount;
             }
-        }
-
-        // TODO: Fix all overlapping brushes
-        internal static bool GenerateLinearStairsSubMeshes(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref LineairStairsData description, ChiselLinearStairsDefinition definition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition, int subMeshOffset = 0)
-        {
-            // TODO: properly assign all materials
-
-            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
-                return false;
-
-            brushContainer.Clear();
-
-            var stepOffset = new Vector3(0, -definition.stepHeight, definition.stepDepth);
-            if (description.stepCount > 0)
-            {
-                if (description.haveRiser)
-                {
-                    var min = description.bounds.Min;
-                    var max = description.bounds.Max;
-                    max.z = min.z + definition.StepDepthOffset + definition.stepDepth;
-                    if (description.riserType != StairsRiserType.FillDown)
-                    {
-                        if (description.riserType == StairsRiserType.ThinRiser)
-                            min.z = max.z - description.riserDepth;
-                        else
-                            min.z = min.z + definition.StepDepthOffset;
-                        if (description.thickRiser)
-                            min.z -= description.offsetZ;
-                    }
-                    min.y = max.y - definition.stepHeight;
-                    min.y -= description.treadHeight;
-                    max.y -= description.treadHeight;
-                    min.x += (description.leftSideType  != StairsSideType.None) ? description.sideWidth : 0;
-                    max.x -= (description.rightSideType != StairsSideType.None) ? description.sideWidth : 0;
-                    
-                    var extrusion = new Vector3(max.x - min.x, 0, 0);
-                    for (int i = 0; i < description.stepCount; i++)
-                    {
-                        if (i == 1 &&
-                            description.thickRiser)
-                        {
-                            min.z += description.offsetZ;
-                        }
-                        if (i == description.stepCount - 1)
-                        {
-                            min.y += description.treadHeight - description.offsetY;
-                        }
-
-                        var minZ = math.max(description.bounds.Min.z, min.z);
-                        var maxZ = math.min(description.bounds.Max.z, max.z);
-
-                        Vector3[] vertices;
-                        if (i == 0 || description.riserType != StairsRiserType.Smooth)
-                        {
-                            vertices = new[] {
-                                                new Vector3( min.x, min.y, minZ),	// 0
-                                                new Vector3( min.x, min.y, maxZ),	// 1
-                                                new Vector3( min.x, max.y, maxZ),  // 2
-                                                new Vector3( min.x, max.y, minZ),	// 3
-                                            };
-                        } else
-                        {
-                            vertices = new[] {
-                                                new Vector3( min.x, min.y, minZ),	// 0
-                                                new Vector3( min.x, min.y, maxZ),	// 1
-                                                new Vector3( min.x, max.y, maxZ),  // 2
-                                                new Vector3( min.x, max.y, minZ - definition.stepDepth),	// 3
-                                            };
-                        }
-
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + i], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 3, 3, 3 }, // TODO: fix this
-                                        surfaceDefinition);
-
-                        if (description.riserType != StairsRiserType.FillDown)
-                            min.z += definition.stepDepth;
-                        max.z += definition.stepDepth;
-                        min.y -= definition.stepHeight;
-                        max.y -= definition.stepHeight;
-                    }
-                }
-                if (description.haveTread)
-                {
-                    var min = new Vector3(description.bounds.Min.x + description.sideWidth, description.bounds.Max.y - definition.treadHeight, description.bounds.Min.z);
-                    var max = new Vector3(description.bounds.Max.x - description.sideWidth, description.bounds.Max.y, description.bounds.Min.z + definition.StepDepthOffset + definition.stepDepth + description.nosingDepth);
-                    for (int i = 0; i < description.stepCount; i++)
-                    {
-                        min.x = description.bounds.Min.x - ((i == 0) ? description.rightTopNosingWidth : description.rightNosingWidth);
-                        max.x = description.bounds.Max.x + ((i == 0) ? description.leftTopNosingWidth : description.leftNosingWidth);
-                        if (i == 1)
-                        {
-                            min.z = max.z - (definition.stepDepth + description.nosingDepth);
-                        }
-                        var vertices = new[] {
-                                                new Vector3( min.x, min.y, min.z),	// 0
-                                                new Vector3( min.x, min.y, max.z),	// 1
-                                                new Vector3( min.x, max.y, max.z),  // 2
-                                                new Vector3( min.x, max.y, min.z),	// 3
-                                            };
-                        var extrusion = new Vector3(max.x - min.x, 0, 0);
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[subMeshOffset + description.startTread + i], vertices, extrusion,
-                                        new int[] { 0, 1, 2, 2, 2, 2 }, // TODO: fix this
-                                        surfaceDefinition);
-                        min += stepOffset;
-                        max += stepOffset;
-                    }
-                }
-
-                if (description.leftSideDescription.enabled)
-                {
-                    var minX = description.bounds.Max.x - description.sideWidth;
-                    var maxX = description.bounds.Max.x;
-
-                    GenerateStairsSide(ref brushContainer, ref surfaceDefinition, subMeshOffset + description.startLeftSide, description.stepCount, minX, maxX, description.leftSideType, definition, description, description.leftSideDescription);
-                }
-
-                if (description.rightSideDescription.enabled)
-                {
-                    var minX = description.bounds.Min.x;
-                    var maxX = description.bounds.Min.x + description.sideWidth;
-
-                    GenerateStairsSide(ref brushContainer, ref surfaceDefinition, subMeshOffset + description.startRightSide, description.stepCount, minX, maxX, description.rightSideType, definition, description, description.rightSideDescription);
-                }
-            }
-            return true;
-        }
- 
-
-        public static int GetLinearStairsSubMeshCount(ChiselLinearStairsDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, StairsSideType leftSideDefinition, StairsSideType rightSideDefinition)
-        {
-            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
-            {
-                return 0;
-            }
-
-            var minMaxAABB = new MinMaxAABB { Min = definition.bounds.min, Max = definition.bounds.max };
-            var description = new LineairStairsData(minMaxAABB,
-                                                    definition.stepHeight, definition.stepDepth,
-                                                    definition.treadHeight,
-                                                    definition.nosingDepth, definition.nosingWidth,
-                                                    definition.plateauHeight,
-                                                    definition.riserType, definition.riserDepth,
-                                                    leftSideDefinition, rightSideDefinition,
-                                                    definition.sideWidth, definition.sideHeight, definition.sideDepth);
-            return description.subMeshCount;
         }
     }
 }

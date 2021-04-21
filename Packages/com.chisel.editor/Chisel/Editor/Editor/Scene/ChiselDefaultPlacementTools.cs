@@ -213,9 +213,9 @@ namespace Chisel.Editors
         where ComponentType  : ChiselDefinedGeneratorComponent<DefinitionType>
         where DefinitionType : IChiselGenerator, new()
     {
-        protected override void OnScene(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles, ComponentType generator)
+        protected override void OnScene(IChiselHandles handles, ComponentType generator)
         {
-            generator.definition.OnEdit(ref surfaceDefinition, handles);
+            generator.definition.OnEdit(handles);
         }
 
         protected override void OnMessages(IChiselMessages messages)

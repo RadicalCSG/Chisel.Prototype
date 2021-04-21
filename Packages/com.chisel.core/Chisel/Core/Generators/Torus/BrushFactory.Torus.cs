@@ -130,48 +130,8 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateTorus(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselTorusDefinition definition)
+        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref float3[] vertices)
         {
-            float3[] vertices = null;
-            if (!GenerateTorusVertices(definition, ref surfaceDefinition, ref vertices))
-                return false;
-            
-            var horzSegments	= definition.horizontalSegments;
-            var vertSegments	= definition.verticalSegments;
-
-            brushContainer.EnsureSize(horzSegments);
-
-            var descriptionIndex		= new int[2 + vertSegments];
-            
-            descriptionIndex[0] = 0;
-            descriptionIndex[1] = 1;
-
-            for (int v = 0; v < vertSegments; v++)
-                descriptionIndex[v + 2] = 2;
-
-            for (int n1 = 1, n0 = 0; n1 < horzSegments + 1; n0 = n1, n1++)
-            {
-                var subMeshVertices	= new float3[vertSegments * 2];
-                for (int v = 0; v < vertSegments; v++)
-                {
-                    subMeshVertices[v               ] = vertices[(n0 * vertSegments) + v];
-                    subMeshVertices[v + vertSegments] = vertices[(n1 * vertSegments) + v];
-                }
-                
-                var brushMesh = new BrushMesh();
-                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in surfaceDefinition);
-                if (!brushMesh.Validate())
-                    return false;
-
-                brushContainer.brushMeshes[n0] = brushMesh;
-            }
-            return true;
-        }
-
-        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref float3[] vertices)
-        {
-            definition.Validate(ref surfaceDefinition);
-
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);
             var torusRadius		= (definition.outerDiameter * 0.5f) - tubeRadiusX;

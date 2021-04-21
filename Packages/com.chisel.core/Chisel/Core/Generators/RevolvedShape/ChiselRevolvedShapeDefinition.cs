@@ -1,17 +1,13 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
-using Mathf = UnityEngine.Mathf;
-using UnitySceneExtensions;
-using UnityEngine.Profiling;
-using System.Collections.Generic;
-using UnityEngine;
-using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -43,20 +39,19 @@ namespace Chisel.Core
             revolveSegments	= kDefaultRevolveSegments;
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+        public int RequiredSurfaceCount { get { return 6; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+
+        public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            curveSegments	= math.max(curveSegments, 2);
+            revolveSegments	= math.max(revolveSegments, 1);
 
-            curveSegments	= Mathf.Max(curveSegments, 2);
-            revolveSegments	= Mathf.Max(revolveSegments, 1);
-
-            totalAngle		= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
-
-            surfaceDefinition.EnsureSize(6);
+            totalAngle		= math.clamp(totalAngle, 1, 360); // TODO: constants
         }
 
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -67,8 +62,6 @@ namespace Chisel.Core
                 if (branch.Operation != operation)
                     branch.Operation = operation;
             }
-
-            Validate(ref surfaceDefinition);
 
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
             {
@@ -94,7 +87,6 @@ namespace Chisel.Core
                     this.BuildBrushes(branch, requiredSubMeshCount);
 
                 using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0,1,0), Allocator.Temp))
-                using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
                 {
                     using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                     {
@@ -121,7 +113,7 @@ namespace Chisel.Core
             }
         }
 
-
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -133,14 +125,14 @@ namespace Chisel.Core
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
             var controlPoints	= shape.controlPoints;
             
-            var shapeVertices		= new List<SegmentVertex>();
+            var shapeVertices		= new System.Collections.Generic.List<SegmentVertex>();
             BrushMeshFactory.GetPathVertices(this.shape, this.curveSegments, shapeVertices);
 
             
@@ -152,16 +144,16 @@ namespace Chisel.Core
             var zTestcolor	 = handles.GetStateColor(baseColor, false, false);
             for (int h = 1, pr = 0; h < horzSegments + 1; pr = h, h++)
             {
-                var hDegree0	= (pr * horzDegreePerSegment) + horzOffset;
-                var hDegree1	= (h  * horzDegreePerSegment) + horzOffset;
-                var rotation0	= Quaternion.AngleAxis(hDegree0, normal);
-                var rotation1	= Quaternion.AngleAxis(hDegree1, normal);
+                var hDegree0	= math.radians((pr * horzDegreePerSegment) + horzOffset);
+                var hDegree1	= math.radians((h  * horzDegreePerSegment) + horzOffset);
+                var rotation0	= quaternion.AxisAngle(normal, hDegree0);
+                var rotation1	= quaternion.AxisAngle(normal, hDegree1);
                 for (int p0 = controlPoints.Length - 1, p1 = 0; p1 < controlPoints.Length; p0 = p1, p1++)
                 {
                     var point0	= controlPoints[p0].position;
                     //var point1	= controlPoints[p1].position;
-                    var vertexA	= rotation0 * new Vector3(point0.x, point0.y, 0);
-                    var vertexB	= rotation1 * new Vector3(point0.x, point0.y, 0);
+                    var vertexA	= math.mul(rotation0, new float3(point0.x, point0.y, 0));
+                    var vertexB	= math.mul(rotation1, new float3(point0.x, point0.y, 0));
                     //var vertexC	= rotation0 * new Vector3(point1.x, 0, point1.y);
 
                     handles.color = noZTestcolor;
@@ -175,8 +167,8 @@ namespace Chisel.Core
                 {
                     var point0	= shapeVertices[v0].position;
                     var point1	= shapeVertices[v1].position;
-                    var vertexA	= rotation0 * new Vector3(point0.x, point0.y, 0);
-                    var vertexB	= rotation0 * new Vector3(point1.x, point1.y, 0);
+                    var vertexA	= math.mul(rotation0, new float3(point0.x, point0.y, 0));
+                    var vertexB	= math.mul(rotation0, new float3(point1.x, point1.y, 0));
 
                     handles.color = noZTestcolor;
                     handles.DrawLine(vertexA, vertexB, lineMode: LineMode.NoZTest, thickness: kHorzLineThickness, dashSize: kLineDash);
@@ -193,6 +185,7 @@ namespace Chisel.Core
                 handles.DrawLine(normal * 10, normal * -10, dashSize: 4.0f);
             }
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

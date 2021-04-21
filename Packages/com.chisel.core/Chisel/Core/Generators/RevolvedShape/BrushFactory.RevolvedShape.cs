@@ -144,83 +144,7 @@ namespace Chisel.Core
             }
             return matrices;
         }
-
-        public static bool GenerateRevolvedShape(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselRevolvedShapeDefinition definition)
-        { 
-            definition.Validate(ref surfaceDefinition);
-        
-            
-            var shapeVertices		= new List<SegmentVertex>();
-            BrushMeshFactory.GetPathVertices(definition.shape, definition.curveSegments, shapeVertices);
-
-            SegmentVertex[][] polygonVerticesArray;
-
-            if (!Decomposition.ConvexPartition(shapeVertices, 
-                                           out polygonVerticesArray))
-                return false;
-            
-            // TODO: splitting it before we do the composition would be better
-
-            var polygonVerticesList		= polygonVerticesArray.ToList();
-            for (int i = polygonVerticesList.Count - 1; i >= 0; i--)
-            {
-                Split2DPolygonAlongOriginXAxis(polygonVerticesList, i);
-            }
-
-            var brushMeshesList			= new List<BrushMesh>();
-            var horzSegments			= definition.revolveSegments;//horizontalSegments;
-            var horzDegreePerSegment	= definition.totalAngle / horzSegments;
-
-
-            // TODO: make this work when intersecting rotation axis
-            //			1. split polygons along rotation axis
-            //			2. if edge lies on rotation axis, make sure we don't create infinitely thin quad
-            //					collapse this quad, or prevent this from happening
-            // TODO: share this code with torus generator
-            for (int p = 0; p < polygonVerticesList.Count; p++)
-            {
-                var polygonVertices		= polygonVerticesList[p];
-                
-                var vertSegments		= polygonVertices.Length;
-                var descriptionIndex	= new int[2 + vertSegments];
-            
-                descriptionIndex[0] = 0;
-                descriptionIndex[1] = 1;
-            
-                for (int v = 0; v < vertSegments; v++)
-                {
-                    descriptionIndex[v + 2] = 2;
-                }
-                
-                var horzOffset		= definition.startAngle;
-                for (int h = 1, pr = 0; h < horzSegments + 1; pr = h, h++)
-                {
-                    var hDegree0 = math.radians((pr * horzDegreePerSegment) + horzOffset);
-                    var hDegree1 = math.radians((h  * horzDegreePerSegment) + horzOffset);
-                    var rotation0 = quaternion.AxisAngle(Vector3.forward, hDegree0);
-                    var rotation1 = quaternion.AxisAngle(Vector3.forward, hDegree1);
-                    var subMeshVertices = new Vector3[vertSegments * 2];
-                    for (int v = 0; v < vertSegments; v++)
-                    {
-                        var polygonVertex = polygonVertices[v].position;
-                        subMeshVertices[v               ] = math.mul(rotation0, new Vector3(polygonVertex.x, 0, polygonVertex.y));
-                        subMeshVertices[v + vertSegments] = math.mul(rotation1, new Vector3(polygonVertex.x, 0, polygonVertex.y));
-                    }
-
-                    var brushMesh = new BrushMesh();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in surfaceDefinition))
-                        continue;
-
-                    if (!brushMesh.Validate())
-                        return false;
-                    brushMeshesList.Add(brushMesh);
-                }
-            }
-
-            brushContainer.CopyFrom(brushMeshesList);
-            return true;
-        }
-
+        /*
         static void Split2DPolygonAlongOriginXAxis(List<SegmentVertex[]> polygons, int index, int defaultSegment = 0)
         {
             const float kEpsilon = 0.0001f;
@@ -310,5 +234,6 @@ namespace Chisel.Core
             polygons[index] = positivePolygon.ToArray();
             polygons.Insert(index, negativePolygon.ToArray());
         }
+        */
     }
 }

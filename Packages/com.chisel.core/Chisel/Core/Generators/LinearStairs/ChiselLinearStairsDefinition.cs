@@ -1,16 +1,14 @@
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using Bounds  = UnityEngine.Bounds;
-using Mathf   = UnityEngine.Mathf;
-using Vector3 = UnityEngine.Vector3;
-using UnitySceneExtensions;
-using UnityEngine.Profiling;
+using Debug = UnityEngine.Debug;
 using Unity.Collections;
-using Unity.Mathematics;
-using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Bounds  = UnityEngine.Bounds;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -124,25 +122,25 @@ namespace Chisel.Core
         public float	height { get { return bounds.size.y; } set { var size = bounds.size; size.y = value; bounds.size = size; } }
         public float	depth  { get { return bounds.size.z; } set { var size = bounds.size; size.z = value; bounds.size = size; } }
         
-        public Vector3  boundsMin { get { return new Vector3(Mathf.Min(bounds.min.x, bounds.max.x), Mathf.Min(bounds.min.y, bounds.max.y), Mathf.Min(bounds.min.z, bounds.max.z)); } }
-        public Vector3  boundsMax { get { return new Vector3(Mathf.Max(bounds.min.x, bounds.max.x), Mathf.Max(bounds.min.y, bounds.max.y), Mathf.Max(bounds.min.z, bounds.max.z)); } }
+        public Vector3  boundsMin { get { return new Vector3(math.min(bounds.min.x, bounds.max.x), math.min(bounds.min.y, bounds.max.y), math.min(bounds.min.z, bounds.max.z)); } }
+        public Vector3  boundsMax { get { return new Vector3(math.max(bounds.min.x, bounds.max.x), math.max(bounds.min.y, bounds.max.y), math.max(bounds.min.z, bounds.max.z)); } }
         
-        public float	absWidth  { get { return Mathf.Abs(bounds.size.x); } }
-        public float	absHeight { get { return Mathf.Abs(bounds.size.y); } }
-        public float	absDepth  { get { return Mathf.Abs(bounds.size.z); } }
+        public float	absWidth  { get { return math.abs(bounds.size.x); } }
+        public float	absHeight { get { return math.abs(bounds.size.y); } }
+        public float	absDepth  { get { return math.abs(bounds.size.z); } }
 
         public int StepCount
         {
             get
             {
-                return Mathf.Max(1,
-                          Mathf.FloorToInt((absHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
+                return math.max(1,
+                          (int)math.floor((absHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
             }
         }
 
         public float StepDepthOffset
         {
-            get { return Mathf.Max(0, absDepth - (StepCount * stepDepth)); }
+            get { return math.max(0, absDepth - (StepCount * stepDepth)); }
         }
 
         public void Reset()
@@ -169,60 +167,58 @@ namespace Chisel.Core
             sideHeight		= kDefaultSideHeight;
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+        public int RequiredSurfaceCount { get { return (int)SurfaceSides.TotalSides; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            var defaultRenderMaterial  = ChiselMaterialManager.DefaultWallMaterial;
+            var defaultPhysicsMaterial = ChiselMaterialManager.DefaultPhysicsMaterial;
 
-            if (surfaceDefinition.EnsureSize((int)SurfaceSides.TotalSides))
+            surfaceDefinition.surfaces[(int)SurfaceSides.Top    ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Bottom ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Left   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Right  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Front  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Back   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Tread  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
+            surfaceDefinition.surfaces[(int)SurfaceSides.Step   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);
+
+            for (int i = 0; i < surfaceDefinition.surfaces.Length; i++)
             {
-                var defaultRenderMaterial  = ChiselMaterialManager.DefaultWallMaterial;
-                var defaultPhysicsMaterial = ChiselMaterialManager.DefaultPhysicsMaterial;
-
-                surfaceDefinition.surfaces[(int)SurfaceSides.Top    ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Bottom ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Left   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Right  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Front  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Back   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultWallMaterial,  defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Tread  ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultTreadMaterial, defaultPhysicsMaterial);
-                surfaceDefinition.surfaces[(int)SurfaceSides.Step   ].brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultStepMaterial,  defaultPhysicsMaterial);
-
-                for (int i = 0; i < surfaceDefinition.surfaces.Length; i++)
-                {
-                    if (surfaceDefinition.surfaces[i].brushMaterial == null)
-                        surfaceDefinition.surfaces[i].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
-                }
+                if (surfaceDefinition.surfaces[i].brushMaterial == null)
+                    surfaceDefinition.surfaces[i].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
-
-
-            stepHeight		= Mathf.Max(kMinStepHeight, stepHeight);
-            stepDepth		= Mathf.Clamp(stepDepth, kMinStepDepth, absDepth);
-            treadHeight		= Mathf.Max(0, treadHeight);
-            nosingDepth		= Mathf.Max(0, nosingDepth);
-            nosingWidth		= Mathf.Max(0, nosingWidth);
-
-            width			= Mathf.Max(kMinWidth, absWidth) * (width < 0 ? -1 : 1);
-            depth			= Mathf.Max(stepDepth, absDepth) * (depth < 0 ? -1 : 1);
-
-            riserDepth		= Mathf.Max(kMinRiserDepth, riserDepth);
-            sideDepth		= Mathf.Max(0, sideDepth);
-            sideWidth		= Mathf.Max(kMinSideWidth, sideWidth);
-            sideHeight		= Mathf.Max(0, sideHeight);
-
-            var realHeight       = Mathf.Max(stepHeight, absHeight);
-            var maxPlateauHeight = realHeight - stepHeight;
-
-            plateauHeight		= Mathf.Clamp(plateauHeight, 0, maxPlateauHeight);
-
-            var totalSteps      = Mathf.Max(1, Mathf.FloorToInt((realHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
-            var totalStepHeight = totalSteps * stepHeight;
-
-            plateauHeight		= Mathf.Max(0, realHeight - totalStepHeight);
-            stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, absDepth / totalSteps);
         }
 
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public void Validate()
+        {
+            stepHeight		= math.max(kMinStepHeight, stepHeight);
+            stepDepth		= math.clamp(stepDepth, kMinStepDepth, absDepth);
+            treadHeight		= math.max(0, treadHeight);
+            nosingDepth		= math.max(0, nosingDepth);
+            nosingWidth		= math.max(0, nosingWidth);
+
+            width			= math.max(kMinWidth, absWidth) * (width < 0 ? -1 : 1);
+            depth			= math.max(stepDepth, absDepth) * (depth < 0 ? -1 : 1);
+
+            riserDepth		= math.max(kMinRiserDepth, riserDepth);
+            sideDepth		= math.max(0, sideDepth);
+            sideWidth		= math.max(kMinSideWidth, sideWidth);
+            sideHeight		= math.max(0, sideHeight);
+
+            var realHeight       = math.max(stepHeight, absHeight);
+            var maxPlateauHeight = realHeight - stepHeight;
+
+            plateauHeight		= math.clamp(plateauHeight, 0, maxPlateauHeight);
+
+            var totalSteps      = math.max(1, (int)math.floor((realHeight - plateauHeight + kStepSmudgeValue) / stepHeight));
+            var totalStepHeight = totalSteps * stepHeight;
+
+            plateauHeight		= math.max(0, realHeight - totalStepHeight);
+            stepDepth			= math.clamp(stepDepth, kMinStepDepth, absDepth / totalSteps);
+        }
+
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -234,15 +230,7 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            Validate(ref surfaceDefinition);
-
             if (!HasVolume)
-            {
-                this.ClearBrushes(branch);
-                return default;
-            }
-
-            if (surfaceDefinition.surfaces.Length != (int)SurfaceSides.TotalSides)
             {
                 this.ClearBrushes(branch);
                 return default;
@@ -266,36 +254,33 @@ namespace Chisel.Core
             if (branch.Count != requiredSubMeshCount)
                 this.BuildBrushes(branch, requiredSubMeshCount);
 
-            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
             {
-                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                const int subMeshOffset = 0;
+
+                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
                 {
-                    const int subMeshOffset = 0;
-
-                    if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
-                    {
-                        this.ClearBrushes(branch);
-                        return default;
-                    }
-
-                    for (int i = 0; i < requiredSubMeshCount; i++)
-                    {
-                        var brush = (CSGTreeBrush)branch[i];
-                        brush.LocalTransformation = float4x4.identity;
-                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
-                    }
+                    this.ClearBrushes(branch);
                     return default;
                 }
+
+                for (int i = 0; i < requiredSubMeshCount; i++)
+                {
+                    var brush = (CSGTreeBrush)branch[i];
+                    brush.LocalTransformation = float4x4.identity;
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                }
+                return default;
             }
         }
 
-
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
 
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             var newDefinition = this;
 
@@ -311,8 +296,8 @@ namespace Chisel.Core
                 if (handles.DoBoundsHandle(ref bounds, snappingSteps: steps))
                     newDefinition.bounds = bounds;
 
-                var min			= new Vector3(Mathf.Min(bounds.min.x, bounds.max.x), Mathf.Min(bounds.min.y, bounds.max.y), Mathf.Min(bounds.min.z, bounds.max.z));
-                var max			= new Vector3(Mathf.Max(bounds.min.x, bounds.max.x), Mathf.Max(bounds.min.y, bounds.max.y), Mathf.Max(bounds.min.z, bounds.max.z));
+                var min			= new Vector3(math.min(bounds.min.x, bounds.max.x), math.min(bounds.min.y, bounds.max.y), math.min(bounds.min.z, bounds.max.z));
+                var max			= new Vector3(math.max(bounds.min.x, bounds.max.x), math.max(bounds.min.y, bounds.max.y), math.max(bounds.min.z, bounds.max.z));
 
                 var size        = (max - min);
 
@@ -332,10 +317,10 @@ namespace Chisel.Core
 
                 if (handles.DoEdgeHandle1D(out edgeHeight, Axis.Y, pHeight0, pHeight1, snappingStep: stepHeight))
                 {
-                    var totalStepHeight = Mathf.Clamp((heightStart - edgeHeight), size.y % stepHeight, size.y);
+                    var totalStepHeight = math.clamp((heightStart - edgeHeight), size.y % stepHeight, size.y);
                     const float kSmudgeValue = 0.0001f;
                     var oldStepCount = newDefinition.StepCount;
-                    var newStepCount = Mathf.Max(1, Mathf.FloorToInt((Mathf.Abs(totalStepHeight) + kSmudgeValue) / stepHeight));
+                    var newStepCount = math.max(1, (int)math.floor((math.abs(totalStepHeight) + kSmudgeValue) / stepHeight));
 
                     newDefinition.stepDepth     = (oldStepCount * newDefinition.stepDepth) / newStepCount;
                     newDefinition.plateauHeight = size.y - (stepHeight * newStepCount);
@@ -344,7 +329,7 @@ namespace Chisel.Core
                 if (handles.DoEdgeHandle1D(out stepDepthOffset, Axis.Z, pDepth0, pDepth1, snappingStep: ChiselLinearStairsDefinition.kMinStepDepth))
                 {
                     stepDepthOffset -= depthStart;
-                    stepDepthOffset = Mathf.Clamp(stepDepthOffset, 0, this.absDepth - ChiselLinearStairsDefinition.kMinStepDepth);
+                    stepDepthOffset = math.clamp(stepDepthOffset, 0, this.absDepth - ChiselLinearStairsDefinition.kMinStepDepth);
                     newDefinition.stepDepth = ((this.absDepth - stepDepthOffset) / this.StepCount);
                 }
 
@@ -356,7 +341,7 @@ namespace Chisel.Core
                     handles.DoEdgeHandle1DOffset(out var height1vec, Axis.Y, pHeight1, pDepth1, direction, snappingStep: stepHeight);
                     var height0 = Vector3.Dot(direction, height0vec);
                     var height1 = Vector3.Dot(direction, height1vec);
-                    if (Mathf.Abs(height0) > Mathf.Abs(height1)) heightOffset = height0; else heightOffset = height1;
+                    if (math.abs(height0) > math.abs(height1)) heightOffset = height0; else heightOffset = height1;
                 }
                 if (prevModified != handles.modified)
                 {
@@ -366,6 +351,7 @@ namespace Chisel.Core
             if (handles.modified)
                 this = newDefinition;
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

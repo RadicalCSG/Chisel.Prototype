@@ -8,6 +8,7 @@ using UnityEngine.Profiling;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
+using Unity.Collections;
 
 namespace Chisel.Components
 {
@@ -19,6 +20,7 @@ namespace Chisel.Components
 
         public DefinitionType definition = new DefinitionType();
 
+        public ChiselSurfaceDefinition surfaceDefinition;
 
         public override ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) { return surfaceDefinition.GetBrushMaterial(descriptionIndex); }
         public override SurfaceDescription GetSurfaceDescription(int descriptionIndex) { return surfaceDefinition.GetSurfaceDescription(descriptionIndex); }
@@ -26,11 +28,32 @@ namespace Chisel.Components
         public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return surfaceDefinition.GetSurfaceUV0(descriptionIndex); }
         public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { surfaceDefinition.SetSurfaceUV0(descriptionIndex, uv0); }
 
-        protected override void OnResetInternal()           { definition.Reset(); surfaceDefinition?.Reset(); base.OnResetInternal(); }
-        protected override void OnValidateInternal()        { definition.Validate(ref surfaceDefinition); base.OnValidateInternal(); }
-        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID) 
+        protected override void OnResetInternal()
         { 
-            return definition.Generate(ref surfaceDefinition, ref node, userID, operation); 
+            definition.Reset(); 
+            surfaceDefinition?.Reset(); 
+            base.OnResetInternal(); 
+        }
+
+        protected override void OnValidateInternal()
+        {
+            definition.Validate();
+            if (surfaceDefinition == null)
+            {
+                surfaceDefinition = new ChiselSurfaceDefinition();
+                surfaceDefinition.Reset();
+            }
+            if (surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount))
+                definition.UpdateSurfaces(ref surfaceDefinition);
+            base.OnValidateInternal(); 
+        }
+        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        {
+            OnValidateInternal();
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob))
+            {
+                return definition.Generate(surfaceDefinitionBlob, ref node, userID, operation);
+            }
         }
     }
 
@@ -38,8 +61,6 @@ namespace Chisel.Components
     {
         // This ensures names remain identical, or a compile error occurs.
         public const string kOperationFieldName         = nameof(operation);
-
-        public ChiselSurfaceDefinition surfaceDefinition;
 
         [HideInInspector] CSGTreeNode Node = default;
 

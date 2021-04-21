@@ -1,13 +1,13 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
-using Mathf = UnityEngine.Mathf;
-using UnityEngine.Profiling;
-using Unity.Mathematics;
-using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -41,9 +41,9 @@ namespace Chisel.Core
         public int                  topSides;
         public int                  bottomSides;
         
-        public int					sides				{ get { return (haveCenter ? 2 : 0) + Mathf.Max(topSides, 1) + Mathf.Max(bottomSides, 1); } }
+        public int					sides				{ get { return (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1); } }
         public int					firstTopSide		{ get { return 0; } }
-        public int					lastTopSide			{ get { return Mathf.Max(topSides, 1); } }
+        public int					lastTopSide			{ get { return math.max(topSides, 1); } }
         public int					firstBottomSide		{ get { return lastTopSide + 1; } }
         public int					lastBottomSide		{ get { return sides - 1; } }
 
@@ -69,28 +69,28 @@ namespace Chisel.Core
             bottomSides			= SidesVertices;
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+        int Sides { get { return 2 + math.max(topSides, 1) + math.max(bottomSides, 1); } }
+
+        public int RequiredSurfaceCount { get { return 2 + Sides; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+
+        public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
-
-            topLength			= Mathf.Max(topLength,    0);
-            bottomLength		= Mathf.Max(bottomLength, 0);
-            length				= Mathf.Max(Mathf.Abs(length), (haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0));
-            length				= Mathf.Max(Mathf.Abs(length), kMinLength);
+            topLength	    = math.max(topLength,    0);
+            bottomLength	= math.max(bottomLength, 0);
+            length			= math.max(math.abs(length), (haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0));
+            length			= math.max(math.abs(length), kMinLength);
             
-            height				= Mathf.Max(Mathf.Abs(height), kMinHeight);
-            width			    = Mathf.Max(Mathf.Abs(width), kMinDiameter);
+            height			= math.max(math.abs(height), kMinHeight);
+            width			= math.max(math.abs(width), kMinDiameter);
             
-            topSides			= Mathf.Max(topSides,	 1);
-            bottomSides			= Mathf.Max(bottomSides, 1);
-
-            var sides			= 2 + Mathf.Max(topSides,1) + Mathf.Max(bottomSides,1);
-            surfaceDefinition.EnsureSize(2 + sides);
+            topSides		= math.max(topSides,	 1);
+            bottomSides		= math.max(bottomSides, 1);
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -102,25 +102,20 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            if (!BrushMeshFactory.GenerateStadium(width, height, length,
+                                                    topLength, topSides,
+                                                    bottomLength, bottomSides,
+                                                    in surfaceDefinitionBlob, out var brushMesh, Allocator.Persistent))
             {
-                Validate(ref surfaceDefinition);
-
-                if (!BrushMeshFactory.GenerateStadium(width, height, length,
-                                                      topLength, topSides,
-                                                      bottomLength, bottomSides,
-                                                      in surfaceDefinitionBlob, out var brushMesh, Allocator.Persistent))
-                {
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return default;
-                }
-
-                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
                 return default;
             }
+
+            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            return default;
         }
 
-
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -135,8 +130,8 @@ namespace Chisel.Core
         static void DrawOutline(IChiselHandleRenderer renderer, ChiselStadiumDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
             var sides				= definition.sides;
-            var topSides			= Mathf.Max(definition.topSides, 1) + 1;
-            var bottomSides			= Mathf.Max(definition.bottomSides, 1) + 1;
+            var topSides			= math.max(definition.topSides, 1) + 1;
+            var bottomSides			= math.max(definition.bottomSides, 1) + 1;
 
             var haveRoundedTop		= definition.haveRoundedTop;
             var haveRoundedBottom	= definition.haveRoundedBottom;
@@ -171,7 +166,7 @@ namespace Chisel.Core
             //renderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
         }
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             var baseColor       = handles.color;
             var upVector		= Vector3.up;
@@ -179,7 +174,7 @@ namespace Chisel.Core
             var forwardVector	= Vector3.forward;
 
             Vector3[] vertices = null;
-            if (BrushMeshFactory.GenerateStadiumVertices(this, ref surfaceDefinition, ref vertices))
+            if (BrushMeshFactory.GenerateStadiumVertices(this, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
@@ -308,11 +303,12 @@ namespace Chisel.Core
             if (handles.modified)
             {
                 this.height		= topPoint.y - bottomPoint.y;
-                this.length		= Mathf.Max(0, frontPoint.z - backPoint.z);
+                this.length		= math.max(0, frontPoint.z - backPoint.z);
                 this.width	= leftPoint.x - rightPoint.x;
                 // TODO: handle sizing in some directions (needs to modify transformation?)
             }
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

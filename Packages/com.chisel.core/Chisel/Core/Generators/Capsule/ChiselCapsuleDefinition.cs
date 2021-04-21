@@ -1,15 +1,13 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
-using Mathf = UnityEngine.Mathf;
-using UnityEngine.Profiling;
-using Unity.Burst;
-using System.Runtime.CompilerServices;
-using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -49,13 +47,13 @@ namespace Chisel.Core
             public bool	        HaveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
             public bool	        HaveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
             public bool	        HaveCylinder		{ get { return CylinderHeight > kHeightEpsilon; } }
-            public float        CylinderHeight		{ get { return Mathf.Abs(height - (bottomHeight + topHeight)); } }
+            public float        CylinderHeight		{ get { return math.abs(height - (bottomHeight + topHeight)); } }
 
 
             internal int		BottomRingCount		{ get { return HaveRoundedBottom ? bottomSegments : 1; } }
             internal int		TopRingCount		{ get { return HaveRoundedTop    ? topSegments    : 1; } }
             internal int		RingCount			{ get { return BottomRingCount + TopRingCount - (HaveCylinder ? 0 : 1); } }
-            internal int		Segments            { get { return Mathf.Max(1, RingCount); } }
+            internal int		Segments            { get { return math.max(1, RingCount); } }
 
 
             // TODO: store somewhere else
@@ -77,6 +75,13 @@ namespace Chisel.Core
             internal int		BottomVertexOffset	{ get { return ExtraVertexCount + ((RingCount - BottomRingCount) * sides); } }
         }
 
+        public Settings settings;
+
+
+        //[NamedItems(overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        #region Reset
         static readonly Settings kDefaultSettings = new Settings
         {
             height				= kDefaultHeight,
@@ -92,39 +97,36 @@ namespace Chisel.Core
             bottomSegments		= kDefaultBottomSegments
         };
 
-        public Settings settings;
-
-
-        //[NamedItems(overflow = "Side {0}")]
-        //public ChiselSurfaceDefinition  surfaceDefinition;
-
         public void Reset()
         {
             settings = kDefaultSettings;
         }
+        #endregion
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+
+        #region Validate
+        public int RequiredSurfaceCount { get { return 2 + settings.sides; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+
+        public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            settings.topHeight		= math.max(settings.topHeight, 0);
+            settings.bottomHeight	= math.max(settings.bottomHeight, 0);
+            settings.height			= math.max(settings.topHeight + settings.bottomHeight, math.abs(settings.height)) * (settings.height < 0 ? -1 : 1);
 
-            settings.topHeight		= Mathf.Max(settings.topHeight, 0);
-            settings.bottomHeight	= Mathf.Max(settings.bottomHeight, 0);
-            settings.height			= Mathf.Max(settings.topHeight + settings.bottomHeight, Mathf.Abs(settings.height)) * (settings.height < 0 ? -1 : 1);
+            settings.diameterX		= math.max(math.abs(settings.diameterX), kMinDiameter);
+            settings.diameterZ		= math.max(math.abs(settings.diameterZ), kMinDiameter);
 
-            settings.diameterX		= Mathf.Max(Mathf.Abs(settings.diameterX), kMinDiameter);
-            settings.diameterZ		= Mathf.Max(Mathf.Abs(settings.diameterZ), kMinDiameter);
-
-            settings.topSegments	= Mathf.Max(settings.topSegments, 0);
-            settings.bottomSegments	= Mathf.Max(settings.bottomSegments, 0);
-            settings.sides			= Mathf.Max(settings.sides, 3);
-            
-            surfaceDefinition.EnsureSize(2 + settings.sides);
+            settings.topSegments	= math.max(settings.topSegments, 0);
+            settings.bottomSegments	= math.max(settings.bottomSegments, 0);
+            settings.sides			= math.max(settings.sides, 3);
         }
+        #endregion
 
 
         [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -136,24 +138,21 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            if (!BrushMeshFactory.GenerateCapsule(in settings,
+                                                    in surfaceDefinitionBlob,
+                                                    out var brushMesh,
+                                                    Allocator.Persistent))
             {
-                Validate(ref surfaceDefinition);
-                if (!BrushMeshFactory.GenerateCapsule(in settings,
-                                                      in surfaceDefinitionBlob,
-                                                      out var brushMesh,
-                                                      Allocator.Persistent))
-                {
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return default;
-                }
-
-                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                return default;
             }
+
+            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             return default;
         }
 
 
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -215,12 +214,12 @@ namespace Chisel.Core
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
         
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
-            if (BrushMeshFactory.GenerateCapsuleVertices(ref this, ref surfaceDefinition, ref vertices))
+            if (BrushMeshFactory.GenerateCapsuleVertices(ref this, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
@@ -234,7 +233,7 @@ namespace Chisel.Core
             var topPoint	= normal * (settings.offsetY + settings.height);
             var bottomPoint = normal * (settings.offsetY);
             var middlePoint	= normal * (settings.offsetY + (settings.height * 0.5f));
-            var radius2D	= new Vector2(settings.diameterX, settings.diameterZ) * 0.5f;
+            var radius2D	= new float2(settings.diameterX, settings.diameterZ) * 0.5f;
 
             var topHeight       = settings.topHeight;
             var bottomHeight    = settings.bottomHeight;
@@ -263,7 +262,7 @@ namespace Chisel.Core
                         var to = vertices[i + settings.TopVertexOffset];
 
                         if (handles.DoEdgeHandle1DOffset(out var edgeOffset, UnitySceneExtensions.Axis.Y, from, to, renderLine: false))
-                            topHeight = Mathf.Clamp(topHeight - edgeOffset, 0, maxTopHeight);
+                            topHeight = math.clamp(topHeight - edgeOffset, 0, maxTopHeight);
                         topLoopHasFocus = topLoopHasFocus || handles.lastHandleHadFocus;
                     }
 
@@ -294,7 +293,7 @@ namespace Chisel.Core
                         var to      = vertices[i + settings.BottomVertexOffset];
 
                         if (handles.DoEdgeHandle1DOffset(out var edgeOffset, UnitySceneExtensions.Axis.Y, from, to, renderLine: false))
-                            bottomHeight = Mathf.Clamp(bottomHeight + edgeOffset, 0, maxBottomHeight);
+                            bottomHeight = math.clamp(bottomHeight + edgeOffset, 0, maxBottomHeight);
                         bottomLoopHasFocus = bottomLoopHasFocus || handles.lastHandleHadFocus;
                     }
 
@@ -325,6 +324,7 @@ namespace Chisel.Core
                 // TODO: handle sizing down (needs to modify transformation?)
             }
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

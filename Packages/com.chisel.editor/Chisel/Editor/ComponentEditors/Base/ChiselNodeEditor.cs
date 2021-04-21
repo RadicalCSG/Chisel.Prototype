@@ -683,10 +683,9 @@ namespace Chisel.Editors
 
         // Note: name is the same for every generator, but is hidden inside a generic class, hence the use of ChiselBrushDefinition
         const string kDefinitionName = ChiselDefinedGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
-
+        
         List<SerializedProperty> children = new List<SerializedProperty>();
         SerializedProperty definitionSerializedProperty;
-        SerializedProperty surfaceFefinitionSerializedProperty;
         protected void InitDefaultInspector()
         {
             ResetDefaultInspector();
@@ -698,13 +697,10 @@ namespace Chisel.Editors
                 {
                     if (iterator.name == kDefinitionName)
                         definitionSerializedProperty = iterator.Copy();
-                    if (iterator.name == nameof(ChiselGeneratorComponent.surfaceDefinition))
-                        surfaceFefinitionSerializedProperty = iterator.Copy();
                 } while (iterator.NextVisible(false));
             }
 
-            if (definitionSerializedProperty == null ||
-                surfaceFefinitionSerializedProperty == null)
+            if (definitionSerializedProperty == null)
                 return;
 
             iterator = definitionSerializedProperty.Copy();
@@ -715,7 +711,6 @@ namespace Chisel.Editors
                     children.Add(iterator.Copy());
                 } while (iterator.NextVisible(false));
             }
-            children.Add(surfaceFefinitionSerializedProperty);
         }
 
         protected void OnDefaultInspector()
@@ -797,7 +792,7 @@ namespace Chisel.Editors
         protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
-        protected abstract void OnScene(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles, T generator);
+        protected abstract void OnScene(IChiselHandles handles, T generator);
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
@@ -1048,7 +1043,7 @@ namespace Chisel.Editors
                         EditorGUI.BeginChangeCheck();
                         try
                         {
-                            OnScene(ref generator.surfaceDefinition, handles, generator);
+                            OnScene(handles, generator);
                         }
                         finally
                         {

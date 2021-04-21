@@ -376,39 +376,6 @@ namespace Chisel.Core
             }
         }
 
-        public static bool CreateBox(ref BrushMesh brushMesh, Vector3 min, Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            if (surfaceDefinition == null)
-                return false;
-
-            var surfaces = surfaceDefinition.surfaces;
-            if (surfaces == null)
-                return false;
-
-            if (surfaces.Length < 6)
-                return false;
-
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
-            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
-            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
-
-            BrushMeshFactory.CreateBoxVertices(min, max, ref brushMesh.vertices);
-
-            CreateBoxPolygons(in surfaceDefinition, ref brushMesh.polygons);
-            if (brushMesh.halfEdges != null &&
-                brushMesh.halfEdges.Length == boxHalfEdges.Length)
-            {
-                boxHalfEdges.CopyTo(brushMesh.halfEdges, 0);
-            } else
-                brushMesh.halfEdges = boxHalfEdges.ToArray();
-            brushMesh.UpdateHalfEdgePolygonIndices();
-            brushMesh.CalculatePlanes();
-            return true;
-        }
-        
         public static void CreateBoxVertices(Vector3 min, Vector3 max, ref Vector3[] vertices)
         {
             if (vertices == null ||
@@ -424,23 +391,6 @@ namespace Chisel.Core
             vertices[5] = new Vector3(max.x, min.y, min.z); // 5
             vertices[6] = new Vector3(max.x, min.y, max.z); // 6
             vertices[7] = new Vector3(min.x, min.y, max.z); // 7
-        }
-
-        public static void CreateBoxVertices(Vector3 min, Vector3 max, ref float3[] vertices)
-        {
-            if (vertices == null ||
-                vertices.Length != 8)
-                vertices = new float3[8];
-
-            vertices[0] = new float3(min.x, max.y, min.z); // 0
-            vertices[1] = new float3(max.x, max.y, min.z); // 1
-            vertices[2] = new float3(max.x, max.y, max.z); // 2
-            vertices[3] = new float3(min.x, max.y, max.z); // 3
-
-            vertices[4] = new float3(min.x, min.y, min.z); // 4  
-            vertices[5] = new float3(max.x, min.y, min.z); // 5
-            vertices[6] = new float3(max.x, min.y, max.z); // 6
-            vertices[7] = new float3(min.x, min.y, max.z); // 7
         }
 
         // TODO: do not use this version unless we have no choice ..

@@ -1,21 +1,13 @@
 using System;
-using System.Linq;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
-using Quaternion = UnityEngine.Quaternion;
-using Matrix4x4 = UnityEngine.Matrix4x4;
-using Mathf = UnityEngine.Mathf;
-using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
-using UnitySceneExtensions;
-using System.Collections.Generic;
-using UnityEngine.Profiling;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -41,19 +33,16 @@ namespace Chisel.Core
             shape			= new Curve2D(kDefaultShape);
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
-        {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
-            
-            if (shape == null)
-                shape = new Curve2D(kDefaultShape);
+        public int RequiredSurfaceCount { get { return 2 + shape.controlPoints.Length; } }
 
-            int sides = shape.controlPoints.Length;
-            surfaceDefinition.EnsureSize(2 + sides);
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+
+        public void Validate()
+        {
+            shape ??= new Curve2D(kDefaultShape);
         }
 
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -64,8 +53,6 @@ namespace Chisel.Core
                 if (branch.Operation != operation)
                     branch.Operation = operation;
             }
-
-            Validate(ref surfaceDefinition);
 
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
             {
@@ -92,7 +79,6 @@ namespace Chisel.Core
                 // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
                 using (var pathBlob = ChiselPathBlob.Convert(path, Allocator.Temp))
                 using (var pathMatrices = pathBlob.Value.GetMatrices(Allocator.Temp))
-                using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
                 {
                     using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                     {
@@ -120,6 +106,7 @@ namespace Chisel.Core
         }
 
 
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -131,7 +118,7 @@ namespace Chisel.Core
         const float kCapLineThickness			= 1.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;            
             var noZTestcolor	= handles.GetStateColor(baseColor, false, true);
@@ -216,6 +203,7 @@ namespace Chisel.Core
 
             // TODO: draw curved path
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

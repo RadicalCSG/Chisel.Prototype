@@ -17,11 +17,6 @@ namespace Chisel.Components
             get { return definition.brushOutline; }
             set { if (value == definition.brushOutline) return; definition.brushOutline = value; OnValidateInternal(); }
         }
-        public ChiselSurfaceDefinition Surfaces
-        {
-            get { return surfaceDefinition; }
-            set { if (value == surfaceDefinition) return; surfaceDefinition = value; OnValidateInternal(); }
-        }
         #endregion
 
         #region HasValidState

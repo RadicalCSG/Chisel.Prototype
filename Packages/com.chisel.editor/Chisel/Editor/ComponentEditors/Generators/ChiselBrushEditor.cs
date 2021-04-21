@@ -51,7 +51,7 @@ namespace Chisel.Editors
                 generator.OnValidate();
         }
 
-        protected override void OnScene(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles, ChiselBrush generator)
+        protected override void OnScene(IChiselHandles handles, ChiselBrush generator)
         {
             if (!activeOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
                 editableOutline == null)

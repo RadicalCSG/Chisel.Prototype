@@ -1,15 +1,12 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector3 = UnityEngine.Vector3;
 using Debug = UnityEngine.Debug;
-using Mathf = UnityEngine.Mathf;
-using UnitySceneExtensions;
-using UnityEngine.Profiling;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
@@ -34,13 +31,20 @@ namespace Chisel.Core
             stairs.Reset();
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+        public int RequiredSurfaceCount { get { return stairs.RequiredSurfaceCount; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
-            curveSegments = Mathf.Max(curveSegments, 2);
-            stairs.Validate(ref surfaceDefinition);
+            stairs.UpdateSurfaces(ref surfaceDefinition);
+        }
+            
+        public void Validate()
+        {
+            curveSegments = math.max(curveSegments, 2);
+            stairs.Validate();
         }
 
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -50,15 +54,6 @@ namespace Chisel.Core
             {
                 if (branch.Operation != operation)
                     branch.Operation = operation;
-            }
-
-            Validate(ref surfaceDefinition);
-
-
-            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
-            {
-                this.ClearBrushes(branch);
-                return default;
             }
 
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
@@ -89,36 +84,33 @@ namespace Chisel.Core
                     if (branch.Count != requiredSubMeshCount)
                         this.BuildBrushes(branch, requiredSubMeshCount);
 
-                    using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                     {
-                        using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                        if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes, in shapeVertices,
+                                                                    shape.closed, minMaxAABB,
+                                                                    stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
+                                                                    stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
+                                                                    stairs.leftSide, stairs.rightSide,
+                                                                    stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
+                                                                    in surfaceDefinitionBlob, Allocator.Persistent))
                         {
-                            if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes, in shapeVertices,
-                                                                       shape.closed, minMaxAABB,
-                                                                       stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
-                                                                       stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
-                                                                       stairs.leftSide, stairs.rightSide,
-                                                                       stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
-                                                                       in surfaceDefinitionBlob, Allocator.Persistent))
-                            {
-                                this.ClearBrushes(branch);
-                                return default;
-                            }
-
-                            for (int i = 0; i < requiredSubMeshCount; i++)
-                            {
-                                var brush = (CSGTreeBrush)branch[i];
-                                brush.LocalTransformation = float4x4.identity;
-                                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
-                            }
+                            this.ClearBrushes(branch);
                             return default;
                         }
+
+                        for (int i = 0; i < requiredSubMeshCount; i++)
+                        {
+                            var brush = (CSGTreeBrush)branch[i];
+                            brush.LocalTransformation = float4x4.identity;
+                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                        }
+                        return default;
                     }
                 }
             }
         }
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             handles.DoShapeHandle(ref shape);
         }

@@ -1,14 +1,13 @@
 using System;
-using Vector3 = UnityEngine.Vector3;
-using Quaternion = UnityEngine.Quaternion;
-using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
-using UnitySceneExtensions;
-using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
@@ -30,6 +29,7 @@ namespace Chisel.Core
     {
         public const string kNodeTypeName = "Cylinder";
 
+        #region Definition
         public CylinderShapeType type;
         public bool     isEllipsoid;
         public bool     fitToBounds;
@@ -64,18 +64,14 @@ namespace Chisel.Core
         [DistanceValue] public float height;
         [DistanceValue] public float bottomOffset;
 
-        // TODO: show this in scene somehow
-        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
-        //public ChiselSurfaceDefinition surfaceDefinition;
-
-
         [UnityEngine.HideInInspector]
         public uint smoothingGroup; // TODO: show when we actually have normal smoothing + have custom property drawer for this
 
         [UnityEngine.HideInInspector, AngleValue]
         public float rotation;      // TODO: just get rid of this
+        #endregion
 
-
+        #region Properties
         public float TopDiameterX
         {
             get { return topDiameterX; }
@@ -206,6 +202,12 @@ namespace Chisel.Core
                 }
             }
         }
+        #endregion
+
+        // TODO: show this in scene somehow
+        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition surfaceDefinition;
+
 
         public void Reset()
         {
@@ -225,46 +227,45 @@ namespace Chisel.Core
             type = CylinderShapeType.Cylinder;
         }
 
-        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
+        public int RequiredSurfaceCount { get { return 2 + sides; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            // Top plane
+            surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
 
-            topDiameterX = Mathf.Abs(topDiameterX);
-            topDiameterZ = Mathf.Abs(topDiameterZ);
-            bottomDiameterX = Mathf.Abs(bottomDiameterX);
-            bottomDiameterZ = Mathf.Abs(bottomDiameterZ);
+            // Bottom plane
+            surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
 
-            sides = Mathf.Max(3, sides);
+            float radius = topDiameterX * 0.5f;
+            float angle = (360.0f / sides);
+            float sideLength = (2 * math.sin(math.radians(angle / 2.0f))) * radius;
 
-            if (surfaceDefinition.EnsureSize(2 + sides))
+            // Side planes
+            for (int i = 2; i < 2 + sides; i++)
             {
-                // Top plane
-                surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
-
-                // Bottom plane
-                surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
-                
-                float radius = topDiameterX * 0.5f;
-                float angle = (360.0f / sides);
-                float sideLength = (2 * Mathf.Sin((angle / 2.0f) * Mathf.Deg2Rad)) * radius;
-
-                // Side planes
-                for (int i = 2; i < 2 + sides; i++)
-                {
-                    var uv0 = UVMatrix.identity;
-                    uv0.U.w = ((i - 2) + 0.5f) * sideLength;
-                    // TODO: align with bottom
-                    //uv0.V.w = 0.5f;
-                    surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
-                    surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
-                }
+                var uv0 = UVMatrix.identity;
+                uv0.U.w = ((i - 2) + 0.5f) * sideLength;
+                // TODO: align with bottom
+                //uv0.V.w = 0.5f;
+                surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
+                surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
             }
+        }
+
+        public void Validate()
+        {
+            topDiameterX = math.abs(topDiameterX);
+            topDiameterZ = math.abs(topDiameterZ);
+            bottomDiameterX = math.abs(bottomDiameterX);
+            bottomDiameterZ = math.abs(bottomDiameterZ);
+
+            sides = math.max(3, sides);
         }
 
 
         [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -276,43 +277,38 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
+            var topHeight       = height + bottomOffset;
+            var bottomHeight    = bottomOffset;
+
+            float2 topDiameter;
+            const Allocator allocator = Allocator.Persistent;
+            switch (type)
             {
-                Validate(ref surfaceDefinition);
+                case CylinderShapeType.ConicalFrustum:  topDiameter = new float2(topDiameterX, topDiameterZ); break;
+                case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
+                case CylinderShapeType.Cone:            topDiameter = float2.zero; break; 
+                default: throw new NotImplementedException();
+            }
 
-                var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
-                var topHeight       = height + bottomOffset;
-                var bottomHeight    = bottomOffset;
+            if (!isEllipsoid)
+            {
+                topDiameter.y    = topDiameter.x;
+                bottomDiameter.y = bottomDiameter.x;
+            }
 
-                float2 topDiameter;
-                const Allocator allocator = Allocator.Persistent;
-                switch (type)
-                {
-                    case CylinderShapeType.ConicalFrustum:  topDiameter = new float2(topDiameterX, topDiameterZ); break;
-                    case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
-                    case CylinderShapeType.Cone:            topDiameter = float2.zero; break; 
-                    default: throw new NotImplementedException();
-                }
-
-                if (!isEllipsoid)
-                {
-                    topDiameter.y    = topDiameter.x;
-                    bottomDiameter.y = bottomDiameter.x;
-                }
-
-                if (surfaceDefinition.surfaces.Length != sides + 2 ||
-                    !BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter, topHeight, bottomDiameter, bottomHeight, rotation, sides, fitToBounds, in surfaceDefinitionBlob, out var brushMesh, allocator))
-                {
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return default;
-                }
-
-                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter, topHeight, bottomDiameter, bottomHeight, rotation, sides, fitToBounds, in surfaceDefinitionBlob, out var brushMesh, allocator))
+            {
+                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
                 return default;
             }
+
+            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            return default;
         }
 
 
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -363,14 +359,14 @@ namespace Chisel.Core
                     handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
                 }
 
-                diameterX = Mathf.Abs(diameterX);
-                diameterZ = Mathf.Abs(diameterZ);
+                diameterX = math.abs(diameterX);
+                diameterZ = math.abs(diameterZ);
             } else
             {
                 Debug.Assert(radiusHandles.Length == 1);
 
                 handles.DoDistanceHandle(ref diameterX, center, up, radiusHandles[0]); // left
-                diameterX       = Mathf.Abs(diameterX);
+                diameterX       = math.abs(diameterX);
                 var radiusX     = diameterX * 0.5f;
 
                 if (handles.lastHandleHadFocus)
@@ -443,11 +439,11 @@ namespace Chisel.Core
             
                 topY            = (definition.height + definition.bottomOffset);
                 bottomY         = definition.bottomOffset;
-                var rotate		= Quaternion.AngleAxis(definition.rotation, Vector3.up);
-                topXVector		= rotate * Vector3.right   * tempTopDiameterX * 0.5f;
-                topZVector      = rotate * Vector3.forward * tempTopDiameterZ * 0.5f;
-                bottomXVector   = rotate * Vector3.right   * tempBottomDiameterX * 0.5f;
-                bottomZVector   = rotate * Vector3.forward * tempBottomDiameterZ * 0.5f;
+                var rotate		= quaternion.AxisAngle(new float3(0,1,0), math.radians(definition.rotation));
+                topXVector		= math.mul(rotate, new float3(1, 0, 0)) * tempTopDiameterX * 0.5f;
+                topZVector      = math.mul(rotate, new float3(0, 0, 1)) * tempTopDiameterZ * 0.5f;
+                bottomXVector   = math.mul(rotate, new float3(1, 0, 0)) * tempBottomDiameterX * 0.5f;
+                bottomZVector   = math.mul(rotate, new float3(0, 0, 1)) * tempBottomDiameterZ * 0.5f;
                 normal = Vector3.up;
                 if (topY < bottomY) normal = -Vector3.up; else normal = Vector3.up;
                 topPoint        = normal * topY;
@@ -509,53 +505,6 @@ namespace Chisel.Core
                     }
                     prevDot = currDot;
                 }
-
-    #if false
-                {
-                    var pointC      = (Vector3.right * (definition.topDiameterX * 0.5f)) + (Vector3.up * (definition.height + definition.bottomOffset));
-                    var pointD      = (Vector3.right * (definition.bottomDiameterX * 0.5f)) + (Vector3.up * definition.bottomOffset);
-                    //var deltar      = (pointC - pointD).normalized;
-                    //var normala     = -Vector3.Cross(Vector3.forward, deltar).normalized;
-
-
-                    var DT = (cameraPosition - topPoint);
-                    var DB = (cameraPosition - bottomPoint);
-                    var DmT = DT.magnitude;
-                    var DmB = DB.magnitude;
-                    //var Dv = D / Dm;
-
-                    var RmT = definition.topDiameterX * 0.5f;
-                    var RmB = definition.bottomDiameterX * 0.5f;
-
-                    var cosAT = RmT / DmT;
-                    var cosAB = RmB / DmB;
-                    var AT = Mathf.Acos(cosAT) * Mathf.Rad2Deg;
-                    var AB = Mathf.Acos(cosAB) * Mathf.Rad2Deg;
-                    var RvT = (Quaternion.AngleAxis(AT, Vector3.up) * DT).normalized;
-                    var RvB = (Quaternion.AngleAxis(AB, Vector3.up) * DB).normalized;
-                    //var R = Rv * Rm;
-
-                    var angleT = Vector3.SignedAngle(Vector3.right, RvT, Vector3.up);
-                    var angleB = Vector3.SignedAngle(Vector3.right, RvB, Vector3.up);
-
-                    var arotationT  = Quaternion.AngleAxis(angleT, Vector3.up);
-                    var arotationB  = Quaternion.AngleAxis(angleB, Vector3.up);
-                    var ptA = arotationT * pointC;
-                    var ptB = arotationB * pointD;
-                    var prevCol = handles.color;
-                    handles.color = UnityEngine.Color.red;
-                    handles.DrawLine(bottomPoint, bottomPoint + Vector3.right);
-                    //handles.DrawLine(bottomPoint, bottomPoint + Vector3.forward);
-                    //handles.DrawLine(bottomPoint, bottomPoint + normala);
-                    //handles.DrawLine(bottomPoint, bottomPoint + deltar);
-                    //handles.DrawLine(bottomPoint, bottomPoint + R);
-                    handles.DrawLine(bottomPoint, bottomPoint + RvT);
-                    handles.DrawLine(bottomPoint, bottomPoint + RvB);
-                    //handles.DrawLine(bottomPoint, bottomPoint + desired);
-                    handles.DrawLine(ptA, ptB);
-                    handles.color = prevCol;
-                }
-    #endif
 
 
                 /*/
@@ -693,7 +642,7 @@ namespace Chisel.Core
             }
         }
 
-        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
+        public void OnEdit(IChiselHandles handles)
         {
             // Store our allocated handles in generatorState to avoid reallocating them every frame
             var cylinderHandles = handles.generatorState as CylinderHandles;
@@ -718,7 +667,7 @@ namespace Chisel.Core
                 handles.DoSlider1DHandle(ref cylinderHandles.topPoint,     cylinderHandles.normal, cylinderHandles.topHandles);
                 haveFocus = haveFocus || handles.lastHandleHadFocus;
                 if (haveFocus)
-                    handles.RenderDistanceMeasurement(cylinderHandles.topPoint, cylinderHandles.bottomPoint, Mathf.Abs(height));
+                    handles.RenderDistanceMeasurement(cylinderHandles.topPoint, cylinderHandles.bottomPoint, math.abs(height));
             }
             if (prevModified != handles.modified)
             {
@@ -754,6 +703,7 @@ namespace Chisel.Core
                 }
             }
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

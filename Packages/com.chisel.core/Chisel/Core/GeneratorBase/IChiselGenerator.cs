@@ -5,16 +5,19 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
+using Unity.Entities;
 
 namespace Chisel.Core
 {
     public interface IChiselGenerator
     {
+        int RequiredSurfaceCount { get; }
         void Reset();
-        void Validate(ref ChiselSurfaceDefinition surfaceDefinition);
-        void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles);
+        void Validate();
+        void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
+        void OnEdit(IChiselHandles handles);
         void OnMessages(IChiselMessages messages);
-        JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation);
+        JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation);
     }
     
     public static class IChiselGeneratorExtensions
