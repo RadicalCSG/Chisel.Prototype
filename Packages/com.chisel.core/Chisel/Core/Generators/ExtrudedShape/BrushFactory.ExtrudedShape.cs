@@ -185,9 +185,9 @@ namespace Chisel.Core
         }
 
         static List<BrushMesh>      brushMeshesList = new List<BrushMesh>();
-        public static bool GenerateExtrudedShape(ref ChiselBrushContainer brushContainer, ref ChiselExtrudedShapeDefinition definition)
+        public static bool GenerateExtrudedShape(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselExtrudedShapeDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
             ref readonly var shape               = ref definition.shape;
             int              curveSegments       = definition.curveSegments;
@@ -280,7 +280,7 @@ namespace Chisel.Core
                                 continue;
                         }
 
-                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, range.Length, segmentIndices, 0, 1, vertices, definition.surfaceDefinition);
+                        BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, range.Length, segmentIndices, 0, 1, vertices, surfaceDefinition);
                         brushMeshesList.Add(brushMesh);
                         brushMeshIndex++;
                     }

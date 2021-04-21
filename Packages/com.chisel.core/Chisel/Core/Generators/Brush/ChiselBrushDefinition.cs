@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine.Profiling;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -21,9 +22,8 @@ namespace Chisel.Core
         [HideInInspector]
         public BrushMesh                brushOutline;
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        //[NamedItems(overflow = "Surface {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
 
         [HideInInspector]
@@ -49,7 +49,7 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             brushOutline = null;
             if (surfaceDefinition != null) surfaceDefinition.Reset();
@@ -64,7 +64,7 @@ namespace Chisel.Core
             return brushOutline.SplitNonPlanarPolygons();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (!IsValid)
                 return;
@@ -114,6 +114,7 @@ namespace Chisel.Core
             }
         }
 
+        /*
         public bool Generate(ref ChiselBrushContainer brushContainer)
         {
             Profiler.BeginSample("GenerateBrush");
@@ -157,10 +158,10 @@ namespace Chisel.Core
             {
                 Profiler.EndSample();
             }
-        }
+        }*/
 
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!IsValid)
@@ -168,10 +169,10 @@ namespace Chisel.Core
                 if (brush.Valid)
                     brush.Destroy();
                 node = default;
-                return false;
+                return default;
             }
             
-            Validate();
+            Validate(ref surfaceDefinition);
 
             if (!brush.Valid)
             {
@@ -187,10 +188,10 @@ namespace Chisel.Core
                 var brushMesh = BrushMeshFactory.CreateBrushBlob(brushOutline);
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             }
-            return true;
+            return default;
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
         }
 

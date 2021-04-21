@@ -20,7 +20,7 @@ namespace Chisel.Core
             definition.generateFromCenter   = false;
         }
 
-        public override void OnUpdate(ref ChiselSphereDefinition definition, Bounds bounds)
+        public override void OnUpdate(ref ChiselSphereDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
         {
             definition.diameterXYZ = bounds.size;
         }

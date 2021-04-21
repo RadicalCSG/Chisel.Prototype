@@ -7,6 +7,9 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
 using System.Runtime.CompilerServices;
+using Unity.Jobs;
+using Unity.Entities;
+using UnityEngine.Serialization;
 
 namespace Chisel.Core
 {
@@ -16,51 +19,87 @@ namespace Chisel.Core
     {
         public const string kNodeTypeName = "Box";
 
-        public static readonly Bounds   kDefaultBounds = new Bounds(Vector3.zero, Vector3.one);
+        public static readonly MinMaxAABB kDefaultBounds = new MinMaxAABB { Min = new float3(-0.5f), Max = new float3(0.5f) };
 
-        public UnityEngine.Bounds       bounds;
+        public MinMaxAABB               bounds;
 
-        [NamedItems("Top", "Bottom", "Right", "Left", "Back", "Front", fixedSize = 6)]
-        public ChiselSurfaceDefinition  surfaceDefinition;
+        //[NamedItems("Top", "Bottom", "Right", "Left", "Back", "Front", fixedSize = 6)]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        public float3   Min     { get { return bounds.Min;    } set { bounds.Min    = value; } }
+        public float3   Max	    { get { return bounds.Max;    } set { bounds.Max    = value; } }
+        public float3   Size    
+        { 
+            get { return bounds.Max - bounds.Min; } 
+            set 
+            {
+                var newSize  = math.abs(value);
+                var halfSize = newSize * 0.5f;
+                var center   = this.Center;
+                bounds.Min = center - halfSize;
+                bounds.Max = center + halfSize;
+            } 
+        }
 
-        public Vector3      min		{ get { return bounds.min; } set { bounds.min = value; } }
-        public Vector3		max	    { get { return bounds.max; } set { bounds.max = value; } }
-        public Vector3		size    { get { return bounds.size; } set { bounds.size = value; } }
-        public Vector3		center  { get { return bounds.center; } set { bounds.center = value; } }
+        public float3   Center  
+        { 
+            get { return (bounds.Max + bounds.Min) * 0.5f; } 
+            set 
+            { 
+                var newSize  = math.abs(Size);
+                var halfSize = newSize * 0.5f;
+                bounds.Min = value - halfSize;
+                bounds.Max = value + halfSize;
+            } 
+        }
         
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             bounds = kDefaultBounds;
             surfaceDefinition?.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
             surfaceDefinition.EnsureSize(6);
+
+            var originalBox = bounds;
+            
+            bounds.Min.x = math.min(originalBox.Min.x, originalBox.Max.x);
+            bounds.Min.y = math.min(originalBox.Min.y, originalBox.Max.y);
+            bounds.Min.z = math.min(originalBox.Min.z, originalBox.Max.z);
+
+            bounds.Max.x = math.max(originalBox.Min.x, originalBox.Max.x);
+            bounds.Max.y = math.max(originalBox.Min.y, originalBox.Max.y);
+            bounds.Max.z = math.max(originalBox.Min.z, originalBox.Max.z);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateBoxJob : IJob
         {
-            return BrushMeshFactory.GenerateBox(ref brushContainer, ref this);
-        }
+            public MinMaxAABB                                           bounds;
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition>    surfaceDefinitionBlob;
+            
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            unchecked
+            public void Execute()
             {
-                return (int)math.hash(new uint3(math.hash(bounds.min), 
-                                                math.hash(bounds.max),
-                                                (uint)surfaceDefinition.GetHashCode()));
+                if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
+                                                in surfaceDefinitionBlob,
+                                                out var newBrushMesh,
+                                                Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
             }
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -72,23 +111,29 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
+            using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob))
             {
-                if (!BrushMeshFactory.CreateBox(bounds.min, bounds.max,
-                                                in surfaceDefinitionBlob,
-                                                out var brushMesh,
-                                                Allocator.Persistent))
+                using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
                 {
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return false;
-                }
+                    var createBoxJob = new CreateBoxJob
+                    {
+                        bounds                  = bounds,
+                        surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                        brushMesh               = brushMeshRef
+                    };
+                    var handle = createBoxJob.Schedule();
+                    handle.Complete();
 
-                brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    if (!brushMeshRef.Value.IsCreated)
+                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    else
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
+                }
             }
-            return true;
+            return default;
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             handles.DoBoundsHandle(ref bounds);
             handles.RenderBoxMeasurements(bounds);
@@ -98,7 +143,8 @@ namespace Chisel.Core
 
         public void OnMessages(IChiselMessages messages)
         {
-            if (bounds.size.x == 0 || bounds.size.y == 0 || bounds.size.z == 0)
+            var size = this.Size;
+            if (size.x == 0 || size.y == 0 || size.z == 0)
                 messages.Warning(kDimensionCannotBeZero);
         }
     }

@@ -42,6 +42,17 @@ namespace Chisel.Core
 
     public static class IChiselHandleRendererExtensions
     {
+
+        public static bool DoBoundsHandle(this IChiselHandles handles, ref MinMaxAABB box, Vector3? snappingSteps = null, string undoMessage = null)
+        {
+            var bounds = new Bounds();
+            bounds.SetMinMax(box.Min, box.Max);
+            var result = handles.DoBoundsHandle(ref bounds, snappingSteps, undoMessage);
+            box.Min = bounds.min;
+            box.Max = bounds.max;
+            return result;
+        }
+        
         public static void RenderBox(this IChiselHandleRenderer renderer, MinMaxAABB bounds)               { renderer.RenderBox(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
         public static void RenderBoxMeasurements(this IChiselHandleRenderer renderer, MinMaxAABB bounds)   { renderer.RenderBoxMeasurements(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
         public static void RenderCylinder(this IChiselHandleRenderer renderer, MinMaxAABB bounds, int segments) { renderer.RenderCylinder(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min), segments); }

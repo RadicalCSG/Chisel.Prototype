@@ -222,21 +222,21 @@ namespace Chisel.Core
         }
 
 
-        public static bool GenerateSphere(ref ChiselBrushContainer brushContainer, ref ChiselSphereDefinition definition)
+        public static bool GenerateSphere(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselSphereDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
             brushContainer.EnsureSize(1);
 
             var transform = float4x4.TRS(Vector3.zero, quaternion.AxisAngle(new Vector3(0, 1, 0), definition.rotation), Vector3.one);
-            return BrushMeshFactory.GenerateSphere(ref brushContainer.brushMeshes[0], definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+            return BrushMeshFactory.GenerateSphere(ref brushContainer.brushMeshes[0], definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, surfaceDefinition);
         }
 
-        public static bool GenerateSphere(ref BrushMesh brushMesh, ref ChiselSphereDefinition definition)
+        public static bool GenerateSphere(ref BrushMesh brushMesh, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselSphereDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             var transform = float4x4.TRS(Vector3.zero, quaternion.AxisAngle(new Vector3(0, 1, 0), definition.rotation), Vector3.one);
-            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+            return BrushMeshFactory.GenerateSphere(ref brushMesh, definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, transform, definition.horizontalSegments, definition.verticalSegments, surfaceDefinition);
         }
 
         public static bool GenerateSphere(ref BrushMesh brushMesh, Vector3 diameterXYZ, float offsetY, bool generateFromCenter, float4x4 transform, int horzSegments, int vertSegments, in ChiselSurfaceDefinition surfaceDefinition)
@@ -368,9 +368,9 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateSphereVertices(ChiselSphereDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateSphereVertices(ChiselSphereDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref Vector3[] vertices)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             //var transform = float4x4.TRS(Vector3.zero, quaternion.AxisAngle(new Vector3(0, 1, 0), definition.rotation), new Vector3(1));
             BrushMeshFactory.CreateSphereVertices(definition.diameterXYZ, definition.offsetY, definition.generateFromCenter, definition.horizontalSegments, definition.verticalSegments, ref vertices);
             return true;

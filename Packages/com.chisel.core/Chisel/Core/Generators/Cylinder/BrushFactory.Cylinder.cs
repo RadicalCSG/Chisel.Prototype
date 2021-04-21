@@ -273,9 +273,9 @@ namespace Chisel.Core
 
 
 
-        public static bool GenerateCylinder(ref ChiselBrushContainer brushContainer, ref ChiselCylinderDefinition definition)
+        public static bool GenerateCylinder(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselCylinderDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
             var tempTop    = new ChiselCircleDefinition { diameterX = definition.topDiameterX, diameterZ = definition.topDiameterZ, height = definition.height + definition.bottomOffset };
             var tempBottom = new ChiselCircleDefinition { diameterX = definition.bottomDiameterX, diameterZ = definition.bottomDiameterZ, height = definition.bottomOffset };
@@ -291,9 +291,9 @@ namespace Chisel.Core
             bool result = false;
             switch (definition.type)
             {
-                case CylinderShapeType.Cylinder:       result = BrushMeshFactory.GenerateCylinder(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.ConicalFrustum: result = BrushMeshFactory.GenerateConicalFrustum(ref brushContainer.brushMeshes[0], tempBottom, tempTop, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.Cone:           result = BrushMeshFactory.GenerateCone(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
+                case CylinderShapeType.Cylinder:       result = BrushMeshFactory.GenerateCylinder(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in surfaceDefinition); break;
+                case CylinderShapeType.ConicalFrustum: result = BrushMeshFactory.GenerateConicalFrustum(ref brushContainer.brushMeshes[0], tempBottom, tempTop, definition.rotation, definition.sides, definition.fitToBounds, in surfaceDefinition); break;
+                case CylinderShapeType.Cone:           result = BrushMeshFactory.GenerateCone(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in surfaceDefinition); break;
             }
             return result;
         }

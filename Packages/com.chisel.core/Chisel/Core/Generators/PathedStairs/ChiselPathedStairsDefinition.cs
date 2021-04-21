@@ -9,6 +9,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -26,27 +27,20 @@ namespace Chisel.Core
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         public ChiselLinearStairsDefinition stairs;
 
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return stairs.surfaceDefinition; } }
-
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             shape           = kDefaultShape;
             curveSegments   = kDefaultCurveSegments;
-            stairs.Reset();
+            stairs.Reset(ref surfaceDefinition);
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             curveSegments = Mathf.Max(curveSegments, 2);
-            stairs.Validate();
+            stairs.Validate(ref surfaceDefinition);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GeneratePathedStairs(ref brushContainer, ref this);
-        }
-
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -58,13 +52,13 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            Validate();
+            Validate(ref surfaceDefinition);
 
 
-            if (stairs.surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
+            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
             {
                 this.ClearBrushes(branch);
-                return false;
+                return default;
             }
 
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
@@ -76,7 +70,7 @@ namespace Chisel.Core
                     if (shapeVertices.Length < 2)
                     {
                         this.ClearBrushes(branch);
-                        return false;
+                        return default;
                     }
 
                     var minMaxAABB = new MinMaxAABB { Min = stairs.bounds.min, Max = stairs.bounds.max };
@@ -89,13 +83,13 @@ namespace Chisel.Core
                     if (requiredSubMeshCount == 0)
                     {
                         this.ClearBrushes(branch);
-                        return false;
+                        return default;
                     }
 
                     if (branch.Count != requiredSubMeshCount)
                         this.BuildBrushes(branch, requiredSubMeshCount);
 
-                    using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in stairs.surfaceDefinition, Allocator.Temp))
+                    using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
                     {
                         using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
                         {
@@ -108,7 +102,7 @@ namespace Chisel.Core
                                                                        in surfaceDefinitionBlob, Allocator.Persistent))
                             {
                                 this.ClearBrushes(branch);
-                                return false;
+                                return default;
                             }
 
                             for (int i = 0; i < requiredSubMeshCount; i++)
@@ -117,14 +111,14 @@ namespace Chisel.Core
                                 brush.LocalTransformation = float4x4.identity;
                                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                             }
-                            return true;
+                            return default;
                         }
                     }
                 }
             }
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             handles.DoShapeHandle(ref shape);
         }

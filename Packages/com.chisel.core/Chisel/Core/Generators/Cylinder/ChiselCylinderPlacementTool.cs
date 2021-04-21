@@ -21,7 +21,7 @@ namespace Chisel.Core
             definition.sides			= sides;
         }
 
-        public override void OnUpdate(ref ChiselCylinderDefinition definition, Bounds bounds)
+        public override void OnUpdate(ref ChiselCylinderDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
         {
             var height = bounds.size[(int)Axis.Y];
             definition.BottomDiameterX  = bounds.size[(int)Axis.X];

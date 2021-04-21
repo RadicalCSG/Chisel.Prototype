@@ -10,6 +10,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -106,10 +107,8 @@ namespace Chisel.Core
         [DistanceValue] public float	sideHeight;
         [DistanceValue] public float	sideDepth;
         
-        [NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        //[NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
         public bool     HasVolume
         {
@@ -146,7 +145,7 @@ namespace Chisel.Core
             get { return Mathf.Max(0, absDepth - (StepCount * stepDepth)); }
         }
 
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             // TODO: set defaults using attributes?
             stepHeight		= kDefaultStepHeight;
@@ -172,7 +171,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -225,12 +224,7 @@ namespace Chisel.Core
             stepDepth			= Mathf.Clamp(stepDepth, kMinStepDepth, absDepth / totalSteps);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateLinearStairs(ref brushContainer, ref this);
-        }
-
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -242,18 +236,18 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            Validate();
+            Validate(ref surfaceDefinition);
 
             if (!HasVolume)
             {
                 this.ClearBrushes(branch);
-                return false;
+                return default;
             }
 
             if (surfaceDefinition.surfaces.Length != (int)SurfaceSides.TotalSides)
             {
                 this.ClearBrushes(branch);
-                return false;
+                return default;
             }
 
             var description = new BrushMeshFactory.LineairStairsData(new MinMaxAABB { Min = this.bounds.min, Max = this.bounds.max },
@@ -268,7 +262,7 @@ namespace Chisel.Core
             if (requiredSubMeshCount == 0)
             {
                 this.ClearBrushes(branch);
-                return false;
+                return default;
             }
 
             if (branch.Count != requiredSubMeshCount)
@@ -283,7 +277,7 @@ namespace Chisel.Core
                     if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
                     {
                         this.ClearBrushes(branch);
-                        return false;
+                        return default;
                     }
 
                     for (int i = 0; i < requiredSubMeshCount; i++)
@@ -292,7 +286,7 @@ namespace Chisel.Core
                         brush.LocalTransformation = float4x4.identity;
                         brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                     }
-                    return true;
+                    return default;
                 }
             }
         }
@@ -303,7 +297,7 @@ namespace Chisel.Core
         //
 
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             var newDefinition = this;
 

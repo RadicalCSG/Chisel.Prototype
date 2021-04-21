@@ -9,7 +9,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -75,10 +75,8 @@ namespace Chisel.Core
 
         public uint					    bottomSmoothingGroup;
 
-        [NamedItems("Tread Top", "Tread Bottom", "Tread Front", "Tread Back", "Riser Front", "Riser Back", "Inner", "Outer", overflow = "Side {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        //[NamedItems("Tread Top", "Tread Bottom", "Tread Front", "Tread Back", "Riser Front", "Riser Back", "Inner", "Outer", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
         public int StepCount
         {
@@ -98,7 +96,7 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             origin		    = Vector3.zero;
 
@@ -125,7 +123,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -151,12 +149,7 @@ namespace Chisel.Core
             surfaceDefinition.EnsureSize(8);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateSpiralStairs(ref brushContainer, ref this);
-        }
-
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -168,7 +161,7 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            Validate();
+            Validate(ref surfaceDefinition);
 
             // TODO: expose this to user
             var smoothSubDivisions		= 3;
@@ -188,7 +181,7 @@ namespace Chisel.Core
             if (requiredSubMeshCount == 0)
             {
                 this.ClearBrushes(branch);
-                return false;
+                return default;
             }
 
             if (branch.Count != requiredSubMeshCount)
@@ -197,6 +190,12 @@ namespace Chisel.Core
             var haveRiser		= riserType != StairsRiserType.None;
             var treadStart      = !haveRiser ? 0 : riserSubMeshCount;
 
+            Validate(ref surfaceDefinition);
+            if (surfaceDefinition == null ||
+                surfaceDefinition.surfaces == null ||
+                surfaceDefinition.surfaces.Length < 8)
+                return default;
+
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
                 using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
@@ -204,7 +203,7 @@ namespace Chisel.Core
                     if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes, ref this, in surfaceDefinitionBlob, Allocator.Persistent))
                     {
                         this.ClearBrushes(branch);
-                        return false;
+                        return default;
                     }
 
                     for (int i = 0; i < requiredSubMeshCount; i++)
@@ -235,7 +234,7 @@ namespace Chisel.Core
                         brush.Operation = CSGOperationType.Subtractive;
                     }
 
-                    return true;
+                    return default;
                 }
             }
         }
@@ -249,7 +248,7 @@ namespace Chisel.Core
         Vector3[] innerVertices;
         Vector3[] outerVertices;
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             var normal					= Vector3.up;
             var topDirection			= Vector3.forward;

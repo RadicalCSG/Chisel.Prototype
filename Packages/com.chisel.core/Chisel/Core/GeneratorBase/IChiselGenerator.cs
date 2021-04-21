@@ -4,17 +4,17 @@ using UnityEngine;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
     public interface IChiselGenerator
     {
-        void Reset();
-        void Validate();
-        void OnEdit(IChiselHandles handles);
+        void Reset(ref ChiselSurfaceDefinition surfaceDefinition);
+        void Validate(ref ChiselSurfaceDefinition surfaceDefinition);
+        void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles);
         void OnMessages(IChiselMessages messages);
-        bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation);
-        ChiselSurfaceDefinition SurfaceDefinition { get; }
+        JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation);
     }
     
     public static class IChiselGeneratorExtensions

@@ -8,6 +8,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -64,10 +65,8 @@ namespace Chisel.Core
         [DistanceValue] public float bottomOffset;
 
         // TODO: show this in scene somehow
-        [NamedItems("Top", "Bottom", overflow = "Side {0}")]
-        public ChiselSurfaceDefinition surfaceDefinition;
-
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition surfaceDefinition;
 
 
         [UnityEngine.HideInInspector]
@@ -208,7 +207,7 @@ namespace Chisel.Core
             }
         }
 
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             topDiameterX = 1.0f;
             topDiameterZ = 1.0f;
@@ -228,7 +227,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -265,14 +264,9 @@ namespace Chisel.Core
             }
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
-        }
-
 
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -286,7 +280,7 @@ namespace Chisel.Core
 
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
-                Validate();
+                Validate(ref surfaceDefinition);
 
                 var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
                 var topHeight       = height + bottomOffset;
@@ -312,11 +306,11 @@ namespace Chisel.Core
                     !BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter, topHeight, bottomDiameter, bottomHeight, rotation, sides, fitToBounds, in surfaceDefinitionBlob, out var brushMesh, allocator))
                 {
                     brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return false;
+                    return default;
                 }
 
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
-                return true;
+                return default;
             }
         }
 
@@ -701,7 +695,7 @@ namespace Chisel.Core
             }
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             // Store our allocated handles in generatorState to avoid reallocating them every frame
             var cylinderHandles = handles.generatorState as CylinderHandles;

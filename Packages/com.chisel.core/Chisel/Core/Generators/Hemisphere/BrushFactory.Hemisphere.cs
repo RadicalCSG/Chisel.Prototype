@@ -109,26 +109,26 @@ namespace Chisel.Core
             }
         }
 
-        public static bool GenerateHemisphere(ref ChiselBrushContainer brushContainer, ref ChiselHemisphereDefinition definition)
+        public static bool GenerateHemisphere(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselHemisphereDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
             brushContainer.EnsureSize(1);
 
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateHemisphereSubMesh(ref brushContainer.brushMeshes[0], definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+            return GenerateHemisphereSubMesh(ref brushContainer.brushMeshes[0], definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, surfaceDefinition);
         }
 
-        public static bool GenerateHemisphere(ref BrushMesh brushMesh, ref ChiselHemisphereDefinition definition)
+        public static bool GenerateHemisphere(ref BrushMesh brushMesh, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselHemisphereDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
-            return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, definition.surfaceDefinition);
+            return GenerateHemisphereSubMesh(ref brushMesh, definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, surfaceDefinition);
         }
 
-        public static bool GenerateHemisphereVertices(ref ChiselHemisphereDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateHemisphereVertices(ref ChiselHemisphereDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref Vector3[] vertices)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.rotation, Vector3.up), Vector3.one);
             return GenerateHemisphereVertices(definition.diameterXYZ, transform, definition.horizontalSegments, definition.verticalSegments, ref vertices);
         }

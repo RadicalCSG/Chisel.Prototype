@@ -145,9 +145,9 @@ namespace Chisel.Core
             return matrices;
         }
 
-        public static bool GenerateRevolvedShape(ref ChiselBrushContainer brushContainer, ref ChiselRevolvedShapeDefinition definition)
+        public static bool GenerateRevolvedShape(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselRevolvedShapeDefinition definition)
         { 
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
         
             
             var shapeVertices		= new List<SegmentVertex>();
@@ -208,7 +208,7 @@ namespace Chisel.Core
                     }
 
                     var brushMesh = new BrushMesh();
-                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in definition.surfaceDefinition))
+                    if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in surfaceDefinition))
                         continue;
 
                     if (!brushMesh.Validate())

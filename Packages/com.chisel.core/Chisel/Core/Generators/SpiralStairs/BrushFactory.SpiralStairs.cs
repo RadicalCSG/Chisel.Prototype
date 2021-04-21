@@ -41,13 +41,6 @@ namespace Chisel.Core
                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
-            definition.Validate();
-            ref readonly var surfaceDefinition = ref definition.surfaceDefinition;
-            if (surfaceDefinition == null ||
-                surfaceDefinition.surfaces == null ||
-                surfaceDefinition.surfaces.Length < 8)
-                return false;
-            
             const bool fitToBounds = false;
             const float kEpsilon = 0.001f;
 
@@ -414,10 +407,9 @@ namespace Chisel.Core
             }
         }
 
-        public static bool GenerateSpiralStairs(ref ChiselBrushContainer brushContainer, ref ChiselSpiralStairsDefinition definition)
+        public static bool GenerateSpiralStairs(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselSpiralStairsDefinition definition)
         {
-            definition.Validate();
-            ref readonly var surfaceDefinition = ref definition.surfaceDefinition;
+            definition.Validate(ref surfaceDefinition);
             if (surfaceDefinition == null ||
                 surfaceDefinition.surfaces == null ||
                 surfaceDefinition.surfaces.Length < 8)

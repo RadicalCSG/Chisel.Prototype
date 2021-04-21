@@ -23,7 +23,7 @@ namespace Chisel.Core
     {
         public abstract PlacementFlags PlacementFlags { get; }
         public virtual void OnCreate(ref PlacementToolType definition) { }
-        public abstract void OnUpdate(ref PlacementToolType definition, Bounds bounds);
+        public abstract void OnUpdate(ref PlacementToolType definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds);
         public abstract void OnPaint(IChiselHandleRenderer renderer, Bounds bounds);
     }
 

@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEngine.Profiling;
 using Unity.Mathematics;
 using System.Runtime.CompilerServices;
+using Unity.Jobs;
 
 namespace Chisel.Components
 {
@@ -19,15 +20,18 @@ namespace Chisel.Components
         public DefinitionType definition = new DefinitionType();
 
 
-        public override ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) { return definition.SurfaceDefinition.GetBrushMaterial(descriptionIndex); }
-        public override SurfaceDescription GetSurfaceDescription(int descriptionIndex) { return definition.SurfaceDefinition.GetSurfaceDescription(descriptionIndex); }
-        public override void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description) { definition.SurfaceDefinition.SetSurfaceDescription(descriptionIndex, description); }
-        public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return definition.SurfaceDefinition.GetSurfaceUV0(descriptionIndex); }
-        public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { definition.SurfaceDefinition.SetSurfaceUV0(descriptionIndex, uv0); }
+        public override ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) { return surfaceDefinition.GetBrushMaterial(descriptionIndex); }
+        public override SurfaceDescription GetSurfaceDescription(int descriptionIndex) { return surfaceDefinition.GetSurfaceDescription(descriptionIndex); }
+        public override void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description) { surfaceDefinition.SetSurfaceDescription(descriptionIndex, description); }
+        public override UVMatrix GetSurfaceUV0(int descriptionIndex) { return surfaceDefinition.GetSurfaceUV0(descriptionIndex); }
+        public override void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0) { surfaceDefinition.SetSurfaceUV0(descriptionIndex, uv0); }
 
-        protected override void OnResetInternal()           { definition.Reset(); base.OnResetInternal(); }
-        protected override void OnValidateInternal()        { definition.Validate(); base.OnValidateInternal(); }
-        protected override bool UpdateGeneratorInternal(ref CSGTreeNode node, int userID) { return definition.Generate(ref node, userID, operation); }
+        protected override void OnResetInternal()           { definition.Reset(ref surfaceDefinition); base.OnResetInternal(); }
+        protected override void OnValidateInternal()        { definition.Validate(ref surfaceDefinition); base.OnValidateInternal(); }
+        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID) 
+        { 
+            return definition.Generate(ref surfaceDefinition, ref node, userID, operation); 
+        }
     }
 
     public abstract class ChiselGeneratorComponent : ChiselNode
@@ -35,6 +39,7 @@ namespace Chisel.Components
         // This ensures names remain identical, or a compile error occurs.
         public const string kOperationFieldName         = nameof(operation);
 
+        public ChiselSurfaceDefinition surfaceDefinition;
 
         [HideInInspector] CSGTreeNode Node = default;
 
@@ -695,7 +700,11 @@ namespace Chisel.Components
             var instanceID = GetInstanceID();
 
             Profiler.BeginSample("UpdateGeneratorInternal");
-            try { UpdateGeneratorInternal(ref Node, userID: instanceID); }
+            try 
+            { 
+                var jobHandle = UpdateGeneratorInternal(ref Node, userID: instanceID);
+                jobHandle.Complete();
+            }
             finally { Profiler.EndSample(); }
 
             if (!Node.Valid)
@@ -708,7 +717,7 @@ namespace Chisel.Components
             finally { Profiler.EndSample(); }
         }
 
-        protected abstract bool UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
+        protected abstract JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
 
 #if UNITY_EDITOR
         public override bool ConvertToBrushes()

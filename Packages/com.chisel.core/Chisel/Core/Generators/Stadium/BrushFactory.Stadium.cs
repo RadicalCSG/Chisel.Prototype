@@ -133,31 +133,31 @@ namespace Chisel.Core
         }
 
 
-        public static bool GenerateStadium(ref ChiselBrushContainer brushContainer, ref ChiselStadiumDefinition definition)
+        public static bool GenerateStadium(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselStadiumDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             Vector3[] vertices = null;
-            if (!GenerateStadiumVertices(definition, ref vertices))
+            if (!GenerateStadiumVertices(definition, ref surfaceDefinition, ref vertices))
                 return false;
 
             brushContainer.EnsureSize(1);
 
             var surfaceIndices = new int[vertices.Length + 2];
-            return BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[0], definition.sides, surfaceIndices, 0, 1, vertices, definition.surfaceDefinition);
+            return BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[0], definition.sides, surfaceIndices, 0, 1, vertices, surfaceDefinition);
         }
 
-        public static bool GenerateStadium(ref BrushMesh brushMesh, ref ChiselStadiumDefinition definition)
+        public static bool GenerateStadium(ref BrushMesh brushMesh, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselStadiumDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             Vector3[] vertices = null;
-            if (!GenerateStadiumVertices(definition, ref vertices))
+            if (!GenerateStadiumVertices(definition, ref surfaceDefinition, ref vertices))
             {
                 brushMesh.Clear();
                 return false;
             }
             
             var surfaceIndices	= new int[vertices.Length + 2];
-            if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, definition.sides, surfaceIndices, 0, 1, vertices, definition.surfaceDefinition))
+            if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, definition.sides, surfaceIndices, 0, 1, vertices, surfaceDefinition))
             {
                 brushMesh.Clear();
                 return false;
@@ -166,9 +166,9 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateStadiumVertices(ChiselStadiumDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateStadiumVertices(ChiselStadiumDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref Vector3[] vertices)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             
             var topSides		= definition.topSides;
             var bottomSides		= definition.bottomSides;

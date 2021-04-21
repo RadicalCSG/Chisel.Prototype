@@ -130,10 +130,10 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateTorus(ref ChiselBrushContainer brushContainer, ref ChiselTorusDefinition definition)
+        public static bool GenerateTorus(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselTorusDefinition definition)
         {
             float3[] vertices = null;
-            if (!GenerateTorusVertices(definition, ref vertices))
+            if (!GenerateTorusVertices(definition, ref surfaceDefinition, ref vertices))
                 return false;
             
             var horzSegments	= definition.horizontalSegments;
@@ -159,7 +159,7 @@ namespace Chisel.Core
                 }
                 
                 var brushMesh = new BrushMesh();
-                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in definition.surfaceDefinition);
+                BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, vertSegments, descriptionIndex, 0, 1, subMeshVertices, in surfaceDefinition);
                 if (!brushMesh.Validate())
                     return false;
 
@@ -168,9 +168,9 @@ namespace Chisel.Core
             return true;
         }
 
-        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref float3[] vertices)
+        public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref float3[] vertices)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
             var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
             var tubeRadiusY		= (definition.tubeHeight * 0.5f);

@@ -165,11 +165,11 @@ namespace Chisel.Core
 
 
 
-        public static bool GenerateCapsule(ref ChiselBrushContainer brushContainer, ref ChiselCapsuleDefinition definition)
+        public static bool GenerateCapsule(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselCapsuleDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             Vector3[] vertices = null;
-            if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))
+            if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref surfaceDefinition, ref vertices))
                 return false;
 
             ref var settings = ref definition.settings;
@@ -188,13 +188,13 @@ namespace Chisel.Core
                                                              vertices, 
                                                              topCap, bottomCap,  
                                                              topVertex, bottomVertex, 
-                                                             definition.surfaceDefinition);
+                                                             surfaceDefinition);
         }
 
-        public static bool GenerateCapsule(ref BrushMesh brushMesh, ref ChiselCapsuleDefinition definition)
+        public static bool GenerateCapsule(ref BrushMesh brushMesh, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselCapsuleDefinition definition)
         {
             Vector3[] vertices = null;
-            if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref vertices))
+            if (!BrushMeshFactory.GenerateCapsuleVertices(ref definition, ref surfaceDefinition, ref vertices))
             {
                 brushMesh.Clear();
                 return false;
@@ -214,7 +214,7 @@ namespace Chisel.Core
                                                            vertices, 
                                                            topCap, bottomCap,  
                                                            topVertex, bottomVertex, 
-                                                           definition.surfaceDefinition))
+                                                           surfaceDefinition))
             {
                 brushMesh.Clear();
                 return false;
@@ -227,9 +227,9 @@ namespace Chisel.Core
         //	capsule with top OR bottom set to 0 height
         //	capsule with both top AND bottom set to 0 height
         //	capsule with height equal to top and bottom height
-        public static bool GenerateCapsuleVertices(ref ChiselCapsuleDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateCapsuleVertices(ref ChiselCapsuleDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, ref Vector3[] vertices)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
             ref var settings = ref definition.settings;
             var haveTopHemisphere		= settings.HaveRoundedTop;
             var haveBottomHemisphere	= settings.HaveRoundedBottom;

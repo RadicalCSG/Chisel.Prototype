@@ -15,6 +15,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -30,12 +31,10 @@ namespace Chisel.Core
         public ChiselPath               path;
         public int                      curveSegments;
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
+        //[NamedItems(overflow = "Surface {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
-
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             curveSegments   = kDefaultCurveSegments;
             path			= new ChiselPath(ChiselPath.Default);
@@ -44,7 +43,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -56,12 +55,7 @@ namespace Chisel.Core
             surfaceDefinition.EnsureSize(2 + sides);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateExtrudedShape(ref brushContainer, ref this);
-        }
-
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
             if (!branch.Valid)
@@ -73,7 +67,7 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            Validate();
+            Validate(ref surfaceDefinition);
 
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
             {
@@ -83,14 +77,14 @@ namespace Chisel.Core
                 if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
                 {
                     this.ClearBrushes(branch);
-                    return false;
+                    return default;
                 }
 
                 int requiredSubMeshCount = polygonVerticesSegments.Length;
                 if (requiredSubMeshCount == 0)
                 {
                     this.ClearBrushes(branch);
-                    return false;
+                    return default;
                 }
 
                 if (branch.Count != requiredSubMeshCount)
@@ -112,7 +106,7 @@ namespace Chisel.Core
                                                                     Allocator.Persistent))
                         {
                             this.ClearBrushes(branch);
-                            return false;
+                            return default;
                         }
 
                         for (int i = 0; i < requiredSubMeshCount; i++)
@@ -121,7 +115,7 @@ namespace Chisel.Core
                             brush.LocalTransformation = float4x4.identity;
                             brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                         }
-                        return true;
+                        return default;
                     }
                 }
             }
@@ -139,7 +133,7 @@ namespace Chisel.Core
         const float kCapLineThickness			= 1.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             var baseColor		= handles.color;            
             var noZTestcolor	= handles.GetStateColor(baseColor, false, true);

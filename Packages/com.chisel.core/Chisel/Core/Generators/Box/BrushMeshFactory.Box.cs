@@ -376,21 +376,6 @@ namespace Chisel.Core
             }
         }
 
-        public static bool GenerateBox(ref ChiselBrushContainer brushContainer, ref ChiselBoxDefinition definition)
-        {
-            definition.Validate();
-
-            var min = definition.min;
-            var max = definition.max;
-            if (!BoundsExtensions.IsValid(min, max))
-                return false;
-
-            brushContainer.EnsureSize(1);
-
-            return CreateBox(ref brushContainer.brushMeshes[0], definition.min, definition.max, definition.surfaceDefinition);
-        }
-
-
         public static bool CreateBox(ref BrushMesh brushMesh, Vector3 min, Vector3 max, in ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)

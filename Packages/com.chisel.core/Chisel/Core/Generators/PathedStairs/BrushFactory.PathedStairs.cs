@@ -199,11 +199,11 @@ namespace Chisel.Core
         }
 
 
-        public static bool GeneratePathedStairs(ref ChiselBrushContainer brushContainer, ref ChiselPathedStairsDefinition definition)
+        public static bool GeneratePathedStairs(ref ChiselBrushContainer brushContainer, ref ChiselSurfaceDefinition surfaceDefinition, ref ChiselPathedStairsDefinition definition)
         {
-            definition.Validate();
+            definition.Validate(ref surfaceDefinition);
 
-            if (definition.stairs.surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
+            if (surfaceDefinition.surfaces.Length != (int)ChiselLinearStairsDefinition.SurfaceSides.TotalSides)
                 return false;
 
 
@@ -219,7 +219,7 @@ namespace Chisel.Core
                 var leftSide  = (!definition.shape.closed && i ==                       1) ? definition.stairs.leftSide  : StairsSideType.None;
                 var rightSide = (!definition.shape.closed && i == shapeVertices.Count - 1) ? definition.stairs.rightSide : StairsSideType.None;
 
-                totalSubMeshCount += BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, leftSide, rightSide);
+                totalSubMeshCount += BrushMeshFactory.GetLinearStairsSubMeshCount(definition.stairs, ref surfaceDefinition, leftSide, rightSide);
             }
             if (totalSubMeshCount == 0)
                 return false;
@@ -303,7 +303,7 @@ namespace Chisel.Core
                 if (subMeshCount == 0)
                     continue;
 
-                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushContainer, ref description, definition.stairs, leftSide, rightSide, subMeshIndex))
+                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(ref brushContainer, ref surfaceDefinition, ref description, definition.stairs, leftSide, rightSide, subMeshIndex))
                     return false;
 
                 var halfWidth = maxWidth1 * 0.5f;

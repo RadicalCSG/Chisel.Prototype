@@ -7,6 +7,7 @@ using UnityEngine.Profiling;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -51,12 +52,10 @@ namespace Chisel.Core
         public bool					haveCenter			{ get { return (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
 
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
+        //[NamedItems(overflow = "Surface {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
-
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             width			    = kDefaultWidth;
 
@@ -72,7 +71,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -92,15 +91,8 @@ namespace Chisel.Core
             surfaceDefinition.EnsureSize(2 + sides);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateStadium(ref brushContainer, ref this);
-        }
-
-
-
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -114,7 +106,7 @@ namespace Chisel.Core
 
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
-                Validate();
+                Validate(ref surfaceDefinition);
 
                 if (!BrushMeshFactory.GenerateStadium(width, height, length,
                                                       topLength, topSides,
@@ -122,11 +114,11 @@ namespace Chisel.Core
                                                       in surfaceDefinitionBlob, out var brushMesh, Allocator.Persistent))
                 {
                     brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return false;
+                    return default;
                 }
 
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
-                return true;
+                return default;
             }
         }
 
@@ -181,7 +173,7 @@ namespace Chisel.Core
             //renderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             var baseColor       = handles.color;
             var upVector		= Vector3.up;
@@ -189,7 +181,7 @@ namespace Chisel.Core
             var forwardVector	= Vector3.forward;
 
             Vector3[] vertices = null;
-            if (BrushMeshFactory.GenerateStadiumVertices(this, ref vertices))
+            if (BrushMeshFactory.GenerateStadiumVertices(this, ref surfaceDefinition, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);

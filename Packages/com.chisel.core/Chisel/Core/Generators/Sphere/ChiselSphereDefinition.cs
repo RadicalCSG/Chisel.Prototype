@@ -9,6 +9,7 @@ using UnityEngine.Profiling;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Jobs;
 
 namespace Chisel.Core
 {
@@ -31,11 +32,10 @@ namespace Chisel.Core
         public int	    horizontalSegments;
         public int	    verticalSegments;
 
-        [NamedItems(overflow = "Side {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-        public ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
+        //[NamedItems(overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
+        public void Reset(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             diameterXYZ		    = kDefaultDiameter;
             offsetY             = 0;
@@ -46,7 +46,7 @@ namespace Chisel.Core
             if (surfaceDefinition != null) surfaceDefinition.Reset();
         }
 
-        public void Validate()
+        public void Validate(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             if (surfaceDefinition == null)
                 surfaceDefinition = new ChiselSurfaceDefinition();
@@ -61,15 +61,8 @@ namespace Chisel.Core
             surfaceDefinition.EnsureSize(6);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateSphere(ref brushContainer, ref this);
-        }
-        
-
-
         [BurstCompile(CompileSynchronously = true)]
-        public bool Generate(ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(ref ChiselSurfaceDefinition surfaceDefinition, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
@@ -83,17 +76,17 @@ namespace Chisel.Core
 
             using (var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp))
             {
-                Validate();
+                Validate(ref surfaceDefinition);
 
                 if (!BrushMeshFactory.GenerateSphere(diameterXYZ, offsetY, rotation, generateFromCenter, horizontalSegments, verticalSegments, in surfaceDefinitionBlob,
                                                          out var brushMesh, Allocator.Persistent))
                 {
                     brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                    return false;
+                    return default;
                 }
 
                 brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
-                return true;
+                return default;
             }
         }
 
@@ -141,12 +134,12 @@ namespace Chisel.Core
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
 
-        public void OnEdit(IChiselHandles handles)
+        public void OnEdit(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
-            if (BrushMeshFactory.GenerateSphereVertices(this, ref vertices))
+            if (BrushMeshFactory.GenerateSphereVertices(this, ref surfaceDefinition, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);

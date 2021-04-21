@@ -20,7 +20,7 @@ namespace Chisel.Core
             definition.outerSegments    = outerSegments;
         }
 
-        public override void OnUpdate(ref ChiselSpiralStairsDefinition definition, Bounds bounds)
+        public override void OnUpdate(ref ChiselSpiralStairsDefinition definition, ref ChiselSurfaceDefinition surfaceDefinition, Bounds bounds)
         {
             definition.height			= bounds.size[(int)Axis.Y];
             definition.outerDiameter	= bounds.size[(int)Axis.X];

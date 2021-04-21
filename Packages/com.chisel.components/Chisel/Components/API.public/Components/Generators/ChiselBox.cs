@@ -1,5 +1,6 @@
 using UnityEngine;
 using Chisel.Core;
+using Unity.Mathematics;
 
 namespace Chisel.Components
 {
@@ -12,34 +13,34 @@ namespace Chisel.Components
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
-        public Bounds Bounds
+        public MinMaxAABB Bounds
         {
             get { return definition.bounds; }
-            set { if (value == definition.bounds) return; definition.bounds = value; OnValidateInternal(); }
+            set { if (math.all(value.Min == definition.bounds.Min) && math.all(value.Max == definition.bounds.Max)) return; definition.bounds = value; OnValidateInternal(); }
         }
 
-        public Vector3 Min
+        public float3 Min
         {
-            get { return definition.min; }
-            set { if (value == definition.min) return; definition.min = value; OnValidateInternal(); }
+            get { return definition.Min; }
+            set { if (math.all(value == definition.Min)) return; definition.Min = value; OnValidateInternal(); }
         }
 
-        public Vector3 Max
+        public float3 Max
         {
-            get { return definition.max; }
-            set { if (value == definition.max) return; definition.max = value; OnValidateInternal(); }
+            get { return definition.Max; }
+            set { if (math.all(value == definition.Max)) return; definition.Max = value; OnValidateInternal(); }
         }
 
-        public Vector3 Center
+        public float3 Center
         {
-            get { return definition.center; }
-            set { if (value == definition.center) return; definition.center = value; OnValidateInternal(); }
+            get { return definition.Center; }
+            set { if (math.all(value == definition.Center)) return; definition.Center = value; OnValidateInternal(); }
         }
 
-        public Vector3 Size
+        public float3 Size
         {
-            get { return definition.size; }
-            set { if (value == definition.size) return; definition.size = value; OnValidateInternal(); }
+            get { return definition.Size; }
+            set { if (math.all(value == definition.Size)) return; definition.Size = value; OnValidateInternal(); }
         }
         #endregion
 

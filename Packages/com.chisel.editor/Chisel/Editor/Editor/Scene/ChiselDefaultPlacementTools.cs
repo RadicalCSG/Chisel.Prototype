@@ -63,7 +63,7 @@ namespace Chisel.Editors
                                                                                   transformation * Matrix4x4.TRS(center3D, Quaternion.identity, Vector3.one))
                                                 as ChiselDefinedGeneratorComponent<DefinitionType>;
                             shape.Center = Vector2.zero;
-                            generatedComponent.definition.Reset();
+                            generatedComponent.definition.Reset(ref generatedComponent.surfaceDefinition);
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
                             PlacementToolDefinition.OnCreate(ref generatedComponent.definition, shape);
                             PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);
@@ -154,10 +154,10 @@ namespace Chisel.Editors
                             componentPosition   = generatedComponent.transform.localPosition;
                             upAxis              = generatedComponent.transform.up;
 
-                            generatedComponent.definition.Reset();
+                            generatedComponent.definition.Reset(ref generatedComponent.surfaceDefinition);
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
                             PlacementToolDefinition.OnCreate(ref generatedComponent.definition);
-                            PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
+                            PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, ref generatedComponent.surfaceDefinition, bounds);
                             generatedComponent.OnValidate();
 
                             if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
@@ -184,7 +184,7 @@ namespace Chisel.Editors
                                                     ((height < 0 && modelBeneathCursor) ?
                                                     CSGOperationType.Subtractive :
                                                     CSGOperationType.Additive);
-                        PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, bounds);
+                        PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, ref generatedComponent.surfaceDefinition, bounds);
                         generatedComponent.OnValidate();
                         if ((generatoreModeFlags & PlacementFlags.GenerateFromCenterY) == PlacementFlags.GenerateFromCenterY)
                             generatedComponent.transform.localPosition = componentPosition - ((upAxis * height) * 0.5f);
@@ -211,9 +211,9 @@ namespace Chisel.Editors
         where ComponentType  : ChiselDefinedGeneratorComponent<DefinitionType>
         where DefinitionType : IChiselGenerator, new()
     {
-        protected override void OnScene(IChiselHandles handles, ComponentType generator)
+        protected override void OnScene(ref ChiselSurfaceDefinition surfaceDefinition, IChiselHandles handles, ComponentType generator)
         {
-            generator.definition.OnEdit(handles);
+            generator.definition.OnEdit(ref surfaceDefinition, handles);
         }
 
         protected override void OnMessages(IChiselMessages messages)
