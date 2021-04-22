@@ -49,16 +49,25 @@ namespace Chisel.Components
             }
         }
 
-        private Bounds				Bounds				= EmptyBounds;
-        private Bounds              ChildBounds         = EmptyBounds;
-        private bool				BoundsDirty			= true;
-        private bool                ChildBoundsDirty	= true;
+        public Bounds Bounds
+        {
+            get
+            {
+                UpdateBounds();
+                return SelfWithChildrenBounds;
+            }
+        }
 
-        public bool                 Registered			= false;
-        public bool                 IsOpen				= true;
+        private Bounds				SelfBounds			    = EmptyBounds;
+        private Bounds              SelfWithChildrenBounds  = EmptyBounds;
+        private bool				BoundsDirty			    = true;
+        private bool                ChildBoundsDirty	    = true;
 
-        public Matrix4x4            LocalToWorldMatrix  = Matrix4x4.identity;
-        public Matrix4x4            WorldToLocalMatrix  = Matrix4x4.identity;
+        public bool                 Registered			    = false;
+        public bool                 IsOpen				    = true;
+
+        public Matrix4x4            LocalToWorldMatrix      = Matrix4x4.identity;
+        public Matrix4x4            WorldToLocalMatrix      = Matrix4x4.identity;
 
         // TODO: Move bounds handling code to separate class, keep this clean
         public void					UpdateBounds()
@@ -69,17 +78,19 @@ namespace Chisel.Components
                 {
                     if (!Transform)
                         Transform = Component.transform;
-                    Bounds = Component.CalculateBounds();
+                    var generator = Component as ChiselGeneratorComponent;
+                    if (generator)
+                        SelfBounds = ChiselBoundsUtility.CalculateBounds(generator);
                     ChildBoundsDirty = true;
                     BoundsDirty = false;
                 }
             }
             if (ChildBoundsDirty)
             {
-                ChildBounds = Bounds;
+                SelfWithChildrenBounds = SelfBounds;
                 // TODO: make this non-iterative
                 for (int i = 0; i < Children.Count; i++)
-                    Children[i].EncapsulateBounds(ref ChildBounds);
+                    Children[i].EncapsulateBounds(ref SelfWithChildrenBounds);
                 ChildBoundsDirty = false;
             }
         }
@@ -92,7 +103,9 @@ namespace Chisel.Components
             {
                 if (!Transform)
                     Transform = Component.transform;
-                gridBounds = Component.CalculateBounds(transformation);
+                var generator = Component as ChiselGeneratorComponent;
+                if (generator)
+                    SelfBounds = ChiselBoundsUtility.CalculateBounds(generator, transformation);
             }
 
             // TODO: make this non-iterative
@@ -104,18 +117,18 @@ namespace Chisel.Components
         public void		EncapsulateBounds(ref Bounds outBounds)
         {
             UpdateBounds();
-            if (ChildBounds.size.sqrMagnitude != 0)
+            if (SelfWithChildrenBounds.size.sqrMagnitude != 0)
             {
-                float magnitude = ChildBounds.size.sqrMagnitude;
+                float magnitude = SelfWithChildrenBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
                     float.IsNaN(magnitude))
                 {
                     var transformation = LocalToWorldMatrix;
                     var center = transformation.GetColumn(3);
-                    ChildBounds = new Bounds(center, Vector3.zero);
+                    SelfWithChildrenBounds = new Bounds(center, Vector3.zero);
                 }
-                if (outBounds.size.sqrMagnitude == 0) outBounds = ChildBounds;
-                else								  outBounds.Encapsulate(ChildBounds);
+                if (outBounds.size.sqrMagnitude == 0) outBounds = SelfWithChildrenBounds;
+                else								  outBounds.Encapsulate(SelfWithChildrenBounds);
             }
         }
         

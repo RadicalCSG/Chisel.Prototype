@@ -28,7 +28,6 @@ namespace Chisel.Components
         public static ChiselColliderObjects Create(GameObject container, int surfaceParameter)
         {
             var physicsMaterial = ChiselMaterialManager.Instance.GetPhysicMaterial(surfaceParameter);
-            //ChiselBrushMaterialManager.GetPhysicsMaterialByInstanceID(surfaceParameter);
             var sharedMesh      = new Mesh { name = ChiselGeneratedObjects.kGeneratedMeshColliderName };
             var meshCollider    = container.AddComponent<MeshCollider>();
             var colliderObjects = new ChiselColliderObjects
@@ -127,7 +126,7 @@ namespace Chisel.Components
 
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
             //          hopefully that will make it easier for Unity to not screw up the scheduling
-            var bakingSettings = new NativeArray<BakeData>(colliders.Length,Allocator.TempJob);
+            var bakingSettings = new NativeArray<BakeData>(colliders.Length, Allocator.TempJob);
             for (int i = 0; i < colliders.Length; i++)
             {
                 var meshCollider = colliders[i].meshCollider;
@@ -151,11 +150,13 @@ namespace Chisel.Components
             {
                 bakingSettings = bakingSettings.AsReadOnly()
             };
-            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON THE SAME WORKER THREAD?
+
+            // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON A SINGLE WORKER THREAD?
             var jobHandle = bakeColliderJob.Schedule(colliders.Length, 1);
 
             jobHandle.Complete();
             bakingSettings.Dispose(jobHandle);
+
             // TODO: is there a way to defer forcing the collider to update?
             for (int i = 0; i < colliders.Length; i++)
             {

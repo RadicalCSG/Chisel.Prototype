@@ -69,7 +69,7 @@ namespace Chisel.Editors
 
         static Vector3 FindSelectionCenter(ChiselNode selectedNode)
         {
-            var bounds = selectedNode.CalculateBounds();
+            var bounds = selectedNode.hierarchyItem.Bounds;
             var min = bounds.min;
             var max = bounds.max;
             var center = (min + max) * 0.5f;
@@ -84,12 +84,12 @@ namespace Chisel.Editors
             Vector3 center;
             if (selectedNodes.Count > 1)
             {
-                var bounds = selectedNodes[0].CalculateBounds();
+                var bounds = selectedNodes[0].hierarchyItem.Bounds;
                 var min = bounds.min;
                 var max = bounds.max;
                 for (int i = 1; i < selectedNodes.Count; i++)
                 {
-                    bounds = selectedNodes[i].CalculateBounds();
+                    bounds = selectedNodes[i].hierarchyItem.Bounds;
 
                     min.x = Mathf.Min(min.x, bounds.min.x);
                     min.y = Mathf.Min(min.y, bounds.min.y);
@@ -101,7 +101,7 @@ namespace Chisel.Editors
                 }
                 center = (min + max) * 0.5f;
             } else
-                center = selectedNodes[0].CalculateBounds().center;
+                center = selectedNodes[0].hierarchyItem.Bounds.center;
             return center;
         }
         #endregion

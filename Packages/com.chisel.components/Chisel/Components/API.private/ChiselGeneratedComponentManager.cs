@@ -121,6 +121,40 @@ namespace Chisel.Components
 
             UpdateModelFlags(model);
         }
+        
+        // Get all brushes directly contained by this CSGNode (not its children)
+        public static void GetAllTreeBrushes(ChiselGeneratorComponent component, HashSet<CSGTreeBrush> foundBrushes)
+        {
+            if (foundBrushes == null ||
+                !component.TopNode.Valid)
+                return;
+
+            var brush = (CSGTreeBrush)component.TopNode;
+            if (brush.Valid)
+            {
+                foundBrushes.Add(brush);
+            } else
+            {
+                var nodes = new List<CSGTreeNode>();
+                nodes.Add(component.TopNode);
+                while (nodes.Count > 0)
+                {
+                    var lastIndex = nodes.Count - 1;
+                    var current = nodes[lastIndex];
+                    nodes.RemoveAt(lastIndex);
+                    var nodeType = current.Type;
+                    if (nodeType == CSGNodeType.Brush)
+                    {
+                        brush = (CSGTreeBrush)current;
+                            foundBrushes.Add(brush);
+                    } else
+                    {
+                        for (int i = current.Count - 1; i >= 0; i--)
+                            nodes.Add(current[i]);
+                    }
+                }
+            }
+        }
 
 #if UNITY_EDITOR
         static Dictionary<CompactNodeID, VisibilityState> visibilityStateLookup = new Dictionary<CompactNodeID, VisibilityState>();
@@ -191,6 +225,25 @@ namespace Chisel.Components
             }
         }
 
+        public static VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance, ChiselGeneratorComponent generator)
+        {
+            var resultState     = VisibilityState.Unknown;
+            var visible         = !instance.IsHidden(generator.gameObject);
+            var pickingEnabled  = !instance.IsPickingDisabled(generator.gameObject);
+            var topNode         = generator.TopNode;
+            if (topNode.Valid)
+            {
+                topNode.Visible         = visible;
+                topNode.PickingEnabled  = pickingEnabled;
+
+                if (visible)
+                    resultState |= VisibilityState.AllVisible;
+                else
+                    resultState |= VisibilityState.AllInvisible;
+            }
+            return resultState;
+        }
+
         public static void UpdateVisibility(bool force = false)
         { 
             if (!updateVisibilityFlag && !force)
@@ -207,35 +260,22 @@ namespace Chisel.Components
             {
                 if (!node || !node.isActiveAndEnabled)
                     continue;
-                /*
-                var generator = node as ChiselGeneratorComponent;
-                if (generator)
-                { 
-                    if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
-                        continue;
 
-                    var compactNodeID   = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
-                    var modelNodeID     = CompactHierarchyManager.GetCompactNodeID(generator.hierarchyItem.Model.NodeID);
-                    if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
-                        prevState = VisibilityState.Unknown;
-                    var state = generator.UpdateVisibility(sceneVisibilityManager);
-                    visibilityStateLookup[compactNodeID] = state;
-                    visibilityStateLookup[modelNodeID] = state | prevState;
-                }
-                */
                 var brushGenerator = node as ChiselGeneratorComponent;
                 if (brushGenerator)
                 {
-                    if (!CompactHierarchyManager.IsValidNodeID(node.NodeID))
+                    var nodeID = node.TopNode.NodeID;
+                    if (!CompactHierarchyManager.IsValidNodeID(nodeID))
                         continue;
 
-                    var compactNodeID = CompactHierarchyManager.GetCompactNodeID(node.NodeID);
-                    var modelNodeID = CompactHierarchyManager.GetCompactNodeID(brushGenerator.hierarchyItem.Model.NodeID);
-                    if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState prevState))
+                    var modelNodeID = brushGenerator.hierarchyItem.Model.TopNode.NodeID;
+                    var compactNodeID       = CompactHierarchyManager.GetCompactNodeID(nodeID);
+                    var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
+                    if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
                         prevState = VisibilityState.Unknown;
-                    var state = brushGenerator.UpdateVisibility(sceneVisibilityManager);
+                    var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
                     visibilityStateLookup[compactNodeID] = state;
-                    visibilityStateLookup[modelNodeID] = state | prevState;
+                    visibilityStateLookup[modelCompactNodeID] = state | prevState;
                 }
             }
 
@@ -243,10 +283,11 @@ namespace Chisel.Components
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                var modelNodeID = CompactHierarchyManager.GetCompactNodeID(model.NodeID);
-                if (!visibilityStateLookup.TryGetValue(modelNodeID, out VisibilityState state))
+                var modelNodeID = model.TopNode.NodeID;
+                var modelCompactNodeID = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
+                if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {
-                    visibilityStateLookup[modelNodeID] = VisibilityState.AllVisible;
+                    visibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
                     continue;
                 }

@@ -15,15 +15,7 @@ namespace Chisel.Components
         public BrushMesh BrushMesh
         {
             get { return definition.brushOutline; }
-            set { if (value == definition.brushOutline) return; definition.brushOutline = value; OnValidateInternal(); }
-        }
-        #endregion
-
-        #region HasValidState
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
-        {            
-            return definition.ValidState;
+            set { if (value == definition.brushOutline) return; definition.brushOutline = value; OnValidateState(); }
         }
         #endregion
     }

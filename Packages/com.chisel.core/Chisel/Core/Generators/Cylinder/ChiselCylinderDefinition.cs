@@ -11,6 +11,8 @@ using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
+    // TODO: beveled edges (for top and/or bottom)
+    //			-> makes this a capsule
     // TODO: maybe just have different generators + support converting between generators
     [Serializable]
     public enum CylinderShapeType : byte
@@ -704,6 +706,11 @@ namespace Chisel.Core
             }
         }
         #endregion
+
+        public bool HasValidState()
+        {
+            return false;
+        }
 
         public void OnMessages(IChiselMessages messages)
         {

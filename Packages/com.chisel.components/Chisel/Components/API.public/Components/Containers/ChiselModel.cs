@@ -42,11 +42,14 @@ namespace Chisel.Components
     {
         public const string kIsTriggerName      = nameof(isTrigger);
         public const string kConvexName         = nameof(convex);
-//      public const string kCookingOptionsName = nameof(cookingOptions);
-//      public const string kSkinWidthName      = nameof(skinWidth);
 
         public bool                         isTrigger;
         public bool		                    convex;
+        
+        // If the cookingOptions are not the default values it would force a full slow rebake later, 
+        // even if we already did a Bake in a job
+//      public const string kCookingOptionsName = nameof(cookingOptions);
+//      public const string kSkinWidthName      = nameof(skinWidth);
 //      public MeshColliderCookingOptions   cookingOptions;
 //      public float	                    skinWidth;
 
@@ -184,7 +187,6 @@ namespace Chisel.Components
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
-        public override NodeID      NodeID                      { get { return Node.NodeID; } }
         public override bool        CanHaveChildNodes           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
@@ -200,6 +202,7 @@ namespace Chisel.Components
         public bool IsDefaultModel { get; internal set; } = false;
 
         [HideInInspector] public CSGTree                Node;
+        public override CSGTreeNode TopNode { get { return Node; } protected set { Node = (CSGTree)value; } }
 
         [HideInInspector] bool                          initialized = false;
 
@@ -260,7 +263,6 @@ namespace Chisel.Components
         public ChiselModel() : base() { }
 
 
-        internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (Node.Valid)
@@ -310,63 +312,6 @@ namespace Chisel.Components
                 if (!this && generated.generatedDataContainer)
                     generated.DestroyWithUndo();
             }
-        }
-
-        public override int GetAllTreeBrushCount()
-        {
-            return 0;
-        }
-
-        // Get all brushes directly contained by this ChiselNode (not its children)
-        public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
-        {
-            // A Model doesn't contain a CSGTreeBrush node
-        }
-        
-        // TODO: cache this
-        public override Bounds CalculateBounds()
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds();
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
-        }
-
-        // TODO: cache this
-        public override Bounds CalculateBounds(Matrix4x4 transformation)
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds(transformation);
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
         }
 
 #if UNITY_EDITOR

@@ -745,9 +745,6 @@ UpdateAgain:
             try
             {
                 bool haveCreatedTreeNodes = false;
-                //Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                //ChiselBrushContainerAssetManager.Update();
-                //Profiler.EndSample();
                 Profiler.BeginSample("UpdateTrampoline");
                 haveCreatedTreeNodes = UpdateTrampoline();
                 Profiler.EndSample();
@@ -755,10 +752,6 @@ UpdateAgain:
                 // TODO: fix that generators create brushes inside the trampoline, requiring us to call things twice
                 if (haveCreatedTreeNodes)
                 {
-                    //Profiler.BeginSample("ChiselBrushContainerAssetManager.Update");
-                    //try { ChiselBrushContainerAssetManager.Update(); }
-                    //finally { Profiler.EndSample(); }
-
                     Profiler.BeginSample("UpdateTrampoline");
                     try { UpdateTrampoline(); }
                     finally { Profiler.EndSample(); }
@@ -799,14 +792,11 @@ UpdateAgain:
         // Returns true when the number of brushes has been changed
         static bool CreateOrDestroyTreeNodes(ChiselNode node)
         {
-            if (!node.CreatesTreeNode)
-                return false;
-
             Profiler.BeginSample("CreateOrDestroyTreeNodes");
 
             // Create the treeNodes for this node
             Profiler.BeginSample("ClearTreeNodes");
-            node.ClearTreeNodes(clearCaches: false);
+            node.ClearTreeNodes();
             Profiler.EndSample();
             Profiler.BeginSample("CreateTreeNodes");
             var createdTreeNodes = node.CreateTreeNodes();
@@ -1105,7 +1095,7 @@ UpdateAgain:
                         continue;
                 
                     node.hierarchyItem.Transform = null;
-                    node.ClearTreeNodes(clearCaches: true);
+                    node.ClearTreeNodes();
                     UnregisterInternal(node);
                 }
                 
@@ -1355,7 +1345,7 @@ UpdateAgain:
                             {
                                 sortChildrenQueue.Add(iterator.Children);
                             }
-                            if (iterator.Component.HasContainerTreeNode) 
+                            if (iterator.Component.CanHaveChildNodes) 
                             {
                                 updateChildrenQueue.Add(iterator);
                                 break;
@@ -1412,7 +1402,7 @@ UpdateAgain:
                     if (!item.Component)
                         continue;
                     
-                    if (!item.Component.HasContainerTreeNode)
+                    if (!item.Component.CanHaveChildNodes)
                         continue;
                     
                     // TODO: create a virtual updateChildrenQueue list for the default model instead?
@@ -1462,7 +1452,7 @@ UpdateAgain:
                     if (!item.Component)
                         continue;
 
-                    if (!item.Component.HasContainerTreeNode)
+                    if (!item.Component.CanHaveChildNodes)
                         continue;
                     
                     __childNodes.Clear();
@@ -1562,12 +1552,11 @@ UpdateAgain:
         public static Transform FindModelTransformOfTransform(Transform transform)
         {
             // TODO: optimize this
-            ChiselModel model;
             do
             {
                 if (!transform)
                     return null;
-                model = transform.GetComponentInParent<ChiselModel>();
+                var model = transform.GetComponentInParent<ChiselModel>();
                 if (!model)
                     return null;
                 transform = model.hierarchyItem.Transform;
@@ -1582,12 +1571,11 @@ UpdateAgain:
         public static Matrix4x4 FindModelTransformMatrixOfTransform(Transform transform)
         {
             // TODO: optimize this
-            ChiselModel model;
             do
             {
                 if (!transform)
                     return Matrix4x4.identity;
-                model = transform.GetComponentInParent<ChiselModel>();
+                var model = transform.GetComponentInParent<ChiselModel>();
                 if (!model)
                     return Matrix4x4.identity;
                 transform = model.hierarchyItem.Transform;
@@ -1601,8 +1589,7 @@ UpdateAgain:
 
         public static ChiselNode FindChiselNodeByInstanceID(int instanceID)
         {
-            ChiselNode node = null;
-            instanceIDToNodeLookup.TryGetValue(instanceID, out node);
+            instanceIDToNodeLookup.TryGetValue(instanceID, out var node);
             return node;
         }
 

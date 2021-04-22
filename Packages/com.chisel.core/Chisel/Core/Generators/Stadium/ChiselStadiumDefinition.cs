@@ -310,6 +310,11 @@ namespace Chisel.Core
         }
         #endregion
 
+        public bool HasValidState()
+        {
+            return false;
+        }
+
         public void OnMessages(IChiselMessages messages)
         {
         }

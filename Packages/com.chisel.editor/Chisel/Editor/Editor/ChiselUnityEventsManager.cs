@@ -94,10 +94,6 @@ namespace Chisel.Editors
 
             ChiselClickSelectionManager.Instance.OnReset();
             ChiselOutlineRenderer.Instance.OnReset();
-
-            // TODO: clean this up
-            //ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
-            ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
         }
 
         private static void OnPickingChanged()

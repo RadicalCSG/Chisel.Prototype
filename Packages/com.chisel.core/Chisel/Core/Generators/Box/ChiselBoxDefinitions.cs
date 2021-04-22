@@ -131,6 +131,14 @@ namespace Chisel.Core
 
         const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";
 
+        public bool HasValidState()
+        {
+            var size = this.Size;
+            if (size.x == 0 || size.y == 0 || size.z == 0)
+                return true;
+            return false;
+        }
+
         public void OnMessages(IChiselMessages messages)
         {
             var size = this.Size;

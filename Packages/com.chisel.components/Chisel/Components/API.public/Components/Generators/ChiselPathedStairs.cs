@@ -16,10 +16,8 @@ namespace Chisel.Components
         public Curve2D Shape
         {
             get { return definition.shape; }
-            set { if (value == definition.shape) return; definition.shape = value; OnValidateInternal(); }
+            set { if (value == definition.shape) return; definition.shape = value; OnValidateState(); }
         }
         #endregion
-
-        // TODO: add all properties of ChiselPathedStairsDefinition
     }
 }

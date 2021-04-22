@@ -19,10 +19,9 @@ namespace Chisel.Components
         public const string kNodeTypeName = "Composite";
         public override string NodeTypeName { get { return kNodeTypeName; } }
 
-        // bool   HandleAsOne     = false;
-
         [HideInInspector]
         public CSGTreeBranch Node;
+        public override CSGTreeNode TopNode { get { return Node; } protected set { Node = (CSGTreeBranch)value; } }
 
         [SerializeField,HideInInspector] bool passThrough = false; // NOTE: name is used in ChiselCompositeEditor
         public bool PassThrough { get { return passThrough; } set { if (value == passThrough) return; passThrough = value; ChiselNodeHierarchyManager.UpdateAvailability(this); } }
@@ -45,7 +44,7 @@ namespace Chisel.Components
             return (transform.childCount > 0);
         }
 
-        protected override void OnValidateInternal()
+        protected override void OnValidateState()
         {
             if (!Node.Valid)
                 return;
@@ -53,12 +52,11 @@ namespace Chisel.Components
             if (Node.Operation != operation)
                 Node.Operation = operation;
 
-            base.OnValidateInternal();
+            base.OnValidateState();
         }
 
         static CSGTreeNode[] kEmptyTreeNodeArray = new CSGTreeNode[] { };
 
-        internal override void			ClearTreeNodes (bool clearCaches = false) { Node.SetInvalid(); }	
         internal override CSGTreeNode[] CreateTreeNodes()
         {
             if (passThrough)
@@ -73,9 +71,6 @@ namespace Chisel.Components
         internal override bool	IsActive	        { get { return !PassThrough && isActiveAndEnabled; } }
 
         public override bool	CanHaveChildNodes	{ get { return IsActive; } }
-
-        public override NodeID  NodeID			    { get { return Node.NodeID; } }
-
 
         public override void	SetDirty()		    { if (Node.Valid) Node.SetDirty(); }
 
@@ -94,62 +89,6 @@ namespace Chisel.Components
         {
             if (!PassThrough && Node.Valid)
                 childNodes.Add(Node);
-        }
-
-        public override int GetAllTreeBrushCount()
-        {
-            return 0;
-        }
-
-        // Get all brushes directly contained by this ChiselNode (not its children)
-        public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
-        {
-            // An composite doesn't contain a CSGTreeBrush node
-        }
-        
-        // TODO: cache this
-        public override Bounds CalculateBounds()
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds();
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
-        }
-        // TODO: cache this
-        public override Bounds CalculateBounds(Matrix4x4 transformation)
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds(transformation);
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
         }
     }
 }

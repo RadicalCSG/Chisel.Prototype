@@ -263,9 +263,11 @@ namespace Chisel.Editors
                     {
                         for (int n = 0; n < nodes.Length; n++)
                         {
-                            var node = nodes[n];
+                            var node = nodes[n] as ChiselGeneratorComponent;
+                            if (node == null)
+                                continue;
                             foundTreeBrushes.Clear();
-                            node.GetAllTreeBrushes(foundTreeBrushes, ignoreSynchronizedBrushes: true);
+                            ChiselGeneratedComponentManager.GetAllTreeBrushes(node, foundTreeBrushes);
                             if (foundTreeBrushes.Count > 0)
                             {
                                 var directSelected = (// if component is directly select

@@ -308,14 +308,13 @@ namespace Chisel.Editors
 
         static string NameForTreeNode(ChiselHierarchyItem node)
         {
-            var nodeID = node.Component.NodeID;
+            var nodeID = node.Component.TopNode.NodeID;
             var instanceID = node.Component.GetInstanceID();
             var obj = node.Transform;
             if (!obj)
                 return string.Format("<unknown> [{0}:{1}]", nodeID, instanceID);
             return obj.name + string.Format(" [{0}:{1}]", nodeID, instanceID);
         }
-
 
         void OnGUI()
         {

@@ -68,11 +68,15 @@ namespace Chisel.Components
 
 
 
-        // TODO: find a better place
-        public static bool IsVisible(ChiselModel model)
+        public static bool IsSelectable(ChiselModel model)
         {
-            // TODO: should also skip models made invisible in hierarchy ...
-            return model && model.isActiveAndEnabled;
+            if (!model || !model.isActiveAndEnabled)
+                return false;
+
+            var sceneVisibilityManager = UnityEditor.SceneVisibilityManager.instance;
+            var visible         = !sceneVisibilityManager.IsHidden(model.gameObject);
+            var pickingEnabled  = !sceneVisibilityManager.IsPickingDisabled(model.gameObject);
+            return visible && pickingEnabled;
         }
 
 
@@ -96,7 +100,7 @@ namespace Chisel.Components
                 // If we have an active model, but it's actually disabled, do not use it
                 // This prevents users from accidentally adding generators to a model that is inactive, 
                 // and then be confused why nothing is visible.
-                if (!IsVisible(activeModel))
+                if (!IsSelectable(activeModel))
                     return null;
                 return activeModel;
             }
@@ -165,7 +169,7 @@ namespace Chisel.Components
                 foreach (var model in models)
                 {
                     // Skip all inactive models
-                    if (!ChiselModelManager.IsVisible(model))
+                    if (!ChiselModelManager.IsSelectable(model))
                         continue;
 
                     return model;
@@ -225,7 +229,7 @@ namespace Chisel.Components
          
         public static void OnActiveSceneChanged(Scene _, Scene newScene)
         {
-            if (Instance.activeModels.TryGetValue(newScene, out var activeModel) && IsVisible(activeModel))
+            if (Instance.activeModels.TryGetValue(newScene, out var activeModel) && IsSelectable(activeModel))
                 return;
 
             Instance.activeModels[newScene] = FindModelInScene(newScene);
@@ -259,11 +263,6 @@ namespace Chisel.Components
         {
             var model = GetSelectedModel();
             return (model != null);
-        }
-
-        public static IReadOnlyList<ChiselModel> GetAllModels()
-        {
-            return ChiselGeneratedModelMeshManager.registeredModels;
         }
 #endif
     }

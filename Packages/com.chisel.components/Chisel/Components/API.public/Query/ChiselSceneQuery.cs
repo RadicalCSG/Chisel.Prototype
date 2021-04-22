@@ -174,7 +174,7 @@ namespace Chisel.Components
             {
                 var tree	= s_AllTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!ChiselModelManager.IsVisible(model))
+                if (!ChiselModelManager.IsSelectable(model))
                     continue;
 
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)
@@ -340,7 +340,7 @@ namespace Chisel.Components
             {
                 var tree	= s_AllTrees[t];
                 var model	= ChiselNodeHierarchyManager.FindChiselNodeByTreeNode(tree) as ChiselModel;
-                if (!ChiselModelManager.IsVisible(model))
+                if (!ChiselModelManager.IsSelectable(model))
                     continue;
 
                 if (((1 << model.gameObject.layer) & visibleLayers) == 0)

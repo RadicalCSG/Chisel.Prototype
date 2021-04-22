@@ -4,7 +4,6 @@ using UnitySceneExtensions;
 
 namespace Chisel.Components
 {
-    // TODO: change name
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
@@ -24,7 +23,7 @@ namespace Chisel.Components
 
                 definition.path = value;
 
-                OnValidateInternal();
+                OnValidateState();
             }
         }
         
@@ -38,7 +37,7 @@ namespace Chisel.Components
 
                 definition.shape = value;
 
-                OnValidateInternal();
+                OnValidateState();
             }
         }
         #endregion

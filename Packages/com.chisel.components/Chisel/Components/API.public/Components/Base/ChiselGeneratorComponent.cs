@@ -48,10 +48,10 @@ namespace Chisel.Components
             definition.UpdateSurfaces(ref surfaceDefinition);
         }
 
-        protected override void OnValidateInternal()
+        protected override void OnValidateState()
         {
             OnValidateDefinition();
-            base.OnValidateInternal(); 
+            base.OnValidateState(); 
         }
 
         protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
@@ -64,6 +64,13 @@ namespace Chisel.Components
             {
                 return definition.Generate(surfaceDefinitionBlob, ref node, userID, operation);
             }
+        }
+
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {
+            return !base.HasValidState() &&
+                    definition.HasValidState();
         }
     }
 
@@ -80,84 +87,9 @@ namespace Chisel.Components
         [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
         [SerializeField, HideInInspector] protected Vector3 pivotOffset = Vector3.zero;
 
-        public CSGTreeNode TopNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } }
+        public override CSGTreeNode TopNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } protected set { Node = value; } }
         bool ValidNodes { get { return Node.Valid; } }
-
-#if UNITY_EDITOR
-        public VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance)
-        {
-            var resultState     = VisibilityState.Unknown;
-            var visible         = !instance.IsHidden(gameObject);
-            var pickingEnabled  = !instance.IsPickingDisabled(gameObject);
-            if (Node.Valid)
-            {
-                Node.Visible        = visible;
-                Node.PickingEnabled = pickingEnabled;
-
-                if (visible)
-                    resultState |= VisibilityState.AllVisible;
-                else
-                    resultState |= VisibilityState.AllInvisible;
-            }
-            return resultState;
-        }
-#endif
-
-
-        public abstract ChiselBrushMaterial GetBrushMaterial(int descriptionIndex);
-        public abstract SurfaceDescription GetSurfaceDescription(int descriptionIndex);
-        public abstract void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description);
-        public abstract UVMatrix GetSurfaceUV0(int descriptionIndex);
-        public abstract void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0);
-
-        public override CSGTreeNode GetTreeNodeByIndex(int index)
-        {
-            if (index != 0)
-                return CSGTreeNode.InvalidNode;
-            return Node;
-        }
-
-        protected override void OnDisable()
-        {
-            if (Node.Valid)
-                Node.Destroy();
-            Node = default;
-            base.OnDisable();
-        }
-
-        protected override void OnResetInternal()
-        {
-            UpdateGenerator();
-            UpdateBrushMeshInstances();
-            base.OnResetInternal();
-        }
-
-        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
-        {
-            if (!ValidNodes)
-                return false;
-
-            if (ChiselGeneratedComponentManager.IsDefaultModel(hierarchyItem.Model))
-                return false;
-
-            return true;
-        }
-
-        protected override void OnValidateInternal()
-        {
-            if (!ValidNodes)
-            {
-                ChiselNodeHierarchyManager.RebuildTreeNodes(this);
-                return;
-            }
-
-            UpdateGenerator();
-            UpdateBrushMeshInstances();
-
-            ChiselNodeHierarchyManager.NotifyContentsModified(this);
-            base.OnValidateInternal();
-        }
+        
 
         public CSGOperationType Operation
         {
@@ -219,27 +151,6 @@ namespace Chisel.Components
             }
         }
 
-        public override void UpdateTransformation()
-        {
-            // TODO: recalculate transformation based on hierarchy up to (but not including) model
-            var transform = hierarchyItem.Transform;
-            if (!transform)
-                return;
-
-            // TODO: fix this mess
-            var localToWorldMatrix = transform.localToWorldMatrix;
-            var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
-            if (modelTransform)
-                localTransformation = modelTransform.worldToLocalMatrix * localToWorldMatrix;
-            else
-                localTransformation = localToWorldMatrix;
-
-            if (!ValidNodes)
-                return;
-
-            UpdateInternalTransformation();
-        }
-
         public Matrix4x4 PivotTransformation
         {
             get
@@ -281,6 +192,73 @@ namespace Chisel.Components
             }
         }
 
+        public abstract ChiselBrushMaterial GetBrushMaterial(int descriptionIndex);
+        public abstract SurfaceDescription GetSurfaceDescription(int descriptionIndex);
+        public abstract void SetSurfaceDescription(int descriptionIndex, SurfaceDescription description);
+        public abstract UVMatrix GetSurfaceUV0(int descriptionIndex);
+        public abstract void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0);
+
+        protected override void OnDisable()
+        {
+            ClearTreeNodes();
+            base.OnDisable();
+        }
+
+        protected override void OnResetInternal()
+        {
+            UpdateGenerator();
+            UpdateBrushMeshInstances();
+            base.OnResetInternal();
+        }
+
+        // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
+        public override bool HasValidState()
+        {
+            if (!ValidNodes)
+                return false;
+
+            if (ChiselGeneratedComponentManager.IsDefaultModel(hierarchyItem.Model))
+                return false;
+
+            return true;
+        }
+
+        protected override void OnValidateState()
+        {
+            if (!ValidNodes)
+            {
+                ChiselNodeHierarchyManager.RebuildTreeNodes(this);
+                return;
+            }
+
+            UpdateGenerator();
+            UpdateBrushMeshInstances();
+
+            ChiselNodeHierarchyManager.NotifyContentsModified(this);
+            base.OnValidateState();
+        }
+
+        public override void UpdateTransformation()
+        {
+            // TODO: recalculate transformation based on hierarchy up to (but not including) model
+            var transform = hierarchyItem.Transform;
+            if (!transform)
+                return;
+
+            // TODO: fix this mess
+            var localToWorldMatrix = transform.localToWorldMatrix;
+            var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
+            if (modelTransform)
+                localTransformation = modelTransform.worldToLocalMatrix * localToWorldMatrix;
+            else
+                localTransformation = localToWorldMatrix;
+
+            if (!ValidNodes)
+                return;
+
+            UpdateInternalTransformation();
+        }
+
         void UpdateInternalTransformation()
         {
             if (!ValidNodes)
@@ -304,18 +282,7 @@ namespace Chisel.Components
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            if (Node.Valid)
-                Node.Destroy();
-            Node = default;
-        }
-
-        internal override void ClearTreeNodes(bool clearCaches = false)
-        {
-            if (Node.Valid)
-            {
-                Node.Destroy();
-                Node = default;
-            }
+            ClearTreeNodes();
         }
 
         static readonly CSGTreeNode[] nodes = new CSGTreeNode[1];
@@ -347,8 +314,6 @@ namespace Chisel.Components
             return nodes;
         }
 
-        public override NodeID NodeID { get { return TopNode.NodeID; } }
-        
         public override void SetDirty()
         {
             if (!ValidNodes)
@@ -361,152 +326,6 @@ namespace Chisel.Components
         {
             if (TopNode.Valid)
                 childNodes.Add(TopNode);
-        }
-
-        // TODO: clean this up
-        public delegate IEnumerable<CSGTreeBrush> GetSelectedVariantsOfBrushOrSelfDelegate(CSGTreeBrush brush);
-        public static GetSelectedVariantsOfBrushOrSelfDelegate GetSelectedVariantsOfBrushOrSelf;
-
-        static readonly HashSet<CSGTreeBrush> s_FoundBrushes = new HashSet<CSGTreeBrush>();
-
-        public override Bounds CalculateBounds()
-        {
-            if (!Node.Valid)
-                return ChiselHierarchyItem.EmptyBounds;
-
-            var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
-            var minMax			= new MinMaxAABB { };
-            var boundsCount     = 0;
-
-            s_FoundBrushes.Clear();
-            GetAllTreeBrushes(s_FoundBrushes, false);
-            foreach (var brush in s_FoundBrushes)
-            {
-                if (!brush.Valid)
-                    continue;
-
-                var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
-                var childBounds     = brush.Bounds;
-                var size            = childBounds.Max - childBounds.Min;
-                var magnitude       = math.lengthsq(size);
-                if (float.IsInfinity(magnitude) ||
-                    float.IsNaN(magnitude))
-                {
-                    var center = ((float4)transformation.GetColumn(3)).xyz;
-                    var halfSize = size * 0.5f;
-                    childBounds = new MinMaxAABB { Min = center - halfSize, Max = center + halfSize };
-                }
-                if (magnitude != 0)
-                {
-                    if (boundsCount == 0)
-                        minMax = childBounds;
-                    else
-                        minMax.Encapsulate(childBounds);
-                    boundsCount++;
-                }
-            }
-            if (boundsCount == 0)
-                return ChiselHierarchyItem.EmptyBounds;
-            var bounds = new Bounds();
-            bounds.SetMinMax(minMax.Min, minMax.Max);
-            return bounds;
-        }
-        
-        public override Bounds CalculateBounds(Matrix4x4 boundsTransformation)
-        {
-            if (!Node.Valid)
-                return ChiselHierarchyItem.EmptyBounds;
-
-            var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(hierarchyItem.Transform);
-            var minMax			= new MinMaxAABB { };
-            var boundsCount     = 0;
-
-            var foundBrushes    = new HashSet<CSGTreeBrush>();
-            GetAllTreeBrushes(foundBrushes, false);
-            foreach (var brush in foundBrushes)
-            {
-                if (!brush.Valid)
-                    continue;
-                var transformation  = modelMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix * boundsTransformation;
-                var childBounds     = brush.GetBounds(transformation);
-                var size            = childBounds.Max - childBounds.Min;
-                var magnitude       = math.lengthsq(size);
-                if (float.IsInfinity(magnitude) ||
-                    float.IsNaN(magnitude))
-                {
-                    var center = ((float4)transformation.GetColumn(3)).xyz;
-                    var halfSize = size * 0.5f;
-                    childBounds = new MinMaxAABB { Min = center - halfSize, Max = center + halfSize };
-                }
-                if (magnitude != 0)
-                {
-                    if (boundsCount == 0)
-                        minMax = childBounds;
-                    else
-                        minMax.Encapsulate(childBounds);
-                    boundsCount++;
-                }
-            }
-            if (boundsCount == 0)
-                return ChiselHierarchyItem.EmptyBounds;
-            var bounds = new Bounds();
-            bounds.SetMinMax(minMax.Min, minMax.Max);
-            return bounds;
-        }
-        
-        public override int GetAllTreeBrushCount()
-        {
-            return 1;
-        }
-
-        // Get all brushes directly contained by this CSGNode (not its children)
-        public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
-        {
-            if (foundBrushes == null ||
-                !Node.Valid)
-                return;
-
-            var brush = (CSGTreeBrush)Node;
-            if (brush.Valid)
-            {
-#if UNITY_EDITOR
-                if (ignoreSynchronizedBrushes)
-                {
-                    var result = GetSelectedVariantsOfBrushOrSelf(brush);
-                    if (result != null)
-                        foundBrushes.AddRange(result);
-                } else
-#endif
-                    foundBrushes.Add(brush);
-            } else
-            {
-                var nodes = new List<CSGTreeNode>();
-                nodes.Add(Node);
-                while (nodes.Count > 0)
-                {
-                    var lastIndex = nodes.Count - 1;
-                    var current = nodes[lastIndex];
-                    nodes.RemoveAt(lastIndex);
-                    var nodeType = current.Type;
-                    if (nodeType == CSGNodeType.Brush)
-                    {
-                        brush = (CSGTreeBrush)current;
-#if UNITY_EDITOR
-                        if (ignoreSynchronizedBrushes)
-                        {
-                            var result = GetSelectedVariantsOfBrushOrSelf(brush);
-                            if (result != null)
-                                foundBrushes.AddRange(result);
-                        } else
-#endif
-                            foundBrushes.Add(brush);
-                    } else
-                    {
-                        for (int i = current.Count - 1; i >= 0; i--)
-                            nodes.Add(current[i]);
-                    }
-                }
-            }
         }
 
         static readonly List<ChiselBrushMaterial> s_TempBrushMaterials = new List<ChiselBrushMaterial>();
@@ -838,7 +657,7 @@ namespace Chisel.Components
 
         public override bool ConvertToBrushes()
         {
-            OnValidateInternal();
+            OnValidateState();
             if (!Node.Valid)
                 return false;
 

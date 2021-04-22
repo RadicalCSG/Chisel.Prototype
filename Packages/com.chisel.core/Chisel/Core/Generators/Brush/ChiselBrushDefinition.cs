@@ -178,8 +178,21 @@ namespace Chisel.Core
         {
         }
 
+        public bool HasValidState()
+        {
+            return IsValid && ValidState;
+        }
+
         public void OnMessages(IChiselMessages messages)
         {
+            if (!IsValid)
+            {
+                // TODO: show message that internal brush is invalid
+            }
+            if (ValidState)
+            {
+                // TODO: show message that brush is not in valid state
+            }
         }
     }
 } 

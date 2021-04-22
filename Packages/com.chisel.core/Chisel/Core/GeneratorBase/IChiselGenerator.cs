@@ -16,6 +16,7 @@ namespace Chisel.Core
         void Validate();
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
         void OnEdit(IChiselHandles handles);
+        bool HasValidState();
         void OnMessages(IChiselMessages messages);
         JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation);
     }
