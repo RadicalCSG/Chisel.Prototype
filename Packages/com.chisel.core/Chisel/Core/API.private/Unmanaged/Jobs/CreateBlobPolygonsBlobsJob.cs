@@ -270,7 +270,7 @@ namespace Chisel.Core
                 {
                     layers      = polygon.surface.layerDefinition,
                     localPlane  = localPlane,
-                    UV0         = polygon.surface.UV0
+                    UV0         = polygon.surface.surfaceDescription.UV0
                 };
             }
             var basePolygonsBlob = builder.CreateBlobAssetReference<BasePolygonsBlob>(Allocator.Persistent);

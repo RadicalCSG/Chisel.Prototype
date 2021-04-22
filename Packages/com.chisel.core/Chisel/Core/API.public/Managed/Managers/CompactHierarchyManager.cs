@@ -563,7 +563,8 @@ namespace Chisel.Core
             if (nodeID == NodeID.Invalid)
                 return false;
 
-            if (!nodeIDLookup.IsValidID(nodeID.value, nodeID.generation, out var index))
+            if (!nodeIDLookup.IsCreated ||
+                !nodeIDLookup.IsValidID(nodeID.value, nodeID.generation, out var index))
                 return false;
 
             if (index < 0 || index >= nodes.Count)

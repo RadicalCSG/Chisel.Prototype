@@ -10,10 +10,9 @@ namespace Chisel.Core
 {
     public struct NativeChiselSurface
     {
-        public SurfaceLayers    layerDefinition;
-        public UVMatrix         UV0;
-    }
-    
+        public SurfaceLayers        layerDefinition;
+        public SurfaceDescription   surfaceDescription;
+    }    
 
     public struct BrushMeshBlob
     {

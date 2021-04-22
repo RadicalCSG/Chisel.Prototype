@@ -19,8 +19,24 @@ namespace Chisel.Core
         {
             return new NativeChiselSurface
             {
-                layerDefinition = surface?.brushMaterial?.LayerDefinition ?? SurfaceLayers.Empty,
-                UV0             = surface?.surfaceDescription.UV0 ?? UVMatrix.identity
+                layerDefinition     = surface?.brushMaterial?.LayerDefinition ?? SurfaceLayers.Empty,
+                surfaceDescription  = surface?.surfaceDescription ?? SurfaceDescription.Default
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static ChiselSurface Convert(NativeChiselSurface surface)
+        {
+            var materialManager = ChiselMaterialManager.Instance;
+            return new ChiselSurface
+            {
+                brushMaterial       = new ChiselBrushMaterial() // TODO: try to find original BrushMaterial instead?
+                {
+                    LayerUsage      = surface.layerDefinition.layerUsage,
+                    RenderMaterial  = materialManager.GetMaterial(surface.layerDefinition.layerParameter1),
+                    PhysicsMaterial = materialManager.GetPhysicMaterial(surface.layerDefinition.layerParameter2)
+                },
+                surfaceDescription  = surface.surfaceDescription,
             };
         }
 
@@ -32,7 +48,16 @@ namespace Chisel.Core
             dstPolygon.descriptionIndex = srcPolygon.descriptionIndex;
             dstPolygon.surface          = Convert(srcPolygon.surface);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static void Convert(in BrushMeshBlob.Polygon srcPolygon, ref BrushMesh.Polygon dstPolygon)
+        {
+            dstPolygon.firstEdge        = srcPolygon.firstEdge;
+            dstPolygon.edgeCount        = srcPolygon.edgeCount;
+            dstPolygon.descriptionIndex = srcPolygon.descriptionIndex;
+            dstPolygon.surface          = Convert(srcPolygon.surface);
+        }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static BlobAssetReference<NativeChiselSurfaceDefinition> BuildSurfaceDefinitionBlob(NativeChiselSurface surface0,
@@ -128,7 +153,7 @@ namespace Chisel.Core
             }
         }
 
-        public unsafe static BlobAssetReference<BrushMeshBlob> BuildBrushMeshBlob(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
+        public unsafe static BlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
                 brushMesh.vertices == null ||
@@ -184,6 +209,36 @@ namespace Chisel.Core
             return result;
         }
 
+        
+        public unsafe static BrushMesh ConvertToBrushMesh(BlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Allocator allocator = Allocator.Persistent)
+        {
+            if (!brushMeshBlobRef.IsCreated)
+                return null;
+
+            ref var brushMeshBlob = ref brushMeshBlobRef.Value;
+            if (brushMeshBlob.localVertices.Length < 4 ||
+                brushMeshBlob.polygons.Length < 4 ||
+                brushMeshBlob.halfEdges.Length < 12)
+                return null;
+
+            var brushMesh = new BrushMesh
+            {
+                vertices                = brushMeshBlob.localVertices.ToArray(),
+                halfEdges               = BlobArrayExtensions.ToArray<BrushMeshBlob.HalfEdge, BrushMesh.HalfEdge>(ref brushMeshBlob.halfEdges),
+                halfEdgePolygonIndices  = brushMeshBlob.halfEdgePolygonIndices.ToArray(),
+                planes                  = brushMeshBlob.localPlanes.ToArray(),
+                polygons                = new BrushMesh.Polygon[brushMeshBlob.polygons.Length]
+            };
+
+            for (int p = 0; p < brushMeshBlob.polygons.Length; p++)
+            {
+                ref var dstPolygon = ref brushMesh.polygons[p];
+                ref var srcPolygon = ref brushMeshBlob.polygons[p];
+                Convert(in srcPolygon, ref dstPolygon);
+            }
+            return brushMesh;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BlobAssetReference<BrushMeshBlob> Copy(BlobAssetReference<BrushMeshBlob> srcBrushMeshBlob, Allocator allocator)
         {
@@ -209,6 +264,7 @@ namespace Chisel.Core
             builder.Dispose();
             return result;
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool		IsBrushMeshIDValid		(Int32 brushMeshHash)
@@ -277,7 +333,7 @@ namespace Chisel.Core
                 DecreaseRefCount(oldBrushMeshHash);
             }
 
-            var brushMeshBlobRef = BuildBrushMeshBlob(brushMesh, Allocator.Persistent);
+            var brushMeshBlobRef = ConvertToBrushMeshBlob(brushMesh, Allocator.Persistent);
             ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
             if (!brushMeshBlobs.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
                 refCountedBrushMeshBlob = new RefCountedBrushMeshBlob { refCount = 1, brushMeshBlob = brushMeshBlobRef };

@@ -23,33 +23,20 @@ namespace Chisel.Core
         // TODO: add scale the tube in y-direction (use transform instead?)
         // TODO: add start/total angle of tube
 
-        public float outerDiameter;
-        public float innerDiameter { get { return CalcInnerDiameter(outerDiameter, tubeWidth); } set { tubeWidth = CalcTubeWidth(outerDiameter, value); } }
-        public float tubeWidth;
-        public float tubeHeight;
-        public float tubeRotation;
-        public float startAngle;
-        public float totalAngle;
-        public int verticalSegments;
-        public int horizontalSegments;
+        public float    outerDiameter;
+        public float    innerDiameter { get { return math.max(0, outerDiameter - (tubeWidth * 2)); } set { tubeWidth = math.max(kMinTubeDiameter, (outerDiameter - innerDiameter) * 0.5f); } }
+        public float    tubeWidth;
+        public float    tubeHeight;
+        public float    tubeRotation;
+        public float    startAngle;
+        public float    totalAngle;
+        public int      verticalSegments;
+        public int      horizontalSegments;
 
-        public bool fitCircle;
+        public bool     fitCircle;
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
-
-
-        public static float CalcInnerDiameter(float outerDiameter, float tubeWidth)
-        {
-            var innerDiameter = outerDiameter - (tubeWidth * 2);
-            return math.max(0, innerDiameter);
-        }
-
-        public static float CalcTubeWidth(float outerDiameter, float innerDiameter)
-        {
-            var tubeWidth = (outerDiameter - innerDiameter) * 0.5f;
-            return math.max(kMinTubeDiameter, tubeWidth);
-        }
 
         public void Reset()
         {
@@ -126,7 +113,7 @@ namespace Chisel.Core
             }
         }
 
-
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -202,6 +189,7 @@ namespace Chisel.Core
                 // TODO: handle sizing down
             }
         }
+        #endregion
 
         public void OnMessages(IChiselMessages messages)
         {

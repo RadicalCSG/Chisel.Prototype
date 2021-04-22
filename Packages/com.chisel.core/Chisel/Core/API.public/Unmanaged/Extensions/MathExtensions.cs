@@ -264,7 +264,7 @@ namespace Chisel.Core
         }
 
 
-        public static void Set(this Transform transform, in Matrix4x4 matrix)
+        public static void SetLocal(this Transform transform, in Matrix4x4 matrix)
         {
             var position = matrix.GetColumn(3);
             matrix.SetColumn(3, Vector4.zero);

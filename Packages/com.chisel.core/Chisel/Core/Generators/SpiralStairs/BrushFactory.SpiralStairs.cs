@@ -30,7 +30,7 @@ namespace Chisel.Core
                 return BlobAssetReference<BrushMeshBlob>.Null;
             brushMesh.CalculatePlanes();
             brushMesh.UpdateHalfEdgePolygonIndices();
-            return BrushMeshManager.BuildBrushMeshBlob(brushMesh, Allocator.Persistent);
+            return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, Allocator.Persistent);
         }
 
         // TODO: create helper method to cut brushes, use that instead of intersection + subtraction brushes
