@@ -375,8 +375,8 @@ namespace Chisel.Core
 
             polygons = builder.Allocate(ref root.polygons, polygonCount);
 
-            var surfaceTop = surfaceDefinition.surfaces[segmentTopIndex];
-            var surfaceBottom = surfaceDefinition.surfaces[segmentBottomIndex];
+            var surfaceTop      = surfaceDefinition.surfaces[segmentTopIndex];
+            var surfaceBottom   = surfaceDefinition.surfaces[segmentBottomIndex];
             
             polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0,        edgeCount = segments, descriptionIndex = segmentTopIndex, surface = surfaceTop };
             polygons[1] = new BrushMeshBlob.Polygon { firstEdge = segments, edgeCount = segments, descriptionIndex = segmentBottomIndex, surface = surfaceBottom };

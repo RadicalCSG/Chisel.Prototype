@@ -631,21 +631,21 @@ namespace Chisel.Core
             new BrushMesh.HalfEdge{ twinIndex =  9, vertexIndex = 3 }	// 23 (3-7)
         };
 
-        static BrushMesh.Polygon[] CreateBoxPolygons(int descriptionIndex, in ChiselSurface surface)
+        static BrushMesh.Polygon[] CreateBoxPolygons(int descriptionIndex)
         {
             return new[]
             {
                 // left/right
-                new BrushMesh.Polygon{ surfaceID = 0, firstEdge =  0, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 1, firstEdge =  4, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
+                new BrushMesh.Polygon{ firstEdge =  0, edgeCount = 4, descriptionIndex = descriptionIndex },
+                new BrushMesh.Polygon{ firstEdge =  4, edgeCount = 4, descriptionIndex = descriptionIndex },
                 
                 // front/back
-                new BrushMesh.Polygon{ surfaceID = 2, firstEdge =  8, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 3, firstEdge = 12, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
+                new BrushMesh.Polygon{ firstEdge =  8, edgeCount = 4, descriptionIndex = descriptionIndex },
+                new BrushMesh.Polygon{ firstEdge = 12, edgeCount = 4, descriptionIndex = descriptionIndex },
                 
                 // top/down
-                new BrushMesh.Polygon{ surfaceID = 4, firstEdge = 16, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface },
-                new BrushMesh.Polygon{ surfaceID = 5, firstEdge = 20, edgeCount = 4, descriptionIndex = descriptionIndex, surface = surface }
+                new BrushMesh.Polygon{ firstEdge = 16, edgeCount = 4, descriptionIndex = descriptionIndex },
+                new BrushMesh.Polygon{ firstEdge = 20, edgeCount = 4, descriptionIndex = descriptionIndex }
             };
         }
     }

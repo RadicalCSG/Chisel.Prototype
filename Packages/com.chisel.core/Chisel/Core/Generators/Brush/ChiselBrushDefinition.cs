@@ -69,12 +69,9 @@ namespace Chisel.Core
         {
             if (surfaceDefinition.surfaces.Length == 0)
                 return;
-            
+
             for (int p = 0; p < brushOutline.polygons.Length; p++)
-            {
-                surfaceDefinition.surfaces[p].surfaceDescription = brushOutline.polygons[p].surface.surfaceDescription;
-                surfaceDefinition.surfaces[p].brushMaterial = brushOutline.polygons[p].surface.brushMaterial;
-            }
+                brushOutline.polygons[p].descriptionIndex = p;
         }
 
         public void Validate()
@@ -84,10 +81,6 @@ namespace Chisel.Core
 
             if (version != kLatestVersion)
                 version = kLatestVersion;
-
-            // Temporary fix for misformed brushes
-            for (int i = 0; i < brushOutline.polygons.Length; i++)
-                brushOutline.polygons[i].surfaceID = i;
 
             brushOutline.CalculatePlanes();
             
@@ -176,7 +169,7 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            var brushMesh = BrushMeshFactory.CreateBrushBlob(brushOutline);
+            var brushMesh = BrushMeshFactory.CreateBrushBlob(brushOutline, in surfaceDefinitionBlob);
             brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             return default;
         }

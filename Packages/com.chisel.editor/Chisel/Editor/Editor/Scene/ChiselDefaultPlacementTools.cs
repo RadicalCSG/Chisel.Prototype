@@ -64,7 +64,7 @@ namespace Chisel.Editors
                                                 as ChiselDefinedGeneratorComponent<DefinitionType>;
                             shape.Center = Vector2.zero;
                             generatedComponent.definition.Reset();
-                            generatedComponent.surfaceDefinition?.Reset();
+                            generatedComponent.SurfaceDefinition?.Reset();
                             generatedComponent.Operation = forceOperation ?? CSGOperationType.Additive;
                             PlacementToolDefinition.OnCreate(ref generatedComponent.definition, shape);
                             PlacementToolDefinition.OnUpdate(ref generatedComponent.definition, height);

@@ -110,7 +110,7 @@ namespace Chisel.Core
             return (float3)finalVertex;
         }
 
-        public Vector3 CenterAndSnapPlanes()
+        public Vector3 CenterAndSnapPlanes(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             Profiler.BeginSample("CenterAndSnapPlanes");
             /*
@@ -140,7 +140,7 @@ namespace Chisel.Core
             var translate = float4x4.Translate(center);
             for (int i = 0; i < polygons.Length; i++)
             {
-                var surface = polygons[i].surface;
+                ref var surface             = ref surfaceDefinition.surfaces[i];
 
                 var localSpaceToPlaneSpace  = MathExtensions.GenerateLocalToPlaneSpaceMatrix(planes[i]);
                 var originalUVMatrix        = surface.surfaceDescription.UV0.ToFloat4x4();

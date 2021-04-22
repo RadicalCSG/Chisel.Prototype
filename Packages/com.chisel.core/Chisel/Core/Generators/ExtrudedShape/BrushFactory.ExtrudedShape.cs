@@ -69,8 +69,8 @@ namespace Chisel.Core
                 var srcPoint3   = new float3(srcPoint.x, srcPoint.y, 0);
                 localVertices[              v] = matrix0.MultiplyPoint(srcPoint3);
                 localVertices[rangeLength + v] = matrix1.MultiplyPoint(srcPoint3);
-                segmentIndices[              v] = srcSegment;
-                segmentIndices[rangeLength + v] = srcSegment;
+                segmentIndices[              v] = srcSegment + 2;
+                segmentIndices[rangeLength + v] = srcSegment + 2;
             }
             return true;
         }

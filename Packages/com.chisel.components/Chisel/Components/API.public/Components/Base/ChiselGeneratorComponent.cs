@@ -21,6 +21,7 @@ namespace Chisel.Components
         public DefinitionType definition = new DefinitionType();
 
         public ChiselSurfaceDefinition surfaceDefinition;
+        public override ChiselSurfaceDefinition SurfaceDefinition { get { return surfaceDefinition; } }
 
         public override ChiselBrushMaterial GetBrushMaterial(int descriptionIndex) { return surfaceDefinition.GetBrushMaterial(descriptionIndex); }
         public override SurfaceDescription GetSurfaceDescription(int descriptionIndex) { return surfaceDefinition.GetSurfaceDescription(descriptionIndex); }
@@ -43,8 +44,8 @@ namespace Chisel.Components
                 surfaceDefinition = new ChiselSurfaceDefinition();
                 surfaceDefinition.Reset();
             }
-            if (surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount))
-                definition.UpdateSurfaces(ref surfaceDefinition);
+            surfaceDefinition.EnsureSize(definition.RequiredSurfaceCount);
+            definition.UpdateSurfaces(ref surfaceDefinition);
         }
 
         protected override void OnValidateInternal()
@@ -72,6 +73,8 @@ namespace Chisel.Components
         public const string kOperationFieldName         = nameof(operation);
 
         [HideInInspector] CSGTreeNode Node = default;
+
+        public abstract ChiselSurfaceDefinition SurfaceDefinition { get; }
 
         [SerializeField, HideInInspector] protected CSGOperationType operation;		    // NOTE: do not rename, name is directly used in editors
         [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
@@ -763,7 +766,25 @@ namespace Chisel.Components
         protected abstract JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
 
 #if UNITY_EDITOR
-        static ChiselNode ConvertChildTreeNodesToGameObjects(Transform parent, CSGTreeNode node)
+        static bool ConvertBrush(CSGTreeBrush srcBrush, in ChiselSurfaceDefinition srcSurfaceDefinition, out BrushMesh newBrushMesh, out ChiselSurfaceDefinition newSurfaceDefinition)
+        {
+            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(srcBrush.BrushMesh.BrushMeshID);
+            newBrushMesh = BrushMeshManager.ConvertToBrushMesh(brushMeshBlob);
+
+            newSurfaceDefinition = new ChiselSurfaceDefinition
+            {
+                surfaces = new ChiselSurface[newBrushMesh.polygons.Length]
+            };
+            for (int p = 0; p < newBrushMesh.polygons.Length; p++)
+            {
+                var oldDescriptionIndex = newBrushMesh.polygons[p].descriptionIndex;
+                newSurfaceDefinition.surfaces[p] = srcSurfaceDefinition.surfaces[oldDescriptionIndex];
+                newBrushMesh.polygons[p].descriptionIndex = p;
+            }
+            return true;
+        }
+
+        static ChiselNode ConvertChildTreeNodesToGameObjects(Transform parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
         {
             if (node.Type == CSGNodeType.Brush)
             {
@@ -772,9 +793,8 @@ namespace Chisel.Components
                 brushComponent.transform.SetLocal(brushNode.LocalTransformation);
                 brushComponent.Operation                 = brushNode.Operation;
 
-                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(brushNode.BrushMesh.BrushMeshID);
-                var brushMesh       = BrushMeshManager.ConvertToBrushMesh(brushMeshBlob);
-
+                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
+                brushComponent.surfaceDefinition = newSurfaceDefinition;
                 brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
                 return brushComponent;
             } 
@@ -785,11 +805,11 @@ namespace Chisel.Components
             compositeComponent.Operation = node.Operation;
             var parentTransform = compositeComponent.transform;
             for (int i = 0; i < node.Count; i++)
-                ConvertChildTreeNodesToGameObjects(parentTransform, node[i]);
+                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
             return compositeComponent;
         }
 
-        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, CSGTreeNode node)
+        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
         {
             if (node.Type == CSGNodeType.Brush)
             {
@@ -798,22 +818,21 @@ namespace Chisel.Components
                 brushComponent.transform.SetLocal(brushNode.LocalTransformation);
                 brushComponent.Operation                 = brushNode.Operation;
 
-                var brushMeshBlob   = BrushMeshManager.GetBrushMeshBlob(brushNode.BrushMesh.BrushMeshID);
-                var brushMesh       = BrushMeshManager.ConvertToBrushMesh(brushMeshBlob);
-
+                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
+                brushComponent.surfaceDefinition = newSurfaceDefinition;
                 brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
                 return brushComponent;
             }
 
             if (node.Count == 1)
-                return ConvertTreeNodeToBrushes(parent, node[0]);
+                return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0]);
             
             var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(parent);
             //compositeComponent.transform.SetLocal(node.LocalTransformation);
             compositeComponent.Operation = node.Operation;
             var parentTransform = compositeComponent.transform;
             for (int i = 0; i < node.Count; i++)
-                ConvertChildTreeNodesToGameObjects(parentTransform, node[i]);
+                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
             return compositeComponent;
         }
 
@@ -825,6 +844,7 @@ namespace Chisel.Components
 
             var topGameObject = this.gameObject;
             var gameObjectIsActive = topGameObject.activeSelf;
+            var surfaceDefinition = this.SurfaceDefinition;
 
             // Destroying this Generator Component will destroy the treeNode
             // So we need to copy the treeNode
@@ -842,7 +862,7 @@ namespace Chisel.Components
                 // We set the gameobject to not be active, this will prevent a lot of messages to 
                 // be send by Unity while we're still building the entire sub-hierarchy
                 topGameObject.SetActive(false);
-                var topComponent = ConvertTreeNodeToBrushes(topGameObject, topNode);
+                var topComponent = ConvertTreeNodeToBrushes(topGameObject, in surfaceDefinition, topNode);
                 result = topComponent != null;
             }
             finally 

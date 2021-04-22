@@ -23,7 +23,7 @@ namespace Chisel.Core
         /// <summary>Create a <see cref="Chisel.Core.BrushMeshInstance"/> from a given <see cref="Chisel.Core.BrushMesh"/></summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to create an instance with</param>
         /// <returns>A newly created <see cref="Chisel.Core.BrushMeshInstance"/> on success, or an invalid <see cref="Chisel.Core.BrushMeshInstance"/> on failure.</returns>
-        public static BrushMeshInstance Create(BrushMesh brushMesh) { return new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) }; }
+        public static BrushMeshInstance Create(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition) { var newInstance = new BrushMeshInstance(); newInstance.Set(brushMesh, in surfaceDefinition); return newInstance; }
 
         /// <summary>Destroy the <see cref="Chisel.Core.BrushMeshInstance"/> and release the memory used by this instance.</summary>
         public void	Destroy		()					{ var prevBrushMeshID = brushMeshHash; brushMeshHash = BrushMeshInstance.InvalidInstanceID; BrushMeshManager.DecreaseRefCount(prevBrushMeshID); }
@@ -31,9 +31,9 @@ namespace Chisel.Core
         /// <summary>Update this <see cref="Chisel.Core.BrushMeshInstance"/> with the given <see cref="Chisel.Core.BrushMesh"/>.</summary>
         /// <param name="brushMesh">The <see cref="Chisel.Core.BrushMesh"/> to update the <see cref="Chisel.Core.BrushMeshInstance"/> with</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure. In case of failure the brush will keep using the previously set <see cref="Chisel.Core.BrushMesh"/>.</returns>
-        public bool Set			(BrushMesh brushMesh)	
+        public bool Set			(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)	
         {
-            brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, oldBrushMeshHash: brushMeshHash);
+            brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, in surfaceDefinition, oldBrushMeshHash: brushMeshHash);
             return Valid;
         }
         
@@ -50,7 +50,7 @@ namespace Chisel.Core
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object obj) { if (!(obj is BrushMeshInstance)) return false; var type = (BrushMeshInstance)obj; return brushMeshHash == type.brushMeshHash; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode() { return brushMeshHash.GetHashCode(); }
+        public override int GetHashCode() { return brushMeshHash; }
         #endregion
     }
 }

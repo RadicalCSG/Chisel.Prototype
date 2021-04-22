@@ -108,27 +108,6 @@ namespace Chisel.Core
         [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
                                                         // new instances will have the latest version
 
-        static BrushMeshBlob.Polygon[] s_TempPolygons;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override unsafe int GetHashCode()
-        {
-            unchecked
-            {
-                if (s_TempPolygons == null || s_TempPolygons.Length < polygons.Length)
-                    s_TempPolygons = new BrushMeshBlob.Polygon[polygons.Length];
-                for (int i = 0; i < polygons.Length; i++)
-                    BrushMeshManager.Convert(in polygons[i], ref s_TempPolygons[i]);
-                fixed (BrushMeshBlob.Polygon* polygonsPtr  = s_TempPolygons)
-                fixed (float3*                verticesPtr  = vertices)
-                fixed (HalfEdge*              halfEdgesPtr = halfEdges)
-                {
-                    return (int)math.hash(new uint3(math.hash(polygonsPtr,  sizeof(BrushMeshBlob.Polygon) * polygons.Length),
-                                                    math.hash(verticesPtr,  sizeof(float3  ) * vertices.Length),
-                                                    math.hash(halfEdgesPtr, sizeof(HalfEdge) * halfEdges.Length)));
-                }
-            }
-        }
-
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)
         {
@@ -173,15 +152,10 @@ namespace Chisel.Core
             /// <value>The number or edges of this <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
             public Int32 edgeCount;
             
-            /// <value>An ID that can be used to identify the <see cref="Chisel.Core.BrushMesh.Polygon"/>.</value>
-            public Int32 surfaceID; // TODO: replace with surfaceID (leading to BrushMaterial uniqueID) and polygonIndex
             public Int32 descriptionIndex;
 
-            /// <value>Describes what the surface of a polygon looks like & behaves.</value>
-            public ChiselSurface surface;
-
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public override string ToString() { return $"{{ firstEdge = {firstEdge}, edgeCount = {edgeCount}, surfaceID = {surfaceID} }}"; }
+            public override string ToString() { return $"{{ firstEdge = {firstEdge}, edgeCount = {edgeCount}, descriptionIndex = {descriptionIndex} }}"; }
         }
 
         /// <summary>Defines a half edge of a <see cref="Chisel.Core.BrushMesh"/>.</summary>

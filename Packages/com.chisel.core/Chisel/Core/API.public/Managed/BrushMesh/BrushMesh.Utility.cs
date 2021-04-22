@@ -694,10 +694,8 @@ namespace Chisel.Core
 
                 newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount          = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
                 newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex].descriptionIndex;
-                newPolygons[newPolygonIndex].surface            = polygons[polygonIndex].surface;
-
+                
                 newPolygons[polygonIndex].firstEdge = indexIn;
                 newPolygons[polygonIndex].edgeCount = segment2;
 
@@ -762,10 +760,8 @@ namespace Chisel.Core
 
                 newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
                 newPolygons[newPolygonIndex].edgeCount          = newEdgeCount;
-                newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
                 newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex].descriptionIndex;
-                newPolygons[newPolygonIndex].surface            = polygons[polygonIndex].surface;
-
+                
                 newPolygons[polygonIndex].firstEdge = indexOut;
                 newPolygons[polygonIndex].edgeCount = segment2;
 
@@ -856,9 +852,7 @@ namespace Chisel.Core
                     {
                         firstEdge           = newFirstEdge,
                         edgeCount           = newEdgeCount,
-                        surfaceID           = polygons[newPolygonIndex - 1].surfaceID + 1,
-                        descriptionIndex    = originalPolygon.descriptionIndex,
-                        surface             = originalPolygon.surface
+                        descriptionIndex    = originalPolygon.descriptionIndex
                     });
                 }
 
@@ -956,9 +950,7 @@ namespace Chisel.Core
                     polygons.Add(new Polygon { 
                         firstEdge           = newFirstEdge,
                         edgeCount           = newEdgeCount,
-                        surfaceID           = polygons[newPolygonIndex - 1].surfaceID + 1,
-                        descriptionIndex    = originalPolygon.descriptionIndex,
-                        surface             = originalPolygon.surface
+                        descriptionIndex    = originalPolygon.descriptionIndex
                     });
                 }
 
@@ -1059,9 +1051,7 @@ namespace Chisel.Core
             var newPolygonIndex = polygons.Length;
             newPolygons[newPolygonIndex].edgeCount          = newCount;
             newPolygons[newPolygonIndex].firstEdge          = newFirstEdge;
-            newPolygons[newPolygonIndex].surfaceID          = polygons[polygons.Length - 1].surfaceID + 1;
             newPolygons[newPolygonIndex].descriptionIndex   = polygons[polygonIndex1].descriptionIndex;
-            newPolygons[newPolygonIndex].surface            = polygons[polygonIndex1].surface;
 
             var edgeCount1 = polygons[polygonIndex1].edgeCount;
             var firstEdge1 = polygons[polygonIndex1].firstEdge;
@@ -1546,13 +1536,12 @@ namespace Chisel.Core
         static bool[]       s_TestedPolygons                = null; // avoids allocations at runtime
 
 
-        static bool CutInternal(float4[] cuttingPlanes, ChiselSurface[] chiselSurfaces, List<Polygon> polygons, List<float4> planes, List<HalfEdge> halfEdges, List<int> halfEdgePolygonIndices, List<float3> vertices)
+        static bool CutInternal(float4[] cuttingPlanes, List<Polygon> polygons, List<float4> planes, List<HalfEdge> halfEdges, List<int> halfEdgePolygonIndices, List<float3> vertices)
         {
             bool result = true;
             for (int srcIndex = 0; srcIndex < cuttingPlanes.Length; srcIndex++)
             {
                 var cuttingPlane    = -cuttingPlanes[srcIndex];
-                var chiselSurface   = chiselSurfaces[srcIndex];
 
                 s_VertexDistances.Clear();
                 if (s_VertexDistances.Capacity < vertices.Count)
@@ -1725,18 +1714,14 @@ namespace Chisel.Core
                         {
                             firstEdge           = polygonStart1,
                             edgeCount           = newEdgeCount,
-                            surface             = chiselSurface,
-                            descriptionIndex    = srcIndex,
-                            surfaceID           = polygonIndex1
+                            descriptionIndex    = srcIndex
                         });
 
                         polygons.Add(new Polygon
                         {
                             firstEdge           = polygonStart2,
                             edgeCount           = newEdgeCount,
-                            surface             = chiselSurface,
-                            descriptionIndex    = srcIndex,
-                            surfaceID           = polygonIndex2
+                            descriptionIndex    = srcIndex
                         });
 
                         var desiredHalfEdgePolygonIndicesCapacity = halfEdgePolygonIndices.Count + (2 * newEdgeCount);
@@ -1809,34 +1794,18 @@ namespace Chisel.Core
         }
 
         static readonly float4[] sSingleCuttingPlane = new float4[1];
-        static readonly ChiselSurface[] sSingleSurface = new ChiselSurface[1];
-        public bool Cut(Plane cuttingPlane, ChiselSurface chiselSurface = null)
+        public bool Cut(Plane cuttingPlane)
         {
             sSingleCuttingPlane[0] = -new float4(cuttingPlane.normal, cuttingPlane.distance);
-            sSingleSurface[0] = chiselSurface;
-            return Cut(sSingleCuttingPlane, chiselSurface == null ? null : sSingleSurface);
+            return Cut(sSingleCuttingPlane);
         }
 
-        public bool Cut(float4[] cuttingPlanes, ChiselSurface[] chiselSurfaces = null)
+        public bool Cut(float4[] cuttingPlanes)
         {
             Profiler.BeginSample("Cut");
             try
             {
                 if (cuttingPlanes == null) throw new ArgumentNullException(nameof(cuttingPlanes));
-                if (chiselSurfaces == null)
-                {
-                    chiselSurfaces = new ChiselSurface[cuttingPlanes.Length];
-                    for (int i = 0; i < cuttingPlanes.Length; i++)
-                    {
-                        chiselSurfaces[i] = new ChiselSurface
-                        {
-                            brushMaterial = ChiselBrushMaterial.CreateInstance(ChiselMaterialManager.DefaultFloorMaterial, ChiselMaterialManager.DefaultPhysicsMaterial),
-                            surfaceDescription = SurfaceDescription.Default
-                        };
-                    }
-                }
-                if (cuttingPlanes.Length != chiselSurfaces.Length)
-                    throw new ArgumentException($"{nameof(cuttingPlanes)} must be equal in Length to {nameof(chiselSurfaces)}");
                 if (cuttingPlanes.Length == 0)
                     return false;            
                 if (polygons == null || polygons.Length == 0 ||
@@ -1872,7 +1841,7 @@ namespace Chisel.Core
                 s_VerticesBuffer.Clear();
                 s_VerticesBuffer.AddRange(vertices);
 
-                var result = CutInternal(cuttingPlanes, chiselSurfaces, s_PolygonsBuffer, s_PlanesBuffer, s_HalfEdgesBuffer, s_HalfEdgePolygonIndicesBuffer, s_VerticesBuffer);
+                var result = CutInternal(cuttingPlanes, s_PolygonsBuffer, s_PlanesBuffer, s_HalfEdgesBuffer, s_HalfEdgePolygonIndicesBuffer, s_VerticesBuffer);
 
                 bool updateIndices;
                 //updateIndices = CompactHalfEdges(s_PolygonsBuffer, s_PlanesBuffer, s_HalfEdgesBuffer, s_HalfEdgePolygonIndicesBuffer);
