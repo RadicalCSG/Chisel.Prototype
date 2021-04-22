@@ -17,7 +17,7 @@ namespace Chisel.Editors
 
         public override GUIContent GetHierarchyIcon(ChiselModel node)
         {
-            return ChiselEditorResources.GetIconContent(kModelIconName, node.NodeTypeName)[0];
+            return ChiselEditorResources.GetIconContent(kModelIconName, node.ChiselNodeTypeName)[0];
         }
 
         public override bool HasValidState(ChiselModel node)

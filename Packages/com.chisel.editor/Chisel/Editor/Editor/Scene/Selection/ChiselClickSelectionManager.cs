@@ -7,6 +7,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnitySceneExtensions;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Editors
 {
@@ -18,7 +19,7 @@ namespace Chisel.Editors
         {
             this.point  = chiselIntersection.worldPlaneIntersection;
             this.plane  = chiselIntersection.worldPlane;
-            this.node   = chiselIntersection.node;
+            this.node   = chiselIntersection.treeNode;
             this.model  = chiselIntersection.model;
         }
 
@@ -343,7 +344,7 @@ namespace Chisel.Editors
             if (intersectionObject &&
                 intersectionObject.activeInHierarchy)
             {
-                if (brushIntersection.node != null)
+                if (brushIntersection.treeNode != null)
                     return new PlaneIntersection(brushIntersection);
                 
                 if (intersectionObject.TryGetComponent<MeshFilter>(out var meshFilter))
@@ -379,6 +380,74 @@ namespace Chisel.Editors
             return GetPlaneIntersection(mousePosition);
         }
 
+
+        static readonly List<ChiselBrushMaterial> s_TempBrushMaterials = new List<ChiselBrushMaterial>();
+
+        static ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeNode node, CSGTreeBrush brush, int surfaceID)
+        {
+            if (!node.Valid)
+                return null;
+
+            if (surfaceID < 0)
+                return null;
+
+            s_TempBrushMaterials.Clear();
+            if (!GetAllMaterials(node, brush, s_TempBrushMaterials))
+                return null;
+
+            if (surfaceID >= s_TempBrushMaterials.Count)
+                return null;
+
+            var brushMaterial = s_TempBrushMaterials[surfaceID];
+            s_TempBrushMaterials.Clear();
+            return brushMaterial;
+        }
+
+        static bool GetAllMaterials(CSGTreeBrush brush, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
+        {
+            if (brush.NodeID != findBrush.NodeID)
+                return false;
+
+            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
+            if (!brushMeshBlob.IsCreated)
+                return true;
+
+            ref var brushMesh = ref brushMeshBlob.Value;
+            for (int i = 0; i < brushMesh.polygons.Length; i++)
+            {
+                var surface = brushMesh.polygons[i].surface;
+                var brushMaterial = new ChiselBrushMaterial
+                {
+                    LayerUsage = surface.layerDefinition.layerUsage,
+                    RenderMaterial = surface.layerDefinition.layerParameter1 == 0 ? default : ChiselMaterialManager.Instance.GetMaterial(surface.layerDefinition.layerParameter1),
+                    PhysicsMaterial = surface.layerDefinition.layerParameter2 == 0 ? default : ChiselMaterialManager.Instance.GetPhysicMaterial(surface.layerDefinition.layerParameter2)
+                };
+                brushMaterials.Add(brushMaterial);
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool GetAllMaterials(CSGTreeNode node, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
+        {
+            switch (node.Type)
+            {
+                case CSGNodeType.Branch: return GetAllMaterials((CSGTreeBranch)node, findBrush, brushMaterials);
+                case CSGNodeType.Brush: return GetAllMaterials((CSGTreeBrush)node, findBrush, brushMaterials);
+                default: return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool GetAllBrushMaterials(CSGTreeNode node, CSGTreeBrush brush, List<ChiselBrushMaterial> brushMaterials)
+        {
+            if (!node.Valid)
+                return false;
+
+            GetAllMaterials(node, brush, brushMaterials);
+            return brushMaterials.Count > 0;
+        }
+
         public static bool FindBrushMaterials(Vector2 position, List<ChiselBrushMaterial> outBrushMaterials, List<ChiselNode> nodes, bool selectAllSurfaces)
         {
             outBrushMaterials.Clear();
@@ -389,8 +458,8 @@ namespace Chisel.Editors
                 if (!PickFirstGameObject(position, out intersection))
                     return false;
 
-                var node = intersection.node;
-                if (!node)
+                var chiselNode = intersection.treeNode;
+                if (!chiselNode)
                     return false;
 
                 var brush = intersection.brushIntersection.brush;
@@ -398,17 +467,17 @@ namespace Chisel.Editors
                 if (selectAllSurfaces)
                 {
                     nodes.Clear();
-                    nodes.Add(node);
-                    if (!node.GetAllBrushMaterials(brush, outBrushMaterials))
+                    nodes.Add(chiselNode);
+                    if (!GetAllBrushMaterials(chiselNode.TopTreeNode, brush, outBrushMaterials))
                         return false;
                     return true;
                 } else
                 {
-                    var surface = node.FindBrushMaterialBySurfaceIndex(brush, intersection.brushIntersection.surfaceIndex);
+                    var surface = FindBrushMaterialBySurfaceIndex(chiselNode.TopTreeNode, brush, intersection.brushIntersection.surfaceIndex);
                     if (surface == null)
                         return false;
                     nodes.Clear();
-                    nodes.Add(node);
+                    nodes.Add(chiselNode);
                     outBrushMaterials.Add(surface);
                     return true;
                 }
@@ -420,6 +489,64 @@ namespace Chisel.Editors
             }
         }
         
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool FindSurfaceReference(ChiselNode chiselNode, CSGTreeNode node, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
+        {
+            surfaceReference = null;
+            switch (node.Type)
+            {
+                case CSGNodeType.Branch: return FindSurfaceReference(chiselNode, (CSGTreeBranch)node, findBrush, surfaceID, out surfaceReference);
+                case CSGNodeType.Brush:  return FindSurfaceReference(chiselNode, (CSGTreeBrush)node,  findBrush, surfaceID, out surfaceReference);
+                default: return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool FindSurfaceReference(ChiselNode chiselNode, CSGTreeBranch branch, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
+        {
+            surfaceReference = null;
+            for (int i = 0; i < branch.Count; i++)
+            {
+                if (FindSurfaceReference(chiselNode, branch[i], findBrush, surfaceID, out surfaceReference))
+                    return true;
+            }
+            return false;
+        }
+
+        static bool FindSurfaceReference(ChiselNode chiselNode, CSGTreeBrush brush, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
+        {
+            surfaceReference = null;
+            if (findBrush.NodeID != brush.NodeID)
+                return false;
+            
+            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(findBrush.BrushMesh.BrushMeshID);
+            if (!brushMeshBlob.IsCreated)
+                return true;
+
+            ref var brushMesh = ref brushMeshBlob.Value;
+
+            var surfaceIndex = surfaceID;
+            if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
+                return true;
+
+            var descriptionIndex = brushMesh.polygons[surfaceIndex].descriptionIndex;
+
+            //return new SurfaceReference(this, brushContainerAsset, 0, 0, surfaceIndex, surfaceIndex);
+            surfaceReference = new SurfaceReference(chiselNode, descriptionIndex, brush, surfaceIndex);
+            return true;
+        }
+
+        public static SurfaceReference FindSurfaceReference(ChiselNode chiselNode, CSGTreeBrush brush, int surfaceID)
+        {
+            if (!chiselNode || !chiselNode.TopTreeNode.Valid)
+                return null;
+
+            if (FindSurfaceReference(chiselNode, chiselNode.TopTreeNode, brush, surfaceID, out var surfaceReference))
+                return surfaceReference;
+            return null;
+        }
+        
         public static bool FindSurfaceReferences(List<SurfaceReference> foundSurfaces, Vector2 position, bool selectAllSurfaces, out ChiselIntersection intersection, out SurfaceReference surfaceReference)
         {
             intersection = ChiselIntersection.None;
@@ -429,15 +556,15 @@ namespace Chisel.Editors
                 if (!PickFirstGameObject(position, out intersection))
                     return false;
     
-                var node = intersection.node;
-                if (!node)
+                var chiselNode = intersection.treeNode;
+                if (!chiselNode)
                     return false;
 
                 var brush = intersection.brushIntersection.brush;
 
-                surfaceReference = node.FindSurfaceReference(brush, intersection.brushIntersection.surfaceIndex);
+                surfaceReference = FindSurfaceReference(chiselNode, brush, intersection.brushIntersection.surfaceIndex);
                 if (selectAllSurfaces)
-                    return node.GetAllSurfaceReferences(brush, foundSurfaces);
+                    return ChiselSurfaceSelectionManager.GetAllSurfaceReferences(chiselNode, brush, foundSurfaces);
 
                 if (surfaceReference == null)
                     return false;
@@ -472,7 +599,7 @@ namespace Chisel.Editors
 
                     if (ChiselSceneQuery.FindFirstWorldIntersection(model, worldRayStart, worldRayEnd, layers, ignore, filter, out var tempIntersection))
                     {
-                        node = tempIntersection.node;
+                        node = tempIntersection.treeNode;
                         if (node)
                         {
                             if (ignore != null &&

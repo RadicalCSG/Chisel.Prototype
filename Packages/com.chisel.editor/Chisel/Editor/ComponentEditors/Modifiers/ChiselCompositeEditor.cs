@@ -15,7 +15,7 @@ namespace Chisel.Editors
     {
         public override GUIContent GetHierarchyIcon(ChiselComposite node)
         {
-            return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.NodeTypeName);
+            return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.ChiselNodeTypeName);
         }
 
         public override bool HasValidState(ChiselComposite node)

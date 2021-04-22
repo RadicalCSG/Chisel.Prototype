@@ -14,14 +14,13 @@ namespace Chisel.Components
         public const string kDocumentationBaseURL = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
         public const string kDocumentationExtension = ".html";
 
-        public abstract string NodeTypeName { get; }
+        public abstract string          ChiselNodeTypeName  { get; }
+        public abstract CSGTreeNode     TopTreeNode         { get; protected set; }
+        internal virtual bool           IsActive            { get { return isActiveAndEnabled; } }
+        public virtual bool             IsContainer         { get { return false; } }
 
 
         [NonSerialized] [HideInInspector] public readonly ChiselHierarchyItem hierarchyItem;
-        
-        internal virtual bool           IsActive            { get { return isActiveAndEnabled; } }
-        public virtual bool             CanHaveChildNodes   { get { return false; } }        
-        public abstract CSGTreeNode     TopNode             { get; protected set; }
 
 
         public ChiselNode() { hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }        
@@ -69,46 +68,17 @@ namespace Chisel.Components
         public virtual void UpdateTransformation() { }
 
 
-        internal abstract CSGTreeNode[] CreateTreeNodes();
-        public void ClearTreeNodes()
+        internal abstract CSGTreeNode CreateTreeNode();
+        public void ResetTreeNodes()
         {
-            var topNode = TopNode;
+            var topNode = TopTreeNode;
             if (topNode.Valid)
-            {
                 topNode.Destroy();
-                TopNode = default;
-            }
+            TopTreeNode = default;
         }
-
-        internal virtual void SetChildren(List<CSGTreeNode> childNodes) { }
-        public virtual void CollectCSGTreeNodes(List<CSGTreeNode> childNodes) { }
 
         public virtual void UpdateBrushMeshInstances() { }
 
-        public virtual ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeBrush brush, int surfaceID)
-        {
-            return null;
-        }
-
-        public virtual bool GetAllBrushMaterials(CSGTreeBrush brush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            return false;
-        }
-        
-        public virtual SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
-        {
-            return null;
-        }   
-
-        public virtual bool GetAllSurfaceReferences(CSGTreeBrush brush, List<SurfaceReference> surfaces)
-        {
-            return false;
-        }
-        
-        public virtual bool GetAllSurfaceReferences(List<SurfaceReference> surfaces)
-        {
-            return false;
-        }
 
 
         public virtual Vector3 SetPivot(Vector3 newWorldPosition)
@@ -131,12 +101,5 @@ namespace Chisel.Components
                 child.Component.AddPivotOffset(worldSpaceDelta);
             }
         }
-
-#if UNITY_EDITOR
-        public virtual bool ConvertToBrushes()
-        {
-            return false;
-        }
-#endif
     }
 }

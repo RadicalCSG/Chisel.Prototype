@@ -87,7 +87,7 @@ namespace Chisel.Components
         [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
         [SerializeField, HideInInspector] protected Vector3 pivotOffset = Vector3.zero;
 
-        public override CSGTreeNode TopNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } protected set { Node = value; } }
+        public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } protected set { Node = value; } }
         bool ValidNodes { get { return Node.Valid; } }
         
 
@@ -200,7 +200,7 @@ namespace Chisel.Components
 
         protected override void OnDisable()
         {
-            ClearTreeNodes();
+            ResetTreeNodes();
             base.OnDisable();
         }
 
@@ -282,11 +282,10 @@ namespace Chisel.Components
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            ClearTreeNodes();
+            ResetTreeNodes();
         }
 
-        static readonly CSGTreeNode[] nodes = new CSGTreeNode[1];
-        internal override CSGTreeNode[] CreateTreeNodes()
+        internal override CSGTreeNode CreateTreeNode()
         {
             if (ValidNodes)
                 Debug.LogWarning(this.GetType().Name + " already has a treeNode, but trying to create a new one?", this);
@@ -304,14 +303,12 @@ namespace Chisel.Components
             Profiler.EndSample();
 
 
-            if (ValidNodes)
-            {
-                if (Node.Operation != operation)
-                    Node.Operation = operation;
-                nodes[0] = Node;
-            } else
-                nodes[0] = default;
-            return nodes;
+            if (!ValidNodes)
+                return default;
+            
+            if (Node.Operation != operation)
+                Node.Operation = operation;
+            return Node;
         }
 
         public override void SetDirty()
@@ -319,221 +316,9 @@ namespace Chisel.Components
             if (!ValidNodes)
                 return;
 
-            TopNode.SetDirty();
+            TopTreeNode.SetDirty();
         }
 
-        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
-        {
-            if (TopNode.Valid)
-                childNodes.Add(TopNode);
-        }
-
-        static readonly List<ChiselBrushMaterial> s_TempBrushMaterials = new List<ChiselBrushMaterial>();
-
-        public override ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeBrush brush, int surfaceID)
-        {
-            if (!Node.Valid)
-                return null;
-
-            if (surfaceID < 0)
-                return null;
-
-            s_TempBrushMaterials.Clear();
-            if (!GetAllMaterials(Node, brush, s_TempBrushMaterials))
-                return null;
-
-            if (surfaceID >= s_TempBrushMaterials.Count)
-                return null;
-
-            var brushMaterial = s_TempBrushMaterials[surfaceID];
-            s_TempBrushMaterials.Clear();
-            return brushMaterial;
-        }
-
-        bool GetAllMaterials(CSGTreeBrush brush, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            if (brush.NodeID != findBrush.NodeID)
-                return false;
-
-            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
-            if (!brushMeshBlob.IsCreated)
-                return true;
-
-            ref var brushMesh = ref brushMeshBlob.Value;
-            for (int i = 0; i < brushMesh.polygons.Length; i++)
-            {
-                var surface = brushMesh.polygons[i].surface;
-                var brushMaterial = new ChiselBrushMaterial
-                {
-                    LayerUsage      = surface.layerDefinition.layerUsage,
-                    RenderMaterial  = surface.layerDefinition.layerParameter1 == 0 ? default : ChiselMaterialManager.Instance.GetMaterial(surface.layerDefinition.layerParameter1),
-                    PhysicsMaterial = surface.layerDefinition.layerParameter2 == 0 ? default : ChiselMaterialManager.Instance.GetPhysicMaterial(surface.layerDefinition.layerParameter2)
-                };
-                brushMaterials.Add(brushMaterial);
-            }
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool GetAllMaterials(CSGTreeNode node, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            switch(node.Type)
-            {
-                case CSGNodeType.Branch:    return GetAllMaterials((CSGTreeBranch)node, findBrush, brushMaterials);
-                case CSGNodeType.Brush:     return GetAllMaterials((CSGTreeBrush)node, findBrush, brushMaterials);
-                default: return false;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool GetAllMaterials(CSGTreeBranch branch, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            for (int i = 0; i < branch.Count; i++)
-            {
-                if (GetAllMaterials(branch[i], findBrush, brushMaterials))
-                    return true;
-            }
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool GetAllBrushMaterials(CSGTreeBrush brush, List<ChiselBrushMaterial> brushMaterials)
-        {
-            if (!Node.Valid)
-                return false;
-
-            GetAllMaterials(Node, brush, brushMaterials);
-            return brushMaterials.Count > 0;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool FindSurfaceReference(CSGTreeNode node, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
-        {
-            surfaceReference = null;
-            switch (node.Type)
-            {
-                case CSGNodeType.Branch: return FindSurfaceReference((CSGTreeBranch)node, findBrush, surfaceID, out surfaceReference);
-                case CSGNodeType.Brush:  return FindSurfaceReference((CSGTreeBrush)node,  findBrush, surfaceID, out surfaceReference);
-                default: return false;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool FindSurfaceReference(CSGTreeBranch branch, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
-        {
-            surfaceReference = null;
-            for (int i = 0; i < branch.Count; i++)
-            {
-                if (FindSurfaceReference(branch[i], findBrush, surfaceID, out surfaceReference))
-                    return true;
-            }
-            return false;
-        }
-
-        bool FindSurfaceReference(CSGTreeBrush brush, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
-        {
-            surfaceReference = null;
-            if (findBrush.NodeID != brush.NodeID)
-                return false;
-            
-            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(findBrush.BrushMesh.BrushMeshID);
-            if (!brushMeshBlob.IsCreated)
-                return true;
-
-            ref var brushMesh = ref brushMeshBlob.Value;
-
-            var surfaceIndex = surfaceID;
-            if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                return true;
-
-            var descriptionIndex = brushMesh.polygons[surfaceIndex].descriptionIndex;
-
-            //return new SurfaceReference(this, brushContainerAsset, 0, 0, surfaceIndex, surfaceIndex);
-            surfaceReference = new SurfaceReference(this, descriptionIndex, brush, surfaceIndex);
-            return true;
-        }
-
-        public override SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
-        {
-            if (!Node.Valid)
-                return null;
-
-            if (FindSurfaceReference(Node, brush, surfaceID, out var surfaceReference))
-                return surfaceReference;
-            return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool GetAllSurfaces(CSGTreeNode node, CSGTreeBrush? findBrush, List<SurfaceReference> surfaces)
-        {
-            switch (node.Type)
-            {
-                case CSGNodeType.Brush:  return GetAllSurfaces((CSGTreeBrush)node,  findBrush, surfaces);
-                case CSGNodeType.Branch: return GetAllSurfaces((CSGTreeBranch)node, findBrush, surfaces);
-            }
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool GetAllSurfaces(CSGTreeBranch branch, CSGTreeBrush? findBrush, List<SurfaceReference> surfaces)
-        {
-            if (!branch.Valid)
-                return false;
-
-            for (int i = 0; i < branch.Count; i++)
-            {
-                var child = branch[i];
-                if (GetAllSurfaces(child, findBrush, surfaces)) 
-                    return true;
-            }
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool GetAllSurfaces(CSGTreeBrush brush, CSGTreeBrush? findBrush, List<SurfaceReference> surfaces)
-        {
-            if (!brush.Valid)
-                return false;
-
-            if (findBrush != null && findBrush?.NodeID != brush.NodeID)
-                return true;
-
-            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
-            if (!brushMeshBlob.IsCreated)
-                return true;
-
-            ref var brushMesh = ref brushMeshBlob.Value;
-            for (int i = 0; i < brushMesh.polygons.Length; i++)
-            {
-                var surfaceIndex = i;
-                var descriptionIndex = brushMesh.polygons[i].descriptionIndex;
-                //surfaces.Add(new SurfaceReference(this, brushContainerAsset, 0, 0, i, surfaceID));
-                surfaces.Add(new SurfaceReference(this, descriptionIndex, brush, surfaceIndex));
-            }
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool GetAllSurfaceReferences(CSGTreeBrush brush, List<SurfaceReference> surfaces)
-        {
-            if (!Node.Valid)
-                return false;
-
-            if (!GetAllSurfaces(Node, brush, surfaces))
-                return false;
-            return surfaces.Count > 0;
-        }
-
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool GetAllSurfaceReferences(List<SurfaceReference> surfaces)
-        {
-            if (!Node.Valid)
-
-            if (!GetAllSurfaces(Node, null, surfaces))
-                    return false;
-            return surfaces.Count > 0;
-        }
 
         internal override void AddPivotOffset(Vector3 worldSpaceDelta)
         {
@@ -575,128 +360,11 @@ namespace Chisel.Components
             if (!Node.Valid)
                 return;
 
-            //brushContainerAsset.SetDirty();
-
             Profiler.BeginSample("UpdateBrushMeshInstances");
             try { UpdateBrushMeshInstances(); }
             finally { Profiler.EndSample(); }
         }
 
         protected abstract JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
-
-#if UNITY_EDITOR
-        static bool ConvertBrush(CSGTreeBrush srcBrush, in ChiselSurfaceDefinition srcSurfaceDefinition, out BrushMesh newBrushMesh, out ChiselSurfaceDefinition newSurfaceDefinition)
-        {
-            var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(srcBrush.BrushMesh.BrushMeshID);
-            newBrushMesh = BrushMeshManager.ConvertToBrushMesh(brushMeshBlob);
-
-            newSurfaceDefinition = new ChiselSurfaceDefinition
-            {
-                surfaces = new ChiselSurface[newBrushMesh.polygons.Length]
-            };
-            for (int p = 0; p < newBrushMesh.polygons.Length; p++)
-            {
-                var oldDescriptionIndex = newBrushMesh.polygons[p].descriptionIndex;
-                newSurfaceDefinition.surfaces[p] = srcSurfaceDefinition.surfaces[oldDescriptionIndex];
-                newBrushMesh.polygons[p].descriptionIndex = p;
-            }
-            return true;
-        }
-
-        static ChiselNode ConvertChildTreeNodesToGameObjects(Transform parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
-        {
-            if (node.Type == CSGNodeType.Brush)
-            {
-                var brushNode       = (CSGTreeBrush)node;
-                var brushComponent  = ChiselComponentFactory.Create<ChiselBrush>("Brush", parent);
-                brushComponent.transform.SetLocal(brushNode.LocalTransformation);
-                brushComponent.Operation                 = brushNode.Operation;
-
-                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
-                brushComponent.surfaceDefinition = newSurfaceDefinition;
-                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
-                return brushComponent;
-            } 
-            
-            var compositeComponent = ChiselComponentFactory.Create<ChiselComposite>("Composite", parent);
-            //compositeComponent.transform.SetLocal(node.LocalTransformation);
-            //compositeComponent.LocalTransformation = Matrix4x4.identity;
-            compositeComponent.Operation = node.Operation;
-            var parentTransform = compositeComponent.transform;
-            for (int i = 0; i < node.Count; i++)
-                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
-            return compositeComponent;
-        }
-
-        static ChiselNode ConvertTreeNodeToBrushes(GameObject parent, in ChiselSurfaceDefinition surfaceDefinition, CSGTreeNode node)
-        {
-            if (node.Type == CSGNodeType.Brush)
-            {
-                var brushNode       = (CSGTreeBrush)node;
-                var brushComponent  = ChiselComponentFactory.AddComponent<ChiselBrush>(parent);
-                brushComponent.transform.SetLocal(brushNode.LocalTransformation);
-                brushComponent.Operation                 = brushNode.Operation;
-
-                ConvertBrush(brushNode, in surfaceDefinition, out var brushMesh, out var newSurfaceDefinition);
-                brushComponent.surfaceDefinition = newSurfaceDefinition;
-                brushComponent.definition = new ChiselBrushDefinition { brushOutline = brushMesh };
-                return brushComponent;
-            }
-
-            if (node.Count == 1)
-                return ConvertTreeNodeToBrushes(parent, in surfaceDefinition, node[0]);
-            
-            var compositeComponent = ChiselComponentFactory.AddComponent<ChiselComposite>(parent);
-            //compositeComponent.transform.SetLocal(node.LocalTransformation);
-            compositeComponent.Operation = node.Operation;
-            var parentTransform = compositeComponent.transform;
-            for (int i = 0; i < node.Count; i++)
-                ConvertChildTreeNodesToGameObjects(parentTransform, in surfaceDefinition, node[i]);
-            return compositeComponent;
-        }
-
-        public override bool ConvertToBrushes()
-        {
-            OnValidateState();
-            if (!Node.Valid)
-                return false;
-
-            var topGameObject = this.gameObject;
-            var gameObjectIsActive = topGameObject.activeSelf;
-            var surfaceDefinition = this.SurfaceDefinition;
-
-            // Destroying this Generator Component will destroy the treeNode
-            // So we need to copy the treeNode
-            var topNode = Node;
-            // Set the treeNode to default in the component
-            // (so when we destroy it the original treeNode doesn't get destroyed)
-            Node = default;
-            // Destroy the component
-            UnityEditor.Undo.DestroyObjectImmediate(this);
-            // ... and then destroy the treeNode ourselves after we're done with it
-
-            bool result = false;
-            try
-            {
-                // We set the gameobject to not be active, this will prevent a lot of messages to 
-                // be send by Unity while we're still building the entire sub-hierarchy
-                topGameObject.SetActive(false);
-                var topComponent = ConvertTreeNodeToBrushes(topGameObject, in surfaceDefinition, topNode);
-                result = topComponent != null;
-            }
-            finally 
-            { 
-                // Activate the gameobject again (if it was active in the first place)
-                topGameObject.SetActive(gameObjectIsActive);
-
-                // Destroy the treeNode that was part of the original Generator Component
-                if (topNode.Valid)
-                    topNode.Destroy();
-            }
-            UnityEditor.Undo.SetCurrentGroupName((TopNode.Type == CSGNodeType.Brush) ? $"Converted {NodeTypeName} to brush" : $"Converted {NodeTypeName} to multiple brushes");
-            return result;
-        }
-#endif
-
     }
 }

@@ -10,7 +10,7 @@ namespace Chisel.Components
     public sealed class ChiselPathedStairs : ChiselDefinedGeneratorComponent<ChiselPathedStairsDefinition>
     {
         public const string kNodeTypeName = ChiselPathedStairsDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public Curve2D Shape

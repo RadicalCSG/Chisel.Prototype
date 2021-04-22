@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselSphere : ChiselDefinedGeneratorComponent<ChiselSphereDefinition>
     {
         public const string kNodeTypeName = ChiselSphereDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public Vector3 DiameterXYZ

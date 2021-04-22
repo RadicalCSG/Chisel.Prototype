@@ -19,7 +19,7 @@ namespace Chisel.Components
     public struct ChiselIntersection
     {
         public ChiselModel	model;
-        public ChiselNode	node;
+        public ChiselNode	treeNode;
 
         public Plane        worldPlane;
         public Vector3      worldPlaneIntersection;
@@ -29,7 +29,7 @@ namespace Chisel.Components
         public readonly static ChiselIntersection None = new ChiselIntersection()
         {
             model                   = null,
-            node                    = null,
+            treeNode                    = null,
             worldPlane			    = new Plane(Vector3.zero, 0),
             worldPlaneIntersection	= Vector3.zero,
             brushIntersection       = CSGTreeBrushIntersection.None

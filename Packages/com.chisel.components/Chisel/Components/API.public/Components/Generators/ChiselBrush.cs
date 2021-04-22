@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselBrush : ChiselDefinedGeneratorComponent<ChiselBrushDefinition>
     {
         public const string kNodeTypeName = ChiselBrushDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public BrushMesh BrushMesh

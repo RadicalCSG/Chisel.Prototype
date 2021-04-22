@@ -10,7 +10,7 @@ namespace Chisel.Components
     public sealed class ChiselExtrudedShape : ChiselDefinedGeneratorComponent<ChiselExtrudedShapeDefinition>
     {
         public const string kNodeTypeName = ChiselExtrudedShapeDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public ChiselPath Path

@@ -471,7 +471,7 @@ namespace Chisel.Editors
                     continue;
                 
                 s_SelectedNodes.Clear();
-                node.CollectCSGTreeNodes(s_SelectedNodes);
+                ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_SelectedNodes, node.hierarchyItem);
                 foreach (var child in s_SelectedNodes)
                 {
                     if (!child.Valid || child.Type != CSGNodeType.Brush)

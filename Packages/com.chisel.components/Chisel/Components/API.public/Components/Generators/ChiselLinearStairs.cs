@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselLinearStairs : ChiselDefinedGeneratorComponent<ChiselLinearStairsDefinition>
     {
         public const string kNodeTypeName = ChiselLinearStairsDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public float StepHeight

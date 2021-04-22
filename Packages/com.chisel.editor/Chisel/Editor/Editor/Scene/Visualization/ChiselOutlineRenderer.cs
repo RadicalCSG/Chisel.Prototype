@@ -277,7 +277,7 @@ namespace Chisel.Editors
                                                       // if we find CSGTreeBrushes directly on this node, but this node
                                                       // can also have child nodes, then we assume the CSGTreeBrushes are generated
                                                       // and we don't want to show those as directly selected
-                                                      !node.CanHaveChildNodes;
+                                                      !node.IsContainer;
                                 var transform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(node.hierarchyItem.Transform);
                                 foreach (var treeBrush in foundTreeBrushes)
                                 {

@@ -10,7 +10,7 @@ namespace Chisel.Components
     public sealed class ChiselBox : ChiselDefinedGeneratorComponent<ChiselBoxDefinition>
     {
         public const string kNodeTypeName = ChiselBoxDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public MinMaxAABB Bounds

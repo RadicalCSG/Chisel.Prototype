@@ -494,20 +494,20 @@ namespace Chisel.Editors
         public static bool ConvertToBrushes(ChiselGeneratorComponent chiselNode)
         {
             chiselNode.OnValidate();
-            if (!chiselNode.TopNode.Valid)
+            if (!chiselNode.TopTreeNode.Valid)
                 return false;
 
             var topGameObject       = chiselNode.gameObject;
             var gameObjectIsActive  = topGameObject.activeSelf;
             var surfaceDefinition   = chiselNode.SurfaceDefinition;
-            var nodeTypeName        = chiselNode.NodeTypeName;
+            var nodeTypeName        = chiselNode.ChiselNodeTypeName;
 
             // Destroying this Generator Component will destroy the treeNode
             // So we need to copy the treeNode
-            var topNode = chiselNode.TopNode;
+            var topNode = chiselNode.TopTreeNode;
             // Set the treeNode to default in the component
             // (so when we destroy it the original treeNode doesn't get destroyed)
-            chiselNode.ClearTreeNodes();
+            chiselNode.ResetTreeNodes();
             // Destroy the component
             UnityEditor.Undo.DestroyObjectImmediate(chiselNode);
             // ... and then destroy the treeNode ourselves after we're done with it
@@ -548,7 +548,7 @@ namespace Chisel.Editors
                 var node = targetObject as ChiselGeneratorComponent;
                 if (!node)
                     continue;
-                var count = node.TopNode.Count;
+                var count = node.TopTreeNode.Count;
                 singular = (count <= 1) || singular;
                 multiple = (count > 1) || multiple;
             }
@@ -764,13 +764,13 @@ namespace Chisel.Editors
         {
             var brushGenerator = node as ChiselGeneratorComponent;
             if (brushGenerator != null)
-                return GetHierarchyIcon(brushGenerator.Operation, node.NodeTypeName);
+                return GetHierarchyIcon(brushGenerator.Operation, node.ChiselNodeTypeName);
 
             var generator = node as ChiselGeneratorComponent;
             if (generator == null)
                 return GUIContent.none;
 
-            return GetHierarchyIcon(generator.Operation, node.NodeTypeName);
+            return GetHierarchyIcon(generator.Operation, node.ChiselNodeTypeName);
         }
 
         public bool HasValidState(ChiselNode node)
@@ -955,7 +955,7 @@ namespace Chisel.Editors
             } else
             {
                 ChiselEditGeneratorTool.OnEditSettingsGUI = OnEditSettingsGUI;
-                ChiselEditGeneratorTool.CurrentEditorName = (target as T).NodeTypeName;
+                ChiselEditGeneratorTool.CurrentEditorName = (target as T).ChiselNodeTypeName;
             }
             Profiler.EndSample();
             Profiler.BeginSample("FindProperty");

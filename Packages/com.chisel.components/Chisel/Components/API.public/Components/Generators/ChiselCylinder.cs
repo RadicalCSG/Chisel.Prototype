@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselCylinder : ChiselDefinedGeneratorComponent<ChiselCylinderDefinition>
     {
         public const string kNodeTypeName = ChiselCylinderDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public CylinderShapeType Type

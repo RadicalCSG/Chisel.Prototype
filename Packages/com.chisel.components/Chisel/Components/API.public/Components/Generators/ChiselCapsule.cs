@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselCapsule : ChiselDefinedGeneratorComponent<ChiselCapsuleDefinition>
     {
         public const string kNodeTypeName = ChiselCapsuleDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
         
         #region Properties
         public float Height

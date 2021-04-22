@@ -180,14 +180,14 @@ namespace Chisel.Components
 
 
         public const string kNodeTypeName = "Model";
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
 
         public ChiselGeneratedColliderSettings  ColliderSettings        { get { return colliderSettings; } }
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
-        public override bool        CanHaveChildNodes           { get { return IsActive; } }
+        public override bool        IsContainer           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
         public bool                 CreateRenderComponents      = true;
@@ -202,7 +202,7 @@ namespace Chisel.Components
         public bool IsDefaultModel { get; internal set; } = false;
 
         [HideInInspector] public CSGTree                Node;
-        public override CSGTreeNode TopNode { get { return Node; } protected set { Node = (CSGTree)value; } }
+        public override CSGTreeNode TopTreeNode { get { return Node; } protected set { Node = (CSGTree)value; } }
 
         [HideInInspector] bool                          initialized = false;
 
@@ -263,34 +263,14 @@ namespace Chisel.Components
         public ChiselModel() : base() { }
 
 
-        internal override CSGTreeNode[] CreateTreeNodes()
+        internal override CSGTreeNode CreateTreeNode()
         {
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
-            return new CSGTreeNode[] { Node };
+            return Node;
         }
-
-
-        internal override void SetChildren(List<CSGTreeNode> childNodes)
-        {
-            if (!Node.Valid)
-            {
-                Debug.LogWarning($"SetChildren called on a {nameof(ChiselModel)} that isn't properly initialized", this);
-                return;
-            }
-            if (childNodes.Count == 0)
-                return;
-            if (!Node.SetChildren(childNodes))
-                Debug.LogError("Failed to assign list of children to tree node");
-        }
-
-        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
-        {
-            // No parent can hold a model as a child, so we don't add anything
-        }
-
 
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
         public override bool HasValidState()

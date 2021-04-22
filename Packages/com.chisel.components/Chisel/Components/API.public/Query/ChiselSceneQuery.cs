@@ -119,7 +119,7 @@ namespace Chisel.Components
             
             return new ChiselIntersection()
             {
-                node                    = node,
+                treeNode                    = node,
                 model                   = model,
                 worldPlane              = worldPlane,
                 worldPlaneIntersection  = worldPlaneIntersection,
@@ -147,7 +147,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        node.CollectCSGTreeNodes(s_IgnoreNodes);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_IgnoreNodes, node.hierarchyItem);
                         s_IgnoreInstanceIDs.Add(node.GetInstanceID());
                     }
                 }
@@ -159,7 +159,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        node.CollectCSGTreeNodes(s_FilterNodes);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_FilterNodes, node.hierarchyItem);
                         s_FilterInstanceIDs.Add(node.GetInstanceID());
                         if (node.hierarchyItem != null &&
                             node.hierarchyItem.Model)
@@ -253,7 +253,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        node.CollectCSGTreeNodes(s_IgnoreNodes);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_IgnoreNodes, node.hierarchyItem);
                         s_IgnoreInstanceIDs.Add(node.GetInstanceID());
                     }
                 }
@@ -265,7 +265,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        node.CollectCSGTreeNodes(s_FilterNodes);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_FilterNodes, node.hierarchyItem);
                         s_FilterInstanceIDs.Add(node.GetInstanceID());
                         if (node.hierarchyItem != null &&
                             node.hierarchyItem.Model)

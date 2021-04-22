@@ -38,7 +38,7 @@ namespace Chisel.Components
         // Note: keep in mind that these work even when components have already been destroyed
         static readonly Dictionary<Transform, ChiselNode> componentLookup = new Dictionary<Transform, ChiselNode>();
         static readonly Dictionary<ChiselNode, ChiselHierarchyItem> hierarchyItemLookup = new Dictionary<ChiselNode, ChiselHierarchyItem>();
-        static readonly Dictionary<ChiselNode, CSGTreeNode[]> treeNodeLookup = new Dictionary<ChiselNode, CSGTreeNode[]>();
+        static readonly Dictionary<ChiselNode, CSGTreeNode> treeNodeLookup = new Dictionary<ChiselNode, CSGTreeNode>();
 
         static readonly HashSet<ChiselNode> registerQueueLookup = new HashSet<ChiselNode>();
         static readonly List<ChiselNode> registerQueue = new List<ChiselNode>();
@@ -499,7 +499,7 @@ namespace Chisel.Components
 
             // Find siblingIndexs up the parents, until we find a ChiselNode
             if (componentLookup.TryGetValue(parent, out ChiselNode parentComponent)
-                && !parentComponent.CanHaveChildNodes)
+                && !parentComponent.IsContainer)
                 parentComponent = null;
             while (ReferenceEquals(parentComponent, null))
             {
@@ -509,7 +509,7 @@ namespace Chisel.Components
                 if (ReferenceEquals(parent, null))
                     break;
 
-                if (componentLookup.TryGetValue(parent, out parentComponent) && !parentComponent.CanHaveChildNodes)
+                if (componentLookup.TryGetValue(parent, out parentComponent) && !parentComponent.IsContainer)
                     parentComponent = null;
             }
 
@@ -796,13 +796,13 @@ UpdateAgain:
 
             // Create the treeNodes for this node
             Profiler.BeginSample("ClearTreeNodes");
-            node.ClearTreeNodes();
+            node.ResetTreeNodes();
             Profiler.EndSample();
             Profiler.BeginSample("CreateTreeNodes");
-            var createdTreeNodes = node.CreateTreeNodes();
+            var createdTreeNode = node.CreateTreeNode();
             Profiler.EndSample();
-            if (createdTreeNodes != null && createdTreeNodes.Length > 0)
-                treeNodeLookup[node] = createdTreeNodes;
+            if (createdTreeNode.Valid)
+                treeNodeLookup[node] = createdTreeNode;
             else
                 treeNodeLookup.Remove(node);
             Profiler.EndSample();
@@ -1028,16 +1028,11 @@ UpdateAgain:
 
                     // Remove any treeNodes that are part of the components we're trying to unregister 
                     // (including components that may have been already destroyed)
-                    CSGTreeNode[] createdTreeNodes;
-                    if (treeNodeLookup.TryGetValue(node, out createdTreeNodes))
+                    CSGTreeNode createdTreeNode;
+                    if (treeNodeLookup.TryGetValue(node, out createdTreeNode))
                     {
-                        for (int n = 0; n < createdTreeNodes.Length; n++)
-                        {
-                            if (!createdTreeNodes[n].Valid)
-                                continue;
-                        
-                            destroyNodesList.Add(createdTreeNodes[n]);
-                        }
+                        if (createdTreeNode.Valid)
+                            destroyNodesList.Add(createdTreeNode);
                         treeNodeLookup.Remove(node);
                     }
                 }
@@ -1095,7 +1090,7 @@ UpdateAgain:
                         continue;
                 
                     node.hierarchyItem.Transform = null;
-                    node.ClearTreeNodes();
+                    node.ResetTreeNodes();
                     UnregisterInternal(node);
                 }
                 
@@ -1114,16 +1109,11 @@ UpdateAgain:
 
                     // Remove any treeNodes that are part of the components we're trying to register 
                     // (including components that may have been already destroyed)
-                    CSGTreeNode[] createdTreeNodes;
-                    if (treeNodeLookup.TryGetValue(node, out createdTreeNodes))
+                    CSGTreeNode createdTreeNode;
+                    if (treeNodeLookup.TryGetValue(node, out createdTreeNode))
                     {
-                        for (int n = 0; n < createdTreeNodes.Length; n++)
-                        {
-                            if (!createdTreeNodes[n].Valid)
-                                continue;
-
-                            destroyNodesList.Add(createdTreeNodes[n]);
-                        }
+                        if (createdTreeNode.Valid)
+                            destroyNodesList.Add(createdTreeNode);
                         treeNodeLookup.Remove(node);
                     }
                 }
@@ -1345,7 +1335,7 @@ UpdateAgain:
                             {
                                 sortChildrenQueue.Add(iterator.Children);
                             }
-                            if (iterator.Component.CanHaveChildNodes) 
+                            if (iterator.Component.IsContainer) 
                             {
                                 updateChildrenQueue.Add(iterator);
                                 break;
@@ -1402,7 +1392,7 @@ UpdateAgain:
                     if (!item.Component)
                         continue;
                     
-                    if (!item.Component.CanHaveChildNodes)
+                    if (!item.Component.IsContainer)
                         continue;
                     
                     // TODO: create a virtual updateChildrenQueue list for the default model instead?
@@ -1452,7 +1442,7 @@ UpdateAgain:
                     if (!item.Component)
                         continue;
 
-                    if (!item.Component.CanHaveChildNodes)
+                    if (!item.Component.IsContainer)
                         continue;
                     
                     __childNodes.Clear();
@@ -1461,7 +1451,16 @@ UpdateAgain:
                         continue;
                     try 
                     {
-                        item.Component.SetChildren(__childNodes);
+                        var parentComponent = item.Component;
+                        var parentNode = parentComponent.TopTreeNode;
+                        if (!parentNode.Valid)
+                        {
+                            Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} that isn't properly initialized", parentComponent);
+                        } else
+                        {
+                            if (!parentNode.SetChildren(__childNodes))
+                                Debug.LogError($"Failed to assign list of children to {parentComponent.ChiselNodeTypeName}", parentComponent);
+                        }
                     }
                     catch(Exception ex)
                     {
@@ -1535,17 +1534,21 @@ UpdateAgain:
             return haveModifiedTreeNodeCount;
         }
 
-        static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
+        public static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
         {
             if (item == null)
                 return;
             for (int i = 0; i < item.Children.Count; i++)
             {
                 var childComponent = item.Children[i].Component;
-                if (!childComponent && childComponent.isActiveAndEnabled)
+                if (!childComponent && childComponent.IsActive)
                     continue;
 
-                childComponent.CollectCSGTreeNodes(childNodes);
+                var topNode = childComponent.TopTreeNode;
+                if (!topNode.Valid)
+                    continue;
+
+                childNodes.Add(topNode);
             }
         }
 

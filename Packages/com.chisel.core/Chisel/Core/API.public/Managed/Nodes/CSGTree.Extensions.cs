@@ -66,6 +66,32 @@ namespace Chisel.Core
             return success;
         }
 
+        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeNode"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
+        /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeNode"/>. The array itself cannot be null.</param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        public static bool SetChildren(in this CSGTreeNode node, params CSGTreeNode[] array)
+        {
+            if (node.Type == CSGNodeType.Branch)
+                return SetChildren((CSGTreeBranch)node, array);
+            else
+            if (node.Type == CSGNodeType.Tree)
+                return SetChildren((CSGTree)node, array);
+            return false;
+        }
+
+        /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTreeNode"/> to the give list of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
+        /// <param name="list">The list whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeNode"/>. The list itself cannot be null.</param>
+        /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        public static bool SetChildren(in this CSGTreeNode node, List<CSGTreeNode> list)
+        {
+            if (node.Type == CSGNodeType.Branch)
+                return SetChildren((CSGTreeBranch)node, list);
+            else
+            if (node.Type == CSGNodeType.Tree)
+                return SetChildren((CSGTree)node, list);
+            return false;
+        }
+
 
         /// <summary>Inserts an array of <see cref="Chisel.Core.CSGTreeNode"/>s into the <see cref="Chisel.Core.CSGTree"/> at the specified index.</summary>
         /// <param name="index">The zero-based index at which the new <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted.</param>

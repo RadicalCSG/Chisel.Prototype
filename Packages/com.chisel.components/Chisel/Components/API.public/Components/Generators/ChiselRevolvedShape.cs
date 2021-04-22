@@ -10,7 +10,7 @@ namespace Chisel.Components
     public sealed class ChiselRevolvedShape : ChiselDefinedGeneratorComponent<ChiselRevolvedShapeDefinition>
     {
         public const string kNodeTypeName = ChiselRevolvedShapeDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         #region Properties
         public Curve2D Shape

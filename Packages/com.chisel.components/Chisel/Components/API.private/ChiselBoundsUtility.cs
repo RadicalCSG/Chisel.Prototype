@@ -13,7 +13,7 @@ namespace Chisel.Components
         static readonly HashSet<CSGTreeBrush> s_FoundBrushes = new HashSet<CSGTreeBrush>();
         public static Bounds CalculateBounds(ChiselGeneratorComponent generator)
         {
-            if (!generator.TopNode.Valid)
+            if (!generator.TopTreeNode.Valid)
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
@@ -56,7 +56,7 @@ namespace Chisel.Components
         
         public static Bounds CalculateBounds(ChiselGeneratorComponent generator, Matrix4x4 boundsTransformation)
         {
-            if (!generator.TopNode.Valid)
+            if (!generator.TopTreeNode.Valid)
                 return ChiselHierarchyItem.EmptyBounds;
 
             var modelMatrix		= ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);

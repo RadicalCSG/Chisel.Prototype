@@ -1134,7 +1134,7 @@ namespace Chisel.Editors
         void RecordUndo(string undoMessage)
         {
             if (generator)
-                RecordUndo(undoMessage ?? $"Modified {generator.NodeTypeName}", generator);
+                RecordUndo(undoMessage ?? $"Modified {generator.ChiselNodeTypeName}", generator);
         }
 
         public bool DoBoundsHandle(ref Bounds bounds, Vector3? snappingSteps = null, string undoMessage = null)

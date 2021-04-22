@@ -9,7 +9,7 @@ namespace Chisel.Components
     public sealed class ChiselTorus : ChiselDefinedGeneratorComponent<ChiselTorusDefinition>
     {
         public const string kNodeTypeName = ChiselTorusDefinition.kNodeTypeName;
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         // TODO: add all properties of ChiselTorusDefinition
     }

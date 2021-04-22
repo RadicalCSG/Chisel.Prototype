@@ -126,17 +126,17 @@ namespace Chisel.Components
         public static void GetAllTreeBrushes(ChiselGeneratorComponent component, HashSet<CSGTreeBrush> foundBrushes)
         {
             if (foundBrushes == null ||
-                !component.TopNode.Valid)
+                !component.TopTreeNode.Valid)
                 return;
 
-            var brush = (CSGTreeBrush)component.TopNode;
+            var brush = (CSGTreeBrush)component.TopTreeNode;
             if (brush.Valid)
             {
                 foundBrushes.Add(brush);
             } else
             {
                 var nodes = new List<CSGTreeNode>();
-                nodes.Add(component.TopNode);
+                nodes.Add(component.TopTreeNode);
                 while (nodes.Count > 0)
                 {
                     var lastIndex = nodes.Count - 1;
@@ -230,7 +230,7 @@ namespace Chisel.Components
             var resultState     = VisibilityState.Unknown;
             var visible         = !instance.IsHidden(generator.gameObject);
             var pickingEnabled  = !instance.IsPickingDisabled(generator.gameObject);
-            var topNode         = generator.TopNode;
+            var topNode         = generator.TopTreeNode;
             if (topNode.Valid)
             {
                 topNode.Visible         = visible;
@@ -264,11 +264,11 @@ namespace Chisel.Components
                 var brushGenerator = node as ChiselGeneratorComponent;
                 if (brushGenerator)
                 {
-                    var nodeID = node.TopNode.NodeID;
+                    var nodeID = node.TopTreeNode.NodeID;
                     if (!CompactHierarchyManager.IsValidNodeID(nodeID))
                         continue;
 
-                    var modelNodeID = brushGenerator.hierarchyItem.Model.TopNode.NodeID;
+                    var modelNodeID = brushGenerator.hierarchyItem.Model.TopTreeNode.NodeID;
                     var compactNodeID       = CompactHierarchyManager.GetCompactNodeID(nodeID);
                     var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
                     if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
@@ -283,7 +283,7 @@ namespace Chisel.Components
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                var modelNodeID = model.TopNode.NodeID;
+                var modelNodeID = model.TopTreeNode.NodeID;
                 var modelCompactNodeID = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
                 if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {

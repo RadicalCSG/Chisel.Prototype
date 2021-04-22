@@ -17,11 +17,11 @@ namespace Chisel.Components
         public const string kPassThroughFieldName   = nameof(passThrough);
 
         public const string kNodeTypeName = "Composite";
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
         [HideInInspector]
         public CSGTreeBranch Node;
-        public override CSGTreeNode TopNode { get { return Node; } protected set { Node = (CSGTreeBranch)value; } }
+        public override CSGTreeNode TopTreeNode { get { return Node; } protected set { Node = (CSGTreeBranch)value; } }
 
         [SerializeField,HideInInspector] bool passThrough = false; // NOTE: name is used in ChiselCompositeEditor
         public bool PassThrough { get { return passThrough; } set { if (value == passThrough) return; passThrough = value; ChiselNodeHierarchyManager.UpdateAvailability(this); } }
@@ -55,40 +55,22 @@ namespace Chisel.Components
             base.OnValidateState();
         }
 
-        static CSGTreeNode[] kEmptyTreeNodeArray = new CSGTreeNode[] { };
-
-        internal override CSGTreeNode[] CreateTreeNodes()
+        internal override CSGTreeNode CreateTreeNode()
         {
             if (passThrough)
-                return kEmptyTreeNodeArray;
+                return default;
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);		
             Node = CSGTreeBranch.Create(userID: GetInstanceID());
             Node.Operation = operation;
-            return new CSGTreeNode[] { Node };
+            return Node;
         }
 
         internal override bool	IsActive	        { get { return !PassThrough && isActiveAndEnabled; } }
 
-        public override bool	CanHaveChildNodes	{ get { return IsActive; } }
+        public override bool	IsContainer	{ get { return IsActive; } }
 
         public override void	SetDirty()		    { if (Node.Valid) Node.SetDirty(); }
 
-        internal override void SetChildren(List<CSGTreeNode> childNodes)
-        {
-            if (!Node.Valid)
-            {
-                Debug.LogWarning($"SetChildren called on a {nameof(ChiselComposite)} that isn't properly initialized", this);
-                return;
-            }
-            if (!Node.SetChildren(childNodes))
-                Debug.LogError("Failed to assign list of children to tree node");
-        }
-
-        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
-        {
-            if (!PassThrough && Node.Valid)
-                childNodes.Add(Node);
-        }
     }
 }
