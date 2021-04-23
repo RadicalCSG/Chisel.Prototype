@@ -57,7 +57,7 @@ namespace Chisel.Core
 
         public const float  kDefaultRiserDepth      = 0.03f;
         
-        [DistanceValue] public Vector3  origin;
+        [DistanceValue] public float3   origin;
         [DistanceValue] public float	height;
         [DistanceValue] public float    outerDiameter;
         [DistanceValue] public float    innerDiameter;
@@ -93,7 +93,7 @@ namespace Chisel.Core
 
         public void Reset()
         {
-            origin		    = Vector3.zero;
+            origin		    = float3.zero;
 
             stepHeight	    = kDefaultStepHeight;
         
@@ -142,6 +142,30 @@ namespace Chisel.Core
             outerSegments	= math.max(kMinSegments, outerSegments);
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateSpiralStairsJob : IJob
+        {
+            public ChiselSpiralStairsDefinition settings;
+            
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes, 
+                                                           ref settings, 
+                                                           in surfaceDefinitionBlob, 
+                                                           Allocator.Persistent))
+                {
+                    for (int i = 0; i < brushMeshes.Length; i++)
+                        brushMeshes[i] = default;
+                }
+            }
+        }
+
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -178,23 +202,28 @@ namespace Chisel.Core
             if (branch.Count != requiredSubMeshCount)
                 this.BuildBrushes(branch, requiredSubMeshCount);
             
-            var haveRiser		= riserType != StairsRiserType.None;
-            var treadStart      = !haveRiser ? 0 : riserSubMeshCount;
-
-            using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+            using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
             {
-                if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes, ref this, in surfaceDefinitionBlob, Allocator.Persistent))
+                var createSpiralStairsJob = new CreateSpiralStairsJob
                 {
-                    this.ClearBrushes(branch);
-                    return default;
-                }
+                    settings                = this,
 
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMeshes             = brushMeshes
+                };
+                var handle = createSpiralStairsJob.Schedule();
+                handle.Complete();
+
+                //this.ClearBrushes(branch);
                 for (int i = 0; i < requiredSubMeshCount; i++)
                 {
                     var brush = (CSGTreeBrush)branch[i];
                     brush.LocalTransformation = float4x4.identity;
                     brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                 }
+
+                var haveRiser		= riserType != StairsRiserType.None;
+                var treadStart      = !haveRiser ? 0 : riserSubMeshCount;
 
                 {
                     var subMeshIndex = treadStart - cylinderSubMeshCount;
@@ -227,8 +256,8 @@ namespace Chisel.Core
         //
 
 
-        Vector3[] innerVertices;
-        Vector3[] outerVertices;
+        static Vector3[] s_InnerVertices;
+        static Vector3[] s_OuterVertices;
 
         public void OnEdit(IChiselHandles handles)
         {
@@ -292,10 +321,10 @@ namespace Chisel.Core
 
                 // TODO: somehow put this into a separate renderer
                 cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalInnerDiameter;
-                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.innerSegments, ref innerVertices);
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.innerSegments, ref s_InnerVertices);
 
                 cylinderTop.diameterZ = cylinderTop.diameterX = cylinderLow.diameterZ = cylinderLow.diameterX = originalOuterDiameter;
-                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.outerSegments, ref outerVertices);
+                BrushMeshFactory.GetConicalFrustumVertices(cylinderLow, cylinderTop, 0, this.outerSegments, ref s_OuterVertices);
                 
                 var originalColor	= handles.color;
                 var color			= handles.color;
@@ -307,10 +336,10 @@ namespace Chisel.Core
                     var sides = this.outerSegments;
                     for (int i = 0, j = sides - 1; i < sides; j = i, i++)
                     {
-                        var t0 = outerVertices[i];
-                        var t1 = outerVertices[j];
-                        var b0 = outerVertices[i + sides];
-                        var b1 = outerVertices[j + sides];
+                        var t0 = s_OuterVertices[i];
+                        var t1 = s_OuterVertices[j];
+                        var b0 = s_OuterVertices[i + sides];
+                        var b1 = s_OuterVertices[j + sides];
 
                         handles.DrawLine(t0, b0, thickness: 1.0f);
                         handles.DrawLine(t0, t1, thickness: 1.0f);
@@ -321,10 +350,10 @@ namespace Chisel.Core
                     var sides = this.innerSegments;
                     for (int i = 0, j = sides - 1; i < sides; j = i, i++)
                     {
-                        var t0 = innerVertices[i];
-                        var t1 = innerVertices[j];
-                        var b0 = innerVertices[i + sides];
-                        var b1 = innerVertices[j + sides];
+                        var t0 = s_InnerVertices[i];
+                        var t1 = s_InnerVertices[j];
+                        var b0 = s_InnerVertices[i + sides];
+                        var b1 = s_InnerVertices[j + sides];
 
                         handles.DrawLine(t0, b0, thickness: 1.0f);
                         handles.DrawLine(t0, t1, thickness: 1.0f);
@@ -337,10 +366,10 @@ namespace Chisel.Core
                     var sides = this.outerSegments;
                     for (int i = 0, j = sides - 1; i < sides; j = i, i++)
                     {
-                        var t0 = outerVertices[i];
-                        var t1 = outerVertices[j];
-                        var b0 = outerVertices[i + sides];
-                        var b1 = outerVertices[j + sides];
+                        var t0 = s_OuterVertices[i];
+                        var t1 = s_OuterVertices[j];
+                        var b0 = s_OuterVertices[i + sides];
+                        var b1 = s_OuterVertices[j + sides];
 
                         handles.DrawLine(t0, b0, thickness: 1.0f);
                         handles.DrawLine(t0, t1, thickness: 1.0f);
@@ -351,10 +380,10 @@ namespace Chisel.Core
                     var sides = this.innerSegments;
                     for (int i = 0, j = sides - 1; i < sides; j = i, i++)
                     {
-                        var t0 = innerVertices[i];
-                        var t1 = innerVertices[j];
-                        var b0 = innerVertices[i + sides];
-                        var b1 = innerVertices[j + sides];
+                        var t0 = s_InnerVertices[i];
+                        var t1 = s_InnerVertices[j];
+                        var b0 = s_InnerVertices[i + sides];
+                        var b1 = s_InnerVertices[j + sides];
 
 
                         handles.DrawLine(t0, b0, thickness: 1.0f);

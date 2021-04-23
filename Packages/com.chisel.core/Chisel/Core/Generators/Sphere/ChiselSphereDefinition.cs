@@ -58,6 +58,39 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
+        struct CreateSphereJob : IJob
+        {
+            public float3	diameterXYZ;
+            public float    offsetY;
+            public bool     generateFromCenter;
+            public float    rotation; // TODO: useless?
+            public int		horizontalSegments;
+            public int		verticalSegments;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+            
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateSphere(diameterXYZ, 
+                                                     offsetY, 
+                                                     rotation, 
+                                                     generateFromCenter, 
+                                                     horizontalSegments, 
+                                                     verticalSegments, 
+                                                     in surfaceDefinitionBlob,
+                                                     out var newBrushMesh, 
+                                                     Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
+            }
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
@@ -69,15 +102,29 @@ namespace Chisel.Core
                 if (brush.Operation != operation)
                     brush.Operation = operation;
             }
-
-            if (!BrushMeshFactory.GenerateSphere(diameterXYZ, offsetY, rotation, generateFromCenter, horizontalSegments, verticalSegments, in surfaceDefinitionBlob,
-                                                        out var brushMesh, Allocator.Persistent))
+            
+            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
             {
-                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                return default;
-            }
+                var createHemisphereJob = new CreateSphereJob
+                {
+                    diameterXYZ             = diameterXYZ,
+                    offsetY                 = offsetY,
+                    rotation                = rotation,
+                    generateFromCenter      = generateFromCenter,
+                    horizontalSegments      = horizontalSegments,
+                    verticalSegments        = verticalSegments,
 
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMesh               = brushMeshRef
+                };
+                var handle = createHemisphereJob.Schedule();
+                handle.Complete();
+
+                if (!brushMeshRef.Value.IsCreated)
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                else
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
+            }
             return default;
         }
 

@@ -126,6 +126,29 @@ namespace Chisel.Core
 
 
         [BurstCompile(CompileSynchronously = true)]
+        struct CreateCapsuleJob : IJob
+        {
+            public Settings settings;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateCapsule(in settings,
+                                                      in surfaceDefinitionBlob,
+                                                      out var newBrushMesh,
+                                                      Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
+            }
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
@@ -137,17 +160,24 @@ namespace Chisel.Core
                 if (brush.Operation != operation)
                     brush.Operation = operation;
             }
-
-            if (!BrushMeshFactory.GenerateCapsule(in settings,
-                                                    in surfaceDefinitionBlob,
-                                                    out var brushMesh,
-                                                    Allocator.Persistent))
+            
+            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
             {
-                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                return default;
-            }
+                var createHemisphereJob = new CreateCapsuleJob
+                {
+                    settings        = settings,
 
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMesh               = brushMeshRef
+                };
+                var handle = createHemisphereJob.Schedule();
+                handle.Complete();
+
+                if (!brushMeshRef.Value.IsCreated)
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                else
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
+            }
             return default;
         }
 

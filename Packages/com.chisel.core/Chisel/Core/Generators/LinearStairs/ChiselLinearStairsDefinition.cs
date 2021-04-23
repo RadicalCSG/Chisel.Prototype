@@ -218,6 +218,28 @@ namespace Chisel.Core
             stepDepth			= math.clamp(stepDepth, kMinStepDepth, absDepth / totalSteps);
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateLinearStairsJob : IJob
+        {
+            public BrushMeshFactory.LineairStairsData description;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                const int subMeshOffset = 0;
+                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
+                {
+                    for (int i = 0; i < brushMeshes.Length; i++)
+                        brushMeshes[i] = default;
+                }
+            }
+        }
+
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -253,25 +275,28 @@ namespace Chisel.Core
 
             if (branch.Count != requiredSubMeshCount)
                 this.BuildBrushes(branch, requiredSubMeshCount);
-
-            using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
-            {
-                const int subMeshOffset = 0;
-
-                if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, subMeshOffset, in description, in surfaceDefinitionBlob))
+            
+            using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
+            { 
+                var createExtrudedShapeJob = new CreateLinearStairsJob
                 {
-                    this.ClearBrushes(branch);
-                    return default;
-                }
+                    description             = description,
 
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMeshes             = brushMeshes
+                };
+                var handle = createExtrudedShapeJob.Schedule();
+                handle.Complete();
+
+                //this.ClearBrushes(branch);
                 for (int i = 0; i < requiredSubMeshCount; i++)
                 {
                     var brush = (CSGTreeBrush)branch[i];
                     brush.LocalTransformation = float4x4.identity;
                     brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                 }
-                return default;
             }
+            return default;
         }
 
         #region OnEdit

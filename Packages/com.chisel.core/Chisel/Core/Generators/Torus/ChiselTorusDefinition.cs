@@ -69,6 +69,34 @@ namespace Chisel.Core
             totalAngle			= math.clamp(totalAngle, 1, 360); // TODO: constants
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateTorusJob : IJob
+        {
+            public int verticalSegments;
+            public int horizontalSegments;
+            [NoAlias, ReadOnly] public NativeArray<float3> vertices;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateTorus(brushMeshes, 
+                                                    in vertices, 
+                                                    verticalSegments, 
+                                                    horizontalSegments,
+                                                    in surfaceDefinitionBlob, 
+                                                    Allocator.Persistent))
+                {
+                    for (int i = 0; i < brushMeshes.Length; i++)
+                        brushMeshes[i] = default;
+                }
+            }
+        }
+
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -91,17 +119,23 @@ namespace Chisel.Core
             if (branch.Count != requiredSubMeshCount)
                 this.BuildBrushes(branch, requiredSubMeshCount);
 
-            using (var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter, tubeWidth, tubeHeight, tubeRotation, startAngle, totalAngle, verticalSegments, horizontalSegments, fitCircle, Allocator.Temp))
+            using (var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter, tubeWidth, tubeHeight, tubeRotation, startAngle, totalAngle, verticalSegments, horizontalSegments, fitCircle, Allocator.TempJob))
             {
-                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
                 {
-                    if (!BrushMeshFactory.GenerateTorus(brushMeshes, in vertices, verticalSegments, horizontalSegments,
-                                                in surfaceDefinitionBlob, Allocator.Persistent))
+                    var createTorusJob = new CreateTorusJob
                     {
-                        this.ClearBrushes(branch);
-                        return default;
-                    }
+                        verticalSegments    = verticalSegments, 
+                        horizontalSegments  = horizontalSegments,
+                        vertices            = vertices,
 
+                        surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                        brushMeshes             = brushMeshes
+                    };
+                    var handle = createTorusJob.Schedule();
+                    handle.Complete();
+
+                    //this.ClearBrushes(branch);
                     for (int i = 0; i < requiredSubMeshCount; i++)
                     {
                         var brush = (CSGTreeBrush)branch[i];

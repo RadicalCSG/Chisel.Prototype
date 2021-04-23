@@ -51,6 +51,34 @@ namespace Chisel.Core
             totalAngle		= math.clamp(totalAngle, 1, 360); // TODO: constants
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateRevolvedShapeJob : IJob
+        {
+            [NoAlias, ReadOnly] public NativeList<SegmentVertex>     polygonVerticesList;
+            [NoAlias, ReadOnly] public NativeList<int>               polygonVerticesSegments;
+            [NoAlias, ReadOnly] public NativeList<float4x4>          pathMatrices;
+            
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                                                            in polygonVerticesList,
+                                                            in polygonVerticesSegments,
+                                                            in pathMatrices,
+                                                            in surfaceDefinitionBlob,
+                                                            Allocator.Persistent))
+                {
+                    for (int i = 0; i < brushMeshes.Length; i++)
+                        brushMeshes[i] = default;
+                }
+            }
+        }
+
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -63,52 +91,62 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
             {
                 // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
 
                 ref var curve = ref curveBlob.Value;
-                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
+                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.TempJob))
                 {
                     this.ClearBrushes(branch);
                     return default;
                 }
-
-                BrushMeshFactory.Split2DPolygonAlongOriginXAxis(polygonVerticesList, polygonVerticesSegments);
-
-                int requiredSubMeshCount = polygonVerticesSegments.Length * revolveSegments;
-                if (requiredSubMeshCount == 0)
+                try
                 {
-                    this.ClearBrushes(branch);
-                    return default;
-                }
+                    BrushMeshFactory.Split2DPolygonAlongOriginXAxis(polygonVerticesList, polygonVerticesSegments);
 
-                if (branch.Count != requiredSubMeshCount)
-                    this.BuildBrushes(branch, requiredSubMeshCount);
-
-                using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0,1,0), Allocator.Temp))
-                {
-                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                    int requiredSubMeshCount = polygonVerticesSegments.Length * revolveSegments;
+                    if (requiredSubMeshCount == 0)
                     {
-                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
-                                                                    in polygonVerticesList,
-                                                                    in polygonVerticesSegments,
-                                                                    in pathMatrices,
-                                                                    in surfaceDefinitionBlob,
-                                                                    Allocator.Persistent))
-                        {
-                            this.ClearBrushes(branch);
-                            return default;
-                        }
+                        this.ClearBrushes(branch);
+                        return default;
+                    }
 
+                    if (branch.Count != requiredSubMeshCount)
+                        this.BuildBrushes(branch, requiredSubMeshCount);
+
+                    using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0, 1, 0), Allocator.TempJob))
+                    using (var brushMeshes  = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
+                    {
+                        var createExtrudedShapeJob = new CreateRevolvedShapeJob
+                        {
+                            polygonVerticesList     = polygonVerticesList,
+                            polygonVerticesSegments = polygonVerticesSegments,
+                            pathMatrices            = pathMatrices,
+
+                            surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                            brushMeshes             = brushMeshes
+                        };
+                        var handle = createExtrudedShapeJob.Schedule();
+                        handle.Complete();
+
+                        //this.ClearBrushes(branch);
                         for (int i = 0; i < requiredSubMeshCount; i++)
                         {
                             var brush = (CSGTreeBrush)branch[i];
                             brush.LocalTransformation = float4x4.identity;
                             brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
                         }
-                        return default;
                     }
+
+                    return default;
+                }
+                finally
+                {
+                    if (polygonVerticesList.IsCreated)
+                        polygonVerticesList.Dispose();
+                    if (polygonVerticesSegments.IsCreated)
+                        polygonVerticesSegments.Dispose();
                 }
             }
         }

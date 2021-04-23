@@ -52,6 +52,35 @@ namespace Chisel.Core
             verticalSegments	= math.max(verticalSegments, 1);
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateHemisphereJob : IJob
+        {
+            public float3	diameterXYZ;
+            public float    rotation; // TODO: useless?
+            public int		horizontalSegments;
+            public int		verticalSegments;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+            
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ, 
+                                                         rotation, 
+                                                         horizontalSegments, 
+                                                         verticalSegments, 
+                                                         in surfaceDefinitionBlob,
+                                                         out var newBrushMesh, 
+                                                         Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
+            }
+        }
+
 
         [BurstCompile(CompileSynchronously = true)]
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
@@ -66,14 +95,26 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ, rotation, horizontalSegments, verticalSegments, in surfaceDefinitionBlob,
-                                                        out var brushMesh, Allocator.Persistent))
+            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
             {
-                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                return default;
-            }
+                var createHemisphereJob = new CreateHemisphereJob
+                {
+                    diameterXYZ             = diameterXYZ,
+                    rotation                = rotation,
+                    horizontalSegments      = horizontalSegments,
+                    verticalSegments        = verticalSegments,
 
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMesh               = brushMeshRef
+                };
+                var handle = createHemisphereJob.Schedule();
+                handle.Complete();
+
+                if (!brushMeshRef.Value.IsCreated)
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                else
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
+            }
             return default;
         }
 

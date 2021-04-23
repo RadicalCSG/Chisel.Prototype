@@ -75,8 +75,6 @@ namespace Chisel.Core
             return true;
         }
 
-        static List<BrushMesh> brushMeshesList = new List<BrushMesh>();
-
         [BurstCompile]
         public static unsafe bool GenerateExtrudedShape(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, 
                                                         in NativeList<SegmentVertex> polygonVerticesArray, 
@@ -100,8 +98,7 @@ namespace Chisel.Core
 
             int brushMeshIndex = 0;
 
-            brushMeshesList.Clear();
-            Profiler.BeginSample("CreateExtrudedSubMeshes");
+            //Profiler.BeginSample("CreateExtrudedSubMeshes");
             for (int p = 0; p < polygonVerticesSegments.Length; p++)
             {
                 var range = new Range
@@ -153,7 +150,7 @@ namespace Chisel.Core
                     }
                 }
             }
-            Profiler.EndSample();
+            //Profiler.EndSample();
             return true;
         }
 

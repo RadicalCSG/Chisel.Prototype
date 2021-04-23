@@ -954,24 +954,24 @@ namespace Chisel.Core
             {
                 if (halfEdges[h].vertexIndex < 0)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].vertexIndex is " + halfEdges[h].vertexIndex);
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}");
                     fail = true;
                 } else
                 if (halfEdges[h].vertexIndex >= vertices.Length)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].vertexIndex is " + halfEdges[h].vertexIndex + ", but there are " + vertices.Length + " vertices.");
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].vertexIndex is {halfEdges[h].vertexIndex}, but there are {vertices.Length} vertices.");
                     fail = true;
                 }
 
                 if (halfEdges[h].twinIndex < 0)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex);
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}");
                     fail = true;
                     continue;
                 } else
                 if (halfEdges[h].twinIndex >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex + ", but there are " + halfEdges.Length + " edges.");
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but there are {halfEdges.Length} edges.");
                     fail = true;
                     continue;
                 }
@@ -980,7 +980,7 @@ namespace Chisel.Core
                 var twin		= halfEdges[twinIndex];
                 if (twin.twinIndex != h)
                 {
-                    if (logErrors) Debug.LogError("halfEdges[" + h + "].twinIndex is " + halfEdges[h].twinIndex + ", but the twinIndex of its twin is " + twin.twinIndex + " instead of " + h + ".");
+                    if (logErrors) Debug.LogError($"halfEdges[{h}].twinIndex is {halfEdges[h].twinIndex}, but the twinIndex of its twin is {twin.twinIndex} instead of {h}.");
                     fail = true;
                 }
             }
@@ -992,28 +992,28 @@ namespace Chisel.Core
                 var polygonFail = false;
                 if (firstEdge < 0)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge);
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge is {firstEdge}");
                     polygonFail = true;
                 } else
                 if (firstEdge >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge is " + firstEdge + ", but there are " + halfEdges.Length + " edges.");
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge is {firstEdge}, but there are {halfEdges.Length} edges.");
                     polygonFail = true;
                 }
                 if (count <= 2)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].edgeCount is " + count);
+                    if (logErrors) Debug.LogError($"polygons[{p}].edgeCount is {count}");
                     polygonFail = true;
                 } else
                 if (firstEdge + count - 1 >= halfEdges.Length)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount is " + (firstEdge + count) + ", but there are " + halfEdges.Length + " edges.");
+                    if (logErrors) Debug.LogError($"polygons[{p}].firstEdge + polygons[{p}].edgeCount is {(firstEdge + count)}, but there are {halfEdges.Length} edges.");
                     polygonFail = true;
                 } else
                 if (p < polygons.Length - 1 &&
                     polygons[p + 1].firstEdge != firstEdge + count)
                 {
-                    if (logErrors) Debug.LogError("polygons[" + (p + 1) + "].firstEdge does not equal polygons[" + p + "].firstEdge + polygons[" + p + "].edgeCount.");
+                    if (logErrors) Debug.LogError($"polygons[{(p + 1)}].firstEdge does not equal polygons[{p}].firstEdge + polygons[{p}].edgeCount.");
                     polygonFail = true;
                 }
 
@@ -1036,7 +1036,7 @@ namespace Chisel.Core
                     {
                         if (logErrors)
                         {
-                            Debug.LogError("halfEdges[" + (i0 + firstEdge) + "].vertexIndex (" + h0.vertexIndex + ") is not equal to halfEdges[halfEdges[" + (i1 + firstEdge) + "].twinIndex(" + h1.twinIndex + ")].vertexIndex (" + t1.vertexIndex + ").");
+                            Debug.LogError($"halfEdges[{(i0 + firstEdge)}].vertexIndex ({h0.vertexIndex}) is not equal to halfEdges[halfEdges[{(i1 + firstEdge)}].twinIndex({h1.twinIndex})].vertexIndex ({t1.vertexIndex}).");
                         }
                         fail = true;
                     }

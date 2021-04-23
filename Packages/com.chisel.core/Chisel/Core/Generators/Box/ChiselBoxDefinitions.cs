@@ -116,7 +116,7 @@ namespace Chisel.Core
                 handle.Complete();
 
                 if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
                 else
                     brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
             }

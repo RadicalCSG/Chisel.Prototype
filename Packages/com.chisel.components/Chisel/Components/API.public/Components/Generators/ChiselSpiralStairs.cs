@@ -15,7 +15,7 @@ namespace Chisel.Components
         public Vector3 Origin
         {
             get { return definition.origin; }
-            set { if (definition.origin == value) return; definition.origin = value; OnValidateState(); }
+            set { if ((Vector3)definition.origin == value) return; definition.origin = value; OnValidateState(); }
         }
         
         public float StepHeight

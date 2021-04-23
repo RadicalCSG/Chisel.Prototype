@@ -265,6 +265,54 @@ namespace Chisel.Core
             sides = math.max(3, sides);
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreateCylinderJob : IJob
+        {
+            public CylinderShapeType type;
+            public float    height;
+            public float    bottomOffset;
+            public float2   topDiameter;
+            public float2   bottomDiameter;
+            public float    rotation;
+            public int      sides;
+            public bool     fitToBounds;
+            public bool     isEllipsoid;
+            
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
+
+            public void Execute()
+            {
+                var topHeight = height + bottomOffset;
+                var bottomHeight = bottomOffset;
+                switch (type)
+                {
+                    case CylinderShapeType.ConicalFrustum:  break;
+                    case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
+                    case CylinderShapeType.Cone:            topDiameter = float2.zero; break;
+                    default: throw new NotImplementedException();
+                }
+
+                if (!isEllipsoid)
+                {
+                    topDiameter.y = topDiameter.x;
+                    bottomDiameter.y = bottomDiameter.x;
+                }
+
+                if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter,    topHeight, 
+                                                                    bottomDiameter, bottomHeight, 
+                                                                    rotation, sides, fitToBounds, 
+                                                                    in surfaceDefinitionBlob, 
+                                                                    out var newBrushMesh, Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
+            }
+        }
+
 
         [BurstCompile(CompileSynchronously = true)]
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
@@ -279,33 +327,33 @@ namespace Chisel.Core
                     brush.Operation = operation;
             }
 
-            var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
-            var topHeight       = height + bottomOffset;
-            var bottomHeight    = bottomOffset;
-
-            float2 topDiameter;
-            const Allocator allocator = Allocator.Persistent;
-            switch (type)
+            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
             {
-                case CylinderShapeType.ConicalFrustum:  topDiameter = new float2(topDiameterX, topDiameterZ); break;
-                case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
-                case CylinderShapeType.Cone:            topDiameter = float2.zero; break; 
-                default: throw new NotImplementedException();
-            }
+                var topDiameter     = new float2(topDiameterX,    topDiameterZ);
+                var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
+                var createCylinderJob = new CreateCylinderJob
+                {
+                    type            = type,
+                    height          = height,
+                    bottomOffset    = bottomOffset,
+                    topDiameter     = topDiameter,
+                    bottomDiameter  = bottomDiameter,
+                    rotation        = rotation,
+                    sides           = sides,
+                    fitToBounds     = fitToBounds,
+                    isEllipsoid     = isEllipsoid,
 
-            if (!isEllipsoid)
-            {
-                topDiameter.y    = topDiameter.x;
-                bottomDiameter.y = bottomDiameter.x;
-            }
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMesh               = brushMeshRef
+                };
+                var handle = createCylinderJob.Schedule();
+                handle.Complete();
 
-            if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter, topHeight, bottomDiameter, bottomHeight, rotation, sides, fitToBounds, in surfaceDefinitionBlob, out var brushMesh, allocator))
-            {
-                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                return default;
+                if (!brushMeshRef.Value.IsCreated)
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                else
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
             }
-
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
             return default;
         }
 

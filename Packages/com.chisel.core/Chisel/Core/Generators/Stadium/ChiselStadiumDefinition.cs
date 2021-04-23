@@ -90,6 +90,37 @@ namespace Chisel.Core
         }
 
         [BurstCompile(CompileSynchronously = true)]
+        struct CreateStadiumJob : IJob
+        {
+            public float    width;
+            public float    height;
+            public float    length;
+            public float    topLength;
+            public int      topSides;
+            public float    bottomLength;
+            public int      bottomSides;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+            
+            [NoAlias]
+            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GenerateStadium(width, height, length,
+                                                      topLength, topSides,
+                                                      bottomLength, bottomSides,
+                                                      in surfaceDefinitionBlob, 
+                                                      out var newBrushMesh, 
+                                                      Allocator.Persistent))
+                    brushMesh.Value = default;
+                else
+                    brushMesh.Value = newBrushMesh;
+            }
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
@@ -101,17 +132,30 @@ namespace Chisel.Core
                 if (brush.Operation != operation)
                     brush.Operation = operation;
             }
-
-            if (!BrushMeshFactory.GenerateStadium(width, height, length,
-                                                    topLength, topSides,
-                                                    bottomLength, bottomSides,
-                                                    in surfaceDefinitionBlob, out var brushMesh, Allocator.Persistent))
+            
+            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
             {
-                brush.BrushMesh = BrushMeshInstance.InvalidInstance;
-                return default;
-            }
+                var createHemisphereJob = new CreateStadiumJob
+                {
+                    width           = width,
+                    height          = height,
+                    length          = length,
+                    topLength       = topLength,
+                    topSides        = topSides,
+                    bottomLength    = bottomLength,
+                    bottomSides     = bottomSides,
 
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMesh               = brushMeshRef
+                };
+                var handle = createHemisphereJob.Schedule();
+                handle.Complete();
+
+                if (!brushMeshRef.Value.IsCreated)
+                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                else
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
+            }
             return default;
         }
 

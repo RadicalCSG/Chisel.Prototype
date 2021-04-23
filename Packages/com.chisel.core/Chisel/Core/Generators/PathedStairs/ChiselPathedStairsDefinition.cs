@@ -44,6 +44,37 @@ namespace Chisel.Core
             stairs.Validate();
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct CreatePathedStairsJob : IJob
+        {
+            public bool                         closed;
+            public MinMaxAABB                   bounds;
+            public ChiselLinearStairsDefinition stairs;
+
+            [NoAlias, ReadOnly] public NativeList<SegmentVertex> shapeVertices;
+
+            [NoAlias, ReadOnly]
+            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+
+            [NoAlias]
+            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes, in shapeVertices,
+                                                           closed, bounds,
+                                                           stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
+                                                           stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
+                                                           stairs.leftSide, stairs.rightSide,
+                                                           stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
+                                                           in surfaceDefinitionBlob, Allocator.Persistent))
+                {
+                    for (int i = 0; i < brushMeshes.Length; i++)
+                        brushMeshes[i] = default;
+                }
+            }
+        }
+
         public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var branch = (CSGTreeBranch)node;
@@ -56,10 +87,10 @@ namespace Chisel.Core
                     branch.Operation = operation;
             }
 
-            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.Temp))
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
             {
                 ref var curve = ref curveBlob.Value;
-                using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.Temp))
+                using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.TempJob))
                 {
                     curve.GetPathVertices(curveSegments, shapeVertices);
                     if (shapeVertices.Length < 2)
@@ -84,20 +115,22 @@ namespace Chisel.Core
                     if (branch.Count != requiredSubMeshCount)
                         this.BuildBrushes(branch, requiredSubMeshCount);
 
-                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
                     {
-                        if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes, in shapeVertices,
-                                                                    shape.closed, minMaxAABB,
-                                                                    stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
-                                                                    stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
-                                                                    stairs.leftSide, stairs.rightSide,
-                                                                    stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
-                                                                    in surfaceDefinitionBlob, Allocator.Persistent))
+                        var createExtrudedShapeJob = new CreatePathedStairsJob
                         {
-                            this.ClearBrushes(branch);
-                            return default;
-                        }
+                            closed                  = shape.closed,
+                            bounds                  = minMaxAABB,
+                            stairs                  = stairs,
 
+                            shapeVertices           = shapeVertices,
+                            surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                            brushMeshes             = brushMeshes
+                        };
+                        var handle = createExtrudedShapeJob.Schedule();
+                        handle.Complete();
+
+                        //this.ClearBrushes(branch);
                         for (int i = 0; i < requiredSubMeshCount; i++)
                         {
                             var brush = (CSGTreeBrush)branch[i];
