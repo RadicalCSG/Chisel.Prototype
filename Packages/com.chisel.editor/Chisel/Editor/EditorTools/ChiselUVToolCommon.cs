@@ -19,8 +19,10 @@ namespace Chisel.Editors
     sealed class ChiselSurfaceContainer : ScriptableObject
     {
         public const string kSurfaceDescriptionName = nameof(SurfaceDescription);
+        public const string kBrushMaterialName      = nameof(BrushMaterial);
         
-        public SurfaceDescription SurfaceDescription;
+        public SurfaceDescription       SurfaceDescription;
+        public ChiselBrushMaterial      BrushMaterial;
         [NonSerialized] public SurfaceReference SurfaceReference;
 
         public static ChiselSurfaceContainer Create(SurfaceReference surfaceReference)
@@ -28,6 +30,7 @@ namespace Chisel.Editors
             var container = ScriptableObject.CreateInstance<ChiselSurfaceContainer>();
             container.SurfaceReference      = surfaceReference;
             container.SurfaceDescription    = surfaceReference.SurfaceDescription;
+            container.BrushMaterial         = surfaceReference.BrushMaterial;
             //container.BrushSurface        = surfaceReference.BrushSurface;
             container.hideFlags             = HideFlags.DontSave;
             return container;
@@ -123,25 +126,20 @@ namespace Chisel.Editors
             }
 
             serializedObject = new SerializedObject(surfaces);
-            var brushSurfaceProperty = serializedObject.FindProperty(ChiselSurfaceContainer.kSurfaceDescriptionName);
-            if (brushSurfaceProperty != null)
-            { 
-                var materialProperty = brushSurfaceProperty.FindPropertyRelative(ChiselSurface.kBrushMaterialName);
-                if (materialProperty != null)
-                { 
-                    layerUsageProp      = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageFieldName);
-                    renderMaterialProp  = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialFieldName);
-                    physicsMaterialProp = materialProperty.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialFieldName);
-                }
-                var surfaceDescriptionProp  = brushSurfaceProperty.FindPropertyRelative(ChiselSurface.kSurfaceDescriptionName);
-                if (surfaceDescriptionProp != null)
-                {
-                    smoothingGroupProp  = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kSmoothingGroupName);
-                    surfaceFlagsProp    = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kSurfaceFlagsName);
-                    UV0Prop             = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kUV0Name);
-                }
+            var surfaceDescriptionProp = serializedObject.FindProperty(ChiselSurfaceContainer.kSurfaceDescriptionName);
+            if (surfaceDescriptionProp != null)
+            {
+                smoothingGroupProp  = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kSmoothingGroupName);
+                surfaceFlagsProp    = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kSurfaceFlagsName);
+                UV0Prop             = surfaceDescriptionProp.FindPropertyRelative(SurfaceDescription.kUV0Name);
             }
-
+            var brushMaterialProp       = serializedObject.FindProperty(ChiselSurfaceContainer.kBrushMaterialName);
+            if (brushMaterialProp != null)
+            {
+                layerUsageProp      = brushMaterialProp.FindPropertyRelative(ChiselBrushMaterial.kLayerUsageFieldName);
+                renderMaterialProp  = brushMaterialProp.FindPropertyRelative(ChiselBrushMaterial.kRenderMaterialFieldName);
+                physicsMaterialProp = brushMaterialProp.FindPropertyRelative(ChiselBrushMaterial.kPhysicsMaterialFieldName);
+            }
             initialized = true;
         }
 
