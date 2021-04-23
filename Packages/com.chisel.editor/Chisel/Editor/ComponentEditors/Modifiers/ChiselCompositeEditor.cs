@@ -17,11 +17,6 @@ namespace Chisel.Editors
         {
             return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.ChiselNodeTypeName);
         }
-
-        public override bool HasValidState(ChiselComposite node)
-        {
-            return node.HasValidState();
-        }
     }
 
     [CustomEditor(typeof(ChiselComposite))]

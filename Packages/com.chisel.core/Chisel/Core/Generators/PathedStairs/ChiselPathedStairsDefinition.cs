@@ -117,7 +117,7 @@ namespace Chisel.Core
 
         public bool HasValidState()
         {
-            return false;
+            return true;
         }
 
         public void OnMessages(IChiselMessages messages)

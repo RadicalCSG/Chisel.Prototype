@@ -17,6 +17,8 @@ namespace Chisel.Core
         void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition);
         void OnEdit(IChiselHandles handles);
         bool HasValidState();
+
+        // TODO: make these messages show in hierarchy tooltips
         void OnMessages(IChiselMessages messages);
         JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation);
     }

@@ -69,7 +69,7 @@ namespace Chisel.Components
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
         public override bool HasValidState()
         {
-            return !base.HasValidState() &&
+            return base.HasValidState() &&
                     definition.HasValidState();
         }
     }

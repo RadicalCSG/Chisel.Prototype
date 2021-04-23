@@ -772,19 +772,6 @@ namespace Chisel.Editors
 
             return GetHierarchyIcon(generator.Operation, node.ChiselNodeTypeName);
         }
-
-        public bool HasValidState(ChiselNode node)
-        {
-            var brushGenerator = node as ChiselGeneratorComponent;
-            if (brushGenerator != null)
-                return node.HasValidState();
-
-            var generator = node as ChiselGeneratorComponent;
-            if (generator == null)
-                return false;
-
-            return node.HasValidState();
-        }
     }
 
     public abstract class ChiselGeneratorEditor<T> : ChiselNodeEditor<T>
@@ -983,19 +970,6 @@ namespace Chisel.Editors
             {
                 ChiselEditToolBase.ClearLastRememberedType();
             }
-        }
-
-        protected bool HasValidState()
-        {
-            foreach (var target in targets)
-            {
-                var generator = target as T;
-                if (!generator)
-                    continue;
-                if (!generator.HasValidState())
-                    return false;
-            }
-            return true;
         }
 
         static readonly HashSet<System.Object> s_FoundObjects = new HashSet<System.Object>();

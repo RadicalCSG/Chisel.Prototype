@@ -46,6 +46,7 @@ namespace Chisel.Editors
                 return nodeDetails;
             return generatorDefaultDetails;
         }
+
         public static GUIContent GetHierarchyIcon(ChiselNode node)
         {
             if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
@@ -57,20 +58,8 @@ namespace Chisel.Editors
 
         public static GUIContent GetHierarchyIcon(ChiselNode node, out bool hasValidState)
         {
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
-            {
-                hasValidState = nodeDetails.HasValidState(node);
-                return nodeDetails.GetHierarchyIconForGenericNode(node);
-            }
-            hasValidState = generatorDefaultDetails.HasValidState(node);
-            return generatorDefaultDetails.GetHierarchyIconForGenericNode(node);
+            hasValidState = node.HasValidState();
+            return GetHierarchyIcon(node);
         }
-
-        public static bool HasValidState(ChiselNode node)
-        {
-            if (nodeDetailsLookup.TryGetValue(node.GetType(), out IChiselNodeDetails nodeDetails))
-                return nodeDetails.HasValidState(node);
-            return generatorDefaultDetails.HasValidState(node);
-        } 
     }
 }

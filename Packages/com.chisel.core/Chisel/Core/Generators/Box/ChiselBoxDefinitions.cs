@@ -135,8 +135,8 @@ namespace Chisel.Core
         {
             var size = this.Size;
             if (size.x == 0 || size.y == 0 || size.z == 0)
-                return true;
-            return false;
+                return false;
+            return true;
         }
 
         public void OnMessages(IChiselMessages messages)

@@ -19,11 +19,6 @@ namespace Chisel.Editors
         {
             return ChiselEditorResources.GetIconContent(kModelIconName, node.ChiselNodeTypeName)[0];
         }
-
-        public override bool HasValidState(ChiselModel node)
-        {
-            return node.HasValidState();
-        }
     }
 
     [CustomEditor(typeof(ChiselModel))]
