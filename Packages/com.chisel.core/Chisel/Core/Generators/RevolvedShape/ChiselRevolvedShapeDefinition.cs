@@ -12,7 +12,17 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : IChiselGenerator
+    public struct RevolvedShapeSettings
+    {
+        public int      curveSegments;
+        public int      revolveSegments;
+        public float    startAngle;
+        public float    totalAngle;
+        public BlobAssetReference<ChiselCurve2DBlob> curveBlob;
+    }
+
+    [Serializable]
+    public struct ChiselRevolvedShapeDefinition : IChiselBranchGenerator
     {
         public const string kNodeTypeName = "Revolved Shape";
 
@@ -20,11 +30,9 @@ namespace Chisel.Core
         public const int                kDefaultRevolveSegments = 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
+        [HideFoldout] public RevolvedShapeSettings settings;
+
         public Curve2D  shape;
-        public int	    curveSegments;
-        public int	    revolveSegments;
-        public float    startAngle;
-        public float    totalAngle;
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
@@ -32,11 +40,11 @@ namespace Chisel.Core
         public void Reset()
         {
             // TODO: create constants
-            shape			= kDefaultShape;
-            startAngle		= 0.0f;
-            totalAngle		= 360.0f;
-            curveSegments	= kDefaultCurveSegments;
-            revolveSegments	= kDefaultRevolveSegments;
+            shape			            = kDefaultShape;
+            settings.startAngle		    = 0.0f;
+            settings.totalAngle		    = 360.0f;
+            settings.curveSegments	    = kDefaultCurveSegments;
+            settings.revolveSegments	= kDefaultRevolveSegments;
         }
 
         public int RequiredSurfaceCount { get { return 6; } }
@@ -45,101 +53,61 @@ namespace Chisel.Core
 
         public void Validate()
         {
-            curveSegments	= math.max(curveSegments, 2);
-            revolveSegments	= math.max(revolveSegments, 1);
+            settings.curveSegments	    = math.max(settings.curveSegments, 2);
+            settings.revolveSegments	= math.max(settings.revolveSegments, 1);
 
-            totalAngle		= math.clamp(totalAngle, 1, 360); // TODO: constants
+            settings.totalAngle		    = math.clamp(settings.totalAngle, 1, 360); // TODO: constants
         }
 
         [BurstCompile(CompileSynchronously = true)]
         struct CreateRevolvedShapeJob : IJob
         {
-            [NoAlias, ReadOnly] public NativeList<SegmentVertex>     polygonVerticesList;
-            [NoAlias, ReadOnly] public NativeList<int>               polygonVerticesSegments;
-            [NoAlias, ReadOnly] public NativeList<float4x4>          pathMatrices;
+            [NoAlias, ReadOnly] public RevolvedShapeSettings settings;
             
             [NoAlias, ReadOnly]
             public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
 
             [NoAlias]
-            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+            public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
 
             public void Execute()
             {
-                if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
-                                                            in polygonVerticesList,
-                                                            in polygonVerticesSegments,
-                                                            in pathMatrices,
-                                                            in surfaceDefinitionBlob,
-                                                            Allocator.Persistent))
+                ref var curve = ref settings.curveBlob.Value;
+                if (!curve.ConvexPartition(settings.curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
                 {
-                    for (int i = 0; i < brushMeshes.Length; i++)
-                        brushMeshes[i] = default;
+                    brushMeshes.Clear();
+                    return;
                 }
-            }
-        }
 
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
-        {
-            var branch = (CSGTreeBranch)node;
-            if (!branch.Valid)
-            {
-                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (branch.Operation != operation)
-                    branch.Operation = operation;
-            }
-
-            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
-            {
-                // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
-
-                ref var curve = ref curveBlob.Value;
-                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.TempJob))
-                {
-                    this.ClearBrushes(branch);
-                    return default;
-                }
                 try
                 {
                     BrushMeshFactory.Split2DPolygonAlongOriginXAxis(polygonVerticesList, polygonVerticesSegments);
 
-                    int requiredSubMeshCount = polygonVerticesSegments.Length * revolveSegments;
+                    int requiredSubMeshCount = polygonVerticesSegments.Length * settings.revolveSegments;
                     if (requiredSubMeshCount == 0)
                     {
-                        this.ClearBrushes(branch);
-                        return default;
+                        brushMeshes.Clear();
+                        return;
                     }
 
-                    if (branch.Count != requiredSubMeshCount)
-                        this.BuildBrushes(branch, requiredSubMeshCount);
-
-                    using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(revolveSegments, new float3(0, 1, 0), Allocator.TempJob))
-                    using (var brushMeshes  = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
+                    using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(settings.revolveSegments, new float3(0, 1, 0), Allocator.Temp))
                     {
-                        var createExtrudedShapeJob = new CreateRevolvedShapeJob
+                        brushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                                                                    in polygonVerticesList,
+                                                                    in polygonVerticesSegments,
+                                                                    in pathMatrices,
+                                                                    in surfaceDefinitionBlob,
+                                                                    Allocator.Persistent))
                         {
-                            polygonVerticesList     = polygonVerticesList,
-                            polygonVerticesSegments = polygonVerticesSegments,
-                            pathMatrices            = pathMatrices,
-
-                            surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                            brushMeshes             = brushMeshes
-                        };
-                        var handle = createExtrudedShapeJob.Schedule();
-                        handle.Complete();
-
-                        //this.ClearBrushes(branch);
-                        for (int i = 0; i < requiredSubMeshCount; i++)
-                        {
-                            var brush = (CSGTreeBrush)branch[i];
-                            brush.LocalTransformation = float4x4.identity;
-                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                            for (int i = 0; i < brushMeshes.Length; i++)
+                            {
+                                if (brushMeshes[i].IsCreated)
+                                    brushMeshes[i].Dispose();
+                            }
+                            brushMeshes.Clear();
                         }
                     }
-
-                    return default;
                 }
                 finally
                 {
@@ -148,6 +116,25 @@ namespace Chisel.Core
                     if (polygonVerticesSegments.IsCreated)
                         polygonVerticesSegments.Dispose();
                 }
+            }
+        }
+
+        public void FixupOperations(CSGTreeBranch branch) { }
+
+        public JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
+            {
+                settings.curveBlob = curveBlob;
+                var createExtrudedShapeJob = new CreateRevolvedShapeJob
+                {
+                    settings                = settings,                            
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMeshes             = brushMeshes
+                };
+                var handle = createExtrudedShapeJob.Schedule();
+                handle.Complete();
+                return default;
             }
         }
 
@@ -171,12 +158,12 @@ namespace Chisel.Core
             var controlPoints	= shape.controlPoints;
             
             var shapeVertices		= new System.Collections.Generic.List<SegmentVertex>();
-            BrushMeshFactory.GetPathVertices(this.shape, this.curveSegments, shapeVertices);
+            BrushMeshFactory.GetPathVertices(this.shape, settings.curveSegments, shapeVertices);
 
             
-            var horzSegments			= this.revolveSegments;
-            var horzDegreePerSegment	= this.totalAngle / horzSegments;
-            var horzOffset				= this.startAngle;
+            var horzSegments			= settings.revolveSegments;
+            var horzDegreePerSegment	= settings.totalAngle / horzSegments;
+            var horzOffset				= settings.startAngle;
             
             var noZTestcolor = handles.GetStateColor(baseColor, false, true);
             var zTestcolor	 = handles.GetStateColor(baseColor, false, false);

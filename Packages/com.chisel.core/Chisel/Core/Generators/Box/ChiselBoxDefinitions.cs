@@ -10,9 +10,48 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
+    public struct ChiselBoxGenerator : IChiselBrushTypeGenerator<MinMaxAABB>
+    {
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                                          settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
+
+            public void Execute(int index)
+            {
+                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
+            }
+        }
+
+        public JobHandle Schedule(NativeList<MinMaxAABB> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var job = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray(),
+                brushMeshes         = brushMeshes.AsArray()
+            };
+            return job.Schedule(settings, 8);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(MinMaxAABB bounds, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        {
+            if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
+                                            in surfaceDefinitionBlob,
+                                            out var newBrushMesh,
+                                            allocator))
+                return default;
+            return newBrushMesh;
+        }
+    }
+
+
     // TODO: beveled edges?
     [Serializable]
-    public struct ChiselBoxDefinition : IChiselGenerator
+    public struct ChiselBoxDefinition : IChiselBrushGenerator<ChiselBoxGenerator, MinMaxAABB>
     {
         public const string kNodeTypeName = "Box";
 
@@ -91,36 +130,21 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public MinMaxAABB GenerateSettings()
         {
-            var brush = (CSGTreeBrush)node;
-            if (!brush.Valid)
-            {
-                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (brush.Operation != operation)
-                    brush.Operation = operation;
-            }
+            return bounds;
+        }
 
-            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
+        [BurstCompile(CompileSynchronously = true)]
+        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            var createBoxJob = new CreateBoxJob
             {
-                var createBoxJob = new CreateBoxJob
-                {
-                    bounds                  = bounds,
-                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                    brushMesh               = brushMeshRef
-                };
-                var handle = createBoxJob.Schedule();
-                handle.Complete();
-
-                if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
-            }
-            return default;
+                bounds                  = bounds,
+                surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                brushMesh               = brushMeshRef
+            };
+            return createBoxJob.Schedule();
         }
 
         public void OnEdit(IChiselHandles handles)

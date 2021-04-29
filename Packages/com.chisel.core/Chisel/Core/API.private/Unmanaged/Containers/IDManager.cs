@@ -205,18 +205,26 @@ namespace Chisel.Core
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
             if (idInternal < 0 || idInternal >= idToIndex.Length)
-                throw new ArgumentOutOfRangeException($"{nameof(id)} ({id}) must be between 1 and {1 + idToIndex.Length}");
+            {
+                Debug.LogError($"{nameof(id)} ({id}) must be between 1 and {1 + idToIndex.Length}");
+                return -1;
+            }
 
             var idLookup = idToIndex[idInternal];
             if (idLookup.generation != generation)
-                throw new ArgumentException($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
+            {
+                Debug.LogError($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
+                return -1;
+            }
 
             var index = idLookup.index;
             if (index < 0 || index >= indexToID.Length)
             {
                 if (indexToID.Length == 0)
-                    throw new ArgumentException($"{nameof(id)} ({id}) does not point to an valid index. This lookup table does not contain any valid indices at the moment.");
-                throw new ArgumentException($"{nameof(id)} ({id}) does not point to an valid index. It must be >= 0 and < {indexToID.Length}.");
+                    Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index. This lookup table does not contain any valid indices at the moment.");
+                else
+                    Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index. It must be >= 0 and < {indexToID.Length}.");
+                return -1;
             }
 
             return idLookup.index;

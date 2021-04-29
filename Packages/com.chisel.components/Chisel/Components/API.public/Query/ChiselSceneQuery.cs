@@ -147,7 +147,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_IgnoreNodes, node.hierarchyItem);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_IgnoreNodes, node.hierarchyItem);
                         s_IgnoreInstanceIDs.Add(node.GetInstanceID());
                     }
                 }
@@ -159,7 +159,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_FilterNodes, node.hierarchyItem);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_FilterNodes, node.hierarchyItem);
                         s_FilterInstanceIDs.Add(node.GetInstanceID());
                         if (node.hierarchyItem != null &&
                             node.hierarchyItem.Model)
@@ -253,7 +253,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_IgnoreNodes, node.hierarchyItem);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_IgnoreNodes, node.hierarchyItem);
                         s_IgnoreInstanceIDs.Add(node.GetInstanceID());
                     }
                 }
@@ -265,7 +265,7 @@ namespace Chisel.Components
                     var node = go.GetComponent<ChiselNode>();
                     if (node)
                     {
-                        ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_FilterNodes, node.hierarchyItem);
+                        ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_FilterNodes, node.hierarchyItem);
                         s_FilterInstanceIDs.Add(node.GetInstanceID());
                         if (node.hierarchyItem != null &&
                             node.hierarchyItem.Model)

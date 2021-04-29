@@ -12,7 +12,85 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselSphereDefinition : IChiselGenerator
+    public struct SphereSettings
+    {
+        [DistanceValue] public float3	diameterXYZ;
+        public float    offsetY;
+        public bool     generateFromCenter;
+        public float    rotation; // TODO: useless?
+        public int	    horizontalSegments;
+        public int	    verticalSegments;
+    }
+
+    public struct ChiselSphereGenerator : IChiselBrushTypeGenerator<SphereSettings>
+    {
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<SphereSettings> settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute(int index)
+            {
+                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
+            }
+        }
+
+        public JobHandle Schedule(NativeList<SphereSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var job = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray(),
+                brushMeshes         = brushMeshes.AsArray()
+            };
+            return job.Schedule(settings, 8);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushJob : IJob
+        {
+            public SphereSettings settings;
+            [NoAlias, ReadOnly] public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
+            [NoAlias] public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
+
+            public void Execute()
+            {
+                brushMesh.Value = GenerateMesh(settings, surfaceDefinitionBlob, Allocator.Persistent);
+            }
+        }
+
+        public JobHandle Schedule(SphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef)
+        {
+            var job = new CreateBrushJob
+            {
+                settings = settings,
+                surfaceDefinitionBlob = surfaceDefinitionBlob,
+                brushMesh = brushMeshRef
+            };
+            return job.Schedule();
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(SphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateSphere(settings.diameterXYZ,
+                                                    settings.offsetY,
+                                                    settings.rotation,  // TODO: useless?
+                                                    settings.generateFromCenter,
+                                                    settings.horizontalSegments,
+                                                    settings.verticalSegments,
+                                                    in surfaceDefinitionBlob,
+                                                    out var newBrushMesh,
+                                                    allocator))
+                return default;
+            return newBrushMesh;
+        }
+    }
+
+    [Serializable]
+    public struct ChiselSphereDefinition : IChiselBrushGenerator<ChiselSphereGenerator, SphereSettings>
     {
         public const string kNodeTypeName = "Sphere";
 
@@ -21,26 +99,22 @@ namespace Chisel.Core
         public const int                kDefaultHorizontalSegments  = 12;
         public const int                kDefaultVerticalSegments    = 12;
         public const bool               kDefaultGenerateFromCenter  = false;
-        public static readonly Vector3  kDefaultDiameter            = Vector3.one;
+        public static readonly float3   kDefaultDiameter            = new float3(1);
 
-        [DistanceValue] public Vector3	diameterXYZ;
-        public float    offsetY;
-        public bool     generateFromCenter;
-        public float    rotation; // TODO: useless?
-        public int	    horizontalSegments;
-        public int	    verticalSegments;
+
+        [HideFoldout] public SphereSettings settings;
 
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()
         {
-            diameterXYZ		    = kDefaultDiameter;
-            offsetY             = 0;
-            rotation		    = kDefaultRotation;
-            horizontalSegments  = kDefaultHorizontalSegments;
-            verticalSegments    = kDefaultVerticalSegments;
-            generateFromCenter  = kDefaultGenerateFromCenter;
+            settings.diameterXYZ		    = kDefaultDiameter;
+            settings.offsetY             = 0;
+            settings.rotation		    = kDefaultRotation;
+            settings.horizontalSegments  = kDefaultHorizontalSegments;
+            settings.verticalSegments    = kDefaultVerticalSegments;
+            settings.generateFromCenter  = kDefaultGenerateFromCenter;
         }
 
         public int RequiredSurfaceCount { get { return 6; } }
@@ -49,23 +123,18 @@ namespace Chisel.Core
 
         public void Validate()
         {
-            diameterXYZ.x = math.max(kMinSphereDiameter, math.abs(diameterXYZ.x));
-            diameterXYZ.y = math.max(0,                  math.abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
-            diameterXYZ.z = math.max(kMinSphereDiameter, math.abs(diameterXYZ.z));
+            settings.diameterXYZ.x = math.max(kMinSphereDiameter, math.abs(settings.diameterXYZ.x));
+            settings.diameterXYZ.y = math.max(0,                  math.abs(settings.diameterXYZ.y)) * (settings.diameterXYZ.y < 0 ? -1 : 1);
+            settings.diameterXYZ.z = math.max(kMinSphereDiameter, math.abs(settings.diameterXYZ.z));
 
-            horizontalSegments  = math.max(horizontalSegments, 3);
-            verticalSegments	= math.max(verticalSegments, 2);
+            settings.horizontalSegments = math.max(settings.horizontalSegments, 3);
+            settings.verticalSegments	= math.max(settings.verticalSegments, 2);
         }
 
         [BurstCompile(CompileSynchronously = true)]
         struct CreateSphereJob : IJob
         {
-            public float3	diameterXYZ;
-            public float    offsetY;
-            public bool     generateFromCenter;
-            public float    rotation; // TODO: useless?
-            public int		horizontalSegments;
-            public int		verticalSegments;
+            public SphereSettings settings;
 
             [NoAlias, ReadOnly]
             public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
@@ -75,12 +144,12 @@ namespace Chisel.Core
 
             public void Execute()
             {
-                if (!BrushMeshFactory.GenerateSphere(diameterXYZ, 
-                                                     offsetY, 
-                                                     rotation, 
-                                                     generateFromCenter, 
-                                                     horizontalSegments, 
-                                                     verticalSegments, 
+                if (!BrushMeshFactory.GenerateSphere(settings.diameterXYZ,
+                                                     settings.offsetY,
+                                                     settings.rotation,  // TODO: useless?
+                                                     settings.generateFromCenter,
+                                                     settings.horizontalSegments,
+                                                     settings.verticalSegments, 
                                                      in surfaceDefinitionBlob,
                                                      out var newBrushMesh, 
                                                      Allocator.Persistent))
@@ -90,42 +159,21 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public SphereSettings GenerateSettings()
         {
-            var brush = (CSGTreeBrush)node;
-            if (!brush.Valid)
-            {
-                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (brush.Operation != operation)
-                    brush.Operation = operation;
-            }
-            
-            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
-            {
-                var createHemisphereJob = new CreateSphereJob
-                {
-                    diameterXYZ             = diameterXYZ,
-                    offsetY                 = offsetY,
-                    rotation                = rotation,
-                    generateFromCenter      = generateFromCenter,
-                    horizontalSegments      = horizontalSegments,
-                    verticalSegments        = verticalSegments,
+            return settings;
+        }
 
-                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                    brushMesh               = brushMeshRef
-                };
-                var handle = createHemisphereJob.Schedule();
-                handle.Complete();
-
-                if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
-            }
-            return default;
+        [BurstCompile(CompileSynchronously = true)]
+        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            var createHemisphereJob = new CreateSphereJob
+            {
+                settings                = settings,
+                surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                brushMesh               = brushMeshRef
+            };
+            return createHemisphereJob.Schedule();
         }
 
         #region OnEdit
@@ -142,7 +190,7 @@ namespace Chisel.Core
 
         static void DrawOutline(IChiselHandleRenderer renderer, ChiselSphereDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            var sides			= definition.horizontalSegments;
+            var sides			= definition.settings.horizontalSegments;
             
             var extraVertices	= 2;
             var bottomVertex	= 1;
@@ -188,22 +236,22 @@ namespace Chisel.Core
             }
 
             Vector3 center, topPoint, bottomPoint;
-            if (!this.generateFromCenter)
+            if (!settings.generateFromCenter)
             {
-                center      = normal * (this.offsetY + (this.diameterXYZ.y * 0.5f));
-                topPoint    = normal * (this.offsetY + this.diameterXYZ.y);
-                bottomPoint = normal * (this.offsetY);
+                center      = normal * (settings.offsetY + (settings.diameterXYZ.y * 0.5f));
+                topPoint    = normal * (settings.offsetY + settings.diameterXYZ.y);
+                bottomPoint = normal * (settings.offsetY);
             } else
             {
-                center      = normal * (this.offsetY);
-                topPoint    = normal * (this.offsetY + (this.diameterXYZ.y *  0.5f));
-                bottomPoint = normal * (this.offsetY + (this.diameterXYZ.y * -0.5f));
+                center      = normal * (settings.offsetY);
+                topPoint    = normal * (settings.offsetY + (settings.diameterXYZ.y *  0.5f));
+                bottomPoint = normal * (settings.offsetY + (settings.diameterXYZ.y * -0.5f));
             }
 
-            if (this.diameterXYZ.y < 0)
+            if (settings.diameterXYZ.y < 0)
                 normal = -normal;
 
-            var radius2D = new float2(this.diameterXYZ.x, this.diameterXYZ.z) * 0.5f;
+            var radius2D = new float2(settings.diameterXYZ.x, settings.diameterXYZ.z) * 0.5f;
 
             {
                 // TODO: make it possible to (optionally) size differently in x & z
@@ -229,12 +277,12 @@ namespace Chisel.Core
             }
             if (handles.modified)
             {
-                var diameter = this.diameterXYZ;
+                var diameter = settings.diameterXYZ;
                 diameter.y = topPoint.y - bottomPoint.y;
                 diameter.x = radius2D.x * 2.0f;
                 diameter.z = radius2D.x * 2.0f;
-                this.offsetY    = bottomPoint.y;
-                this.diameterXYZ = diameter;
+                settings.offsetY    = bottomPoint.y;
+                settings.diameterXYZ = diameter;
                 // TODO: handle sizing down (needs to modify transformation?)
             }
         }

@@ -47,7 +47,7 @@ namespace Chisel.Core
         // TODO: create spiral sides support
         [BurstCompile]
         public static bool GenerateSpiralStairs(NativeArray<BlobAssetReference<BrushMeshBlob>>       brushMeshes, 
-                                                ref ChiselSpiralStairsDefinition                     definition, 
+                                                ref SpiralStairsSettings                             definition, 
                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
@@ -115,11 +115,11 @@ namespace Chisel.Core
             {
                 ref var outerCylinderSurfaces = ref outerCylinderSurfaceDefinitionBlob.Value.surfaces;
                 for (int i = 0; i < outerCylinderSurfaces.Length; i++)
-                    outerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[ChiselSpiralStairsDefinition.kOuterSurface];
+                    outerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[SpiralStairsSettings.kOuterSurface];
 
                 ref var innerCylinderSurfaces = ref innerCylinderSurfaceDefinitionBlob.Value.surfaces;
                 for (int i = 0; i < innerCylinderSurfaces.Length; i++)
-                    innerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[ChiselSpiralStairsDefinition.kInnerSurface];
+                    innerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[SpiralStairsSettings.kInnerSurface];
 
 
                 if (haveRiser)
@@ -297,13 +297,13 @@ namespace Chisel.Core
                             o1 = new float2(origin.x + c1, origin.z + s1);
 
                             //brushMesh.halfEdges = (anglePerStep > 0) ? invertedWedgeHalfEdges.ToArray() : wedgeHalfEdges.ToArray();
-                            brushMeshes[i] = CreateWedgeAssetPolygons(new float3( origin.x, maxY, origin.z), // 0
-                                                                      new float3(     o1.x, maxY,     o1.y), // 1
-                                                                      new float3(     o0.x, maxY,     o0.y), // 2  
+                            brushMeshes[i] = CreateWedgeAssetPolygons(new float3( origin.x, minY, origin.z), // 0
+                                                                      new float3(     o1.x, minY,     o1.y), // 1
+                                                                      new float3(     o0.x, minY,     o0.y), // 2  
 
-                                                                      new float3( origin.x, minY, origin.z), // 3
-                                                                      new float3(     o1.x, minY,     o1.y), // 4
-                                                                      new float3(     o0.x, minY,     o0.y), // 5
+                                                                      new float3( origin.x, maxY, origin.z), // 3
+                                                                      new float3(     o1.x, maxY,     o1.y), // 4
+                                                                      new float3(     o0.x, maxY,     o0.y), // 5
                                                                       in surfaceDefinitionBlob, 
                                                                       allocator);
                             if (i == 0)

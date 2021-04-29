@@ -7,7 +7,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselRevolvedShape : ChiselDefinedGeneratorComponent<ChiselRevolvedShapeDefinition>
+    public sealed class ChiselRevolvedShape : ChiselBranchGeneratorComponent<ChiselRevolvedShapeDefinition>
     {
         public const string kNodeTypeName = ChiselRevolvedShapeDefinition.kNodeTypeName;
         public override string ChiselNodeTypeName { get { return kNodeTypeName; } }

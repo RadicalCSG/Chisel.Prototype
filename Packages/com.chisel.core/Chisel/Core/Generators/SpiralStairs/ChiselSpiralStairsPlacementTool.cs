@@ -16,14 +16,14 @@ namespace Chisel.Core
 
         public override void OnCreate(ref ChiselSpiralStairsDefinition definition) 
         {
-            definition.stepHeight       = stepHeight;
-            definition.outerSegments    = outerSegments;
+            definition.settings.stepHeight       = stepHeight;
+            definition.settings.outerSegments    = outerSegments;
         }
 
         public override void OnUpdate(ref ChiselSpiralStairsDefinition definition, Bounds bounds)
         {
-            definition.height			= bounds.size[(int)Axis.Y];
-            definition.outerDiameter	= bounds.size[(int)Axis.X];
+            definition.settings.height			= bounds.size[(int)Axis.Y];
+            definition.settings.outerDiameter	= bounds.size[(int)Axis.X];
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

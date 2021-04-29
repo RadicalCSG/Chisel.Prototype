@@ -39,7 +39,7 @@ namespace Chisel.Core
                 
                 var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
                 var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
-                var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadiumDefinition.kNoCenterEpsilon;
+                var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= StadiumSettings.kNoCenterEpsilon;
                 var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
 
                 CreateExtrudedSubMesh(sides, null, 0, 1, 
@@ -70,7 +70,7 @@ namespace Chisel.Core
         {
             var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
             var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
-            var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadiumDefinition.kNoCenterEpsilon;
+            var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= StadiumSettings.kNoCenterEpsilon;
             var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
             
             var radius			= diameter * 0.5f;
@@ -134,29 +134,29 @@ namespace Chisel.Core
 
         public static bool GenerateStadiumVertices(ChiselStadiumDefinition definition, ref Vector3[] vertices)
         {
-            var topSides		= definition.topSides;
-            var bottomSides		= definition.bottomSides;
-            var sides			= definition.sides;
+            var topSides		= definition.settings.topSides;
+            var bottomSides		= definition.settings.bottomSides;
+            var sides			= definition.settings.Sides;
 
-            var length			= definition.length;
-            var topLength		= definition.topLength;
-            var bottomLength	= definition.bottomLength;
-            var diameter		= definition.width;
+            var length			= definition.settings.length;
+            var topLength		= definition.settings.topLength;
+            var bottomLength	= definition.settings.bottomLength;
+            var diameter		= definition.settings.width;
             var radius			= diameter * 0.5f;
 
             if (vertices == null ||
                 vertices.Length != sides * 2)
                 vertices		= new Vector3[sides * 2];
             
-            var firstTopSide	= definition.firstTopSide;
-            var lastTopSide		= definition.lastTopSide;
-            var firstBottomSide = definition.firstBottomSide;
-            var lastBottomSide  = definition.lastBottomSide;
+            var firstTopSide	= definition.settings.FirstTopSide;
+            var lastTopSide		= definition.settings.LastTopSide;
+            var firstBottomSide = definition.settings.FirstBottomSide;
+            var lastBottomSide  = definition.settings.LastBottomSide;
 
-            var haveCenter		= definition.haveCenter;
+            var haveCenter		= definition.settings.HaveCenter;
             
             int vertexIndex = 0;
-            if (!definition.haveRoundedTop)
+            if (!definition.settings.HaveRoundedTop)
             {
                 vertices[vertexIndex] = new Vector3(-radius, 0, length * -0.5f); vertexIndex++;
                 vertices[vertexIndex] = new Vector3( radius, 0, length * -0.5f); vertexIndex++;
@@ -182,7 +182,7 @@ namespace Chisel.Core
                 vertexIndex--;
 
             //vertexIndex = definition.firstBottomSide;
-            if (!definition.haveRoundedBottom)
+            if (!definition.settings.HaveRoundedBottom)
             {
                 vertices[vertexIndex] = new Vector3( radius, 0, length * 0.5f); vertexIndex++;
                 vertices[vertexIndex] = new Vector3(-radius, 0, length * 0.5f); vertexIndex++;
@@ -204,7 +204,7 @@ namespace Chisel.Core
                 }
             }
 
-            var extrusion = new Vector3(0, 1, 0) * definition.height;
+            var extrusion = new Vector3(0, 1, 0) * definition.settings.height;
             for (int s = 0; s < sides; s++)
                 vertices[s + sides] = vertices[s] + extrusion;
             return true;

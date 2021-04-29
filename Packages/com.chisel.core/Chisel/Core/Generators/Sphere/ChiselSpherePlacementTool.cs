@@ -15,14 +15,14 @@ namespace Chisel.Core
 
         public override void OnCreate(ref ChiselSphereDefinition definition) 
         {
-            definition.verticalSegments     = verticalSegments;
-            definition.horizontalSegments   = horizontalSegments;
-            definition.generateFromCenter   = false;
+            definition.settings.verticalSegments     = verticalSegments;
+            definition.settings.horizontalSegments   = horizontalSegments;
+            definition.settings.generateFromCenter   = false;
         }
 
         public override void OnUpdate(ref ChiselSphereDefinition definition, Bounds bounds)
         {
-            definition.diameterXYZ = bounds.size;
+            definition.settings.diameterXYZ = bounds.size;
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

@@ -789,26 +789,6 @@ UpdateAgain:
             }
         }
 
-        // Returns true when the number of brushes has been changed
-        static bool CreateOrDestroyTreeNodes(ChiselNode node)
-        {
-            Profiler.BeginSample("CreateOrDestroyTreeNodes");
-
-            // Create the treeNodes for this node
-            Profiler.BeginSample("ClearTreeNodes");
-            node.ResetTreeNodes();
-            Profiler.EndSample();
-            Profiler.BeginSample("CreateTreeNodes");
-            var createdTreeNode = node.CreateTreeNode();
-            Profiler.EndSample();
-            if (createdTreeNode.Valid)
-                treeNodeLookup[node] = createdTreeNode;
-            else
-                treeNodeLookup.Remove(node);
-            Profiler.EndSample();
-            return true;
-        }
-
         public static ChiselSceneHierarchy GetSceneHierarchyForScene(Scene scene)
         {
             if (sceneHierarchies.TryGetValue(scene, out ChiselSceneHierarchy sceneHierarchy))
@@ -1118,14 +1098,16 @@ UpdateAgain:
                     }
                 }
                 Profiler.EndSample();
-            
+
+                GeneratorJobPoolManager.Clear();
+
                 // Initialize the components
                 Profiler.BeginSample("UpdateTrampoline.registerQueue.B");
                 for (int i = registerQueue.Count - 1; i >= 0; i--) // reversed direction because we're also potentially removing items
                 {
                     var node = registerQueue[i];
-                    if (!node ||			// component might've been destroyed between adding it to the registerQueue and here
-                        !node.IsActive)	// component might be active/enabled etc.
+                    if (!node ||		// component might've been destroyed after adding it to the registerQueue
+                        !node.IsActive)	// component might be active/enabled etc. after adding it to the registerQueue
                     {
                         registerQueue.RemoveAt(i);
                         continue;
@@ -1154,10 +1136,27 @@ UpdateAgain:
                             __registerNodes.Add(node); 
                     }
 
-                    haveModifiedTreeNodeCount = CreateOrDestroyTreeNodes(node) || haveModifiedTreeNodeCount;
+                    // TODO: seperate building the base tree node and creating the meshes & sub-nodes in the generator
+                    // TODO: create all brushes per generator type, collect them, build them all in parallel job, 
+                    //       _then_ create all the sub-nodes and initialize the nodes with the generated brushes
+
+                    Profiler.BeginSample("RebuildTreeNodes");
+                    bool modified = false;
+                    try
+                    {
+                        var treeNode = node.RebuildTreeNodes();
+                        if (treeNode.Valid)
+                            treeNodeLookup[node] = treeNode;
+                        else
+                            treeNodeLookup.Remove(node);
+                        modified = true; // TODO: fix this
+                    } finally { Profiler.EndSample(); }
+                    haveModifiedTreeNodeCount = modified || haveModifiedTreeNodeCount;
                 }
                 Profiler.EndSample();
-                 
+
+                GeneratorJobPoolManager.Schedule();
+
                 // Separate loop to ensure all parent components are already initialized
                 // this is because the order of the registerQueue is essentially random
                 Profiler.BeginSample("UpdateTrampoline.registerQueue.C");
@@ -1446,7 +1445,7 @@ UpdateAgain:
                         continue;
                     
                     __childNodes.Clear();
-                    GetChildrenOfHierachyItem(__childNodes, item);
+                    GetChildrenOfHierarchyItem(__childNodes, item);
                     if (__childNodes.Count == 0)
                         continue;
                     try 
@@ -1534,7 +1533,7 @@ UpdateAgain:
             return haveModifiedTreeNodeCount;
         }
 
-        public static void GetChildrenOfHierachyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
+        public static void GetChildrenOfHierarchyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
         {
             if (item == null)
                 return;

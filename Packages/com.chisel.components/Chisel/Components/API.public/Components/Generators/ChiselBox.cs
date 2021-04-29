@@ -7,7 +7,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselBox : ChiselDefinedGeneratorComponent<ChiselBoxDefinition>
+    public sealed class ChiselBox : ChiselBrushGeneratorComponent<ChiselBoxDefinition, ChiselBoxGenerator, MinMaxAABB>
     {
         public const string kNodeTypeName = ChiselBoxDefinition.kNodeTypeName;
         public override string ChiselNodeTypeName { get { return kNodeTypeName; } }

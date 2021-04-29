@@ -59,12 +59,16 @@ namespace Chisel.Core
 
             using (var builder = new BlobBuilder(Allocator.Temp))
             {
+                const int kTotalVertices    = 8;
+                const int kTotalHalfEdges   = 24;
+                const int kTotalPolygons    = 6;
+
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                var localVertices           = builder.Allocate(ref root.localVertices,           8);
-                var halfEdges               = builder.Allocate(ref root.halfEdges,              24);
-                var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, 24);
-                var polygons                = builder.Allocate(ref root.polygons,                6);
-                var localPlanes             = builder.Allocate(ref root.localPlanes,             6);
+                var localVertices           = builder.Allocate(ref root.localVertices,          kTotalVertices);
+                var halfEdges               = builder.Allocate(ref root.halfEdges,              kTotalHalfEdges);
+                var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, kTotalHalfEdges);
+                var polygons                = builder.Allocate(ref root.polygons,               kTotalPolygons);
+                var localPlanes             = builder.Allocate(ref root.localPlanes,            kTotalPolygons);
                 
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
@@ -74,6 +78,7 @@ namespace Chisel.Core
                 const int vertIndex5 = 5;
                 const int vertIndex6 = 6;
                 const int vertIndex7 = 7;
+                Debug.Assert(vertIndex7 == kTotalVertices - 1);
 
                 localVertices[vertIndex0] = vertex0;
                 localVertices[vertIndex1] = vertex1;
@@ -90,36 +95,44 @@ namespace Chisel.Core
                 const int polygon3 = 3;
                 const int polygon4 = 4;
                 const int polygon5 = 5;
+                Debug.Assert(polygon5 == kTotalPolygons - 1);
 
-                const int edge0_0 = (polygon0 * 4) + 0;
-                const int edge0_1 = (polygon0 * 4) + 1;
-                const int edge0_2 = (polygon0 * 4) + 2;
-                const int edge0_3 = (polygon0 * 4) + 3;
+                const int polygon0_offset = 0;
+                const int edge0_0 = polygon0_offset + 0;
+                const int edge0_1 = polygon0_offset + 1;
+                const int edge0_2 = polygon0_offset + 2;
+                const int edge0_3 = polygon0_offset + 3;
 
-                const int edge1_0 = (polygon1 * 4) + 0;
-                const int edge1_1 = (polygon1 * 4) + 1;
-                const int edge1_2 = (polygon1 * 4) + 2; 
-                const int edge1_3 = (polygon1 * 4) + 3;
+                const int polygon1_offset = polygon0_offset + 4;
+                const int edge1_0 = polygon1_offset + 0;
+                const int edge1_1 = polygon1_offset + 1;
+                const int edge1_2 = polygon1_offset + 2; 
+                const int edge1_3 = polygon1_offset + 3;
 
-                const int edge2_0 = (polygon2 * 4) + 0;
-                const int edge2_1 = (polygon2 * 4) + 1;
-                const int edge2_2 = (polygon2 * 4) + 2;
-                const int edge2_3 = (polygon2 * 4) + 3;
+                const int polygon2_offset = polygon1_offset + 4;
+                const int edge2_0 = polygon2_offset + 0;
+                const int edge2_1 = polygon2_offset + 1;
+                const int edge2_2 = polygon2_offset + 2;
+                const int edge2_3 = polygon2_offset + 3;
 
-                const int edge3_0 = (polygon3 * 4) + 0;
-                const int edge3_1 = (polygon3 * 4) + 1;
-                const int edge3_2 = (polygon3 * 4) + 2;
-                const int edge3_3 = (polygon3 * 4) + 3;
+                const int polygon3_offset = polygon2_offset + 4;
+                const int edge3_0 = polygon3_offset + 0;
+                const int edge3_1 = polygon3_offset + 1;
+                const int edge3_2 = polygon3_offset + 2;
+                const int edge3_3 = polygon3_offset + 3;
 
-                const int edge4_0 = (polygon4 * 4) + 0;
-                const int edge4_1 = (polygon4 * 4) + 1;
-                const int edge4_2 = (polygon4 * 4) + 2;
-                const int edge4_3 = (polygon4 * 4) + 3;
+                const int polygon4_offset = polygon3_offset + 4;
+                const int edge4_0 = polygon4_offset + 0;
+                const int edge4_1 = polygon4_offset + 1;
+                const int edge4_2 = polygon4_offset + 2;
+                const int edge4_3 = polygon4_offset + 3;
 
-                const int edge5_0 = (polygon5 * 4) + 0;
-                const int edge5_1 = (polygon5 * 4) + 1;
-                const int edge5_2 = (polygon5 * 4) + 2;
-                const int edge5_3 = (polygon5 * 4) + 3;
+                const int polygon5_offset = polygon4_offset + 4;
+                const int edge5_0 = polygon5_offset + 0;
+                const int edge5_1 = polygon5_offset + 1;
+                const int edge5_2 = polygon5_offset + 2;
+                const int edge5_3 = polygon5_offset + 3;
+                Debug.Assert(edge5_3 == kTotalHalfEdges - 1);
 
 
 

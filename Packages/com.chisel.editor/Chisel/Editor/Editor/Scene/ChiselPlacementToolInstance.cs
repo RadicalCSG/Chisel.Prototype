@@ -19,8 +19,8 @@ namespace Chisel.Editors
         // Placement tool definition needs to be a ScriptableObject so we can create an Editor for it
         where PlacementToolDefinitionType : ScriptableObject 
         // We need the DefinitionType to be able to strongly type the Generator
-        where DefinitionType              : IChiselGenerator, new()
-        where Generator                   : ChiselDefinedGeneratorComponent<DefinitionType>
+        where DefinitionType              : IChiselNodeGenerator, new()
+        where Generator                   : ChiselNodeGeneratorComponent<DefinitionType>
     {
         public override void OnActivate()   { EnsureInitialized(); base.OnActivate(); generatedComponent = null; forceOperation = null; LoadValues(PlacementToolDefinition); }
         public override void OnDeactivate() { base.OnActivate(); generatedComponent = null; }
@@ -53,7 +53,7 @@ namespace Chisel.Editors
         }
         protected CSGOperationType?                                     forceOperation  = null;
         protected Type                                                  generatorType   = typeof(Generator);
-        protected ChiselDefinedGeneratorComponent<DefinitionType>  generatedComponent;
+        protected ChiselNodeGeneratorComponent<DefinitionType>  generatedComponent;
 
         static readonly string[] excludeProperties = new[] { "m_Script" };
 

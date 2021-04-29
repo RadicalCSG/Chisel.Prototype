@@ -171,7 +171,7 @@ namespace Chisel.Core
                 if (subMeshCount == 0)
                     continue;
 
-                if (!GenerateLinearStairsSubMeshes(brushMeshes, subMeshIndex, in description, in surfaceDefinitionBlob))
+                if (!GenerateLinearStairsSubMeshes(brushMeshes, subMeshIndex, in description, in surfaceDefinitionBlob, allocator))
                     return false;
 
                 for (int m = 0; m < subMeshCount; m++)

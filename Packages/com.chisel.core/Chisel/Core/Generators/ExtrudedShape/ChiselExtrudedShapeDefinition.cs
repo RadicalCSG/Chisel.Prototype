@@ -11,8 +11,22 @@ using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
+    public struct ChiselExtrudedShapeGenerator : IChiselBranchTypeGenerator<StadiumSettings>
+    {
+        public void FixupOperations(CSGTreeBranch branch) { }
+    }
+
     [Serializable]
-    public struct ChiselExtrudedShapeDefinition : IChiselGenerator
+    public struct ExtrudedShapeSettings
+    {
+        public int curveSegments;
+
+        [UnityEngine.HideInInspector] public BlobAssetReference<ChiselPathBlob>     pathBlob;
+        [UnityEngine.HideInInspector] public BlobAssetReference<ChiselCurve2DBlob>  curveBlob;
+    }
+
+    [Serializable]
+    public struct ChiselExtrudedShapeDefinition : IChiselBranchGenerator
     {
         public const string kNodeTypeName = "Extruded Shape";
 
@@ -21,16 +35,17 @@ namespace Chisel.Core
 
         public Curve2D                  shape;
         public ChiselPath               path;
-        public int                      curveSegments;
+
+        [HideFoldout] public ExtrudedShapeSettings settings;
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()
         {
-            curveSegments   = kDefaultCurveSegments;
-            path			= new ChiselPath(ChiselPath.Default);
-            shape			= new Curve2D(kDefaultShape);
+            shape = new Curve2D(kDefaultShape);
+            path  = new ChiselPath(ChiselPath.Default);
+            settings.curveSegments = kDefaultCurveSegments;
         }
 
         public int RequiredSurfaceCount { get { return 2 + shape.controlPoints.Length; } }
@@ -45,90 +60,46 @@ namespace Chisel.Core
         [BurstCompile(CompileSynchronously = true)]
         struct CreateExtrudedShapeJob : IJob
         {
-            [NoAlias, ReadOnly]
-            public NativeList<SegmentVertex>    polygonVerticesList;
-            [NoAlias, ReadOnly]
-            public NativeList<int>              polygonVerticesSegments;
-            [NoAlias, ReadOnly]
-            public NativeList<float4x4>         pathMatrices;
+            [NoAlias, ReadOnly] public ExtrudedShapeSettings                                settings;
+            [NoAlias, ReadOnly] public BlobAssetReference<NativeChiselSurfaceDefinition>    surfaceDefinitionBlob;
 
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-
-            [NoAlias]
-            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
 
             public void Execute()
             {
-                if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes, 
-                                                            in polygonVerticesList, 
-                                                            in polygonVerticesSegments, 
-                                                            in pathMatrices, 
-                                                            in surfaceDefinitionBlob, 
-                                                            Allocator.Persistent))
-                {
-                    for (int i = 0; i < brushMeshes.Length; i++)
-                        brushMeshes[i] = default;
-                }
-            }
-        }
-
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
-        {
-            var branch = (CSGTreeBranch)node;
-            if (!branch.Valid)
-            {
-                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (branch.Operation != operation)
-                    branch.Operation = operation;
-            }
-
-            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
-            {
                 // TODO: brushes must be part of unique hierarchy, otherwise it'd be impossible to create brushes safely inside a job ....
-                ref var curve = ref curveBlob.Value;
-                if (!curve.ConvexPartition(curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.TempJob))
+                ref var curve = ref settings.curveBlob.Value;
+                if (!curve.ConvexPartition(settings.curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
                 {
-                    this.ClearBrushes(branch);
-                    return default;
+                    brushMeshes.Clear();
+                    return;
                 }
                 try
-                { 
+                {
                     int requiredSubMeshCount = polygonVerticesSegments.Length;
                     if (requiredSubMeshCount == 0)
                     {
-                        this.ClearBrushes(branch);
-                        return default;
+                        brushMeshes.Clear();
+                        return;
                     }
 
-                    if (branch.Count != requiredSubMeshCount)
-                        this.BuildBrushes(branch, requiredSubMeshCount);
-                
                     // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
-                    using (var pathBlob = ChiselPathBlob.Convert(path, Allocator.TempJob))
-                    using (var pathMatrices = pathBlob.Value.GetMatrices(Allocator.TempJob))
-                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
-                    { 
-                        var createExtrudedShapeJob = new CreateExtrudedShapeJob
+                    using (var pathMatrices = settings.pathBlob.Value.GetMatrices(Allocator.Temp))
+                    {
+                        brushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                                                            in polygonVerticesList,
+                                                            in polygonVerticesSegments,
+                                                            in pathMatrices,
+                                                            in surfaceDefinitionBlob,
+                                                            Allocator.Persistent))
                         {
-                            polygonVerticesList     = polygonVerticesList,
-                            polygonVerticesSegments = polygonVerticesSegments,
-                            pathMatrices            = pathMatrices,
-
-                            surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                            brushMeshes             = brushMeshes
-                        };
-                        var handle = createExtrudedShapeJob.Schedule();
-                        handle.Complete();
-
-                        //this.ClearBrushes(branch);
-                        for (int i = 0; i < requiredSubMeshCount; i++)
-                        {
-                            var brush = (CSGTreeBrush)branch[i];
-                            brush.LocalTransformation = float4x4.identity;
-                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                            for (int i = 0; i < brushMeshes.Length; i++)
+                            {
+                                if (brushMeshes[i].IsCreated)
+                                    brushMeshes[i].Dispose();
+                            }
+                            brushMeshes.Clear();
                         }
                     }
                 }
@@ -140,7 +111,27 @@ namespace Chisel.Core
                         polygonVerticesSegments.Dispose();
                 }
             }
-            return default;
+        }
+
+        public void FixupOperations(CSGTreeBranch branch) { }
+
+        public JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            using (var pathBlob = ChiselPathBlob.Convert(path, Allocator.TempJob))
+            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
+            {
+                settings.pathBlob  = pathBlob;
+                settings.curveBlob = curveBlob;
+                var createExtrudedShapeJob = new CreateExtrudedShapeJob
+                {
+                    settings                = settings,
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMeshes             = brushMeshes
+                };
+                var handle = createExtrudedShapeJob.Schedule();
+                handle.Complete();
+                return default;
+            }
         }
 
 

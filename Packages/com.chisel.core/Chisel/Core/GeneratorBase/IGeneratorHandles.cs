@@ -52,7 +52,16 @@ namespace Chisel.Core
             box.Max = bounds.max;
             return result;
         }
-        
+        public static bool DoTurnHandle(this IChiselHandles handles, ref MinMaxAABB box, string undoMessage = null)
+        {
+            var bounds = new Bounds();
+            bounds.SetMinMax(box.Min, box.Max);
+            var result = handles.DoTurnHandle(ref box, undoMessage);
+            box.Min = bounds.min;
+            box.Max = bounds.max;
+            return result;
+        }
+
         public static void RenderBox(this IChiselHandleRenderer renderer, MinMaxAABB bounds)               { renderer.RenderBox(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
         public static void RenderBoxMeasurements(this IChiselHandleRenderer renderer, MinMaxAABB bounds)   { renderer.RenderBoxMeasurements(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min)); }
         public static void RenderCylinder(this IChiselHandleRenderer renderer, MinMaxAABB bounds, int segments) { renderer.RenderCylinder(new Bounds((bounds.Max + bounds.Min) * 0.5f, bounds.Max - bounds.Min), segments); }
@@ -61,6 +70,7 @@ namespace Chisel.Core
         public static void RenderDistanceMeasurement(this IChiselHandleRenderer renderer, float3 from, float3 to, float forceValue) { renderer.RenderDistanceMeasurement((Vector3)from, (Vector3)to, forceValue); }
         
         public static void DrawLine(this IChiselHandleRenderer renderer, float3 from, float3 to, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f) { renderer.DrawLine((Vector3)from, (Vector3)to, lineMode, thickness, dashSize); }
+
     }
 
     public interface IChiselHandle

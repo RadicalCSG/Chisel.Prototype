@@ -1,20 +1,267 @@
-using UnityEngine;
-using System.Collections;
-using Chisel.Core;
-using System.Collections.Generic;
-using System;
 using System.Linq;
-using UnityEngine.Profiling;
-using Unity.Mathematics;
-using System.Runtime.CompilerServices;
-using Unity.Jobs;
+using AOT;
+using Chisel.Core;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Jobs;
+using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
+    public class GeneratorJobPoolManager : System.IDisposable
+    {
+        System.Collections.Generic.HashSet<GeneratorJobPool> generatorPools = new System.Collections.Generic.HashSet<GeneratorJobPool>();
 
-    public abstract class ChiselDefinedGeneratorComponent<DefinitionType> : ChiselGeneratorComponent
-        where DefinitionType : IChiselGenerator, new()
+        static GeneratorJobPoolManager instance;
+        
+        public static GeneratorJobPoolManager Instance
+        {
+            get
+            {
+                return instance ??= new GeneratorJobPoolManager();
+            }
+        }
+
+        public static bool Register(GeneratorJobPool pool) { return Instance.generatorPools.Add(pool); }
+        public static bool Unregister(GeneratorJobPool pool) { return Instance.generatorPools.Remove(pool); }
+
+        public static void Clear() 
+        {
+            var allGeneratorPools = Instance.generatorPools;
+            foreach (var pool in allGeneratorPools)
+                pool.Clear();
+        }
+
+        public static JobHandle Schedule()
+        {
+            var combinedJobHandle = (JobHandle)default;
+            var allGeneratorPools = Instance.generatorPools;
+            foreach (var pool in allGeneratorPools)
+                combinedJobHandle = JobHandle.CombineDependencies(combinedJobHandle, pool.Schedule());
+            combinedJobHandle.Complete();
+            foreach (var pool in allGeneratorPools)
+                pool.Assign();
+            return default;
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (generatorPools == null)
+                return;
+
+            var allGeneratorPools = Instance.generatorPools.ToArray();
+            foreach (var pool in allGeneratorPools)
+                pool.Dispose();
+
+            generatorPools.Clear();
+            generatorPools = null;
+            if (disposing)
+                System.GC.SuppressFinalize(this);
+        }
+
+        ~GeneratorJobPoolManager() { Dispose(disposing: false); }
+
+        void System.IDisposable.Dispose() { Dispose(disposing: true); System.GC.SuppressFinalize(this); }
+    }
+
+    public interface GeneratorJobPool : System.IDisposable
+    {
+        void Clear();
+        JobHandle Schedule();
+        void Assign();
+    }
+
+    public class GeneratorJobPool<Generator, Settings> : GeneratorJobPool
+        where Settings       : unmanaged
+        where Generator      : IChiselBrushTypeGenerator<Settings>, new()
+    {
+        readonly Generator generator = new Generator();
+
+        NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
+        NativeList<Settings>                                            generatorSettings;
+        NativeList<BlobAssetReference<BrushMeshBlob>>                   brushMeshes;
+        NativeList<CSGTreeNode>                                         nodes;
+        
+
+        JobHandle previousJobHandle = default;
+
+        public GeneratorJobPool() { GeneratorJobPoolManager.Register(this); }
+
+        public void Clear()
+        {
+            previousJobHandle.Complete(); // <- make sure we've completed the previous schedule
+            previousJobHandle = default;
+
+            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Clear(); else surfaceDefinitions = new NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>>(Allocator.Persistent);
+            if (generatorSettings .IsCreated) generatorSettings .Clear(); else generatorSettings  = new NativeList<Settings>(Allocator.Persistent);
+            if (brushMeshes       .IsCreated) brushMeshes       .Clear(); else brushMeshes        = new NativeList<BlobAssetReference<BrushMeshBlob>>(Allocator.Persistent);
+            if (nodes             .IsCreated) nodes             .Clear(); else nodes              = new NativeList<CSGTreeNode>(Allocator.Persistent);
+        }
+
+        public void Dispose()
+        {
+            GeneratorJobPoolManager.Unregister(this);
+            if (surfaceDefinitions.IsCreated) surfaceDefinitions.Dispose();
+            if (generatorSettings .IsCreated) generatorSettings .Dispose();
+            if (brushMeshes       .IsCreated) brushMeshes       .Dispose();
+            if (nodes             .IsCreated) nodes             .Dispose();
+
+            surfaceDefinitions = default;
+            generatorSettings = default;
+            brushMeshes = default;
+            nodes = default;
+        }
+
+        public void Add(CSGTreeNode node, Settings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition)
+        {
+            surfaceDefinitions.Add(surfaceDefinition);
+            generatorSettings .Add(settings);
+            nodes             .Add(node);
+        }
+
+        public JobHandle Schedule()
+        {
+            brushMeshes.Resize(generatorSettings.Length, NativeArrayOptions.ClearMemory);
+            previousJobHandle = generator.Schedule(generatorSettings, surfaceDefinitions, brushMeshes);
+            return previousJobHandle;
+        }
+
+        public void Assign()
+        {
+            for (int i = 0; i < surfaceDefinitions.Length; i++)
+                surfaceDefinitions[i].Dispose();
+            generator.Assign(nodes, brushMeshes);
+        }
+    }
+
+    public abstract class ChiselBrushGeneratorComponent<DefinitionType, Generator, Settings> : ChiselNodeGeneratorComponent<DefinitionType>
+        where Settings       : unmanaged
+        where Generator      : IChiselBrushTypeGenerator<Settings>, new()
+        where DefinitionType : IChiselBrushGenerator<Generator, Settings>, new()
+    {
+        CSGTreeBrush GenerateTopNode(CSGTreeNode node, int userID, CSGOperationType operation)
+        {
+            var brush = (CSGTreeBrush)node;
+            if (!brush.Valid)
+            {
+                if (node.Valid)
+                    node.Destroy();
+                return CSGTreeBrush.Create(userID: userID, operation: operation);
+            }
+            if (brush.Operation != operation)
+                brush.Operation = operation;
+            return brush;
+        }
+
+        static readonly GeneratorJobPool<Generator, Settings> s_JobPool = new GeneratorJobPool<Generator, Settings>();
+
+        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        {
+            var brush = (CSGTreeBrush)node;
+            OnValidateDefinition();
+            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
+            if (!surfaceDefinitionBlob.IsCreated)
+                return default;
+
+            node = brush = GenerateTopNode(brush, userID, operation);
+            var settings = definition.GenerateSettings();
+            s_JobPool.Add(brush, settings, surfaceDefinitionBlob);
+            return default;
+        }
+    }
+
+    public abstract class ChiselBranchGeneratorComponent<DefinitionType> : ChiselNodeGeneratorComponent<DefinitionType>
+        where DefinitionType : IChiselBranchGenerator, new()
+    {
+        static void ClearBrushes(CSGTreeBranch branch)
+        {
+            for (int i = branch.Count - 1; i >= 0; i--)
+                branch[i].Destroy();
+            branch.Clear();
+        }
+
+        static unsafe void BuildBrushes(CSGTreeBranch branch, int desiredBrushCount)
+        {
+            if (branch.Count < desiredBrushCount)
+            {
+                var newBrushCount = desiredBrushCount - branch.Count;
+                var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
+                try
+                {
+                    var userID = branch.UserID;
+                    for (int i = 0; i < newBrushCount; i++)
+                        newRange[i] = CSGTreeBrush.Create(userID: userID, operation: CSGOperationType.Additive);
+                    branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
+                }
+                finally { newRange.Dispose(); }
+            } else
+            {
+                for (int i = branch.Count - 1; i >= desiredBrushCount; i--)
+                {
+                    var oldBrush = branch[i];
+                    branch.RemoveAt(i);
+                    oldBrush.Destroy();
+                }
+            }
+        }
+
+        CSGTreeBranch GenerateTopNode(CSGTreeBranch branch, int userID, CSGOperationType operation)
+        {
+            if (!branch.Valid)
+            {
+                if (branch.Valid)
+                    branch.Destroy();
+                return CSGTreeBranch.Create(userID: userID, operation: operation);
+            }
+            if (branch.Operation != operation)
+                branch.Operation = operation;
+            return branch;
+        }
+
+        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        {
+            var branch = (CSGTreeBranch)node;
+            OnValidateDefinition();
+            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
+            if (!surfaceDefinitionBlob.IsCreated)
+                return default;
+            using (surfaceDefinitionBlob)
+            using (var brushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
+            {
+                node = branch = GenerateTopNode(branch, userID, operation);
+
+                var handle = definition.Generate(brushMeshes, surfaceDefinitionBlob);
+                handle.Complete();
+
+                if (brushMeshes.Length == 0)
+                {
+                    ClearBrushes(branch);
+                    return default;
+                }
+
+                if (branch.Count != brushMeshes.Length)
+                    BuildBrushes(branch, brushMeshes.Length);
+
+                for (int i = 0; i < brushMeshes.Length; i++)
+                {
+                    var brush = (CSGTreeBrush)branch[i];
+                    brush.LocalTransformation = float4x4.identity;
+                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
+                }
+
+                definition.FixupOperations(branch);
+
+                return default;
+            }
+        }
+    }
+
+    public abstract class ChiselNodeGeneratorComponent<DefinitionType> : ChiselGeneratorComponent
+        where DefinitionType : IChiselNodeGenerator, new()
     {
         public const string kDefinitionName = nameof(definition);
 
@@ -36,7 +283,7 @@ namespace Chisel.Components
             base.OnResetInternal(); 
         }
 
-        void OnValidateDefinition()
+        protected void OnValidateDefinition()
         {
             definition.Validate();
             if (surfaceDefinition == null)
@@ -54,23 +301,10 @@ namespace Chisel.Components
             base.OnValidateState(); 
         }
 
-        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
-        {
-            OnValidateDefinition();
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
-            if (!surfaceDefinitionBlob.IsCreated)
-                return default;
-            using (surfaceDefinitionBlob)
-            {
-                return definition.Generate(surfaceDefinitionBlob, ref node, userID, operation);
-            }
-        }
-
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
         public override bool HasValidState()
         {
-            return base.HasValidState() &&
-                    definition.HasValidState();
+            return base.HasValidState() && definition.HasValidState();
         }
     }
 
@@ -206,7 +440,6 @@ namespace Chisel.Components
 
         protected override void OnResetInternal()
         {
-            UpdateGenerator();
             UpdateBrushMeshInstances();
             base.OnResetInternal();
         }
@@ -231,7 +464,6 @@ namespace Chisel.Components
                 return;
             }
 
-            UpdateGenerator();
             UpdateBrushMeshInstances();
 
             ChiselNodeHierarchyManager.NotifyContentsModified(this);
@@ -285,26 +517,27 @@ namespace Chisel.Components
             ResetTreeNodes();
         }
 
-        internal override CSGTreeNode CreateTreeNode()
+        internal override CSGTreeNode RebuildTreeNodes()
         {
-            if (ValidNodes)
+            ResetTreeNodes();
+            if (Node.Valid)
                 Debug.LogWarning(this.GetType().Name + " already has a treeNode, but trying to create a new one?", this);
-            
-            Profiler.BeginSample("GenerateAllTreeNodes");
-            GenerateAllTreeNodes();
-            Profiler.EndSample();
 
             Profiler.BeginSample("UpdateGenerator");
-            UpdateGenerator();
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateInternalTransformation");
-            UpdateInternalTransformation();
-            Profiler.EndSample();
-
+            try
+            {
+                var instanceID = GetInstanceID();
+                var jobHandle = UpdateGeneratorInternal(ref Node, userID: instanceID);
+                jobHandle.Complete();
+            }
+            finally { Profiler.EndSample(); }
 
             if (!ValidNodes)
                 return default;
+
+            Profiler.BeginSample("UpdateBrushMeshInstances");
+            try { UpdateBrushMeshInstances(); }
+            finally { Profiler.EndSample(); }
             
             if (Node.Operation != operation)
                 Node.Operation = operation;
@@ -326,15 +559,6 @@ namespace Chisel.Components
             base.AddPivotOffset(worldSpaceDelta);
         }
 
-        public void GenerateAllTreeNodes()
-        {
-            if (Node.Valid)
-            {
-                Node.Destroy();
-                Node = default;
-            }
-        }
-
         public override void UpdateBrushMeshInstances()
         {
             // Update the Node (if it exists)
@@ -343,26 +567,6 @@ namespace Chisel.Components
 
             ChiselNodeHierarchyManager.RebuildTreeNodes(this);
             SetDirty();
-        }
-
-        public virtual void UpdateGenerator()
-        {
-            var instanceID = GetInstanceID();
-
-            Profiler.BeginSample("UpdateGeneratorInternal");
-            try 
-            { 
-                var jobHandle = UpdateGeneratorInternal(ref Node, userID: instanceID);
-                jobHandle.Complete();
-            }
-            finally { Profiler.EndSample(); }
-
-            if (!Node.Valid)
-                return;
-
-            Profiler.BeginSample("UpdateBrushMeshInstances");
-            try { UpdateBrushMeshInstances(); }
-            finally { Profiler.EndSample(); }
         }
 
         protected abstract JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID);

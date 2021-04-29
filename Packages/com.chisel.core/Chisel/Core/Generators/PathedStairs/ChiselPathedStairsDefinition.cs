@@ -11,135 +11,128 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselPathedStairsDefinition : IChiselGenerator
+    public struct PathedStairsSettings
+    {
+        [NonSerialized]
+        public BlobAssetReference<ChiselCurve2DBlob> curveBlob;
+        [NonSerialized] public bool closed;
+
+        public int curveSegments;
+
+        // TODO: do not use this data structure, find common stuff and share between the definitions ...
+        [HideFoldout] public ChiselLinearStairsDefinition stairs;
+    }
+
+    [Serializable]
+    public struct ChiselPathedStairsDefinition : IChiselBranchGenerator
     {
         public const string kNodeTypeName = "Pathed Stairs";
 
         public const int				kDefaultCurveSegments	= 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
+
+        [HideFoldout] public PathedStairsSettings settings;
+
         public Curve2D					shape;
-        public int                      curveSegments;
+        //public int                      curveSegments;
         
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
-        public ChiselLinearStairsDefinition stairs;
+        //public ChiselLinearStairsDefinition stairs;
 
         public void Reset()
         {
-            shape           = kDefaultShape;
-            curveSegments   = kDefaultCurveSegments;
-            stairs.Reset();
+            shape                   = kDefaultShape;
+            settings.curveSegments  = kDefaultCurveSegments;
+            settings.stairs.Reset();
         }
 
-        public int RequiredSurfaceCount { get { return stairs.RequiredSurfaceCount; } }
+        public int RequiredSurfaceCount { get { return settings.stairs.RequiredSurfaceCount; } }
 
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
-            stairs.UpdateSurfaces(ref surfaceDefinition);
+            settings.stairs.UpdateSurfaces(ref surfaceDefinition);
         }
             
         public void Validate()
         {
-            curveSegments = math.max(curveSegments, 2);
-            stairs.Validate();
+            settings.curveSegments = math.max(settings.curveSegments, 2);
+            settings.stairs.Validate();
         }
 
         [BurstCompile(CompileSynchronously = true)]
         struct CreatePathedStairsJob : IJob
         {
-            public bool                         closed;
-            public MinMaxAABB                   bounds;
-            public ChiselLinearStairsDefinition stairs;
-
-            [NoAlias, ReadOnly] public NativeList<SegmentVertex> shapeVertices;
+            public PathedStairsSettings settings;
 
             [NoAlias, ReadOnly]
             public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
 
             [NoAlias]
-            public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+            public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
 
             public void Execute()
             {
-                if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes, in shapeVertices,
-                                                           closed, bounds,
-                                                           stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
-                                                           stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
-                                                           stairs.leftSide, stairs.rightSide,
-                                                           stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
-                                                           in surfaceDefinitionBlob, Allocator.Persistent))
+                ref var curve = ref settings.curveBlob.Value;
+                var closed = settings.closed;
+                var bounds = settings.stairs.settings.bounds;
+                using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.Temp))
                 {
-                    for (int i = 0; i < brushMeshes.Length; i++)
-                        brushMeshes[i] = default;
+                    curve.GetPathVertices(settings.curveSegments, shapeVertices);
+                    if (shapeVertices.Length < 2)
+                    {
+                        brushMeshes.Clear();
+                        return;
+                    }
+
+                    int requiredSubMeshCount = BrushMeshFactory.CountPathedStairBrushes(in shapeVertices, closed, bounds,
+                                                                                    settings.stairs.settings.stepHeight, settings.stairs.settings.stepDepth, settings.stairs.settings.treadHeight, settings.stairs.settings.nosingDepth,
+                                                                                    settings.stairs.settings.plateauHeight, settings.stairs.settings.riserType, settings.stairs.settings.riserDepth,
+                                                                                    settings.stairs.settings.leftSide, settings.stairs.settings.rightSide,
+                                                                                    settings.stairs.settings.sideWidth, settings.stairs.settings.sideHeight, settings.stairs.settings.sideDepth);
+                    if (requiredSubMeshCount == 0)
+                    {
+                        brushMeshes.Clear();
+                        return;
+                    }
+
+                    brushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+                    if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes,
+                                                               in shapeVertices, closed, bounds,
+                                                               settings.stairs.settings.stepHeight, settings.stairs.settings.stepDepth, settings.stairs.settings.treadHeight, settings.stairs.settings.nosingDepth,
+                                                               settings.stairs.settings.plateauHeight, settings.stairs.settings.riserType, settings.stairs.settings.riserDepth,
+                                                               settings.stairs.settings.leftSide, settings.stairs.settings.rightSide,
+                                                               settings.stairs.settings.sideWidth, settings.stairs.settings.sideHeight, settings.stairs.settings.sideDepth,
+                                                               in surfaceDefinitionBlob, Allocator.Persistent))
+                    {
+                        for (int i = 0; i < brushMeshes.Length; i++)
+                        {
+                            if (brushMeshes[i].IsCreated)
+                                brushMeshes[i].Dispose();
+                        }
+                        brushMeshes.Clear();
+                    }
                 }
             }
         }
 
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
-        {
-            var branch = (CSGTreeBranch)node;
-            if (!branch.Valid)
-            {
-                node = branch = CSGTreeBranch.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (branch.Operation != operation)
-                    branch.Operation = operation;
-            }
+        public void FixupOperations(CSGTreeBranch branch) { }
 
+        public JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
             using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
             {
-                ref var curve = ref curveBlob.Value;
-                using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.TempJob))
+                settings.curveBlob = curveBlob;
+                settings.closed = shape.closed;
+                var createExtrudedShapeJob = new CreatePathedStairsJob
                 {
-                    curve.GetPathVertices(curveSegments, shapeVertices);
-                    if (shapeVertices.Length < 2)
-                    {
-                        this.ClearBrushes(branch);
-                        return default;
-                    }
-
-                    var minMaxAABB = new MinMaxAABB { Min = stairs.bounds.min, Max = stairs.bounds.max };
-                    int requiredSubMeshCount = BrushMeshFactory.CountPathedStairBrushes(in shapeVertices, shape.closed,
-                                                                                        minMaxAABB,
-                                                                                        stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
-                                                                                        stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
-                                                                                        stairs.leftSide, stairs.rightSide,
-                                                                                        stairs.sideWidth, stairs.sideHeight, stairs.sideDepth);
-                    if (requiredSubMeshCount == 0)
-                    {
-                        this.ClearBrushes(branch);
-                        return default;
-                    }
-
-                    if (branch.Count != requiredSubMeshCount)
-                        this.BuildBrushes(branch, requiredSubMeshCount);
-
-                    using (var brushMeshes = new NativeArray<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.TempJob))
-                    {
-                        var createExtrudedShapeJob = new CreatePathedStairsJob
-                        {
-                            closed                  = shape.closed,
-                            bounds                  = minMaxAABB,
-                            stairs                  = stairs,
-
-                            shapeVertices           = shapeVertices,
-                            surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                            brushMeshes             = brushMeshes
-                        };
-                        var handle = createExtrudedShapeJob.Schedule();
-                        handle.Complete();
-
-                        //this.ClearBrushes(branch);
-                        for (int i = 0; i < requiredSubMeshCount; i++)
-                        {
-                            var brush = (CSGTreeBrush)branch[i];
-                            brush.LocalTransformation = float4x4.identity;
-                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[i]) };
-                        }
-                        return default;
-                    }
-                }
+                    settings                = settings,
+                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                    brushMeshes             = brushMeshes
+                };
+                var handle = createExtrudedShapeJob.Schedule();
+                handle.Complete();
+                return default;
             }
         }
 

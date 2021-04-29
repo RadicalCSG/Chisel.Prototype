@@ -115,9 +115,9 @@ namespace Chisel.Core
                 polygonVerticesArray = new NativeList<SegmentVertex>(allocator);
                 polygonVerticesSegments = new NativeList<int>(allocator);
 
-                Profiler.BeginSample("ConvexPartition");
+                //Profiler.BeginSample("ConvexPartition");
                 if (shapeVertices.Length == 3)
-                {
+                { 
                     polygonVerticesArray.ResizeUninitialized(3);
                     polygonVerticesArray[0] = shapeVertices[0];
                     polygonVerticesArray[1] = shapeVertices[1];
@@ -150,9 +150,9 @@ namespace Chisel.Core
                             External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
                     }
                 }
-                Profiler.EndSample();
+                //Profiler.EndSample();
 
-                Debug.Assert(polygonVerticesArray.Length == 0 || polygonVerticesArray.Length == polygonVerticesSegments[polygonVerticesSegments.Length - 1]);
+                //Debug.Assert(polygonVerticesArray.Length == 0 || polygonVerticesArray.Length == polygonVerticesSegments[polygonVerticesSegments.Length - 1]);
                 return true;
             }
         }

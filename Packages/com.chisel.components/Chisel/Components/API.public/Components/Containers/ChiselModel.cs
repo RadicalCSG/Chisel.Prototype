@@ -263,8 +263,9 @@ namespace Chisel.Components
         public ChiselModel() : base() { }
 
 
-        internal override CSGTreeNode CreateTreeNode()
+        internal override CSGTreeNode RebuildTreeNodes()
         {
+            ResetTreeNodes();
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();

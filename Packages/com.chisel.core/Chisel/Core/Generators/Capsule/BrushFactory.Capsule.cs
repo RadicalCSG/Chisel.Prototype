@@ -21,7 +21,7 @@ namespace Chisel.Core
     {
 
         [BurstCompile]
-        public static bool GenerateCapsule(in ChiselCapsuleDefinition.Settings                  settings,
+        public static bool GenerateCapsule(in CapsuleSettings                                   settings,
                                            in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinition,
                                            out BlobAssetReference<BrushMeshBlob>                brushMesh,
                                            Allocator                                            allocator)
@@ -61,10 +61,10 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public static bool GenerateCapsuleVertices(in ChiselCapsuleDefinition.Settings  settings,
-                                                   in BlobBuilder                       builder, 
-                                                   ref BrushMeshBlob                    root,
-                                                   out BlobBuilderArray<float3>         localVertices)
+        public static bool GenerateCapsuleVertices(in CapsuleSettings           settings,
+                                                   in BlobBuilder               builder, 
+                                                   ref BrushMeshBlob            root,
+                                                   out BlobBuilderArray<float3> localVertices)
         {
             var haveTopHemisphere		= settings.HaveRoundedTop;
             var haveBottomHemisphere	= settings.HaveRoundedBottom;

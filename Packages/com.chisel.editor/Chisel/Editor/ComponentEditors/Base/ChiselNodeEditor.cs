@@ -785,7 +785,7 @@ namespace Chisel.Editors
         }
 
         // Note: name is the same for every generator, but is hidden inside a generic class, hence the use of ChiselBrushDefinition
-        const string kDefinitionName = ChiselDefinedGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
+        const string kDefinitionName = ChiselNodeGeneratorComponent<ChiselBrushDefinition>.kDefinitionName;
         
         List<SerializedProperty> children = new List<SerializedProperty>();
         SerializedProperty definitionSerializedProperty;

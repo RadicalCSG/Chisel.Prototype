@@ -471,7 +471,7 @@ namespace Chisel.Editors
                     continue;
                 
                 s_SelectedNodes.Clear();
-                ChiselNodeHierarchyManager.GetChildrenOfHierachyItem(s_SelectedNodes, node.hierarchyItem);
+                ChiselNodeHierarchyManager.GetChildrenOfHierarchyItem(s_SelectedNodes, node.hierarchyItem);
                 foreach (var child in s_SelectedNodes)
                 {
                     if (!child.Valid || child.Type != CSGNodeType.Brush)
@@ -916,11 +916,14 @@ namespace Chisel.Editors
             var nodesWithChildren = new HashSet<UnityEngine.Object>();
             foreach (var node in nodes)
             {
-                var children = node.GetComponentsInChildren<ChiselNode>();
+                var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    if (child.hierarchyItem.Transform == null)
+                        nodesWithChildren.Add(child.transform);
+                    else
+                        nodesWithChildren.Add(child.hierarchyItem.Transform);
                 }
             }
 
@@ -934,11 +937,14 @@ namespace Chisel.Editors
             var nodesWithChildren = new HashSet<UnityEngine.Object>();
             foreach (var node in nodes)
             {
-                var children = node.GetComponentsInChildren<ChiselNode>();
+                var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    if (child.hierarchyItem.Transform == null)
+                        nodesWithChildren.Add(child.transform);
+                    else
+                        nodesWithChildren.Add(child.hierarchyItem.Transform);
                 }
             }
 

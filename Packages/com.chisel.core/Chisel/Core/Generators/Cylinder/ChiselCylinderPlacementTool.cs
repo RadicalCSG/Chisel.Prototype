@@ -16,17 +16,17 @@ namespace Chisel.Core
 
         public override void OnCreate(ref ChiselCylinderDefinition definition) 
         {
-            definition.isEllipsoid		= (placement & PlacementFlags.SameLengthXZ) != PlacementFlags.SameLengthXZ;
-            definition.type				= cylinderType;
-            definition.sides			= sides;
+            definition.settings.isEllipsoid		= (placement & PlacementFlags.SameLengthXZ) != PlacementFlags.SameLengthXZ;
+            definition.settings.type			= cylinderType;
+            definition.settings.sides			= sides;
         }
 
         public override void OnUpdate(ref ChiselCylinderDefinition definition, Bounds bounds)
         {
             var height = bounds.size[(int)Axis.Y];
-            definition.BottomDiameterX  = bounds.size[(int)Axis.X];
-            definition.height        = height;
-            definition.BottomDiameterZ  = bounds.size[(int)Axis.Z];
+            definition.settings.BottomDiameterX  = bounds.size[(int)Axis.X];
+            definition.settings.height           = height;
+            definition.settings.BottomDiameterZ  = bounds.size[(int)Axis.Z];
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

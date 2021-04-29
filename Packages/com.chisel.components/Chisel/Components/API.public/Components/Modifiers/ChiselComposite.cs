@@ -55,12 +55,13 @@ namespace Chisel.Components
             base.OnValidateState();
         }
 
-        internal override CSGTreeNode CreateTreeNode()
+        internal override CSGTreeNode RebuildTreeNodes()
         {
+            ResetTreeNodes();
             if (passThrough)
                 return default;
             if (Node.Valid)
-                Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);		
+                Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);
             Node = CSGTreeBranch.Create(userID: GetInstanceID());
             Node.Operation = operation;
             return Node;

@@ -9,26 +9,6 @@ using UnitySceneExtensions;
 
 namespace Chisel.Core
 {
-    // TODO: move somewhere else
-    struct Range
-    {
-        public int start;
-        public int end;
-        public int Length
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return end - start; }
-        }
-
-        public int Center
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return start + ((end - start) / 2); }
-        }
-
-    }
-
-
     // TODO: replace with complete managed solution, clean up
     public partial class Decomposition
     {

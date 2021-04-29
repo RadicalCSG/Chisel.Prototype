@@ -68,7 +68,7 @@ namespace Chisel.Components
         public virtual void UpdateTransformation() { }
 
 
-        internal abstract CSGTreeNode CreateTreeNode();
+        internal abstract CSGTreeNode RebuildTreeNodes();
         public void ResetTreeNodes()
         {
             var topNode = TopTreeNode;

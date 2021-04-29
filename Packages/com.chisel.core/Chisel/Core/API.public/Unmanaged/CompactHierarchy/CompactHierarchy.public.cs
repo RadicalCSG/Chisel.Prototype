@@ -282,13 +282,23 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NodeID GetNodeID(CompactNodeID compactNodeID)
         {
+            int nodeIndex;
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
-                throw new ArgumentException(nameof(compactNodeID), $"{nameof(compactNodeID)} is an invalid node");
+            {
+                Debug.LogError($"{nameof(compactNodeID)} is an invalid node");
+                return NodeID.Invalid;
+            }
 
-            var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
+            nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
                 return NodeID.Invalid;
+
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
+            {
+                Debug.LogError($"{nameof(compactNodeID)} nodeIndex is out of range");
+                return NodeID.Invalid;
+            }
 
             return compactNodes[nodeIndex].nodeID;
         }

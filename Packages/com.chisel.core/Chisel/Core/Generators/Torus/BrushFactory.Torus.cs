@@ -132,22 +132,22 @@ namespace Chisel.Core
 
         public static bool GenerateTorusVertices(ChiselTorusDefinition definition, ref float3[] vertices)
         {
-            var tubeRadiusX		= (definition.tubeWidth  * 0.5f);
-            var tubeRadiusY		= (definition.tubeHeight * 0.5f);
-            var torusRadius		= (definition.outerDiameter * 0.5f) - tubeRadiusX;
+            var tubeRadiusX		= (definition.settings.tubeWidth  * 0.5f);
+            var tubeRadiusY		= (definition.settings.tubeHeight * 0.5f);
+            var torusRadius		= (definition.settings.outerDiameter * 0.5f) - tubeRadiusX;
         
     
-            var horzSegments	= definition.horizontalSegments;
-            var vertSegments	= definition.verticalSegments;
+            var horzSegments	= definition.settings.horizontalSegments;
+            var vertSegments	= definition.settings.verticalSegments;
 
-            var horzRadiansPerSegment = math.radians(definition.totalAngle / horzSegments);
+            var horzRadiansPerSegment = math.radians(definition.settings.totalAngle / horzSegments);
             var vertRadiansPerSegment = math.radians(360.0f / vertSegments);
             
             var circleVertices	= new float3[vertSegments];
 
             var min = new float2(float.PositiveInfinity, float.PositiveInfinity);
             var max = new float2(float.NegativeInfinity, float.NegativeInfinity);
-            var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.tubeRotation);
+            var tubeAngleOffset	= math.radians((((vertSegments & 1) == 1) ? 0.0f : ((360.0f / vertSegments) * 0.5f)) + definition.settings.tubeRotation);
             for (int v = 0; v < vertSegments; v++)
             {
                 var vRad = tubeAngleOffset + (v * vertRadiansPerSegment);
@@ -159,7 +159,7 @@ namespace Chisel.Core
                 max.y = math.max(max.y, circleVertices[v].y);
             }
 
-            if (definition.fitCircle)
+            if (definition.settings.fitCircle)
             {
                 var center = (max + min) * 0.5f;
                 var size   = (max - min) * 0.5f;
@@ -175,7 +175,7 @@ namespace Chisel.Core
 
             horzSegments++;
             
-            var horzOffset	= definition.startAngle;
+            var horzOffset	= definition.settings.startAngle;
             var vertexCount = vertSegments * horzSegments;
             if (vertices == null ||
                 vertices.Length != vertexCount)

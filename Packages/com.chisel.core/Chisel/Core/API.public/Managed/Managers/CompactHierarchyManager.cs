@@ -496,7 +496,8 @@ namespace Chisel.Core
             if (compactNodeID == CompactNodeID.Invalid)
                 return NodeID.Invalid;
 
-            return GetHierarchy(compactNodeID).GetNodeID(compactNodeID);
+            var hierarchy = GetHierarchy(compactNodeID);
+            return hierarchy.GetNodeID(compactNodeID);
         }
 
         public static CompactHierarchyID GetHierarchyIDOfNode(NodeID nodeID)

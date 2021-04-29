@@ -6,7 +6,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselSpiralStairs : ChiselDefinedGeneratorComponent<ChiselSpiralStairsDefinition>
+    public sealed class ChiselSpiralStairs : ChiselBranchGeneratorComponent<ChiselSpiralStairsDefinition>
     {
         public const string kNodeTypeName = ChiselSpiralStairsDefinition.kNodeTypeName;
         public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
@@ -14,91 +14,91 @@ namespace Chisel.Components
         #region Properties
         public Vector3 Origin
         {
-            get { return definition.origin; }
-            set { if ((Vector3)definition.origin == value) return; definition.origin = value; OnValidateState(); }
+            get { return definition.settings.origin; }
+            set { if ((Vector3)definition.settings.origin == value) return; definition.settings.origin = value; OnValidateState(); }
         }
         
         public float StepHeight
         {
-            get { return definition.stepHeight; }
-            set { if (definition.stepHeight == value) return; definition.stepHeight = value; OnValidateState(); }
+            get { return definition.settings.stepHeight; }
+            set { if (definition.settings.stepHeight == value) return; definition.settings.stepHeight = value; OnValidateState(); }
         }
         
         public float NosingDepth
         {
-            get { return definition.nosingDepth; }
-            set { if (definition.nosingDepth == value) return; definition.nosingDepth = value; OnValidateState(); }
+            get { return definition.settings.nosingDepth; }
+            set { if (definition.settings.nosingDepth == value) return; definition.settings.nosingDepth = value; OnValidateState(); }
         }
         
         public float NosingWidth
         {
-            get { return definition.nosingWidth; }
-            set { if (definition.nosingWidth == value) return; definition.nosingWidth = value; OnValidateState(); }
+            get { return definition.settings.nosingWidth; }
+            set { if (definition.settings.nosingWidth == value) return; definition.settings.nosingWidth = value; OnValidateState(); }
         }
         
         public float TreadHeight
         {
-            get { return definition.treadHeight; }
-            set { if (definition.treadHeight == value) return; definition.treadHeight = value; OnValidateState(); }
+            get { return definition.settings.treadHeight; }
+            set { if (definition.settings.treadHeight == value) return; definition.settings.treadHeight = value; OnValidateState(); }
         }
 
         public float StartAngle
         {
-            get { return definition.startAngle; }
-            set { if (definition.startAngle == value) return; definition.startAngle = value; OnValidateState(); }
+            get { return definition.settings.startAngle; }
+            set { if (definition.settings.startAngle == value) return; definition.settings.startAngle = value; OnValidateState(); }
         }
 
         public float Rotation
         {
-            get { return definition.rotation; }
-            set { if (definition.rotation == value) return; definition.rotation = value; OnValidateState(); }
+            get { return definition.settings.rotation; }
+            set { if (definition.settings.rotation == value) return; definition.settings.rotation = value; OnValidateState(); }
         }
 
         public float OuterDiameter
         {
-            get { return definition.outerDiameter; }
-            set { if (value == definition.outerDiameter) return; definition.outerDiameter = value; OnValidateState(); }
+            get { return definition.settings.outerDiameter; }
+            set { if (value == definition.settings.outerDiameter) return; definition.settings.outerDiameter = value; OnValidateState(); }
         }
 
         public int OuterSegments
         {
-            get { return definition.outerSegments; }
-            set { if (value == definition.outerSegments) return; definition.outerSegments = value; OnValidateState(); }
+            get { return definition.settings.outerSegments; }
+            set { if (value == definition.settings.outerSegments) return; definition.settings.outerSegments = value; OnValidateState(); }
         }
 
         public float InnerDiameter
         {
-            get { return definition.innerDiameter; }
-            set { if (value == definition.innerDiameter) return; definition.innerDiameter = value; OnValidateState(); }
+            get { return definition.settings.innerDiameter; }
+            set { if (value == definition.settings.innerDiameter) return; definition.settings.innerDiameter = value; OnValidateState(); }
         }
 
         public int InnerSegments
         {
-            get { return definition.innerSegments; }
-            set { if (value == definition.innerSegments) return; definition.innerSegments = value; OnValidateState(); }
+            get { return definition.settings.innerSegments; }
+            set { if (value == definition.settings.innerSegments) return; definition.settings.innerSegments = value; OnValidateState(); }
         }
 
         public float Height
         {
-            get { return definition.height; }
-            set { if (definition.height == value) return; definition.height = value; OnValidateState(); }
+            get { return definition.settings.height; }
+            set { if (definition.settings.height == value) return; definition.settings.height = value; OnValidateState(); }
         }
 
         public StairsRiserType RiserType
         {
-            get { return definition.riserType; }
-            set { if (value == definition.riserType) return; definition.riserType = value; OnValidateState(); }
+            get { return definition.settings.riserType; }
+            set { if (value == definition.settings.riserType) return; definition.settings.riserType = value; OnValidateState(); }
         }
 
         public uint BottomSmoothingGroup
         {
-            get { return definition.bottomSmoothingGroup; }
-            set { if (value == definition.bottomSmoothingGroup) return; definition.bottomSmoothingGroup = value; OnValidateState(); }
+            get { return definition.settings.bottomSmoothingGroup; }
+            set { if (value == definition.settings.bottomSmoothingGroup) return; definition.settings.bottomSmoothingGroup = value; OnValidateState(); }
         }
 
         public int StepCount
         {
-            get { return definition.StepCount; }
+            get { return definition.settings.StepCount; }
         }
         #endregion
     }

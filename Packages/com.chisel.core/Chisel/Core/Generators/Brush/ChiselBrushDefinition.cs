@@ -13,7 +13,7 @@ using SerializeField = UnityEngine.SerializeField;
 namespace Chisel.Core
 {
     [Serializable]
-    public class ChiselBrushDefinition : IChiselGenerator
+    public class ChiselBrushDefinition : IChiselNodeGenerator
     {
         public const string kNodeTypeName = "Brush";
 
@@ -149,28 +149,9 @@ namespace Chisel.Core
         }*/
 
         [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
         {
-            var brush = (CSGTreeBrush)node;
-            if (!IsValid)
-            {
-                if (brush.Valid)
-                    brush.Destroy();
-                node = default;
-                return default;
-            }
-            
-            if (!brush.Valid)
-            {
-                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (brush.Operation != operation)
-                    brush.Operation = operation;
-            }
-
-            var brushMesh = BrushMeshFactory.CreateBrushBlob(brushOutline, in surfaceDefinitionBlob);
-            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+            brushMeshRef.Value = BrushMeshFactory.CreateBrushBlob(brushOutline, in surfaceDefinitionBlob);
             return default;
         }
 

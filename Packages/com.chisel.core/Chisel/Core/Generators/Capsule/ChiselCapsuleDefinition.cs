@@ -12,7 +12,95 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselCapsuleDefinition : IChiselGenerator
+    public struct CapsuleSettings
+    {
+        public const float kHeightEpsilon = 0.001f;
+
+        public float    height;
+        public float    topHeight;
+        public float    bottomHeight;
+        public float    offsetY;
+
+        public float    diameterX;
+        public float    diameterZ;
+        public float    rotation;
+
+        public int      sides;
+        public int      topSegments;
+        public int      bottomSegments;
+
+        public bool	        HaveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
+        public bool	        HaveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
+        public bool	        HaveCylinder		{ get { return CylinderHeight > kHeightEpsilon; } }
+        public float        CylinderHeight		{ get { return math.abs(height - (bottomHeight + topHeight)); } }
+
+
+        internal int		BottomRingCount		{ get { return HaveRoundedBottom ? bottomSegments : 1; } }
+        internal int		TopRingCount		{ get { return HaveRoundedTop    ? topSegments    : 1; } }
+        internal int		RingCount			{ get { return BottomRingCount + TopRingCount - (HaveCylinder ? 0 : 1); } }
+        internal int		Segments            { get { return math.max(1, RingCount); } }
+
+
+        // TODO: store somewhere else
+        internal int		ExtraVertexCount	{ get { return ((HaveRoundedTop) ? 1 : 0) + ((HaveRoundedBottom) ? 1 : 0); } }
+        internal int		BottomVertex		{ get { return (0); } }
+        internal int		TopVertex			{ get { return (HaveRoundedBottom) ? 1 : 0; } }
+
+
+        internal int		VertexCount			{ get { return (sides * RingCount) + ExtraVertexCount; } }
+
+        internal int		BottomRing			{ get { return (HaveRoundedBottom) ? (RingCount - bottomSegments) : RingCount - 1; } }
+        internal int		TopRing				{ get { return (HaveRoundedTop   ) ? (topSegments - 1) : 0; } }
+
+        internal float	    TopOffset			{ get { if (height < 0) return -topHeight; return height - topHeight; } }
+
+        internal float	    BottomOffset		{ get { if (height < 0) return height + bottomHeight; return bottomHeight; } }
+
+        internal int		TopVertexOffset		{ get { return ExtraVertexCount + ((TopRingCount - 1) * sides); } }
+        internal int		BottomVertexOffset	{ get { return ExtraVertexCount + ((RingCount - BottomRingCount) * sides); } }
+    }
+
+    public struct ChiselCapsuleGenerator : IChiselBrushTypeGenerator<CapsuleSettings>
+    {
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<CapsuleSettings>                                     settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
+
+            public void Execute(int index)
+            {
+                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
+            }
+        }
+
+        public JobHandle Schedule(NativeList<CapsuleSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var job = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray(),
+                brushMeshes         = brushMeshes.AsArray()
+            };
+            return job.Schedule(settings, 8);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(CapsuleSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateCapsule(in settings,
+                                                  in surfaceDefinitionBlob,
+                                                  out var newBrushMesh,
+                                                  allocator))
+                return default;
+            return newBrushMesh;
+        }
+    }
+
+
+    [Serializable]
+    public struct ChiselCapsuleDefinition : IChiselBrushGenerator<ChiselCapsuleGenerator, CapsuleSettings>
     {
         public const string kNodeTypeName = "Capsule";
 
@@ -26,63 +114,15 @@ namespace Chisel.Core
         public const int	kDefaultSides				= 8;
         public const int	kDefaultTopSegments			= 4;
         public const int	kDefaultBottomSegments		= 4;
-        public const float  kHeightEpsilon              = 0.001f;
         
-        [Serializable]
-        public struct Settings
-        { 
-            public float    height;
-            public float    topHeight;
-            public float    bottomHeight;
-            public float    offsetY;
-
-            public float    diameterX;
-            public float    diameterZ;
-            public float    rotation;
-
-            public int      sides;
-            public int      topSegments;
-            public int      bottomSegments;
-
-            public bool	        HaveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
-            public bool	        HaveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
-            public bool	        HaveCylinder		{ get { return CylinderHeight > kHeightEpsilon; } }
-            public float        CylinderHeight		{ get { return math.abs(height - (bottomHeight + topHeight)); } }
-
-
-            internal int		BottomRingCount		{ get { return HaveRoundedBottom ? bottomSegments : 1; } }
-            internal int		TopRingCount		{ get { return HaveRoundedTop    ? topSegments    : 1; } }
-            internal int		RingCount			{ get { return BottomRingCount + TopRingCount - (HaveCylinder ? 0 : 1); } }
-            internal int		Segments            { get { return math.max(1, RingCount); } }
-
-
-            // TODO: store somewhere else
-            internal int		ExtraVertexCount	{ get { return ((HaveRoundedTop) ? 1 : 0) + ((HaveRoundedBottom) ? 1 : 0); } }
-            internal int		BottomVertex		{ get { return (0); } }
-            internal int		TopVertex			{ get { return (HaveRoundedBottom) ? 1 : 0; } }
-
-
-            internal int		VertexCount			{ get { return (sides * RingCount) + ExtraVertexCount; } }
-
-            internal int		BottomRing			{ get { return (HaveRoundedBottom) ? (RingCount - bottomSegments) : RingCount - 1; } }
-            internal int		TopRing				{ get { return (HaveRoundedTop   ) ? (topSegments - 1) : 0; } }
-
-            internal float	    TopOffset			{ get { if (height < 0) return -topHeight; return height - topHeight; } }
-
-            internal float	    BottomOffset		{ get { if (height < 0) return height + bottomHeight; return bottomHeight; } }
-
-            internal int		TopVertexOffset		{ get { return ExtraVertexCount + ((TopRingCount - 1) * sides); } }
-            internal int		BottomVertexOffset	{ get { return ExtraVertexCount + ((RingCount - BottomRingCount) * sides); } }
-        }
-
-        public Settings settings;
+        [HideFoldout] public CapsuleSettings settings;
 
 
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
         #region Reset
-        static readonly Settings kDefaultSettings = new Settings
+        static readonly CapsuleSettings kDefaultSettings = new CapsuleSettings
         {
             height				= kDefaultHeight,
             topHeight			= kDefaultHemisphereHeight,
@@ -128,7 +168,7 @@ namespace Chisel.Core
         [BurstCompile(CompileSynchronously = true)]
         struct CreateCapsuleJob : IJob
         {
-            public Settings settings;
+            public CapsuleSettings settings;
 
             [NoAlias, ReadOnly]
             public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
@@ -148,37 +188,21 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public CapsuleSettings GenerateSettings()
         {
-            var brush = (CSGTreeBrush)node;
-            if (!brush.Valid)
-            {
-                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (brush.Operation != operation)
-                    brush.Operation = operation;
-            }
-            
-            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
-            {
-                var createHemisphereJob = new CreateCapsuleJob
-                {
-                    settings        = settings,
+            return settings;
+        }
 
-                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                    brushMesh               = brushMeshRef
-                };
-                var handle = createHemisphereJob.Schedule();
-                handle.Complete();
-
-                if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
-            }
-            return default;
+        [BurstCompile(CompileSynchronously = true)]
+        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            var createHemisphereJob = new CreateCapsuleJob
+            {
+                settings                = settings,
+                surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                brushMesh               = brushMeshRef
+            };
+            return createHemisphereJob.Schedule();
         }
 
 

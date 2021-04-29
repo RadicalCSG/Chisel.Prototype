@@ -12,11 +12,75 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselStadiumDefinition : IChiselGenerator
+    public struct StadiumSettings
+    {
+        internal const float kNoCenterEpsilon = 0.0001f;
+
+        public float                width;        
+        public float                height;
+        public float                length;
+        public float                topLength;
+        public float                bottomLength;
+        
+        // TODO: better naming
+        public int                  topSides;
+        public int                  bottomSides;
+
+        internal int				Sides				{ get { return (HaveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1); } }
+        internal int				FirstTopSide		{ get { return 0; } }
+        internal int				LastTopSide			{ get { return math.max(topSides, 1); } }
+        internal int				FirstBottomSide		{ get { return LastTopSide + 1; } }
+        internal int				LastBottomSide		{ get { return Sides - 1; } }
+
+        internal bool				HaveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
+        internal bool				HaveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
+        internal bool				HaveCenter			{ get { return (length - ((HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
+    }
+
+    public struct ChiselStadiumGenerator : IChiselBrushTypeGenerator<StadiumSettings>
+    {
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<StadiumSettings> settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute(int index)
+            {
+                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
+            }
+        }
+
+        public JobHandle Schedule(NativeList<StadiumSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var job = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray(),
+                brushMeshes         = brushMeshes.AsArray()
+            };
+            return job.Schedule(settings, 8);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(StadiumSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateStadium(settings.width, settings.height, settings.length,
+                                                  settings.topLength, settings.topSides,
+                                                  settings.bottomLength, settings.bottomSides,
+                                                  in surfaceDefinitionBlob,
+                                                  out var newBrushMesh,
+                                                  allocator))
+                return default;
+            return newBrushMesh;
+        }
+    }
+
+    [Serializable]
+    public struct ChiselStadiumDefinition : IChiselBrushGenerator<ChiselStadiumGenerator, StadiumSettings>
     {
         public const string kNodeTypeName = "Stadium";
-
-        internal const float kNoCenterEpsilon           = 0.0001f;
 
         public const float	kMinDiameter				= 0.01f;
         public const float	kMinLength					= 0.01f;
@@ -29,76 +93,50 @@ namespace Chisel.Core
         public const float	kDefaultWidth			    = 1.0f;
         
         public const int	kDefaultTopSides			= 4;
-        public const int	SidesVertices				= 4;
-        
-        public float                width;        
-        public float                height;
-        public float                length;
-        public float                topLength;
-        public float                bottomLength;
-        
-        // TODO: better naming
-        public int                  topSides;
-        public int                  bottomSides;
-        
-        public int					sides				{ get { return (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1); } }
-        public int					firstTopSide		{ get { return 0; } }
-        public int					lastTopSide			{ get { return math.max(topSides, 1); } }
-        public int					firstBottomSide		{ get { return lastTopSide + 1; } }
-        public int					lastBottomSide		{ get { return sides - 1; } }
+        public const int	kSidesVertices				= 4;
 
-        public bool					haveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
-        public bool					haveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
-        public bool					haveCenter			{ get { return (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
-
+        [HideFoldout] public StadiumSettings settings;
+        
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
         public void Reset()
         {
-            width			    = kDefaultWidth;
+            settings.width			    = kDefaultWidth;
 
-            height				= kDefaultHeight;
+            settings.height				= kDefaultHeight;
 
-            length				= kDefaultLength;
-            topLength			= kDefaultTopLength;
-            bottomLength		= kDefaultBottomLength;
-            
-            topSides			= kDefaultTopSides;
-            bottomSides			= SidesVertices;
+            settings.length				= kDefaultLength;
+            settings.topLength			= kDefaultTopLength;
+            settings.bottomLength		= kDefaultBottomLength;
+
+            settings.topSides			= kDefaultTopSides;
+            settings.bottomSides		= kSidesVertices;
         }
 
-        int Sides { get { return 2 + math.max(topSides, 1) + math.max(bottomSides, 1); } }
-
-        public int RequiredSurfaceCount { get { return 2 + Sides; } }
+        public int RequiredSurfaceCount { get { return 2 + settings.Sides; } }
 
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
 
         public void Validate()
         {
-            topLength	    = math.max(topLength,    0);
-            bottomLength	= math.max(bottomLength, 0);
-            length			= math.max(math.abs(length), (haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0));
-            length			= math.max(math.abs(length), kMinLength);
-            
-            height			= math.max(math.abs(height), kMinHeight);
-            width			= math.max(math.abs(width), kMinDiameter);
-            
-            topSides		= math.max(topSides,	 1);
-            bottomSides		= math.max(bottomSides, 1);
+            settings.topLength	    = math.max(settings.topLength,    0);
+            settings.bottomLength	= math.max(settings.bottomLength, 0);
+            settings.length			= math.max(math.abs(settings.length), (settings.HaveRoundedTop ? settings.topLength : 0) + (settings.HaveRoundedBottom ? settings.bottomLength : 0));
+            settings.length			= math.max(math.abs(settings.length), kMinLength);
+
+            settings.height			= math.max(math.abs(settings.height), kMinHeight);
+            settings.width			= math.max(math.abs(settings.width), kMinDiameter);
+
+            settings.topSides		= math.max(settings.topSides,	 1);
+            settings.bottomSides	= math.max(settings.bottomSides, 1);
         }
 
         [BurstCompile(CompileSynchronously = true)]
         struct CreateStadiumJob : IJob
         {
-            public float    width;
-            public float    height;
-            public float    length;
-            public float    topLength;
-            public int      topSides;
-            public float    bottomLength;
-            public int      bottomSides;
+            public StadiumSettings settings;
 
             [NoAlias, ReadOnly]
             public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
@@ -108,9 +146,9 @@ namespace Chisel.Core
 
             public void Execute()
             {
-                if (!BrushMeshFactory.GenerateStadium(width, height, length,
-                                                      topLength, topSides,
-                                                      bottomLength, bottomSides,
+                if (!BrushMeshFactory.GenerateStadium(settings.width, settings.height, settings.length,
+                                                      settings.topLength, settings.topSides,
+                                                      settings.bottomLength, settings.bottomSides,
                                                       in surfaceDefinitionBlob, 
                                                       out var newBrushMesh, 
                                                       Allocator.Persistent))
@@ -120,43 +158,21 @@ namespace Chisel.Core
             }
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, ref CSGTreeNode node, int userID, CSGOperationType operation)
+        public StadiumSettings GenerateSettings()
         {
-            var brush = (CSGTreeBrush)node;
-            if (!brush.Valid)
-            {
-                node = brush = CSGTreeBrush.Create(userID: userID, operation: operation);
-            } else
-            {
-                if (brush.Operation != operation)
-                    brush.Operation = operation;
-            }
-            
-            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
-            {
-                var createHemisphereJob = new CreateStadiumJob
-                {
-                    width           = width,
-                    height          = height,
-                    length          = length,
-                    topLength       = topLength,
-                    topSides        = topSides,
-                    bottomLength    = bottomLength,
-                    bottomSides     = bottomSides,
+            return settings;
+        }
 
-                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                    brushMesh               = brushMeshRef
-                };
-                var handle = createHemisphereJob.Schedule();
-                handle.Complete();
-
-                if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
-            }
-            return default;
+        [BurstCompile(CompileSynchronously = true)]
+        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
+        {
+            var createHemisphereJob = new CreateStadiumJob
+            {
+                settings                = settings,
+                surfaceDefinitionBlob   = surfaceDefinitionBlob,
+                brushMesh               = brushMeshRef
+            };
+            return createHemisphereJob.Schedule();
         }
 
         #region OnEdit
@@ -173,18 +189,18 @@ namespace Chisel.Core
 
         static void DrawOutline(IChiselHandleRenderer renderer, ChiselStadiumDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            var sides				= definition.sides;
-            var topSides			= math.max(definition.topSides, 1) + 1;
-            var bottomSides			= math.max(definition.bottomSides, 1) + 1;
+            var sides				= definition.settings.Sides;
+            var topSides			= math.max(definition.settings.topSides, 1) + 1;
+            var bottomSides			= math.max(definition.settings.bottomSides, 1) + 1;
 
-            var haveRoundedTop		= definition.haveRoundedTop;
-            var haveRoundedBottom	= definition.haveRoundedBottom;
-            var haveCenter			= definition.haveCenter;
+            var haveRoundedTop		= definition.settings.HaveRoundedTop;
+            var haveRoundedBottom	= definition.settings.HaveRoundedBottom;
+            var haveCenter			= definition.settings.HaveCenter;
             //renderer.DrawLineLoop(vertices,     0, sides, lineMode: lineMode, thickness: kCapLineThickness);
             //renderer.DrawLineLoop(vertices, sides, sides, lineMode: lineMode, thickness: kCapLineThickness);
 
-            var firstTopSide = definition.firstTopSide;
-            var lastTopSide  = definition.lastTopSide;
+            var firstTopSide = definition.settings.FirstTopSide;
+            var lastTopSide  = definition.settings.LastTopSide;
             for (int k = firstTopSide; k <= lastTopSide; k++)
             {
                 var sideLine	= !haveRoundedTop || (k == firstTopSide) || (k == lastTopSide);
@@ -193,8 +209,8 @@ namespace Chisel.Core
                 renderer.DrawLine(vertices[k], vertices[sides + k], lineMode: lineMode, thickness: thickness, dashSize: dashSize);
             }
             
-            var firstBottomSide = definition.firstBottomSide;
-            var lastBottomSide  = definition.lastBottomSide;
+            var firstBottomSide = definition.settings.FirstBottomSide;
+            var lastBottomSide  = definition.settings.LastBottomSide;
             for (int k = firstBottomSide; k <= lastBottomSide; k++)
             {
                 var sideLine	= haveCenter && (!haveRoundedBottom || (k == firstBottomSide) || (k == lastBottomSide));
@@ -228,21 +244,21 @@ namespace Chisel.Core
                 handles.color = baseColor;
             }
 
-            var height		        = this.height;
-            var length		        = this.length;
-            var diameter	        = this.width;
-            var sides		        = this.sides;
+            var height		        = settings.height;
+            var length		        = settings.length;
+            var diameter	        = settings.width;
+            var sides		        = settings.Sides;
             
-            var firstTopSide	    = this.firstTopSide;
-            var lastTopSide		    = this.lastTopSide;
-            var firstBottomSide     = this.firstBottomSide;
-            var lastBottomSide      = this.lastBottomSide;
+            var firstTopSide	    = settings.FirstTopSide;
+            var lastTopSide		    = settings.LastTopSide;
+            var firstBottomSide     = settings.FirstBottomSide;
+            var lastBottomSide      = settings.LastBottomSide;
 
-            var haveRoundedTop		= this.haveRoundedTop;
-            var haveRoundedBottom	= this.haveRoundedBottom;
-            var haveCenter			= this.haveCenter;
-            var topLength			= this.topLength;
-            var bottomLength		= this.bottomLength;
+            var haveRoundedTop		= settings.HaveRoundedTop;
+            var haveRoundedBottom	= settings.HaveRoundedBottom;
+            var haveCenter			= settings.HaveCenter;
+            var topLength			= settings.topLength;
+            var bottomLength		= settings.bottomLength;
             
 
             var midY		= height * 0.5f;
@@ -265,7 +281,7 @@ namespace Chisel.Core
                     handles.DoDirectionHandle(ref topPoint, upVector);
                     var topHasFocus = handles.lastHandleHadFocus;
                     handles.backfaced = false;
-                    //if (this.haveRoundedTop)
+                    //if (settings.haveRoundedTop)
                     {
                         var thickness = topHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
 
@@ -292,7 +308,7 @@ namespace Chisel.Core
                     handles.DoDirectionHandle(ref bottomPoint, -upVector);
                     var bottomHasFocus = handles.lastHandleHadFocus;
                     handles.backfaced = false;
-                    //if (this.haveRoundedBottom)
+                    //if (settings.haveRoundedBottom)
                     {
                         var thickness = bottomHasFocus ? kCapLineThicknessSelected : kCapLineThickness;
 
@@ -346,9 +362,9 @@ namespace Chisel.Core
             }
             if (handles.modified)
             {
-                this.height		= topPoint.y - bottomPoint.y;
-                this.length		= math.max(0, frontPoint.z - backPoint.z);
-                this.width	= leftPoint.x - rightPoint.x;
+                settings.height		= topPoint.y - bottomPoint.y;
+                settings.length		= math.max(0, frontPoint.z - backPoint.z);
+                settings.width	= leftPoint.x - rightPoint.x;
                 // TODO: handle sizing in some directions (needs to modify transformation?)
             }
         }
