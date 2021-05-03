@@ -18,11 +18,191 @@ namespace Chisel.Core
         public int      revolveSegments;
         public float    startAngle;
         public float    totalAngle;
-        public BlobAssetReference<ChiselCurve2DBlob> curveBlob;
+
+        [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselCurve2DBlob>   curveBlob;
+        [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex>             polygonVerticesList;
+        [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                       polygonVerticesSegments;
+        [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<float4x4>                  pathMatrices;
+    }
+
+    public struct ChiselRevolvedShapeGenerator : IChiselBranchTypeGenerator<RevolvedShapeSettings>
+    {
+        [BurstCompile()]
+        unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias] public NativeArray<RevolvedShapeSettings>   settings;
+            [NoAlias, WriteOnly] public NativeArray<int>          brushCounts;
+
+            public void Execute(int index)
+            {
+                var setting = settings[index];
+                brushCounts[index] = PrepareAndCountRequiredBrushMeshes_(ref setting);
+                settings[index] = setting;
+            }
+        }
+
+        [BurstCompile()]
+        unsafe struct AllocateBrushesJob : IJob
+        {
+            [NoAlias, ReadOnly] public NativeArray<int> brushCounts;
+            [NoAlias, WriteOnly] public NativeArray<Range> ranges;
+            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                var totalRequiredBrushCount = 0;
+                for (int i = 0; i < brushCounts.Length; i++)
+                {
+                    var length = brushCounts[i];
+                    var start = totalRequiredBrushCount;
+                    var end = start + length;
+                    ranges[i] = new Range { start = start, end = end };
+                    totalRequiredBrushCount += length;
+                }
+                brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
+            }
+        }
+
+        [BurstCompile()]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias] public NativeArray<Range>                                         ranges;
+            [NoAlias] public NativeArray<RevolvedShapeSettings>                         settings;
+            [NativeDisableParallelForRestriction]
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
+
+            public void Execute(int index)
+            {
+                try
+                {
+                    var range = ranges[index];
+                    var requiredSubMeshCount = range.Length;
+                    if (requiredSubMeshCount != 0)
+                    {
+                        using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                        {
+                            generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+                            if (!GenerateMesh(settings[index], surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
+                            {
+                                ranges[index] = new Range { start = 0, end = 0 };
+                                return;
+                            }
+                            
+                            Debug.Assert(requiredSubMeshCount == generatedBrushMeshes.Length);
+                            if (requiredSubMeshCount != generatedBrushMeshes.Length)
+                                throw new InvalidOperationException();
+
+                            for (int i = range.start, m = 0; i < range.end; i++, m++)
+                            {
+                                brushMeshes[i] = generatedBrushMeshes[m];
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    var setting = settings[index];
+                    Dispose(ref setting);
+                    settings[index] = setting;
+                }
+            }
+        }
+
+        [BurstDiscard]
+        public JobHandle Schedule(NativeList<RevolvedShapeSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var brushCounts = new NativeArray<int>(settings.Length, Allocator.TempJob);
+            var countBrushesJob = new PrepareAndCountBrushesJob
+            {
+                settings            = settings.AsArray(),
+                brushCounts         = brushCounts
+            };
+            var brushCountJobHandle = countBrushesJob.Schedule(settings, 8);
+            var allocateBrushesJob = new AllocateBrushesJob
+            {
+                brushCounts         = brushCounts,
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes
+            };
+            var allocateBrushesJobHandle = allocateBrushesJob.Schedule(brushCountJobHandle);
+            var createJob = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes.AsDeferredJobArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray()
+            };
+            var createJobHandle = createJob.Schedule(settings, 8, allocateBrushesJobHandle);
+            return brushCounts.Dispose(createJobHandle);
+        }
+
+        public static void Dispose(ref RevolvedShapeSettings settings)
+        {
+            if (settings.curveBlob.IsCreated) settings.curveBlob.Dispose(); settings.curveBlob = default;
+            if (settings.polygonVerticesList.IsCreated) settings.polygonVerticesList.Dispose(); settings.polygonVerticesList = default;
+            if (settings.polygonVerticesSegments.IsCreated) settings.polygonVerticesSegments.Dispose(); settings.polygonVerticesSegments = default;
+            if (settings.pathMatrices.IsCreated) settings.pathMatrices.Dispose(); settings.pathMatrices = default;
+        }
+
+        [BurstCompile()]
+        public int PrepareAndCountRequiredBrushMeshes(ref RevolvedShapeSettings settings)
+        {
+            ref var curve = ref settings.curveBlob.Value;
+            if (!curve.ConvexPartition(settings.curveSegments, out UnsafeList<SegmentVertex> polygonVerticesList, out UnsafeList<int> polygonVerticesSegments, Allocator.Persistent))
+                return 0;
+
+            settings.polygonVerticesList     = polygonVerticesList;
+            settings.polygonVerticesSegments = polygonVerticesSegments;
+            BrushMeshFactory.GetCircleMatrices(out settings.pathMatrices, settings.revolveSegments, new float3(0, 1, 0), Allocator.Persistent);
+
+            BrushMeshFactory.Split2DPolygonAlongOriginXAxis(ref settings.polygonVerticesList, ref settings.polygonVerticesSegments);
+
+            return settings.polygonVerticesSegments.Length * (settings.pathMatrices.length - 1);
+        }
+
+        [BurstCompile()]
+        public static int PrepareAndCountRequiredBrushMeshes_(ref RevolvedShapeSettings settings)
+        {
+            ref var curve = ref settings.curveBlob.Value;
+            if (!curve.ConvexPartition(settings.curveSegments, out UnsafeList<SegmentVertex> polygonVerticesList, out UnsafeList<int> polygonVerticesSegments, Allocator.Persistent))
+                return 0;
+
+            settings.polygonVerticesList = polygonVerticesList;
+            settings.polygonVerticesSegments = polygonVerticesSegments;
+            BrushMeshFactory.GetCircleMatrices(out settings.pathMatrices, settings.revolveSegments, new float3(0, 1, 0), Allocator.Persistent);
+
+            BrushMeshFactory.Split2DPolygonAlongOriginXAxis(ref settings.polygonVerticesList, ref settings.polygonVerticesSegments);
+
+            return settings.polygonVerticesSegments.Length * (settings.pathMatrices.length - 1);
+        }
+
+        [BurstCompile()]
+        public static bool GenerateMesh(RevolvedShapeSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                                                        in settings.polygonVerticesList,
+                                                        in settings.polygonVerticesSegments,
+                                                        in settings.pathMatrices,
+                                                        in surfaceDefinitionBlob,
+                                                        Allocator.Persistent))
+            {
+                for (int i = 0; i < brushMeshes.Length; i++)
+                {
+                    if (brushMeshes[i].IsCreated)
+                        brushMeshes[i].Dispose();
+                }
+                return false;
+            }
+            return true;
+        }
+
+        [BurstDiscard]
+        public void FixupOperations(CSGTreeBranch branch, RevolvedShapeSettings settings) { }
     }
 
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : IChiselBranchGenerator
+    public struct ChiselRevolvedShapeDefinition : IChiselBranchGenerator<ChiselRevolvedShapeGenerator, RevolvedShapeSettings>
     {
         public const string kNodeTypeName = "Revolved Shape";
 
@@ -59,83 +239,10 @@ namespace Chisel.Core
             settings.totalAngle		    = math.clamp(settings.totalAngle, 1, 360); // TODO: constants
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateRevolvedShapeJob : IJob
+        public RevolvedShapeSettings GenerateSettings()
         {
-            [NoAlias, ReadOnly] public RevolvedShapeSettings settings;
-            
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-
-            [NoAlias]
-            public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
-
-            public void Execute()
-            {
-                ref var curve = ref settings.curveBlob.Value;
-                if (!curve.ConvexPartition(settings.curveSegments, out var polygonVerticesList, out var polygonVerticesSegments, Allocator.Temp))
-                {
-                    brushMeshes.Clear();
-                    return;
-                }
-
-                try
-                {
-                    BrushMeshFactory.Split2DPolygonAlongOriginXAxis(polygonVerticesList, polygonVerticesSegments);
-
-                    int requiredSubMeshCount = polygonVerticesSegments.Length * settings.revolveSegments;
-                    if (requiredSubMeshCount == 0)
-                    {
-                        brushMeshes.Clear();
-                        return;
-                    }
-
-                    using (var pathMatrices = BrushMeshFactory.GetCircleMatrices(settings.revolveSegments, new float3(0, 1, 0), Allocator.Temp))
-                    {
-                        brushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
-                        if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
-                                                                    in polygonVerticesList,
-                                                                    in polygonVerticesSegments,
-                                                                    in pathMatrices,
-                                                                    in surfaceDefinitionBlob,
-                                                                    Allocator.Persistent))
-                        {
-                            for (int i = 0; i < brushMeshes.Length; i++)
-                            {
-                                if (brushMeshes[i].IsCreated)
-                                    brushMeshes[i].Dispose();
-                            }
-                            brushMeshes.Clear();
-                        }
-                    }
-                }
-                finally
-                {
-                    if (polygonVerticesList.IsCreated)
-                        polygonVerticesList.Dispose();
-                    if (polygonVerticesSegments.IsCreated)
-                        polygonVerticesSegments.Dispose();
-                }
-            }
-        }
-
-        public void FixupOperations(CSGTreeBranch branch) { }
-
-        public JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            using (var curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob))
-            {
-                settings.curveBlob = curveBlob;
-                var createExtrudedShapeJob = new CreateRevolvedShapeJob
-                {
-                    settings                = settings,                            
-                    surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                    brushMeshes             = brushMeshes
-                };
-                var handle = createExtrudedShapeJob.Schedule();
-                handle.Complete();
-                return default;
-            }
+            settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
+            return settings;
         }
 
         #region OnEdit

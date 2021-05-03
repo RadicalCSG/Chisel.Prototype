@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnitySceneExtensions;
@@ -101,6 +102,41 @@ namespace Chisel.Core
             {
                 segments[0].ToMatrix()
             };
+
+            for (int s = 1; s < segments.Length; s++)
+            {
+                var pathPointA = segments[s - 1];
+                var pathPointB = segments[s    ];
+
+                if (math.all(pathPointA.position == pathPointB.position) &&
+                    math.all(pathPointA.rotation.value == pathPointB.rotation.value) &&
+                    math.all(pathPointA.scale == pathPointB.scale))
+                    continue;
+
+                int subSegments = 1;
+                var offsetQuaternion = math.mul(pathPointB.rotation, math.inverse(pathPointA.rotation));
+                var offsetEuler = GetQuaternionEulerAngles(offsetQuaternion);
+                if (offsetEuler.x > 180) offsetEuler.x = 360 - offsetEuler.x;
+                if (offsetEuler.y > 180) offsetEuler.y = 360 - offsetEuler.y;
+                if (offsetEuler.z > 180) offsetEuler.z = 360 - offsetEuler.z;
+                var maxAngle = math.max(math.max(offsetEuler.x, offsetEuler.y), offsetEuler.z);
+                if (maxAngle != 0)
+                    subSegments = math.max(1, (int)math.ceil(maxAngle / 5));
+
+                if ((pathPointA.scale.x / pathPointA.scale.y) != (pathPointB.scale.x / pathPointB.scale.y) &&
+                    (subSegments & 1) == 1)
+                    subSegments += 1;
+
+                for (int n = 1; n <= subSegments; n++)
+                    matrices.Add(ChiselPathBlob.Point.Lerp(ref pathPointA, ref pathPointB, n / (float)subSegments));
+            }
+            return matrices;
+        }
+
+        public UnsafeList<float4x4> GetUnsafeMatrices(Allocator allocator)
+        {
+            var matrices = new UnsafeList<float4x4>(segments.Length, allocator);
+            matrices.Add(segments[0].ToMatrix());
 
             for (int s = 1; s < segments.Length; s++)
             {

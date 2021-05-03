@@ -42,7 +42,7 @@ namespace Chisel.Core
                 var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= StadiumSettings.kNoCenterEpsilon;
                 var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
 
-                CreateExtrudedSubMesh(sides, null, 0, 1, 
+                CreateExtrudedSubMesh(sides, null, 0, 0, 1, 
                                       in localVertices, in surfaceDefinitionBlob, in builder, ref root,
                                       out var polygons, out var halfEdges);
 

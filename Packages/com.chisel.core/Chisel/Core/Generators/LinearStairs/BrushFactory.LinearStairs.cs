@@ -64,7 +64,7 @@ namespace Chisel.Core
         }
         */
         // TODO: Fix all overlapping brushes
-        internal static unsafe bool GenerateLinearStairsSubMeshes(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        internal static unsafe bool GenerateLinearStairsSubMeshes(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int subMeshOffset, in LineairStairsData description, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             // TODO: properly assign all materials
 
@@ -126,8 +126,9 @@ namespace Chisel.Core
                             vertices[3] = new float3(min.x, max.y, minZ - description.stepDepth);	// 3
                         }
 
+                        const int indicesLength = 6;
                         var indices = stackalloc[] { 0, 1, 2, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[subMeshOffset + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                        brushMeshes[subMeshOffset + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         
 
                         if (description.riserType != StairsRiserType.FillDown)
@@ -156,10 +157,11 @@ namespace Chisel.Core
                                                 new float3( min.x, max.y, min.z), // 3
                                             };
                         var extrusion = new float3(max.x - min.x, 0, 0);
-                        
 
+
+                        const int indicesLength = 6;
                         var indices = stackalloc[] { 0, 1, 2, 2, 2, 2 }; // TODO: fix this
-                        brushMeshes[subMeshOffset + description.startTread + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                        brushMeshes[subMeshOffset + description.startTread + i] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                         min += stepOffset;
                         max += stepOffset;
@@ -185,12 +187,12 @@ namespace Chisel.Core
             return true;
         }
 
-        static unsafe BlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob(float3* vertices, int vertexCount, float3 extrusion, int* indices, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
+        static unsafe BlobAssetReference<BrushMeshBlob> CreateExtrudedSubMeshBlob(float3* vertices, int vertexCount, float3 extrusion, int* indices, int indicesLength, ref NativeChiselSurfaceDefinition surfaceDefinition, Allocator allocator)
         {
             using (var builder = new BlobBuilder(Allocator.Temp))
             {
                 ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-                if (BrushMeshFactory.CreateExtrudedSubMesh(vertices, vertexCount, extrusion, indices,
+                if (BrushMeshFactory.CreateExtrudedSubMesh(vertices, vertexCount, extrusion, indices, indicesLength,
                                                            ref surfaceDefinition,
                                                            in builder, ref root,
                                                            out var polygons,
@@ -212,7 +214,7 @@ namespace Chisel.Core
             }
         }
 
-        private static unsafe void GenerateStairsSide(NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
+        private static unsafe void GenerateStairsSide(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, int startIndex, int stepCount, float minX, float maxX, StairsSideType sideType, in LineairStairsData description, ref NativeChiselSurfaceDefinition surfaceDefinition, in LinearStairsSideData side, Allocator allocator)
         {
             var min = new float3(minX, description.bounds.Max.y - description.treadHeight - description.stepHeight, description.bounds.Min.z + description.stepDepthOffset);
             var max = new float3(maxX, description.bounds.Max.y - description.treadHeight                         , description.bounds.Min.z + description.stepDepthOffset + description.stepDepth);
@@ -242,8 +244,9 @@ namespace Chisel.Core
                                         new float3( min.x, y0, z1), // 3
                                     };
 
+                    const int indicesLength = 7;
                     var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                 } else
                     startIndex--;
 
@@ -280,8 +283,9 @@ namespace Chisel.Core
                                         new float3( min.x, y3, z1), // 3
                                     };
 
+                    const int indicesLength = 7;
                     var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                    brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                 } else
                 {
                     var y1 = max.y;
@@ -325,8 +329,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z0), // 4
                                         };
 
+                        const int indicesLength = 9;
                         var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, ref surfaceDefinition, allocator);
+                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                     } else
                     if (z3 > maxZ)
                     {
@@ -354,8 +359,10 @@ namespace Chisel.Core
                                                 new float3( min.x, y0, z0), // 4
                                             };
 
+
+                            const int indicesLength = 9;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         }
 
                         if ((description.sideDepth * aspect) < (description.plateauHeight - description.treadHeight))
@@ -377,8 +384,9 @@ namespace Chisel.Core
                                         new float3( min.x, y3, z1), // 3
                                     };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + 2] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex + 2] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         }
                     } else
                     {
@@ -407,8 +415,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z0), // 5
                                         };
 
+                        const int indicesLength = 9;
                         var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 6, extrusion, indices, ref surfaceDefinition, allocator);
+                        brushMeshes[startIndex + 1] = CreateExtrudedSubMeshBlob(vertices, 6, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                     }
                 }
             } else
@@ -433,8 +442,9 @@ namespace Chisel.Core
                                         new float3( min.x, y0, z1), // 3
                                     };
 
+                    const int indicesLength = 7;
                     var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                    brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                 } else
                     startIndex--;
                 // "wall" on stair steps
@@ -463,8 +473,9 @@ namespace Chisel.Core
                                         new float3( min.x, y3, z1), // 3
                                     };
 
+                    const int indicesLength = 7;
                     var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                    brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                     min.z += description.stepDepth;
                     max.z += description.stepDepth;
@@ -498,8 +509,9 @@ namespace Chisel.Core
                                         new float3( min.x, y0, z1), // 2
                                     };
 
+                        const int indicesLength = 7;
                         var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                        brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, ref surfaceDefinition, allocator);
+                        brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                         min.z += description.stepDepth;
                         max.z += description.stepDepth;
@@ -535,8 +547,9 @@ namespace Chisel.Core
                                                 new float3( min.x, y0, z1), // 3
                                             };
 
+                                const int indicesLength = 7;
                                 var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -567,8 +580,9 @@ namespace Chisel.Core
                                                 new float3( min.x, y0, z1), // 4
                                             };
 
+                                const int indicesLength = 7;
                                 var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, ref surfaceDefinition, allocator);
+                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -591,8 +605,9 @@ namespace Chisel.Core
                                                 new float3( min.x, y0, z1), // 3
                                             };
 
+                                const int indicesLength = 7;
                                 var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                                brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                                 min.z += description.stepDepth;
                                 max.z += description.stepDepth;
@@ -623,8 +638,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z1), // 3
                                         };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                             min.z += description.stepDepth;
                             max.z += description.stepDepth;
@@ -646,8 +662,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z1), // 2
                                         };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
 
                             min.z += description.stepDepth;
                             max.z += description.stepDepth;
@@ -678,8 +695,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z1), // 3
                                         };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         } else
                         if (y1 < description.bounds.Min.y)
                         {
@@ -705,8 +723,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z1), // 4
                                         };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 5, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         } else
                         {
                             // z0 y0 *------* z1 y0 
@@ -728,8 +747,9 @@ namespace Chisel.Core
                                             new float3( min.x, y0, z1), // 3
                                         };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[j] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         }
 
                         min.z += description.stepDepth;
@@ -764,8 +784,9 @@ namespace Chisel.Core
                                                 new float3( min.x, y3, z1), // 2
                                             };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 3, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         } else
                         {
                             // y1 z0 *
@@ -782,8 +803,9 @@ namespace Chisel.Core
                                                 new float3( min.x, y2, z1), // 3
                                             };
 
+                            const int indicesLength = 7;
                             var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                            brushMeshes[startIndex + stepCount] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                         }
                     }
                 }
@@ -805,8 +827,9 @@ namespace Chisel.Core
                                         new float3( min.x, y0, z1), // 3
                                     };
 
+                    const int indicesLength = 7;
                     var indices = stackalloc[] { 0, 1, 2, 3, 3, 3, 3 }; // TODO: fix this
-                    brushMeshes[startIndex + stepCount - 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, ref surfaceDefinition, allocator);
+                    brushMeshes[startIndex + stepCount - 1] = CreateExtrudedSubMeshBlob(vertices, 4, extrusion, indices, indicesLength, ref surfaceDefinition, allocator);
                 }
             }
         }

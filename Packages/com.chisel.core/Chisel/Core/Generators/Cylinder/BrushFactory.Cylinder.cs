@@ -106,7 +106,7 @@ namespace Chisel.Core
                                               in builder, ref root, out localVertices, fitToBounds: fitToBounds);
 
                     // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                    CreateExtrudedSubMesh(segments, null, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                    CreateExtrudedSubMesh(segments, null, 0, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
                 }
 
                 if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))

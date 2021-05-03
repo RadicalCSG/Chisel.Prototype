@@ -548,7 +548,10 @@ namespace Chisel.Editors
                 var node = targetObject as ChiselGeneratorComponent;
                 if (!node)
                     continue;
-                var count = node.TopTreeNode.Count;
+                var topTreeNode = node.TopTreeNode;
+                if (!topTreeNode.Valid)
+                    continue;
+                var count = topTreeNode.Count;
                 singular = (count <= 1) || singular;
                 multiple = (count > 1) || multiple;
             }

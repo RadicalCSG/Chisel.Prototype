@@ -278,7 +278,7 @@ namespace Chisel.Core
 
         //public static bool CreateExtrudedSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, Vector3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
         [BurstCompile]
-        public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentTopIndex, int segmentBottomIndex, 
+        public static unsafe void CreateExtrudedSubMesh(int segments, int* segmentDescriptionIndices, int segmentDescriptionLength, int segmentTopIndex, int segmentBottomIndex, 
                                                         in BlobBuilderArray<float3>                          localVertices,
                                                         in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                         in BlobBuilder builder, ref BrushMeshBlob root,
@@ -383,7 +383,7 @@ namespace Chisel.Core
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s]);
+                var descriptionIndex = (segmentDescriptionIndices == null || s >= segmentDescriptionLength) ? s + 2 : (segmentDescriptionIndices[s]);
                 var firstEdge = edgeIndices[(s * 2) + 0] - 1;
                 switch (segmentTopology[s])
                 {
@@ -407,6 +407,8 @@ namespace Chisel.Core
                     case SegmentTopology.TriangleNegative:
                     case SegmentTopology.TrianglePositive:
                     {
+                        Debug.Assert(surfaceID < polygons.Length);
+                        Debug.Assert(descriptionIndex < surfaceDefinition.surfaces.Length);
                         polygons[surfaceID] = new BrushMeshBlob.Polygon { firstEdge = firstEdge, edgeCount = 3, descriptionIndex = descriptionIndex, surface = surfaceDefinition.surfaces[descriptionIndex] };
                         surfaceID++;
                         break;
@@ -662,7 +664,7 @@ namespace Chisel.Core
         }
 
         public static unsafe bool CreateExtrudedSubMesh(float3* sideVertices, int sideVertexCount, float3 extrusion, 
-                                                        int* segmentDescriptionIndices,
+                                                        int* segmentDescriptionIndices, int segmentDescriptionLength,
                                                         ref NativeChiselSurfaceDefinition surfaceDefinition,
                                                         in BlobBuilder builder, ref BrushMeshBlob root,
                                                         out BlobBuilderArray<BrushMeshBlob.Polygon>    polygons,
@@ -748,8 +750,8 @@ namespace Chisel.Core
 
             polygons = builder.Allocate(ref root.polygons, polygonCount);
             
-            var surfaceIndex0 = (segmentDescriptionIndices == null) ? 0 : (segmentDescriptionIndices[0]);
-            var surfaceIndex1 = (segmentDescriptionIndices == null) ? 1 : (segmentDescriptionIndices[1]);
+            var surfaceIndex0 = (segmentDescriptionIndices == null || 0 >= segmentDescriptionLength) ? 0 : (segmentDescriptionIndices[0]);
+            var surfaceIndex1 = (segmentDescriptionIndices == null || 1 >= segmentDescriptionLength) ? 1 : (segmentDescriptionIndices[1]);
             var surface0 = surfaceDefinition.surfaces[surfaceIndex0];
             var surface1 = surfaceDefinition.surfaces[surfaceIndex1];
 
@@ -758,7 +760,7 @@ namespace Chisel.Core
 
             for (int s = 0, surfaceID = 2; s < segments; s++)
             {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
+                var descriptionIndex = (segmentDescriptionIndices == null || (s + 2) >= segmentDescriptionLength) ? s + 2 : (segmentDescriptionIndices[s + 2]);
                 var firstEdge		 = edgeIndices[(s * 2) + 0] - 1;
                 if (isSegmentConvex[s] == 0)
                 {

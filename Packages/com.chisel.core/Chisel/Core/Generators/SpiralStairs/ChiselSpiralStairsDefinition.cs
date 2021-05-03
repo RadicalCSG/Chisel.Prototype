@@ -15,7 +15,8 @@ namespace Chisel.Core
     [Serializable]
     public struct SpiralStairsSettings
     {
-        const float kSmudgeValue = 0.0001f;
+        // TODO: expose this to user
+        const int smoothSubDivisions = 3;
 
         public const int kTreadTopSurface       = 0;
         public const int kTreadBottomSurface    = 1;
@@ -43,6 +44,9 @@ namespace Chisel.Core
 
         public uint					    bottomSmoothingGroup;
 
+
+        const float kSmudgeValue = 0.0001f;
+
         public int StepCount
         {
             get
@@ -58,6 +62,197 @@ namespace Chisel.Core
                 return rotation / StepCount;
             }
         }
+
+        const float kEpsilon = 0.001f;
+
+        internal bool HaveInnerCylinder => (innerDiameter >= kEpsilon);
+        internal bool HaveTread => (nosingDepth < kEpsilon) ? false : (treadHeight >= kEpsilon);
+
+        internal int CylinderSubMeshCount => HaveInnerCylinder ? 2 : 1;
+        internal int SubMeshPerRiser => (riserType == StairsRiserType.None) ? 0 :
+                                               (riserType == StairsRiserType.Smooth) ? (2 * smoothSubDivisions)
+                                                                            : 1;
+        internal int RiserSubMeshCount => (StepCount * SubMeshPerRiser) + ((riserType == StairsRiserType.None) ? 0 : CylinderSubMeshCount);
+        internal int TreadSubMeshCount => (HaveTread ? StepCount + CylinderSubMeshCount : 0);
+        internal int RequiredSubMeshCount => (TreadSubMeshCount + RiserSubMeshCount);
+
+
+        internal bool HaveRiser => riserType != StairsRiserType.None;
+        internal int TreadStart => !HaveRiser ? 0 : RiserSubMeshCount;
+
+    }
+
+    public struct ChiselSpiralStairsGenerator : IChiselBranchTypeGenerator<SpiralStairsSettings>
+    {
+        [BurstCompile()]
+        unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias] public NativeArray<SpiralStairsSettings>  settings;
+            [NoAlias, WriteOnly] public NativeArray<int>        brushCounts;
+
+            public void Execute(int index)
+            {
+                var setting = settings[index];
+                brushCounts[index] = PrepareAndCountRequiredBrushMeshes_(ref setting);
+                settings[index] = setting;
+            }
+        }
+
+        [BurstCompile()]
+        unsafe struct AllocateBrushesJob : IJob
+        {
+            [NoAlias, ReadOnly] public NativeArray<int> brushCounts;
+            [NoAlias, WriteOnly] public NativeArray<Range> ranges;
+            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute()
+            {
+                var totalRequiredBrushCount = 0;
+                for (int i = 0; i < brushCounts.Length; i++)
+                {
+                    var length = brushCounts[i];
+                    var start = totalRequiredBrushCount;
+                    var end = start + length;
+                    ranges[i] = new Range { start = start, end = end };
+                    totalRequiredBrushCount += length;
+                }
+                brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
+            }
+        }
+
+        [BurstCompile()]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<SpiralStairsSettings>                settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias] public NativeArray<Range> ranges;
+            [NativeDisableParallelForRestriction]
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
+
+            public void Execute(int index)
+            {
+                try
+                {
+                    var range = ranges[index];
+                    var requiredSubMeshCount = range.Length;
+                    if (requiredSubMeshCount != 0)
+                    {
+                        using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                        {
+                            generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+                            if (!GenerateMesh(settings[index], surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
+                            {
+                                ranges[index] = new Range { start = 0, end = 0 };
+                                return;
+                            }
+                            
+                            Debug.Assert(requiredSubMeshCount == generatedBrushMeshes.Length);
+                            if (requiredSubMeshCount != generatedBrushMeshes.Length)
+                                throw new InvalidOperationException();
+
+                            Debug.Assert(brushMeshes.Length >= range.end);
+
+                            for (int i = range.start, m=0; i < range.end; i++, m++)
+                            {
+                                brushMeshes[i] = generatedBrushMeshes[m];
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    Dispose(settings[index]);
+                }
+            }
+        }
+
+        [BurstDiscard]
+        public JobHandle Schedule(NativeList<SpiralStairsSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+        {
+            var brushCounts = new NativeArray<int>(settings.Length, Allocator.TempJob);
+            var countBrushesJob = new PrepareAndCountBrushesJob
+            {
+                settings            = settings.AsArray(),
+                brushCounts         = brushCounts
+            };
+            var brushCountJobHandle = countBrushesJob.Schedule(settings, 8);
+            var allocateBrushesJob = new AllocateBrushesJob
+            {
+                brushCounts         = brushCounts,
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes
+            };
+            var allocateBrushesJobHandle = allocateBrushesJob.Schedule(brushCountJobHandle);
+            var createJob = new CreateBrushesJob
+            {
+                settings            = settings.AsArray(),
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes.AsDeferredJobArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray()
+            };
+            var createJobHandle = createJob.Schedule(settings, 8, allocateBrushesJobHandle);
+            return brushCounts.Dispose(createJobHandle);
+        }
+
+        public static void Dispose(SpiralStairsSettings settings)
+        {
+        }
+
+        [BurstCompile()]
+        public int PrepareAndCountRequiredBrushMeshes(ref SpiralStairsSettings settings)
+        {
+            return settings.RequiredSubMeshCount;
+        }
+
+        [BurstCompile()]
+        public static int PrepareAndCountRequiredBrushMeshes_(ref SpiralStairsSettings settings)
+        {
+            return settings.RequiredSubMeshCount;
+        }
+
+        [BurstCompile()]
+        public static bool GenerateMesh(SpiralStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes,
+                                                       ref settings,
+                                                       in surfaceDefinitionBlob,
+                                                       Allocator.Persistent))
+            {
+                for (int i = 0; i < brushMeshes.Length; i++)
+                {
+                    if (brushMeshes[i].IsCreated)
+                        brushMeshes[i].Dispose();
+                }
+                return false;
+            }
+            return true;
+        }
+
+        [BurstDiscard]
+        public void FixupOperations(CSGTreeBranch branch, SpiralStairsSettings createSpiralStairsJob)
+        {
+            // TODO: somehow make this possible to set up from within the job without requiring the treeBranches/treeBrushes
+            {
+                var subMeshIndex = createSpiralStairsJob.TreadStart - createSpiralStairsJob.CylinderSubMeshCount;
+                var brush = (CSGTreeBrush)branch[subMeshIndex];
+                brush.Operation = CSGOperationType.Intersecting;
+
+                subMeshIndex = createSpiralStairsJob.RequiredSubMeshCount - createSpiralStairsJob.CylinderSubMeshCount;
+                brush = (CSGTreeBrush)branch[subMeshIndex];
+                brush.Operation = CSGOperationType.Intersecting;
+            }
+
+            if (createSpiralStairsJob.HaveInnerCylinder)
+            {
+                var subMeshIndex = createSpiralStairsJob.TreadStart - 1;
+                var brush = (CSGTreeBrush)branch[subMeshIndex];
+                brush.Operation = CSGOperationType.Subtractive;
+
+                subMeshIndex = createSpiralStairsJob.RequiredSubMeshCount - 1;
+                brush = (CSGTreeBrush)branch[subMeshIndex];
+                brush.Operation = CSGOperationType.Subtractive;
+            }
+        }
     }
 
     // https://www.archdaily.com/896537/how-to-calculate-spiral-staircase-dimensions-and-designs
@@ -66,7 +261,7 @@ namespace Chisel.Core
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DTs7Bc10UxKpWM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DPwskqkaN7e_wM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     [Serializable]
-    public struct ChiselSpiralStairsDefinition : IChiselBranchGenerator
+    public struct ChiselSpiralStairsDefinition : IChiselBranchGenerator<ChiselSpiralStairsGenerator, SpiralStairsSettings>
     {
         public const string kNodeTypeName = "Spiral Stairs";
 
@@ -150,100 +345,9 @@ namespace Chisel.Core
             settings.outerSegments	= math.max(kMinSegments, settings.outerSegments);
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateSpiralStairsJob : IJob
+        public SpiralStairsSettings GenerateSettings()
         {
-            // TODO: expose this to user
-            const int smoothSubDivisions = 3;
-
-            public SpiralStairsSettings settings;
-            
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-
-            [NoAlias]
-            public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
-            
-            const float kEpsilon = 0.001f;
-
-            public bool haveInnerCylinder	    => (settings.innerDiameter >= kEpsilon);
-            public bool haveTread		        => (settings.nosingDepth < kEpsilon) ? false : (settings.treadHeight >= kEpsilon);
-
-            public int cylinderSubMeshCount	    => haveInnerCylinder ? 2 : 1;
-            public int subMeshPerRiser			=> (settings.riserType == StairsRiserType.None  ) ? 0 : 
-                                                   (settings.riserType == StairsRiserType.Smooth) ? (2 * smoothSubDivisions)
-                                                                                : 1;
-            public int riserSubMeshCount		=> (settings.StepCount * subMeshPerRiser) + ((settings.riserType == StairsRiserType.None  ) ? 0 : cylinderSubMeshCount);
-            public int treadSubMeshCount		=> (haveTread ? settings.StepCount + cylinderSubMeshCount : 0);
-            public int requiredSubMeshCount    => (treadSubMeshCount + riserSubMeshCount);
-
-
-            public bool haveRiser   => settings.riserType != StairsRiserType.None;
-            public int  treadStart  => !haveRiser ? 0 : riserSubMeshCount;
-
-            public void Execute()
-            {
-                if (requiredSubMeshCount == 0)
-                {
-                    brushMeshes.Clear();
-                    return;
-                }
-
-                brushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
-                if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes, 
-                                                           ref settings, 
-                                                           in surfaceDefinitionBlob, 
-                                                           Allocator.Persistent))
-                {
-                    for (int i = 0; i < brushMeshes.Length; i++)
-                    {
-                        if (brushMeshes[i].IsCreated)
-                            brushMeshes[i].Dispose();
-                    }
-                    brushMeshes.Clear();
-                }
-            }
-        }
-
-        public void FixupOperations(CSGTreeBranch branch)
-        {
-            var createSpiralStairsJob = new CreateSpiralStairsJob
-            {
-                settings = settings
-            };
-
-            // TODO: somehow make this possible to set up from within the job without requiring the treeBranches/treeBrushes
-            {
-                var subMeshIndex = createSpiralStairsJob.treadStart - createSpiralStairsJob.cylinderSubMeshCount;
-                var brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Intersecting;
-
-                subMeshIndex = createSpiralStairsJob.requiredSubMeshCount - createSpiralStairsJob.cylinderSubMeshCount;
-                brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Intersecting;
-            }
-
-            if (createSpiralStairsJob.haveInnerCylinder)
-            {
-                var subMeshIndex = createSpiralStairsJob.treadStart - 1;
-                var brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Subtractive;
-
-                subMeshIndex = createSpiralStairsJob.requiredSubMeshCount - 1;
-                brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Subtractive;
-            }
-        }
-
-        public JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createSpiralStairsJob = new CreateSpiralStairsJob
-            {
-                settings                = settings,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMeshes             = brushMeshes
-            };
-            return createSpiralStairsJob.Schedule();
+            return settings;
         }
 
         #region OnEdit

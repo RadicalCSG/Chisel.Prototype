@@ -1,11 +1,12 @@
 ﻿using System;
-using Debug = System.Diagnostics.Debug;
+using Debug = UnityEngine.Debug;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine.Profiling;
 using UnitySceneExtensions;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -88,9 +89,67 @@ namespace Chisel.Core
                 }
             }
         }
+        
+        [BurstCompile]
+        public void GetPathVertices(int shapeCurveSegments, out UnsafeList<SegmentVertex> shapeVertices, Allocator allocator)
+        {
+            var length = controlPoints.Length;
+
+            shapeVertices = new UnsafeList<SegmentVertex>(length * (1 + math.max(1, shapeCurveSegments)), allocator);
+            for (int i = 0; i < length; i++)
+            {
+                var index1 = i;
+                var index2 = (i + 1) % length;
+                var p1 = controlPoints[index1];
+                var p2 = controlPoints[index2];
+                var v1 = p1.position;
+                var v2 = p2.position;
+
+                if (shapeCurveSegments == 0 ||
+                    (controlPoints[index1].constraint2 == ControlPointConstraint.Straight &&
+                     controlPoints[index2].constraint1 == ControlPointConstraint.Straight))
+                {
+                    shapeVertices.Add(new SegmentVertex { position = v1, segmentIndex = i });
+                    continue;
+                }
+
+                float2 v0, v3;
+
+                if (p1.constraint2 != ControlPointConstraint.Straight)
+                    v0 = v1 - p1.tangent2;
+                else
+                    v0 = v1;
+                if (p2.constraint1 != ControlPointConstraint.Straight)
+                    v3 = v2 - p2.tangent1;
+                else
+                    v3 = v2;
+
+                shapeVertices.Add(new SegmentVertex { position = v1, segmentIndex = i });
+                for (int n = 1; n < shapeCurveSegments; n++)
+                {
+                    shapeVertices.Add(new SegmentVertex { position = PointOnBezier(v1, v0, v3, v2, n / (float)shapeCurveSegments), segmentIndex = i });
+                }
+            }
+        }
 
         [BurstCompile]
         static float CalculateOrientation(NativeList<SegmentVertex> vertices, Range range)
+        {
+            // Newell's algorithm to create a plane for concave polygons.
+            // NOTE: doesn't work well for self-intersecting polygons
+            var direction = 0.0f;
+            var prevVertex = vertices[range.end - 1].position;
+            for (int n = range.start; n < range.end; n++)
+            {
+                var currVertex = vertices[n].position;
+                direction += (prevVertex.x - currVertex.x) * (prevVertex.y + currVertex.y);
+                prevVertex = currVertex;
+            }
+            return direction;
+        }
+
+        [BurstCompile]
+        static float CalculateOrientation(UnsafeList<SegmentVertex> vertices, Range range)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
@@ -130,6 +189,60 @@ namespace Chisel.Core
                     if (!External.BayazitDecomposerBursted.ConvexPartition(shapeVertices,
                                                                            polygonVerticesArray,
                                                                            polygonVerticesSegments))
+                    {
+                        polygonVerticesArray.Dispose();
+                        polygonVerticesSegments.Dispose();
+                        polygonVerticesArray    = default;
+                        polygonVerticesSegments = default;
+                        return false;
+                    }
+
+                    for (int i = 0; i < polygonVerticesSegments.Length; i++)
+                    {
+                        var range = new Range
+                        {
+                            start   = i == 0 ? 0 : polygonVerticesSegments[i - 1],
+                            end     =              polygonVerticesSegments[i    ]
+                        };
+
+                        if (CalculateOrientation(polygonVerticesArray, range) < 0)
+                            External.BayazitDecomposerBursted.Reverse(polygonVerticesArray, range);
+                    }
+                }
+                //Profiler.EndSample();
+
+                //Debug.Assert(polygonVerticesArray.Length == 0 || polygonVerticesArray.Length == polygonVerticesSegments[polygonVerticesSegments.Length - 1]);
+                return true;
+            }
+        }
+
+        [BurstCompile]
+        public bool ConvexPartition(int curveSegments, out UnsafeList<SegmentVertex> polygonVerticesArray, out UnsafeList<int> polygonVerticesSegments, Allocator allocator)
+        {
+            using (var shapeVertices = new NativeList<SegmentVertex>(Allocator.Temp))
+            {
+                GetPathVertices(curveSegments, shapeVertices);
+
+                //Profiler.BeginSample("ConvexPartition");
+                if (shapeVertices.Length == 3)
+                {
+                    polygonVerticesArray = new UnsafeList<SegmentVertex>(3, allocator);
+                    polygonVerticesSegments = new UnsafeList<int>(1, allocator);
+
+                    polygonVerticesArray.Resize(3, NativeArrayOptions.UninitializedMemory);
+                    polygonVerticesArray[0] = shapeVertices[0];
+                    polygonVerticesArray[1] = shapeVertices[1];
+                    polygonVerticesArray[2] = shapeVertices[2];
+
+                    polygonVerticesSegments.Resize(1, NativeArrayOptions.UninitializedMemory);
+                    polygonVerticesSegments[0] = polygonVerticesArray.Length;
+                } else
+                {
+                    polygonVerticesArray    = new UnsafeList<SegmentVertex>(shapeVertices.Length * math.max(1, shapeVertices.Length / 2), allocator);
+                    polygonVerticesSegments = new UnsafeList<int>(shapeVertices.Length, allocator);
+                    if (!External.BayazitDecomposerBursted.ConvexPartition(shapeVertices,
+                                                                           ref polygonVerticesArray,
+                                                                           ref polygonVerticesSegments))
                     {
                         polygonVerticesArray.Dispose();
                         polygonVerticesSegments.Dispose();

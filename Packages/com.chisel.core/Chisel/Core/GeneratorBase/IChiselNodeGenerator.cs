@@ -45,39 +45,46 @@ namespace Chisel.Core
     }
 
     public interface IChiselBrushTypeGenerator<Settings>
-        where Settings : struct
+        where Settings : unmanaged
     {
         JobHandle Schedule(NativeList<Settings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes);
     }
 
 
     public interface IChiselBrushGenerator<Generator, Settings> : IChiselNodeGenerator
-        where Settings : struct
+        where Settings : unmanaged
         where Generator : IChiselBrushTypeGenerator<Settings>
     {
         Settings GenerateSettings();
         JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob);
     }
 
-    public interface IChiselBranchTypeGenerator<Settings>
-        where Settings : struct
+    public interface IChiselBranchTypeGenerator_<Settings>
+        where Settings : unmanaged
     {
-        // Temporary workaround
-        void FixupOperations(CSGTreeBranch branch);
+        int PrepareAndCountRequiredBrushMeshes(ref Settings settings);
     }
 
-    public interface IChiselBranchGenerator : IChiselNodeGenerator
+    public interface IChiselBranchTypeGenerator<Settings> : IChiselBranchTypeGenerator_<Settings>
+        where Settings : unmanaged
     {
-        JobHandle Generate(NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob);
-        
+        JobHandle Schedule(NativeList<Settings> generatorSettings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes);
+    
         // Temporary workaround
-        void FixupOperations(CSGTreeBranch branch);
+        void FixupOperations(CSGTreeBranch branch, Settings settings);
+    }
+
+    public interface IChiselBranchGenerator<Generator, Settings> : IChiselNodeGenerator
+        where Settings  : unmanaged
+        where Generator : IChiselBranchTypeGenerator<Settings>
+    {
+        Settings GenerateSettings();
     }
 
     public static class TypeGeneratorExtensions
     {
         public static void Assign<Settings>(this IChiselBrushTypeGenerator<Settings> @this, NativeList<CSGTreeNode> nodes, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-            where Settings : struct
+            where Settings : unmanaged
         {
             for (int i = 0; i < nodes.Length; i++)
             {
@@ -125,8 +132,8 @@ namespace Chisel.Core
             }
         }
 
-        public static void Assign<Settings>(this IChiselBranchTypeGenerator<Settings> @this, NativeList<CSGTreeNode> nodes, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-            where Settings : struct
+        public static void Assign<Settings>(this IChiselBranchTypeGenerator<Settings> @this, NativeList<Settings> generatorSettings, NativeList<CSGTreeNode> nodes, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
+            where Settings : unmanaged
         {
             for (int i = 0; i < nodes.Length; i++)
             {
@@ -141,14 +148,14 @@ namespace Chisel.Core
                 if (branch.Count != range.Length)
                     BuildBrushes(branch, range.Length);
 
-                for (int b = 0, m = range.start; b < range.Length; i++, m++)
+                for (int b = 0, m = range.start; m < range.end; b++, m++)
                 {
                     var brush = (CSGTreeBrush)branch[b];
                     brush.LocalTransformation = float4x4.identity;
                     brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[m]) };
                 }
 
-                @this.FixupOperations(branch);
+                @this.FixupOperations(branch, generatorSettings[i]);
             }
         }
     }

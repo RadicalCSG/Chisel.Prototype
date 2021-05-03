@@ -8,6 +8,7 @@ using Debug = UnityEngine.Debug;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using UnitySceneExtensions;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core.External
 {
@@ -41,6 +42,184 @@ namespace Chisel.Core.External
         /// </summary>
         [BurstCompile]
         public static bool ConvexPartition(NativeList<SegmentVertex> srcVertices, NativeList<SegmentVertex> outputVertices, NativeList<int> outputRanges, int defaultSegment = 0)
+        {
+            Debug.Assert(srcVertices.Length > 3);
+
+            var allVertices = new NativeList<SegmentVertex>(Allocator.Temp);
+            var ranges      = new NativeList<Range>(Allocator.Temp);
+
+            try
+            {
+                allVertices.AddRange(srcVertices);
+                ranges.Add(new Range { start = 0, end = srcVertices.Length });
+
+                var originalVertexCount = srcVertices.Length * 2;
+
+                int counter = 0;
+                while (counter < ranges.Length)
+                {
+                    var vertices = allVertices;
+                    var range = ranges[counter];
+
+                    counter++;
+                    if (counter > originalVertexCount)
+                    {
+                        Debug.LogWarning($"counter > {originalVertexCount}");
+                        return false;
+                    }
+
+                    var count = range.Length;
+                    if (count == 0)
+                        continue;
+
+                    ForceCounterClockWise(vertices, range);
+
+                    int reflexIndex;
+                    for (reflexIndex = 0; reflexIndex < count; ++reflexIndex)
+                    {
+                        if (Reflex(reflexIndex, vertices, range))
+                            break;
+                    }
+
+                    // Check if polygon is already convex
+                    if (reflexIndex == count)
+                    {
+                        // Check if polygon is degenerate, in which case we skip it
+                        if (math.abs(GetSignedDoubleArea(vertices, range)) <= 0.0f)
+                            continue;
+
+                        var desiredCapacity = outputVertices.Length + range.Length;
+                        if (outputVertices.Capacity < desiredCapacity)
+                            outputVertices.Capacity = desiredCapacity;
+                        for (int n = range.start; n < range.end; n++)
+                            outputVertices.Add(vertices[n]);
+                        outputRanges.Add(outputVertices.Length);
+                        continue;
+                    }
+
+                    int i = reflexIndex;
+
+                    var lowerDist = float.PositiveInfinity;
+                    var lowerInt = float2.zero;
+                    var lowerIndex = 0;
+
+                    var upperDist = float.PositiveInfinity;
+                    var upperInt = float2.zero;
+                    var upperIndex = 0;
+                    for (int j = 0; j < count; ++j)
+                    {
+                        // if line intersects with an edge
+                        if (Left   (At(i - 1, vertices, range).position, At(i, vertices, range).position, At(j    , vertices, range).position) &&
+                            RightOn(At(i - 1, vertices, range).position, At(i, vertices, range).position, At(j - 1, vertices, range).position))
+                        {
+                            // find the point of intersection
+                            var p = LineIntersect(At(i - 1, vertices, range).position, 
+                                                  At(i    , vertices, range).position, 
+                                                  At(j    , vertices, range).position, 
+                                                  At(j - 1, vertices, range).position);
+                            if (RightOn(At(i + 1, vertices, range).position, 
+                                        At(i    , vertices, range).position, p))
+                            {
+                                // make sure it's inside the poly
+                                var d = SquareDist(At(i, vertices, range).position, p);
+                                if (d < lowerDist)
+                                {
+                                    // keep only the closest intersection
+                                    lowerDist = d;
+                                    lowerInt = p;
+                                    lowerIndex = j;
+                                }
+                            }
+                        }
+
+                        if (Left   (At(i + 1, vertices, range).position, At(i, vertices, range).position, At(j + 1, vertices, range).position) &&
+                            RightOn(At(i + 1, vertices, range).position, At(i, vertices, range).position, At(j    , vertices, range).position))
+                        {
+                            var p = LineIntersect(At(i + 1, vertices, range).position, 
+                                                  At(i    , vertices, range).position, 
+                                                  At(j    , vertices, range).position, 
+                                                  At(j + 1, vertices, range).position);
+                            if (LeftOn(At(i - 1, vertices, range).position, 
+                                       At(i    , vertices, range).position, p))
+                            {
+                                var d = SquareDist(At(i, vertices, range).position, p);
+                                if (d < upperDist)
+                                {
+                                    upperDist = d;
+                                    upperIndex = j;
+                                    upperInt = p;
+                                }
+                            }
+                        }
+                    }
+
+
+                    // if there are no vertices to connect to, choose a float2 in the middle
+                    if (lowerIndex == (upperIndex + 1) % count)
+                    {
+                        var sp = ((lowerInt + upperInt) / 2.0f);
+
+                        var newRange = Copy(i, upperIndex, vertices, range, allVertices);
+                        allVertices.Add(new SegmentVertex { position = sp, segmentIndex = defaultSegment });
+                        newRange.end++;
+                        ranges.Add(newRange);
+
+                        newRange = Copy(lowerIndex, i, vertices, range, allVertices);
+                        allVertices.Add(new SegmentVertex { position = sp, segmentIndex = defaultSegment });
+                        newRange.end++;
+                        ranges.Add(newRange);
+                    } else
+                    {
+                        double highestScore = 0;
+                        double bestIndex = lowerIndex;
+                        while (upperIndex < lowerIndex)
+                            upperIndex += count;
+
+                        for (int j = lowerIndex; j <= upperIndex; ++j)
+                        {
+                            if (!CanSee(i, j, vertices, range))
+                                continue;
+
+                            double score = 1 / (SquareDist(At(i, vertices, range).position, 
+                                                           At(j, vertices, range).position) + 1);
+                            if (Reflex(j, vertices, range))
+                            {
+                                if (RightOn(At(j - 1, vertices, range).position, At(j, vertices, range).position, At(i, vertices, range).position) &&
+                                    LeftOn (At(j + 1, vertices, range).position, At(j, vertices, range).position, At(i, vertices, range).position))
+                                    score += 3;
+                                else
+                                    score += 2;
+                            } else
+                                score += 1;
+
+                            if (score > highestScore)
+                            {
+                                bestIndex = j;
+                                highestScore = score;
+                            }
+                        }
+
+                        ranges.Add(Copy(i, (int)(bestIndex), vertices, range, allVertices));
+                        ranges.Add(Copy((int)(bestIndex), i, vertices, range, allVertices));
+                    }
+
+                }
+                return outputRanges.Length > 0;
+            }
+            finally
+            {
+                allVertices.Dispose();
+                ranges.Dispose();
+            }
+        }
+        
+
+        /// <summary>
+        /// Decompose the polygon into several smaller non-concave polygon.
+        /// If the polygon is already convex, it will return the original polygon, unless it is over MaxPolygonVertices.
+        /// </summary>
+        [BurstCompile]
+        public static bool ConvexPartition(NativeList<SegmentVertex> srcVertices, ref UnsafeList<SegmentVertex> outputVertices, ref UnsafeList<int> outputRanges, int defaultSegment = 0)
         {
             Debug.Assert(srcVertices.Length > 3);
 
@@ -444,6 +623,17 @@ namespace Chisel.Core.External
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse(NativeList<SegmentVertex> vertices, Range range)
+        {
+            for (int i1 = range.start, i2 = range.end - 1, center = range.Center; i1 < center; i1++, i2--)
+            {
+                var temp = vertices[i1];
+                vertices[i1] = vertices[i2];
+                vertices[i2] = temp;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Reverse(UnsafeList<SegmentVertex> vertices, Range range)
         {
             for (int i1 = range.start, i2 = range.end - 1, center = range.Center; i1 < center; i1++, i2--)
             {

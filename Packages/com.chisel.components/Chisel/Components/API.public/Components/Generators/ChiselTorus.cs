@@ -6,7 +6,7 @@ namespace Chisel.Components
     [ExecuteInEditMode]
     [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
     [AddComponentMenu("Chisel/" + kNodeTypeName)]
-    public sealed class ChiselTorus : ChiselBranchGeneratorComponent<ChiselTorusDefinition>
+    public sealed class ChiselTorus : ChiselBranchGeneratorComponent<ChiselTorusGenerator, TorusSettings, ChiselTorusDefinition>
     {
         public const string kNodeTypeName = ChiselTorusDefinition.kNodeTypeName;
         public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
