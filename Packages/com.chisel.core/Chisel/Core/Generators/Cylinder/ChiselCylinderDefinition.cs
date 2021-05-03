@@ -204,31 +204,7 @@ namespace Chisel.Core
     public struct ChiselCylinderGenerator : IChiselBrushTypeGenerator<CylinderSettings>
     {
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<CylinderSettings>                                     settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
-
-            public void Execute(int index)
-            {
-                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(NativeList<CylinderSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var job = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray(),
-                brushMeshes         = brushMeshes.AsArray()
-            };
-            return job.Schedule(settings, 8);
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(CylinderSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(CylinderSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             var topDiameter     = new float2(settings.topDiameterX, settings.topDiameterZ);
             var bottomDiameter  = new float2(settings.bottomDiameterX, settings.bottomDiameterZ);
@@ -331,65 +307,7 @@ namespace Chisel.Core
             settings.sides = math.max(3, settings.sides);
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateCylinderJob : IJob
-        {
-            public CylinderSettings settings;
-            
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-
-            [NoAlias]
-            public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
-
-            public void Execute()
-            {
-                var topDiameter     = new float2(settings.topDiameterX, settings.topDiameterZ);
-                var bottomDiameter  = new float2(settings.bottomDiameterX, settings.bottomDiameterZ);
-
-                var topHeight = settings.height + settings.bottomOffset;
-                var bottomHeight = settings.bottomOffset;
-                switch (settings.type)
-                {
-                    case CylinderShapeType.ConicalFrustum:  break;
-                    case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
-                    case CylinderShapeType.Cone:            topDiameter = float2.zero; break;
-                    default: throw new NotImplementedException();
-                }
-
-                if (!settings.isEllipsoid)
-                {
-                    topDiameter.y = topDiameter.x;
-                    bottomDiameter.y = bottomDiameter.x;
-                }
-
-                if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter,    topHeight, 
-                                                                    bottomDiameter, bottomHeight,
-                                                                    settings.rotation, settings.sides, settings.fitToBounds, 
-                                                                    in surfaceDefinitionBlob, 
-                                                                    out var newBrushMesh, Allocator.Persistent))
-                    brushMesh.Value = default;
-                else
-                    brushMesh.Value = newBrushMesh;
-            }
-        }
-
-        public CylinderSettings GenerateSettings()
-        {
-            return settings;
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createCylinderJob = new CreateCylinderJob
-            {
-                settings                = settings,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMesh               = brushMeshRef
-            };
-            return createCylinderJob.Schedule();
-        }
+        public CylinderSettings GenerateSettings() { return settings; }
 
 
         #region OnEdit

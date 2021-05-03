@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 namespace Chisel.Core
 {
     [Serializable]
+    [BurstCompile()]
     public struct TorusSettings
     {
         public const float kMinTubeDiameter = 0.1f;
@@ -35,131 +36,12 @@ namespace Chisel.Core
 
     public struct ChiselTorusGenerator : IChiselBranchTypeGenerator<TorusSettings>
     {
-        [BurstCompile()]
-        unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias] public NativeArray<TorusSettings>     settings;
-            [NoAlias, WriteOnly] public NativeArray<int>    brushCounts;
-
-            public void Execute(int index)
-            {
-                var setting = settings[index];
-                brushCounts[index] = PrepareAndCountRequiredBrushMeshes_(ref setting);
-                settings[index] = setting;
-            }
-        }
-
-        [BurstCompile()]
-        unsafe struct AllocateBrushesJob : IJob
-        {
-            [NoAlias, ReadOnly] public NativeArray<int>                     brushCounts;
-            [NoAlias, WriteOnly] public NativeArray<Range>                  ranges;
-            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
-
-            public void Execute()
-            {
-                var totalRequiredBrushCount = 0;
-                for (int i = 0; i < brushCounts.Length; i++)
-                {
-                    var length = brushCounts[i];
-                    var start = totalRequiredBrushCount;
-                    var end = start + length;
-                    ranges[i] = new Range { start = start, end = end };
-                    totalRequiredBrushCount += length;
-                }
-                brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
-            }
-        }
-
-        [BurstCompile()]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
-            [NoAlias] public NativeArray<Range>                                         ranges;
-            [NoAlias] public NativeArray<TorusSettings>                                 settings;
-            [NativeDisableParallelForRestriction]
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
-
-            public void Execute(int index)
-            {
-                try
-                {
-                    var range = ranges[index];
-                    var requiredSubMeshCount = range.Length;
-                    if (requiredSubMeshCount != 0)
-                    {
-                        using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
-                        {
-                            generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
-                            if (!GenerateMesh(settings[index], surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
-                            {
-                                ranges[index] = new Range { start = 0, end = 0 };
-                                return;
-                            }
-                            
-                            Debug.Assert(requiredSubMeshCount == generatedBrushMeshes.Length);
-                            if (requiredSubMeshCount != generatedBrushMeshes.Length)
-                                throw new InvalidOperationException();
-                            for (int i = range.start, m = 0; i < range.end; i++, m++)
-                            {
-                                brushMeshes[i] = generatedBrushMeshes[m];
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    var setting = settings[index];
-                    Dispose(ref setting);
-                    settings[index] = setting;
-                }
-            }
-        }
-
-        [BurstDiscard]
-        public JobHandle Schedule(NativeList<TorusSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var brushCounts = new NativeArray<int>(settings.Length, Allocator.TempJob);
-            var countBrushesJob = new PrepareAndCountBrushesJob
-            {
-                settings            = settings.AsArray(),
-                brushCounts         = brushCounts
-            };
-            var brushCountJobHandle = countBrushesJob.Schedule(settings, 8);
-            var allocateBrushesJob = new AllocateBrushesJob
-            {
-                brushCounts = brushCounts,
-                ranges      = ranges.AsArray(),
-                brushMeshes = brushMeshes
-            };
-            var allocateBrushesJobHandle = allocateBrushesJob.Schedule(brushCountJobHandle);
-            var createJob = new CreateBrushesJob
-            { 
-                settings            = settings.AsArray(),
-                ranges              = ranges.AsArray(),
-                brushMeshes         = brushMeshes.AsDeferredJobArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray()
-            };
-            var createJobHandle = createJob.Schedule(settings, 8, allocateBrushesJobHandle);
-            return brushCounts.Dispose(createJobHandle);
-        }
-
-        public static void Dispose(ref TorusSettings settings)
-        {
-        }
-
         public int PrepareAndCountRequiredBrushMeshes(ref TorusSettings settings)
         {
             return settings.horizontalSegments;
         }
 
-        public static int PrepareAndCountRequiredBrushMeshes_(ref TorusSettings settings)
-        {
-            return settings.horizontalSegments;
-        }
-
-        [BurstCompile()]
-        public static bool GenerateMesh(TorusSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateMesh(ref TorusSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
             using (var vertices = BrushMeshFactory.GenerateTorusVertices(settings.outerDiameter,
                                                                          settings.tubeWidth,
@@ -175,7 +57,7 @@ namespace Chisel.Core
                 if (!BrushMeshFactory.GenerateTorus(brushMeshes,
                                                     in vertices,
                                                     settings.verticalSegments,
-                                                    settings.horizontalSegments,
+                                                    settings.horizontalSegments, 
                                                     in surfaceDefinitionBlob,
                                                     Allocator.Persistent))
                 {
@@ -190,8 +72,9 @@ namespace Chisel.Core
             }
         }
 
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch, TorusSettings settings) { }
+        public void Dispose(ref TorusSettings settings) {}
+
+        public void FixupOperations(CSGTreeBranch branch, TorusSettings settings) { }        
     }
 
     [Serializable]

@@ -40,31 +40,7 @@ namespace Chisel.Core
     public struct ChiselStadiumGenerator : IChiselBrushTypeGenerator<StadiumSettings>
     {
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<StadiumSettings> settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
-
-            public void Execute(int index)
-            {
-                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(NativeList<StadiumSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var job = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray(),
-                brushMeshes         = brushMeshes.AsArray()
-            };
-            return job.Schedule(settings, 8);
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(StadiumSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(StadiumSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateStadium(settings.width, settings.height, settings.length,
                                                   settings.topLength, settings.topSides,
@@ -133,47 +109,11 @@ namespace Chisel.Core
             settings.bottomSides	= math.max(settings.bottomSides, 1);
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateStadiumJob : IJob
-        {
-            public StadiumSettings settings;
-
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-            
-            [NoAlias]
-            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
-
-            public void Execute()
-            {
-                if (!BrushMeshFactory.GenerateStadium(settings.width, settings.height, settings.length,
-                                                      settings.topLength, settings.topSides,
-                                                      settings.bottomLength, settings.bottomSides,
-                                                      in surfaceDefinitionBlob, 
-                                                      out var newBrushMesh, 
-                                                      Allocator.Persistent))
-                    brushMesh.Value = default;
-                else
-                    brushMesh.Value = newBrushMesh;
-            }
-        }
-
         public StadiumSettings GenerateSettings()
         {
             return settings;
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createHemisphereJob = new CreateStadiumJob
-            {
-                settings                = settings,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMesh               = brushMeshRef
-            };
-            return createHemisphereJob.Schedule();
-        }
 
         #region OnEdit
         //

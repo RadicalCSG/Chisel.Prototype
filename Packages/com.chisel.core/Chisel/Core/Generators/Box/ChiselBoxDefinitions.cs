@@ -13,31 +13,7 @@ namespace Chisel.Core
     public struct ChiselBoxGenerator : IChiselBrushTypeGenerator<MinMaxAABB>
     {
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<MinMaxAABB>                                          settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
-
-            public void Execute(int index)
-            {
-                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(NativeList<MinMaxAABB> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var job = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray(),
-                brushMeshes         = brushMeshes.AsArray()
-            };
-            return job.Schedule(settings, 8);
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(MinMaxAABB bounds, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(MinMaxAABB bounds, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
                                             in surfaceDefinitionBlob,
@@ -108,44 +84,8 @@ namespace Chisel.Core
             bounds.Max = math.max(originalBox.Min, originalBox.Max);
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateBoxJob : IJob
-        {
-            public MinMaxAABB                                           bounds;
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition>    surfaceDefinitionBlob;
-            
-            [NoAlias]
-            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
+        public MinMaxAABB GenerateSettings() { return bounds; }
 
-            public void Execute()
-            {
-                if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
-                                                in surfaceDefinitionBlob,
-                                                out var newBrushMesh,
-                                                Allocator.Persistent))
-                    brushMesh.Value = default;
-                else
-                    brushMesh.Value = newBrushMesh;
-            }
-        }
-
-        public MinMaxAABB GenerateSettings()
-        {
-            return bounds;
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createBoxJob = new CreateBoxJob
-            {
-                bounds                  = bounds,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMesh               = brushMeshRef
-            };
-            return createBoxJob.Schedule();
-        }
 
         public void OnEdit(IChiselHandles handles)
         {

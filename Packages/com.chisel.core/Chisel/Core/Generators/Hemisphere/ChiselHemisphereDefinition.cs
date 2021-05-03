@@ -23,55 +23,7 @@ namespace Chisel.Core
     public struct ChiselHemisphereGenerator : IChiselBrushTypeGenerator<HemisphereSettings>
     {
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<HemisphereSettings> settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
-
-            public void Execute(int index)
-            {
-                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(NativeList<HemisphereSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var job = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray(),
-                brushMeshes         = brushMeshes.AsArray()
-            };
-            return job.Schedule(settings, 8);
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushJob : IJob
-        {
-            public HemisphereSettings settings;
-            [NoAlias, ReadOnly] public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-            [NoAlias] public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
-
-            public void Execute()
-            {
-                brushMesh.Value = GenerateMesh(settings, surfaceDefinitionBlob, Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(HemisphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef)
-        {
-            var job = new CreateBrushJob
-            {
-                settings = settings,
-                surfaceDefinitionBlob = surfaceDefinitionBlob,
-                brushMesh = brushMeshRef
-            };
-            return job.Schedule();
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(HemisphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(HemisphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateHemisphere(settings.diameterXYZ,
                                                      settings.rotation, // TODO: useless?
@@ -123,48 +75,8 @@ namespace Chisel.Core
             settings.verticalSegments	= math.max(settings.verticalSegments, 1);
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateHemisphereJob : IJob
-        {
-            public HemisphereSettings settings;
+        public HemisphereSettings GenerateSettings() { return settings; }
 
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-            
-            [NoAlias]
-            public NativeReference<BlobAssetReference<BrushMeshBlob>>   brushMesh;
-
-            public void Execute()
-            {
-                if (!BrushMeshFactory.GenerateHemisphere(settings.diameterXYZ,
-                                                         settings.rotation, // TODO: useless?
-                                                         settings.horizontalSegments,
-                                                         settings.verticalSegments, 
-                                                         in surfaceDefinitionBlob,
-                                                         out var newBrushMesh, 
-                                                         Allocator.Persistent))
-                    brushMesh.Value = default;
-                else
-                    brushMesh.Value = newBrushMesh;
-            }
-        }
-
-        public HemisphereSettings GenerateSettings()
-        {
-            return settings;
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createHemisphereJob = new CreateHemisphereJob
-            {
-                settings                = settings,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMesh               = brushMeshRef
-            };
-            return createHemisphereJob.Schedule();
-        }
 
         #region OnEdit
         //

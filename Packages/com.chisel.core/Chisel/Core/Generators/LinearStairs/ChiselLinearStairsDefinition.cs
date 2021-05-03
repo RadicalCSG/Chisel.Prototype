@@ -119,118 +119,7 @@ namespace Chisel.Core
 
     public struct ChiselLinearStairsGenerator : IChiselBranchTypeGenerator<LinearStairsSettings>
     {
-        [BurstCompile()]
-        unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias] public NativeArray<LinearStairsSettings>  settings;
-            [NoAlias, WriteOnly] public NativeArray<int>        brushCounts;
-
-            public void Execute(int index)
-            {
-                var setting = settings[index];
-                brushCounts[index] = PrepareAndCountRequiredBrushMeshes_(ref setting);
-                settings[index] = setting;
-            }
-        }
-
-        [BurstCompile()]
-        unsafe struct AllocateBrushesJob : IJob
-        {
-            [NoAlias, ReadOnly] public NativeArray<int> brushCounts;
-            [NoAlias, WriteOnly] public NativeArray<Range> ranges;
-            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes;
-
-            public void Execute()
-            {
-                var totalRequiredBrushCount = 0;
-                for (int i = 0; i < brushCounts.Length; i++)
-                {
-                    var length = brushCounts[i];
-                    var start = totalRequiredBrushCount;
-                    var end = start + length;
-                    ranges[i] = new Range { start = start, end = end };
-                    totalRequiredBrushCount += length;
-                }
-                brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
-            }
-        }
-
-        [BurstCompile()]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<LinearStairsSettings>                settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
-            [NoAlias] public NativeArray<Range> ranges;
-            [NativeDisableParallelForRestriction]
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
-
-            public void Execute(int index)
-            {
-                try
-                {
-                    var range = ranges[index];
-                    var requiredSubMeshCount = range.Length;
-                    if (requiredSubMeshCount != 0)
-                    {
-                        using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
-                        {
-                            generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
-                            if (!GenerateMesh(settings[index], surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
-                            {
-                                ranges[index] = new Range { start = 0, end = 0 };
-                                return;
-                            }
-                            
-                            Debug.Assert(requiredSubMeshCount == generatedBrushMeshes.Length);
-                            if (requiredSubMeshCount != generatedBrushMeshes.Length)
-                                throw new InvalidOperationException();
-                            for (int i = range.start, m=0; i < range.end; i++,m++)
-                            {
-                                brushMeshes[i] = generatedBrushMeshes[m];
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    Dispose(settings[index]);
-                }
-            }
-        }
-
-        [BurstDiscard]
-        public JobHandle Schedule(NativeList<LinearStairsSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var brushCounts = new NativeArray<int>(settings.Length, Allocator.TempJob);
-            var countBrushesJob = new PrepareAndCountBrushesJob
-            {
-                settings            = settings.AsArray(),
-                brushCounts         = brushCounts
-            };
-            var brushCountJobHandle = countBrushesJob.Schedule(settings, 8);
-            var allocateBrushesJob = new AllocateBrushesJob
-            {
-                brushCounts         = brushCounts,
-                ranges              = ranges.AsArray(),
-                brushMeshes         = brushMeshes
-            };
-            var allocateBrushesJobHandle = allocateBrushesJob.Schedule(brushCountJobHandle);
-            var createJob = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                ranges              = ranges.AsArray(),
-                brushMeshes         = brushMeshes.AsDeferredJobArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray()
-            };
-            var createJobHandle = createJob.Schedule(settings, 8, allocateBrushesJobHandle);
-            return brushCounts.Dispose(createJobHandle);
-        }
-
-        public static void Dispose(LinearStairsSettings settings)
-        {
-        }
-
-        [BurstCompile()]
+        [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes(ref LinearStairsSettings settings)
         {
             var size = settings.BoundsSize;
@@ -249,25 +138,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile()]
-        public static int PrepareAndCountRequiredBrushMeshes_(ref LinearStairsSettings settings)
-        {
-            var size = settings.BoundsSize;
-            if (math.any(size == 0))
-                return 0;
-
-            var description = new BrushMeshFactory.LineairStairsData(settings.bounds,
-                                                                        settings.stepHeight, settings.stepDepth,
-                                                                        settings.treadHeight,
-                                                                        settings.nosingDepth, settings.nosingWidth,
-                                                                        settings.plateauHeight,
-                                                                        settings.riserType, settings.riserDepth,
-                                                                        settings.leftSide, settings.rightSide,
-                                                                        settings.sideWidth, settings.sideHeight, settings.sideDepth);
-            return description.subMeshCount;
-        }
-
-        [BurstCompile()]
-        public static bool GenerateMesh(LinearStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateMesh(ref LinearStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
             var description = new BrushMeshFactory.LineairStairsData(settings.bounds,
                                                                         settings.stepHeight, settings.stepDepth,
@@ -293,6 +164,9 @@ namespace Chisel.Core
             }
             return true;
         }
+
+        public void Dispose(ref LinearStairsSettings settings) {}
+
 
         [BurstDiscard]
         public void FixupOperations(CSGTreeBranch branch, LinearStairsSettings settings) { }

@@ -63,31 +63,7 @@ namespace Chisel.Core
     public struct ChiselCapsuleGenerator : IChiselBrushTypeGenerator<CapsuleSettings>
     {
         [BurstCompile(CompileSynchronously = true)]
-        unsafe struct CreateBrushesJob : IJobParallelForDefer
-        {
-            [NoAlias, ReadOnly] public NativeArray<CapsuleSettings>                                     settings;
-            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>>   surfaceDefinitions;
-            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>                  brushMeshes;
-
-            public void Execute(int index)
-            {
-                brushMeshes[index] = GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
-            }
-        }
-
-        public JobHandle Schedule(NativeList<CapsuleSettings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes)
-        {
-            var job = new CreateBrushesJob
-            {
-                settings            = settings.AsArray(),
-                surfaceDefinitions  = surfaceDefinitions.AsArray(),
-                brushMeshes         = brushMeshes.AsArray()
-            };
-            return job.Schedule(settings, 8);
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public static BlobAssetReference<BrushMeshBlob> GenerateMesh(CapsuleSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(CapsuleSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateCapsule(in settings,
                                                   in surfaceDefinitionBlob,
@@ -164,46 +140,7 @@ namespace Chisel.Core
         }
         #endregion
 
-
-        [BurstCompile(CompileSynchronously = true)]
-        struct CreateCapsuleJob : IJob
-        {
-            public CapsuleSettings settings;
-
-            [NoAlias, ReadOnly]
-            public BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob;
-
-            [NoAlias]
-            public NativeReference<BlobAssetReference<BrushMeshBlob>> brushMesh;
-
-            public void Execute()
-            {
-                if (!BrushMeshFactory.GenerateCapsule(in settings,
-                                                      in surfaceDefinitionBlob,
-                                                      out var newBrushMesh,
-                                                      Allocator.Persistent))
-                    brushMesh.Value = default;
-                else
-                    brushMesh.Value = newBrushMesh;
-            }
-        }
-
-        public CapsuleSettings GenerateSettings()
-        {
-            return settings;
-        }
-
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            var createHemisphereJob = new CreateCapsuleJob
-            {
-                settings                = settings,
-                surfaceDefinitionBlob   = surfaceDefinitionBlob,
-                brushMesh               = brushMeshRef
-            };
-            return createHemisphereJob.Schedule();
-        }
+        public CapsuleSettings GenerateSettings() { return settings; }
 
 
         #region OnEdit

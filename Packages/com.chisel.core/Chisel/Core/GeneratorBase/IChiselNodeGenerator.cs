@@ -29,8 +29,6 @@ namespace Chisel.Core
         }
     }
 
-
-
     public interface IChiselNodeGenerator
     {
         int RequiredSurfaceCount { get; }
@@ -47,29 +45,23 @@ namespace Chisel.Core
     public interface IChiselBrushTypeGenerator<Settings>
         where Settings : unmanaged
     {
-        JobHandle Schedule(NativeList<Settings> settings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes);
+        BlobAssetReference<BrushMeshBlob> GenerateMesh(Settings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator);
     }
-
 
     public interface IChiselBrushGenerator<Generator, Settings> : IChiselNodeGenerator
         where Settings : unmanaged
         where Generator : IChiselBrushTypeGenerator<Settings>
     {
         Settings GenerateSettings();
-        JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob);
     }
 
-    public interface IChiselBranchTypeGenerator_<Settings>
+    public interface IChiselBranchTypeGenerator<Settings>
         where Settings : unmanaged
-    {
+    {   
         int PrepareAndCountRequiredBrushMeshes(ref Settings settings);
-    }
+        bool GenerateMesh(ref Settings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator);
+        void Dispose(ref Settings settings);
 
-    public interface IChiselBranchTypeGenerator<Settings> : IChiselBranchTypeGenerator_<Settings>
-        where Settings : unmanaged
-    {
-        JobHandle Schedule(NativeList<Settings> generatorSettings, NativeList<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions, NativeList<Range> ranges, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes);
-    
         // Temporary workaround
         void FixupOperations(CSGTreeBranch branch, Settings settings);
     }

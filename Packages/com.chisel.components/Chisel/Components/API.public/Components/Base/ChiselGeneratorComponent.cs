@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using AOT;
 using Chisel.Core;
@@ -131,12 +132,33 @@ namespace Chisel.Components
             generatorSettings .Add(settings);
             nodes             .Add(node);
         }
+        
+        [BurstCompile(CompileSynchronously = true)]
+        unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<Settings> settings;
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshes;
+
+            public void Execute(int index)
+            {
+                var imp = new Generator();
+                brushMeshes[index] = imp.GenerateMesh(settings[index], surfaceDefinitions[index], Allocator.Persistent);
+            }
+        }
+
 
         public JobHandle Schedule()
         {
             brushMeshes.Resize(generatorSettings.Length, NativeArrayOptions.ClearMemory);
-            previousJobHandle = generator.Schedule(generatorSettings, surfaceDefinitions, brushMeshes);
-            return previousJobHandle;
+            
+            var job = new CreateBrushesJob
+            {
+                settings            = generatorSettings.AsArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray(),
+                brushMeshes         = brushMeshes.AsArray()
+            };
+            return job.Schedule(generatorSettings, 8);
         }
 
         public void Assign()
@@ -198,11 +220,118 @@ namespace Chisel.Components
             nodes             .Add(node);
         }
 
+        [BurstCompile]
+        public unsafe struct PrepareAndCountBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias] public NativeArray<Settings>          settings;
+            [NoAlias, WriteOnly] public NativeArray<int>    brushCounts;
+
+            public unsafe void Execute(int index)
+            {
+                var setting = settings[index];
+                var generator = new Generator();
+                brushCounts[index] = generator.PrepareAndCountRequiredBrushMeshes(ref setting);
+                settings[index] = setting;
+            }
+        }
+
+        [BurstCompile]
+        public unsafe struct AllocateBrushesJob : IJob
+        {
+            [NoAlias, ReadOnly] public NativeArray<int>                     brushCounts;
+            [NoAlias, WriteOnly] public NativeArray<Range>                  ranges;
+            [NoAlias] public NativeList<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
+
+            public void Execute()
+            {
+                var totalRequiredBrushCount = 0;
+                for (int i = 0; i < brushCounts.Length; i++)
+                {
+                    var length = brushCounts[i];
+                    var start = totalRequiredBrushCount;
+                    var end = start + length;
+                    ranges[i] = new Range { start = start, end = end };
+                    totalRequiredBrushCount += length;
+                }
+                brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
+            }
+        }
+
+        [BurstCompile]
+        public unsafe struct CreateBrushesJob : IJobParallelForDefer
+        {
+            [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<NativeChiselSurfaceDefinition>> surfaceDefinitions;
+            [NoAlias] public NativeArray<Range>                                         ranges;
+            [NoAlias] public NativeArray<Settings>                                      settings;
+            [NativeDisableParallelForRestriction]
+            [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>  brushMeshes;
+
+            public void Execute(int index)
+            {
+                var imp = new Generator();
+                try
+                {
+                    var range = ranges[index];
+                    var requiredSubMeshCount = range.Length;
+                    if (requiredSubMeshCount != 0)
+                    {
+                        using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp))
+                        {
+                            generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
+
+                            var setting = settings[index];
+                            var surfaceDefinition = surfaceDefinitions[index];
+                            if (!imp.GenerateMesh(ref setting, surfaceDefinition, generatedBrushMeshes, Allocator.Persistent))
+                            {
+                                ranges[index] = new Range { start = 0, end = 0 };
+                                return;
+                            }
+                            
+                            Debug.Assert(requiredSubMeshCount == generatedBrushMeshes.Length);
+                            if (requiredSubMeshCount != generatedBrushMeshes.Length)
+                                throw new InvalidOperationException();
+                            for (int i = range.start, m = 0; i < range.end; i++, m++)
+                            {
+                                brushMeshes[i] = generatedBrushMeshes[m];
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    var setting = settings[index];
+                    imp.Dispose(ref setting);
+                    settings[index] = setting;
+                }
+            }
+        }
+        
         public JobHandle Schedule()
         {
             ranges.Resize(generatorSettings.Length, NativeArrayOptions.ClearMemory);
-            previousJobHandle = generator.Schedule(generatorSettings, surfaceDefinitions, ranges, brushMeshes);
-            return previousJobHandle;
+            var brushCounts = new NativeArray<int>(generatorSettings.Length, Allocator.TempJob);
+            var countBrushesJob = new PrepareAndCountBrushesJob
+            {
+                settings            = generatorSettings.AsArray(),
+                brushCounts         = brushCounts
+            };
+            var brushCountJobHandle = countBrushesJob.Schedule(generatorSettings, 8);
+            var allocateBrushesJob = new AllocateBrushesJob
+            {
+                brushCounts         = brushCounts,
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes
+            };
+            var allocateBrushesJobHandle = allocateBrushesJob.Schedule(brushCountJobHandle);
+            var createJob = new CreateBrushesJob
+            {
+                settings            = generatorSettings.AsArray(),
+                ranges              = ranges.AsArray(),
+                brushMeshes         = brushMeshes.AsDeferredJobArray(),
+                surfaceDefinitions  = surfaceDefinitions.AsArray()
+            };
+            var createJobHandle = createJob.Schedule(generatorSettings, 8, allocateBrushesJobHandle);
+            return brushCounts.Dispose(createJobHandle);
         }
 
         public void Assign()
