@@ -15,12 +15,25 @@ namespace Chisel.Core
 {
     [Serializable]
     [BurstCompile()]
-    public struct TorusSettings
+    public struct ChiselTorus : IBranchGenerator
     {
-        public const float kMinTubeDiameter = 0.1f;
+        public readonly static ChiselTorus DefaultValues = new ChiselTorus
+        {
+            tubeWidth           = 0.5f,
+            tubeHeight          = 0.5f,
+            outerDiameter       = 1.0f,
+            tubeRotation        = 0,
+            startAngle          = 0.0f,
+            totalAngle          = 360.0f,
+            horizontalSegments  = 8,
+            verticalSegments    = 8,
+            fitCircle           = true
+        };
+
+        // TODO: add scale the tube in y-direction (use transform instead?)
+        // TODO: add start/total angle of tube
 
         public float    outerDiameter;
-        public float    InnerDiameter { get { return math.max(0, outerDiameter - (tubeWidth * 2)); } set { tubeWidth = math.max(kMinTubeDiameter, (outerDiameter - InnerDiameter) * 0.5f); } }
         public float    tubeWidth;
         public float    tubeHeight;
         public float    tubeRotation;
@@ -32,103 +45,103 @@ namespace Chisel.Core
         [MarshalAs(UnmanagedType.U1)]
         public bool     fitCircle;
 
-    }
 
-    public struct ChiselTorusGenerator : IChiselBranchTypeGenerator<TorusSettings>
-    {
-        public int PrepareAndCountRequiredBrushMeshes(ref TorusSettings settings)
+        #region Properties
+
+        const float kMinTubeDiameter = 0.1f;
+
+        public float InnerDiameter { get { return math.max(0, outerDiameter - (tubeWidth * 2)); } set { tubeWidth = math.max(kMinTubeDiameter, (outerDiameter - InnerDiameter) * 0.5f); } }
+        #endregion
+
+        #region Generate
+        [BurstCompile]
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            return settings.horizontalSegments;
+            return horizontalSegments;
         }
 
-        public bool GenerateMesh(ref TorusSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        [BurstCompile]
+        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
-            using (var vertices = BrushMeshFactory.GenerateTorusVertices(settings.outerDiameter,
-                                                                         settings.tubeWidth,
-                                                                         settings.tubeHeight,
-                                                                         settings.tubeRotation,
-                                                                         settings.startAngle,
-                                                                         settings.totalAngle,
-                                                                         settings.verticalSegments,
-                                                                         settings.horizontalSegments,
-                                                                         settings.fitCircle,
-                                                                         Allocator.Temp))
+            using var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter,
+                                                                        tubeWidth,
+                                                                        tubeHeight,
+                                                                        tubeRotation,
+                                                                        startAngle,
+                                                                        totalAngle,
+                                                                        verticalSegments,
+                                                                        horizontalSegments,
+                                                                        fitCircle,
+                                                                        Allocator.Temp);
+            
+            if (!BrushMeshFactory.GenerateTorus(brushMeshes,
+                                                in vertices,
+                                                verticalSegments,
+                                                horizontalSegments,
+                                                in surfaceDefinitionBlob,
+                                                Allocator.Persistent))
             {
-                if (!BrushMeshFactory.GenerateTorus(brushMeshes,
-                                                    in vertices,
-                                                    settings.verticalSegments,
-                                                    settings.horizontalSegments, 
-                                                    in surfaceDefinitionBlob,
-                                                    Allocator.Persistent))
+                for (int i = 0; i < brushMeshes.Length; i++)
                 {
-                    for (int i = 0; i < brushMeshes.Length; i++)
-                    {
-                        if (brushMeshes[i].IsCreated)
-                            brushMeshes[i].Dispose();
-                    }
-                    return false;
+                    if (brushMeshes[i].IsCreated)
+                        brushMeshes[i].Dispose();
                 }
-                return true;
+                return false;
             }
+
+            return true;
         }
 
-        public void Dispose(ref TorusSettings settings) {}
+        [BurstCompile]
+        public void Dispose() { }
+        
+        [BurstDiscard]
+        public void FixupOperations(CSGTreeBranch branch) { }
+        #endregion
 
-        public void FixupOperations(CSGTreeBranch branch, TorusSettings settings) { }        
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 6; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
+
+        #region Validation
+        public void Validate()
+        {
+            tubeWidth			= math.max(tubeWidth,  kMinTubeDiameter);
+            tubeHeight			= math.max(tubeHeight, kMinTubeDiameter);
+            outerDiameter		= math.max(outerDiameter, tubeWidth * 2);
+
+            horizontalSegments	= math.max(horizontalSegments, 3);
+            verticalSegments	= math.max(verticalSegments, 3);
+
+            totalAngle			= math.clamp(totalAngle, 1, 360); // TODO: constants
+        }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselTorusDefinition : IChiselBranchGenerator<ChiselTorusGenerator, TorusSettings>
+    public struct ChiselTorusDefinition : ISerializedBranchGenerator<ChiselTorus>
     {
         public const string kNodeTypeName = "Torus";
 
-        public const int kDefaultHorizontalSegments = 8;
-        public const int kDefaultVerticalSegments = 8;
-
-        // TODO: add scale the tube in y-direction (use transform instead?)
-        // TODO: add start/total angle of tube
-
-        [HideFoldout] public TorusSettings settings;
+        [HideFoldout] public ChiselTorus settings;
 
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
-        {
-            // TODO: create constants
-            settings.tubeWidth = 0.5f;
-            settings.tubeHeight = 0.5f;
-            settings.outerDiameter = 1.0f;
-            settings.tubeRotation = 0;
-            settings.startAngle = 0.0f;
-            settings.totalAngle = 360.0f;
-            settings.horizontalSegments = kDefaultHorizontalSegments;
-            settings.verticalSegments = kDefaultVerticalSegments;
+        public void Reset() { settings = ChiselTorus.DefaultValues; }
 
-            settings.fitCircle = true;
-        }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
 
-        public int RequiredSurfaceCount { get { return 6; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        public void Validate() { settings.Validate(); }
 
-        public void Validate()
-        {
-            settings.tubeWidth			= math.max(settings.tubeWidth,  TorusSettings.kMinTubeDiameter);
-            settings.tubeHeight			= math.max(settings.tubeHeight, TorusSettings.kMinTubeDiameter);
-            settings.outerDiameter		= math.max(settings.outerDiameter, settings.tubeWidth * 2);
-
-            settings.horizontalSegments	= math.max(settings.horizontalSegments, 3);
-            settings.verticalSegments	= math.max(settings.verticalSegments, 3);
-
-            settings.totalAngle			= math.clamp(settings.totalAngle, 1, 360); // TODO: constants
-        }
-
-        public TorusSettings GenerateSettings()
-        {
-            return settings;
-        }
+        public ChiselTorus GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //

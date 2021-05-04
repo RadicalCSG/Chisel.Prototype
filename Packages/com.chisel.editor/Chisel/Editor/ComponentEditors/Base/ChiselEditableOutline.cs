@@ -18,7 +18,7 @@ namespace Chisel.Editors
     //       (but at the same time be careful to not over-engineer and make it too abstract)
     public class ChiselEditableOutline
     {
-        public ChiselEditableOutline(ChiselBrush brush)
+        public ChiselEditableOutline(ChiselBrushComponent brush)
         {
             this.brush = brush;
             this.brushMesh = new BrushMesh(this.brush.definition.brushOutline);
@@ -31,7 +31,7 @@ namespace Chisel.Editors
         const float kSoftEdgeDashSize           = 2.0f;
 
 
-        public ChiselBrush              brush;
+        public ChiselBrushComponent              brush;
         public BrushMesh                brushMesh;
         public ChiselTopologySelection  selection;
 

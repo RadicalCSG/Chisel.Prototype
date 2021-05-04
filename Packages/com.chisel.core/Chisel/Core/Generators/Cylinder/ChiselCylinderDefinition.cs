@@ -22,9 +22,31 @@ namespace Chisel.Core
         ConicalFrustum
     }
 
+    // TODO: in circle mode use max(radiusx,radiusz) instead of just radiusx => toggling from ellipsoid to circle will make more sense
+    // TODO: make handles snappable so we can snap circles to the grid
+    // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
+    //          the quad triangulation needs to be reversed (figure out how to detect this)
     [Serializable]
-    public struct CylinderSettings
+    public struct ChiselCylinder : IBrushGenerator
     {
+        public readonly static ChiselCylinder DefaultValues = new ChiselCylinder
+        {
+            topDiameterX        = 1.0f,
+            topDiameterZ        = 1.0f,
+            height              = 1.0f,
+
+            bottomDiameterX     = 1.0f,
+            bottomDiameterZ     = 1.0f,
+            bottomOffset        = 0.0f,
+
+            rotation            = 0.0f,
+            isEllipsoid         = false,
+            fitToBounds         = true,
+            sides               = 16,
+            smoothingGroup      = 1,
+            type                = CylinderShapeType.Cylinder
+        };
+
         #region Definition
         public CylinderShapeType type;
         public bool     isEllipsoid;
@@ -199,19 +221,16 @@ namespace Chisel.Core
             }
         }
         #endregion
-    }
 
-    public struct ChiselCylinderGenerator : IChiselBrushTypeGenerator<CylinderSettings>
-    {
         [BurstCompile(CompileSynchronously = true)]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(CylinderSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            var topDiameter     = new float2(settings.topDiameterX, settings.topDiameterZ);
-            var bottomDiameter  = new float2(settings.bottomDiameterX, settings.bottomDiameterZ);
+            var topDiameter     = new float2(topDiameterX, topDiameterZ);
+            var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
 
-            var topHeight = settings.height + settings.bottomOffset;
-            var bottomHeight = settings.bottomOffset;
-            switch (settings.type)
+            var topHeight = height + bottomOffset;
+            var bottomHeight = bottomOffset;
+            switch (type)
             {
                 case CylinderShapeType.ConicalFrustum:  break;
                 case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
@@ -219,7 +238,7 @@ namespace Chisel.Core
                 default: throw new NotImplementedException();
             }
 
-            if (!settings.isEllipsoid)
+            if (!isEllipsoid)
             {
                 topDiameter.y = topDiameter.x;
                 bottomDiameter.y = bottomDiameter.x;
@@ -227,52 +246,18 @@ namespace Chisel.Core
 
             if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter,    topHeight, 
                                                                 bottomDiameter, bottomHeight,
-                                                                settings.rotation, settings.sides, settings.fitToBounds, 
+                                                                rotation, sides, fitToBounds, 
                                                                 in surfaceDefinitionBlob, 
                                                                 out var newBrushMesh, 
                                                                 allocator))
                 return default;
             return newBrushMesh;
-        }
-    }
+        }    
+        
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 2 + sides; } }
 
-
-    // TODO: in circle mode use max(radiusx,radiusz) instead of just radiusx => toggling from ellipsoid to circle will make more sense
-    // TODO: make handles snappable so we can snap circles to the grid
-    // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
-    //          the quad triangulation needs to be reversed (figure out how to detect this)
-    [Serializable]
-    public struct ChiselCylinderDefinition : IChiselBrushGenerator<ChiselCylinderGenerator, CylinderSettings>
-    {
-        public const string kNodeTypeName = "Cylinder";
-
-        [HideFoldout] public CylinderSettings settings;
-
-        // TODO: show this in scene somehow
-        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
-        //public ChiselSurfaceDefinition surfaceDefinition;
-
-
-        public void Reset()
-        {
-            settings.topDiameterX = 1.0f;
-            settings.topDiameterZ = 1.0f;
-            settings.height = 1.0f;
-
-            settings.bottomDiameterX = 1.0f;
-            settings.bottomDiameterZ = 1.0f;
-            settings.bottomOffset = 0.0f;
-
-            settings.rotation = 0.0f;
-            settings.isEllipsoid = false;
-            settings.fitToBounds = true;
-            settings.sides = 16;
-            settings.smoothingGroup = 1;
-            settings.type = CylinderShapeType.Cylinder;
-        }
-
-        public int RequiredSurfaceCount { get { return 2 + settings.sides; } }
-
+        [BurstDiscard]
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             // Top plane
@@ -281,33 +266,53 @@ namespace Chisel.Core
             // Bottom plane
             surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
 
-            float radius = settings.topDiameterX * 0.5f;
-            float angle = (360.0f / settings.sides);
+            float radius = topDiameterX * 0.5f;
+            float angle = (360.0f / sides);
             float sideLength = (2 * math.sin(math.radians(angle / 2.0f))) * radius;
 
             // Side planes
-            for (int i = 2; i < 2 + settings.sides; i++)
+            for (int i = 2; i < 2 + sides; i++)
             {
                 var uv0 = UVMatrix.identity;
                 uv0.U.w = ((i - 2) + 0.5f) * sideLength;
                 // TODO: align with bottom
                 //uv0.V.w = 0.5f;
                 surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
-                surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = settings.smoothingGroup;
+                surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
             }
         }
 
+        [BurstDiscard]
         public void Validate()
         {
-            settings.topDiameterX = math.abs(settings.topDiameterX);
-            settings.topDiameterZ = math.abs(settings.topDiameterZ);
-            settings.bottomDiameterX = math.abs(settings.bottomDiameterX);
-            settings.bottomDiameterZ = math.abs(settings.bottomDiameterZ);
+            topDiameterX = math.abs(topDiameterX);
+            topDiameterZ = math.abs(topDiameterZ);
+            bottomDiameterX = math.abs(bottomDiameterX);
+            bottomDiameterZ = math.abs(bottomDiameterZ);
 
-            settings.sides = math.max(3, settings.sides);
+            sides = math.max(3, sides);
         }
 
-        public CylinderSettings GenerateSettings() { return settings; }
+    }
+
+    [Serializable]
+    public struct ChiselCylinderDefinition : ISerializedBrushGenerator<ChiselCylinder>
+    {
+        public const string kNodeTypeName = "Cylinder";
+
+        [HideFoldout] public ChiselCylinder settings;
+
+        // TODO: show this in scene somehow
+        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition surfaceDefinition;
+
+
+        public void Reset() { settings = ChiselCylinder.DefaultValues; }
+        public int RequiredSurfaceCount => settings.RequiredSurfaceCount; 
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
+        public void Validate() => settings.Validate(); 
+
+        public ChiselCylinder GetBrushGenerator() { return settings; }
 
 
         #region OnEdit

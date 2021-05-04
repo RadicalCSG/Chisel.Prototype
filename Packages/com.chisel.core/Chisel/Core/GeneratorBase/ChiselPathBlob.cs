@@ -62,7 +62,7 @@ namespace Chisel.Core
         // TODO: move somewhere else
         // From: https://forum.unity.com/threads/is-there-a-conversion-method-from-quaternion-to-euler.624007/#post-5805985
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static float3 GetQuaternionEulerAngles(quaternion rot)
+        public static float3 GetQuaternionEulerAngles(quaternion rot)
         {
             float4 q1 = rot.value;
             float sqw = q1.w * q1.w;

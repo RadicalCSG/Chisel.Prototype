@@ -12,70 +12,69 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct HemisphereSettings
+    public struct ChiselHemisphere : IBrushGenerator
     {
+        public readonly static ChiselHemisphere DefaultValues = new ChiselHemisphere
+        {
+            diameterXYZ		    = new float3(1.0f, 0.5f, 1.0f),
+            rotation			= 0.0f,
+            horizontalSegments	= 8,
+            verticalSegments	= 8
+        };
+
+
         [DistanceValue] public float3   diameterXYZ;
         public float                    rotation; // TODO: useless?
         public int                      horizontalSegments;
         public int                      verticalSegments;
-    }
-
-    public struct ChiselHemisphereGenerator : IChiselBrushTypeGenerator<HemisphereSettings>
-    {
+        
         [BurstCompile(CompileSynchronously = true)]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(HemisphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateHemisphere(settings.diameterXYZ,
-                                                     settings.rotation, // TODO: useless?
-                                                     settings.horizontalSegments,
-                                                     settings.verticalSegments,
+            if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ,
+                                                     rotation, // TODO: useless?
+                                                     horizontalSegments,
+                                                     verticalSegments,
                                                      in surfaceDefinitionBlob,
                                                      out var newBrushMesh,
                                                      allocator))
                 return default;
             return newBrushMesh;
         }
-    }
-
-    [Serializable]
-    public struct ChiselHemisphereDefinition : IChiselBrushGenerator<ChiselHemisphereGenerator, HemisphereSettings>
-    {
-        public const string kNodeTypeName = "Hemisphere";
-
-        public const float				kMinDiameter				= 0.01f;
-        public const float              kDefaultRotation            = 0.0f;
-        public const int				kDefaultHorizontalSegments  = 8;
-        public const int				kDefaultVerticalSegments    = 8;
-        public static readonly float3   kDefaultDiameter			= new Vector3(1.0f, 0.5f, 1.0f);
-
-        [HideFoldout] public HemisphereSettings settings;
-
-        //[NamedItems("Bottom", overflow = "Side {0}")]
-        //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset()
-        {
-            settings.diameterXYZ			= kDefaultDiameter;
-            settings.rotation			= kDefaultRotation;
-            settings.horizontalSegments	= kDefaultHorizontalSegments;
-            settings.verticalSegments	= kDefaultVerticalSegments;
-        }
 
         public int RequiredSurfaceCount { get { return 6; } }
 
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
 
+        public const float kMinDiameter = 0.01f;
+
         public void Validate()
         {
-            settings.diameterXYZ.x = math.max(kMinDiameter, math.abs(settings.diameterXYZ.x));
-            settings.diameterXYZ.y = math.max(0,            math.abs(settings.diameterXYZ.y)) * (settings.diameterXYZ.y < 0 ? -1 : 1);
-            settings.diameterXYZ.z = math.max(kMinDiameter, math.abs(settings.diameterXYZ.z));
+            diameterXYZ.x = math.max(kMinDiameter, math.abs(diameterXYZ.x));
+            diameterXYZ.y = math.max(0,            math.abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
+            diameterXYZ.z = math.max(kMinDiameter, math.abs(diameterXYZ.z));
 
-            settings.horizontalSegments	= math.max(settings.horizontalSegments, 3);
-            settings.verticalSegments	= math.max(settings.verticalSegments, 1);
+            horizontalSegments	= math.max(horizontalSegments, 3);
+            verticalSegments	= math.max(verticalSegments, 1);
         }
+    }
 
-        public HemisphereSettings GenerateSettings() { return settings; }
+    [Serializable]
+    public struct ChiselHemisphereDefinition : ISerializedBrushGenerator<ChiselHemisphere>
+    {
+        public const string kNodeTypeName = "Hemisphere";
+
+        [HideFoldout] public ChiselHemisphere settings;
+
+        //[NamedItems("Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        public void Reset() { settings = ChiselHemisphere.DefaultValues; }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition); 
+        public void Validate() => settings.Validate(); 
+
+        public ChiselHemisphere GetBrushGenerator() { return settings; }
 
 
         #region OnEdit

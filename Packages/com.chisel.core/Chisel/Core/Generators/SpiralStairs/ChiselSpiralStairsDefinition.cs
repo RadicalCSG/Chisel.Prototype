@@ -13,19 +13,36 @@ using Color   = UnityEngine.Color;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct SpiralStairsSettings
+    public struct ChiselSpiralStairs : IBranchGenerator
     {
+        public readonly static ChiselSpiralStairs DefaultValues = new ChiselSpiralStairs
+        {
+            origin		    = float3.zero,
+
+            stepHeight	    = 0.20f,                          
+
+            treadHeight     = 0.02f,
+            nosingDepth	    = 0.02f,
+            nosingWidth	    = 0.01f,
+
+            innerDiameter   = 0.25f,
+            outerDiameter   = 2,
+            height		    = 1,
+
+            startAngle	    = 0,
+            rotation	    = 180,
+
+            innerSegments   = 8,
+            outerSegments   = 8,
+
+            riserType	    = StairsRiserType.ThickRiser,
+            riserDepth	    = 0.03f,
+
+            bottomSmoothingGroup    = 0
+        };
+
         // TODO: expose this to user
         const int smoothSubDivisions = 3;
-
-        public const int kTreadTopSurface       = 0;
-        public const int kTreadBottomSurface    = 1;
-        public const int kTreadFrontSurface     = 2;
-        public const int kTreadBackSurface      = 3;
-        public const int kRiserFrontSurface     = 4;
-        public const int kRiserBackSurface      = 5;
-        public const int kInnerSurface          = 6;
-        public const int kOuterSurface          = 7;
 
         [DistanceValue] public float3   origin;
         [DistanceValue] public float	height;
@@ -44,6 +61,7 @@ namespace Chisel.Core
 
         public uint					    bottomSmoothingGroup;
 
+        #region Properties
 
         const float kSmudgeValue = 0.0001f;
 
@@ -79,22 +97,20 @@ namespace Chisel.Core
 
         internal bool HaveRiser => riserType != StairsRiserType.None;
         internal int TreadStart => !HaveRiser ? 0 : RiserSubMeshCount;
+        #endregion
 
-    }
-
-    public struct ChiselSpiralStairsGenerator : IChiselBranchTypeGenerator<SpiralStairsSettings>
-    {
-        [BurstCompile()]
-        public int PrepareAndCountRequiredBrushMeshes(ref SpiralStairsSettings settings)
+        #region Generate
+        [BurstCompile]
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            return settings.RequiredSubMeshCount;
+            return RequiredSubMeshCount;
         }
 
-        [BurstCompile()]
-        public bool GenerateMesh(ref SpiralStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        [BurstCompile]
+        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes,
-                                                       ref settings,
+                                                       ref this,
                                                        in surfaceDefinitionBlob,
                                                        Allocator.Persistent))
             {
@@ -108,35 +124,87 @@ namespace Chisel.Core
             return true;
         }
 
-        public void Dispose(ref SpiralStairsSettings settings)
-        {
-        }
+        public void Dispose() {}
 
         [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch, SpiralStairsSettings createSpiralStairsJob)
+        public void FixupOperations(CSGTreeBranch branch)
         {
             // TODO: somehow make this possible to set up from within the job without requiring the treeBranches/treeBrushes
             {
-                var subMeshIndex = createSpiralStairsJob.TreadStart - createSpiralStairsJob.CylinderSubMeshCount;
+                var subMeshIndex = TreadStart - CylinderSubMeshCount;
                 var brush = (CSGTreeBrush)branch[subMeshIndex];
                 brush.Operation = CSGOperationType.Intersecting;
 
-                subMeshIndex = createSpiralStairsJob.RequiredSubMeshCount - createSpiralStairsJob.CylinderSubMeshCount;
+                subMeshIndex = RequiredSubMeshCount - CylinderSubMeshCount;
                 brush = (CSGTreeBrush)branch[subMeshIndex];
                 brush.Operation = CSGOperationType.Intersecting;
             }
 
-            if (createSpiralStairsJob.HaveInnerCylinder)
+            if (HaveInnerCylinder)
             {
-                var subMeshIndex = createSpiralStairsJob.TreadStart - 1;
+                var subMeshIndex = TreadStart - 1;
                 var brush = (CSGTreeBrush)branch[subMeshIndex];
                 brush.Operation = CSGOperationType.Subtractive;
 
-                subMeshIndex = createSpiralStairsJob.RequiredSubMeshCount - 1;
+                subMeshIndex = RequiredSubMeshCount - 1;
                 brush = (CSGTreeBrush)branch[subMeshIndex];
                 brush.Operation = CSGOperationType.Subtractive;
             }
         }
+        #endregion
+
+        #region Surfaces
+        public enum SurfaceSides : byte
+        { 
+            TreadTopSurface       = 0,
+            TreadBottomSurface    = 1,
+            TreadFrontSurface     = 2,
+            TreadBackSurface      = 3,
+            RiserFrontSurface     = 4,
+            RiserBackSurface      = 5,
+            InnerSurface          = 6,
+            OuterSurface          = 7,
+
+            TotalSides
+        }
+
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 8; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
+        
+        #region Validation
+        public const float	kMinStepHeight			= 0.01f;
+        public const float  kMinStairsDepth         = 0.1f;
+        public const float  kMinRiserDepth          = 0.01f;
+        public const float	kMinRotation			= 15;
+        public const int    kMinSegments            = 3;
+        public const float	kMinInnerDiameter		= 0.00f;
+        public const float	kMinOuterDiameter		= 0.01f;
+
+        public void Validate()
+        {
+            stepHeight      = math.max(kMinStepHeight, stepHeight);
+
+            innerDiameter   = math.min(outerDiameter - kMinStairsDepth, innerDiameter);
+            innerDiameter   = math.max(kMinInnerDiameter, innerDiameter);
+            outerDiameter   = math.max(innerDiameter + kMinStairsDepth, outerDiameter);
+            outerDiameter   = math.max(kMinOuterDiameter, outerDiameter);
+            height          = math.max(stepHeight, math.abs(height)) * (height < 0 ? -1 : 1);
+            treadHeight     = math.max(0, treadHeight);
+            nosingDepth     = math.max(0, nosingDepth);
+            nosingWidth     = math.max(0, nosingWidth);
+
+            riserDepth      = math.max(kMinRiserDepth, riserDepth);
+
+            rotation        = math.max(kMinRotation, math.abs(rotation)) * (rotation < 0 ? -1 : 1);
+
+            innerSegments   = math.max(kMinSegments, innerSegments);
+            outerSegments   = math.max(kMinSegments, outerSegments);
+        }
+        #endregion
     }
 
     // https://www.archdaily.com/896537/how-to-calculate-spiral-staircase-dimensions-and-designs
@@ -145,94 +213,22 @@ namespace Chisel.Core
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DTs7Bc10UxKpWM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DPwskqkaN7e_wM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     [Serializable]
-    public struct ChiselSpiralStairsDefinition : IChiselBranchGenerator<ChiselSpiralStairsGenerator, SpiralStairsSettings>
+    public struct ChiselSpiralStairsDefinition : ISerializedBranchGenerator<ChiselSpiralStairs>
     {
         public const string kNodeTypeName = "Spiral Stairs";
 
-
-        public const float	kMinStepHeight			= 0.01f;
-        public const float  kMinStairsDepth         = 0.1f;
-        public const float  kMinRiserDepth          = 0.01f;
-        public const float	kMinRotation			= 15;
-        public const int    kMinSegments            = 3;
-        public const float	kMinInnerDiameter		= 0.00f;
-        public const float	kMinOuterDiameter		= 0.01f;
-        
-        public const float	kDefaultStepHeight      = 0.20f;
-        public const float	kDefaultTreadHeight     = 0.02f;
-        public const float	kDefaultNosingDepth     = 0.02f;
-        public const float	kDefaultNosingWidth     = 0.01f;
-
-        public const float	kDefaultInnerDiameter	= 0.25f;
-        public const float	kDefaultOuterDiameter	= 2;
-        public const float	kDefaultHeight          = 1;
-        
-        public const int	kDefaultInnerSegments	= 8;
-        public const int	kDefaultOuterSegments	= 16;
-        
-        public const float	kDefaultStartAngle		= 0;
-        public const float	kDefaultRotation		= 180;
-
-        public const float  kDefaultRiserDepth      = 0.03f;
-
-        [HideFoldout] public SpiralStairsSettings settings;
+        [HideFoldout] public ChiselSpiralStairs settings;
 
 
-        public void Reset()
-        {
-            settings.origin		    = float3.zero;
+        public void Reset() { settings = ChiselSpiralStairs.DefaultValues; }
 
-            settings.stepHeight	    = kDefaultStepHeight;
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
 
-            settings.treadHeight     = kDefaultTreadHeight;
-            settings.nosingDepth	    = kDefaultNosingDepth;
-            settings.nosingWidth	    = kDefaultNosingWidth;
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
 
-            settings.innerDiameter   = kDefaultInnerDiameter;
-            settings.outerDiameter   = kDefaultOuterDiameter;
-            settings.height		    = kDefaultHeight;
+        public void Validate() { settings.Validate(); }
 
-            settings.startAngle	    = kDefaultStartAngle;
-            settings.rotation	    = kDefaultRotation;
-
-            settings.innerSegments   = kDefaultInnerSegments;
-            settings.outerSegments   = kDefaultOuterSegments;
-
-            settings.riserType	    = StairsRiserType.ThickRiser;
-            settings.riserDepth	    = kDefaultRiserDepth;
-
-            settings.bottomSmoothingGroup    = 0;
-        }
-
-        public int RequiredSurfaceCount { get { return 8; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
-
-        public void Validate()
-        {
-            settings.stepHeight		= math.max(kMinStepHeight, settings.stepHeight);
-
-            settings.innerDiameter	= math.min(settings.outerDiameter - kMinStairsDepth, settings.innerDiameter);
-            settings.innerDiameter	= math.max(kMinInnerDiameter, settings.innerDiameter);
-            settings.outerDiameter	= math.max(settings.innerDiameter + kMinStairsDepth, settings.outerDiameter);
-            settings.outerDiameter	= math.max(kMinOuterDiameter, settings.outerDiameter);
-            settings.height			= math.max(settings.stepHeight, math.abs(settings.height)) * (settings.height < 0 ? -1 : 1);
-            settings.treadHeight	= math.max(0, settings.treadHeight);
-            settings.nosingDepth	= math.max(0, settings.nosingDepth);
-            settings.nosingWidth	= math.max(0, settings.nosingWidth);
-
-            settings.riserDepth		= math.max(kMinRiserDepth, settings.riserDepth);
-
-            settings.rotation		= math.max(kMinRotation, math.abs(settings.rotation)) * (settings.rotation < 0 ? -1 : 1);
-
-            settings.innerSegments	= math.max(kMinSegments, settings.innerSegments);
-            settings.outerSegments	= math.max(kMinSegments, settings.outerSegments);
-        }
-
-        public SpiralStairsSettings GenerateSettings()
-        {
-            return settings;
-        }
+        public ChiselSpiralStairs GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //
@@ -286,7 +282,7 @@ namespace Chisel.Core
                 handles.DoDirectionHandle(ref lowPoint, -normal, snappingStep: originalStepHeight);
                 lowPoint.y		= math.min(topPoint.y - originalStepHeight, lowPoint.y);
 
-                float minOuterDiameter = innerDiameter + ChiselSpiralStairsDefinition.kMinStairsDepth;
+                float minOuterDiameter = innerDiameter + ChiselSpiralStairs.kMinStairsDepth;
                 { 
                     var outerRadius = outerDiameter * 0.5f;
                     handles.DoRadiusHandle(ref outerRadius, Vector3.up, topPoint, renderDisc: false);
@@ -294,7 +290,7 @@ namespace Chisel.Core
                     outerDiameter = math.max(minOuterDiameter, outerRadius * 2.0f);
                 }
                         
-                float maxInnerDiameter = outerDiameter - ChiselSpiralStairsDefinition.kMinStairsDepth;
+                float maxInnerDiameter = outerDiameter - ChiselSpiralStairs.kMinStairsDepth;
                 { 
                     var innerRadius = innerDiameter * 0.5f;
                     handles.DoRadiusHandle(ref innerRadius, Vector3.up, midPoint, renderDisc: false);

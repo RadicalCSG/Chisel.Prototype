@@ -12,8 +12,27 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct CapsuleSettings
+    public struct ChiselCapsule : IBrushGenerator
     {
+        public const float	kDefaultDiameter			= 1.0f;
+        public const float	kDefaultHemisphereRatio	    = 0.25f;
+        public const float	kDefaultHemisphereHeight	= kDefaultDiameter * kDefaultHemisphereRatio;
+        
+        public static readonly ChiselCapsule DefaultSettings = new ChiselCapsule
+        {
+            height				= 1.0f,
+            topHeight			= kDefaultHemisphereHeight,
+            bottomHeight		= kDefaultHemisphereHeight,
+            offsetY             = 0,
+            diameterX			= kDefaultDiameter,
+            diameterZ			= kDefaultDiameter,
+            rotation			= 0.0f,
+            
+            sides				= 8,
+            topSegments			= 4,
+            bottomSegments		= 4
+        };
+
         public const float kHeightEpsilon = 0.001f;
 
         public float    height;
@@ -29,6 +48,7 @@ namespace Chisel.Core
         public int      topSegments;
         public int      bottomSegments;
 
+        #region Properties
         public bool	        HaveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
         public bool	        HaveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
         public bool	        HaveCylinder		{ get { return CylinderHeight > kHeightEpsilon; } }
@@ -58,90 +78,61 @@ namespace Chisel.Core
 
         internal int		TopVertexOffset		{ get { return ExtraVertexCount + ((TopRingCount - 1) * sides); } }
         internal int		BottomVertexOffset	{ get { return ExtraVertexCount + ((RingCount - BottomRingCount) * sides); } }
-    }
+        #endregion
 
-    public struct ChiselCapsuleGenerator : IChiselBrushTypeGenerator<CapsuleSettings>
-    {
         [BurstCompile(CompileSynchronously = true)]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(CapsuleSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateCapsule(in settings,
+            if (!BrushMeshFactory.GenerateCapsule(in this,
                                                   in surfaceDefinitionBlob,
                                                   out var newBrushMesh,
                                                   allocator))
                 return default;
             return newBrushMesh;
         }
+        
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 2 + sides; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+
+
+        public const float kMinDiameter = 0.01f;
+
+        [BurstDiscard]
+        public void Validate()
+        {
+            topHeight		= math.max(topHeight, 0);
+            bottomHeight	= math.max(bottomHeight, 0);
+            height			= math.max(topHeight + bottomHeight, math.abs(height)) * (height < 0 ? -1 : 1);
+
+            diameterX		= math.max(math.abs(diameterX), kMinDiameter);
+            diameterZ		= math.max(math.abs(diameterZ), kMinDiameter);
+
+            topSegments	= math.max(topSegments, 0);
+            bottomSegments	= math.max(bottomSegments, 0);
+            sides			= math.max(sides, 3);
+        }
     }
 
-
     [Serializable]
-    public struct ChiselCapsuleDefinition : IChiselBrushGenerator<ChiselCapsuleGenerator, CapsuleSettings>
+    public struct ChiselCapsuleDefinition : ISerializedBrushGenerator<ChiselCapsule>
     {
         public const string kNodeTypeName = "Capsule";
 
-        public const float	kMinDiameter				= 0.01f;
-
-        public const float	kDefaultHeight				= 1.0f;
-        public const float	kDefaultDiameter			= 1.0f;
-        public const float	kDefaultHemisphereRatio	    = 0.25f;
-        public const float	kDefaultHemisphereHeight	= kDefaultDiameter * kDefaultHemisphereRatio;
-        public const float  kDefaultRotation            = 0.0f;
-        public const int	kDefaultSides				= 8;
-        public const int	kDefaultTopSegments			= 4;
-        public const int	kDefaultBottomSegments		= 4;
-        
-        [HideFoldout] public CapsuleSettings settings;
-
+        [HideFoldout] public ChiselCapsule settings;
 
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        #region Reset
-        static readonly CapsuleSettings kDefaultSettings = new CapsuleSettings
-        {
-            height				= kDefaultHeight,
-            topHeight			= kDefaultHemisphereHeight,
-            bottomHeight		= kDefaultHemisphereHeight,
-            offsetY             = 0,
-            diameterX			= kDefaultDiameter,
-            diameterZ			= kDefaultDiameter,
-            rotation			= kDefaultRotation,
-            
-            sides				= kDefaultSides,
-            topSegments			= kDefaultTopSegments,
-            bottomSegments		= kDefaultBottomSegments
-        };
-
-        public void Reset()
-        {
-            settings = kDefaultSettings;
-        }
-        #endregion
+        public void Reset() { settings = ChiselCapsule.DefaultSettings; }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
+        public void Validate() => settings.Validate();
 
 
-        #region Validate
-        public int RequiredSurfaceCount { get { return 2 + settings.sides; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
-
-        public void Validate()
-        {
-            settings.topHeight		= math.max(settings.topHeight, 0);
-            settings.bottomHeight	= math.max(settings.bottomHeight, 0);
-            settings.height			= math.max(settings.topHeight + settings.bottomHeight, math.abs(settings.height)) * (settings.height < 0 ? -1 : 1);
-
-            settings.diameterX		= math.max(math.abs(settings.diameterX), kMinDiameter);
-            settings.diameterZ		= math.max(math.abs(settings.diameterZ), kMinDiameter);
-
-            settings.topSegments	= math.max(settings.topSegments, 0);
-            settings.bottomSegments	= math.max(settings.bottomSegments, 0);
-            settings.sides			= math.max(settings.sides, 3);
-        }
-        #endregion
-
-        public CapsuleSettings GenerateSettings() { return settings; }
-
+        public ChiselCapsule GetBrushGenerator() { return settings; }
 
         #region OnEdit
         //

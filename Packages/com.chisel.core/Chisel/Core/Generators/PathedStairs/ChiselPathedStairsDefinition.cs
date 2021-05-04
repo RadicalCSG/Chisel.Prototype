@@ -11,51 +11,54 @@ using UnitySceneExtensions;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct PathedStairsSettings
+    public struct ChiselPathedStairs : IBranchGenerator
     {
+        public readonly static ChiselPathedStairs DefaultValues = new ChiselPathedStairs
+        {
+            curveSegments   = 8,
+            closed          = true,
+            stairs          = ChiselLinearStairs.DefaultValues
+        };
+
         [NonSerialized] public bool closed;
 
         public int curveSegments;
 
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
-        [HideFoldout] public ChiselLinearStairsDefinition stairs;
+        [HideFoldout] public ChiselLinearStairs stairs;
 
         [UnityEngine.HideInInspector, NonSerialized] public BlobAssetReference<ChiselCurve2DBlob> curveBlob;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex> shapeVertices;
-    }
 
-    public struct ChiselPathedStairsGenerator : IChiselBranchTypeGenerator<PathedStairsSettings>
-    {
+        #region Generate
         [BurstCompile]
-        public int PrepareAndCountRequiredBrushMeshes(ref PathedStairsSettings settings)
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            ref var curve = ref settings.curveBlob.Value;
-            var closed = settings.closed;
-            var bounds = settings.stairs.settings.bounds;
-            curve.GetPathVertices(settings.curveSegments, out settings.shapeVertices, Allocator.Persistent);
-            if (settings.shapeVertices.Length < 2)
+            ref var curve = ref curveBlob.Value;
+            var bounds = stairs.bounds;
+            curve.GetPathVertices(curveSegments, out shapeVertices, Allocator.Persistent);
+            if (shapeVertices.Length < 2)
                 return 0;
 
-            return BrushMeshFactory.CountPathedStairBrushes(settings.shapeVertices, closed, bounds,
-                                                            settings.stairs.settings.stepHeight, settings.stairs.settings.stepDepth, settings.stairs.settings.treadHeight, settings.stairs.settings.nosingDepth,
-                                                            settings.stairs.settings.plateauHeight, settings.stairs.settings.riserType, settings.stairs.settings.riserDepth,
-                                                            settings.stairs.settings.leftSide, settings.stairs.settings.rightSide,
-                                                            settings.stairs.settings.sideWidth, settings.stairs.settings.sideHeight, settings.stairs.settings.sideDepth);
+            return BrushMeshFactory.CountPathedStairBrushes(shapeVertices, closed, bounds,
+                                                            stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
+                                                            stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
+                                                            stairs.leftSide, stairs.rightSide,
+                                                            stairs.sideWidth, stairs.sideHeight, stairs.sideDepth);
         }
 
         [BurstCompile()]
-        public bool GenerateMesh(ref PathedStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
-            ref var curve = ref settings.curveBlob.Value;
-            var closed = settings.closed;
-            var bounds = settings.stairs.settings.bounds;
+            ref var curve = ref curveBlob.Value;
+            var bounds = stairs.bounds;
 
             if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes,
-                                                        settings.shapeVertices, closed, bounds,
-                                                        settings.stairs.settings.stepHeight, settings.stairs.settings.stepDepth, settings.stairs.settings.treadHeight, settings.stairs.settings.nosingDepth,
-                                                        settings.stairs.settings.plateauHeight, settings.stairs.settings.riserType, settings.stairs.settings.riserDepth,
-                                                        settings.stairs.settings.leftSide, settings.stairs.settings.rightSide,
-                                                        settings.stairs.settings.sideWidth, settings.stairs.settings.sideHeight, settings.stairs.settings.sideDepth,
+                                                        shapeVertices, closed, bounds,
+                                                        stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
+                                                        stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
+                                                        stairs.leftSide, stairs.rightSide,
+                                                        stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
                                                         in surfaceDefinitionBlob, Allocator.Persistent))
             {
                 for (int i = 0; i < brushMeshes.Length; i++)
@@ -68,53 +71,64 @@ namespace Chisel.Core
             return true;
         }
 
-        public void Dispose(ref PathedStairsSettings settings)
+        public void Dispose()
         {
-            if (settings.curveBlob.IsCreated) settings.curveBlob.Dispose();
+            if (curveBlob.IsCreated) curveBlob.Dispose();
         }
 
         [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch, PathedStairsSettings settings) { }
+        public void FixupOperations(CSGTreeBranch branch) { }
+        #endregion
+
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return stairs.RequiredSurfaceCount; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        {
+            stairs.UpdateSurfaces(ref surfaceDefinition);
+        }
+        #endregion
+
+        #region Validation
+        public const int kMinCurveSegments = 2;
+
+        public void Validate()
+        {
+            curveSegments = math.max(curveSegments, kMinCurveSegments);
+            stairs.Validate();
+        }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselPathedStairsDefinition : IChiselBranchGenerator<ChiselPathedStairsGenerator, PathedStairsSettings>
+    public struct ChiselPathedStairsDefinition : ISerializedBranchGenerator<ChiselPathedStairs>
     {
         public const string kNodeTypeName = "Pathed Stairs";
 
-        public const int				kDefaultCurveSegments	= 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
-
-        [HideFoldout] public PathedStairsSettings settings;
+        [HideFoldout] public ChiselPathedStairs settings;
 
         public Curve2D					shape;
-        //public int                      curveSegments;
         
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         //public ChiselLinearStairsDefinition stairs;
 
         public void Reset()
         {
-            shape                   = kDefaultShape;
-            settings.curveSegments  = kDefaultCurveSegments;
-            settings.stairs.Reset();
+            shape    = kDefaultShape;
+            settings = ChiselPathedStairs.DefaultValues;
         }
 
-        public int RequiredSurfaceCount { get { return settings.stairs.RequiredSurfaceCount; } }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
-        {
-            settings.stairs.UpdateSurfaces(ref surfaceDefinition);
-        }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
             
-        public void Validate()
-        {
-            settings.curveSegments = math.max(settings.curveSegments, 2);
-            settings.stairs.Validate();
-        }
+        public void Validate() { settings.Validate(); }
 
-        public PathedStairsSettings GenerateSettings()
+        public ChiselPathedStairs GetBranchGenerator()
         {
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
             settings.closed = shape.closed;

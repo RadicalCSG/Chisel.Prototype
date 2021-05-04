@@ -425,7 +425,7 @@ namespace Chisel.Editors
                 var obj = EditorUtility.InstanceIDToObject(instanceID) as ChiselNode;
                 if (obj)
                 { 
-                    var brush		= obj as ChiselBrush;
+                    var brush		= obj as ChiselBrushComponent;
                     var composite	= obj as ChiselComposite;
                     var model		= obj as ChiselModel;
                     CSGTreeNode node = CSGTreeNode.InvalidNode;

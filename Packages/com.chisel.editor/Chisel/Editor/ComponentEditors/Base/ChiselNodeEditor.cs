@@ -444,7 +444,7 @@ namespace Chisel.Editors
             if (node.Type == CSGNodeType.Brush)
             {
                 var brushNode       = (CSGTreeBrush)node;
-                var brushComponent  = ChiselComponentFactory.Create<ChiselBrush>("Brush", parent);
+                var brushComponent  = ChiselComponentFactory.Create<ChiselBrushComponent>("Brush", parent);
                 brushComponent.transform.SetLocal(brushNode.LocalTransformation);
                 brushComponent.Operation                 = brushNode.Operation;
 
@@ -469,7 +469,7 @@ namespace Chisel.Editors
             if (node.Type == CSGNodeType.Brush)
             {
                 var brushNode       = (CSGTreeBrush)node;
-                var brushComponent  = ChiselComponentFactory.AddComponent<ChiselBrush>(parent);
+                var brushComponent  = ChiselComponentFactory.AddComponent<ChiselBrushComponent>(parent);
                 brushComponent.transform.SetLocal(brushNode.LocalTransformation);
                 brushComponent.Operation                 = brushNode.Operation;
 
@@ -589,7 +589,7 @@ namespace Chisel.Editors
             rect.yMax -= kBottomPadding;
             var buttonRect = rect;
             buttonRect.xMax -= ChiselCompositeGUI.GetOperationChoicesInternalWidth(showAuto: false);
-            if (typeof(T) != typeof(ChiselBrush))
+            if (typeof(T) != typeof(ChiselBrushComponent))
             {
                 ConvertIntoBrushesButton(buttonRect, serializedObject);
                 ChiselCompositeGUI.ShowOperationChoicesInternal(rect, operationProp, showLabel: false);

@@ -7,8 +7,8 @@ namespace Chisel.Core
     public sealed class ChiselSpiralStairsPlacementTool : ChiselBoundsPlacementTool<ChiselSpiralStairsDefinition>
     {
         // TODO: add more settings
-        public float    stepHeight      = ChiselSpiralStairsDefinition.kDefaultStepHeight;
-        public int      outerSegments   = ChiselSpiralStairsDefinition.kDefaultOuterSegments;
+        public float    stepHeight      = ChiselSpiralStairs.DefaultValues.stepHeight;
+        public int      outerSegments   = ChiselSpiralStairs.DefaultValues.outerSegments;
         
         [ToggleFlags(includeFlags: (int)(PlacementFlags.GenerateFromCenterXZ))]
         public PlacementFlags placement = PlacementFlags.GenerateFromCenterXZ | PlacementFlags.AlwaysFaceUp | PlacementFlags.SameLengthXZ;

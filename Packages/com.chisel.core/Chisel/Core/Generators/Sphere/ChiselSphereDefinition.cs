@@ -12,78 +12,78 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct SphereSettings
+    public struct ChiselSphere : IBrushGenerator
     {
+        public readonly static ChiselSphere DefaultValues = new ChiselSphere
+        {
+            diameterXYZ		    = new float3(1),
+            offsetY             = 0,
+            rotation		    = 0.0f,
+            horizontalSegments  = 12,
+            verticalSegments    = 12,
+            generateFromCenter  = false
+        };
+
         [DistanceValue] public float3	diameterXYZ;
         public float    offsetY;
         public bool     generateFromCenter;
         public float    rotation; // TODO: useless?
         public int	    horizontalSegments;
         public int	    verticalSegments;
-    }
-
-    public struct ChiselSphereGenerator : IChiselBrushTypeGenerator<SphereSettings>
-    {
+        
         [BurstCompile(CompileSynchronously = true)]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(SphereSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateSphere(settings.diameterXYZ,
-                                                    settings.offsetY,
-                                                    settings.rotation,  // TODO: useless?
-                                                    settings.generateFromCenter,
-                                                    settings.horizontalSegments,
-                                                    settings.verticalSegments,
-                                                    in surfaceDefinitionBlob,
-                                                    out var newBrushMesh,
-                                                    allocator))
+            if (!BrushMeshFactory.GenerateSphere(diameterXYZ,
+                                                 offsetY,
+                                                 rotation,  // TODO: useless?
+                                                 generateFromCenter,
+                                                 horizontalSegments,
+                                                 verticalSegments,
+                                                 in surfaceDefinitionBlob,
+                                                 out var newBrushMesh,
+                                                 allocator))
                 return default;
             return newBrushMesh;
+        }
+        
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 6; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        
+        
+        public const float kMinSphereDiameter = 0.01f;
+
+        [BurstDiscard]
+        public void Validate()
+        {
+            diameterXYZ.x       = math.max(kMinSphereDiameter, math.abs(diameterXYZ.x));
+            diameterXYZ.y       = math.max(0,                  math.abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
+            diameterXYZ.z       = math.max(kMinSphereDiameter, math.abs(diameterXYZ.z));
+
+            horizontalSegments  = math.max(horizontalSegments, 3);
+            verticalSegments	= math.max(verticalSegments, 2);
         }
     }
 
     [Serializable]
-    public struct ChiselSphereDefinition : IChiselBrushGenerator<ChiselSphereGenerator, SphereSettings>
+    public struct ChiselSphereDefinition : ISerializedBrushGenerator<ChiselSphere>
     {
         public const string kNodeTypeName = "Sphere";
 
-        public const float              kMinSphereDiameter          = 0.01f;
-        public const float              kDefaultRotation            = 0.0f;
-        public const int                kDefaultHorizontalSegments  = 12;
-        public const int                kDefaultVerticalSegments    = 12;
-        public const bool               kDefaultGenerateFromCenter  = false;
-        public static readonly float3   kDefaultDiameter            = new float3(1);
-
-
-        [HideFoldout] public SphereSettings settings;
+        [HideFoldout] public ChiselSphere settings;
 
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
-        {
-            settings.diameterXYZ		    = kDefaultDiameter;
-            settings.offsetY             = 0;
-            settings.rotation		    = kDefaultRotation;
-            settings.horizontalSegments  = kDefaultHorizontalSegments;
-            settings.verticalSegments    = kDefaultVerticalSegments;
-            settings.generateFromCenter  = kDefaultGenerateFromCenter;
-        }
+        public void Reset() { settings = ChiselSphere.DefaultValues; }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition); 
+        public void Validate() => settings.Validate(); 
 
-        public int RequiredSurfaceCount { get { return 6; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
-
-        public void Validate()
-        {
-            settings.diameterXYZ.x = math.max(kMinSphereDiameter, math.abs(settings.diameterXYZ.x));
-            settings.diameterXYZ.y = math.max(0,                  math.abs(settings.diameterXYZ.y)) * (settings.diameterXYZ.y < 0 ? -1 : 1);
-            settings.diameterXYZ.z = math.max(kMinSphereDiameter, math.abs(settings.diameterXYZ.z));
-
-            settings.horizontalSegments = math.max(settings.horizontalSegments, 3);
-            settings.verticalSegments	= math.max(settings.verticalSegments, 2);
-        }
-
-        public SphereSettings GenerateSettings() { return settings; }
+        public ChiselSphere GetBrushGenerator() { return settings; }
 
         #region OnEdit
         //

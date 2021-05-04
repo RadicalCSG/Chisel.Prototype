@@ -9,11 +9,11 @@ using GUIUtility             = UnityEngine.GUIUtility;
 
 namespace Chisel.Editors
 {
-    [CustomEditor(typeof(ChiselBrush))]
+    [CustomEditor(typeof(ChiselBrushComponent))]
     [CanEditMultipleObjects]
-    public sealed class ChiselBrushEditor : ChiselGeneratorEditor<ChiselBrush>
+    public sealed class ChiselBrushEditor : ChiselGeneratorEditor<ChiselBrushComponent>
     {
-        static Dictionary<ChiselBrush, ChiselEditableOutline> activeOutlines = new Dictionary<ChiselBrush, ChiselEditableOutline>();
+        static Dictionary<ChiselBrushComponent, ChiselEditableOutline> activeOutlines = new Dictionary<ChiselBrushComponent, ChiselEditableOutline>();
 
         protected override void OnUndoRedoPerformed()
         {
@@ -28,7 +28,7 @@ namespace Chisel.Editors
         }
 
 
-        protected override void OnGeneratorSelected(ChiselBrush generator)
+        protected override void OnGeneratorSelected(ChiselBrushComponent generator)
         {
             if (generator.definition.IsValid)
                 CommitChanges();
@@ -38,7 +38,7 @@ namespace Chisel.Editors
             activeOutlines[generator] = new ChiselEditableOutline(generator);
         }
 
-        protected override void OnGeneratorDeselected(ChiselBrush generator)
+        protected override void OnGeneratorDeselected(ChiselBrushComponent generator)
         {
             if (generator.definition.IsValid)
                 CommitChanges();
@@ -51,7 +51,7 @@ namespace Chisel.Editors
                 generator.OnValidate();
         }
 
-        protected override void OnScene(IChiselHandles handles, ChiselBrush generator)
+        protected override void OnScene(IChiselHandles handles, ChiselBrushComponent generator)
         {
             if (!activeOutlines.TryGetValue(generator, out ChiselEditableOutline editableOutline) ||
                 editableOutline == null)
@@ -75,7 +75,7 @@ namespace Chisel.Editors
         // Creates a new optimized/fixed brushMesh based on the brushMesh inside of the generator
         // this will not be copied to the generator until the current operation is complete. 
         // This prevents, for example, dragging an edge over another edge DURING a dragging operation messing things up.
-        void UpdateEditableOutline(ChiselBrush generator)
+        void UpdateEditableOutline(ChiselBrushComponent generator)
         {
             generatorModified = true;
             var outline = activeOutlines[generator];

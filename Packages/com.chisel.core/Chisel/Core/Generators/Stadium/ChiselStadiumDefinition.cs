@@ -12,9 +12,20 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct StadiumSettings
+    public struct ChiselStadium : IBrushGenerator
     {
-        internal const float kNoCenterEpsilon = 0.0001f;
+        public readonly static ChiselStadium DefaultValues = new ChiselStadium
+        {
+            width			= 1.0f,
+            height			= 1.0f,
+            length			= 1.0f,
+
+            topLength		= 0.25f,
+            bottomLength	= 0.25f,
+
+            topSides		= 4,
+            bottomSides		= 4
+        };
 
         public float                width;        
         public float                height;
@@ -26,6 +37,9 @@ namespace Chisel.Core
         public int                  topSides;
         public int                  bottomSides;
 
+        #region Properties
+        internal const float kNoCenterEpsilon = 0.0001f;
+
         internal int				Sides				{ get { return (HaveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1); } }
         internal int				FirstTopSide		{ get { return 0; } }
         internal int				LastTopSide			{ get { return math.max(topSides, 1); } }
@@ -35,84 +49,65 @@ namespace Chisel.Core
         internal bool				HaveRoundedTop		{ get { return (topLength    > 0) && (topSides    > 1); } }
         internal bool				HaveRoundedBottom	{ get { return (bottomLength > 0) && (bottomSides > 1); } }
         internal bool				HaveCenter			{ get { return (length - ((HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
-    }
+        #endregion
 
-    public struct ChiselStadiumGenerator : IChiselBrushTypeGenerator<StadiumSettings>
-    {
         [BurstCompile(CompileSynchronously = true)]
-        public BlobAssetReference<BrushMeshBlob> GenerateMesh(StadiumSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateStadium(settings.width, settings.height, settings.length,
-                                                  settings.topLength, settings.topSides,
-                                                  settings.bottomLength, settings.bottomSides,
+            if (!BrushMeshFactory.GenerateStadium(width, height, length,
+                                                  topLength, topSides,
+                                                  bottomLength, bottomSides,
                                                   in surfaceDefinitionBlob,
                                                   out var newBrushMesh,
                                                   allocator))
                 return default;
             return newBrushMesh;
         }
+        
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 2 + Sides; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        
+
+        public const float	kMinDiameter    = 0.01f;
+        public const float	kMinLength	    = 0.01f;
+        public const float	kMinHeight	    = 0.01f;
+
+        [BurstDiscard]
+        public void Validate()
+        {
+            topLength	    = math.max(topLength,    0);
+            bottomLength	= math.max(bottomLength, 0);
+            length			= math.max(math.abs(length), (HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0));
+            length			= math.max(math.abs(length), kMinLength);
+
+            height			= math.max(math.abs(height), kMinHeight);
+            width			= math.max(math.abs(width), kMinDiameter);
+
+            topSides		= math.max(topSides,	 1);
+            bottomSides	    = math.max(bottomSides, 1);
+        }
     }
 
     [Serializable]
-    public struct ChiselStadiumDefinition : IChiselBrushGenerator<ChiselStadiumGenerator, StadiumSettings>
+    public struct ChiselStadiumDefinition : ISerializedBrushGenerator<ChiselStadium>
     {
         public const string kNodeTypeName = "Stadium";
 
-        public const float	kMinDiameter				= 0.01f;
-        public const float	kMinLength					= 0.01f;
-        public const float	kMinHeight					= 0.01f;
-        
-        public const float	kDefaultHeight				= 1.0f;
-        public const float	kDefaultLength				= 1.0f;
-        public const float	kDefaultTopLength			= 0.25f;
-        public const float	kDefaultBottomLength		= 0.25f;
-        public const float	kDefaultWidth			    = 1.0f;
-        
-        public const int	kDefaultTopSides			= 4;
-        public const int	kSidesVertices				= 4;
-
-        [HideFoldout] public StadiumSettings settings;
+        [HideFoldout] public ChiselStadium settings;
         
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
-        {
-            settings.width			    = kDefaultWidth;
+        public void Reset() { settings = ChiselStadium.DefaultValues; }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
+        public void Validate() => settings.Validate(); 
 
-            settings.height				= kDefaultHeight;
-
-            settings.length				= kDefaultLength;
-            settings.topLength			= kDefaultTopLength;
-            settings.bottomLength		= kDefaultBottomLength;
-
-            settings.topSides			= kDefaultTopSides;
-            settings.bottomSides		= kSidesVertices;
-        }
-
-        public int RequiredSurfaceCount { get { return 2 + settings.Sides; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
-
-        public void Validate()
-        {
-            settings.topLength	    = math.max(settings.topLength,    0);
-            settings.bottomLength	= math.max(settings.bottomLength, 0);
-            settings.length			= math.max(math.abs(settings.length), (settings.HaveRoundedTop ? settings.topLength : 0) + (settings.HaveRoundedBottom ? settings.bottomLength : 0));
-            settings.length			= math.max(math.abs(settings.length), kMinLength);
-
-            settings.height			= math.max(math.abs(settings.height), kMinHeight);
-            settings.width			= math.max(math.abs(settings.width), kMinDiameter);
-
-            settings.topSides		= math.max(settings.topSides,	 1);
-            settings.bottomSides	= math.max(settings.bottomSides, 1);
-        }
-
-        public StadiumSettings GenerateSettings()
-        {
-            return settings;
-        }
+        public ChiselStadium GetBrushGenerator() { return settings; }
 
 
         #region OnEdit

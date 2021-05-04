@@ -23,16 +23,6 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            // TODO: eventually remove when it's more battle tested
-            if (!brushMesh.Validate(logErrors: true))
-                return BlobAssetReference<BrushMeshBlob>.Null;
-            brushMesh.CalculatePlanes();
-            brushMesh.UpdateHalfEdgePolygonIndices();
-            return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinition, Allocator.Persistent);
-        }
-
         public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
         {
             // TODO: eventually remove when it's more battle tested
@@ -47,7 +37,7 @@ namespace Chisel.Core
         // TODO: create spiral sides support
         [BurstCompile]
         public static bool GenerateSpiralStairs(NativeList<BlobAssetReference<BrushMeshBlob>>        brushMeshes, 
-                                                ref SpiralStairsSettings                             definition, 
+                                                ref ChiselSpiralStairs                             definition, 
                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {
@@ -115,11 +105,11 @@ namespace Chisel.Core
             {
                 ref var outerCylinderSurfaces = ref outerCylinderSurfaceDefinitionBlob.Value.surfaces;
                 for (int i = 0; i < outerCylinderSurfaces.Length; i++)
-                    outerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[SpiralStairsSettings.kOuterSurface];
+                    outerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[(int)ChiselSpiralStairs.SurfaceSides.OuterSurface];
 
                 ref var innerCylinderSurfaces = ref innerCylinderSurfaceDefinitionBlob.Value.surfaces;
                 for (int i = 0; i < innerCylinderSurfaces.Length; i++)
-                    innerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[SpiralStairsSettings.kInnerSurface];
+                    innerCylinderSurfaces[i] = surfaceDefinitionBlob.Value.surfaces[(int)ChiselSpiralStairs.SurfaceSides.InnerSurface];
 
 
                 if (haveRiser)

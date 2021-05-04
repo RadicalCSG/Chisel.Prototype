@@ -34,9 +34,31 @@ namespace Chisel.Core
     }
 
     [Serializable]
-    public struct LinearStairsSettings
+    public struct ChiselLinearStairs : IBranchGenerator
     {
-        public const float kStepSmudgeValue = BrushMeshFactory.LineairStairsData.kStepSmudgeValue;
+        // TODO: set defaults using attributes?
+        public readonly static ChiselLinearStairs DefaultValues = new ChiselLinearStairs
+        {
+            stepHeight		= 0.20f,
+            stepDepth		= 0.20f,
+            treadHeight	    = 0.02f,
+            nosingDepth	    = 0.02f,
+            nosingWidth	    = 0.01f,
+
+            Width			= 1,
+            Height			= 1,
+            Depth			= 1,
+
+            plateauHeight	= 0,
+
+            riserType		= StairsRiserType.ThinRiser,
+            leftSide		= StairsSideType.None,
+            rightSide		= StairsSideType.None,
+            riserDepth		= 0.05f,
+            sideDepth		= 0.125f,
+            sideWidth		= 0.125f,
+            sideHeight		= 0.5f
+        };
 
         // TODO: add all spiral stairs improvements to linear stairs
 
@@ -61,11 +83,15 @@ namespace Chisel.Core
         [DistanceValue] public float	sideWidth;
         [DistanceValue] public float	sideHeight;
         [DistanceValue] public float	sideDepth;
-        
+
         //[NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        
+        #region Properties
+
+        const float kStepSmudgeValue = BrushMeshFactory.LineairStairsData.kStepSmudgeValue;
+
+
         public float	Width  { get { return BoundsSize.x; } set { var size = BoundsSize; size.x = value; BoundsSize = size; } }
         public float	Height { get { return BoundsSize.y; } set { var size = BoundsSize; size.y = value; BoundsSize = size; } }
         public float	Depth  { get { return BoundsSize.z; } set { var size = BoundsSize; size.z = value; BoundsSize = size; } }
@@ -115,39 +141,38 @@ namespace Chisel.Core
         {
             get { return math.max(0, AbsDepth - (StepCount * stepDepth)); }
         }
-    }
+        #endregion
 
-    public struct ChiselLinearStairsGenerator : IChiselBranchTypeGenerator<LinearStairsSettings>
-    {
+        #region Generate
         [BurstCompile]
-        public int PrepareAndCountRequiredBrushMeshes(ref LinearStairsSettings settings)
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            var size = settings.BoundsSize;
+            var size = BoundsSize;
             if (math.any(size == 0))
                 return 0;
 
-            var description = new BrushMeshFactory.LineairStairsData(settings.bounds,
-                                                                        settings.stepHeight, settings.stepDepth,
-                                                                        settings.treadHeight,
-                                                                        settings.nosingDepth, settings.nosingWidth,
-                                                                        settings.plateauHeight,
-                                                                        settings.riserType, settings.riserDepth,
-                                                                        settings.leftSide, settings.rightSide,
-                                                                        settings.sideWidth, settings.sideHeight, settings.sideDepth);
+            var description = new BrushMeshFactory.LineairStairsData(bounds,
+                                                                        stepHeight, stepDepth,
+                                                                        treadHeight,
+                                                                        nosingDepth, nosingWidth,
+                                                                        plateauHeight,
+                                                                        riserType, riserDepth,
+                                                                        leftSide, rightSide,
+                                                                        sideWidth, sideHeight, sideDepth);
             return description.subMeshCount;
         }
 
         [BurstCompile()]
-        public bool GenerateMesh(ref LinearStairsSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
-            var description = new BrushMeshFactory.LineairStairsData(settings.bounds,
-                                                                        settings.stepHeight, settings.stepDepth,
-                                                                        settings.treadHeight,
-                                                                        settings.nosingDepth, settings.nosingWidth,
-                                                                        settings.plateauHeight,
-                                                                        settings.riserType, settings.riserDepth,
-                                                                        settings.leftSide, settings.rightSide,
-                                                                        settings.sideWidth, settings.sideHeight, settings.sideDepth);
+            var description = new BrushMeshFactory.LineairStairsData(bounds,
+                                                                        stepHeight, stepDepth,
+                                                                        treadHeight,
+                                                                        nosingDepth, nosingWidth,
+                                                                        plateauHeight,
+                                                                        riserType, riserDepth,
+                                                                        leftSide, rightSide,
+                                                                        sideWidth, sideHeight, sideDepth);
             const int subMeshOffset = 0;
             if (!BrushMeshFactory.GenerateLinearStairsSubMeshes(brushMeshes, 
                                                                 subMeshOffset, 
@@ -165,92 +190,33 @@ namespace Chisel.Core
             return true;
         }
 
-        public void Dispose(ref LinearStairsSettings settings) {}
+        public void Dispose() {}
 
 
         [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch, LinearStairsSettings settings) { }
-    }
+        public void FixupOperations(CSGTreeBranch branch) { }
+        #endregion
 
-    // https://www.archdaily.com/892647/how-to-make-calculations-for-staircase-designs
-    // https://inspectapedia.com/Stairs/2024s.jpg
-    // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
-    // https://en.wikipedia.org/wiki/Stairs
-    [Serializable]
-    public struct ChiselLinearStairsDefinition : IChiselBranchGenerator<ChiselLinearStairsGenerator, LinearStairsSettings>
-    {
-        public const string kNodeTypeName = "Linear Stairs";
-
+        #region Surfaces
         public enum SurfaceSides : byte
         {
-            Top,
-            Bottom,
-            Left,
-            Right,
-            Front,
-            Back,
-            Tread,
-            Step,
+            Top     = 0,
+            Bottom  = 1,
+            Left    = 2,
+            Right   = 3,
+            Front   = 4,
+            Back    = 5,
+            Tread   = 6,
+            Step    = 7,
 
             TotalSides
         }
 
-        public const float	kMinStepHeight			= 0.01f;
-        public const float	kMinStepDepth			= 0.01f;
-        public const float  kMinRiserDepth          = 0.01f;
-        public const float  kMinSideWidth			= 0.01f;
-        public const float	kMinWidth				= 0.0001f;
 
-        public const float	kDefaultStepHeight		= 0.20f;
-        public const float	kDefaultStepDepth		= 0.20f;
-        public const float	kDefaultTreadHeight     = 0.02f;
-        public const float	kDefaultNosingDepth     = 0.02f; 
-        public const float	kDefaultNosingWidth     = 0.01f;
-
-        public const float	kDefaultWidth			= 1;
-        public const float	kDefaultHeight			= 1;
-        public const float	kDefaultDepth			= 1;
-
-        public const float	kDefaultPlateauHeight	= 0;
-
-        public const float  kDefaultRiserDepth      = 0.05f;
-        public const float  kDefaultSideDepth		= 0.125f;
-        public const float  kDefaultSideWidth		= 0.125f;
-        public const float  kDefaultSideHeight      = 0.5f;
-
-        [HideFoldout] public LinearStairsSettings settings;
-
-        //[NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
-        //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        
-
-        public void Reset()
-        {
-            // TODO: set defaults using attributes?
-            settings.stepHeight		= kDefaultStepHeight;
-            settings.stepDepth		= kDefaultStepDepth;
-            settings.treadHeight	= kDefaultTreadHeight;
-            settings.nosingDepth	= kDefaultNosingDepth;
-            settings.nosingWidth	= kDefaultNosingWidth;
-
-            settings.Width			= kDefaultWidth;
-            settings.Height			= kDefaultHeight;
-            settings.Depth			= kDefaultDepth;
-
-            settings.plateauHeight	= kDefaultPlateauHeight;
-
-            settings.riserType		= StairsRiserType.ThinRiser;
-            settings.leftSide		= StairsSideType.None;
-            settings.rightSide		= StairsSideType.None;
-            settings.riserDepth		= kDefaultRiserDepth;
-            settings.sideDepth		= kDefaultSideDepth;
-            settings.sideWidth		= kDefaultSideWidth;
-            settings.sideHeight		= kDefaultSideHeight;
-        }
-
+        [BurstDiscard]
         public int RequiredSurfaceCount { get { return (int)SurfaceSides.TotalSides; } }
 
+        [BurstDiscard]
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             var defaultRenderMaterial  = ChiselMaterialManager.DefaultWallMaterial;
@@ -271,39 +237,69 @@ namespace Chisel.Core
                     surfaceDefinition.surfaces[i].brushMaterial = ChiselBrushMaterial.CreateInstance(defaultRenderMaterial, defaultPhysicsMaterial);
             }
         }
+        #endregion
+
+        #region Validation
+        public const float	kMinStepHeight			= 0.01f;
+        public const float	kMinStepDepth			= 0.01f;
+        public const float  kMinRiserDepth          = 0.01f;
+        public const float  kMinSideWidth			= 0.01f;
+        public const float	kMinWidth				= 0.0001f;
 
         public void Validate()
         {
-            settings.stepHeight		= math.max(kMinStepHeight, settings.stepHeight);
-            settings.stepDepth		= math.clamp(settings.stepDepth, kMinStepDepth, settings.AbsDepth);
-            settings.treadHeight	= math.max(0, settings.treadHeight);
-            settings.nosingDepth	= math.max(0, settings.nosingDepth);
-            settings.nosingWidth	= math.max(0, settings.nosingWidth);
+            stepHeight		= math.max(kMinStepHeight, stepHeight);
+            stepDepth		= math.clamp(stepDepth, kMinStepDepth, AbsDepth);
+            treadHeight	    = math.max(0, treadHeight);
+            nosingDepth	    = math.max(0, nosingDepth);
+            nosingWidth	    = math.max(0, nosingWidth);
 
-            settings.Width			= math.max(kMinWidth, settings.AbsWidth) * (settings.Width < 0 ? -1 : 1);
-            settings.Depth			= math.max(settings.stepDepth, settings.AbsDepth) * (settings.Depth < 0 ? -1 : 1);
+            Width			= math.max(kMinWidth, AbsWidth) * (Width < 0 ? -1 : 1);
+            Depth			= math.max(stepDepth, AbsDepth) * (Depth < 0 ? -1 : 1);
 
-            settings.riserDepth		= math.max(kMinRiserDepth, settings.riserDepth);
-            settings.sideDepth		= math.max(0, settings.sideDepth);
-            settings.sideWidth		= math.max(kMinSideWidth, settings.sideWidth);
-            settings.sideHeight		= math.max(0, settings.sideHeight);
+            riserDepth		= math.max(kMinRiserDepth, riserDepth);
+            sideDepth		= math.max(0, sideDepth);
+            sideWidth		= math.max(kMinSideWidth, sideWidth);
+            sideHeight		= math.max(0, sideHeight);
 
-            var realHeight          = math.max(settings.stepHeight, settings.AbsHeight);
-            var maxPlateauHeight    = realHeight - settings.stepHeight;
+            var realHeight          = math.max(stepHeight, AbsHeight);
+            var maxPlateauHeight    = realHeight - stepHeight;
 
-            settings.plateauHeight	= math.clamp(settings.plateauHeight, 0, maxPlateauHeight);
+            plateauHeight	= math.clamp(plateauHeight, 0, maxPlateauHeight);
 
-            var totalSteps          = math.max(1, (int)math.floor((realHeight - settings.plateauHeight + LinearStairsSettings.kStepSmudgeValue) / settings.stepHeight));
-            var totalStepHeight     = totalSteps * settings.stepHeight;
+            var totalSteps          = math.max(1, (int)math.floor((realHeight - plateauHeight + ChiselLinearStairs.kStepSmudgeValue) / stepHeight));
+            var totalStepHeight     = totalSteps * stepHeight;
 
-            settings.plateauHeight	= math.max(0, realHeight - totalStepHeight);
-            settings.stepDepth		= math.clamp(settings.stepDepth, kMinStepDepth, settings.AbsDepth / totalSteps);
+            plateauHeight	= math.max(0, realHeight - totalStepHeight);
+            stepDepth		= math.clamp(stepDepth, kMinStepDepth, AbsDepth / totalSteps);
         }
+        #endregion
+    }
 
-        public LinearStairsSettings GenerateSettings()
-        {
-            return settings;
-        }
+    // https://www.archdaily.com/892647/how-to-make-calculations-for-staircase-designs
+    // https://inspectapedia.com/Stairs/2024s.jpg
+    // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
+    // https://en.wikipedia.org/wiki/Stairs
+    [Serializable]
+    public struct ChiselLinearStairsDefinition : ISerializedBranchGenerator<ChiselLinearStairs>
+    {
+        public const string kNodeTypeName = "Linear Stairs";
+
+        [HideFoldout] public ChiselLinearStairs settings;
+
+        //[NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        public void Reset() { settings = ChiselLinearStairs.DefaultValues; }
+
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
+
+        public void Validate() { settings.Validate(); }
+
+
+        public ChiselLinearStairs GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //
@@ -357,10 +353,10 @@ namespace Chisel.Core
                     newDefinition.settings.plateauHeight = size.y - (stepHeight * newStepCount);
                 }
 
-                if (handles.DoEdgeHandle1D(out stepDepthOffset, Axis.Z, pDepth0, pDepth1, snappingStep: ChiselLinearStairsDefinition.kMinStepDepth))
+                if (handles.DoEdgeHandle1D(out stepDepthOffset, Axis.Z, pDepth0, pDepth1, snappingStep: ChiselLinearStairs.kMinStepDepth))
                 {
                     stepDepthOffset -= depthStart;
-                    stepDepthOffset = math.clamp(stepDepthOffset, 0, settings.AbsDepth - ChiselLinearStairsDefinition.kMinStepDepth);
+                    stepDepthOffset = math.clamp(stepDepthOffset, 0, settings.AbsDepth - ChiselLinearStairs.kMinStepDepth);
                     newDefinition.settings.stepDepth = ((settings.AbsDepth - stepDepthOffset) / settings.StepCount);
                 }
 

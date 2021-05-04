@@ -5,8 +5,8 @@ namespace Chisel.Core
     [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselHemispherePlacementTool : ChiselBoundsPlacementTool<ChiselHemisphereDefinition>
     {
-        public int horizontalSegments   = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
-        public int verticalSegments     = ChiselHemisphereDefinition.kDefaultVerticalSegments;
+        public int horizontalSegments   = ChiselHemisphere.DefaultValues.horizontalSegments;
+        public int verticalSegments     = ChiselHemisphere.DefaultValues.verticalSegments;
         
 
         [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsHalfXZ | PlacementFlags.GenerateFromCenterXZ))]

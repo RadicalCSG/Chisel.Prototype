@@ -12,8 +12,16 @@ using Vector3 = UnityEngine.Vector3;
 namespace Chisel.Core
 {
     [Serializable]
-    public struct RevolvedShapeSettings
+    public struct ChiselRevolvedShape : IBranchGenerator
     {
+        public readonly static ChiselRevolvedShape DefaultValues = new ChiselRevolvedShape
+        {
+            startAngle		= 0.0f,
+            totalAngle		= 360.0f,
+            curveSegments	= 8,
+            revolveSegments	= 8
+        };
+
         public int      curveSegments;
         public int      revolveSegments;
         public float    startAngle;
@@ -23,33 +31,29 @@ namespace Chisel.Core
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<SegmentVertex>             polygonVerticesList;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<int>                       polygonVerticesSegments;
         [UnityEngine.HideInInspector, NonSerialized] internal UnsafeList<float4x4>                  pathMatrices;
-    }
-
-    public struct ChiselRevolvedShapeGenerator : IChiselBranchTypeGenerator<RevolvedShapeSettings>
-    {
+                
+        #region Generate
         [BurstCompile]
-        public int PrepareAndCountRequiredBrushMeshes(ref RevolvedShapeSettings settings)
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            ref var curve = ref settings.curveBlob.Value;
-            if (!curve.ConvexPartition(settings.curveSegments, out UnsafeList<SegmentVertex> polygonVerticesList, out UnsafeList<int> polygonVerticesSegments, Allocator.Persistent))
+            ref var curve = ref curveBlob.Value;
+            if (!curve.ConvexPartition(curveSegments, out polygonVerticesList, out polygonVerticesSegments, Allocator.Persistent))
                 return 0;
 
-            settings.polygonVerticesList     = polygonVerticesList;
-            settings.polygonVerticesSegments = polygonVerticesSegments;
-            BrushMeshFactory.GetCircleMatrices(out settings.pathMatrices, settings.revolveSegments, new float3(0, 1, 0), Allocator.Persistent);
+            BrushMeshFactory.GetCircleMatrices(out pathMatrices, revolveSegments, new float3(0, 1, 0), Allocator.Persistent);
 
-            BrushMeshFactory.Split2DPolygonAlongOriginXAxis(ref settings.polygonVerticesList, ref settings.polygonVerticesSegments);
+            BrushMeshFactory.Split2DPolygonAlongOriginXAxis(ref polygonVerticesList, ref polygonVerticesSegments);
 
-            return settings.polygonVerticesSegments.Length * (settings.pathMatrices.length - 1);
+            return polygonVerticesSegments.Length * (pathMatrices.length - 1);
         }
 
         [BurstCompile()]
-        public bool GenerateMesh(ref RevolvedShapeSettings settings, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
-                                                        in settings.polygonVerticesList,
-                                                        in settings.polygonVerticesSegments,
-                                                        in settings.pathMatrices,
+                                                        in polygonVerticesList,
+                                                        in polygonVerticesSegments,
+                                                        in pathMatrices,
                                                         in surfaceDefinitionBlob,
                                                         Allocator.Persistent))
             {
@@ -63,28 +67,45 @@ namespace Chisel.Core
             return true;
         }
 
-        public void Dispose(ref RevolvedShapeSettings settings)
+        public void Dispose()
         {
-            if (settings.curveBlob.IsCreated) settings.curveBlob.Dispose(); settings.curveBlob = default;
-            if (settings.polygonVerticesList.IsCreated) settings.polygonVerticesList.Dispose(); settings.polygonVerticesList = default;
-            if (settings.polygonVerticesSegments.IsCreated) settings.polygonVerticesSegments.Dispose(); settings.polygonVerticesSegments = default;
-            if (settings.pathMatrices.IsCreated) settings.pathMatrices.Dispose(); settings.pathMatrices = default;
+            if (curveBlob.IsCreated) curveBlob.Dispose(); curveBlob = default;
+            if (polygonVerticesList.IsCreated) polygonVerticesList.Dispose(); polygonVerticesList = default;
+            if (polygonVerticesSegments.IsCreated) polygonVerticesSegments.Dispose(); polygonVerticesSegments = default;
+            if (pathMatrices.IsCreated) pathMatrices.Dispose(); pathMatrices = default;
         }
 
         [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch, RevolvedShapeSettings settings) { }
+        public void FixupOperations(CSGTreeBranch branch) { }
+        #endregion
+
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 6; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
+        
+        #region Validation
+        public void Validate()
+        {
+            curveSegments	    = math.max(curveSegments, 2);
+            revolveSegments	    = math.max(revolveSegments, 1);
+
+            totalAngle		    = math.clamp(totalAngle, 1, 360); // TODO: constants
+        }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : IChiselBranchGenerator<ChiselRevolvedShapeGenerator, RevolvedShapeSettings>
+    public struct ChiselRevolvedShapeDefinition : ISerializedBranchGenerator<ChiselRevolvedShape>
     {
         public const string kNodeTypeName = "Revolved Shape";
 
-        public const int				kDefaultCurveSegments	= 8;
-        public const int                kDefaultRevolveSegments = 8;
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
 
-        [HideFoldout] public RevolvedShapeSettings settings;
+        [HideFoldout] public ChiselRevolvedShape settings;
 
         public Curve2D  shape;
 
@@ -93,27 +114,16 @@ namespace Chisel.Core
 
         public void Reset()
         {
-            // TODO: create constants
-            shape			            = kDefaultShape;
-            settings.startAngle		    = 0.0f;
-            settings.totalAngle		    = 360.0f;
-            settings.curveSegments	    = kDefaultCurveSegments;
-            settings.revolveSegments	= kDefaultRevolveSegments;
+            shape	    = kDefaultShape;
+            settings    = ChiselRevolvedShape.DefaultValues;
         }
 
-        public int RequiredSurfaceCount { get { return 6; } }
+        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
+        public void Validate() { settings.Validate(); }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
 
-        public void Validate()
-        {
-            settings.curveSegments	    = math.max(settings.curveSegments, 2);
-            settings.revolveSegments	= math.max(settings.revolveSegments, 1);
-
-            settings.totalAngle		    = math.clamp(settings.totalAngle, 1, 360); // TODO: constants
-        }
-
-        public RevolvedShapeSettings GenerateSettings()
+        public ChiselRevolvedShape GetBranchGenerator()
         {
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
             return settings;

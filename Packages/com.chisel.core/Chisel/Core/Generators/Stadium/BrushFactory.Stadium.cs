@@ -39,7 +39,7 @@ namespace Chisel.Core
                 
                 var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
                 var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
-                var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= StadiumSettings.kNoCenterEpsilon;
+                var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadium.kNoCenterEpsilon;
                 var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
 
                 CreateExtrudedSubMesh(sides, null, 0, 0, 1, 
@@ -70,7 +70,7 @@ namespace Chisel.Core
         {
             var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
             var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
-            var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= StadiumSettings.kNoCenterEpsilon;
+            var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadium.kNoCenterEpsilon;
             var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
             
             var radius			= diameter * 0.5f;
