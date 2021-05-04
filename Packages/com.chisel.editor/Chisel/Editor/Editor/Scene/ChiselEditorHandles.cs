@@ -1385,7 +1385,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselEditorMessages : IChiselMessages
+    public sealed class ChiselComponentInspectorMessageHandler : IChiselMessageHandler
     {
         public void Warning(string message, Action buttonAction, string buttonText)
         {

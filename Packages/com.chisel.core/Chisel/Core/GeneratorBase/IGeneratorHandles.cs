@@ -201,7 +201,7 @@ namespace Chisel.Core
         bool DoPlanarScaleHandle(ref Vector2 scale2D, Vector3 position, Quaternion rotation, string undoMessage = null);
     }
 
-    public interface IChiselMessages
+    public interface IChiselMessageHandler
     {
         void Warning(string message, Action buttonAction, string buttonText);
         void Warning(string message);

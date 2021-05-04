@@ -204,6 +204,13 @@ namespace Chisel.Core
             innerSegments   = math.max(kMinSegments, innerSegments);
             outerSegments   = math.max(kMinSegments, outerSegments);
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
@@ -213,22 +220,9 @@ namespace Chisel.Core
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DTs7Bc10UxKpWM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     // https://www.google.com/imgres?imgurl=https%3A%2F%2Fwww.visualarq.com%2Fwp-content%2Fuploads%2Fsites%2F2%2F2014%2F07%2FSpiral-stair-landings.png&imgrefurl=https%3A%2F%2Fwww.visualarq.com%2Fsupport%2Ftips%2Fhow-can-i-create-spiral-stairs-can-i-add-landings%2F&docid=Tk82BDe0l2fZmM&tbnid=DTs7Bc10UxKpWM%3A&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880&h=656&client=firefox-b-ab&bih=625&biw=1649&q=spiral%20stairs%20parameters&ved=0ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg&iact=mrc&uact=8#h=656&imgdii=DPwskqkaN7e_wM:&vet=10ahUKEwiL8_nBtLXeAhWC-qQKHUO4CBQQMwhCKAIwAg..i&w=880
     [Serializable]
-    public struct ChiselSpiralStairsDefinition : ISerializedBranchGenerator<ChiselSpiralStairs>
+    public class ChiselSpiralStairsDefinition : SerializedBranchGenerator<ChiselSpiralStairs>
     {
         public const string kNodeTypeName = "Spiral Stairs";
-
-        [HideFoldout] public ChiselSpiralStairs settings;
-
-
-        public void Reset() { settings = ChiselSpiralStairs.DefaultValues; }
-
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
-
-        public void Validate() { settings.Validate(); }
-
-        public ChiselSpiralStairs GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //
@@ -239,7 +233,7 @@ namespace Chisel.Core
         static Vector3[] s_InnerVertices;
         static Vector3[] s_OuterVertices;
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var normal					= Vector3.up;
             var topDirection			= Vector3.forward;
@@ -396,14 +390,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

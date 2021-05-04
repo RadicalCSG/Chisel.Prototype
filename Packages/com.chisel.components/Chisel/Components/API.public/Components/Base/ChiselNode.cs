@@ -44,8 +44,7 @@ namespace Chisel.Components
         public void OnValidate() { OnValidateState(); }
         protected virtual void OnValidateState() { SetDirty(); }
 
-
-        public abstract bool HasValidState();
+        public abstract void GetWarningMessages(IChiselMessageHandler messages);
 
         public void Reset() { OnResetInternal(); }
         protected virtual void OnResetInternal() { OnInitialize(); }

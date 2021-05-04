@@ -33,8 +33,6 @@ namespace Chisel.Core
             bottomSegments		= 4
         };
 
-        public const float kHeightEpsilon = 0.001f;
-
         public float    height;
         public float    topHeight;
         public float    bottomHeight;
@@ -48,7 +46,10 @@ namespace Chisel.Core
         public int      topSegments;
         public int      bottomSegments;
 
+
         #region Properties
+        const float kHeightEpsilon = 0.001f;
+
         public bool	        HaveRoundedTop		{ get { return topSegments > 0 && topHeight > kHeightEpsilon; } }
         public bool	        HaveRoundedBottom	{ get { return bottomSegments > 0 && bottomHeight > kHeightEpsilon; } }
         public bool	        HaveCylinder		{ get { return CylinderHeight > kHeightEpsilon; } }
@@ -80,7 +81,8 @@ namespace Chisel.Core
         internal int		BottomVertexOffset	{ get { return ExtraVertexCount + ((RingCount - BottomRingCount) * sides); } }
         #endregion
 
-        [BurstCompile(CompileSynchronously = true)]
+        #region Generate
+        [BurstCompile]
         public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateCapsule(in this,
@@ -90,13 +92,17 @@ namespace Chisel.Core
                 return default;
             return newBrushMesh;
         }
-        
+        #endregion
+
+        #region Surfaces
         [BurstDiscard]
         public int RequiredSurfaceCount { get { return 2 + sides; } }
 
         [BurstDiscard]
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
 
+        #region Validation
 
         public const float kMinDiameter = 0.01f;
 
@@ -110,30 +116,31 @@ namespace Chisel.Core
             diameterX		= math.max(math.abs(diameterX), kMinDiameter);
             diameterZ		= math.max(math.abs(diameterZ), kMinDiameter);
 
-            topSegments	= math.max(topSegments, 0);
+            topSegments	    = math.max(topSegments, 0);
             bottomSegments	= math.max(bottomSegments, 0);
             sides			= math.max(sides, 3);
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+        }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultSettings; }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselCapsuleDefinition : ISerializedBrushGenerator<ChiselCapsule>
+    public class ChiselCapsuleDefinition : SerializedBrushGenerator<ChiselCapsule>
     {
         public const string kNodeTypeName = "Capsule";
-
-        [HideFoldout] public ChiselCapsule settings;
 
         //[NamedItems(overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset() { settings = ChiselCapsule.DefaultSettings; }
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
-        public void Validate() => settings.Validate();
-
-
-        public ChiselCapsule GetBrushGenerator() { return settings; }
-
+        
         #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
@@ -196,12 +203,12 @@ namespace Chisel.Core
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
         
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
-            if (BrushMeshFactory.GenerateCapsuleVertices(ref this, ref vertices))
+            if (BrushMeshFactory.GenerateCapsuleVertices(ref settings, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
@@ -307,14 +314,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

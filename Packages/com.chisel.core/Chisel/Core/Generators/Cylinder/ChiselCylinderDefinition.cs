@@ -47,7 +47,6 @@ namespace Chisel.Core
             type                = CylinderShapeType.Cylinder
         };
 
-        #region Definition
         public CylinderShapeType type;
         public bool     isEllipsoid;
         public bool     fitToBounds;
@@ -87,7 +86,7 @@ namespace Chisel.Core
 
         [UnityEngine.HideInInspector, AngleValue]
         public float rotation;      // TODO: just get rid of this
-        #endregion
+        
 
         #region Properties
         public float TopDiameterX
@@ -222,7 +221,8 @@ namespace Chisel.Core
         }
         #endregion
 
-        [BurstCompile(CompileSynchronously = true)]
+        #region Generate
+        [BurstCompile]
         public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             var topDiameter     = new float2(topDiameterX, topDiameterZ);
@@ -252,8 +252,10 @@ namespace Chisel.Core
                                                                 allocator))
                 return default;
             return newBrushMesh;
-        }    
-        
+        }
+        #endregion
+
+        #region Surfaces
         [BurstDiscard]
         public int RequiredSurfaceCount { get { return 2 + sides; } }
 
@@ -281,8 +283,9 @@ namespace Chisel.Core
                 surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
             }
         }
+        #endregion
 
-        [BurstDiscard]
+        #region Validation
         public void Validate()
         {
             topDiameterX = math.abs(topDiameterX);
@@ -293,27 +296,25 @@ namespace Chisel.Core
             sides = math.max(3, sides);
         }
 
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+        }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselCylinderDefinition : ISerializedBrushGenerator<ChiselCylinder>
+    public class ChiselCylinderDefinition : SerializedBrushGenerator<ChiselCylinder>
     {
         public const string kNodeTypeName = "Cylinder";
-
-        [HideFoldout] public ChiselCylinder settings;
 
         // TODO: show this in scene somehow
         //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
         //public ChiselSurfaceDefinition surfaceDefinition;
-
-
-        public void Reset() { settings = ChiselCylinder.DefaultValues; }
-        public int RequiredSurfaceCount => settings.RequiredSurfaceCount; 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
-        public void Validate() => settings.Validate(); 
-
-        public ChiselCylinder GetBrushGenerator() { return settings; }
-
 
         #region OnEdit
         //
@@ -649,7 +650,7 @@ namespace Chisel.Core
             }
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             // Store our allocated handles in generatorState to avoid reallocating them every frame
             var cylinderHandles = handles.generatorState as CylinderHandles;
@@ -711,15 +712,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-            // TODO: show a message when height = 0 or when shape is a line or flat b/c diameters are 0
-        }
     }
 }

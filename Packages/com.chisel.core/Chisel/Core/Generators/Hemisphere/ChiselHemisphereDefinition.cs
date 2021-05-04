@@ -27,7 +27,9 @@ namespace Chisel.Core
         public float                    rotation; // TODO: useless?
         public int                      horizontalSegments;
         public int                      verticalSegments;
-        
+
+
+        #region Generate
         [BurstCompile(CompileSynchronously = true)]
         public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
@@ -41,11 +43,15 @@ namespace Chisel.Core
                 return default;
             return newBrushMesh;
         }
+        #endregion
 
+        #region Surfaces
         public int RequiredSurfaceCount { get { return 6; } }
 
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
 
+        #region Validation
         public const float kMinDiameter = 0.01f;
 
         public void Validate()
@@ -57,25 +63,24 @@ namespace Chisel.Core
             horizontalSegments	= math.max(horizontalSegments, 3);
             verticalSegments	= math.max(verticalSegments, 1);
         }
+
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+        }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselHemisphereDefinition : ISerializedBrushGenerator<ChiselHemisphere>
+    public class ChiselHemisphereDefinition : SerializedBrushGenerator<ChiselHemisphere>
     {
         public const string kNodeTypeName = "Hemisphere";
 
-        [HideFoldout] public ChiselHemisphere settings;
-
         //[NamedItems("Bottom", overflow = "Side {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset() { settings = ChiselHemisphere.DefaultValues; }
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition); 
-        public void Validate() => settings.Validate(); 
-
-        public ChiselHemisphere GetBrushGenerator() { return settings; }
-
 
         #region OnEdit
         //
@@ -127,12 +132,12 @@ namespace Chisel.Core
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
-            if (BrushMeshFactory.GenerateHemisphereVertices(ref this, ref vertices))
+            if (BrushMeshFactory.GenerateHemisphereVertices(ref settings, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
@@ -173,14 +178,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

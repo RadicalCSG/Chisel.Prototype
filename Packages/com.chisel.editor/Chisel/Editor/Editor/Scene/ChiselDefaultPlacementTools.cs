@@ -218,14 +218,18 @@ namespace Chisel.Editors
             generator.definition.OnEdit(handles);
         }
 
-        protected override void OnMessages(IChiselMessages messages)
+        protected override void ShowWarningMessages(IChiselMessageHandler messages)
         {
+            bool hadMessage = false;
             foreach (var target in targets)
             {
                 var generator = target as ComponentType;
                 if (!generator)
                     continue;
-                generator.definition.OnMessages(messages);
+                if (!hadMessage)
+                    EditorGUILayout.Space();
+                hadMessage = true;
+                generator.definition.GetWarningMessages(messages);
             }
         }
     }

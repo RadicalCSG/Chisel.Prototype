@@ -883,14 +883,14 @@ namespace Chisel.Editors
             ShowInspectorHeader(operationProp);
         }
 
-        static readonly ChiselEditorMessages warnings = new ChiselEditorMessages();
-        protected virtual void OnMessages(IChiselMessages warnings) { }
+        static readonly ChiselComponentInspectorMessageHandler warnings = new ChiselComponentInspectorMessageHandler();
+        protected virtual void ShowWarningMessages(IChiselMessageHandler warnings) { }
 
 
         protected virtual void OnInspector() 
         { 
             OnDefaultInspector(); 
-            OnMessages(warnings); 
+            ShowWarningMessages(warnings); 
         }
 
         protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }

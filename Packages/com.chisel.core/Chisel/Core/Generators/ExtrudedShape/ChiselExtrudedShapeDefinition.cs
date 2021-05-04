@@ -89,11 +89,18 @@ namespace Chisel.Core
         
         #region Validation
         public void Validate() { }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
     [Serializable]
-    public struct ChiselExtrudedShapeDefinition : ISerializedBranchGenerator<ChiselExtrudedShape>
+    public class ChiselExtrudedShapeDefinition : SerializedBranchGenerator<ChiselExtrudedShape>
     {
         public const string kNodeTypeName = "Extruded Shape";
 
@@ -102,37 +109,31 @@ namespace Chisel.Core
         public Curve2D                  shape;
         public ChiselPath               path;
 
-        [HideFoldout] public ChiselExtrudedShape settings;
-
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
+        public override void Reset()
         {
             shape = new Curve2D(kDefaultShape);
             path  = new ChiselPath(ChiselPath.Default);
-            settings = ChiselExtrudedShape.DefaultValues;
+            base.Reset();
         }
 
-        public int RequiredSurfaceCount { get { return 2 + shape.controlPoints.Length; } }
+        public override int RequiredSurfaceCount { get { return 2 + shape.controlPoints.Length; } }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) 
-        {
-            settings.UpdateSurfaces(ref surfaceDefinition);
-        }
 
-        public void Validate()
+        public override void Validate()
         {
             shape ??= new Curve2D(kDefaultShape);
             path  ??= new ChiselPath(ChiselPath.Default);
-            settings.Validate();
+            base.Validate();
         }
 
-        public ChiselExtrudedShape GetBranchGenerator()
+        public override ChiselExtrudedShape GetBranchGenerator()
         {
             settings.pathBlob = ChiselPathBlob.Convert(path, Allocator.TempJob);
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
-            return settings;
+            return base.GetBranchGenerator();
         }
 
         #region OnEdit
@@ -147,7 +148,7 @@ namespace Chisel.Core
         const float kCapLineThickness			= 1.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;            
             var noZTestcolor	= handles.GetStateColor(baseColor, false, true);
@@ -233,14 +234,5 @@ namespace Chisel.Core
             // TODO: draw curved path
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

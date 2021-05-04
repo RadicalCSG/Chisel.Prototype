@@ -37,6 +37,7 @@ namespace Chisel.Core
         public int                  topSides;
         public int                  bottomSides;
 
+
         #region Properties
         internal const float kNoCenterEpsilon = 0.0001f;
 
@@ -51,7 +52,8 @@ namespace Chisel.Core
         internal bool				HaveCenter			{ get { return (length - ((HaveRoundedTop ? topLength : 0) + (HaveRoundedBottom ? bottomLength : 0))) >= kNoCenterEpsilon; } }
         #endregion
 
-        [BurstCompile(CompileSynchronously = true)]
+        #region Generate
+        [BurstCompile]
         public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.GenerateStadium(width, height, length,
@@ -63,19 +65,21 @@ namespace Chisel.Core
                 return default;
             return newBrushMesh;
         }
-        
+        #endregion
+
+        #region Surfaces
         [BurstDiscard]
         public int RequiredSurfaceCount { get { return 2 + Sides; } }
 
         [BurstDiscard]
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
-        
+        #endregion
 
+        #region Validation
         public const float	kMinDiameter    = 0.01f;
         public const float	kMinLength	    = 0.01f;
         public const float	kMinHeight	    = 0.01f;
 
-        [BurstDiscard]
         public void Validate()
         {
             topLength	    = math.max(topLength,    0);
@@ -89,26 +93,25 @@ namespace Chisel.Core
             topSides		= math.max(topSides,	 1);
             bottomSides	    = math.max(bottomSides, 1);
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+        }
+        #endregion
+        
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselStadiumDefinition : ISerializedBrushGenerator<ChiselStadium>
+    public class ChiselStadiumDefinition : SerializedBrushGenerator<ChiselStadium>
     {
         public const string kNodeTypeName = "Stadium";
 
-        [HideFoldout] public ChiselStadium settings;
-        
-
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset() { settings = ChiselStadium.DefaultValues; }
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
-        public void Validate() => settings.Validate(); 
-
-        public ChiselStadium GetBrushGenerator() { return settings; }
-
 
         #region OnEdit
         //
@@ -161,7 +164,7 @@ namespace Chisel.Core
             //renderer.DrawLine(vertices[sides + firstTopSide   ], vertices[sides + lastTopSide   ], lineMode: lineMode, thickness: kVertLineThickness);
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor       = handles.color;
             var upVector		= Vector3.up;
@@ -304,14 +307,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

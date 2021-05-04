@@ -21,6 +21,7 @@ namespace Chisel.Core
 
         public MinMaxAABB bounds;
 
+
         #region Properties
         public float3 Min { get { return bounds.Min; } set { bounds.Min = value; } }
         public float3 Max { get { return bounds.Max; } set { bounds.Max = value; } }
@@ -50,8 +51,8 @@ namespace Chisel.Core
         }
         #endregion
 
-
-        [BurstCompile(CompileSynchronously = true)]
+        #region Generate
+        [BurstCompile]
         public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
             if (!BrushMeshFactory.CreateBox(bounds.Min, bounds.Max,
@@ -61,61 +62,54 @@ namespace Chisel.Core
                 return default;
             return newBrushMesh;
         }
+        #endregion
 
+        #region Surfaces
         [BurstDiscard]
         public int RequiredSurfaceCount { get { return 6; } }
 
         [BurstDiscard]
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
 
-        [BurstDiscard]
+        #region Validation
         public void Validate()
         {
             var originalBox = bounds;
             bounds.Min = math.min(originalBox.Min, originalBox.Max);
             bounds.Max = math.max(originalBox.Min, originalBox.Max);
         }
+
+        const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+            var size = Size;
+            if (size.x == 0 || size.y == 0 || size.z == 0)
+                messages.Warning(kDimensionCannotBeZero);
+        }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
     }
 
     [Serializable]
-    public struct ChiselBoxDefinition : ISerializedBrushGenerator<ChiselBox>
+    public class ChiselBoxDefinition : SerializedBrushGenerator<ChiselBox>
     {
         public const string kNodeTypeName = "Box";
-
-        [HideFoldout] public ChiselBox settings;
 
         //[NamedItems("Top", "Bottom", "Right", "Left", "Back", "Front", fixedSize = 6)]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset() { settings = ChiselBox.DefaultValues; }
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) => settings.UpdateSurfaces(ref surfaceDefinition);
-        public void Validate() => settings.Validate(); 
-
-        public ChiselBox GetBrushGenerator() { return settings; }
-
-
-        public void OnEdit(IChiselHandles handles)
+        #region OnEdit
+        public override void OnEdit(IChiselHandles handles)
         {
             handles.DoBoundsHandle(ref settings.bounds);
             handles.RenderBoxMeasurements(settings.bounds);
         }
-
-        const string kDimensionCannotBeZero = "One or more dimensions of the box is zero, which is not allowed";
-
-        public bool HasValidState()
-        {
-            var size = settings.Size;
-            if (size.x == 0 || size.y == 0 || size.z == 0)
-                return false;
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-            var size = settings.Size;
-            if (size.x == 0 || size.y == 0 || size.z == 0)
-                messages.Warning(kDimensionCannotBeZero);
-        }
+        #endregion
     }
 }

@@ -159,12 +159,7 @@ namespace Chisel.Core
         {
         }
 
-        public bool HasValidState()
-        {
-            return IsValid && ValidState;
-        }
-
-        public void OnMessages(IChiselMessages messages)
+        public void GetWarningMessages(IChiselMessageHandler messages)
         {
             if (!IsValid)
             {

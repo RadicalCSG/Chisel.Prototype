@@ -61,7 +61,7 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public static bool GenerateCapsuleVertices(in ChiselCapsule           settings,
+        public static bool GenerateCapsuleVertices(in ChiselCapsule             settings,
                                                    in BlobBuilder               builder, 
                                                    ref BrushMeshBlob            root,
                                                    out BlobBuilderArray<float3> localVertices)
@@ -168,9 +168,8 @@ namespace Chisel.Core
         //	capsule with top OR bottom set to 0 height
         //	capsule with both top AND bottom set to 0 height
         //	capsule with height equal to top and bottom height
-        public static bool GenerateCapsuleVertices(ref ChiselCapsuleDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateCapsuleVertices(ref ChiselCapsule settings, ref Vector3[] vertices)
         {
-            ref var settings = ref definition.settings;
             var haveTopHemisphere		= settings.HaveRoundedTop;
             var haveBottomHemisphere	= settings.HaveRoundedBottom;
             var haveMiddleCylinder		= settings.HaveCylinder;

@@ -396,7 +396,7 @@ namespace Chisel.Components
 
     public abstract class ChiselBrushGeneratorComponent<DefinitionType, Generator> : ChiselNodeGeneratorComponent<DefinitionType>
         where Generator      : unmanaged, IBrushGenerator
-        where DefinitionType : ISerializedBrushGenerator<Generator>, new()
+        where DefinitionType : SerializedBrushGenerator<Generator>, new()
     {
         CSGTreeBrush GenerateTopNode(CSGTreeNode node, int userID, CSGOperationType operation)
         {
@@ -431,7 +431,7 @@ namespace Chisel.Components
 
     public abstract class ChiselBranchGeneratorComponent<Generator, DefinitionType> : ChiselNodeGeneratorComponent<DefinitionType>
         where Generator      : unmanaged, IBranchGenerator
-        where DefinitionType : ISerializedBranchGenerator<Generator>, new()
+        where DefinitionType : SerializedBranchGenerator<Generator>, new()
     {
         CSGTreeBranch GenerateTopNode(CSGTreeBranch branch, int userID, CSGOperationType operation)
         {
@@ -505,9 +505,10 @@ namespace Chisel.Components
         }
 
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
+        public override void GetWarningMessages(IChiselMessageHandler messages)
         {
-            return base.HasValidState() && definition.HasValidState();
+            base.GetWarningMessages(messages);
+            definition.GetWarningMessages(messages);
         }
     }
 
@@ -647,16 +648,21 @@ namespace Chisel.Components
             base.OnResetInternal();
         }
 
+        // TODO: improve warning messages
+        const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of generator (this should never happen)";
+        const string kGeneratorIsPartOfDefaultModel = "This generator is part of the default model, please place it underneath a GameObject with a " + ChiselModel.kNodeTypeName + " component";
+
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
+        public override void GetWarningMessages(IChiselMessageHandler messages)
         {
             if (!ValidNodes)
-                return false;
+            {
+                messages.Warning(kFailedToGenerateNodeMessage);
+                return;
+            }
 
             if (ChiselGeneratedComponentManager.IsDefaultModel(hierarchyItem.Model))
-                return false;
-
-            return true;
+                messages.Warning(kGeneratorIsPartOfDefaultModel);
         }
 
         protected override void OnValidateState()

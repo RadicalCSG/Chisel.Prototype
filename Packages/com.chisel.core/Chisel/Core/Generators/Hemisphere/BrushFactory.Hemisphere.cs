@@ -109,10 +109,10 @@ namespace Chisel.Core
             }
         }
 
-        public static bool GenerateHemisphereVertices(ref ChiselHemisphereDefinition definition, ref Vector3[] vertices)
+        public static bool GenerateHemisphereVertices(ref ChiselHemisphere settings, ref Vector3[] vertices)
         {
-            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(definition.settings.rotation, Vector3.up), Vector3.one);
-            return GenerateHemisphereVertices(definition.settings.diameterXYZ, transform, definition.settings.horizontalSegments, definition.settings.verticalSegments, ref vertices);
+            var transform = Matrix4x4.TRS(Vector3.zero, Quaternion.AngleAxis(settings.rotation, Vector3.up), Vector3.one);
+            return GenerateHemisphereVertices(settings.diameterXYZ, transform, settings.horizontalSegments, settings.verticalSegments, ref vertices);
         }
 
         public static bool GenerateHemisphereVertices(Vector3 diameterXYZ, Matrix4x4 transform, int horzSegments, int vertSegments, ref Vector3[] vertices)

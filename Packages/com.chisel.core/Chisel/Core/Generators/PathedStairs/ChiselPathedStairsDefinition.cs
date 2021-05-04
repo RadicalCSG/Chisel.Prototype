@@ -99,54 +99,50 @@ namespace Chisel.Core
             curveSegments = math.max(curveSegments, kMinCurveSegments);
             stairs.Validate();
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
     [Serializable]
-    public struct ChiselPathedStairsDefinition : ISerializedBranchGenerator<ChiselPathedStairs>
+    public class ChiselPathedStairsDefinition : SerializedBranchGenerator<ChiselPathedStairs>
     {
         public const string kNodeTypeName = "Pathed Stairs";
 
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
-
-        [HideFoldout] public ChiselPathedStairs settings;
 
         public Curve2D					shape;
         
         // TODO: do not use this data structure, find common stuff and share between the definitions ...
         //public ChiselLinearStairsDefinition stairs;
 
-        public void Reset()
+        public override void Reset()
         {
-            shape    = kDefaultShape;
-            settings = ChiselPathedStairs.DefaultValues;
+            shape = kDefaultShape;
+            base.Reset();
         }
 
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
+        public override void Validate() 
+        {
+            shape ??= kDefaultShape;
+            base.Validate(); 
+        }
 
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
-            
-        public void Validate() { settings.Validate(); }
-
-        public ChiselPathedStairs GetBranchGenerator()
+        public override ChiselPathedStairs GetBranchGenerator()
         {
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
             settings.closed = shape.closed;
-            return settings;
+            return base.GetBranchGenerator();
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             handles.DoShapeHandle(ref shape);
-        }
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
         }
     }
 }

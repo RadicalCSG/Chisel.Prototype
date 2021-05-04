@@ -273,6 +273,13 @@ namespace Chisel.Core
             plateauHeight	= math.max(0, realHeight - totalStepHeight);
             stepDepth		= math.clamp(stepDepth, kMinStepDepth, AbsDepth / totalSteps);
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
@@ -281,36 +288,20 @@ namespace Chisel.Core
     // https://landarchbim.com/2014/11/18/stair-nosing-treads-and-stringers/
     // https://en.wikipedia.org/wiki/Stairs
     [Serializable]
-    public struct ChiselLinearStairsDefinition : ISerializedBranchGenerator<ChiselLinearStairs>
+    public class ChiselLinearStairsDefinition : SerializedBranchGenerator<ChiselLinearStairs>
     {
         public const string kNodeTypeName = "Linear Stairs";
 
-        [HideFoldout] public ChiselLinearStairs settings;
-
         //[NamedItems("Top", "Bottom", "Left", "Right", "Front", "Back", "Tread", "Step", overflow = "Side {0}", fixedSize = 8)]
         //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset() { settings = ChiselLinearStairs.DefaultValues; }
-
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
-
-        public void Validate() { settings.Validate(); }
-
-
-        public ChiselLinearStairs GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
 
-
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
-            var newDefinition = this;
-
             {
                 var stepDepthOffset = settings.StepDepthOffset;
                 var stepHeight      = settings.stepHeight;
@@ -321,7 +312,7 @@ namespace Chisel.Core
                 steps.y			    = stepHeight;
 
                 if (handles.DoBoundsHandle(ref bounds, snappingSteps: steps))
-                    newDefinition.settings.bounds = bounds;
+                    settings.bounds = bounds;
 
                 var min			= math.min(bounds.Min, bounds.Max);
                 var max			= math.min(bounds.Min, bounds.Max);
@@ -340,24 +331,24 @@ namespace Chisel.Core
                 var pDepth1		= new Vector3(max.x, max.y, depthStart + stepDepthOffset);
 
                 if (handles.DoTurnHandle(ref bounds))
-                    newDefinition.settings.bounds = bounds;
+                    settings.bounds = bounds;
 
                 if (handles.DoEdgeHandle1D(out edgeHeight, Axis.Y, pHeight0, pHeight1, snappingStep: stepHeight))
                 {
                     var totalStepHeight = math.clamp((heightStart - edgeHeight), size.y % stepHeight, size.y);
                     const float kSmudgeValue = 0.0001f;
-                    var oldStepCount = newDefinition.settings.StepCount;
+                    var oldStepCount = settings.StepCount;
                     var newStepCount = math.max(1, (int)math.floor((math.abs(totalStepHeight) + kSmudgeValue) / stepHeight));
 
-                    newDefinition.settings.stepDepth     = (oldStepCount * newDefinition.settings.stepDepth) / newStepCount;
-                    newDefinition.settings.plateauHeight = size.y - (stepHeight * newStepCount);
+                    settings.stepDepth     = (oldStepCount * settings.stepDepth) / newStepCount;
+                    settings.plateauHeight = size.y - (stepHeight * newStepCount);
                 }
 
                 if (handles.DoEdgeHandle1D(out stepDepthOffset, Axis.Z, pDepth0, pDepth1, snappingStep: ChiselLinearStairs.kMinStepDepth))
                 {
                     stepDepthOffset -= depthStart;
                     stepDepthOffset = math.clamp(stepDepthOffset, 0, settings.AbsDepth - ChiselLinearStairs.kMinStepDepth);
-                    newDefinition.settings.stepDepth = ((settings.AbsDepth - stepDepthOffset) / settings.StepCount);
+                    settings.stepDepth = ((settings.AbsDepth - stepDepthOffset) / settings.StepCount);
                 }
 
                 float heightOffset;
@@ -372,21 +363,10 @@ namespace Chisel.Core
                 }
                 if (prevModified != handles.modified)
                 {
-                    newDefinition.settings.plateauHeight += heightOffset;
+                    settings.plateauHeight += heightOffset;
                 }
             }
-            if (handles.modified)
-                this = newDefinition;
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

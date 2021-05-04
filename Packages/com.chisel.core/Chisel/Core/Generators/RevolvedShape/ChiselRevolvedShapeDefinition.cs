@@ -95,38 +95,45 @@ namespace Chisel.Core
 
             totalAngle		    = math.clamp(totalAngle, 1, 360); // TODO: constants
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
     [Serializable]
-    public struct ChiselRevolvedShapeDefinition : ISerializedBranchGenerator<ChiselRevolvedShape>
+    public class ChiselRevolvedShapeDefinition : SerializedBranchGenerator<ChiselRevolvedShape>
     {
         public const string kNodeTypeName = "Revolved Shape";
 
         public static readonly Curve2D	kDefaultShape			= new Curve2D(new[]{ new CurveControlPoint2D(-1,-1), new CurveControlPoint2D( 1,-1), new CurveControlPoint2D( 1, 1), new CurveControlPoint2D(-1, 1) });
-
-        [HideFoldout] public ChiselRevolvedShape settings;
 
         public Curve2D  shape;
 
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public void Reset()
+        public override void Reset()
         {
-            shape	    = kDefaultShape;
-            settings    = ChiselRevolvedShape.DefaultValues;
+            shape = kDefaultShape;
+            base.Reset();
         }
 
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
-        public void Validate() { settings.Validate(); }
+        public override void Validate() 
+        {
+            shape ??= kDefaultShape;
+            base.Validate(); 
+        }
 
 
-        public ChiselRevolvedShape GetBranchGenerator()
+        public override ChiselRevolvedShape GetBranchGenerator()
         {
             settings.curveBlob = ChiselCurve2DBlob.Convert(shape, Allocator.TempJob);
-            return settings;
+            return base.GetBranchGenerator();
         }
 
         #region OnEdit
@@ -141,7 +148,7 @@ namespace Chisel.Core
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
@@ -202,14 +209,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

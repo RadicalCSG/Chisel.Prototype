@@ -119,29 +119,23 @@ namespace Chisel.Core
 
             totalAngle			= math.clamp(totalAngle, 1, 360); // TODO: constants
         }
+
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
+
+        #region Reset
+        public void Reset() { this = DefaultValues; }
         #endregion
     }
 
     [Serializable]
-    public struct ChiselTorusDefinition : ISerializedBranchGenerator<ChiselTorus>
+    public class ChiselTorusDefinition : SerializedBranchGenerator<ChiselTorus>
     {
         public const string kNodeTypeName = "Torus";
 
-        [HideFoldout] public ChiselTorus settings;
-
-
         //[NamedItems(overflow = "Surface {0}")]
         //public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset() { settings = ChiselTorus.DefaultValues; }
-
-        public int RequiredSurfaceCount { get { return settings.RequiredSurfaceCount; } }
-
-        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { settings.UpdateSurfaces(ref surfaceDefinition); }
-
-        public void Validate() { settings.Validate(); }
-
-        public ChiselTorus GetBranchGenerator() { return settings; }
 
         #region OnEdit
         //
@@ -187,7 +181,7 @@ namespace Chisel.Core
             renderer.color = prevColor;
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var normal			= Vector3.up;
 
@@ -220,14 +214,5 @@ namespace Chisel.Core
             }
         }
         #endregion
-
-        public bool HasValidState()
-        {
-            return true;
-        }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
     }
 }

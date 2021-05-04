@@ -30,18 +30,24 @@ namespace Chisel.Components
         public CSGOperationType Operation { get { return operation; } set { if (value == operation) return; operation = value; if (Node.Valid) Node.Operation = operation; } }
 
 
+        // TODO: improve warning messages
+        const string kModelHasNoChildrenMessage = kNodeTypeName + " has no children and will not have an effect";
+        const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of " + kNodeTypeName + " (this should never happen)";
+
         // Will show a warning icon in hierarchy when a generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
+        public override void GetWarningMessages(IChiselMessageHandler messages)
         {
-            if (PassThrough)
-                return true;
-            if (!Node.Valid)
-                return false;
+            if (!PassThrough && !Node.Valid)
+                messages.Warning(kFailedToGenerateNodeMessage);
 
             // A composite makes no sense without any children
             if (hierarchyItem != null)
-                return (hierarchyItem.Children.Count > 0);
-            return (transform.childCount > 0);
+            {
+                if (hierarchyItem.Children.Count == 0)
+                    messages.Warning(kModelHasNoChildrenMessage);
+            } else
+            if (transform.childCount == 0)
+                messages.Warning(kModelHasNoChildrenMessage);
         }
 
         protected override void OnValidateState()
