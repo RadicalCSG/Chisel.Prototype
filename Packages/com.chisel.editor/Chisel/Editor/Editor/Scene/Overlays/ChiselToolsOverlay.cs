@@ -154,7 +154,7 @@ namespace Chisel.Editors
                     if (gameObject.TryGetComponent<ChiselNode>(out _))
                         return true;
             }
-            return Selection.GetFiltered<ChiselNode>(SelectionMode.OnlyUserModifiable).Length > 0;
+            return Selection.GetFiltered<ChiselNode>(SelectionMode.Editable).Length > 0;
         }
 
 
