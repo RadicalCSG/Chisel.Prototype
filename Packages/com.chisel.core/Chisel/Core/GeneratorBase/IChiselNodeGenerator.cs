@@ -60,7 +60,6 @@ namespace Chisel.Core
         public abstract void OnEdit(IChiselHandles handles);
     }
 
-
     public interface IBranchGenerator
     {
         int PrepareAndCountRequiredBrushMeshes();
@@ -87,16 +86,12 @@ namespace Chisel.Core
 
         public virtual BranchGenerator GetBranchGenerator() { return settings; }
 
-        public virtual void Reset() { settings.Reset(); }
+        public virtual void Reset()     { settings.Reset(); }
+        public virtual void Validate()  { settings.Validate(); }
 
         public virtual void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
             settings.UpdateSurfaces(ref surfaceDefinition);
-        }
-
-        public virtual void Validate()
-        {
-            settings.Validate();
         }
 
         public virtual void GetWarningMessages(IChiselMessageHandler messages)

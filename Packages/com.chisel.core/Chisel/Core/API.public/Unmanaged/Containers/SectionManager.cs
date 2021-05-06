@@ -90,27 +90,29 @@ namespace Chisel.Core
         unsafe bool FindSectionByOffset(int findOffset, out int foundSection)
         {
             foundSection = -1;
-            if (sections.Length == 0)
+            var sectionsLength = sections.Length;
+            if (sectionsLength == 0)
                 return false;
 
-            if (findOffset < 0 || findOffset > sections[sections.Length - 1].end)
+            var sectionsPtr = (Section*)sections.GetUnsafePtr();
+            if (findOffset < 0 || findOffset > sectionsPtr[sectionsLength - 1].end)
                 return false;
 
             var searchStack = stackalloc SectionFindStack[8]; // should be be more than enough, we'd be running into integer size issues before then
             int searchLength;
 
-            searchStack[0] = new SectionFindStack { first = 0, last = sections.Length - 1 };
+            searchStack[0] = new SectionFindStack { first = 0, last = sectionsLength - 1 };
             searchLength = 1;
 
             while (searchLength > 0)
             {
                 var sectionFirstIndex = searchStack[searchLength - 1].first;
                 var sectionLastIndex  = searchStack[searchLength - 1].last;
-                searchStack[searchLength - 1] = new SectionFindStack { };
+                searchStack[searchLength - 1] = default;
                 searchLength--;
 
                 var centerSectionIndex  = sectionFirstIndex + ((sectionLastIndex - sectionFirstIndex) / 2);
-                var section             = sections[centerSectionIndex];
+                var section             = sectionsPtr[centerSectionIndex];
                 var difference          = (findOffset < section.start) ? -1 : 
                                           (findOffset > section.end  ) ?  1 : 
                                           0;

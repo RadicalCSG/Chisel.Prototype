@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
 
 namespace Chisel.Core
@@ -141,7 +142,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void GetID(int index, out int id, out int generation)
+        public unsafe void GetID(int index, out int id, out int generation)
         {
             id = default; //out
             generation = default;//out
@@ -153,7 +154,7 @@ namespace Chisel.Core
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 throw new IndexOutOfRangeException($"{nameof(id)} ({id}) must be between 1 ... {1 + idToIndex.Length}");
 
-            generation = idToIndex[idInternal].generation;
+            generation = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal].generation;
             if (idToIndex[idInternal].index != index)
                 throw new FieldAccessException($"Internal mismatch of ids and indices");
 
@@ -161,7 +162,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsValidID(int id, int generation, out int index)
+        public unsafe bool IsValidID(int id, int generation, out int index)
         {
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
@@ -169,7 +170,7 @@ namespace Chisel.Core
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 return false;
 
-            var idLookup = idToIndex[idInternal];
+            var idLookup = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal];
             if (idLookup.generation != generation)
                 return false;
 

@@ -148,13 +148,6 @@ namespace Chisel.Core
             }
         }*/
 
-        [BurstCompile(CompileSynchronously = true)]
-        public JobHandle Generate(NativeReference<BlobAssetReference<BrushMeshBlob>> brushMeshRef, BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
-        {
-            brushMeshRef.Value = BrushMeshFactory.CreateBrushBlob(brushOutline, in surfaceDefinitionBlob);
-            return default;
-        }
-
         public void OnEdit(IChiselHandles handles)
         {
         }

@@ -541,6 +541,7 @@ namespace Chisel.Core
             return IsValidHierarchyID(hierarchyID, out _);
         }
 
+        [BurstCompile]
         internal static bool IsValidNodeID(NodeID nodeID, out int index)
         {
             index = -1;
@@ -559,6 +560,7 @@ namespace Chisel.Core
             return true;
         }
 
+        [BurstCompile]
         public static bool IsValidNodeID(NodeID nodeID)
         {
             if (nodeID == NodeID.Invalid)
@@ -786,6 +788,7 @@ namespace Chisel.Core
         }
         #endregion
 
+        [BurstCompile]
         internal static CSGNodeType GetTypeOfNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -803,6 +806,7 @@ namespace Chisel.Core
         }
 
 
+        [BurstCompile]
         public static bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             if (compactNodeID == CompactNodeID.Invalid)

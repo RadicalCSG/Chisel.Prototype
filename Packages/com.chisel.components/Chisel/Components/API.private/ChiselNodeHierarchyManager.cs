@@ -69,11 +69,6 @@ namespace Chisel.Components
         static readonly HashSet<ChiselNode> hierarchyUpdateQueue = new HashSet<ChiselNode>();
         static readonly HashSet<ChiselNode> onHierarchyChangeCalled = new HashSet<ChiselNode>();
 
-        // Dictionaries used to keep track which brushContainerAssets are used by which nodes, which is necessary to update the right nodes when an brushContainerAsset has been changed
-//      static readonly Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>> generatedBrushNodes = new Dictionary<ChiselBrushContainerAsset, HashSet<ChiselNode>>();
-//      static readonly Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>> nodegeneratedBrush = new Dictionary<ChiselNode, HashSet<ChiselBrushContainerAsset>>();
-
-
         public static bool ignoreNextChildrenChanged = false;
         public static bool firstStart = false;
         public static bool prefabInstanceUpdatedEvent = false;
@@ -89,13 +84,6 @@ namespace Chisel.Components
         public static void Initialize()
         {
             ChiselNodeHierarchyManager.firstStart = false;
-            /*
-            ChiselBrushContainerAssetManager.OnBrushMeshInstanceChanged -= OnBrushMeshInstanceChanged;
-            ChiselBrushContainerAssetManager.OnBrushMeshInstanceChanged += OnBrushMeshInstanceChanged;
-
-            ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed -= OnBrushMeshInstanceDestroyed;
-            ChiselBrushContainerAssetManager.OnBrushMeshInstanceDestroyed += OnBrushMeshInstanceDestroyed;
-            */
         }
 
         // TODO: Clean up API
@@ -107,10 +95,6 @@ namespace Chisel.Components
             Profiler.BeginSample("CSGManager.Clear");
             Chisel.Core.CompactHierarchyManager.Clear();
             Profiler.EndSample();
-
-            //Profiler.BeginSample("ChiselBrushContainerAssetManager.Reset");
-            //ChiselBrushContainerAssetManager.Reset();
-            //Profiler.EndSample();
 
             endTime = Time.realtimeSinceStartup;
             Debug.Log($"  Reset done in {((endTime - startTime) * 1000)} ms. ");
@@ -167,9 +151,6 @@ namespace Chisel.Components
             
             foreach(var item in destroyNodesList)
                 item.Destroy();
-
-            //generatedBrushNodes.Clear();
-            //nodegeneratedBrush.Clear();
 
             reregisterModelQueue.Clear();
             ClearQueues();
@@ -234,26 +215,6 @@ namespace Chisel.Components
 
             // Figure out if a components have been removed or created
             prefabInstanceUpdatedEvent = true;
-        }
-
-        public static int RootCount(Scene scene)
-        {
-            ChiselSceneHierarchy hierarchy;
-            if (!sceneHierarchies.TryGetValue(scene, out hierarchy))
-                return 0;
-            return hierarchy.RootItems.Count;
-        }
-
-        public static bool IsNodeDirty(ChiselNode component)
-        {
-            if (!component)
-                return false;
-
-            if (!registerQueueLookup.Add(component))
-                return false;
-
-            return registerQueue.Contains(component) ||
-                    hierarchyUpdateQueue.Contains(component);
         }
 
         public static void Register(ChiselNode component)
@@ -349,106 +310,9 @@ namespace Chisel.Components
             UpdateGeneratedBrushes(node);
         }
 
-/*
-        private static void OnBrushMeshInstanceChanged(ChiselBrushContainerAsset brushContainerAsset)
-        {
-            if (!generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-                return;
-            
-            foreach (var node in nodes)
-            {
-                if (node)
-                {
-                    node.UpdateBrushMeshInstances();
-                    hierarchyUpdateQueue.Add(node);
-                    updateTransformationNodes.Add(node);
-                }
-            }
-        }
-
-        private static void OnBrushMeshInstanceDestroyed(ChiselBrushContainerAsset brushContainerAsset)
-        {
-            if (generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-            {
-                foreach (var node in nodes)
-                {
-                    if (!node)
-                        continue;
-
-                    HashSet<ChiselBrushContainerAsset> uniqueGeneratedBrushes;
-                    if (nodegeneratedBrush.TryGetValue(node, out uniqueGeneratedBrushes))
-                        uniqueGeneratedBrushes.Remove(brushContainerAsset);
-                }
-            }
-            generatedBrushNodes.Remove(brushContainerAsset);
-        }
-
-        static List<ChiselBrushContainerAsset> nodeGeneratedBrushes = new List<ChiselBrushContainerAsset>();
-
-
-        static HashSet<ChiselBrushContainerAsset> RemoveBrushReference(ChiselNode node)
-        {
-            if (nodegeneratedBrush.TryGetValue(node, out var uniqueGeneratedBrushes))
-            {
-                // Remove previously set brushMeshes for this node
-                foreach (var brushContainerAsset in uniqueGeneratedBrushes)
-                {
-                    if (generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-                        nodes.Remove(node);
-                }
-                uniqueGeneratedBrushes.Clear();
-            } else
-                uniqueGeneratedBrushes = new HashSet<ChiselBrushContainerAsset>();
-            return uniqueGeneratedBrushes;
-        }*/
-
         static void UpdateGeneratedBrushes(ChiselNode node)
-        {/*
-            if (!node)
-            {
-                RemoveBrushReference(node);
-                return;
-            }
-
-            nodeGeneratedBrushes.Clear();
-            if (!node.GetUsedGeneratedBrushes(nodeGeneratedBrushes))
-                return;
-
-            var uniqueGeneratedBrushes = RemoveBrushReference(node);
-            for (int i = 0; i < nodeGeneratedBrushes.Count; i++)
-            {
-                var brushContainerAsset = nodeGeneratedBrushes[i];
-                if (object.Equals(brushContainerAsset, null))
-                    continue;
-
-                // Add current brushMesh of this node
-                if (uniqueGeneratedBrushes.Add(brushContainerAsset))
-                {
-                    if (!generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-                        generatedBrushNodes[brushContainerAsset] = nodes = new HashSet<ChiselNode>();
-                    nodes.Add(node);
-                }
-            }
-            nodegeneratedBrush[node] = uniqueGeneratedBrushes;*/
+        {
             node.UpdateBrushMeshInstances();
-        }
-
-        static void RemoveGeneratedBrushes(ChiselNode node)
-        {/*
-            // NOTE: node is likely destroyed at this point, it can still be used as a lookup key however.
-
-            HashSet<ChiselBrushContainerAsset> nodeGeneratedBrushes;
-            if (nodegeneratedBrush.TryGetValue(node, out nodeGeneratedBrushes))
-            {
-                // Remove previously set brushMeshes for this node
-                foreach (var brushContainerAsset in nodeGeneratedBrushes)
-                {
-                    if (generatedBrushNodes.TryGetValue(brushContainerAsset, out var nodes))
-                        nodes.Remove(node);
-                }
-                nodeGeneratedBrushes.Clear();
-            }
-            nodegeneratedBrush.Remove(node);*/
         }
 
         public static void OnTransformChildrenChanged(ChiselNode component)
@@ -516,8 +380,9 @@ namespace Chisel.Components
             return parentComponent;
         }
 
-        static List<GameObject> __rootGameObjects = new List<GameObject>(); // static to avoid allocations
-        static Queue<Transform> __transforms = new Queue<Transform>(); // static to avoid allocations
+        // static to avoid allocations
+        static List<GameObject> __rootGameObjects = new List<GameObject>(); 
+        static Queue<Transform> __transforms = new Queue<Transform>(); 
         static void UpdateChildren(Transform rootTransform)
         {
             __transforms.Clear();
@@ -562,7 +427,8 @@ namespace Chisel.Components
             __transforms.Clear();
         }
 
-        static Queue<List<ChiselHierarchyItem>> __hierarchyQueueLists = new Queue<List<ChiselHierarchyItem>>(); // static to avoid allocations
+        // static to avoid allocations
+        static Queue<List<ChiselHierarchyItem>> __hierarchyQueueLists = new Queue<List<ChiselHierarchyItem>>(); 
         static void SetChildScenes(ChiselHierarchyItem hierarchyItem, Scene scene)
         {
             // Note: we're only setting the scene here.
@@ -698,8 +564,6 @@ namespace Chisel.Components
             {
                 sceneHierarchies.Remove(sceneHierarchy.Scene);
             }
-
-            RemoveGeneratedBrushes(component);
         }
 
         static readonly List<GameObject> rootObjects = new List<GameObject>();
@@ -744,18 +608,9 @@ UpdateAgain:
 
             try
             {
-                bool haveCreatedTreeNodes = false;
                 Profiler.BeginSample("UpdateTrampoline");
-                haveCreatedTreeNodes = UpdateTrampoline();
+                UpdateTrampoline();
                 Profiler.EndSample();
-
-                // TODO: fix that generators create brushes inside the trampoline, requiring us to call things twice
-                if (haveCreatedTreeNodes)
-                {
-                    Profiler.BeginSample("UpdateTrampoline");
-                    try { UpdateTrampoline(); }
-                    finally { Profiler.EndSample(); }
-                }
             }
             // If we get an exception we don't want to end up infinitely spawning this exception ..
             finally
@@ -797,31 +652,17 @@ UpdateAgain:
             return sceneHierarchies[scene] = new ChiselSceneHierarchy { Scene = scene };
         }
 
-        public static ChiselModel GetDefaultModelForScene(Scene scene)
-        {
-            var sceneHierarchy = GetSceneHierarchyForScene(scene);
-            if (!sceneHierarchy.Scene.IsValid() ||
-                !sceneHierarchy.Scene.isLoaded)
-                return null;
-
-            if (!sceneHierarchy.DefaultModel)
-                sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
-
-            return sceneHierarchy.DefaultModel;
-        }
-
-
-        static readonly HashSet<ChiselNode> __registerNodes = new HashSet<ChiselNode>();	// static to avoid allocations
-        static readonly HashSet<ChiselNode> __unregisterNodes = new HashSet<ChiselNode>();	// static to avoid allocations
-        static readonly List<CSGTreeNode> __childNodes = new List<CSGTreeNode>(5000);  // static to avoid allocations
-        static readonly List<ChiselNode> __prevUpdateQueue = new List<ChiselNode>();
+        // static to avoid allocations
+        static readonly HashSet<ChiselNode> __registerNodes     = new HashSet<ChiselNode>();	
+        static readonly HashSet<ChiselNode> __unregisterNodes   = new HashSet<ChiselNode>();
+        static readonly List<CSGTreeNode>   __childNodes        = new List<CSGTreeNode>(5000);
+        static readonly List<ChiselNode>    __prevUpdateQueue   = new List<ChiselNode>();
         static readonly List<KeyValuePair<Scene, ChiselSceneHierarchy>> __prevSceneHierarchy = new List<KeyValuePair<Scene, ChiselSceneHierarchy>>();
 
         internal static bool prevPlaying = false;
-        internal static bool UpdateTrampoline()
+        internal static void UpdateTrampoline()
         {
             Profiler.BeginSample("UpdateTrampoline.Setup");
-            bool haveModifiedTreeNodeCount = false;
             if (createDefaultModels.Count > 0)
             {
                 foreach (var sceneHierarchy in createDefaultModels)
@@ -850,7 +691,7 @@ UpdateAgain:
             if (currentPlaying != prevPlaying)
             {
                 prevPlaying = currentPlaying;
-                return false;
+                return;
             }
 #endif
             // *Workaround*
@@ -859,13 +700,11 @@ UpdateAgain:
             {
                 firstStart = true;
                 Chisel.Core.CompactHierarchyManager.Clear();
-                //ChiselBrushContainerAssetManager.Reset();
 
                 // Prefabs can fire events that look like objects have been loaded/created ..
                 // Also, starting up in the editor can swallow up events and cause some nodes to not be registered properly
                 // So to ensure that the first state is correct, we get it explicitly
                 FindAndReregisterAllNodes();
-                //ChiselBrushContainerAssetManager.Update();
 #if UNITY_EDITOR
                 ChiselGeneratedComponentManager.OnVisibilityChanged();
 #endif
@@ -887,8 +726,8 @@ UpdateAgain:
                         if (!defaultChildren[n].GameObject)
                         {
                             var rootComponent = defaultChildren[n].Component;
-                            defaultChildren.RemoveAt(n);      // prevent potential infinite loops
-                            Unregister(rootComponent);  // .. try to clean this up
+                            defaultChildren.RemoveAt(n); // prevent potential infinite loops
+                            Unregister(rootComponent);   // .. try to clean this up
                             continue;
                         }
 
@@ -910,8 +749,8 @@ UpdateAgain:
                         if (!rootItems[n].GameObject)
                         {
                             var rootComponent = rootItems[n].Component;
-                            rootItems.RemoveAt(n);      // prevent potential infinite loops
-                            Unregister(rootComponent);  // .. try to clean this up
+                            rootItems.RemoveAt(n);     // prevent potential infinite loops
+                            Unregister(rootComponent); // .. try to clean this up
                             continue;
                         }
 
@@ -979,7 +818,7 @@ UpdateAgain:
                 updateTransformationNodes.Count == 0 &&
                 destroyNodesList.Count == 0 &&
                 rebuildTreeNodes.Count == 0)
-                return false;
+                return;
 
             __registerNodes   .Clear();
             __unregisterNodes .Clear();
@@ -1099,8 +938,6 @@ UpdateAgain:
                 }
                 Profiler.EndSample();
 
-                GeneratorJobPoolManager.Clear();
-
                 // Initialize the components
                 Profiler.BeginSample("UpdateTrampoline.registerQueue.B");
                 for (int i = registerQueue.Count - 1; i >= 0; i--) // reversed direction because we're also potentially removing items
@@ -1141,7 +978,6 @@ UpdateAgain:
                     //       _then_ create all the sub-nodes and initialize the nodes with the generated brushes
 
                     Profiler.BeginSample("RebuildTreeNodes");
-                    bool modified = false;
                     try
                     {
                         var treeNode = node.RebuildTreeNodes();
@@ -1149,13 +985,9 @@ UpdateAgain:
                             treeNodeLookup[node] = treeNode;
                         else
                             treeNodeLookup.Remove(node);
-                        modified = true; // TODO: fix this
                     } finally { Profiler.EndSample(); }
-                    haveModifiedTreeNodeCount = modified || haveModifiedTreeNodeCount;
                 }
                 Profiler.EndSample();
-
-                GeneratorJobPoolManager.Schedule();
 
                 // Separate loop to ensure all parent components are already initialized
                 // this is because the order of the registerQueue is essentially random
@@ -1382,7 +1214,7 @@ UpdateAgain:
                 sortChildrenQueue.Clear();
             }
             Profiler.EndSample();
-            
+
             Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue");
             if (updateChildrenQueue.Count > 0)
             {
@@ -1470,7 +1302,7 @@ UpdateAgain:
                 updateChildrenQueue.Clear();
             }
             Profiler.EndSample();
-            
+
             Profiler.BeginSample("UpdateTrampoline.updateTransformationNodes");
             if (updateTransformationNodes.Count > 0)
             {
@@ -1530,7 +1362,6 @@ UpdateAgain:
             // Used to redraw windows etc.
             NodeHierarchyModified?.Invoke();
             Profiler.EndSample();
-            return haveModifiedTreeNodeCount;
         }
 
         public static void GetChildrenOfHierarchyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)

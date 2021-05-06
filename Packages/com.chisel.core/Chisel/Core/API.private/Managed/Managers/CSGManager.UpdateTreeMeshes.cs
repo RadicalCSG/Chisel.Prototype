@@ -76,6 +76,15 @@ namespace Chisel.Core
             #region Do the setup for the CSG Jobs (not jobified)
             Profiler.BeginSample("CSG_Prepare");
 
+
+            Profiler.BeginSample("CSG_GeneratorJobPool");
+            var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs();
+            Profiler.EndSample();
+            generatorPoolJobHandle.Complete();
+
+            GeneratorJobPoolManager.Clear();
+
+
             #region Prepare Trees
             Profiler.BeginSample("CSG_TreeUpdate_Allocate");
             if (s_TreeUpdates == null || s_TreeUpdates.Length < treeNodeIDs.Count)

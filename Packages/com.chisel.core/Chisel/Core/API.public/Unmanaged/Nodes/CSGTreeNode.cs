@@ -40,7 +40,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
     [System.Diagnostics.DebuggerDisplay("{Type} ({nodeID})")]
-    public partial struct CSGTreeNode 
+    public partial struct CSGTreeNode : IEquatable<CSGTreeNode>
     {
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeNode"/> is valid or not.</value>
@@ -169,6 +169,7 @@ namespace Chisel.Core
             if (obj is CSGTree) return nodeID == ((CSGTree)obj).treeNodeID;
             return false;
         }
+        public bool Equals(CSGTreeNode other) { return nodeID == other.nodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return nodeID.GetHashCode(); }
         #endregion
@@ -180,7 +181,6 @@ namespace Chisel.Core
         internal void SetStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.SetStatusFlag(nodeID, flag); }
         internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(nodeID, flag); }
         internal void ClearAllStatusFlags() { CompactHierarchyManager.ClearAllStatusFlags(nodeID); }
-
 
         [SerializeField] // Useful to be able to handle selection in history
         internal NodeID nodeID;

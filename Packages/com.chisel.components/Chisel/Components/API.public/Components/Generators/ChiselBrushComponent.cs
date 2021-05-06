@@ -3,6 +3,7 @@ using Chisel.Core;
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
@@ -36,26 +37,28 @@ namespace Chisel.Components
             return brush;
         }
 
-        protected override JobHandle UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        protected override void UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
         {
-            var brush = (CSGTreeBrush)node;
-            OnValidateDefinition();
-            var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
-            if (!surfaceDefinitionBlob.IsCreated)
-                return default;
-            using (surfaceDefinitionBlob)
-            using (var brushMeshRef = new NativeReference<BlobAssetReference<BrushMeshBlob>>(Allocator.TempJob))
-            {
-                node = brush = GenerateTopNode(brush, userID, operation);
-                var handle = definition.Generate(brushMeshRef, surfaceDefinitionBlob);
-                handle.Complete();
-
-                if (!brushMeshRef.Value.IsCreated)
-                    brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshRef.Value) };
-                return default;
+            Profiler.BeginSample("ChiselBrushComponent");
+            try
+            { 
+                var brush = (CSGTreeBrush)node;
+                OnValidateDefinition();
+                var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
+                if (!surfaceDefinitionBlob.IsCreated)
+                    return;
+                using (surfaceDefinitionBlob)
+                {
+                    node = brush = GenerateTopNode(brush, userID, operation);
+                    var brushMesh = BrushMeshFactory.CreateBrushBlob(definition.brushOutline, in surfaceDefinitionBlob);
+                    
+                    if (!brushMesh.IsCreated)
+                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                    else
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                }
             }
+            finally { Profiler.EndSample(); }
         }
     }
 }
