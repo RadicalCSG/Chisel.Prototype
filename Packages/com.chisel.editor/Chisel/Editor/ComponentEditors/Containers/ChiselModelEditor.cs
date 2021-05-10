@@ -22,7 +22,6 @@ namespace Chisel.Editors
     }
 
     [CustomEditor(typeof(ChiselModel))]
-    [CanEditMultipleObjects]
     public sealed class ChiselModelEditor : ChiselNodeEditor<ChiselModel>
     {
         const string kModelHasNoChildren = "This model has no chisel nodes as children and will not generate any geometry.\nAdd some chisel nodes to see something.";

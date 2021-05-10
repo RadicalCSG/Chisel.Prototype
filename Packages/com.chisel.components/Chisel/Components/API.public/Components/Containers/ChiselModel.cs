@@ -165,9 +165,8 @@ namespace Chisel.Components
     }
 
 
-    [ExecuteInEditMode]
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselModel : ChiselNode
     {
         public const string kRenderSettingsName             = nameof(renderSettings);

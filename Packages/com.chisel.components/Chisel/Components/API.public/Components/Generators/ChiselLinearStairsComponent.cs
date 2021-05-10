@@ -4,8 +4,8 @@ using Unity.Mathematics;
 
 namespace Chisel.Components
 {
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [ExecuteInEditMode, AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselLinearStairsComponent : ChiselBranchGeneratorComponent<Core.ChiselLinearStairs, ChiselLinearStairsDefinition>
     {
         public const string kNodeTypeName = Core.ChiselLinearStairsDefinition.kNodeTypeName;

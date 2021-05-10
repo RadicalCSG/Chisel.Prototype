@@ -129,18 +129,19 @@ namespace Chisel.Components
         }
     }
 
+    [DisallowMultipleComponent]
     public abstract class ChiselGeneratorComponent : ChiselNode
     {
         // This ensures names remain identical, or a compile error occurs.
-        public const string kOperationFieldName         = nameof(operation);
+        public const string kOperationFieldName = nameof(operation);
 
         [HideInInspector] CSGTreeNode Node = default;
 
         public abstract ChiselSurfaceDefinition SurfaceDefinition { get; }
 
-        [SerializeField, HideInInspector] protected CSGOperationType operation;		    // NOTE: do not rename, name is directly used in editors
-        [SerializeField, HideInInspector] protected Matrix4x4 localTransformation = Matrix4x4.identity;
-        [SerializeField, HideInInspector] protected Vector3 pivotOffset = Vector3.zero;
+        [SerializeField, HideInInspector] protected CSGOperationType    operation;		    // NOTE: do not rename, name is directly used in editors
+        [SerializeField, HideInInspector] protected Matrix4x4           localTransformation = Matrix4x4.identity;
+        [SerializeField, HideInInspector] protected Vector3             pivotOffset = Vector3.zero;
 
         public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } protected set { Node = value; } }
         bool ValidNodes { get { return Node.Valid; } }

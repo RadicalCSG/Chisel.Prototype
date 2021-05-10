@@ -4,8 +4,8 @@ using UnitySceneExtensions;
 
 namespace Chisel.Components
 {
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [ExecuteInEditMode, AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselPathedStairsComponent : ChiselBranchGeneratorComponent<Core.ChiselPathedStairs, ChiselPathedStairsDefinition>
     {
         public const string kNodeTypeName = Core.ChiselPathedStairsDefinition.kNodeTypeName;

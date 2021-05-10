@@ -7,9 +7,8 @@ using UnityEngine.Profiling;
 
 namespace Chisel.Components
 {
-    [ExecuteInEditMode]
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselComposite : ChiselNode
     {
         // This ensures names remain identical and the field actually exists, or a compile error occurs.

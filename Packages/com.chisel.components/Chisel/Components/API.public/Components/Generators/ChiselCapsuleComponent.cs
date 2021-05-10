@@ -3,8 +3,8 @@ using Chisel.Core;
 
 namespace Chisel.Components
 {
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [ExecuteInEditMode, AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselCapsuleComponent : ChiselBrushGeneratorComponent<ChiselCapsuleDefinition, Core.ChiselCapsule>
     {
         public const string kNodeTypeName = Core.ChiselCapsuleDefinition.kNodeTypeName;

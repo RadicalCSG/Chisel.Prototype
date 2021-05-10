@@ -207,7 +207,6 @@ namespace Chisel.Editors
 
 
 
-    [CanEditMultipleObjects]
     public abstract class ChiselGeneratorDefinitionEditor<ComponentType, DefinitionType> 
         : ChiselGeneratorEditor<ComponentType>
         where ComponentType  : ChiselNodeGeneratorComponent<DefinitionType>
