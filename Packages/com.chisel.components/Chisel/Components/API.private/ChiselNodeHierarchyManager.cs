@@ -29,7 +29,7 @@ namespace Chisel.Components
 {
     public static class ChiselNodeHierarchyManager
     {
-        public static readonly Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies = new Dictionary<Scene, ChiselSceneHierarchy>();
+        public static readonly Dictionary<int, ChiselSceneHierarchy> sceneHierarchies = new Dictionary<int, ChiselSceneHierarchy>();
 
         static readonly HashSet<ChiselNode> registeredNodes = new HashSet<ChiselNode>();
         static readonly Dictionary<int, ChiselNode> instanceIDToNodeLookup = new Dictionary<int, ChiselNode>();
@@ -92,46 +92,54 @@ namespace Chisel.Components
         {
             double endTime, startTime;
 
-            startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("CSGManager.Clear");
-            Chisel.Core.CompactHierarchyManager.Clear();
-            Profiler.EndSample();
-
-            endTime = Time.realtimeSinceStartup;
-            Debug.Log($"  Reset done in {((endTime - startTime) * 1000)} ms. ");
 
 
-            startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("FindAndReregisterAllNodes");
-            ChiselNodeHierarchyManager.FindAndReregisterAllNodes();
-            Profiler.EndSample();
-            endTime = Time.realtimeSinceStartup;
-            Debug.Log($"  FindAndReregisterAllNodes done in {((endTime - startTime) * 1000)} ms. ");
 
+            var log = new System.Text.StringBuilder();
+            double resetTime = 0;
+            double updateModelsTime = 0;
+            double updateVisibilityTime = 0;
+            double fullTime = 0;
+            try
+            {
+                var fullStartTime = Time.realtimeSinceStartupAsDouble;
 
-            startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("UpdateAllTransformations");
-            ChiselNodeHierarchyManager.UpdateAllTransformations();
-            Profiler.EndSample();
-            endTime = Time.realtimeSinceStartup;
-            Debug.Log($"  UpdateAllTransformations done in {((endTime - startTime) * 1000)} ms. ");
+                startTime = fullStartTime;
+                Profiler.BeginSample("CSGManager.Clear");
+                Chisel.Core.CompactHierarchyManager.Clear();
+                ChiselNodeHierarchyManager.FindAndReregisterAllNodes();
+                ChiselNodeHierarchyManager.UpdateAllTransformations();
+                ChiselNodeHierarchyManager.Update();
+                Profiler.EndSample();
+                endTime = Time.realtimeSinceStartupAsDouble;
+                resetTime = (endTime - startTime) * 1000;
 
+                startTime = endTime;
+                Profiler.BeginSample("UpdateModels");
+                ChiselGeneratedModelMeshManager.UpdateModels();
+                Profiler.EndSample();
+                endTime = Time.realtimeSinceStartupAsDouble;
+                updateModelsTime = (endTime - startTime) * 1000;
 
-            startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("UpdateHierarchy");
-            ChiselNodeHierarchyManager.Update();
-            Profiler.EndSample();
-            endTime = Time.realtimeSinceStartup;
-            Debug.Log($"  UpdateHierarchy done in {((endTime - startTime) * 1000)} ms. ");
+                startTime = endTime;
+                Profiler.BeginSample("UpdateVisibility");
+                ChiselGeneratedComponentManager.UpdateVisibility(force: true);
+                Profiler.EndSample();
+                endTime = Time.realtimeSinceStartupAsDouble;
+                updateVisibilityTime = (endTime - startTime) * 1000;
 
-            startTime = Time.realtimeSinceStartup;
-            Profiler.BeginSample("UpdateModels");
-            ChiselGeneratedModelMeshManager.UpdateModels();
-            Profiler.EndSample();
-            endTime = Time.realtimeSinceStartup;
-            Debug.Log($"  UpdateModels done in {((endTime - startTime) * 1000)} ms. ");
+                var fullEndTime = endTime;
+                fullTime = (fullEndTime - fullStartTime) * 1000;
+            }
+            finally
+            {
 
-            ChiselGeneratedComponentManager.UpdateVisibility(force: true);
+                log.AppendFormat("Full CSG rebuild: {0:0.00} ms", fullTime);
+                log.AppendFormat("  Reinitialize: {0:0.00} ms", resetTime);
+                log.AppendFormat("  Build meshes: {0:0.00} ms", updateModelsTime);
+                log.AppendFormat("  Cleanup: {0:0.00} ms", updateVisibilityTime);
+                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, log.ToString());
+            }
         }
 
         internal static void Reset()
@@ -387,8 +395,12 @@ namespace Chisel.Components
                 if (componentLookup.TryGetValue(parent, out var parentComponent))
                 {
                     // If we haven't found a node before and our node is not a Composite PassthTough node, store it
-                    if (firstParentComponent == null && !((parentComponent as ChiselComposite)?.PassThrough ?? false))
-                        firstParentComponent = parentComponent;
+                    if (firstParentComponent == null)
+                    {
+                        var composite = parentComponent as ChiselComposite;
+                        if (composite == null || !composite.PassThrough)
+                            firstParentComponent = parentComponent;
+                    }
 
                     // If we found the model, quit
                     if (parentComponent is ChiselModel)
@@ -586,7 +598,7 @@ namespace Chisel.Components
 
             if (rootItems.Count == 0)
             {
-                sceneHierarchies.Remove(sceneHierarchy.Scene);
+                sceneHierarchies.Remove(sceneHierarchy.Scene.handle);
             }
         }
 
@@ -670,10 +682,11 @@ UpdateAgain:
 
         public static ChiselSceneHierarchy GetSceneHierarchyForScene(Scene scene)
         {
-            if (sceneHierarchies.TryGetValue(scene, out ChiselSceneHierarchy sceneHierarchy))
+            var sceneHandle = scene.handle;
+            if (sceneHierarchies.TryGetValue(sceneHandle, out ChiselSceneHierarchy sceneHierarchy))
                 return sceneHierarchy;
 
-            return sceneHierarchies[scene] = new ChiselSceneHierarchy { Scene = scene };
+            return sceneHierarchies[sceneHandle] = new ChiselSceneHierarchy { Scene = scene };
         }
 
         // static to avoid allocations
@@ -681,10 +694,46 @@ UpdateAgain:
         static readonly HashSet<ChiselNode> __unregisterNodes   = new HashSet<ChiselNode>();
         static readonly List<CSGTreeNode>   __childNodes        = new List<CSGTreeNode>(5000);
         static readonly List<ChiselNode>    __prevUpdateQueue   = new List<ChiselNode>();
-        static readonly List<KeyValuePair<Scene, ChiselSceneHierarchy>> __prevSceneHierarchy = new List<KeyValuePair<Scene, ChiselSceneHierarchy>>();
+        static readonly List<KeyValuePair<int, ChiselSceneHierarchy>> __prevSceneHierarchy = new List<KeyValuePair<int, ChiselSceneHierarchy>>();
 
-        static readonly ChiselNodeOrderSorter chiselNodeOrderSorter = new ChiselNodeOrderSorter();
-        static readonly ChiselHierarchyItemSorter chiselHierarchyItemSorter = new ChiselHierarchyItemSorter();
+
+        static Comparison<ChiselHierarchyItem> compareChiselHierarchyGlobalOrder = CompareChiselHierarchyGlobalOrder;
+        static int CompareChiselHierarchyGlobalOrder(ChiselHierarchyItem x, ChiselHierarchyItem y)
+        {
+            var xIndices = x.SiblingIndices;
+            var yIndices = y.SiblingIndices;
+            if (xIndices.Count != yIndices.Count)
+                return xIndices.Count - yIndices.Count;
+            var count = xIndices.Count;
+            for (int i = 0; i < count; i++)
+            {
+                var difference = xIndices[i].CompareTo(yIndices[i]);
+                if (difference != 0)
+                    return difference;
+            }
+            return 0;
+        }
+
+        static Comparison<ChiselHierarchyItem> compareChiselHierarchyParentOrder = CompareChiselHierarchyParentOrder;
+        static int CompareChiselHierarchyParentOrder(ChiselHierarchyItem x, ChiselHierarchyItem y)
+        {
+            var xIndices = x.SiblingIndices;
+            var yIndices = y.SiblingIndices;
+            var xEnd = xIndices.Count;
+            var yEnd = yIndices.Count;
+            var xCount = x.siblingIndicesUntilNode;
+            var yCount = y.siblingIndicesUntilNode;
+            var xStart = xEnd - xCount;
+            var yStart = yEnd - yCount;
+            var count = Mathf.Min(xCount, yCount);
+            for (int i = 0; i < count; i++)
+            {
+                var difference = xIndices[i + xStart].CompareTo(yIndices[i + yStart]);
+                if (difference != 0)
+                    return difference;
+            }
+            return 0;
+        }
 
         internal static bool prevPlaying = false;
         internal static void UpdateTrampoline()
@@ -758,8 +807,8 @@ UpdateAgain:
                             continue;
                         }
 
-                        if (defaultChildren[n].GameObject.scene == expectedScene &&
-                            defaultChildren[n].Scene == expectedScene)
+                        if (defaultChildren[n].GameObject.scene.handle == expectedScene &&
+                            defaultChildren[n].Scene.handle == expectedScene)
                             continue;
 
                         var component = defaultChildren[n].Component;
@@ -781,8 +830,8 @@ UpdateAgain:
                             continue;
                         }
 
-                        if (rootItems[n].GameObject.scene == expectedScene &&
-                            rootItems[n].Scene == expectedScene)
+                        if (rootItems[n].GameObject.scene.handle == expectedScene &&
+                            rootItems[n].Scene.handle == expectedScene)
                             continue;
 
                         var component = rootItems[n].Component;
@@ -1220,7 +1269,7 @@ UpdateAgain:
                     if (items.Count > 1)
                         continue;
 
-                    items.Sort(chiselHierarchyItemSorter);
+                    items.Sort(compareChiselHierarchyParentOrder);
                 }
                 sortChildrenQueue.Clear();
             }
@@ -1246,9 +1295,9 @@ UpdateAgain:
                         var itemModel = item.Component as ChiselModel;
 
                         // If the default model is empty, we'll destroy it to remove clutter
-                        var scene = item.Scene;
+                        var sceneHandle = item.Scene.handle;
                         ChiselSceneHierarchy sceneHierarchy;
-                        if (sceneHierarchies.TryGetValue(scene, out sceneHierarchy))
+                        if (sceneHierarchies.TryGetValue(sceneHandle, out sceneHierarchy))
                         {
                             if (sceneHierarchy.DefaultModel == itemModel)
                             {
@@ -1294,7 +1343,7 @@ UpdateAgain:
                         continue;
                     }
                 }
-                updateChildrenQueueList.Sort(chiselNodeOrderSorter);
+                updateChildrenQueueList.Sort(compareChiselHierarchyGlobalOrder);
                 for (int i = 0; i < updateChildrenQueueList.Count; i++)
                 {
                     var hierarchyItem = updateChildrenQueueList[i];
@@ -1409,7 +1458,7 @@ UpdateAgain:
         {
             if (item == null)
                 return;
-            item.Children.Sort(chiselHierarchyItemSorter);
+            item.Children.Sort(compareChiselHierarchyParentOrder);
             for (int i = 0; i < item.Children.Count; i++)
             {
                 var childHierarchyItem = item.Children[i];
@@ -1477,48 +1526,6 @@ UpdateAgain:
         public static ChiselNode FindChiselNodeByTreeNode(CSGTreeNode node)
         {
             return FindChiselNodeByInstanceID(node.UserID);
-        }
-    }
-
-    public struct ChiselHierarchyItemSorter : IComparer<ChiselHierarchyItem>
-    {
-        public int Compare(ChiselHierarchyItem x, ChiselHierarchyItem y)
-        {
-            var xIndices = x.SiblingIndices;
-            var yIndices = y.SiblingIndices;
-            var xEnd = xIndices.Count;
-            var yEnd = yIndices.Count;
-            var xCount = x.siblingIndicesUntilNode;
-            var yCount = y.siblingIndicesUntilNode;
-            var xStart = xEnd - xCount;
-            var yStart = yEnd - yCount;
-            var count = Mathf.Min(xCount, yCount);
-            for (int i = 0; i < count; i++)
-            {
-                var difference = xIndices[i + xStart].CompareTo(yIndices[i + yStart]);
-                if (difference != 0)
-                    return difference;
-            }
-            return 0;
-        }
-    }
-
-    public struct ChiselNodeOrderSorter : IComparer<ChiselHierarchyItem>
-    {
-        public int Compare(ChiselHierarchyItem x, ChiselHierarchyItem y)
-        {
-            var xIndices = x.SiblingIndices;
-            var yIndices = y.SiblingIndices;
-            if (xIndices.Count != yIndices.Count)
-                return xIndices.Count - yIndices.Count;
-            var count = xIndices.Count;
-            for (int i = 0; i < count; i++)
-            {
-                var difference = xIndices[i].CompareTo(yIndices[i]);
-                if (difference != 0)
-                    return difference;
-            }
-            return 0;
         }
     }
 }

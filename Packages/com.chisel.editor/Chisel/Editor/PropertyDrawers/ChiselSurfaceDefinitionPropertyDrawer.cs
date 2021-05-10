@@ -39,34 +39,47 @@ namespace Chisel.Editors
 
             EditorGUI.BeginProperty(position, label, surfacesProp);
             bool prevShowMixedValue = EditorGUI.showMixedValue;
-
-            EditorGUI.BeginChangeCheck();
-            var path                = surfacesProp.propertyPath;
-            var surfacesVisible     = SessionState.GetBool(path, false);
-            surfacesVisible = EditorGUILayout.BeginFoldoutHeaderGroup(surfacesVisible, kSurfacesContent);
-            if (EditorGUI.EndChangeCheck())
-                SessionState.SetBool(path, surfacesVisible);
-            if (surfacesVisible)
+            try
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUI.indentLevel++;
-                SerializedProperty elementProperty;
-                for (int i = 0; i < surfacesProp.arraySize; i++)
+                var path = surfacesProp.propertyPath;
+                var surfacesVisible = SessionState.GetBool(path, false);
+                surfacesVisible = EditorGUILayout.BeginFoldoutHeaderGroup(surfacesVisible, kSurfacesContent);
+                try
                 {
-                    surfacePropertyContent.text = string.Format(kSurfacePropertyName, (i+1));
-                    elementProperty = surfacesProp.GetArrayElementAtIndex(i);
-                    EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
+                    if (EditorGUI.EndChangeCheck())
+                        SessionState.SetBool(path, surfacesVisible);
+                    if (surfacesVisible)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUI.indentLevel++;
+                        try
+                        {
+                            SerializedProperty elementProperty;
+                            for (int i = 0; i < surfacesProp.arraySize; i++)
+                            {
+                                surfacePropertyContent.text = string.Format(kSurfacePropertyName, (i + 1));
+                                elementProperty = surfacesProp.GetArrayElementAtIndex(i);
+                                EditorGUILayout.PropertyField(elementProperty, surfacePropertyContent, true);
+                            }
+                        }
+                        finally
+                        {
+                            EditorGUI.indentLevel--;
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                property.serializedObject.ApplyModifiedProperties();
+                            }
+                        }
+                    }
                 }
-                EditorGUI.indentLevel--;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    property.serializedObject.ApplyModifiedProperties();
-                }
+                finally { EditorGUILayout.EndFoldoutHeaderGroup(); }
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            EditorGUI.showMixedValue = prevShowMixedValue;
-            EditorGUI.EndProperty();
+            finally
+            {
+                EditorGUI.showMixedValue = prevShowMixedValue;
+                EditorGUI.EndProperty();
+            }
         }
     }
 }

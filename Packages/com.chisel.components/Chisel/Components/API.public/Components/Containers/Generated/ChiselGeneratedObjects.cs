@@ -365,13 +365,16 @@ namespace Chisel.Components
             }
         }
 
-        
-        readonly Dictionary<ChiselModel, GameObjectState>   gameObjectStates        = new Dictionary<ChiselModel, GameObjectState>();
-        readonly List<ChiselColliderObjectUpdate>           colliderObjectUpdates   = new List<ChiselColliderObjectUpdate>();
-        readonly List<ChiselMeshUpdate>                     renderMeshUpdates       = new List<ChiselMeshUpdate>();
-        readonly List<ChiselRenderObjectUpdate>             renderObjectUpdates     = new List<ChiselRenderObjectUpdate>();
-        readonly List<ChiselColliderObjects>                colliderObjects         = new List<ChiselColliderObjects>();
-        readonly List<Mesh>                                 foundMeshes             = new List<Mesh>();
+
+        static readonly Dictionary<ChiselModel, GameObjectState>   gameObjectStates        = new Dictionary<ChiselModel, GameObjectState>();
+        static readonly List<ChiselColliderObjectUpdate>           colliderObjectUpdates   = new List<ChiselColliderObjectUpdate>();
+        static readonly List<ChiselMeshUpdate>                     renderMeshUpdates       = new List<ChiselMeshUpdate>();
+        static readonly List<ChiselRenderObjectUpdate>             renderObjectUpdates     = new List<ChiselRenderObjectUpdate>();
+        static readonly List<ChiselColliderObjects>                colliderObjects         = new List<ChiselColliderObjects>();
+        static readonly List<Mesh>                                 foundMeshes             = new List<Mesh>();
+
+        static readonly HashSet<int> usedDebugHelpers = new HashSet<int>();
+        static readonly HashSet<int> usedRenderMeshes = new HashSet<int>();
 
         // in between UpdateMeshes and FinishMeshUpdates our jobs should be force completed, so we can now upload our meshes to unity Meshes
 
@@ -459,9 +462,8 @@ namespace Chisel.Components
 
 
             // Now do all kinds of book-keeping code that we might as well do while our jobs are running on other threads
-            Profiler.BeginSample("new_ChiselRenderObjectUpdate");
-
-            var usedDebugHelpers = new HashSet<int>();
+            Profiler.BeginSample("new_ChiselDebugObjectUpdate");
+            usedDebugHelpers.Clear();
             for (int i = 0; i < debugHelperMeshes.Length; i++)
             {
                 var debugHelperMeshUpdate   = debugHelperMeshes[i];
@@ -479,7 +481,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("new_ChiselRenderObjectUpdate");
-            var usedRenderMeshes = new HashSet<int>();
+            usedRenderMeshes.Clear();
             for (int i = 0; i < renderMeshes.Length; i++)
             {
                 var renderMeshUpdate    = renderMeshes[i];
@@ -552,7 +554,7 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             Profiler.BeginSample("Renderers.Update");
-            ChiselRenderObjects.UpdateSettings(this.renderMeshUpdates, this.renderObjectUpdates, this.gameObjectStates, ref vertexBufferContents);
+            ChiselRenderObjects.UpdateSettings(renderMeshUpdates, renderObjectUpdates, gameObjectStates, ref vertexBufferContents);
             Profiler.EndSample();
 
             Debug.Assert(foundMeshes.Count <= meshDataArray.Length);
@@ -615,10 +617,10 @@ namespace Chisel.Components
             Profiler.EndSample();
 
             this.needVisibilityMeshUpdate = true;
-            this.gameObjectStates.Clear();
-            this.renderMeshUpdates.Clear();
-            this.renderObjectUpdates.Clear();
-            this.colliderObjects.Clear();
+            gameObjectStates.Clear();
+            renderMeshUpdates.Clear();
+            renderObjectUpdates.Clear();
+            colliderObjects.Clear();
             
             var foundMeshCount = foundMeshes.Count;
             foundMeshes.Clear();

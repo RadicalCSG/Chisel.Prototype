@@ -10,9 +10,9 @@ namespace Chisel.Core
     public sealed partial class ChiselMaterialManager
     {
         readonly Dictionary<int, Material>           idToMaterial       = new Dictionary<int, Material>();
-        readonly Dictionary<Material, int>           materialToID       = new Dictionary<Material, int>();
+        readonly Dictionary<int, int>                materialToID       = new Dictionary<int, int>();
         readonly Dictionary<int, PhysicMaterial>     idToPhysicMaterial = new Dictionary<int, PhysicMaterial>();
-        readonly Dictionary<PhysicMaterial, int>     physicMaterialToID = new Dictionary<PhysicMaterial, int>();
+        readonly Dictionary<int, int>                physicMaterialToID = new Dictionary<int, int>();
 
 #if UNITY_EDITOR
         int ToID(Material material)
@@ -43,10 +43,11 @@ namespace Chisel.Core
         {
             if (!material)
                 return 0;
-            if (materialToID.TryGetValue(material, out var id))
+            var instanceID = material.GetInstanceID();
+            if (materialToID.TryGetValue(instanceID, out var id))
                 return id;
             id = ToID(material);
-            materialToID[material] = id;
+            materialToID[instanceID] = id;
             idToMaterial[id] = material;
             return id;
         }
@@ -66,10 +67,11 @@ namespace Chisel.Core
         {
             if (!physicMaterial)
                 return 0;
-            if (physicMaterialToID.TryGetValue(physicMaterial, out var id))
+            var instanceID = physicMaterial.GetInstanceID();
+            if (physicMaterialToID.TryGetValue(instanceID, out var id))
                 return id;
             id = ToID(physicMaterial);
-            physicMaterialToID[physicMaterial] = id;
+            physicMaterialToID[instanceID] = id;
             idToPhysicMaterial[id] = physicMaterial;
             return id;
         }

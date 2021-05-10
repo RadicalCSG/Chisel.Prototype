@@ -160,7 +160,7 @@ namespace Chisel.Editors
         }
         static List<StackItem>  itemStack = new List<StackItem>();
 
-        static int GetVisibleItems(Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies)
+        static int GetVisibleItems(Dictionary<int, ChiselSceneHierarchy> sceneHierarchies)
         {
             if (sceneHierarchies == null || sceneHierarchies.Count == 0)
                 return 0;
@@ -209,7 +209,7 @@ namespace Chisel.Editors
             goto ContinueOnNextStackItem;
         }
 
-        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, Dictionary<Scene, ChiselSceneHierarchy> sceneHierarchies)
+        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, HashSet<Transform> selectedTransforms, Dictionary<int, ChiselSceneHierarchy> sceneHierarchies)
         {
             if (sceneHierarchies == null || sceneHierarchies.Count == 0)
                 return;
@@ -217,7 +217,7 @@ namespace Chisel.Editors
             var defaultColor = GUI.color;
             foreach (var item in sceneHierarchies)
             {
-                var scene = item.Key;
+                var scene = item.Value.Scene;
                 if (itemRect.Overlaps(visibleArea))
                 {
                     var name = scene.name;

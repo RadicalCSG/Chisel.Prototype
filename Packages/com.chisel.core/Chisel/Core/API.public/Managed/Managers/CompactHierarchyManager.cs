@@ -200,10 +200,12 @@ namespace Chisel.Core
             GetHierarchy(hierarchyID).GetAllNodes(nodes);
         }
 
+        static readonly List<CompactHierarchy> sHierarchyList = new List<CompactHierarchy>();
         public static void Clear()
         {
-            var oldHierarchies = hierarchies.ToArray();
-            foreach (var hierarchy in oldHierarchies)
+            sHierarchyList.Clear();
+            sHierarchyList.AddRange(hierarchies);
+            foreach (var hierarchy in sHierarchyList)
             {
                 if (hierarchy.IsCreated)
                 {
@@ -217,6 +219,7 @@ namespace Chisel.Core
                     }
                 }
             }
+            sHierarchyList.Clear();
             defaultHierarchyID = CompactHierarchyID.Invalid;
 
             ClearOutlines();

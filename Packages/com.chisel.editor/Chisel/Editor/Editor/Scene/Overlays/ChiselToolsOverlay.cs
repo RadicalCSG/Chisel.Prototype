@@ -24,10 +24,7 @@ namespace Chisel.Editors
             UnityEngine.Profiling.Profiler.BeginSample("Rebuild");
             try
             {
-                var startTime = Time.realtimeSinceStartup;
                 ChiselNodeHierarchyManager.Rebuild();
-                var csg_endTime = Time.realtimeSinceStartup;
-                Debug.Log($"Full CSG rebuild done in {((csg_endTime - startTime) * 1000)} ms. ");
             }
             finally
             {
