@@ -446,6 +446,7 @@ namespace Chisel.Core
         static NodeID CreateNodeID(out int index)
         {
             index = nodeIDLookup.CreateID(out var id, out var generation);
+            //Debug.Log($"CreateNodeID index:{index} id:{id} generation:{generation}");
             while (index >= nodes.Count)
                 nodes.Add(CompactNodeID.Invalid);
             return new NodeID(value: id, generation: generation);
@@ -491,13 +492,13 @@ namespace Chisel.Core
             return GetCompactNodeID(nodeID, out _);
         }
 
-        public static NodeID GetNodeID(CompactNodeID compactNodeID)
+        public static NodeID GetNodeID(CompactNodeID compactNodeID, bool ignoreInvalid = false)
         {
             if (compactNodeID == CompactNodeID.Invalid)
                 return NodeID.Invalid;
 
             var hierarchy = GetHierarchy(compactNodeID);
-            return hierarchy.GetNodeID(compactNodeID);
+            return hierarchy.GetNodeID(compactNodeID, ignoreInvalid);
         }
 
         public static CompactHierarchyID GetHierarchyIDOfNode(NodeID nodeID)
@@ -1644,6 +1645,21 @@ namespace Chisel.Core
 
             SetChildrenDirty(parentCompactNodeID);
             hierarchy.DetachAllChildrenFromParent(parentCompactNodeID);
+            SetDirty(parentCompactNodeID);
+        }
+
+        internal static void DestroyChildNodes(NodeID parent)
+        {
+            if (!IsValidNodeID(parent, out var parentNodeIndex))
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(parent)} (value: {parent.value}, generation: {parent.generation}) is invalid", nameof(parent));
+
+            var parentCompactNodeID = nodes[parentNodeIndex];
+            var hierarchy = GetHierarchy(parentCompactNodeID);
+            if (hierarchy.ChildCount(parentCompactNodeID) == 0)
+                return;
+
+            SetChildrenDirty(parentCompactNodeID);
+            hierarchy.DestroyAllChildrenFromParent(parentCompactNodeID);
             SetDirty(parentCompactNodeID);
         }
 

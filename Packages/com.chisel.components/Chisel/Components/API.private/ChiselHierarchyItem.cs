@@ -23,15 +23,20 @@ namespace Chisel.Components
         public ChiselHierarchyItem(ChiselNode node) { Component = node; }
 
         public ChiselHierarchyItem                  Parent;
+        internal int                                siblingIndicesUntilNode;
         public readonly List<int>                   SiblingIndices      = new List<int>();
         public readonly List<ChiselHierarchyItem>   Children            = new List<ChiselHierarchyItem>();
 
         public ChiselSceneHierarchy sceneHierarchy;
         public Scene                Scene;
-        public Transform            Transform;
-        public GameObject           GameObject;
-        public readonly ChiselNode  Component;
         
+        Transform m_Transform;
+        public Transform            Transform       => (Component == null) ? null : (m_Transform != null) ? m_Transform : (m_Transform = Component.transform);
+        GameObject m_GameObject;
+        public GameObject           GameObject      => (Component == null) ? null : (m_GameObject != null) ? m_GameObject : (m_GameObject = Component.gameObject);
+        
+        public readonly ChiselNode  Component;
+
         // TODO: should cache this instead
         public ChiselModel Model
         {
@@ -76,8 +81,6 @@ namespace Chisel.Components
             {
                 if (Component)
                 {
-                    if (!Transform)
-                        Transform = Component.transform;
                     var generator = Component as ChiselGeneratorComponent;
                     if (generator)
                         SelfBounds = ChiselBoundsUtility.CalculateBounds(generator);
@@ -101,8 +104,6 @@ namespace Chisel.Components
             var gridBounds = new Bounds();
             if (Component)
             {
-                if (!Transform)
-                    Transform = Component.transform;
                 var generator = Component as ChiselGeneratorComponent;
                 if (generator)
                     SelfBounds = ChiselBoundsUtility.CalculateBounds(generator, transformation);

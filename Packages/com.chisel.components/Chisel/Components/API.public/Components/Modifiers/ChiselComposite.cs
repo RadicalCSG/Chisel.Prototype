@@ -40,6 +40,9 @@ namespace Chisel.Components
             if (!PassThrough && !Node.Valid)
                 messages.Warning(kFailedToGenerateNodeMessage);
 
+            if (PassThrough)
+                return;
+
             // A composite makes no sense without any children
             if (hierarchyItem != null)
             {
@@ -63,7 +66,6 @@ namespace Chisel.Components
 
         internal override CSGTreeNode RebuildTreeNodes()
         {
-            ResetTreeNodes();
             if (passThrough)
                 return default;
             if (Node.Valid)
@@ -73,11 +75,11 @@ namespace Chisel.Components
             return Node;
         }
 
-        internal override bool	IsActive	        { get { return !PassThrough && isActiveAndEnabled; } }
+        internal override bool	IsActive	    { get { return !PassThrough && isActiveAndEnabled; } }
 
-        public override bool	IsContainer	{ get { return IsActive; } }
+        public override bool	IsContainer	    { get { return IsActive; } }
 
-        public override void	SetDirty()		    { if (Node.Valid) Node.SetDirty(); }
+        public override void	SetDirty()		{ if (Node.Valid) Node.SetDirty(); }
 
     }
 }

@@ -268,14 +268,20 @@ namespace Chisel.Components
                     if (!CompactHierarchyManager.IsValidNodeID(nodeID))
                         continue;
 
-                    var modelNodeID = brushGenerator.hierarchyItem.Model.TopTreeNode.NodeID;
-                    var compactNodeID       = CompactHierarchyManager.GetCompactNodeID(nodeID);
-                    var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
-                    if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
-                        prevState = VisibilityState.Unknown;
-                    var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
-                    visibilityStateLookup[compactNodeID] = state;
-                    visibilityStateLookup[modelCompactNodeID] = state | prevState;
+                    var model               = brushGenerator.hierarchyItem.Model;
+                    if (model == null)
+                        Debug.LogError($"{brushGenerator.hierarchyItem.Component} model {model} == null", brushGenerator.hierarchyItem.Component);
+                    if (model)
+                    { 
+                        var modelNodeID         = model.TopTreeNode.NodeID;
+                        var compactNodeID       = CompactHierarchyManager.GetCompactNodeID(nodeID);
+                        var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNodeID);
+                        if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
+                            prevState = VisibilityState.Unknown;
+                        var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
+                        visibilityStateLookup[compactNodeID] = state;
+                        visibilityStateLookup[modelCompactNodeID] = state | prevState;
+                    }
                 }
             }
 

@@ -32,6 +32,9 @@ namespace Chisel.Core
         [BurstCompile]
         public int PrepareAndCountRequiredBrushMeshes()
         {
+            if (!curveBlob.IsCreated)
+                return 0; 
+
             ref var curve = ref curveBlob.Value;
             if (!curve.ConvexPartition(curveSegments, out polygonVerticesList, out polygonVerticesSegments, Allocator.Persistent))
                 return 0;

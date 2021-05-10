@@ -8,6 +8,24 @@ namespace Chisel.Core
 {
     public static class CSGTreeExtensions
     {
+        /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
+        public static void DestroyChildren(in this CSGTreeBranch branch)
+        {
+            CompactHierarchyManager.DestroyChildNodes(branch.branchNodeID);
+        }
+
+        /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTree"/>.</summary>
+        public static void DestroyChildren(in this CSGTree tree)
+        {
+            CompactHierarchyManager.DestroyChildNodes(tree.treeNodeID);
+        }
+
+        /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTreeNode"/>.</summary>
+        public static void DestroyChildren(in this CSGTreeNode treeNode)
+        {
+            CompactHierarchyManager.DestroyChildNodes(treeNode.nodeID);
+        }
+
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>
         /// <param name="array">The array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTree"/>. The array itself cannot be null.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>

@@ -404,14 +404,14 @@ namespace Chisel.Core
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int HierarchyIndexOfInternal(CompactNodeID compactNodeID)
+        int HierarchyIndexOfInternal(CompactNodeID compactNodeID, bool ignoreInvalid = false)
         {
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
                 return -1;
             if (compactNodeID.hierarchyID != HierarchyID)
                 return -1;
-            return idManager.GetIndex(compactNodeID.value, compactNodeID.generation);
+            return idManager.GetIndex(compactNodeID.value, compactNodeID.generation, ignoreInvalid);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -592,14 +592,22 @@ namespace Chisel.Core
             throw new NotImplementedException();
         }
 
-        unsafe bool DetachAllInternal(int parentIndex)
+        unsafe bool DetachAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
             var parentHierarchy     = compactNodes[parentIndex];
             var parentChildCount    = parentHierarchy.childCount;
             return DetachRangeInternal(parentIndex, 0, parentChildCount);
         }
-            
+
+        unsafe bool DeleteAllChildrenInternal(int parentIndex)
+        {
+            Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
+            var parentHierarchy = compactNodes[parentIndex];
+            var parentChildCount = parentHierarchy.childCount;
+            return DeleteRangeInternal(parentIndex, 0, parentChildCount, true);
+        }
+
         unsafe bool DetachRangeInternal(int parentIndex, int siblingIndex, int range)
         {
             if (range == 0)

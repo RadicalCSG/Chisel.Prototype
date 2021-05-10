@@ -920,10 +920,7 @@ namespace Chisel.Editors
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    if (child.hierarchyItem.Transform == null)
-                        nodesWithChildren.Add(child.transform);
-                    else
-                        nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildren.Add(child.hierarchyItem.Transform);
                 }
             }
 
@@ -941,10 +938,7 @@ namespace Chisel.Editors
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    if (child.hierarchyItem.Transform == null)
-                        nodesWithChildren.Add(child.transform);
-                    else
-                        nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildren.Add(child.hierarchyItem.Transform);
                 }
             }
 

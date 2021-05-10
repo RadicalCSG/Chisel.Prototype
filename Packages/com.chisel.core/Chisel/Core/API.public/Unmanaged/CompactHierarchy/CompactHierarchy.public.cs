@@ -280,23 +280,23 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NodeID GetNodeID(CompactNodeID compactNodeID)
+        public NodeID GetNodeID(CompactNodeID compactNodeID, bool ignoreInvalid = false)
         {
             int nodeIndex;
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
             {
-                Debug.LogError($"{nameof(compactNodeID)} is an invalid node");
+                if (!ignoreInvalid) Debug.LogError($"{nameof(compactNodeID)} is an invalid node");
                 return NodeID.Invalid;
             }
 
-            nodeIndex = HierarchyIndexOfInternal(compactNodeID);
+            nodeIndex = HierarchyIndexOfInternal(compactNodeID, ignoreInvalid);
             if (nodeIndex == -1)
                 return NodeID.Invalid;
 
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
             {
-                Debug.LogError($"{nameof(compactNodeID)} nodeIndex is out of range");
+                if (!ignoreInvalid) Debug.LogError($"{nameof(compactNodeID)} nodeIndex is out of range");
                 return NodeID.Invalid;
             }
 
@@ -499,7 +499,17 @@ namespace Chisel.Core
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex < 0)
                 throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
-            return DetachAllInternal(parentIndex);
+            return DetachAllChildrenInternal(parentIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DestroyAllChildrenFromParent(CompactNodeID parentID)
+        {
+            Debug.Assert(IsCreated);
+            var parentIndex = HierarchyIndexOfInternal(parentID);
+            if (parentIndex < 0)
+                throw new ArgumentException(nameof(parentID), $"{nameof(parentID)} is invalid");
+            return DeleteAllChildrenInternal(parentIndex);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

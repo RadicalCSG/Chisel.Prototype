@@ -211,6 +211,7 @@ namespace Chisel.Components
 
         public override void OnInitialize()
         {
+            base.OnInitialize();
             if (generated != null &&
                 !generated.generatedDataContainer)
                 generated.Destroy();
@@ -265,7 +266,6 @@ namespace Chisel.Components
 
         internal override CSGTreeNode RebuildTreeNodes()
         {
-            ResetTreeNodes();
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
@@ -302,6 +302,7 @@ namespace Chisel.Components
                 if (!this && generated.generatedDataContainer)
                     generated.DestroyWithUndo();
             }
+            base.OnCleanup();
         }
 
 #if UNITY_EDITOR

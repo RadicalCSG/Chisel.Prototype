@@ -155,18 +155,29 @@ namespace Chisel.Core
 
             public void Execute(int index)
             {
+                if (!surfaceDefinitions.IsCreated ||
+                    !surfaceDefinitions[index].IsCreated)
+                {
+                    brushMeshes[index] = default;
+                    return;
+                }
+
                 brushMeshes[index] = settings[index].GenerateMesh(surfaceDefinitions[index], Allocator.Persistent);
             }
         }
 
         public JobHandle ScheduleJob()
         {
-            if (!nodes.IsCreated)
+            if (!nodes.IsCreated ||
+                !generators.IsCreated ||
+                !brushMeshes.IsCreated ||
+                !surfaceDefinitions.IsCreated)
                 return default;
 
             for (int i = nodes.Length - 1; i >= 0; i--)
             {
                 if (nodes[i].Valid &&
+                    surfaceDefinitions[i].IsCreated &&
                     nodes[i].Type == CSGNodeType.Brush)
                     continue;
 
@@ -175,6 +186,7 @@ namespace Chisel.Core
                 nodes.RemoveAt(i);
             }
 
+            brushMeshes.Clear();
             brushMeshes.Resize(generators.Length, NativeArrayOptions.ClearMemory);
             var job = new CreateBrushesJob
             {
@@ -187,21 +199,48 @@ namespace Chisel.Core
 
         public void Assign()
         {
-            for (int i = 0; i < surfaceDefinitions.Length; i++)
-                surfaceDefinitions[i].Dispose();
-            
+            if (surfaceDefinitions.IsCreated)
+            {
+                for (int i = 0; i < surfaceDefinitions.Length; i++)
+                {
+                    try
+                    {
+                        if (surfaceDefinitions[i].IsCreated)
+                            surfaceDefinitions[i].Dispose();
+                    }
+                    catch (Exception ex) { Debug.LogException(ex); }
+                }
+                surfaceDefinitions.Clear();
+            }
+
+            if (!nodes.IsCreated ||
+                !brushMeshes.IsCreated)
+                return;
+
             for (int i = 0; i < nodes.Length; i++)
             {
-                var brushMesh   = brushMeshes[i];
                 var brush       = (CSGTreeBrush)nodes[i];
                 if (!brush.Valid)
                     continue;
 
-                if (!brushMesh.IsCreated)
+                try
+                {
+                    var brushMesh   = brushMeshes[i];
+                    if (!brushMesh.IsCreated)
+                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                    else
+                        brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                }
+                catch (Exception ex)
+                {
                     brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                else
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    Debug.LogException(ex); 
+                }
             }
+
+            nodes.Clear();
+            generators.Clear();
+            brushMeshes.Clear();
         }
     }
 
@@ -297,6 +336,7 @@ namespace Chisel.Core
                     ranges[i] = new Range { start = start, end = end };
                     totalRequiredBrushCount += length;
                 }
+                brushMeshes.Clear();
                 brushMeshes.Resize(totalRequiredBrushCount, NativeArrayOptions.ClearMemory);
             }
         }
@@ -319,10 +359,11 @@ namespace Chisel.Core
                     if (requiredSubMeshCount != 0)
                     {
                         using var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(requiredSubMeshCount, Allocator.Temp);
-                        
+
                         generatedBrushMeshes.Resize(requiredSubMeshCount, NativeArrayOptions.ClearMemory);
 
-                        if (!settings[index].GenerateMesh(surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
+                        if (!surfaceDefinitions[index].IsCreated ||
+                            !settings[index].GenerateMesh(surfaceDefinitions[index], generatedBrushMeshes, Allocator.Persistent))
                         {
                             ranges[index] = new Range { start = 0, end = 0 };
                             return;
@@ -346,12 +387,16 @@ namespace Chisel.Core
         
         public JobHandle ScheduleJob()
         {
-            if (!nodes.IsCreated)
+            if (!nodes.IsCreated ||
+                !generators.IsCreated ||
+                !brushMeshes.IsCreated ||
+                !surfaceDefinitions.IsCreated)
                 return default;
 
             for (int i = nodes.Length - 1; i >= 0; i--)
             {
                 if (nodes[i].Valid &&
+                    surfaceDefinitions[i].IsCreated &&
                     nodes[i].Type == CSGNodeType.Branch)
                     continue;
 
@@ -360,7 +405,9 @@ namespace Chisel.Core
                 nodes.RemoveAt(i);
             }
 
+            ranges.Clear();
             ranges.Resize(generators.Length, NativeArrayOptions.ClearMemory);
+
             var brushCounts = new NativeArray<int>(generators.Length, Allocator.TempJob);
             var countBrushesJob = new PrepareAndCountBrushesJob
             {
@@ -420,37 +467,67 @@ namespace Chisel.Core
 
         public void Assign()
         {
-            for (int i = 0; i < surfaceDefinitions.Length; i++)
-                surfaceDefinitions[i].Dispose();
+            if (surfaceDefinitions.IsCreated)
+            {
+                for (int i = 0; i < surfaceDefinitions.Length; i++)
+                {
+                    try
+                    {
+                        if (surfaceDefinitions[i].IsCreated)
+                            surfaceDefinitions[i].Dispose();
+                    }
+                    catch(Exception ex) { Debug.LogException(ex); }
+                }
+                surfaceDefinitions.Clear();
+            }
+
+            if (!nodes.IsCreated ||
+                !brushMeshes.IsCreated)
+                return;
 
             for (int i = 0; i < nodes.Length; i++)
             {
-                var range = ranges[i];
                 var branch = (CSGTreeBranch)nodes[i];
                 if (!branch.Valid)
                     continue;
 
-                if (range.Length == 0)
+                try
                 {
-                    ClearBrushes(branch);
-                    continue;
+                    var range = ranges[i];
+                    if (range.Length == 0)
+                    {
+                        ClearBrushes(branch);
+                        continue;
+                    }
+
+                    if (branch.Count != range.Length)
+                        BuildBrushes(branch, range.Length);
+
+                    var localTransformation = branch.LocalTransformation;
+
+                    for (int b = 0, m = range.start; m < range.end; b++, m++)
+                    {
+                        var brush = (CSGTreeBrush)branch[b];
+                        if (brushMeshes[m].IsCreated)
+                        {
+                            brush.LocalTransformation = localTransformation; // TODO: implement proper transformation pipeline
+                            //brush.LocalTransformation = float4x4.identity;
+                            brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[m]) };
+                        } else
+                        {
+                            brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
+                        }
+                    }
+
+                    generators[i].FixupOperations(branch);
                 }
-
-                if (branch.Count != range.Length)
-                    BuildBrushes(branch, range.Length);
-
-                var localTransformation = branch.LocalTransformation;
-
-                for (int b = 0, m = range.start; m < range.end; b++, m++)
-                {
-                    var brush = (CSGTreeBrush)branch[b];
-                    brush.LocalTransformation = localTransformation; // TODO: implement proper transformation pipeline
-                    //brush.LocalTransformation = float4x4.identity;
-                    brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMeshes[m]) };
-                }
-
-                generators[i].FixupOperations(branch);
+                catch (Exception ex) { Debug.LogException(ex); }
             }
+
+            nodes.Clear();
+            ranges.Clear();
+            generators.Clear();
+            brushMeshes.Clear();
         }
     }
 

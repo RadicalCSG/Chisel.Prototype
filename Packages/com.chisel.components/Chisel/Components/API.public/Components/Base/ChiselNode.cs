@@ -24,10 +24,16 @@ namespace Chisel.Components
 
 
         public ChiselNode() { hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }        
-        public virtual void OnInitialize() { }
-        protected virtual void OnCleanup() { }
-        protected virtual void OnDestroy() { ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
         
+        protected virtual void OnCleanup() 
+        { 
+            ResetTreeNodes();
+        }
+
+        public virtual void OnInitialize()
+        {
+        }
+
         protected void OnEnable()
         {
             OnInitialize(); // Awake is not reliable, so we initialize here
@@ -38,6 +44,12 @@ namespace Chisel.Components
         {
             // Note: cannot call OnCleanup here
             ChiselNodeHierarchyManager.UpdateAvailability(this);
+        }
+
+        protected void OnDestroy() 
+        { 
+            ChiselNodeHierarchyManager.Unregister(this); 
+            OnCleanup();
         }
 
 
@@ -74,6 +86,13 @@ namespace Chisel.Components
             if (topNode.Valid)
                 topNode.Destroy();
             TopTreeNode = default;
+        }
+
+        protected void DestroyChildTreeNodes()
+        {
+            var topNode = TopTreeNode;
+            if (topNode.Valid)
+                topNode.DestroyChildren();
         }
 
         public virtual void UpdateBrushMeshInstances() { }

@@ -150,7 +150,7 @@ namespace Chisel.Core
             if (!sectionManager.IsAllocatedIndex(index))
                 throw new ArgumentOutOfRangeException($"{nameof(index)} ({index}) must be allocated and lie between 0 ... {indexToID.Length}");
 
-            var idInternal = indexToID[index] - 1;
+            var idInternal = ((int*)indexToID.GetUnsafePtr())[index] - 1;
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 throw new IndexOutOfRangeException($"{nameof(id)} ({id}) must be between 1 ... {1 + idToIndex.Length}");
 
@@ -179,7 +179,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsValidIndex(int index, out int id, out int generation)
+        public unsafe bool IsValidIndex(int index, out int id, out int generation)
         {
             id = default; //out
             generation = default;//out
@@ -187,11 +187,11 @@ namespace Chisel.Core
             if (!sectionManager.IsAllocatedIndex(index))
                 return false;
 
-            var idInternal = indexToID[index] - 1;
+            var idInternal = ((int*)indexToID.GetUnsafePtr())[index] - 1;
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 return false;
 
-            generation = idToIndex[idInternal].generation;
+            generation = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal].generation;
             if (idToIndex[idInternal].index != index)
                 return false;
 
@@ -200,31 +200,37 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetIndex(int id, int generation)
+        public unsafe int GetIndex(int id, int generation, bool ignoreInvalid = false)
         {
             Debug.Assert(IsCreated);
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
             if (idInternal < 0 || idInternal >= idToIndex.Length)
             {
-                Debug.LogError($"{nameof(id)} ({id}) must be between 1 and {1 + idToIndex.Length}");
+                if (!ignoreInvalid) Debug.LogError($"{nameof(id)} ({id}) must be between 1 and {1 + idToIndex.Length}");
                 return -1;
             }
 
-            var idLookup = idToIndex[idInternal];
+            var idLookup = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal];
             if (idLookup.generation != generation)
             {
-                Debug.LogError($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
+                if (!ignoreInvalid) Debug.LogError($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
                 return -1;
             }
 
             var index = idLookup.index;
             if (index < 0 || index >= indexToID.Length)
             {
-                if (indexToID.Length == 0)
-                    Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index. This lookup table does not contain any valid indices at the moment.");
-                else
-                    Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index. It must be >= 0 and < {indexToID.Length}.");
+                if (!ignoreInvalid)
+                {
+                    if (index == -1)
+                        Debug.LogError($"Using an {nameof(id)} ({id}) that seems to have already been destroyed.");
+                    else
+                    if (indexToID.Length == 0)
+                        Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index ({index}). This lookup table does not contain any valid indices at the moment.");
+                    else
+                        Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index ({index}). It must be >= 0 and < {indexToID.Length}.");
+                }
                 return -1;
             }
 

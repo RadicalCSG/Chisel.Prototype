@@ -253,17 +253,6 @@ namespace Chisel.Components
         public abstract UVMatrix GetSurfaceUV0(int descriptionIndex);
         public abstract void SetSurfaceUV0(int descriptionIndex, UVMatrix uv0);
 
-        protected override void OnDisable()
-        {
-            ResetTreeNodes();
-            base.OnDisable();
-        }
-
-        protected override void OnResetInternal()
-        {
-            UpdateBrushMeshInstances();
-            base.OnResetInternal();
-        }
 
         // TODO: improve warning messages
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of generator (this should never happen)";
@@ -273,6 +262,13 @@ namespace Chisel.Components
         public override void GetWarningMessages(IChiselMessageHandler messages)
         {
             if (!ValidNodes)
+            {
+                messages.Warning(kFailedToGenerateNodeMessage);
+                return;
+            }
+
+            var brush = (CSGTreeBrush)Node;
+            if (brush.Valid && brush.BrushMesh == BrushMeshInstance.InvalidInstance)
             {
                 messages.Warning(kFailedToGenerateNodeMessage);
                 return;
@@ -325,16 +321,20 @@ namespace Chisel.Components
             Node.LocalTransformation = LocalTransformationWithPivot;
         }
 
-
-        protected override void OnDestroy()
+        protected override void OnResetInternal()
         {
-            base.OnDestroy();
-            ResetTreeNodes();
+            UpdateBrushMeshInstances();
+            base.OnResetInternal();
+        }
+
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+            DestroyChildTreeNodes();
         }
 
         internal override CSGTreeNode RebuildTreeNodes()
         {
-            ResetTreeNodes();
             if (Node.Valid)
                 Debug.LogWarning(this.GetType().Name + " already has a treeNode, but trying to create a new one?", this);
 

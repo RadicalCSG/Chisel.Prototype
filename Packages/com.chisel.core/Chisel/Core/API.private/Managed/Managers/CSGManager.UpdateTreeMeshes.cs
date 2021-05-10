@@ -123,21 +123,21 @@ namespace Chisel.Core
                 chiselLookupValues.EnsureCapacity(brushCount);
 
                 Profiler.BeginSample("RESIZE");
-                if (chiselLookupValues.basePolygonCache.Length != brushCount)
+                if (chiselLookupValues.basePolygonCache.Length < brushCount)
                     chiselLookupValues.basePolygonCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.routingTableCache.Length != brushCount)
+                if (chiselLookupValues.routingTableCache.Length < brushCount)
                     chiselLookupValues.routingTableCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.transformationCache.Length != brushCount)
+                if (chiselLookupValues.transformationCache.Length < brushCount)
                     chiselLookupValues.transformationCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushRenderBufferCache.Length != brushCount)
+                if (chiselLookupValues.brushRenderBufferCache.Length < brushCount)
                     chiselLookupValues.brushRenderBufferCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.treeSpaceVerticesCache.Length != brushCount)
+                if (chiselLookupValues.treeSpaceVerticesCache.Length < brushCount)
                     chiselLookupValues.treeSpaceVerticesCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushTreeSpaceBoundCache.Length != brushCount)
+                if (chiselLookupValues.brushTreeSpaceBoundCache.Length < brushCount)
                     chiselLookupValues.brushTreeSpaceBoundCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushTreeSpacePlaneCache.Length != brushCount)
+                if (chiselLookupValues.brushTreeSpacePlaneCache.Length < brushCount)
                     chiselLookupValues.brushTreeSpacePlaneCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
-                if (chiselLookupValues.brushesTouchedByBrushCache.Length != brushCount)
+                if (chiselLookupValues.brushesTouchedByBrushCache.Length < brushCount)
                     chiselLookupValues.brushesTouchedByBrushCache.Resize(brushCount, NativeArrayOptions.ClearMemory);
                 if (chiselLookupValues.brushIDValues.Length != brushCount)
                     chiselLookupValues.brushIDValues.ResizeUninitialized(brushCount);
@@ -306,7 +306,7 @@ namespace Chisel.Core
                             for (int i = 0; i < brushIntersections.Length; i++)
                             {
                                 var otherBrushID        = brushIntersections[i].nodeIndexOrder.compactNodeID;
-                                var otherBrush          = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID) };
+                                var otherBrush          = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID, ignoreInvalid: true) };
 
                                 if (!otherBrush.Valid)
                                     continue;
@@ -500,7 +500,7 @@ namespace Chisel.Core
                         for (int i = 0; i < brushIntersections.Length; i++)
                         {
                             var otherBrushID = brushIntersections[i].nodeIndexOrder.compactNodeID;
-                            var otherBrush   = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID) };
+                            var otherBrush   = new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(otherBrushID, ignoreInvalid: true) };
 
                             if (!otherBrush.Valid)
                                 continue;

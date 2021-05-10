@@ -46,7 +46,7 @@ namespace Chisel.Components
                 OnValidateDefinition();
                 var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.TempJob);
                 if (!surfaceDefinitionBlob.IsCreated)
-                    return;
+                    return; 
                 using (surfaceDefinitionBlob)
                 {
                     node = brush = GenerateTopNode(brush, userID, operation);

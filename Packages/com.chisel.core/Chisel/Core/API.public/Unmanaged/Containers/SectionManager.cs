@@ -79,6 +79,7 @@ namespace Chisel.Core
             return 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsAllocatedIndex(int index)
         {
             return FindSectionByOffset(index, out _);
