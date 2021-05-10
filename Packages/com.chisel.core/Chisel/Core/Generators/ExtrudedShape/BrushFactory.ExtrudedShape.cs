@@ -104,16 +104,22 @@ namespace Chisel.Core
                     end   =              polygonVerticesSegments[p    ]
                 };
 
+                bool verticesInversed = ChiselCurve2DBlob.CalculateOrientation(polygonVerticesArray, range) < 0;
+
                 for (int s = 1; s < pathMatrices.Length; s++)
                 {
                     var matrix0 = pathMatrices[s - 1];
                     var matrix1 = pathMatrices[s];
 
+
+
+
                     // TODO: this doesn't work if top and bottom polygons intersect
                     //			=> need to split into two brushes then, invert one of the two brushes
                     var polygonVertex4      = new float4(polygonVerticesArray[range.start].position, 0, 1);
                     var distanceToBottom    = math.mul(math.inverse(matrix0), math.mul(matrix1, polygonVertex4)).z;
-                    if (distanceToBottom < 0) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
+
+                    if (verticesInversed ^ (distanceToBottom < 0)) { var m = matrix0; matrix0 = matrix1; matrix1 = m; }
 
                     if (brushMeshIndex >= brushMeshes.Length)
                     {

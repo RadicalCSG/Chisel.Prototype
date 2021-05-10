@@ -132,6 +132,7 @@ namespace Chisel.Core
             }
         }
 
+        // TODO: put somewhere else
         [BurstCompile]
         static float CalculateOrientation(NativeList<SegmentVertex> vertices, Range range)
         {
@@ -148,8 +149,9 @@ namespace Chisel.Core
             return direction;
         }
 
+        // TODO: put somewhere else
         [BurstCompile]
-        static float CalculateOrientation(UnsafeList<SegmentVertex> vertices, Range range)
+        public static float CalculateOrientation(UnsafeList<SegmentVertex> vertices, Range range)
         {
             // Newell's algorithm to create a plane for concave polygons.
             // NOTE: doesn't work well for self-intersecting polygons
