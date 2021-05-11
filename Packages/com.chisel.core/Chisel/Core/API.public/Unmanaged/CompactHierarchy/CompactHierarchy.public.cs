@@ -159,6 +159,9 @@ namespace Chisel.Core
         public Int32                brushMeshID;    // TODO: use hash of mesh as "ID"
         public MinMaxAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe uint GetHash() { return math.hash(UnsafeUtility.AddressOf(ref this), sizeof(CompactNode)); }
+
         public override string ToString() { return $"{nameof(brushMeshID)} = {brushMeshID}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
     }
 

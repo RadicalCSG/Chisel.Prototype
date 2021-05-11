@@ -146,9 +146,12 @@ namespace Chisel.Core
             if (!array.IsCreated || array.Length < minimumSize)
             {
                 if (array.IsCreated) array.Dispose();
-                array = new NativeBitArray(minimumSize, Allocator.Temp);
+                array = new NativeBitArray(minimumSize, allocator);
             } else
-                array.Clear();
+            {
+                array.SetBits(0, false, array.Length);
+                //array.Clear(); // <= does not clear bits as you'd expect, is it broken?
+            }
         }
     }
 }

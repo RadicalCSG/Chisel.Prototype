@@ -268,7 +268,7 @@ namespace Chisel.Core
             if (nodeOrder < 0 ||
                 nodeOrder >= basePolygonCache.Length)
             {
-                Debug.LogError("nodeOrder out of bounds");
+                Debug.LogError($"nodeOrder ({nodeOrder}) out of bounds (0..{basePolygonCache.Length})");
                 return;
             }
 

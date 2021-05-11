@@ -22,11 +22,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushCache;
         [NoAlias, ReadOnly] public NativeListArray<float3>                                  loopVerticesLookup;
 
-        [NativeDisableParallelForRestriction]
         [NoAlias, ReadOnly] public NativeStream.Reader      input;
         
         // Write
-        [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeStream.Writer     output;
 
         // Per thread scratch memory
@@ -680,6 +678,8 @@ namespace Chisel.Core
             var count = input.BeginForEachIndex(index);
             if (count == 0)
             {
+                input.EndForEachIndex();
+
                 output.BeginForEachIndex(index);
                 output.Write(new IndexOrder());
                 output.Write(0);
@@ -688,6 +688,7 @@ namespace Chisel.Core
                 output.EndForEachIndex();
                 return;
             }
+
             var brushIndexOrder = input.Read<IndexOrder>();
             var brushNodeOrder = brushIndexOrder.nodeOrder;
             var surfaceCount = input.Read<int>();

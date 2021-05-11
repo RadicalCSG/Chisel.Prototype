@@ -314,10 +314,67 @@ namespace Chisel.Core
             return compactNodeID;
         }
 
-        public uint GetHash()
+        struct HashStruct
         {
-            // TODO: ability to generate hash of entire hierarchy (but do not include IDs (somehow) since they might vary from run to run)
-            throw new NotImplementedException();
+            public CompactNode  nodeInformation;
+            public int          childCount;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe void GetHash(in CompactChildNode node, NativeList<uint> hashes)
+        {
+            if (!IsValidCompactNodeID(node.compactNodeID))
+                return;
+
+            var nodeIndex = HierarchyIndexOfInternal(node.compactNodeID);
+            { 
+                var hashStruct = new HashStruct
+                { 
+                    nodeInformation = node.nodeInformation,
+                    childCount      = node.childCount
+                };
+                hashes.Add(math.hash(UnsafeUtility.AddressOf(ref hashStruct), sizeof(HashStruct)));
+            }
+
+            var childCount = node.childCount;
+            if (childCount == 0)
+                return;
+            var childOffset = node.childOffset;
+            var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+            if (childOffset < 0 || childOffset + childCount > compactNodes.Length)
+                throw new ArgumentOutOfRangeException();
+            for (int i = 0; i < childCount; i++)
+                GetHash(in compactNodesPtr[childOffset + i], hashes);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe uint GetHash(in CompactChildNode node)
+        {
+            if (!IsValidCompactNodeID(node.compactNodeID))
+                return 0;
+
+            using (var hashes = new NativeList<uint>(Allocator.Temp))
+            {
+                GetHash(in node, hashes);
+                return math.hash(hashes.GetUnsafePtr(), sizeof(uint) * hashes.Length);
+            }
+        }
+
+        public unsafe uint GetHash()
+        {
+            using (var hashes = new NativeList<uint>(Allocator.Temp))
+            {
+                var compactNodesPtr = (CompactChildNode*)compactNodes.GetUnsafePtr();
+                for (int i = 0; i < compactNodes.Length; i++)
+                {
+                    if (compactNodesPtr[i].compactNodeID == CompactNodeID.Invalid)
+                        continue;
+                    if (compactNodesPtr[i].parentID != CompactNodeID.Invalid)
+                        continue;
+                    GetHash(in compactNodesPtr[i], hashes);
+                }
+                return math.hash(hashes.GetUnsafePtr(), sizeof(uint) * hashes.Length);
+            }
         }
 
         #region ID / Memory Management
