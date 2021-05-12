@@ -22,9 +22,9 @@ namespace Chisel.Core
         static int[]    s_BrushIDValueToAncestorLegend;
         static int[]    s_BrushIDValueToOrder;
 
-        public static BlobAssetReference<CompactTree> Create(List<CompactNodeID> nodes, List<CSGTreeBrush> brushes, NodeID treeNodeID)
+        public static BlobAssetReference<CompactTree> Create(ref NativeList<CompactNodeID> nodes, ref NativeList<CSGTreeBrush> brushes, NodeID treeNodeID)
         {
-            if (brushes.Count == 0)
+            if (brushes.Length == 0)
                 return BlobAssetReference<CompactTree>.Null;
 
             s_BrushAncestorLegend.Clear();
@@ -32,7 +32,7 @@ namespace Chisel.Core
 
             var minNodeIDValue = int.MaxValue;
             var maxNodeIDValue = 0;
-            for (int b = 0; b < nodes.Count; b++)
+            for (int b = 0; b < nodes.Length; b++)
             {
                 var nodeID = nodes[b];
                 if (nodeID == CompactNodeID.Invalid)
@@ -48,7 +48,7 @@ namespace Chisel.Core
 
             var minBrushIDValue = int.MaxValue;
             var maxBrushIDValue = 0;
-            for (int b = 0; b < brushes.Count; b++)
+            for (int b = 0; b < brushes.Length; b++)
             {
                 var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushes[b].NodeID);
                 if (brushCompactNodeID == CompactNodeID.Invalid)
@@ -71,7 +71,7 @@ namespace Chisel.Core
             }
 
             // Bottom-up -> per brush list of all ancestors to root
-            for (int b = 0; b < brushes.Count; b++)
+            for (int b = 0; b < brushes.Length; b++)
             {
                 var brush = brushes[b];
                 if (!brush.Valid)

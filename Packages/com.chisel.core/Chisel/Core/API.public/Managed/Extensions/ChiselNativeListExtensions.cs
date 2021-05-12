@@ -23,6 +23,7 @@ namespace Chisel.Core
             var jobData = new EnsureCapacityListJob<T1> { List = lengthList.GetUnsafeList(), multiplier = multiplier, Container = container };
             return jobData.Schedule(dependency);
         }
+
         public static JobHandle ScheduleEnsureCapacity<T1, T2>(NativeList<T1> container, NativeList<T2> lengthList, JobHandle dependency)
             where T1 : struct
             where T2 : struct
@@ -30,7 +31,6 @@ namespace Chisel.Core
             var jobData = new EnsureCapacityListJob<T1> { List = lengthList.GetUnsafeList(), multiplier = 1, Container = container };
             return jobData.Schedule(dependency);
         }
-
 
         [BurstCompile(CompileSynchronously = true)]
         struct EnsureCapacityListJob<T> : IJob
@@ -258,6 +258,24 @@ namespace Chisel.Core
         }
 
         public static void InsertAt<T>(this NativeList<T> list, int index, T item) where T : unmanaged
+        {
+            if (index < 0 || index > list.Length)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index == list.Length)
+            {
+                list.Add(item);
+                return;
+            }
+
+            list.Resize(list.Length + 1, NativeArrayOptions.ClearMemory);
+            list.MemMove(index + 1, index, list.Length - (index + 1));
+            list[index] = item;
+        }
+
+        public static void InsertAt<T>(ref this UnsafeList<T> list, int index, T item) where T : unmanaged
         {
             if (index < 0 || index > list.Length)
             {

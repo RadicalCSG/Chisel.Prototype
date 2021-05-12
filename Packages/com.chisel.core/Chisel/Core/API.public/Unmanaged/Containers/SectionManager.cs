@@ -25,7 +25,7 @@ namespace Chisel.Core
             public int  length; // TODO: make this explicit as the difference between start and the next integer
             public int  end { get { return start + length - 1; } }
         }
-        NativeList<Section> sections; // TODO: use UnsafeList instead, so we can more easily store them without getting 
+        UnsafeList<Section> sections; // TODO: use UnsafeList instead, so we can more easily store them without getting 
                                       //       "lists in lists" problems
 
         // We merge all allocated and free sections, which means they alternate between being free and allocated
@@ -54,7 +54,7 @@ namespace Chisel.Core
         public bool IsCreated { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return sections.IsCreated; } }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static SectionManager Create(Allocator allocator) { return new SectionManager { sections = new NativeList<Section>(allocator) }; }
+        public static SectionManager Create(Allocator allocator) { return new SectionManager { sections = new UnsafeList<Section>(16384, allocator) }; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
@@ -95,7 +95,7 @@ namespace Chisel.Core
             if (sectionsLength == 0)
                 return false;
 
-            var sectionsPtr = (Section*)sections.GetUnsafePtr();
+            var sectionsPtr = sections.Ptr;
             if (findOffset < 0 || findOffset > sectionsPtr[sectionsLength - 1].end)
                 return false;
 
@@ -147,7 +147,7 @@ namespace Chisel.Core
                     searchStack[searchLength] = new SectionFindStack { first = firstNode, last = lastNode };
                     searchLength++;
                 }
-            } 
+            }
             return false;
         }
 

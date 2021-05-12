@@ -65,16 +65,6 @@ namespace Chisel.Core
             }
         }
 
-        struct ListComparer : System.Collections.Generic.IComparer<BrushIntersection>
-        {
-            public int Compare(BrushIntersection x, BrushIntersection y)
-            {
-                var orderX = x.nodeIndexOrder.nodeOrder;
-                var orderY = y.nodeIndexOrder.nodeOrder;
-                return orderX.CompareTo(orderY);
-            }
-        }
-
         static BlobAssetReference<BrushesTouchedByBrush> GenerateBrushesTouchedByBrush([NoAlias, ReadOnly] BlobAssetReference<CompactTree>  compactTree, 
                                                                                        [NoAlias, ReadOnly] NativeArray<IndexOrder>          allTreeBrushIndexOrders, 
                                                                                        IndexOrder brushIndexOrder, CompactNodeID rootNodeID,
@@ -135,7 +125,6 @@ namespace Chisel.Core
                 }
             }
 
-            // TODO: replace with NativeBitArray
             var bitset = new BrushIntersectionLookup(minNodeIDValue, (maxNodeIDValue - minNodeIDValue) + 1, Allocator.Temp);
             SetUsedNodesBits(compactTree, in brushIntersections, brushNodeID, rootNodeID, ref bitset);
             

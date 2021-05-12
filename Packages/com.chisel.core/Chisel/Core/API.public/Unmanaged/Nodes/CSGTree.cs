@@ -18,7 +18,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
     [System.Diagnostics.DebuggerDisplay("Tree ({treeNodeID})")]
-    public partial struct CSGTree
+    public partial struct CSGTree : IEquatable<CSGTree>
     {
         #region Create
         /// <summary>Generates a tree returns a <see cref="Chisel.Core.CSGTree"/> struct that contains a reference to it.</summary>
@@ -201,7 +201,9 @@ namespace Chisel.Core
 			if (obj is CSGTree) return treeNodeID == ((CSGTree)obj).treeNodeID;
 			if (obj is CSGTreeNode) return treeNodeID == ((CSGTreeNode)obj).nodeID;
 			return false;
-		}
+        }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool Equals(CSGTree other) { return treeNodeID == other.treeNodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return treeNodeID.GetHashCode(); }
         #endregion

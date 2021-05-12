@@ -1,10 +1,12 @@
 {
     "name": "com.chisel.core.tests",
+    "rootNamespace": "",
     "references": [
         "com.chisel.core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"

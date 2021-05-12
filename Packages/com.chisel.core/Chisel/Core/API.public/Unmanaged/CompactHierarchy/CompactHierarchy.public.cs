@@ -203,8 +203,8 @@ namespace Chisel.Core
         {
             var compactHierarchy = new CompactHierarchy
             {
-                brushMeshToBrush = new NativeMultiHashMap<int, CompactNodeID>(16384, allocator),
-                compactNodes     = new NativeList<CompactChildNode>(allocator),
+                brushMeshToBrush = new UnsafeMultiHashMap<int, CompactNodeID>(16384, allocator),
+                compactNodes     = new UnsafeList<CompactChildNode>(1024, allocator),
                 idManager        = IDManager.Create(allocator),
                 HierarchyID      = hierarchyID
             };

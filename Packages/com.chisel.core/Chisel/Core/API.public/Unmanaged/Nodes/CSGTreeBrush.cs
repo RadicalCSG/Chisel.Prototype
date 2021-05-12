@@ -20,7 +20,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.BrushMeshInstance"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
     [System.Diagnostics.DebuggerDisplay("Brush ({brushNodeID})")]
-    public partial struct CSGTreeBrush 
+    public partial struct CSGTreeBrush : IEquatable<CSGTreeBrush>
     {
         #region Create
         /// <summary>Generates a brush and returns a <see cref="Chisel.Core.CSGTreeBrush"/> struct that contains a reference to it.</summary>
@@ -154,7 +154,9 @@ namespace Chisel.Core
 			if (obj is CSGTreeBrush) return brushNodeID == ((CSGTreeBrush)obj).brushNodeID;
 			if (obj is CSGTreeNode) return brushNodeID == ((CSGTreeNode)obj).nodeID;
 			return false;
-		}
+        }
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool Equals(CSGTreeBrush other) { return brushNodeID == other.brushNodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return brushNodeID.GetHashCode(); }
         #endregion

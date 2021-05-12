@@ -9,7 +9,8 @@
         "UnityEditor.TestRunner",
         "Unity.Mathematics",
         "Unity.Entities",
-        "Unity.Mathematics.Extensions"
+        "Unity.Mathematics.Extensions",
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"

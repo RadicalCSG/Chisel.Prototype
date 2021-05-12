@@ -18,10 +18,10 @@ namespace Chisel.Core
             public Int32 generation;
         }
 
-        NativeList<IndexLookup> idToIndex;
-        NativeList<int>         indexToID;
+        UnsafeList<IndexLookup> idToIndex;
+        UnsafeList<int>         indexToID;
         SectionManager          sectionManager;
-        NativeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
+        UnsafeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
         
 
         public bool CheckConsistency()
@@ -116,10 +116,10 @@ namespace Chisel.Core
         {
             return new IDManager
             {
-                idToIndex       = new NativeList<IndexLookup>(allocator),
-                indexToID       = new NativeList<int>(allocator),
+                idToIndex       = new UnsafeList<IndexLookup>(1024, allocator),
+                indexToID       = new UnsafeList<int>(1024, allocator),
                 sectionManager  = SectionManager.Create(allocator),
-                freeIDs         = new NativeList<int>(allocator)
+                freeIDs         = new UnsafeList<int>(1024, allocator)
             };
         }
 
@@ -150,11 +150,11 @@ namespace Chisel.Core
             if (!sectionManager.IsAllocatedIndex(index))
                 throw new ArgumentOutOfRangeException($"{nameof(index)} ({index}) must be allocated and lie between 0 ... {indexToID.Length}");
 
-            var idInternal = ((int*)indexToID.GetUnsafePtr())[index] - 1;
+            var idInternal = indexToID.Ptr[index] - 1;
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 throw new IndexOutOfRangeException($"{nameof(id)} ({id}) must be between 1 ... {1 + idToIndex.Length}");
 
-            generation = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal].generation;
+            generation = idToIndex.Ptr[idInternal].generation;
             if (idToIndex[idInternal].index != index)
                 throw new FieldAccessException($"Internal mismatch of ids and indices");
 
@@ -170,7 +170,7 @@ namespace Chisel.Core
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 return false;
 
-            var idLookup = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal];
+            var idLookup = idToIndex.Ptr[idInternal];
             if (idLookup.generation != generation)
                 return false;
 
@@ -187,11 +187,11 @@ namespace Chisel.Core
             if (!sectionManager.IsAllocatedIndex(index))
                 return false;
 
-            var idInternal = ((int*)indexToID.GetUnsafePtr())[index] - 1;
+            var idInternal = indexToID.Ptr[index] - 1;
             if (idInternal < 0 || idInternal >= idToIndex.Length)
                 return false;
 
-            generation = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal].generation;
+            generation = idToIndex.Ptr[idInternal].generation;
             if (idToIndex[idInternal].index != index)
                 return false;
 
@@ -211,7 +211,7 @@ namespace Chisel.Core
                 return -1;
             }
 
-            var idLookup = ((IndexLookup*)idToIndex.GetUnsafePtr())[idInternal];
+            var idLookup = idToIndex.Ptr[idInternal];
             if (idLookup.generation != generation)
             {
                 if (!ignoreInvalid) Debug.LogError($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
@@ -332,7 +332,7 @@ namespace Chisel.Core
             // Copy the original indices to beyond the end of the list
             // Make space for these indices, hopefully the index list already has the capacity for 
             // this and no allocation needs to be made
-            indexToID.ResizeUninitialized(tempOffset + swapRange);
+            indexToID.Resize(tempOffset + swapRange, NativeArrayOptions.UninitializedMemory);
             indexToID.MemMove(tempOffset, sectionIndex + swapIndex, swapRange);
             
             // aaaaaabbbbcc .... bbbb
@@ -357,7 +357,7 @@ namespace Chisel.Core
 
             // Resize indices list to remove the temporary data, this is basically just 
             //   indexToID.length = tempOffset
-            indexToID.ResizeUninitialized(tempOffset);
+            indexToID.Resize(tempOffset, NativeArrayOptions.UninitializedMemory);
 
             for (int index = sectionIndex + swapIndex, lastIndex = sectionIndex + sectionLength; index < lastIndex; index++)
             {
