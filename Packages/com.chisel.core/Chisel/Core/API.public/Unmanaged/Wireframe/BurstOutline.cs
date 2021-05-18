@@ -7,40 +7,58 @@ namespace Chisel.Core
 {
     public struct BrushOutline : IDisposable
     {
-        public NativeList<float3>   vertices;
-        public NativeList<int>      visibleOuterLines;
-        public NativeList<int>      surfaceVisibleOuterLines;
-        public NativeList<int>      surfaceVisibleOuterLineRanges;
+        public UnsafeList<float3>   vertices;
+        public UnsafeList<int>      visibleOuterLines;
+        public UnsafeList<int>      surfaceVisibleOuterLines;
+        public UnsafeList<int>      surfaceVisibleOuterLineRanges;
+        public bool                 initialized;
         public uint                 hash;
-
-        public bool IsCreated
-        {
-            get
-            {
-                return visibleOuterLines.IsCreated &&
-                       surfaceVisibleOuterLines.IsCreated &&
-                       surfaceVisibleOuterLineRanges.IsCreated &&
-                       vertices.IsCreated;
-            }
-        }
 
         public static BrushOutline Create()
         {
             return new BrushOutline
             {
-                vertices                      = new NativeList<float3>(Allocator.Persistent),
-                visibleOuterLines             = new NativeList<int>(Allocator.Persistent),
-                surfaceVisibleOuterLines      = new NativeList<int>(Allocator.Persistent),
-                surfaceVisibleOuterLineRanges = new NativeList<int>(Allocator.Persistent)
+                initialized                   = true,
+                vertices                      = new UnsafeList<float3>(64, Allocator.Persistent),
+                visibleOuterLines             = new UnsafeList<int>(64, Allocator.Persistent),
+                surfaceVisibleOuterLines      = new UnsafeList<int>(64, Allocator.Persistent),
+                surfaceVisibleOuterLineRanges = new UnsafeList<int>(64, Allocator.Persistent)
             };
         }
 
-        public void Dispose()
+        public unsafe bool IsCreated
         {
-            if (vertices                     .IsCreated) vertices                     .Dispose(); vertices                      = default;
-            if (visibleOuterLines            .IsCreated) visibleOuterLines            .Dispose(); visibleOuterLines             = default;
-            if (surfaceVisibleOuterLines     .IsCreated) surfaceVisibleOuterLines     .Dispose(); surfaceVisibleOuterLines      = default;
-            if (surfaceVisibleOuterLineRanges.IsCreated) surfaceVisibleOuterLineRanges.Dispose(); surfaceVisibleOuterLineRanges = default;
+            get
+            {
+                return initialized &&
+                       vertices.Ptr != null && vertices.IsCreated &&
+                       visibleOuterLines.Ptr != null && visibleOuterLines.IsCreated &&
+                       surfaceVisibleOuterLines.Ptr != null && surfaceVisibleOuterLines.IsCreated &&
+                       surfaceVisibleOuterLineRanges.Ptr != null && surfaceVisibleOuterLineRanges.IsCreated;
+            }
+        }
+
+        public unsafe void Dispose()
+        {
+            try
+            {
+                initialized = false;
+                if (vertices.Ptr                      != null && vertices                     .IsCreated) vertices                     .Dispose(); 
+                if (visibleOuterLines.Ptr             != null && visibleOuterLines            .IsCreated) visibleOuterLines            .Dispose(); 
+                if (surfaceVisibleOuterLines.Ptr      != null && surfaceVisibleOuterLines     .IsCreated) surfaceVisibleOuterLines     .Dispose(); 
+                if (surfaceVisibleOuterLineRanges.Ptr != null && surfaceVisibleOuterLineRanges.IsCreated) surfaceVisibleOuterLineRanges.Dispose(); 
+            }
+            catch(Exception ex)
+            {
+                UnityEngine.Debug.LogException(ex);
+            }
+            finally
+            { 
+                vertices = default; 
+                visibleOuterLines = default; 
+                surfaceVisibleOuterLines = default; 
+                surfaceVisibleOuterLineRanges = default;
+            }
         }
 
         public void Reset()
@@ -55,7 +73,13 @@ namespace Chisel.Core
         static unsafe uint GetListHash<T>(ref NativeList<T> list)
             where T : unmanaged
         {
-            return math.hash(list.GetUnsafeReadOnlyPtr<T>(), list.Length * sizeof(T));
+            return math.hash(list.GetUnsafePtr(), list.Length * sizeof(T));
+        }
+
+        static unsafe uint GetListHash<T>(ref UnsafeList<T> list)
+            where T : unmanaged
+        {
+            return math.hash(list.Ptr, list.Length * sizeof(T));
         }
 
         void UpdateHash()
@@ -69,10 +93,15 @@ namespace Chisel.Core
         // TODO: use BrushMeshBlob instead
         internal void Fill(ref BrushMeshBlob brushMesh)
         {
+            if (!IsCreated)
+            {
+                UnityEngine.Debug.LogError($"Calling Fill on uninitialized Outline");
+                return;
+            }
             Reset();
 
-            vertices.Clear();
             vertices.AddRange(ref brushMesh.localVertices);
+            UnityEngine.Debug.Assert(vertices.length == brushMesh.localVertices.Length);
             for (int p = 0; p < brushMesh.polygons.Length; p++)
             {
                 var firstEdge = brushMesh.polygons[p].firstEdge;

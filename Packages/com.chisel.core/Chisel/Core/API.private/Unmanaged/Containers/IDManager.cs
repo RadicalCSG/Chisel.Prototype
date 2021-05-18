@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
@@ -9,9 +10,11 @@ namespace Chisel.Core
 {
     // TODO: make sure everything is covered in tests
     // TODO: use native containers, make hierarchy use this as well
+    [BurstCompatible]
     struct IDManager : IDisposable
     {
         [DebuggerDisplay("Index = {index}, Generation = {generation}")]
+        [StructLayout(LayoutKind.Sequential)]
         struct IndexLookup
         {
             public Int32 index;
@@ -22,8 +25,9 @@ namespace Chisel.Core
         UnsafeList<int>         indexToID;
         SectionManager          sectionManager;
         UnsafeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
-        
 
+
+        [BurstCompatible]
         public bool CheckConsistency()
         {
             for (int id = 0; id < idToIndex.Length; id++)
@@ -200,37 +204,81 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe int GetIndex(int id, int generation, bool ignoreInvalid = false)
+        public unsafe int GetIndexNoErrors(int id, int generation)
         {
             Debug.Assert(IsCreated);
             var idInternal = id - 1; // We don't want 0 to be a valid id
 
             if (idInternal < 0 || idInternal >= idToIndex.Length)
-            {
-                if (!ignoreInvalid) Debug.LogError($"{nameof(id)} ({id}) must be between 1 and {1 + idToIndex.Length}");
                 return -1;
-            }
 
             var idLookup = idToIndex.Ptr[idInternal];
             if (idLookup.generation != generation)
-            {
-                if (!ignoreInvalid) Debug.LogError($"The given generation ({generation}) was not identical to the expected generation ({idLookup.generation}), are you using an old reference?");
                 return -1;
-            }
 
             var index = idLookup.index;
             if (index < 0 || index >= indexToID.Length)
+                return -1;
+
+            return idLookup.index;
+        }
+
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckIndexInRange(int id, int index, int length)
+        {
+            if (index < 0 || index >= length)
             {
-                if (!ignoreInvalid)
-                {
-                    if (index == -1)
-                        Debug.LogError($"Using an {nameof(id)} ({id}) that seems to have already been destroyed.");
-                    else
-                    if (indexToID.Length == 0)
-                        Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index ({index}). This lookup table does not contain any valid indices at the moment.");
-                    else
-                        Debug.LogError($"{nameof(id)} ({id}) does not point to an valid index ({index}). It must be >= 0 and < {indexToID.Length}.");
-                }
+                if (index == -1)
+                    throw new Exception($"Using an {nameof(id)} ({id}) that seems to have already been destroyed.");
+                else
+                if (length == 0)
+                    throw new Exception($"{nameof(id)} ({id}) does not point to an valid index ({index}). This lookup table does not contain any valid indices at the moment.");
+                else
+                    throw new Exception($"{nameof(id)} ({id}) does not point to an valid index ({index}). It must be >= 0 and < {length}.");
+            }
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckGeneration(int generation, int expectedGeneration)
+        {
+            if (expectedGeneration != generation)
+                throw new Exception($"The given generation ({generation}) was not identical to the expected generation ({expectedGeneration}), are you using an old reference?");
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckID(int id, int maxID)
+        {
+            var idInternal = id - 1; // We don't want 0 to be a valid id
+            if (idInternal < 0 || idInternal >= maxID)
+                throw new ArgumentException($"{nameof(id)}", $"({id}) must be between 1 and {1 + maxID}");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe int GetIndex(int id, int generation)
+        {
+            Debug.Assert(IsCreated);
+            var idInternal = id - 1; // We don't want 0 to be a valid id
+
+            var maxID = idToIndex.Length;
+            if (idInternal < 0 || idInternal >= maxID)
+            {
+                CheckID(id, maxID);
+                return -1;
+            }
+             
+            var idLookup = idToIndex.Ptr[idInternal];
+            if (idLookup.generation != generation)
+            {
+                CheckGeneration(generation, idLookup.generation);
+                return -1;
+            }
+
+            var maxIndex = indexToID.Length;
+            var index = idLookup.index;
+            if (index < 0 || index >= maxIndex)
+            {
+                CheckIndexInRange(id, index, maxIndex);
                 return -1;
             }
 

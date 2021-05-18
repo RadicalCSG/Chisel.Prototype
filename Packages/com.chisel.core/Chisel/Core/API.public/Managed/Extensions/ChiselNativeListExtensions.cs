@@ -16,6 +16,20 @@ namespace Chisel.Core
 {
     public static unsafe class ChiselNativeListExtensions
     {
+        public static T[] ToArray<T>(ref this UnsafeList<T> input) 
+            where T : unmanaged
+        {
+            var array = new T[input.length];
+            if (input.length == 0)
+                return array;
+            fixed(T* dstPtr = &array[0])
+            {
+                var srcPtr = input.Ptr;
+                UnsafeUtility.MemCpy(dstPtr, srcPtr, input.length * UnsafeUtility.SizeOf<T>());
+            }
+            return array;
+        }
+
         public static JobHandle ScheduleEnsureCapacity<T1,T2>(NativeList<T1> container, NativeList<T2> lengthList, int multiplier, JobHandle dependency)
             where T1 : struct
             where T2 : struct
@@ -79,32 +93,13 @@ namespace Chisel.Core
 
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
 
-        public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
-        {
-            list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
-        }
-
-        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
-        {
-            if (elements.Length == 0)
-                return;
-            CheckLengthInRange(elements.Length, elements.Length);
-            list.AddRange(elements.GetUnsafePtr(), elements.Length);
-        }
-        
-        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
-        {
-            if (length == 0)
-                return;
-            CheckLengthInRange(length, elements.Length);
-            list.AddRange(elements.GetUnsafePtr(), length);
-        }
-
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         static void CheckLengthInRange(int length, int range)
         {
             if (length < 0 || length > range)
-                throw new ArgumentOutOfRangeException("length");
+            {
+                throw new ArgumentOutOfRangeException("length", $"{length} {range}");
+            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
@@ -121,11 +116,73 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException("index");
         }
 
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        static void CheckCreated(bool isCreated)
+        {
+            if (!isCreated)
+                throw new ArgumentException("isCreated");
+        }
+
+        public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
+        {
+            CheckCreated(list.IsCreated);
+            if (elements.Length == 0)
+                return;
+            list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
+        }
+
+        public static void AddRange<T>(ref this UnsafeList<T> list, ref UnsafeList<T> elements) where T : unmanaged
+        {
+            CheckCreated(elements.Ptr != null && elements.IsCreated);
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.Ptr != null && list.IsCreated);
+            CheckLengthInRange(elements.Length, list.Capacity);
+            list.AddRange(elements.Ptr, elements.Length);
+        }
+
+        public static void AddRange<T>(ref this UnsafeList<T> list, ref BlobArray<T> elements) where T : unmanaged
+        {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            list.AddRange(elements.GetUnsafePtr(), elements.Length);
+        }
+
+        public static void AddRange<T>(this NativeList<T> list, ref UnsafeList<T> elements) where T : unmanaged
+        {
+            CheckCreated(elements.Ptr != null && elements.IsCreated);
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            CheckLengthInRange(elements.Length, list.Length);
+            list.AddRange(elements.Ptr, elements.Length);
+        }
+
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
+        {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            CheckLengthInRange(elements.Length, list.Length);
+            list.AddRange(elements.GetUnsafePtr(), elements.Length);
+        }
+        
+        public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
+        {
+            if (length == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            CheckLengthInRange(length, elements.Length);
+            list.AddRange(elements.GetUnsafePtr(), length);
+        }
+
         public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
             if (length == 0)
                 return;
-            CheckLengthInRange(length, elements.Length);
+            CheckCreated(list.IsCreated);
+            CheckLengthInRange(length, list.Capacity);
             list.AddRangeNoResize(elements.GetUnsafePtr(), length);
         }
 
@@ -133,12 +190,14 @@ namespace Chisel.Core
         {
             if (elements.Length == 0)
                 return;
-            CheckLengthInRange(elements.Length, elements.Length);
+            CheckCreated(list.IsCreated);
+            CheckLengthInRange(elements.Length, list.Capacity);
             list.AddRangeNoResize(elements.GetUnsafePtr(), elements.Length);
         }
 
         public static uint Hash<T>(this NativeList<T> list, int length) where T : unmanaged
         {
+            CheckCreated(list.IsCreated);
             CheckLengthInRange(length, list.Length);
             if (length == 0)
                 return 0;
@@ -147,37 +206,57 @@ namespace Chisel.Core
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
         {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
         public static void AddRange<T>(this NativeList<T> list, T[] elements) where T : struct
         {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
             foreach (var item in elements)
                 list.Add(item);
         }
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, T[] elements) where T : struct
         {
+            if (elements.Length == 0)
+                return;
+            CheckCreated(list.IsCreated);
             foreach (var item in elements)
                 list.AddNoResize(item);
         }
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, List<T> elements) where T : struct
         {
-            foreach(var item in elements)
+            if (elements.Count == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            foreach (var item in elements)
                 list.AddNoResize(item);
         }
 
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
-            CheckLengthInRange(count, elements.Length);
+            if (count == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            CheckCreated(elements.IsCreated);
+            CheckLengthInRange(count, list.Capacity);
             CheckIndexInRangeInc(start, elements.Length - count);
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
         public static void CopyFrom<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
-            CheckLengthInRange(count, elements.Length);
+            if (count == 0)
+                return;
+            CheckCreated(list.IsCreated);
+            CheckCreated(elements.IsCreated);
+            CheckLengthInRange(count, list.Capacity);
             CheckIndexInRangeInc(start, elements.Length - count);
 
             list.Clear();
@@ -186,7 +265,10 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
-            CheckLengthInRange(count, elements.Length);
+            if (count == 0)
+                return;
+            CheckCreated(elements.IsCreated);
+            CheckLengthInRange(count, list.Capacity);
             CheckIndexInRangeInc(start, elements.Length - count);
 
             list.Clear();
@@ -196,6 +278,10 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
         {
+            if (count == 0)
+                return;
+            CheckCreated(dstArray.IsCreated);
+            CheckCreated(srcList.IsCreated);
             CheckLengthInRange(count, srcList.Length);
             CheckLengthInRange(count, dstArray.Length);
             CheckIndexInRangeInc(start, srcList.Length - count);
@@ -208,6 +294,10 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
+            if (srcCount == 0)
+                return;
+            CheckCreated(dstArray.IsCreated);
+            CheckCreated(srcArray.IsCreated);
             CheckLengthInRange(srcCount, srcArray.Length);
             CheckLengthInRange(srcCount, dstArray.Length);
             CheckIndexInRangeInc(srcIndex, srcArray.Length - srcCount);
@@ -220,6 +310,9 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
+            if (srcCount == 0)
+                return;
+            CheckCreated(dstArray.IsCreated);
             CheckLengthInRange(srcCount, srcArray.Length);
             CheckLengthInRange(srcCount, dstArray.Length);
             CheckIndexInRangeInc(dstIndex, dstArray.Length - srcCount);
@@ -233,6 +326,9 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
+            if (srcCount == 0)
+                return;
+            CheckCreated(dstList.IsCreated);
             CheckLengthInRange(srcCount, srcArray.Length);
             CheckLengthInRange(srcCount, dstList.Length);
             CheckIndexInRangeInc(dstIndex, dstList.Length - srcCount);
@@ -246,6 +342,8 @@ namespace Chisel.Core
 
         public static void CopyFrom<T>(this NativeSlice<T> dstSlice, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
+            if (srcCount == 0)
+                return;
             CheckLengthInRange(srcCount, srcArray.Length);
             CheckLengthInRange(srcCount, dstSlice.Length);
             CheckIndexInRangeInc(dstIndex, dstSlice.Length - srcCount);
@@ -259,6 +357,7 @@ namespace Chisel.Core
 
         public static void InsertAt<T>(this NativeList<T> list, int index, T item) where T : unmanaged
         {
+            CheckCreated(list.IsCreated);
             if (index < 0 || index > list.Length)
             {
                 LogRangeError();
@@ -269,7 +368,6 @@ namespace Chisel.Core
                 list.Add(item);
                 return;
             }
-
             list.Resize(list.Length + 1, NativeArrayOptions.ClearMemory);
             list.MemMove(index + 1, index, list.Length - (index + 1));
             list[index] = item;
@@ -277,6 +375,7 @@ namespace Chisel.Core
 
         public static void InsertAt<T>(ref this UnsafeList<T> list, int index, T item) where T : unmanaged
         {
+            CheckCreated(list.IsCreated);
             if (index < 0 || index > list.Length)
             {
                 LogRangeError();
@@ -297,6 +396,8 @@ namespace Chisel.Core
         {
             if (count == 0)
                 return;
+
+            CheckCreated(list.IsCreated);
             if (index < 0 || index + count > list.Length)
             {
                 LogRangeError();
@@ -317,6 +418,7 @@ namespace Chisel.Core
         {
             if (count == 0)
                 return;
+            CheckCreated(array.IsCreated);
             if (arrayLength > array.Length)
             {
                 LogRangeError();
@@ -353,6 +455,7 @@ namespace Chisel.Core
                 return;
             }
 
+            CheckCreated(array.IsCreated);
             if (index + count < arrayLength)
                 array.MemMove(index, index + count, arrayLength - (index + count));
             arrayLength -= count;

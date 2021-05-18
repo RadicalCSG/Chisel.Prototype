@@ -58,6 +58,8 @@ namespace Chisel.Core
             nodeIDLookup        = IDManager.Create(Allocator.Persistent);
             hierarchies         = new NativeList<CompactHierarchy>(Allocator.Persistent);
             nodes               = new NativeList<CompactNodeID>(Allocator.Persistent);
+            s_AllTrees          = new NativeList<CSGTree>(Allocator.Persistent);
+            s_TreeNodeIDs       = new NativeList<NodeID>(Allocator.Persistent);
             defaultHierarchyID  = CreateHierarchy().HierarchyID;
         }
 
@@ -68,21 +70,9 @@ namespace Chisel.Core
             if (nodeIDLookup.IsCreated) nodeIDLookup.Dispose(); nodeIDLookup = default;
             if (hierarchies.IsCreated) hierarchies.Dispose(); hierarchies = default;
             if (nodes.IsCreated) nodes.Dispose(); nodes = default;
+            if (s_AllTrees.IsCreated) s_AllTrees.Dispose(); s_AllTrees = default;
+            if (s_TreeNodeIDs.IsCreated) s_TreeNodeIDs.Dispose(); s_TreeNodeIDs = default;
         }
-
-        internal sealed class BrushOutlineState : IDisposable
-        {
-            public BrushOutline brushOutline;
-            public void Dispose()
-            {
-                if (brushOutline.IsCreated)
-                    brushOutline.Dispose();
-                brushOutline = default;
-            }
-        }
-
-        static readonly Dictionary<int, BrushOutlineState> brushOutlineStates = new Dictionary<int, BrushOutlineState>();
-
 
         public static bool CheckConsistency()
         {
@@ -98,9 +88,8 @@ namespace Chisel.Core
         // Temporary hack
         public static void ClearOutlines()
         {
-            foreach(var value in brushOutlineStates.Values)
-                value.Dispose();
-            brushOutlineStates.Clear();
+            for (int i = 0; i < hierarchies.Length; i++)
+                hierarchies[i].ClearAllOutlines();
         }
 
 
@@ -162,7 +151,7 @@ namespace Chisel.Core
             }
         }
 
-        public static void GetAllTrees(List<CSGTree> allTrees)
+        public static void GetAllTrees(NativeList<CSGTree> allTrees)
         {
             allTrees.Clear();
 
@@ -240,7 +229,6 @@ namespace Chisel.Core
             }
             defaultHierarchyID = CompactHierarchyID.Invalid;
 
-            ClearOutlines();
             if (hierarchies.IsCreated) hierarchies.Clear();
             if (hierarchyIDLookup.IsCreated) hierarchyIDLookup.Clear();
 
@@ -351,17 +339,31 @@ namespace Chisel.Core
 #endif
         #endregion
 
-        public static ref BrushOutline GetBrushOutline(NodeID nodeID)
+        public static unsafe ref BrushOutline GetBrushOutline(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID))
                 throw new ArgumentException($"The {nameof(NodeID)} {nameof(nodeID)} (value: {nodeID.value}, generation: {nodeID.generation}) is invalid", nameof(nodeID));
-            if (!brushOutlineStates.ContainsKey(nodeID.value))
-                brushOutlineStates[nodeID.value] = new BrushOutlineState
-                    { 
-                        brushOutline = BrushOutline.Create()
-                    };
-            return ref brushOutlineStates[nodeID.value].brushOutline; 
+
+            var compactNodeID = GetCompactNodeID(nodeID);
+            ref var hierarchy = ref GetHierarchy(compactNodeID);
+            return ref GetBrushOutline(ref hierarchy, compactNodeID);
         }
+
+        public static ref BrushOutline GetBrushOutline(ref CompactHierarchy hierarchy, CompactNodeID compactNodeID)
+        {
+            if (!hierarchy.IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            return ref hierarchy.GetOutline(compactNodeID);
+        }
+
+        public static void Fill(ref CompactHierarchy hierarchy, CompactNodeID compactNodeID, ref BrushMeshBlob brushMesh)
+        {
+            if (!hierarchy.IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+            ref var outline = ref GetBrushOutline(ref hierarchy, compactNodeID);
+            if (outline.IsCreated) outline.Fill(ref brushMesh); 
+        } 
 
         #region CreateHierarchy
         public unsafe static ref CompactHierarchy CreateHierarchy(Int32 userID = 0)
@@ -520,13 +522,22 @@ namespace Chisel.Core
             return GetCompactNodeID(nodeID, out _);
         }
 
-        public static NodeID GetNodeID(CompactNodeID compactNodeID, bool ignoreInvalid = false)
+        public static NodeID GetNodeID(CompactNodeID compactNodeID)
         {
             if (compactNodeID == CompactNodeID.Invalid)
                 return NodeID.Invalid;
 
             ref var hierarchy = ref GetHierarchy(compactNodeID);
-            return hierarchy.GetNodeID(compactNodeID, ignoreInvalid);
+            return hierarchy.GetNodeID(compactNodeID);
+        }
+
+        public static NodeID GetNodeIDNoErrors(CompactNodeID compactNodeID)
+        {
+            if (compactNodeID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+
+            ref var hierarchy = ref GetHierarchy(compactNodeID);
+            return hierarchy.GetNodeIDNoErrors(compactNodeID);
         }
 
         public static CompactHierarchyID GetHierarchyIDOfNode(NodeID nodeID)
@@ -912,6 +923,14 @@ namespace Chisel.Core
         #endregion
 
         #region BrushMeshID
+        internal static Int32 GetBrushMeshID(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(NodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            return GetHierarchy(compactNodeID).GetChildRef(compactNodeID).brushMeshID;
+        }
+
         internal static Int32 GetBrushMeshID(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -985,15 +1004,6 @@ namespace Chisel.Core
         }
         #endregion
 
-        internal static void DestroyOutline(CompactNodeID compactNodeID)
-        {
-            if (brushOutlineStates.ContainsKey(compactNodeID.value))
-            {
-                brushOutlineStates[compactNodeID.value].Dispose();
-                brushOutlineStates.Remove(compactNodeID.value);
-            }
-        }
-        
         public static bool DestroyNode(NodeID nodeID)
         {
             if (!IsValidNodeID(nodeID, out var index))
@@ -1036,7 +1046,7 @@ namespace Chisel.Core
                 SetDirty(oldParent);
             SetDirty(currHierarchy.RootID);
 
-            DestroyOutline(compactNodeID);
+            currHierarchy.ClearOutline(compactNodeID);
             FreeNodeID(nodeID);
 
             return currHierarchy.Delete(compactNodeID);
@@ -1149,7 +1159,7 @@ namespace Chisel.Core
             var childCount          = sourceHierarchy.ChildCount(srcCompactNodeID);
             if (childCount > 0)
             {
-                var offset = destinationHierarchy.AllocateSize(nodeIndex, childCount);
+                var offset = destinationHierarchy.AllocateChildCount(nodeIndex, childCount);
                 for (int i = 0; i < childCount; i++)
                 {
                     var srcChildID = sourceHierarchy.GetChildIDAt(srcCompactNodeID, i);

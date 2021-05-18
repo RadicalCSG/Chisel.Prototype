@@ -205,6 +205,7 @@ namespace Chisel.Core
             {
                 brushMeshToBrush = new UnsafeMultiHashMap<int, CompactNodeID>(16384, allocator),
                 compactNodes     = new UnsafeList<CompactChildNode>(1024, allocator),
+                brushOutlines    = new UnsafeList<BrushOutline>(1024, allocator),
                 idManager        = IDManager.Create(allocator),
                 HierarchyID      = hierarchyID
             };
@@ -283,25 +284,43 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NodeID GetNodeID(CompactNodeID compactNodeID, bool ignoreInvalid = false)
+        public NodeID GetNodeID(CompactNodeID compactNodeID)
         {
             int nodeIndex;
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
             {
-                if (!ignoreInvalid) Debug.LogError($"{nameof(compactNodeID)} is an invalid node");
+                Debug.LogError($"{nameof(compactNodeID)} is an invalid node");
                 return NodeID.Invalid;
             }
 
-            nodeIndex = HierarchyIndexOfInternal(compactNodeID, ignoreInvalid);
+            nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
                 return NodeID.Invalid;
 
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
             {
-                if (!ignoreInvalid) Debug.LogError($"{nameof(compactNodeID)} nodeIndex is out of range");
+                Debug.LogError($"{nameof(compactNodeID)} nodeIndex is out of range");
                 return NodeID.Invalid;
             }
+
+            return compactNodes[nodeIndex].nodeID;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NodeID GetNodeIDNoErrors(CompactNodeID compactNodeID)
+        {
+            int nodeIndex;
+            Debug.Assert(IsCreated);
+            if (compactNodeID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+
+            nodeIndex = HierarchyIndexOfInternalNoErrors(compactNodeID);
+            if (nodeIndex == -1)
+                return NodeID.Invalid;
+
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
+                return NodeID.Invalid;
 
             return compactNodes[nodeIndex].nodeID;
         }

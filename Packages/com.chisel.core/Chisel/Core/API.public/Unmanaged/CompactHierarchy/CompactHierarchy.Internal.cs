@@ -70,6 +70,7 @@ namespace Chisel.Core
         UnsafeMultiHashMap<int, CompactNodeID> brushMeshToBrush;
 
         UnsafeList<CompactChildNode> compactNodes;
+        UnsafeList<BrushOutline>     brushOutlines;
         IDManager                    idManager;
 
         
@@ -80,7 +81,7 @@ namespace Chisel.Core
         public bool IsCreated
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return idManager.IsCreated && compactNodes.IsCreated && brushMeshToBrush.IsCreated; }
+            get { return idManager.IsCreated && compactNodes.IsCreated && brushOutlines.IsCreated && brushMeshToBrush.IsCreated; }
         }
 
         public bool CheckConsistency()
@@ -256,6 +257,22 @@ namespace Chisel.Core
             if (brushMeshToBrush.IsCreated) brushMeshToBrush.Dispose(); brushMeshToBrush = default;
             if (compactNodes.IsCreated) compactNodes.Dispose(); compactNodes = default;
 
+            if (brushOutlines.IsCreated)
+            {
+                try
+                {
+                    for (int i = 0; i < brushOutlines.Length; i++)
+                    {
+                        if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose();
+                        brushOutlines[i] = default;
+                    }
+                }
+                finally
+                {
+                    brushOutlines.Dispose();
+                    brushOutlines = default;
+                }
+            }
             try
             {
                 CompactHierarchyManager.FreeHierarchyID(HierarchyID);
@@ -297,7 +314,11 @@ namespace Chisel.Core
             }
             var compactNodeID = new CompactNodeID(hierarchyID: HierarchyID, value: id, generation: generation);
             if (index >= compactNodes.Length)
+            {
                 compactNodes.Resize(index + 1, NativeArrayOptions.ClearMemory);
+                brushOutlines.Resize(index + 1, NativeArrayOptions.ClearMemory);
+            }
+            brushOutlines[index] = default;
             compactNodes[index] = new CompactChildNode
             {
                 nodeInformation = nodeInformation,
@@ -377,6 +398,52 @@ namespace Chisel.Core
             }
         }
 
+        // Temporary hack
+        public void ClearAllOutlines()
+        {
+            for (int i = 0; i < brushOutlines.Length; i++)
+            {
+                brushOutlines[i].Dispose();
+                brushOutlines[i] = default;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void ClearOutline(CompactNodeID compactNodeID)
+        {
+            Debug.Assert(IsCreated);
+            var index = HierarchyIndexOfInternal(compactNodeID);
+            if (index < 0 || index >= brushOutlines.length)
+                throw new ArgumentException(nameof(compactNodeID));
+
+            if (brushOutlines.Ptr[index].IsCreated)
+                brushOutlines.Ptr[index].Dispose();
+            brushOutlines.Ptr[index] = default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe ref BrushOutline GetOutline(CompactNodeID compactNodeID)
+        {
+            Debug.Assert(IsCreated);
+            var index = HierarchyIndexOfInternal(compactNodeID);
+            if (index < 0 || index >= brushOutlines.length)
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            if (!brushOutlines.Ptr[index].IsCreated)
+                brushOutlines.Ptr[index] = BrushOutline.Create();
+            return ref UnsafeUtility.ArrayElementAsRef<BrushOutline>(brushOutlines.Ptr, index);
+        }
+        
+        internal Int32 GetBrushMeshID(CompactNodeID compactNodeID)
+        {
+            Debug.Assert(IsCreated);
+            var index = HierarchyIndexOfInternal(compactNodeID);
+            if (index < 0 || index >= brushOutlines.length)
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            return compactNodes[index].nodeInformation.brushMeshID;
+        }
+
         #region ID / Memory Management
         void RemoveMeshReference(CompactNodeID compactNodeID, int brushMeshID)
         {
@@ -415,6 +482,7 @@ namespace Chisel.Core
                 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
+                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default;
                 compactNodes[i] = default;
             }
 
@@ -433,6 +501,7 @@ namespace Chisel.Core
 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
+                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
                 compactNodes[i] = default;
             }
 
@@ -440,7 +509,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal int AllocateSize(int parentNodeIndex, int length)
+        internal int AllocateChildCount(int parentNodeIndex, int length)
         {
             if (length < 0)
                 throw new ArgumentException(nameof(length));
@@ -461,14 +530,25 @@ namespace Chisel.Core
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int HierarchyIndexOfInternal(CompactNodeID compactNodeID, bool ignoreInvalid = false)
+        int HierarchyIndexOfInternal(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
             if (compactNodeID == CompactNodeID.Invalid)
                 return -1;
             if (compactNodeID.hierarchyID != HierarchyID)
                 return -1;
-            return idManager.GetIndex(compactNodeID.value, compactNodeID.generation, ignoreInvalid);
+            return idManager.GetIndex(compactNodeID.value, compactNodeID.generation);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int HierarchyIndexOfInternalNoErrors(CompactNodeID compactNodeID)
+        {
+            Debug.Assert(IsCreated);
+            if (compactNodeID == CompactNodeID.Invalid)
+                return -1;
+            if (compactNodeID.hierarchyID != HierarchyID)
+                return -1;
+            return idManager.GetIndexNoErrors(compactNodeID.value, compactNodeID.generation);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -482,7 +562,7 @@ namespace Chisel.Core
         unsafe ref CompactChildNode SafeGetNodeRefAtInternal(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
-            var nodeIndex = UnsafeHierarchyIndexOfInternal(compactNodeID);
+            var nodeIndex       = UnsafeHierarchyIndexOfInternal(compactNodeID);
             var compactNodesPtr = compactNodes.Ptr;
             return ref compactNodesPtr[nodeIndex];
         }
@@ -492,7 +572,7 @@ namespace Chisel.Core
         unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
-            var nodeIndex = UnsafeHierarchyIndexOfInternal(compactNodeID);
+            var nodeIndex       = UnsafeHierarchyIndexOfInternal(compactNodeID);
             var compactNodesPtr = compactNodes.Ptr;
             return ref compactNodesPtr[nodeIndex].nodeInformation;
         }
@@ -591,7 +671,10 @@ namespace Chisel.Core
                 FreeIndexRange(nodeIndex, range);
 
                 for (int i = nodeIndex; i < nodeIndex + range; i++)
+                {
+                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
                     compactNodes[i] = default;
+                }
 
                 // If the range is identical to the number of children, we're deleting all the children
                 if (parentChildCount == range)
@@ -616,7 +699,10 @@ namespace Chisel.Core
                 FreeIndexRange(nodeIndex, range);
 
                 for (int i = nodeIndex; i < nodeIndex + range; i++)
+                {
+                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
                     compactNodes[i] = default;
+                }
 
                 // In that case, we can just decrease the number of children in the list
                 parentHierarchy.childCount -= range;
@@ -632,9 +718,13 @@ namespace Chisel.Core
             // Move nodes behind our node on top of the node we're removing
             var count = parentChildCount - (siblingIndex + range);
             compactNodes.MemMove(nodeIndex, nodeIndex + range, count);
+            brushOutlines.MemMove(nodeIndex, nodeIndex + range, count);
 
             for (int i = nodeIndex + count; i < parentChildOffset + parentChildCount; i++)
+            {
+                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
                 compactNodes[i] = default;
+            }
 
             parentHierarchy.childCount -= range;
             compactNodes[parentIndex] = parentHierarchy;
@@ -660,8 +750,8 @@ namespace Chisel.Core
         unsafe bool DeleteAllChildrenInternal(int parentIndex)
         {
             Debug.Assert(parentIndex >= 0 && parentIndex < compactNodes.Length);
-            var parentHierarchy = compactNodes[parentIndex];
-            var parentChildCount = parentHierarchy.childCount;
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildCount    = parentHierarchy.childCount;
             return DeleteRangeInternal(parentIndex, 0, parentChildCount, true);
         }
 
@@ -721,19 +811,24 @@ namespace Chisel.Core
             var prevLength = compactNodes.Length;
             // Resize compactNodes to have space for the nodes we're detaching (compactNodes will probably have capacity for this already)
             compactNodes.Resize(prevLength + range, NativeArrayOptions.UninitializedMemory);
+            brushOutlines.Resize(prevLength + range, NativeArrayOptions.ClearMemory);
 
             // Copy the original nodes to behind all our other nodes
             compactNodes.MemMove(prevLength, nodeIndex, range);
-            
+            brushOutlines.MemMove(prevLength, nodeIndex, range);
+
             // Move nodes behind our node on top of the node we're removing
             var count = parentChildCount - (siblingIndex + range);
             compactNodes.MemMove(nodeIndex, nodeIndex + range, count);
-            
+            brushOutlines.MemMove(nodeIndex, nodeIndex + range, count);
+
             // Copy original nodes to behind the new parent child list
             compactNodes.MemMove(lastNodeIndex, prevLength, range);
+            brushOutlines.MemMove(lastNodeIndex, prevLength, range);
 
             // Set the compactNodes length to its original size
             compactNodes.Resize(prevLength, NativeArrayOptions.UninitializedMemory);
+            brushOutlines.Resize(prevLength + range, NativeArrayOptions.ClearMemory);
 
             idManager.SwapIndexRangeToBack(parentChildOffset, parentChildCount, siblingIndex, range);
 
@@ -824,11 +919,15 @@ namespace Chisel.Core
                 Debug.Assert(parentChildOffset >= 0 && parentChildOffset < compactNodes.Length + parentChildCount);
 
                 if (compactNodes.Length < parentChildOffset + parentChildCount)
+                {
                     compactNodes.Resize(parentChildOffset + parentChildCount, NativeArrayOptions.ClearMemory);
+                    brushOutlines.Resize(parentChildOffset + parentChildCount, NativeArrayOptions.ClearMemory);
+                }
 
                 // We first move the last nodes to the correct new offset ..
                 var items = originalCount - insertIndex;
                 compactNodes.MemMove(parentChildOffset + insertIndex + 1, originalOffset + insertIndex, items);
+                brushOutlines.MemMove(parentChildOffset + insertIndex + 1, originalOffset + insertIndex, items);
 
                 // If our offset is different then the front section will not be in the right location, so we might need to copy this
                 // We'd also need to reset the old nodes to invalid, if we don't we'd create new dangling nodes
@@ -837,6 +936,7 @@ namespace Chisel.Core
                     // Then we move the first part (if necesary)
                     items = insertIndex;
                     compactNodes.MemMove(parentChildOffset, originalOffset, items);
+                    brushOutlines.MemMove(parentChildOffset, originalOffset, items);
                 }
 
                 // Then we copy our node to the new location
@@ -847,12 +947,16 @@ namespace Chisel.Core
                 // Then we set the old indices to 0
                 var newCount = originalCount + 1;
                 if (nodeIndex < parentChildOffset || nodeIndex >= parentChildOffset + newCount)
+                {
+                    if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); brushOutlines[nodeIndex] = default; 
                     compactNodes[nodeIndex] = default;
+                }
                 for (int i = originalOffset, lastIndex = (originalOffset + originalCount); i < lastIndex; i++)
                 {
                     if (i >= parentChildOffset && i < parentChildOffset + newCount)
                         continue;
 
+                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default;
                     compactNodes[i] = default;
                 }
 

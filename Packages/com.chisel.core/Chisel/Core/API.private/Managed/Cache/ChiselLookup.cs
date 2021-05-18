@@ -28,14 +28,12 @@ namespace Chisel.Core
             public NativeHashMap<CompactNodeID, MinMaxAABB>                                     brushTreeSpaceBoundLookup;
             public NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
 
-            public BlobAssetReference<CompactTree>                              compactTree;
-
             internal void Initialize()
             {
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
                 
-                brushTreeSpaceBoundLookup    = new NativeHashMap<CompactNodeID, MinMaxAABB>(1000, Allocator.Persistent);
-                brushRenderBufferLookup      = new NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
+                brushTreeSpaceBoundLookup   = new NativeHashMap<CompactNodeID, MinMaxAABB>(1000, Allocator.Persistent);
+                brushRenderBufferLookup     = new NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
                 // brushIndex
                 basePolygonCache            = new NativeList<BlobAssetReference<BasePolygonsBlob>>(1000, Allocator.Persistent);
@@ -176,9 +174,6 @@ namespace Chisel.Core
                 if (brushRenderBufferLookup.IsCreated)
                     brushRenderBufferLookup.Dispose();
                 brushRenderBufferLookup = default;
-                if (compactTree.IsCreated)
-                    compactTree.Dispose();
-                compactTree = default;
 
                 parameters1.Dispose();
                 parameters1 = default;

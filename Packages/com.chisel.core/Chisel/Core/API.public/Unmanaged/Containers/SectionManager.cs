@@ -15,9 +15,11 @@ using Debug = UnityEngine.Debug;
 namespace Chisel.Core
 {
     // TODO: make sure everything is covered in tests
+    [BurstCompatible]
     public struct SectionManager : IDisposable
     {
         // TODO: use uints instead?
+        [DebuggerDisplay("Start = {start}, End = {end}, Length = {length}")]
         [StructLayout(LayoutKind.Sequential)]
         struct Section
         {
@@ -31,6 +33,7 @@ namespace Chisel.Core
         // We merge all allocated and free sections, which means they alternate between being free and allocated
         // We then store if the first element is allocated or not, with that we can determine if an even or odd 
         // section index must also be allocated or free
+        [MarshalAs(UnmanagedType.U1)]
         bool firstElementFree;
                 
         public int Count { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return sections.Length; } }
