@@ -96,6 +96,8 @@ namespace FoundationTests
         void Add3Branches(out NodeID tree, out NodeID child1, out NodeID child2, out NodeID child3)
         { 
             tree    = CompactHierarchyManager.CreateTree(treeUserID);
+            var treeHierarchyID = CompactHierarchyManager.GetHierarchyID(tree);
+            ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(treeHierarchyID);
             child1  = CompactHierarchyManager.CreateBranch(branchUserID1);
             child2  = CompactHierarchyManager.CreateBranch(branchUserID2);
             child3  = CompactHierarchyManager.CreateBranch(branchUserID3);
@@ -105,14 +107,14 @@ namespace FoundationTests
             CompactHierarchyManager.AddChildNode(tree, child1);
             CompactHierarchyManager.AddChildNode(tree, child2);
             CompactHierarchyManager.AddChildNode(tree, child3);
-            var child1_parent = CompactHierarchyManager.GetParentOfNode(child1);
-            var child2_parent = CompactHierarchyManager.GetParentOfNode(child2);
-            var child3_parent = CompactHierarchyManager.GetParentOfNode(child3);
+            var child1_parent = TestUtility.GetParentOfNode(child1);
+            var child2_parent = TestUtility.GetParentOfNode(child2);
+            var child3_parent = TestUtility.GetParentOfNode(child3);
             Assume.That((child1_parent, child2_parent, child3_parent), Is.EqualTo((tree, tree, tree)));
-            Assume.That(3, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            var child1_siblingIndex = CompactHierarchyManager.SiblingIndexOf(tree, child1);
-            var child2_siblingIndex = CompactHierarchyManager.SiblingIndexOf(tree, child2);
-            var child3_siblingIndex = CompactHierarchyManager.SiblingIndexOf(tree, child3);
+            Assume.That(3, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            var child1_siblingIndex = treeHierarchy.SiblingIndexOf(CompactHierarchyManager.GetCompactNodeID(child1));
+            var child2_siblingIndex = treeHierarchy.SiblingIndexOf(CompactHierarchyManager.GetCompactNodeID(child2));
+            var child3_siblingIndex = treeHierarchy.SiblingIndexOf(CompactHierarchyManager.GetCompactNodeID(child3));
             Assume.That((0, 1, 2), Is.EqualTo((child1_siblingIndex, child2_siblingIndex, child3_siblingIndex)));
             var tree_userID = CompactHierarchyManager.GetUserIDOfNode(tree);
             var child1_userID = CompactHierarchyManager.GetUserIDOfNode(child1);
@@ -128,10 +130,10 @@ namespace FoundationTests
         {
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child2),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child2),
+                           TestUtility.GetParentOfNode(child3));
 
             Assert.AreEqual((NodeID.Invalid, tree, tree, tree), parents);
         }
@@ -142,10 +144,10 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.DestroyNode(child3);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child2));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child2));
             Assume.That(parents, Is.EqualTo((NodeID.Invalid, tree, tree)));
             var userIDs = (CompactHierarchyManager.GetUserIDOfNode(tree),
                            CompactHierarchyManager.GetUserIDOfNode(child1),
@@ -167,10 +169,10 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.DestroyNode(child2);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child3));
             Assume.That(parents, Is.EqualTo((NodeID.Invalid, tree, tree)));
             var userIDs = (CompactHierarchyManager.GetUserIDOfNode(tree),
                            CompactHierarchyManager.GetUserIDOfNode(child1),
@@ -192,10 +194,10 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.DestroyNode(child1);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child2),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child2),
+                           TestUtility.GetParentOfNode(child3));
             Assume.That(parents, Is.EqualTo((NodeID.Invalid, tree, tree)));
             var userIDs = (CompactHierarchyManager.GetUserIDOfNode(tree),
                            CompactHierarchyManager.GetUserIDOfNode(child1),
@@ -217,7 +219,7 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.RemoveChildNodeAt(tree, 2);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
             var userIDs = (CompactHierarchyManager.GetUserIDOfNode(tree),
                            CompactHierarchyManager.GetUserIDOfNode(child1),
                            CompactHierarchyManager.GetUserIDOfNode(child2),
@@ -228,10 +230,10 @@ namespace FoundationTests
                               CompactHierarchyManager.IsValidNodeID(child2),
                               CompactHierarchyManager.IsValidNodeID(child3));
             Assume.That((true, true, true, true), Is.EqualTo(validNodes));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child2),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child2),
+                           TestUtility.GetParentOfNode(child3));
 
             Assert.AreEqual((NodeID.Invalid, tree, tree, NodeID.Invalid), parents);
             CompactHierarchyManager.CheckConsistency();
@@ -243,7 +245,7 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.RemoveChildNodeAt(tree, 1);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
             var userIDs = (CompactHierarchyManager.GetUserIDOfNode(tree),
                            CompactHierarchyManager.GetUserIDOfNode(child1),
                            CompactHierarchyManager.GetUserIDOfNode(child2),
@@ -254,10 +256,10 @@ namespace FoundationTests
                               CompactHierarchyManager.IsValidNodeID(child2),
                               CompactHierarchyManager.IsValidNodeID(child3));
             Assume.That((true, true, true, true), Is.EqualTo(validNodes));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child2),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child2),
+                           TestUtility.GetParentOfNode(child3));
 
             Assert.AreEqual((NodeID.Invalid, tree, NodeID.Invalid, tree), parents);
             CompactHierarchyManager.CheckConsistency();
@@ -269,25 +271,25 @@ namespace FoundationTests
             Add3Branches(out var tree, out var child1, out var child2, out var child3);
 
             CompactHierarchyManager.AddChildNode(child2, child3);
-            Assume.That(2, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(child2)));
+            Assume.That(2, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(child2)));
             CompactHierarchyManager.AddChildNode(child1, child2);
-            Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(child1)));
-            Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(child2)));
+            Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(child1)));
+            Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(child2)));
             //CompactHierarchyManager.AddChildNode(tree, child1);
-            //Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(tree)));
-            //Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(child1)));
-            //Assume.That(1, Is.EqualTo(CompactHierarchyManager.GetChildNodeCount(child2)));
+            //Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(tree)));
+            //Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(child1)));
+            //Assume.That(1, Is.EqualTo(TestUtility.GetChildCount(child2)));
             var validNodes = (CompactHierarchyManager.IsValidNodeID(tree),
                               CompactHierarchyManager.IsValidNodeID(child1),
                               CompactHierarchyManager.IsValidNodeID(child2),
                               CompactHierarchyManager.IsValidNodeID(child3));
             Assume.That((true, true, true, true), Is.EqualTo(validNodes));
-            var parents = (CompactHierarchyManager.GetParentOfNode(tree),
-                           CompactHierarchyManager.GetParentOfNode(child1),
-                           CompactHierarchyManager.GetParentOfNode(child2),
-                           CompactHierarchyManager.GetParentOfNode(child3));
+            var parents = (TestUtility.GetParentOfNode(tree),
+                           TestUtility.GetParentOfNode(child1),
+                           TestUtility.GetParentOfNode(child2),
+                           TestUtility.GetParentOfNode(child3));
 
             Assert.AreEqual((NodeID.Invalid, tree, child1, child2), parents);
             CompactHierarchyManager.CheckConsistency();

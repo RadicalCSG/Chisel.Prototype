@@ -22,21 +22,21 @@ namespace Chisel.Components
         }
         #endregion
 
-        CSGTreeBrush GenerateTopNode(CSGTreeNode node, int userID, CSGOperationType operation)
+        CSGTreeBrush GenerateTopNode(in CSGTree tree, CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
             {
                 if (node.Valid)
                     node.Destroy();
-                return CSGTreeBrush.Create(userID: userID, operation: operation);
+                return tree.CreateBrush(userID: userID, operation: operation);
             }
             if (brush.Operation != operation)
                 brush.Operation = operation;
             return brush;
         }
 
-        protected override void UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        protected override void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
             Profiler.BeginSample("ChiselBrushComponent");
             try
@@ -48,7 +48,7 @@ namespace Chisel.Components
                     return; 
                 using (surfaceDefinitionBlob)
                 {
-                    node = brush = GenerateTopNode(brush, userID, operation);
+                    node = brush = GenerateTopNode(in tree, brush, userID, operation);
                     var brushMesh = BrushMeshFactory.CreateBrushBlob(definition.brushOutline, in surfaceDefinitionBlob);
                     
                     if (!brushMesh.IsCreated)

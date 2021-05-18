@@ -32,7 +32,7 @@ namespace FoundationTests
         [Test]
         public void DestroyInvalidNode()
         {
-            var invalidNode = CSGTreeNode.InvalidNode;
+            var invalidNode = CSGTreeNode.Invalid;
 
             var result = invalidNode.Destroy();
             LogAssert.Expect(LogType.Error, new Regex("is invalid"));
@@ -44,7 +44,7 @@ namespace FoundationTests
         [Test]
         public void DestroyNode_InvalidNode_Multiple()
         {
-            var result = DestroyNodes(new CSGTreeNode[] { CSGTreeNode.InvalidNode, CSGTreeNode.InvalidNode });
+            var result = DestroyNodes(new CSGTreeNode[] { CSGTreeNode.Invalid, CSGTreeNode.Invalid });
             LogAssert.Expect(LogType.Error, new Regex("is invalid"));
             LogAssert.Expect(LogType.Error, new Regex("is invalid"));
 

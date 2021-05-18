@@ -26,7 +26,7 @@ namespace FoundationTests
             var tree = CSGTree.Create(treeUserID);
             CompactHierarchyManager.ClearDirty(tree);
 
-            var result = tree.Remove(CSGTreeNode.InvalidNode);
+            var result = tree.Remove(CSGTreeNode.Invalid);
             LogAssert.Expect(LogType.Error, new Regex("is invalid"));
 
             Assert.IsFalse(result);
@@ -64,7 +64,7 @@ namespace FoundationTests
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(branch);
 
-            var result = branch.Remove(CSGTreeNode.InvalidNode);
+            var result = branch.Remove(CSGTreeNode.Invalid);
             LogAssert.Expect(LogType.Error, new Regex("is invalid"));
 
             Assert.IsFalse(result);

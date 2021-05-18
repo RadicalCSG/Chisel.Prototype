@@ -203,7 +203,7 @@ namespace FoundationTests
             CompactHierarchyManager.ClearDirty(tree);
 
 
-            CSGTreeBranch branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { CSGTreeNode.InvalidNode, tree });
+            CSGTreeBranch branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { CSGTreeNode.Invalid, tree });
 
 
             TestUtility.ExpectInvalidBranch(ref branch);
@@ -221,7 +221,7 @@ namespace FoundationTests
             CompactHierarchyManager.ClearDirty(tree1);
 
 
-            CSGTree tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { CSGTreeNode.InvalidNode, tree1 });
+            CSGTree tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { CSGTreeNode.Invalid, tree1 });
 
 
             TestUtility.ExpectInvalidTree(ref tree2);

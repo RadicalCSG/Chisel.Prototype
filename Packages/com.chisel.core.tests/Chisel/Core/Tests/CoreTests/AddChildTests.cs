@@ -60,7 +60,7 @@ namespace FoundationTests
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(branch);
 
-            var result = branch.Add(CSGTreeNode.InvalidNode);
+            var result = branch.Add(CSGTreeNode.Invalid);
             LogAssert.Expect(LogType.Error, "Cannot add invalid node as child");
 
             Assert.IsFalse(result);
@@ -76,7 +76,7 @@ namespace FoundationTests
             var tree = CSGTree.Create(treeUserID);
             CompactHierarchyManager.ClearDirty(tree);
 
-            var result = tree.Add(CSGTreeNode.InvalidNode);
+            var result = tree.Add(CSGTreeNode.Invalid);
             LogAssert.Expect(LogType.Error, "Cannot add invalid node as child");
 
             Assert.IsFalse(result);

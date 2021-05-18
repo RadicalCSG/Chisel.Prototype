@@ -444,13 +444,14 @@ namespace Chisel.Core
         {
             if (branch.Count < desiredBrushCount)
             {
+                var tree = branch.Tree;
                 var newBrushCount = desiredBrushCount - branch.Count;
                 var newRange = new NativeArray<CSGTreeNode>(newBrushCount, Allocator.Temp);
                 try
                 {
                     var userID = branch.UserID;
                     for (int i = 0; i < newBrushCount; i++)
-                        newRange[i] = CSGTreeBrush.Create(userID: userID, operation: CSGOperationType.Additive);
+                        newRange[i] = tree.CreateBrush(userID: userID, operation: CSGOperationType.Additive);
                     branch.AddRange((CSGTreeNode*)newRange.GetUnsafePtr(), newBrushCount);
                 }
                 finally { newRange.Dispose(); }

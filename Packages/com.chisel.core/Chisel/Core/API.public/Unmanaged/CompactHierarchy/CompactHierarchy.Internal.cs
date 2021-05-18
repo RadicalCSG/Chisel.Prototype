@@ -129,21 +129,21 @@ namespace Chisel.Core
                         return false;
                     }
 
-                    var nodeID = compactNodes[i].nodeID;
-                    if (!CompactHierarchyManager.IsValidNodeID(nodeID))
+                    if (!CompactHierarchyManager.IsValidNodeID(compactNodes[i].nodeID))
                     {
-                        Debug.LogError($"!CompactHierarchyManager.IsValidNodeID({nodeID})");
+                        Debug.LogError($"!CompactHierarchyManager.IsValidNodeID({compactNodes[i].nodeID})");
                         return false;
                     }
 
-                    var foundCompactNodeID = CompactHierarchyManager.GetCompactNodeID(nodeID);
+                    var foundCompactNodeID = CompactHierarchyManager.GetCompactNodeID(compactNodes[i].nodeID);
                     if (foundCompactNodeID != compactNodes[i].compactNodeID)
                     {
                         Debug.LogError($"{foundCompactNodeID} != compactNodes[{i}].compactNodeID");
                         return false;
                     }
 
-                    var foundNodeID = CompactHierarchyManager.GetNodeID(compactNodes[i].compactNodeID);
+                    ref var hierarchy = ref CompactHierarchyManager.GetHierarchy(compactNodes[i].compactNodeID.hierarchyID);
+                    var foundNodeID = hierarchy.GetNodeID(compactNodes[i].compactNodeID);
                     if (foundNodeID != compactNodes[i].nodeID)
                     {
                         Debug.LogError($"{foundNodeID} != compactNodes[{i}].nodeID");
@@ -283,7 +283,7 @@ namespace Chisel.Core
                 if (idManager.IsCreated) idManager.Dispose(); idManager = default;
             } 
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal CompactNodeID CreateNode(NodeID nodeID, CompactNode nodeInformation)
         {
@@ -988,64 +988,7 @@ namespace Chisel.Core
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void GetBrushesInOrder(System.Collections.Generic.List<CSGTreeBrush> brushes)
-        {
-            if (brushes == null)
-                return;
-            GetTreeNodes(null, brushes);
-        }
-
-        internal unsafe void GetTreeNodes(System.Collections.Generic.List<CompactNodeID> nodes, System.Collections.Generic.List<CSGTreeBrush> brushes)
-        {
-            if (nodes != null) nodes.Clear();
-            if (brushes != null) brushes.Clear();
-            if (nodes == null && brushes == null)
-                return;
-
-            var rootIndex = UnsafeHierarchyIndexOfInternal(RootID);
-            if (rootIndex < 0 || rootIndex >= compactNodes.Length)
-                return;
-            
-            if (nodes != null) nodes.Add(RootID);
-            var compactNodesPtr = compactNodes.Ptr;
-            var nodeStack = new NativeList<int>(math.max(1, compactNodes.Length), Allocator.Temp);
-            try
-            {
-                nodeStack.Add(rootIndex);
-                while (nodeStack.Length > 0)
-                {
-                    var lastNodeStackIndex = nodeStack.Length - 1;
-                    var nodeIndex = nodeStack[lastNodeStackIndex];
-                    nodeStack.RemoveAt(lastNodeStackIndex);
-                    ref var node = ref compactNodesPtr[nodeIndex];
-
-                    if (!IsValidCompactNodeID(node.compactNodeID))
-                        continue;
-
-                    if (nodes != null &&
-                        node.compactNodeID != RootID)
-                    {
-                        nodes.Add(node.compactNodeID);
-                    }
-                    if (node.childCount > 0)
-                    {
-                        for (int i = 0, childIndex = node.childOffset + node.childCount - 1, childCount = node.childCount; i < childCount; i++, childIndex--)
-                            nodeStack.Add(childIndex);
-                    } else
-                    if (node.nodeInformation.brushMeshID != Int32.MaxValue && brushes != null)
-                    {
-                        brushes.Add(new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(node.compactNodeID) });
-                    }
-                }
-            }
-            finally
-            {
-                nodeStack.Dispose();
-            }
-        }
-        
-        internal unsafe void GetTreeNodes(NativeList<CompactNodeID> nodes, NativeList<CSGTreeBrush> brushes)
+        public unsafe void GetTreeNodes(NativeList<CompactNodeID> nodes, NativeList<CSGTreeBrush> brushes)
         {
             if (nodes.IsCreated) nodes.Clear();
             if (brushes.IsCreated) brushes.Clear();
@@ -1084,7 +1027,7 @@ namespace Chisel.Core
                     } else
                     if (node.nodeInformation.brushMeshID != Int32.MaxValue && brushes.IsCreated)
                     {
-                        brushes.Add(new CSGTreeBrush { brushNodeID = CompactHierarchyManager.GetNodeID(node.compactNodeID) });
+                        brushes.Add(CSGTreeBrush.Find(node.compactNodeID));
                     }
                 }
             }
@@ -1094,9 +1037,9 @@ namespace Chisel.Core
             }
         }
 
-        internal unsafe void GetAllNodes(System.Collections.Generic.List<CSGTreeNode> nodes)
+        internal unsafe void GetAllNodes(NativeList<CSGTreeNode> nodes)
         {
-            if (nodes == null)
+            if (!nodes.IsCreated)
                 return;
             
             nodes.Clear();
@@ -1108,7 +1051,7 @@ namespace Chisel.Core
                 if (node.nodeID == NodeID.Invalid)
                     continue;
 
-                var treeNode = new CSGTreeNode { nodeID = node.nodeID };
+                var treeNode = CSGTreeNode.Find(node.nodeID);
                 if (!treeNode.Valid)
                     continue;
                 nodes.Add(treeNode);
@@ -1251,6 +1194,186 @@ namespace Chisel.Core
             ref var node = ref GetChildRef(compactNodeID);
             node.flags &= ~flag;
         }
+        
+        // This method might be removed/renamed in the future
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal bool IsNodeDirty(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return false;
 
+            ref var node = ref GetChildRef(compactNodeID);
+            CSGNodeType nodeType;
+            if (RootID != compactNodeID)
+                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            else
+                nodeType = CSGNodeType.Tree;
+
+            switch (nodeType)
+            {
+                case CSGNodeType.Brush:  return (node.flags & (NodeStatusFlags.NeedCSGUpdate)) != NodeStatusFlags.None;
+                case CSGNodeType.Branch: return (node.flags & (NodeStatusFlags.BranchNeedsUpdate | NodeStatusFlags.NeedPreviousSiblingsUpdate)) != NodeStatusFlags.None;
+                case CSGNodeType.Tree:   return (node.flags & (NodeStatusFlags.TreeNeedsUpdate | NodeStatusFlags.TreeMeshNeedsUpdate)) != NodeStatusFlags.None;
+            }
+            return false;
+        }
+
+        // This method might be removed/renamed in the future
+        internal unsafe bool SetChildrenDirty(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return false;
+
+            ref var node = ref GetChildRef(compactNodeID);
+            if (node.brushMeshID != Int32.MaxValue)
+                return false;
+
+            var result = true;
+            var count = ChildCount(compactNodeID);
+            for (int i = 0; i < count; i++)
+            {
+                var childID = GetChildIDAtInternal(compactNodeID, i);
+                result = SetDirty(childID) && result;
+            }
+            return result;
+        }
+
+        // This method might be removed/renamed in the future
+        internal bool SetDirty(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return false;
+
+            ref var node = ref GetChildRef(compactNodeID);
+            CSGNodeType nodeType;
+            if (RootID != compactNodeID)
+                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            else
+                nodeType = CSGNodeType.Tree;
+
+            switch (nodeType)
+            {
+                case CSGNodeType.Brush:
+                {
+                    node.flags |= NodeStatusFlags.NeedFullUpdate;
+                    ref var rootNode = ref GetChildRef(RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    //Debug.Assert(IsNodeDirty(compactNodeID));
+                    return true; 
+                }
+                case CSGNodeType.Branch:
+                {
+                    node.flags |= NodeStatusFlags.BranchNeedsUpdate;
+                    ref var rootNode = ref GetChildRef(RootID);
+                    rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    //Debug.Assert(IsNodeDirty(compactNodeID));
+                    return true; 
+                }
+                case CSGNodeType.Tree:
+                {
+                    node.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                    //Debug.Assert(IsNodeDirty(compactNodeID));
+                    return true;
+                }
+                default:
+                {
+                    Debug.LogError("Unknown node type");
+                    return false;
+                }
+            }
+        }
+
+        // Do not use. This method might be removed/renamed in the future
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool ClearDirty(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return false;
+
+            GetChildRef(compactNodeID).flags = NodeStatusFlags.None;
+            return true;
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal CSGNodeType GetTypeOfNode(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return CSGNodeType.None;
+
+            if (RootID == compactNodeID)
+                return CSGNodeType.Tree;
+
+            return (GetChildRef(compactNodeID).brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int GetUserIDOfNode(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return 0;
+
+            return GetChildRef(compactNodeID).userID;
+        }
+
+
+        internal bool IsDescendant(CompactNodeID parentCompactNodeID, CompactNodeID childCompactNodeID)
+        {
+            if (parentCompactNodeID.hierarchyID != HierarchyID)
+                throw new ArgumentException($"{nameof(parentCompactNodeID)} is not part of this hierarchy", nameof(parentCompactNodeID));
+
+            if (childCompactNodeID.hierarchyID != HierarchyID)
+                throw new ArgumentException($"{nameof(childCompactNodeID)} is not part of this hierarchy", nameof(childCompactNodeID));
+
+            var iterator = childCompactNodeID;
+            while (iterator != parentCompactNodeID)
+            {
+                if (iterator == CompactNodeID.Invalid)
+                    return false;
+                iterator = ParentOf(iterator);
+            }
+            return true;
+        }
+
+
+        internal MinMaxAABB GetBrushBounds(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            if (nodeRef.brushMeshID == Int32.MaxValue)
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            return nodeRef.bounds;
+        }
+
+        internal MinMaxAABB GetBrushBounds(CompactNodeID compactNodeID, float4x4 transformation)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            if (nodeRef.brushMeshID == Int32.MaxValue)
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            return BrushMeshManager.CalculateBounds(nodeRef.brushMeshID, in transformation);
+        }
+
+        public CompactNodeID GetRootOfNode(CompactNodeID compactNodeID)
+        {
+            var rootCompactNodeID = RootID;
+            if (compactNodeID == rootCompactNodeID)
+                return CompactNodeID.Invalid;
+            var iterator = compactNodeID;
+            while (iterator != CompactNodeID.Invalid)
+            {
+                if (iterator == rootCompactNodeID)
+                    return rootCompactNodeID;
+                iterator = ParentOf(iterator);
+            }
+            return CompactNodeID.Invalid;
+        }
     }
 }

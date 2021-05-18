@@ -140,7 +140,7 @@ namespace Chisel.Components
             get
             {
                 if (node == null)
-                    return (CSGTreeBrush)CSGTreeNode.InvalidNode;
+                    return (CSGTreeBrush)CSGTreeNode.Invalid;
                 return brush;
             }
         }

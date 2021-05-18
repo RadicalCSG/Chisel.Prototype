@@ -17,14 +17,14 @@ namespace Chisel.Components
         where Generator      : unmanaged, IBrushGenerator
         where DefinitionType : SerializedBrushGenerator<Generator>, new()
     {
-        CSGTreeBrush GenerateTopNode(CSGTreeNode node, int userID, CSGOperationType operation)
+        CSGTreeBrush GenerateTopNode(in CSGTree tree, CSGTreeNode node, int userID, CSGOperationType operation)
         {
             var brush = (CSGTreeBrush)node;
             if (!brush.Valid)
             {
                 if (node.Valid)
                     node.Destroy();
-                return CSGTreeBrush.Create(userID: userID, operation: operation);
+                return tree.CreateBrush(userID: userID, operation: operation);
             }
             if (brush.Operation != operation)
                 brush.Operation = operation;
@@ -33,7 +33,7 @@ namespace Chisel.Components
 
         static readonly GeneratorBrushJobPool<Generator> s_JobPool = new GeneratorBrushJobPool<Generator>();
 
-        protected override void UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        protected override void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
             var brush = (CSGTreeBrush)node;
             OnValidateDefinition();
@@ -41,7 +41,7 @@ namespace Chisel.Components
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
-            node = brush = GenerateTopNode(brush, userID, operation);
+            node = brush = GenerateTopNode(in tree, brush, userID, operation);
             var settings = definition.GetBrushGenerator();
             s_JobPool.ScheduleUpdate(brush, settings, surfaceDefinitionBlob);
         }
@@ -51,13 +51,13 @@ namespace Chisel.Components
         where Generator      : unmanaged, IBranchGenerator
         where DefinitionType : SerializedBranchGenerator<Generator>, new()
     {
-        CSGTreeBranch GenerateTopNode(CSGTreeBranch branch, int userID, CSGOperationType operation)
+        CSGTreeBranch GenerateTopNode(in CSGTree tree, CSGTreeBranch branch, int userID, CSGOperationType operation)
         {
             if (!branch.Valid)
             {
                 if (branch.Valid)
                     branch.Destroy();
-                return CSGTreeBranch.Create(userID: userID, operation: operation);
+                return tree.CreateBranch(userID: userID, operation: operation);
             }
             if (branch.Operation != operation)
                 branch.Operation = operation;
@@ -66,7 +66,7 @@ namespace Chisel.Components
 
         static readonly GeneratorBranchJobPool<Generator> s_JobPool = new GeneratorBranchJobPool<Generator>();
 
-        protected override void UpdateGeneratorInternal(ref CSGTreeNode node, int userID)
+        protected override void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID)
         {
             var branch = (CSGTreeBranch)node;
             OnValidateDefinition();
@@ -74,7 +74,7 @@ namespace Chisel.Components
             if (!surfaceDefinitionBlob.IsCreated)
                 return;
 
-            node = branch = GenerateTopNode(branch, userID, operation);
+            node = branch = GenerateTopNode(in tree, branch, userID, operation);
             var settings = definition.GetBranchGenerator();
             s_JobPool.ScheduleUpdate(branch, settings, surfaceDefinitionBlob);
         }
@@ -143,7 +143,7 @@ namespace Chisel.Components
         [SerializeField, HideInInspector] protected Matrix4x4           localTransformation = Matrix4x4.identity;
         [SerializeField, HideInInspector] protected Vector3             pivotOffset = Vector3.zero;
 
-        public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.InvalidNode; return Node; } protected set { Node = value; } }
+        public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.Invalid; return Node; } protected set { Node = value; } }
         bool ValidNodes { get { return Node.Valid; } }
         
 
@@ -342,8 +342,9 @@ namespace Chisel.Components
             Profiler.BeginSample("UpdateGenerator");
             try
             {
+                var treeRoot = this.hierarchyItem.Model.Node;
                 var instanceID = GetInstanceID();
-                UpdateGeneratorInternal(ref Node, userID: instanceID);
+                UpdateGeneratorInternal(in treeRoot, ref Node, userID: instanceID);
             }
             finally { Profiler.EndSample(); }
 
@@ -384,6 +385,6 @@ namespace Chisel.Components
             SetDirty();
         }
 
-        protected abstract void UpdateGeneratorInternal(ref CSGTreeNode node, int userID);
+        protected abstract void UpdateGeneratorInternal(in CSGTree tree, ref CSGTreeNode node, int userID);
     }
 }

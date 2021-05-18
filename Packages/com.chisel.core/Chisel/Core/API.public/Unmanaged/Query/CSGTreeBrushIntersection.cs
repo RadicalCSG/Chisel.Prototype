@@ -18,8 +18,8 @@ namespace Chisel.Core
 
         public readonly static CSGTreeBrushIntersection None = new CSGTreeBrushIntersection()
         {
-            tree				= (CSGTree)CSGTreeNode.InvalidNode,
-            brush				= (CSGTreeBrush)CSGTreeNode.InvalidNode,
+            tree				= (CSGTree)CSGTreeNode.Invalid,
+            brush				= (CSGTreeBrush)CSGTreeNode.Invalid,
             surfaceIndex		= -1,
             surfaceIntersection	= ChiselSurfaceIntersection.None
         };

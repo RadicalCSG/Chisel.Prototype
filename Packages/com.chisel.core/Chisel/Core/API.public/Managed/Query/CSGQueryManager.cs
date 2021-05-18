@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -194,7 +195,6 @@ namespace Chisel.Core
 
 
         static readonly List<CSGTreeBrushIntersection> s_FoundIntersections = new List<CSGTreeBrushIntersection>();
-        static readonly List<CSGTreeBrush> s_TreeBrushes = new List<CSGTreeBrush>();
 
         public static CSGTreeBrushIntersection[] RayCastMulti(MeshQuery[]       meshQueries, 
                                                               CSGTree           tree,
@@ -234,58 +234,60 @@ namespace Chisel.Core
             }
 
             s_FoundIntersections.Clear();
-            s_TreeBrushes.Clear();
 
-            // TODO: cache this
-            CompactHierarchyManager.GetBrushesInOrder(tree, s_TreeBrushes);
-
-            var brushCount    = s_TreeBrushes.Count;
-            if (brushCount == 0)
-                return null;
-            
-            var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
-
-            // TODO: optimize
-            for (int i = 0; i < brushCount; i++)
+            using (var treeBrushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
             {
-                var brush = s_TreeBrushes[i];
+                // TODO: cache this
+                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, treeBrushes);
+
+                var brushCount = treeBrushes.Length;
+                if (brushCount == 0)
+                    return null;
+            
+                var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
+                var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
+
+                // TODO: optimize
+                for (int i = 0; i < brushCount; i++)
+                {
+                    var brush = treeBrushes[i];
 #if UNITY_EDITOR
-                if (!brush.IsSelectable)
-                    continue;
+                    if (!brush.IsSelectable)
+                        continue;
 #endif
-                var minMaxAABB = brush.Bounds;
-                if (minMaxAABB.IsEmpty)
-                    continue;
-                if (s_IgnoreNodeIndices.Contains(brush) ||
-                    (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brush)))
-                    continue;
+                    var minMaxAABB = brush.Bounds;
+                    if (minMaxAABB.IsEmpty)
+                        continue;
+                    if (s_IgnoreNodeIndices.Contains(brush) ||
+                        (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brush)))
+                        continue;
 
-                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
-                if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffer))
-                    continue;
+                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
+                    if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffer))
+                        continue;
 
-                var bounds = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
-                if (!bounds.IntersectRay(treeSpaceRay))
-                    continue;
+                    var bounds = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
+                    if (!bounds.IntersectRay(treeSpaceRay))
+                        continue;
 
-                BrushRayCast(meshQueries, tree, brush,
+                    BrushRayCast(meshQueries, tree, brush,
 
-                                ref brushRenderBuffer.Value.surfaces,
+                                    ref brushRenderBuffer.Value.surfaces,
 
-                                treeSpaceRayStart,
-                                treeSpaceRayEnd,
+                                    treeSpaceRayStart,
+                                    treeSpaceRayEnd,
 
-                                ignoreBackfaced,
-                                ignoreCulled,
+                                    ignoreBackfaced,
+                                    ignoreCulled,
 
-                                s_FoundIntersections);
+                                    s_FoundIntersections);
+                }
+
+                if (s_FoundIntersections.Count == 0)
+                    return null;
+
+                return s_FoundIntersections.ToArray();
             }
-
-            if (s_FoundIntersections.Count == 0)
-                return null;
-
-            return s_FoundIntersections.ToArray();
         }
 
 
@@ -311,96 +313,98 @@ namespace Chisel.Core
                     return null;
             }
 
-            // TODO: cache this
-            CompactHierarchyManager.GetBrushesInOrder(tree, s_TreeBrushes);
-
-            var brushCount = s_TreeBrushes.Count;
-            if (brushCount == 0)
-                return null;
-
-            s_FoundNodes.Clear();
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
-
-            for (int i = 0; i < brushCount; i++)
+            using (var treeBrushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
             {
-                var brush = s_TreeBrushes[i];
+                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, treeBrushes);
+
+                var brushCount = treeBrushes.Length;
+                if (brushCount == 0)
+                    return null;
+
+                s_FoundNodes.Clear();
+                var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
+
+                for (int i = 0; i < brushCount; i++)
+                {
+                    var brush = treeBrushes[i];
 #if UNITY_EDITOR
-                if (!brush.IsSelectable)
-                    continue;
+                    if (!brush.IsSelectable)
+                        continue;
 #endif
 
-                var minMaxAABB = brush.Bounds;
-                if (minMaxAABB.IsEmpty)
-                    continue;
-
-                var bounds              = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
-                // TODO: take transformations into account? (frustum is already in tree space)
-
-                bool intersectsFrustum = false;
-                for (int p = 0; p < 6; p++)
-                {
-                    if (planes[p].IsOutside(bounds))
-                        goto SkipBrush;
-
-                    if (!planes[p].IsInside(bounds))
-                        intersectsFrustum = true;
-                }
-
-                if (intersectsFrustum)
-                {
-                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
-                    if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffers) ||
-                        !brushRenderBuffers.IsCreated)
+                    var minMaxAABB = brush.Bounds;
+                    if (minMaxAABB.IsEmpty)
                         continue;
 
-                    ref var surfaceRenderBuffers = ref brushRenderBuffers.Value.surfaces;
+                    var bounds              = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
+                    // TODO: take transformations into account? (frustum is already in tree space)
 
-                    bool haveVisibleSurfaces = false;
-
-                    // Double check if the vertices of the brush are inside the frustum
-                    for (int s = 0; s < surfaceRenderBuffers.Length; s++)
+                    bool intersectsFrustum = false;
+                    for (int p = 0; p < 6; p++)
                     {
-                        ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
+                        if (planes[p].IsOutside(bounds))
+                            goto SkipBrush;
 
-                        // Compare surface with 'current' meshquery (is this surface even being rendered???)
-                        if (!IsSurfaceVisible(meshQueries, ref surfaceRenderBuffer))
-                            goto SkipSurface;
-
-                        ref var vertices = ref surfaceRenderBuffer.colliderVertices;
-                        for (int p = 0; p < 6; p++)
-                        {
-                            var plane = planes[p];
-                            for (int v = 0; v < vertices.Length; v++)
-                            {
-                                var distance = plane.GetDistanceToPoint(vertices[v]);
-                                if (distance > MathExtensions.kFrustumDistanceEpsilon)
-                                // If we have a visible surface that is outside the frustum, we skip the brush
-                                // (we only want brushes that are completely inside the frustum)
-                                    goto SkipBrush;
-                            }
-                        }
-                        // Make sure we find at least one single visible surface inside the frustum
-                        haveVisibleSurfaces = true;
-SkipSurface:
-                        ;
+                        if (!planes[p].IsInside(bounds))
+                            intersectsFrustum = true;
                     }
 
-                    // If we haven't found a single visible surface inside the frustum, skip the brush
-                    if (!haveVisibleSurfaces)
-                        goto SkipBrush;
+                    if (intersectsFrustum)
+                    {
+                        var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
+                        if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffers) ||
+                            !brushRenderBuffers.IsCreated)
+                            continue;
+
+                        ref var surfaceRenderBuffers = ref brushRenderBuffers.Value.surfaces;
+
+                        bool haveVisibleSurfaces = false;
+
+                        // Double check if the vertices of the brush are inside the frustum
+                        for (int s = 0; s < surfaceRenderBuffers.Length; s++)
+                        {
+                            ref var surfaceRenderBuffer = ref surfaceRenderBuffers[s];
+
+                            // Compare surface with 'current' meshquery (is this surface even being rendered???)
+                            if (!IsSurfaceVisible(meshQueries, ref surfaceRenderBuffer))
+                                goto SkipSurface;
+
+                            ref var vertices = ref surfaceRenderBuffer.colliderVertices;
+                            for (int p = 0; p < 6; p++)
+                            {
+                                var plane = planes[p];
+                                for (int v = 0; v < vertices.Length; v++)
+                                {
+                                    var distance = plane.GetDistanceToPoint(vertices[v]);
+                                    if (distance > MathExtensions.kFrustumDistanceEpsilon)
+                                    // If we have a visible surface that is outside the frustum, we skip the brush
+                                    // (we only want brushes that are completely inside the frustum)
+                                        goto SkipBrush;
+                                }
+                            }
+                            // Make sure we find at least one single visible surface inside the frustum
+                            haveVisibleSurfaces = true;
+SkipSurface:
+                            ;
+                        }
+
+                        // If we haven't found a single visible surface inside the frustum, skip the brush
+                        if (!haveVisibleSurfaces)
+                            goto SkipBrush;
+                    }
+
+                    // TODO: handle generators, where we only select a generator when ALL of it's brushes are selected
+
+                    s_FoundNodes.Add((CSGTreeNode)brush);
+SkipBrush:
+                    ;
                 }
 
-                // TODO: handle generators, where we only select a generator when ALL of it's brushes are selected
+                if (s_FoundNodes.Count == 0)
+                    return null;
 
-                s_FoundNodes.Add((CSGTreeNode)brush);
-SkipBrush:
-                ;
+                return s_FoundNodes.ToArray();
             }
-
-            if (s_FoundNodes.Count == 0)
-                return null;
-
-            return s_FoundNodes.ToArray();
         }
     }
 }

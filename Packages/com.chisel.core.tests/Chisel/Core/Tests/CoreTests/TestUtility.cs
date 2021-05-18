@@ -8,6 +8,7 @@ using Chisel.Core;
 using UnityEditor.SceneManagement;
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 
 namespace FoundationTests
 {
@@ -88,21 +89,46 @@ namespace FoundationTests
             Assert.AreEqual(CSGNodeType.None, type);
         }
         
-        static readonly List<CSGTreeBrush> brushes = new List<CSGTreeBrush>();
-
         public static int CountOfBrushesInTree(CSGTree tree)
         {
-            brushes.Clear();
-            CompactHierarchyManager.GetTreeNodes(tree, null, brushes);
-            return brushes.Count;
+            using (var brushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            {
+                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, brushes);
+                return brushes.Length;
+            }
         }
 
 
         public static bool IsInTree(CSGTree tree, CSGTreeBrush brush)
         {
-            brushes.Clear();
-            CompactHierarchyManager.GetTreeNodes(tree, null, brushes);
-            return brushes.Contains(brush);
+            using (var brushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            {
+                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, brushes);
+                return brushes.IndexOf(brush) != -1;
+            }
+        }
+
+        public static int GetChildCount(NodeID parent)
+        {
+            var parentNodeCompactID = CompactHierarchyManager.GetCompactNodeID(parent);
+            var hierarchyID         = parentNodeCompactID.hierarchyID;
+            ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(hierarchyID);
+            return treeHierarchy.ChildCount(parentNodeCompactID);
+        }
+
+        public static NodeID GetParentOfNode(NodeID parent)
+        {
+            var parentNodeCompactID = CompactHierarchyManager.GetCompactNodeID(parent);
+            if (parentNodeCompactID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+            var hierarchyID = parentNodeCompactID.hierarchyID;
+            if (hierarchyID == CompactHierarchyID.Invalid)
+                return NodeID.Invalid;
+            ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(hierarchyID);
+            var parentNodeID = treeHierarchy.ParentOf(parentNodeCompactID);
+            if (parentNodeID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+            return treeHierarchy.GetNodeID(parentNodeID);
         }
 
     }

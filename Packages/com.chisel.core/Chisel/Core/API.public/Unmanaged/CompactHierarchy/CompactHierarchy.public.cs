@@ -37,26 +37,6 @@ namespace Chisel.Core
     };
     
     [BurstCompatible]
-    public readonly struct NodeID : IComparable<NodeID>, IEquatable<NodeID>
-    {
-        public static readonly NodeID Invalid = default;
-
-        public readonly Int32 value;
-        public readonly Int32 generation;
-        internal NodeID(Int32 value, Int32 generation = 0) { this.value = value; this.generation = generation; }
-
-        #region Overhead
-        [EditorBrowsable(EditorBrowsableState.Never), BurstDiscard] public override string ToString() { return $"NodeID = {value}"; }
-        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool operator ==(NodeID left, NodeID right) { return left.value == right.value && left.generation == right.generation; }
-        [EditorBrowsable(EditorBrowsableState.Never), MethodImpl(MethodImplOptions.AggressiveInlining)] public static bool operator !=(NodeID left, NodeID right) { return left.value != right.value || left.generation != right.generation; }
-        [EditorBrowsable(EditorBrowsableState.Never)] public override bool Equals(object obj) { if (obj is NodeID) return this == ((NodeID)obj); return false; }
-        [EditorBrowsable(EditorBrowsableState.Never)] public override int GetHashCode() { return value; }
-        [EditorBrowsable(EditorBrowsableState.Never)] public int CompareTo(NodeID other) { var diff = value - other.value; if (diff != 0) return diff; return generation - other.generation; }
-        [EditorBrowsable(EditorBrowsableState.Never)] public bool Equals(NodeID other) { return value == other.value && generation == other.generation; }
-        #endregion
-    }
-
-    [BurstCompatible]
     public struct CompactHierarchyID : IComparable<CompactHierarchyID>, IEquatable<CompactHierarchyID>
     {
         public static readonly CompactHierarchyID Invalid = default;
@@ -179,12 +159,12 @@ namespace Chisel.Core
 
         public static readonly CompactChildNode Invalid = default;
 
-        public override string ToString() { return $"{nameof(nodeID)} = {nodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}"; }
+        public override string ToString() { return $"{nameof(compactNodeID)} = {compactNodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}"; }
     }
 
     // TODO: make sure everything is covered in tests
     [BurstCompatible]
-    public partial struct CompactHierarchy : IDisposable
+    public partial struct CompactHierarchy //: IDisposable
     {
         #region CreateHierarchy
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -279,6 +259,27 @@ namespace Chisel.Core
                 return -1;
 
             var parentIndex = HierarchyIndexOfInternal(parentID);
+            Debug.Assert(parentIndex != -1);
+            return SiblingIndexOfInternal(parentIndex, nodeIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int SiblingIndexOf(CompactNodeID parent, CompactNodeID child)
+        {
+            Debug.Assert(IsCreated);
+            if (parent == CompactNodeID.Invalid)
+                return -1;
+
+            var nodeIndex = HierarchyIndexOfInternal(child);
+            if (nodeIndex == -1)
+                return -1;
+
+            var childParent = compactNodes[nodeIndex].parentID;
+            if (childParent == CompactNodeID.Invalid ||
+                childParent != parent)
+                return -1;
+
+            var parentIndex = HierarchyIndexOfInternal(childParent);
             Debug.Assert(parentIndex != -1);
             return SiblingIndexOfInternal(parentIndex, nodeIndex);
         }

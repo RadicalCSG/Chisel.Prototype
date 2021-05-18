@@ -46,7 +46,7 @@ namespace FoundationTests
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(branch);
 
-            var result = branch.Insert(0, CSGTreeNode.InvalidNode);
+            var result = branch.Insert(0, CSGTreeNode.Invalid);
             LogAssert.Expect(LogType.Error, new Regex("Cannot add an invalid child"));
             
 

@@ -69,7 +69,8 @@ namespace Chisel.Components
                 return default;
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselComposite)} already has a treeNode, but trying to create a new one", this);
-            Node = CSGTreeBranch.Create(userID: GetInstanceID());
+            var tree = this.hierarchyItem.Model.Node;
+            Node = tree.CreateBranch(userID: GetInstanceID());
             Node.Operation = operation;
             return Node;
         }

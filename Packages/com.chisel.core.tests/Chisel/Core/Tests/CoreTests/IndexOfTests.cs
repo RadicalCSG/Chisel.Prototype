@@ -126,7 +126,6 @@ namespace FoundationTests
             CompactHierarchyManager.ClearDirty(tree);
 
             var index = tree.IndexOf(brush3);
-            LogAssert.Expect(LogType.Error, new Regex("is not the parent of"));
             
             Assert.AreEqual(-1, index);
         }
