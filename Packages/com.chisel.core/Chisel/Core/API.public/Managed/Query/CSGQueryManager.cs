@@ -189,8 +189,8 @@ namespace Chisel.Core
         //							(in fact, we could still cache the generated table w/ ignored brushes while moving the mouse)
         //						3.	have a ray-brush acceleration data structure so that we reduce the number of brushes to 'try'
         //							to only the ones that the ray actually intersects with (instead of -all- brushes)
-        static readonly HashSet<NodeID> s_IgnoreNodeIndices = new HashSet<NodeID>();
-        static readonly HashSet<NodeID> s_FilterNodeIndices = new HashSet<NodeID>();
+        static readonly HashSet<CSGTreeNode> s_IgnoreNodeIndices = new HashSet<CSGTreeNode>();
+        static readonly HashSet<CSGTreeNode> s_FilterNodeIndices = new HashSet<CSGTreeNode>();
 
 
         static readonly List<CSGTreeBrushIntersection> s_FoundIntersections = new List<CSGTreeBrushIntersection>();
@@ -217,7 +217,7 @@ namespace Chisel.Core
                         ignoreNodes[i].Type != CSGNodeType.Brush)
                         continue;
 
-                    s_IgnoreNodeIndices.Add(ignoreNodes[i].NodeID);
+                    s_IgnoreNodeIndices.Add(ignoreNodes[i]);
                 }
             }
             s_FilterNodeIndices.Clear();
@@ -229,7 +229,7 @@ namespace Chisel.Core
                         filterNodes[i].Type != CSGNodeType.Brush)
                         continue; 
 
-                    s_FilterNodeIndices.Add(filterNodes[i].NodeID);
+                    s_FilterNodeIndices.Add(filterNodes[i]);
                 }
             }
 
@@ -243,9 +243,8 @@ namespace Chisel.Core
             if (brushCount == 0)
                 return null;
             
-            var treeNodeID              = tree.NodeID;
             var treeSpaceRay            = new Ray(treeSpaceRayStart, treeSpaceRayEnd - treeSpaceRayStart);
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeID].brushRenderBufferLookup;
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
 
             // TODO: optimize
             for (int i = 0; i < brushCount; i++)
@@ -258,13 +257,11 @@ namespace Chisel.Core
                 var minMaxAABB = brush.Bounds;
                 if (minMaxAABB.IsEmpty)
                     continue;
-
-                var brushNodeID = brush.NodeID;
-                if (s_IgnoreNodeIndices.Contains(brushNodeID) ||
-                    (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brushNodeID)))
+                if (s_IgnoreNodeIndices.Contains(brush) ||
+                    (s_FilterNodeIndices.Count > 0 && !s_FilterNodeIndices.Contains(brush)))
                     continue;
 
-                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushNodeID);
+                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
                 if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffer))
                     continue;
 
@@ -322,8 +319,7 @@ namespace Chisel.Core
                 return null;
 
             s_FoundNodes.Clear();
-            var treeNodeID              = tree.treeNodeID;
-            var brushRenderBufferLookup = ChiselTreeLookup.Value[treeNodeID].brushRenderBufferLookup;
+            var brushRenderBufferLookup = ChiselTreeLookup.Value[tree].brushRenderBufferLookup;
 
             for (int i = 0; i < brushCount; i++)
             {
@@ -338,7 +334,6 @@ namespace Chisel.Core
                     continue;
 
                 var bounds              = new Bounds((minMaxAABB.Max + minMaxAABB.Min) / 2, minMaxAABB.Max - minMaxAABB.Min);
-                var brushNodeID         = brush.NodeID;
                 // TODO: take transformations into account? (frustum is already in tree space)
 
                 bool intersectsFrustum = false;
@@ -353,7 +348,7 @@ namespace Chisel.Core
 
                 if (intersectsFrustum)
                 {
-                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushNodeID);
+                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
                     if (!brushRenderBufferLookup.TryGetValue(brushCompactNodeID, out var brushRenderBuffers) ||
                         !brushRenderBuffers.IsCreated)
                         continue;
@@ -397,7 +392,7 @@ SkipSurface:
 
                 // TODO: handle generators, where we only select a generator when ALL of it's brushes are selected
 
-                s_FoundNodes.Add(CSGTreeNode.Encapsulate(brushNodeID));
+                s_FoundNodes.Add((CSGTreeNode)brush);
 SkipBrush:
                 ;
             }

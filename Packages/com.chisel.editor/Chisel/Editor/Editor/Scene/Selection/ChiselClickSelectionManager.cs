@@ -405,7 +405,7 @@ namespace Chisel.Editors
 
         static bool GetAllMaterials(CSGTreeBrush brush, CSGTreeBrush findBrush, List<ChiselBrushMaterial> brushMaterials)
         {
-            if (brush.NodeID != findBrush.NodeID)
+            if (findBrush != brush)
                 return false;
 
             var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
@@ -517,7 +517,7 @@ namespace Chisel.Editors
         static bool FindSurfaceReference(ChiselNode chiselNode, CSGTreeBrush brush, CSGTreeBrush findBrush, int surfaceID, out SurfaceReference surfaceReference)
         {
             surfaceReference = null;
-            if (findBrush.NodeID != brush.NodeID)
+            if (findBrush != brush)
                 return false;
             
             var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(findBrush.BrushMesh.BrushMeshID);

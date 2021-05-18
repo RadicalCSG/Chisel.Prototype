@@ -24,9 +24,9 @@ namespace FoundationTests
             var branch1 = CSGTreeBranch.Create();
             var branch2 = CSGTreeBranch.Create();
             var branch3 = CSGTreeBranch.Create();
-            CompactHierarchyManager.ClearDirty(branch1.NodeID);
-            CompactHierarchyManager.ClearDirty(branch2.NodeID);
-            CompactHierarchyManager.ClearDirty(branch3.NodeID);
+            CompactHierarchyManager.ClearDirty(branch1);
+            CompactHierarchyManager.ClearDirty(branch2);
+            CompactHierarchyManager.ClearDirty(branch3);
 
             branch1.Operation = CSGOperationType.Additive;
             branch2.Operation = CSGOperationType.Subtractive;
@@ -35,9 +35,9 @@ namespace FoundationTests
             Assert.AreEqual(CSGOperationType.Additive, branch1.Operation);
             Assert.AreEqual(CSGOperationType.Subtractive, branch2.Operation);
             Assert.AreEqual(CSGOperationType.Intersecting, branch3.Operation);
-            Assert.AreEqual(false, branch1.Dirty);
-            Assert.AreEqual(true, branch2.Dirty);
-            Assert.AreEqual(true, branch3.Dirty);
+            Assert.IsFalse(branch1.Dirty);
+            Assert.IsTrue(branch2.Dirty);
+            Assert.IsTrue(branch3.Dirty);
         }
 
         [Test]
@@ -46,9 +46,9 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create();
             var brush2 = CSGTreeBrush.Create();
             var brush3 = CSGTreeBrush.Create();
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(brush3.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
 
             brush1.Operation = CSGOperationType.Additive;
             brush2.Operation = CSGOperationType.Subtractive;
@@ -57,9 +57,9 @@ namespace FoundationTests
             Assert.AreEqual(CSGOperationType.Additive, brush1.Operation);
             Assert.AreEqual(CSGOperationType.Subtractive, brush2.Operation);
             Assert.AreEqual(CSGOperationType.Intersecting, brush3.Operation);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(true, brush2.Dirty);
-            Assert.AreEqual(true, brush3.Dirty);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsTrue(brush2.Dirty);
+            Assert.IsTrue(brush3.Dirty);
         }
 
 

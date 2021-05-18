@@ -26,29 +26,29 @@ namespace FoundationTests
         {
             var brush1 = CSGTreeBrush.Create();
             var brush2 = CSGTreeBrush.Create();
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
 
             brush1.LocalTransformation = testMatrix1;
             brush2.LocalTransformation = testMatrix2;
 
             Assert.AreEqual(testMatrix1, brush1.LocalTransformation);
             Assert.AreEqual(testMatrix2, brush2.LocalTransformation);
-            Assert.AreEqual(true, brush1.Dirty);
-            Assert.AreEqual(true, brush2.Dirty);
+            Assert.IsTrue(brush1.Dirty);
+            Assert.IsTrue(brush2.Dirty);
         }
 
         [Test]
         public void Brush_SetLocalToTreeToMultipleValues_GetLocalToTreeIsLastSetValue()
         {
             var brush = CSGTreeBrush.Create();
-            CompactHierarchyManager.ClearDirty(brush.NodeID);
+            CompactHierarchyManager.ClearDirty(brush);
 
             brush.LocalTransformation = testMatrix1;
             brush.LocalTransformation = testMatrix2;
 
             Assert.AreEqual(testMatrix2, brush.LocalTransformation);
-            Assert.AreEqual(true, brush.Dirty);
+            Assert.IsTrue(brush.Dirty);
         }
 
         [Test]

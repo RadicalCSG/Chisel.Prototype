@@ -14,23 +14,23 @@ namespace Chisel.Core
     partial class CompactHierarchyManager
     {
         #region Update / Rebuild
-        static NativeList<CSGTree>  s_AllTrees;
-        static NativeList<NodeID>   s_TreeNodeIDs;
+        static NativeList<CSGTree>  allTrees;
+        static NativeList<CSGTree>  updatedTrees;
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
 
-            CompactHierarchyManager.GetAllTrees(s_AllTrees);
+            CompactHierarchyManager.GetAllTrees(CompactHierarchyManager.allTrees);
             // Check if we have a tree that needs updates
-            s_TreeNodeIDs.Clear();
-            for (int t = 0; t < s_AllTrees.Length; t++)
+            updatedTrees.Clear();
+            for (int t = 0; t < CompactHierarchyManager.allTrees.Length; t++)
             {
-                var treeNode = s_AllTrees[t];
-                if (treeNode.Valid &&
-                    treeNode.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
+                var tree = CompactHierarchyManager.allTrees[t];
+                if (tree.Valid &&
+                    tree.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
-                    s_TreeNodeIDs.Add(treeNode.NodeID);
+                    updatedTrees.Add(tree);
                     needUpdate = true;
                 }
             }
@@ -41,7 +41,7 @@ namespace Chisel.Core
             // TODO: update "previous siblings" when something with an intersection operation has been modified
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, s_TreeNodeIDs);
+            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, updatedTrees);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
@@ -58,7 +58,7 @@ namespace Chisel.Core
             {
                 for (int i = 0; i < list.Length; i++)
                 {
-                    var compactNodeID = CompactHierarchyManager.GetCompactNodeID(list[i].NodeID);
+                    var compactNodeID = CompactHierarchyManager.GetCompactNodeID(list[i]);
                     if (!hierarchy.IsValidCompactNodeID(compactNodeID))
                         continue;
                     ref var node = ref hierarchy.GetNodeRef(compactNodeID);
@@ -111,7 +111,7 @@ namespace Chisel.Core
 
                         if (brush.IsStatusFlagSet(NodeStatusFlags.TransformationModified))
                         {
-                            var compactNodeID = CompactHierarchyManager.GetCompactNodeID(brush.NodeID);
+                            var compactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
                             if (hierarchy.IsValidCompactNodeID(compactNodeID))
                                 transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = compactNodeID });
                             brush.ClearStatusFlag(NodeStatusFlags.TransformationModified);
@@ -127,7 +127,7 @@ namespace Chisel.Core
             if (!runInParallel) dependencies.Complete();
         }
 
-        internal unsafe static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<NodeID> treeNodeIDs)
+        internal unsafe static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<CSGTree> trees)
         {
             var finalJobHandle = default(JobHandle);
 
@@ -166,15 +166,15 @@ namespace Chisel.Core
 
             #region Prepare Trees 
             Profiler.BeginSample("CSG_TreeUpdate_Allocate");
-            if (s_TreeUpdates == null || s_TreeUpdates.Length < treeNodeIDs.Length)
-                s_TreeUpdates = new TreeUpdate[treeNodeIDs.Length];
+            if (s_TreeUpdates == null || s_TreeUpdates.Length < trees.Length)
+                s_TreeUpdates = new TreeUpdate[trees.Length];
             Profiler.EndSample();
 
             var treeUpdateLength = 0;
-            for (int t = 0; t < treeNodeIDs.Length; t++)
+            for (int t = 0; t < trees.Length; t++)
             {
                 ref var currentTree = ref s_TreeUpdates[treeUpdateLength];
-                currentTree.Initialize(treeNodeIDs[t]);
+                currentTree.Initialize(trees[t]);
                 treeUpdateLength++;
             }
             #endregion
@@ -252,7 +252,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushTreeSpacePlaneCacheJobHandle,
                                                                           treeUpdate.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var invalidateBrushCacheJob = new InvalidateBrushCacheJob
                         {
                             // Read
@@ -294,7 +294,7 @@ namespace Chisel.Core
                                                                           treeUpdate.basePolygonCacheJobHandle,
                                                                           treeUpdate.brushesTouchedByBrushCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var fixupBrushCacheIndicesJob   = new FixupBrushCacheIndicesJob
                         {
                             // Read
@@ -333,7 +333,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushTreeSpaceBoundCacheJobHandle,                                                                              
                                                                           treeUpdate.treeSpaceVerticesCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
                             // Read
@@ -376,7 +376,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushBrushIntersectionsJobHandle,
                                                                           treeUpdate.brushesThatNeedIndirectUpdateHashMapJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findAllIntersectionsJob = new FindAllBrushIntersectionPairsJob
                         {
                             // Read
@@ -453,7 +453,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushTreeSpacePlaneCacheJobHandle,
                                                                           treeUpdate.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var invalidateBrushCacheJob = new InvalidateIndirectBrushCacheJob
                         {
                             // Read
@@ -496,7 +496,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushTreeSpaceBoundCacheJobHandle,
                                                                           treeUpdate.treeSpaceVerticesCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
                             // Read
@@ -537,7 +537,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushesThatNeedIndirectUpdateJobHandle,
                                                                           treeUpdate.brushBrushIntersectionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findAllIntersectionsJob = new FindAllIndirectBrushIntersectionPairsJob
                         {
                             // Read
@@ -577,7 +577,7 @@ namespace Chisel.Core
                                                                           treeUpdate.rebuildTreeBrushIndexOrdersJobHandle,
                                                                           treeUpdate.allUpdateBrushIndexOrdersJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findAllIntersectionsJob = new AddIndirectUpdatedBrushesToListAndSortJob
                         {
                             // Read
@@ -634,11 +634,11 @@ namespace Chisel.Core
                                                                           treeUpdate.brushIntersectionsWithJobHandle,
                                                                           treeUpdate.brushIntersectionsWithRangeJobHandle,
                                                                           treeUpdate.brushesTouchedByBrushCacheJobHandle);                        
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
                         {
                             // Read
-                            treeNodeID                  = treeUpdate.treeCompactNodeID,
+                            treeCompactNodeID           = treeUpdate.treeCompactNodeID,
                             compactTree                 = treeUpdate.compactTree,
                             allTreeBrushIndexOrders     = treeUpdate.allTreeBrushIndexOrders            .AsJobArray(runInParallel),
                             allUpdateBrushIndexOrders   = treeUpdate.allUpdateBrushIndexOrders          .AsJobArray(runInParallel),
@@ -695,7 +695,7 @@ namespace Chisel.Core
                         // ************************
                         // ************************
 
-                        var chiselLookupValues = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues = ChiselTreeLookup.Value[treeUpdate.tree];
                         // Merges original brush vertices together when they are close to avoid t-junctions
                         var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesJob
                         {
@@ -736,7 +736,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushesTouchedByBrushCacheJobHandle,
                                                                           treeUpdate.uniqueBrushPairsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findBrushPairsJob       = new FindBrushPairsJob
                         {
                             // Read
@@ -800,7 +800,7 @@ namespace Chisel.Core
                                                                           treeUpdate.treeSpaceVerticesCacheJobHandle, 
                                                                           treeUpdate.basePolygonCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobsJob
                         {
                             // Read
@@ -838,7 +838,7 @@ namespace Chisel.Core
                                                                           treeUpdate.transformationCacheJobHandle,
                                                                           treeUpdate.brushTreeSpacePlaneCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                         {
                             // Read
@@ -882,7 +882,7 @@ namespace Chisel.Core
                                                                           treeUpdate.intersectingBrushesStreamJobHandle,
                                                                           treeUpdate.outputSurfaceVerticesJobHandle,
                                                                           treeUpdate.outputSurfacesJobHandle);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findAllIntersectionLoopsJob = new CreateIntersectionLoopsJob
                         {
                             // Needed for count (forced & unused)
@@ -965,7 +965,7 @@ namespace Chisel.Core
                                                                           treeUpdate.basePolygonCacheJobHandle,
                                                                           treeUpdate.loopVerticesLookupJobHandle,
                                                                           treeUpdate.dataStream1JobHandle);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
                         {
                             // Read
@@ -1018,7 +1018,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushesTouchedByBrushCacheJobHandle,
                                                                           treeUpdate.loopVerticesLookupJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesIndirectJob
                         {
                             // Read
@@ -1060,7 +1060,7 @@ namespace Chisel.Core
                                                                           treeUpdate.routingTableCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         // Build categorization trees for brushes
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var createRoutingTableJob   = new CreateRoutingTableJob
                         {
                             // Read
@@ -1110,7 +1110,7 @@ namespace Chisel.Core
                         // Perform CSG
                         // TODO: determine when a brush is completely inside another brush
                         //		 (might not have any intersection loops)
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var performCSGJob           = new PerformCSGJob
                         {
                             // Read
@@ -1163,7 +1163,7 @@ namespace Chisel.Core
                                                                           treeUpdate.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         // TODO: Potentially merge this with PerformCSGJob?
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];
                         var generateSurfaceRenderBuffers = new GenerateSurfaceTrianglesJob
                         {
                             // Read
@@ -1256,7 +1256,7 @@ namespace Chisel.Core
                                                                           treeUpdate.subMeshCountsJobHandle,
                                                                           treeUpdate.vertexBufferContents_subMeshSectionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
-                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.treeNodeID];                        
+                        var chiselLookupValues      = ChiselTreeLookup.Value[treeUpdate.tree];                        
                         dependencies                = ChiselNativeListExtensions.ScheduleEnsureCapacity(treeUpdate.brushRenderData, treeUpdate.allTreeBrushIndexOrders, dependencies);
                         var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
                         {
@@ -1556,7 +1556,7 @@ namespace Chisel.Core
                         if (treeUpdate.updateCount == 0)
                             continue;
 
-                        var chiselLookupValues              = ChiselTreeLookup.Value[treeUpdate.treeNodeID];
+                        var chiselLookupValues              = ChiselTreeLookup.Value[treeUpdate.tree];
                     
                         var dependencies = CombineDependencies(treeUpdate.allTreeBrushIndexOrdersJobHandle,
                                                                treeUpdate.brushTreeSpaceBoundCacheJobHandle,
@@ -1604,13 +1604,13 @@ namespace Chisel.Core
                         brush.ClearAllStatusFlags();
                     }
 
-                    var tree    = new CSGTree { treeNodeID = treeUpdate.treeNodeID };
+                    var tree = treeUpdate.tree;
                     tree.ClearStatusFlag(NodeStatusFlags.TreeNeedsUpdate);
                     tree.SetStatusFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
                 }
-                for (int t = 0; t < treeNodeIDs.Length; t++)
+                for (int t = 0; t < trees.Length; t++)
                 {
-                    var tree    = new CSGTree { treeNodeID = treeNodeIDs[t] };
+                    var tree = trees[t];
                     tree.ClearStatusFlag(NodeStatusFlags.TreeNeedsUpdate);
                     tree.SetStatusFlag(NodeStatusFlags.TreeMeshNeedsUpdate);
                 }
@@ -1625,7 +1625,7 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate = ref s_TreeUpdates[t];
 
-                        var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeID };
+                        var tree = treeUpdate.tree;
                         if (!tree.Valid ||
                             !tree.IsStatusFlagSet(NodeStatusFlags.TreeMeshNeedsUpdate))
                         {
@@ -1683,7 +1683,7 @@ namespace Chisel.Core
                                                                     treeUpdate.vertexBufferContents_meshesJobHandle);
                             if (finishMeshUpdates != null)
                             {
-                                var tree = new CSGTree { treeNodeID = treeUpdate.treeNodeID };
+                                var tree = treeUpdate.tree;
                                 var usedMeshCount = finishMeshUpdates(tree, ref treeUpdate.vertexBufferContents,
                                                                       treeUpdate.meshDataArray,
                                                                       treeUpdate.colliderMeshUpdates,
@@ -1806,38 +1806,9 @@ namespace Chisel.Core
             return finalJobHandle;
         }
 
-        [BurstCompile]
-        unsafe struct UpdateBrushOutlineJob : IJob
-        {
-            public void InitializeHierarchy(ref CompactHierarchy hierarchy)
-            {
-                compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);
-            }
-
-            [NativeDisableUnsafePtrRestriction]
-            [NoAlias, ReadOnly] public CompactHierarchy*                            compactHierarchyPtr;
-            [NoAlias, ReadOnly] public NativeList<IndexOrder>                       allUpdateBrushIndexOrders;
-            [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobs;
-
-            public void Execute()
-            {
-                ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-                for (int b = 0; b < allUpdateBrushIndexOrders.Length; b++)
-                {
-                    var brushIndexOrder     = allUpdateBrushIndexOrders[b];
-                    var brushNodeID         = brushIndexOrder.compactNodeID;
-                    var brushMeshHash       = compactHierarchy.GetBrushMeshID(brushNodeID);
-                    if (brushMeshBlobs.TryGetValue(brushMeshHash, out var item) && item.brushMeshBlob.IsCreated)
-                    {
-                        CompactHierarchyManager.Fill(ref compactHierarchy, brushNodeID, ref item.brushMeshBlob.Value);
-                    }
-                }
-            }
-        }
-
         internal unsafe struct TreeUpdate
         {
-            public NodeID                       treeNodeID;
+            public CSGTree                      tree;
             public CompactNodeID                treeCompactNodeID;
             public int                          brushCount;
             public int                          updateCount;
@@ -2085,25 +2056,25 @@ namespace Chisel.Core
                 Profiler.EndSample();
             }
 
-            public void Initialize(NodeID treeNodeID)
+            public void Initialize(CSGTree tree)
             {
-                this.treeNodeID = treeNodeID;
+                this.tree = tree;
 
                 // Make sure that if we, somehow, run this while parts of the previous update is still running, we wait for it to complete
                 this.lastJobHandle.Complete();
                 this.lastJobHandle = default;
 
-                this.treeCompactNodeID   = CompactHierarchyManager.GetCompactNodeID(this.treeNodeID);
+                this.treeCompactNodeID   = CompactHierarchyManager.GetCompactNodeID(this.tree);
                 if (!this.transformTreeBrushIndicesList.IsCreated) this.transformTreeBrushIndicesList = new NativeList<NodeOrderNodeID>(Allocator.Persistent); else this.transformTreeBrushIndicesList.Clear();
                 if (!this.nodes  .IsCreated) this.nodes   = new NativeList<CompactNodeID>(Allocator.Persistent); else this.nodes  .Clear();
                 if (!this.brushes.IsCreated) this.brushes = new NativeList<CSGTreeBrush> (Allocator.Persistent); else this.brushes.Clear();
 
                 var treeHierarchy = CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
-                CompactHierarchyManager.GetTreeNodes(this.treeNodeID, ref this.nodes, ref this.brushes);
+                CompactHierarchyManager.GetTreeNodes(this.tree, ref this.nodes, ref this.brushes);
 
 
                 #region Allocations/Resize
-                var chiselLookupValues = ChiselTreeLookup.Value[this.treeNodeID];
+                var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 var newBrushCount = this.brushes.Length;
                 chiselLookupValues.EnsureCapacity(newBrushCount);
 
@@ -2179,8 +2150,7 @@ namespace Chisel.Core
                     for (int nodeOrder = 0; nodeOrder < this.brushCount; nodeOrder++)
                     {
                         var brush              = this.brushes[nodeOrder];
-                        var nodeID             = brush.NodeID;
-                        var compactNodeID      = CompactHierarchyManager.GetCompactNodeID(nodeID);
+                        var compactNodeID      = CompactHierarchyManager.GetCompactNodeID(brush);
                         var compactNodeIDValue = compactNodeID.value;
                         nodeIDValueMin = math.min(nodeIDValueMin, compactNodeIDValue);
                         nodeIDValueMax = math.max(nodeIDValueMax, compactNodeIDValue);
@@ -2196,7 +2166,7 @@ namespace Chisel.Core
                     s_NodeIDValueToNodeOrderArray = new int[desiredLength];
                 for (int nodeOrder  = 0; nodeOrder  < this.brushCount; nodeOrder ++)
                 {
-                    var compactNodeID      = CompactHierarchyManager.GetCompactNodeID(this.brushes[nodeOrder].NodeID);
+                    var compactNodeID      = CompactHierarchyManager.GetCompactNodeID(this.brushes[nodeOrder]);
                     var compactNodeIDValue = compactNodeID.value;
                     s_NodeIDValueToNodeOrderArray[compactNodeIDValue - nodeIDToNodeOrderOffset] = nodeOrder;
                     
@@ -2479,7 +2449,7 @@ namespace Chisel.Core
 
                 #region Build Compact Tree
                 Profiler.BeginSample("CompactTreeBuilder");
-                this.compactTree = CompactTreeBuilder.Create(ref this.nodes, ref this.brushes, this.treeNodeID);
+                this.compactTree = CompactTreeBuilder.Create(ref this.nodes, ref this.brushes, this.tree);
                 Profiler.EndSample();
                 #endregion
       
@@ -2496,14 +2466,14 @@ namespace Chisel.Core
                     foundBrushMeshIndices.Clear();
                     for (int nodeOrder = 0; nodeOrder < this.brushCount; nodeOrder++)
                     {
-                        var nodeID = this.brushes[nodeOrder].NodeID;
+                        var brush = this.brushes[nodeOrder];
                         int brushMeshHash = 0;
-                        if (!CompactHierarchyManager.IsValidNodeID(nodeID) ||
+                        if (!CompactHierarchyManager.IsValidNodeID(brush) ||
                             // NOTE: Assignment is intended, this is not supposed to be a comparison
-                            (brushMeshHash = new CSGTreeBrush { brushNodeID = nodeID }.BrushMesh.brushMeshHash) == 0)
+                            (brushMeshHash = brush.BrushMesh.brushMeshHash) == 0)
                         {
                             // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                            Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is invalid.");
+                            Debug.LogError($"Brush with ID {brush} has its brushMeshID set to {brushMeshHash}, which is invalid.");
                             this.allBrushMeshInstanceIDs[nodeOrder] = 0;
                         } else
                         {
@@ -2759,7 +2729,7 @@ namespace Chisel.Core
             if (x.updateCount > y.updateCount)
                 return -1;
 
-            return x.treeNodeID.CompareTo(y.treeNodeID);
+            return x.tree.CompareTo(y.tree);
         }
         static readonly Comparison<TreeUpdate> s_TreeSorter = TreeUpdateCompare;
         #endregion

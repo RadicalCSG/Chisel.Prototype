@@ -39,7 +39,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model.Node, brush.TopNode.Tree);
         }
 
         [UnityTest]
@@ -66,7 +66,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID);
+            Assert.AreEqual(model.Node, composite.Node.Tree);
         }
 
         [UnityTest]
@@ -97,7 +97,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model.Node, brush.TopNode.Tree);
         }
 
         [UnityTest]
@@ -117,7 +117,7 @@ namespace HierarchyTests
 
             var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
             var brushGameObject		= brush.gameObject;
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, brush.TopNode.Tree);
 
             brush.transform.parent = model.transform;
             yield return null;
@@ -131,7 +131,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID); 
+            Assert.AreEqual(model.Node, brush.TopNode.Tree); 
         }
 
         [UnityTest]
@@ -151,7 +151,7 @@ namespace HierarchyTests
 
             var composite			= TestUtility.CreateUndoableGameObjectWithComposite();
             var compositeGameObject	= composite.gameObject;
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite.Node.Tree.NodeID);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, composite.Node.Tree);
 
             composite.transform.parent = model.transform;
             yield return null;
@@ -165,7 +165,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, composite.Node.Tree.NodeID); 
+            Assert.AreEqual(model.Node, composite.Node.Tree); 
         }
 
         [UnityTest]
@@ -199,8 +199,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist"); 
             Assert.AreEqual(1, model1.Node.Count);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);	
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID); 		
+            Assert.AreEqual(CSGTreeNode.InvalidNode, model2.Node);	
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree); 		
         }
 
         [UnityTest]
@@ -233,11 +233,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model1.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
                 
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(1, model1.Node.Count);
             Assert.AreEqual(0, model2.Node.Count);
@@ -245,7 +245,7 @@ namespace HierarchyTests
             brush.transform.parent	= model2.transform;
             yield return null;
                 
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
@@ -279,10 +279,10 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
                 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model1.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
                 
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(1, model1.Node.Count);
                 
@@ -291,7 +291,7 @@ namespace HierarchyTests
                 
             Assert.AreEqual(0, model1.Node.Count);
             var defaultModel = brush.hierarchyItem.sceneHierarchy.DefaultModel;
-            Assert.AreEqual(defaultModel.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(defaultModel, brush.TopNode.Tree);
         }
 
         [UnityTest]
@@ -327,11 +327,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model1.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
                 
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(1, model1.Node.Count);
             Assert.AreEqual(0, model2.Node.Count);
@@ -339,7 +339,7 @@ namespace HierarchyTests
             brush.transform.parent	= plainGameObject.transform;
             yield return null;
                 
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
@@ -378,11 +378,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model1.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
                 
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(1, model1.Node.Count);
             Assert.AreEqual(0, model2.Node.Count);
@@ -390,7 +390,7 @@ namespace HierarchyTests
             brush.transform.parent	= model2.transform;
             yield return null;
                 
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
@@ -424,7 +424,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model1.Node.Count);
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             var model2			= TestUtility.CreateUndoableModelComponent(model2GameObject);
             yield return null;
@@ -441,7 +441,7 @@ namespace HierarchyTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
         }
 
         [UnityTest]
@@ -465,7 +465,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist"); // default model
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, brush.TopNode.Parent);
 
             var model				= TestUtility.CreateUndoableModelComponent(modelGameObject);
             yield return null;
@@ -478,7 +478,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             Assert.AreEqual(1, model.Node.Count);
-            Assert.AreEqual(model.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model.Node, brush.TopNode.Tree);
         }
 
         [UnityTest]
@@ -515,9 +515,9 @@ namespace HierarchyTests
 
             Assert.AreEqual(1, model1.Node.Count);
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, model2.Node);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree);
 
             model2.enabled = true;
             yield return null;
@@ -526,9 +526,9 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, model2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
 
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
@@ -566,8 +566,8 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");	
 
             Assert.AreEqual(1, model1.Node.Count);
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, model2.Node);
         }
 
         [UnityTest]
@@ -602,7 +602,7 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID); 
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree); 
             
             Undo.DestroyObjectImmediate(model2);
             yield return null;
@@ -614,7 +614,7 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");	
 
             Assert.AreEqual(1, model1.Node.Count);
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID); 
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree); 
         }
 
         [UnityTest]
@@ -648,8 +648,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");	
 
-            Assert.AreEqual(model1.Node.NodeID, brush.TopNode.Tree.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
+            Assert.AreEqual(model1.Node, brush.TopNode.Tree); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, model2.Node);
             Assert.AreEqual(1, model1.Node.Count);
             
             model2.enabled				= true;
@@ -659,7 +659,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");	
             
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
             Assert.AreEqual(1, model2.Node.Count);
             Assert.AreEqual(0, model1.Node.Count);
         }
@@ -697,8 +697,8 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, model1.Node.Count);
 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, model2.Node.NodeID);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, brush.TopNode); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, model2.Node);
             
             model2GameObject.SetActive(true); 
             yield return null;	
@@ -709,7 +709,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, model1.Node.Count);
             Assert.AreEqual(1, model2.Node.Count);
 
-            Assert.AreEqual(model2.Node.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model2.Node, brush.TopNode.Tree);
         }
     }
 }*/

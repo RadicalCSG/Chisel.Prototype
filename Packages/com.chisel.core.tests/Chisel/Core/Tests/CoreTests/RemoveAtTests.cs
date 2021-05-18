@@ -24,14 +24,14 @@ namespace FoundationTests
         {
             const int branchUserID = 10;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(0);
             LogAssert.Expect(LogType.Error, new Regex("must be between"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
+            Assert.IsFalse(branch.Dirty);
             Assert.AreEqual(0, branch.Count);
         }
 
@@ -42,18 +42,18 @@ namespace FoundationTests
             const int brushUserID = 11;
             var brush = CSGTreeBrush.Create(userID: brushUserID);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush });
-            CompactHierarchyManager.ClearDirty(brush.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(0);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(NodeID.Invalid, brush.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush.Tree.NodeID);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush.Parent.Valid);
+            Assert.IsFalse(brush.Tree.Valid);
             Assert.AreEqual(0, branch.Count);
         }
 
@@ -66,25 +66,25 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(1);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(true, brush2.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush1.Tree.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Tree.NodeID);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsTrue(brush2.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Parent.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
             Assert.AreEqual(1, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
         }
 
         [Test]
@@ -96,25 +96,25 @@ namespace FoundationTests
             var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(0);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
-            Assert.AreEqual(true, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(NodeID.Invalid, brush1.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Tree.NodeID);
+            Assert.IsTrue(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Parent.Valid);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
             Assert.AreEqual(1, branch.Count);
-            Assert.AreEqual(brush2.NodeID, branch[0].NodeID);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
         }
 
         [Test]
@@ -128,31 +128,31 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(brush3.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(1);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(true, brush2.Dirty);
-            Assert.AreEqual(false, brush3.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush1.Tree.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush3.Tree.NodeID);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsTrue(brush2.Dirty);
+            Assert.IsFalse(brush3.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Parent.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
+            Assert.IsFalse(brush3.Tree.Valid);
             Assert.AreEqual(2, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush3.NodeID, branch[1].NodeID);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
         }
 
         [Test]
@@ -166,33 +166,33 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(brush3.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(3);
             LogAssert.Expect(LogType.Error, new Regex("must be between"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(false, brush3.Dirty);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush3.Tree.NodeID);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsFalse(brush3.Dirty);
+            Assert.IsFalse(branch.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
+            Assert.IsFalse(brush3.Tree.Valid);
             Assert.AreEqual(3, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush2.NodeID, branch[1].NodeID);
-            Assert.AreEqual(brush3.NodeID, branch[2].NodeID);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[2]);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
         }
 
         [Test]
@@ -206,33 +206,33 @@ namespace FoundationTests
             var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
             var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2, brush3 });
-            CompactHierarchyManager.ClearDirty(brush1.NodeID);
-            CompactHierarchyManager.ClearDirty(brush2.NodeID);
-            CompactHierarchyManager.ClearDirty(brush3.NodeID);
-            CompactHierarchyManager.ClearDirty(branch.NodeID);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.RemoveAt(-1);
             LogAssert.Expect(LogType.Error, new Regex("must be between"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(false, brush3.Dirty);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(NodeID.Invalid, brush3.Tree.NodeID);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsFalse(brush3.Dirty);
+            Assert.IsFalse(branch.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
+            Assert.IsFalse(brush3.Tree.Valid);
             Assert.AreEqual(3, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush2.NodeID, branch[1].NodeID);
-            Assert.AreEqual(brush3.NodeID, branch[2].NodeID);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[2]);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
         }
     }
 }

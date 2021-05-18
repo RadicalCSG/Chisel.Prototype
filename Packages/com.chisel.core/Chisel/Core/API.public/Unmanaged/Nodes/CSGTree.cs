@@ -18,7 +18,7 @@ namespace Chisel.Core
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
     [StructLayout(LayoutKind.Sequential), BurstCompatible, Serializable]
     [System.Diagnostics.DebuggerDisplay("Tree ({treeNodeID})")]
-    public partial struct CSGTree : IEquatable<CSGTree>
+    public partial struct CSGTree : IEquatable<CSGTree>, IComparable<CSGTree>
     {
         #region Create
         /// <summary>Generates a tree returns a <see cref="Chisel.Core.CSGTree"/> struct that contains a reference to it.</summary>
@@ -206,6 +206,9 @@ namespace Chisel.Core
         public bool Equals(CSGTree other) { return treeNodeID == other.treeNodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode() { return treeNodeID.GetHashCode(); }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public int CompareTo(CSGTree other) { return treeNodeID.CompareTo(other.treeNodeID); }
         #endregion
 
 
@@ -215,7 +218,6 @@ namespace Chisel.Core
         internal void SetStatusFlag(NodeStatusFlags flag)   { CompactHierarchyManager.SetStatusFlag(treeNodeID, flag); }
         internal void ClearStatusFlag(NodeStatusFlags flag) { CompactHierarchyManager.ClearStatusFlag(treeNodeID, flag); }
         internal void ClearAllStatusFlags()                 { CompactHierarchyManager.ClearAllStatusFlags(treeNodeID); }
-
 
         [SerializeField] // Useful to be able to handle selection in history
         internal NodeID treeNodeID;

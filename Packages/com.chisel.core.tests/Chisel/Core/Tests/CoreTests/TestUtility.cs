@@ -38,8 +38,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)brush).Type;
 
-            Assert.AreEqual(true, brush.Valid);
-            Assert.AreNotEqual(0, brush.NodeID);
+            Assert.IsTrue(brush.Valid);
             Assert.AreEqual(userID, brush.UserID);
             Assert.AreEqual(CSGNodeType.Brush, type);
         }
@@ -48,7 +47,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)brush).Type;
 
-            Assert.AreEqual(false, brush.Valid);
+            Assert.IsFalse(brush.Valid);
             Assert.AreEqual(0, brush.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
@@ -57,8 +56,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)branch).Type;
 
-            Assert.AreEqual(true, branch.Valid);
-            Assert.AreNotEqual(0, branch.NodeID);
+            Assert.IsTrue(branch.Valid);
             Assert.AreEqual(userID, branch.UserID);
             Assert.AreEqual(CSGNodeType.Branch, type);
         }
@@ -67,7 +65,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)branch).Type;
 
-            Assert.AreEqual(false, branch.Valid);
+            Assert.IsFalse(branch.Valid);
             Assert.AreEqual(0, branch.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
@@ -76,8 +74,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(true, tree.Valid);
-            Assert.AreNotEqual(0, tree.NodeID);
+            Assert.IsTrue(tree.Valid);
             Assert.AreEqual(userID, tree.UserID);
             Assert.AreEqual(CSGNodeType.Tree, type);
         }
@@ -86,7 +83,7 @@ namespace FoundationTests
         {
             CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(false, tree.Valid);
+            Assert.IsFalse(tree.Valid);
             Assert.AreEqual(0, tree.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
@@ -96,7 +93,7 @@ namespace FoundationTests
         public static int CountOfBrushesInTree(CSGTree tree)
         {
             brushes.Clear();
-            CompactHierarchyManager.GetTreeNodes(tree.NodeID, null, brushes);
+            CompactHierarchyManager.GetTreeNodes(tree, null, brushes);
             return brushes.Count;
         }
 
@@ -104,7 +101,7 @@ namespace FoundationTests
         public static bool IsInTree(CSGTree tree, CSGTreeBrush brush)
         {
             brushes.Clear();
-            CompactHierarchyManager.GetTreeNodes(tree.NodeID, null, brushes);
+            CompactHierarchyManager.GetTreeNodes(tree, null, brushes);
             return brushes.Contains(brush);
         }
 

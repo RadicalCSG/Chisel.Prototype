@@ -433,7 +433,21 @@ namespace Chisel.Core
                 brushOutlines.Ptr[index] = BrushOutline.Create();
             return ref UnsafeUtility.ArrayElementAsRef<BrushOutline>(brushOutlines.Ptr, index);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void FillOutline(CompactNodeID compactNodeID, ref BrushMeshBlob brushMesh)
+        {
+            Debug.Assert(IsCreated);
+            var index = HierarchyIndexOfInternal(compactNodeID);
+            if (index < 0 || index >= brushOutlines.length)
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            if (!brushOutlines.Ptr[index].IsCreated)
+                 brushOutlines.Ptr[index] = BrushOutline.Create();
+            brushOutlines.Ptr[index].Fill(ref brushMesh);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Int32 GetBrushMeshID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);

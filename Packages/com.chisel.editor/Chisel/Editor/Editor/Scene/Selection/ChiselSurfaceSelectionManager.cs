@@ -291,7 +291,7 @@ namespace Chisel.Editors
             if (!brush.Valid)
                 return false;
 
-            if (findBrush != null && findBrush?.NodeID != brush.NodeID)
+            if (findBrush.HasValue && findBrush.Value != brush)
                 return true;
 
             var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);

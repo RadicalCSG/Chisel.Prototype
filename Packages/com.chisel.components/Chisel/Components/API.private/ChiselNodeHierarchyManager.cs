@@ -1358,7 +1358,7 @@ UpdateAgain:
                     {
                         var node = hierarchyItem.Component;
                         parentTreeNode = node.RebuildTreeNodes();
-                        //Debug.Log($"{hierarchyItem.SiblingIndices.Count} {hierarchyItem.siblingIndicesUntilNode}  {hierarchyItem.SiblingIndices[hierarchyItem.SiblingIndices.Count - 1]} {node.name} {node.TopTreeNode.NodeID}", node);
+                        //Debug.Log($"{hierarchyItem.SiblingIndices.Count} {hierarchyItem.siblingIndicesUntilNode}  {hierarchyItem.SiblingIndices[hierarchyItem.SiblingIndices.Count - 1]} {node.name} {node.TopTreeNode}", node);
                         if (parentTreeNode.Valid)
                             treeNodeLookup[node] = parentTreeNode;
                         else
@@ -1470,7 +1470,7 @@ UpdateAgain:
                 if (!topNode.Valid)
                 {
                     topNode = childComponent.RebuildTreeNodes();
-                    //Debug.Log($"{childHierarchyItem.SiblingIndices.Count} {childHierarchyItem.siblingIndicesUntilNode}  {childHierarchyItem.SiblingIndices[childHierarchyItem.SiblingIndices.Count - 1]} {childComponent.name} {childComponent.TopTreeNode.NodeID}", childComponent);
+                    //Debug.Log($"{childHierarchyItem.SiblingIndices.Count} {childHierarchyItem.siblingIndicesUntilNode}  {childHierarchyItem.SiblingIndices[childHierarchyItem.SiblingIndices.Count - 1]} {childComponent.name} {childComponent.TopTreeNode}", childComponent);
                     if (!topNode.Valid)
                         continue;
                 }

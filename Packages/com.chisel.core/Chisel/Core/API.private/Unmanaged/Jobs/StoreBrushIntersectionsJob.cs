@@ -14,7 +14,7 @@ namespace Chisel.Core
     struct StoreBrushIntersectionsJob : IJobParallelForDefer
     {
         // Read
-        [NoAlias, ReadOnly] public CompactNodeID                    treeNodeID;
+        [NoAlias, ReadOnly] public CompactNodeID                    treeCompactNodeID;
         [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>  compactTree;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>          allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>          allUpdateBrushIndexOrders;
@@ -152,7 +152,7 @@ namespace Chisel.Core
             int brushNodeOrder      = brushIndexOrder.nodeOrder;
             {
                 var result = GenerateBrushesTouchedByBrush(compactTree, 
-                                                           allTreeBrushIndexOrders, brushIndexOrder, treeNodeID,
+                                                           allTreeBrushIndexOrders, brushIndexOrder, treeCompactNodeID,
                                                            brushIntersectionsWith, 
                                                            intersectionOffset: brushIntersectionsWithRange[brushNodeOrder].x, 
                                                            intersectionCount:  brushIntersectionsWithRange[brushNodeOrder].y, ref brushIntersections);

@@ -251,7 +251,7 @@ namespace Chisel.Components
         public int GetHashCode(SurfaceReference obj)
         {
             // TODO: use a better hash combiner ..
-            return  obj.brush.NodeID.GetHashCode() ^
+            return  obj.brush.GetHashCode() ^
                     obj.descriptionIndex ^
                     obj.surfaceIndex;
         }

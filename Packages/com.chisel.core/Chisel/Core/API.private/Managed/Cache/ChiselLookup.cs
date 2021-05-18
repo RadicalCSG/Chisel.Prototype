@@ -203,14 +203,14 @@ namespace Chisel.Core
             }
         }
 
-        public Data this[NodeID nodeID]
+        public Data this[CSGTree treeNode]
         {
             get
             {
-                if (!chiselTreeLookup.TryGetValue(nodeID, out int dataIndex))
+                if (!chiselTreeLookup.TryGetValue(treeNode, out int dataIndex))
                 {
                     dataIndex = chiselTreeData.Count;
-                    chiselTreeLookup[nodeID] = dataIndex;
+                    chiselTreeLookup[treeNode] = dataIndex;
                     chiselTreeData.Add(new Data());
                     chiselTreeData[dataIndex].Initialize();
                 }
@@ -218,19 +218,19 @@ namespace Chisel.Core
             }
         }
 
-        readonly Dictionary<NodeID, int>    chiselTreeLookup    = new Dictionary<NodeID, int>();
+        readonly Dictionary<CSGTree, int>   chiselTreeLookup    = new Dictionary<CSGTree, int>();
         readonly List<Data>                 chiselTreeData      = new List<Data>();
 
-        public void Remove(NodeID nodeID)
+        public void Remove(CSGTree tree)
         {
-            if (!chiselTreeLookup.TryGetValue(nodeID, out int dataIndex))
+            if (!chiselTreeLookup.TryGetValue(tree, out int dataIndex))
                 return;
 
             var data = chiselTreeData[dataIndex];
             data.Dispose();
             // TODO: remove null entry and fix up indices
             chiselTreeData[dataIndex] = default;
-            chiselTreeLookup.Remove(nodeID);
+            chiselTreeLookup.Remove(tree);
         }
 
         public void Clear()

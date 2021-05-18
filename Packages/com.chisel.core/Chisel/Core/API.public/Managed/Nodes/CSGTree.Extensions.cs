@@ -11,19 +11,19 @@ namespace Chisel.Core
         /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         public static void DestroyChildren(in this CSGTreeBranch branch)
         {
-            CompactHierarchyManager.DestroyChildNodes(branch.branchNodeID);
+            CompactHierarchyManager.DestroyChildNodes(branch);
         }
 
         /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTree"/>.</summary>
         public static void DestroyChildren(in this CSGTree tree)
         {
-            CompactHierarchyManager.DestroyChildNodes(tree.treeNodeID);
+            CompactHierarchyManager.DestroyChildNodes(tree);
         }
 
         /// <summary>Destroys all the children of this <see cref="Chisel.Core.CSGTreeNode"/>.</summary>
         public static void DestroyChildren(in this CSGTreeNode treeNode)
         {
-            CompactHierarchyManager.DestroyChildNodes(treeNode.nodeID);
+            CompactHierarchyManager.DestroyChildNodes(treeNode);
         }
 
         /// <summary>Sets all the children of this <see cref="Chisel.Core.CSGTree"/> to the give array of <see cref="Chisel.Core.CSGTreeNode"/>s at the specified index.</summary>

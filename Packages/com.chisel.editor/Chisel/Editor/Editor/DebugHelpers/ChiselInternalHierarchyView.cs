@@ -34,7 +34,7 @@ namespace Chisel.Editors
             windows.Remove(this);
         }
 
-        Dictionary<NodeID, bool> openNodes = new Dictionary<NodeID, bool>();
+        Dictionary<CSGTreeNode, bool> openNodes = new Dictionary<CSGTreeNode, bool>();
         static List<ChiselInternalHierarchyView> windows = new List<ChiselInternalHierarchyView>();
 
         public static void RepaintAll()
@@ -167,7 +167,7 @@ namespace Chisel.Editors
         }
         static List<StackItem>  itemStack = new List<StackItem>();
 
-        static int GetVisibleItems(Dictionary<NodeID, CSGTreeNode[]> sceneHierarchies, ref Dictionary<NodeID, bool> openNodes)
+        static int GetVisibleItems(Dictionary<CSGTreeNode, CSGTreeNode[]> sceneHierarchies, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
             if (sceneHierarchies == null || sceneHierarchies.Count == 0)
                 return 0;
@@ -182,7 +182,7 @@ namespace Chisel.Editors
             return totalCount;
         }
         
-        static int GetVisibleItems(CSGTreeNode[] hierarchyItems, ref Dictionary<NodeID, bool> openNodes)
+        static int GetVisibleItems(CSGTreeNode[] hierarchyItems, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
             if (hierarchyItems == null)
                 return 0;
@@ -202,12 +202,12 @@ namespace Chisel.Editors
                 int i = currentStackItem.index;
                 currentStackItem.index++;
 
-                var nodeID = children[i].NodeID;
+                var child = children[i];
                 bool isOpen;
-                if (!openNodes.TryGetValue(nodeID, out isOpen))
+                if (!openNodes.TryGetValue(child, out isOpen))
                 {
                     isOpen = true;
-                    openNodes[nodeID] = true;
+                    openNodes[child] = true;
                 }
                 if (isOpen)
                 {
@@ -235,7 +235,7 @@ namespace Chisel.Editors
             return children;
         }
 
-        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, ref Dictionary<NodeID, bool> openNodes)
+        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
             if (hierarchyItems == null || hierarchyItems.Length == 0)
                 return;
@@ -245,10 +245,9 @@ namespace Chisel.Editors
             GUI.color = defaultColor;
         }
 
-        static string NameForTreeNode(CSGTreeNode coreNode)
+        static string NameForTreeNode(CSGTreeNode treeNode)
         {
-            var userID = coreNode.UserID;
-            var nodeID = coreNode.NodeID;
+            var userID = treeNode.UserID;
             var obj = (userID != 0) ? EditorUtility.InstanceIDToObject(userID) : null;
             string name;
             if (obj == null)
@@ -258,10 +257,10 @@ namespace Chisel.Editors
             {
                 name =  obj.name;
             }
-            return string.Format("{0} [{1}:{2}:{3}]", name, nodeID.value, userID, coreNode.Type);
+            return $"{name} [{treeNode}:{userID}:{treeNode.Type}]";
         }
 
-        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, Color defaultColor, ref Dictionary<NodeID, bool> openNodes)
+        static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, Color defaultColor, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
             if (hierarchyItems == null)
                 return;
@@ -290,12 +289,12 @@ namespace Chisel.Editors
                     return;
                 }
 
-                var nodeID		= children[i].NodeID;
-                var userID		= children[i].UserID;
-                var childCount	= children[i].Count;
+                var child       = children[i];
+                var userID		= child.UserID;
+                var childCount	= child.Count;
                 if (itemRect.y > visibleArea.yMin)
                 {
-                    var name			= NameForTreeNode(children[i]);
+                    var name			= NameForTreeNode(child);
                     var selected		= selectedInstanceIDs.Contains(userID);
                     var labelStyle		= (childCount > 0) ?
                                             (selected ? styles.foldOutLabelSelected : styles.foldOutLabel) :
@@ -303,8 +302,8 @@ namespace Chisel.Editors
 
 
                     bool isOpen;
-                    if (!openNodes.TryGetValue(nodeID, out isOpen))
-                        openNodes[nodeID] = false;
+                    if (!openNodes.TryGetValue(child, out isOpen))
+                        openNodes[child] = false;
 
                     const float labelOffset = 14;
 
@@ -323,9 +322,9 @@ namespace Chisel.Editors
                     labelRect.x += labelOffset;
                     labelRect.width -= labelOffset;
                     if (childCount > 0)
-                        openNodes[nodeID] = EditorGUI.Foldout(foldOutRect, isOpen, string.Empty, true, styles.foldOut);
+                        openNodes[child] = EditorGUI.Foldout(foldOutRect, isOpen, string.Empty, true, styles.foldOut);
 
-                    if (!children[i].Valid)
+                    if (!child.Valid)
                         GUI.color = Color.red;
 
                     if (EditorGUI.EndChangeCheck() ||
@@ -340,16 +339,16 @@ namespace Chisel.Editors
                         }
                         Selection.instanceIDs = new[] { userID };
                     }
-                    if (!children[i].Valid)
+                    if (!child.Valid)
                         GUI.color = prevColor;
                 }
                 itemRect.y += kItemHeight;
 
-                if (openNodes[nodeID])
+                if (openNodes[child])
                 {
                     if (childCount > 0)
                     {
-                        itemStack.Add(new StackItem(ChildrenToArray(children[i]), itemRect.x + kItemIndent));
+                        itemStack.Add(new StackItem(ChildrenToArray(child), itemRect.x + kItemIndent));
                         goto ContinueOnNextStackItem;
                     }
                 }
@@ -452,23 +451,22 @@ namespace Chisel.Editors
                             labelArea.x = 0;
                             labelArea.y = labelArea.height;
                             labelArea.height = kItemHeight;
-                            var nodeID = node.NodeID;
-                            GUI.Label(labelArea, "NodeID: " + nodeID.value); labelArea.y += kItemHeight;
-                            GUI.Label(labelArea, "UserID: " + node.UserID); labelArea.y += kItemHeight;
-                            GUI.Label(labelArea, "Operation: " + node.Operation); labelArea.y += kItemHeight;
-                            GUI.Label(labelArea, "Valid: " + node.Valid); labelArea.y += kItemHeight;
-                            GUI.Label(labelArea, "NodeType: " + node.Type); labelArea.y += kItemHeight;
-                            GUI.Label(labelArea, "ChildCount: " + node.Count); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"Node: {node}"); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"UserID: {node.UserID}"); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"Operation: {node.Operation}"); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"Valid: {node.Valid}"); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"NodeType: {node.Type}"); labelArea.y += kItemHeight;
+                            GUI.Label(labelArea, $"ChildCount: {node.Count}"); labelArea.y += kItemHeight;
                             if (node.Type != CSGNodeType.Tree)
                             {
-                                GUI.Label(labelArea, "Parent: " + node.Parent.NodeID.value + " valid: " + node.Parent.Valid); labelArea.y += kItemHeight;
-                                GUI.Label(labelArea, "Model: " + node.Tree.NodeID.value + " valid: " + node.Tree.Valid); labelArea.y += kItemHeight;
+                                GUI.Label(labelArea, $"Parent: {node.Parent} valid: {node.Parent.Valid}"); labelArea.y += kItemHeight;
+                                GUI.Label(labelArea, $"Model: {node.Tree} valid: {node.Tree.Valid}"); labelArea.y += kItemHeight;
                             }
                             if (node.Type == CSGNodeType.Brush)
                             {
                                 var treeBrush = (CSGTreeBrush)node;
                                 var brushMeshInstance = treeBrush.BrushMesh;
-                                GUI.Label(labelArea, "BrushMeshInstance: " + brushMeshInstance.BrushMeshID + " valid: " + brushMeshInstance.Valid); labelArea.y += kItemHeight;
+                                GUI.Label(labelArea, $"BrushMeshInstance: {brushMeshInstance.BrushMeshID} valid: {brushMeshInstance.Valid}"); labelArea.y += kItemHeight;
                             }
                         }
                     }

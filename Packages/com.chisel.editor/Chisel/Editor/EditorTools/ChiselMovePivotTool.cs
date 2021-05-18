@@ -827,8 +827,8 @@ namespace Chisel.Editors
 
         static readonly List<Vector3> s_PolygonVertices = new List<Vector3>();
 
-        static readonly HashSet<(NodeID, int)> s_usedVertices = new HashSet<(NodeID, int)>();
-        static readonly HashSet<(NodeID, int)> s_usedSurfaces = new HashSet<(NodeID, int)>();
+        static readonly HashSet<(CSGTreeNode, int)> s_usedVertices = new HashSet<(CSGTreeNode, int)>();
+        static readonly HashSet<(CSGTreeNode, int)> s_usedSurfaces = new HashSet<(CSGTreeNode, int)>();
         static void DrawCustomSnappedEvent()
         {
 #if false
@@ -850,8 +850,7 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawVertexSnapEvents.Count; i++)
             {
                 var intersection    = s_DrawVertexSnapEvents[i];
-                //s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex));
-                var vertexKey       = (intersection.brush.NodeID, intersection.vertexIndex);
+                var vertexKey       = (intersection.brush, intersection.vertexIndex);
                 if (!s_usedVertices.Add(vertexKey))
                     continue;
                 HandleRendering.RenderVertexBox(intersection.intersection);
@@ -860,11 +859,11 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawEdgeSnapEvents.Count; i++)
             {
                 var intersection    = s_DrawEdgeSnapEvents[i];
-                s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex0));
-                s_usedSurfaces.Add((intersection.brush.NodeID, intersection.surfaceIndex1));
+                s_usedSurfaces.Add((intersection.brush, intersection.surfaceIndex0));
+                s_usedSurfaces.Add((intersection.brush, intersection.surfaceIndex1));
 
-                var vertexKey0      = (intersection.brush.NodeID, intersection.vertexIndex0);
-                var vertexKey1      = (intersection.brush.NodeID, intersection.vertexIndex1);
+                var vertexKey0      = (intersection.brush, intersection.vertexIndex0);
+                var vertexKey1      = (intersection.brush, intersection.vertexIndex1);
                 if (!s_usedVertices.Add(vertexKey0) ||
                     !s_usedVertices.Add(vertexKey1))
                     continue;
@@ -874,7 +873,7 @@ namespace Chisel.Editors
             for (int i = 0; i < s_DrawSurfaceSnapEvents.Count; i++)
             {
                 var surfaceSnapEvent    = s_DrawSurfaceSnapEvents[i];
-                var surfaceKey          = (surfaceSnapEvent.brush.NodeID, surfaceSnapEvent.surfaceIndex);
+                var surfaceKey          = (surfaceSnapEvent.brush, surfaceSnapEvent.surfaceIndex);
                 if (!s_usedSurfaces.Add(surfaceKey))
                     continue;
 

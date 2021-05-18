@@ -18,7 +18,7 @@ namespace Chisel.Core
 
 
         [BurstCompile]
-        public static BlobAssetReference<CompactTree> Create(ref NativeList<CompactNodeID> nodes, ref NativeList<CSGTreeBrush> brushes, NodeID treeNodeID)
+        public static BlobAssetReference<CompactTree> Create(ref NativeList<CompactNodeID> nodes, ref NativeList<CSGTreeBrush> brushes, CSGTree tree)
         {
             if (brushes.Length == 0)
                 return BlobAssetReference<CompactTree>.Null;
@@ -43,7 +43,7 @@ namespace Chisel.Core
             var maxBrushIDValue = 0;
             for (int b = 0; b < brushes.Length; b++)
             {
-                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushes[b].NodeID);
+                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushes[b]);
                 if (brushCompactNodeID == CompactNodeID.Invalid)
                     continue;
 
@@ -72,16 +72,16 @@ namespace Chisel.Core
 
                     var parentStart = brushAncestorsIDValues.Length;
 
-                    var parent      = brush.Parent;
-                    while (parent.Valid && parent.NodeID != treeNodeID)
+                    var parent      = (CSGTreeNode)brush.Parent;
+                    while (parent.Valid && parent != tree)
                     {
-                        var parentCompactNodeID = CompactHierarchyManager.GetCompactNodeID(parent.NodeID);
+                        var parentCompactNodeID = CompactHierarchyManager.GetCompactNodeID(parent);
                         var parentCompactNodeIDValue = parentCompactNodeID.value;
                         brushAncestorsIDValues.Add(parentCompactNodeIDValue);
                         parent = parent.Parent;
                     }
 
-                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush.NodeID);
+                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
                     var brushCompactNodeIDValue = brushCompactNodeID.value;
                     brushIDValueToAncestorLegend[brushCompactNodeIDValue - minBrushIDValue] = brushAncestorLegend.Length;
                     brushIDValueToOrder[brushCompactNodeIDValue - minBrushIDValue] = b;
@@ -102,12 +102,12 @@ namespace Chisel.Core
                         return BlobAssetReference<CompactTree>.Null;
 
                     // Top-down                    
-                    nodeQueue.Enqueue(new CompactTopDownBuilderNode() { treeNode = new CSGTreeNode() { nodeID = treeNodeID }, compactHierarchyindex = 0 });
-                    hierarchyNodes.Add(new CompactHierarchyNode()
+                    nodeQueue.Enqueue(new CompactTopDownBuilderNode { treeNode = tree, compactHierarchyindex = 0 });
+                    hierarchyNodes.Add(new CompactHierarchyNode
                     {
                         Type        = CSGNodeType.Tree,
                         Operation   = CSGOperationType.Additive,
-                        nodeID      = CompactHierarchyManager.GetCompactNodeID(treeNodeID)
+                        nodeID      = CompactHierarchyManager.GetCompactNodeID(tree)
                     });
 
                     while (nodeQueue.Count > 0)
@@ -146,12 +146,11 @@ namespace Chisel.Core
                                     treeNode = child,
                                     compactHierarchyindex = hierarchyNodes.Length
                                 });
-                            var nodeID      = child.NodeID;
                             hierarchyNodes.Add(new CompactHierarchyNode()
                             {
                                 Type        = childType,
                                 Operation   = child.Operation,
-                                nodeID      = CompactHierarchyManager.GetCompactNodeID(nodeID)
+                                nodeID      = CompactHierarchyManager.GetCompactNodeID(child)
                             });
                         }
 

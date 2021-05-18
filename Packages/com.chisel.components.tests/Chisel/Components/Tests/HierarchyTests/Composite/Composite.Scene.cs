@@ -85,8 +85,8 @@ namespace HierarchyTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             
             Assert.AreEqual(composite.hierarchyItem, brush.hierarchyItem.Parent);
-            Assert.AreEqual(composite.NodeID, brush.hierarchyItem.Parent.Component.NodeID);
-            Assert.AreEqual(composite.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite, brush.hierarchyItem.Parent.Component);
+            Assert.AreEqual(composite, brush.TopNode.Parent);
             
             Assert.AreEqual(scene2, composite.gameObject.scene, "Composite is not part of expected scene");
             Assert.AreEqual(scene2, composite.hierarchyItem.Scene, "Composite is not registered to expected scene");
