@@ -988,7 +988,7 @@ namespace Chisel.Core
             return true;
         }
 
-        public unsafe void GetTreeNodes(NativeList<CompactNodeID> nodes, NativeList<CSGTreeBrush> brushes)
+        public unsafe void GetTreeNodes(NativeList<CompactNodeID> nodes, NativeList<CompactNodeID> brushes)
         {
             if (nodes.IsCreated) nodes.Clear();
             if (brushes.IsCreated) brushes.Clear();
@@ -1027,7 +1027,7 @@ namespace Chisel.Core
                     } else
                     if (node.nodeInformation.brushMeshID != Int32.MaxValue && brushes.IsCreated)
                     {
-                        brushes.Add(CSGTreeBrush.Find(node.compactNodeID));
+                        brushes.Add(node.compactNodeID);
                     }
                 }
             }
@@ -1315,6 +1315,15 @@ namespace Chisel.Core
                 return 0;
 
             return GetChildRef(compactNodeID).userID;
+        }
+
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal CSGOperationType GetOperation(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                return CSGOperationType.Invalid;                        
+            return GetChildRef(compactNodeID).operation;
         }
 
 

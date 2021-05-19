@@ -235,7 +235,7 @@ namespace Chisel.Core
 
             s_FoundIntersections.Clear();
 
-            using (var treeBrushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            using (var treeBrushes = new NativeList<CompactNodeID>(Allocator.Temp))
             {
                 // TODO: cache this
                 CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, treeBrushes);
@@ -250,7 +250,7 @@ namespace Chisel.Core
                 // TODO: optimize
                 for (int i = 0; i < brushCount; i++)
                 {
-                    var brush = treeBrushes[i];
+                    var brush = CSGTreeBrush.Find(treeBrushes[i]);
 #if UNITY_EDITOR
                     if (!brush.IsSelectable)
                         continue;
@@ -313,7 +313,7 @@ namespace Chisel.Core
                     return null;
             }
 
-            using (var treeBrushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            using (var treeBrushes = new NativeList<CompactNodeID>(Allocator.Temp))
             {
                 CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, treeBrushes);
 
@@ -326,7 +326,7 @@ namespace Chisel.Core
 
                 for (int i = 0; i < brushCount; i++)
                 {
-                    var brush = treeBrushes[i];
+                    var brush = CSGTreeBrush.Find(treeBrushes[i]);
 #if UNITY_EDITOR
                     if (!brush.IsSelectable)
                         continue;

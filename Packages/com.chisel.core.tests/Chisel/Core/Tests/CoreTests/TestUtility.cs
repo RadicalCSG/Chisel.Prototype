@@ -91,7 +91,7 @@ namespace FoundationTests
         
         public static int CountOfBrushesInTree(CSGTree tree)
         {
-            using (var brushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            using (var brushes = new NativeList<CompactNodeID>(Allocator.Temp))
             {
                 CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, brushes);
                 return brushes.Length;
@@ -101,10 +101,12 @@ namespace FoundationTests
 
         public static bool IsInTree(CSGTree tree, CSGTreeBrush brush)
         {
-            using (var brushes = new NativeList<CSGTreeBrush>(Allocator.Temp))
+            using (var brushes = new NativeList<CompactNodeID>(Allocator.Temp))
             {
-                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, brushes);
-                return brushes.IndexOf(brush) != -1;
+                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
+                var compactHierarchy = CompactHierarchyManager.GetHierarchy(tree);
+                compactHierarchy.GetTreeNodes(default, brushes);
+                return brushes.IndexOf(brushCompactNodeID) != -1;
             }
         }
 

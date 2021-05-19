@@ -12,13 +12,16 @@ namespace Chisel.Core
     {
         struct CompactTopDownBuilderNode
         {
-            public CSGTreeNode  treeNode;
-            public int          compactHierarchyindex;
+            public CompactNodeID  compactNodeID;
+            public int            compactHierarchyindex;
         }
 
 
         [BurstCompile]
-        public static BlobAssetReference<CompactTree> Create(ref NativeList<CompactNodeID> nodes, ref NativeList<CSGTreeBrush> brushes, CSGTree tree)
+        public static BlobAssetReference<CompactTree> Create(ref CompactHierarchy       compactHierarchy, 
+                                                             NativeArray<CompactNodeID> nodes, 
+                                                             NativeArray<CompactNodeID> brushes, 
+                                                             CompactNodeID              treeCompactNodeID)
         {
             if (brushes.Length == 0)
                 return BlobAssetReference<CompactTree>.Null;
@@ -43,7 +46,7 @@ namespace Chisel.Core
             var maxBrushIDValue = 0;
             for (int b = 0; b < brushes.Length; b++)
             {
-                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brushes[b]);
+                var brushCompactNodeID = brushes[b];
                 if (brushCompactNodeID == CompactNodeID.Invalid)
                     continue;
 
@@ -66,22 +69,20 @@ namespace Chisel.Core
                 // Bottom-up -> per brush list of all ancestors to root
                 for (int b = 0; b < brushes.Length; b++)
                 {
-                    var brush = brushes[b];
-                    if (!brush.Valid)
+                    var brushCompactNodeID = brushes[b];
+                    if (!compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
                         continue;
 
                     var parentStart = brushAncestorsIDValues.Length;
 
-                    var parent      = (CSGTreeNode)brush.Parent;
-                    while (parent.Valid && parent != tree)
+                    var parentCompactNodeID = compactHierarchy.ParentOf(brushCompactNodeID);
+                    while (compactHierarchy.IsValidCompactNodeID(parentCompactNodeID) && parentCompactNodeID != treeCompactNodeID)
                     {
-                        var parentCompactNodeID = CompactHierarchyManager.GetCompactNodeID(parent);
                         var parentCompactNodeIDValue = parentCompactNodeID.value;
                         brushAncestorsIDValues.Add(parentCompactNodeIDValue);
-                        parent = parent.Parent;
+                        parentCompactNodeID = compactHierarchy.ParentOf(parentCompactNodeID);
                     }
 
-                    var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
                     var brushCompactNodeIDValue = brushCompactNodeID.value;
                     brushIDValueToAncestorLegend[brushCompactNodeIDValue - minBrushIDValue] = brushAncestorLegend.Length;
                     brushIDValueToOrder[brushCompactNodeIDValue - minBrushIDValue] = b;
@@ -92,7 +93,7 @@ namespace Chisel.Core
                     });
                 }
 
-                var nodeQueue = new NativeQueue<CompactTopDownBuilderNode>(Allocator.Temp);
+                var nodeQueue = new NativeList<CompactTopDownBuilderNode>(Allocator.Temp);
                 var hierarchyNodes = new NativeList<CompactHierarchyNode>(Allocator.Temp);
                 using (brushIDValueToAncestorLegend)
                 using (brushIDValueToOrder)
@@ -102,63 +103,71 @@ namespace Chisel.Core
                         return BlobAssetReference<CompactTree>.Null;
 
                     // Top-down                    
-                    nodeQueue.Enqueue(new CompactTopDownBuilderNode { treeNode = tree, compactHierarchyindex = 0 });
+                    nodeQueue.Add(new CompactTopDownBuilderNode { compactNodeID = treeCompactNodeID, compactHierarchyindex = 0 });
                     hierarchyNodes.Add(new CompactHierarchyNode
                     {
-                        Type        = CSGNodeType.Tree,
-                        Operation   = CSGOperationType.Additive,
-                        nodeID      = CompactHierarchyManager.GetCompactNodeID(tree)
+                        Type            = CSGNodeType.Tree,
+                        Operation       = CSGOperationType.Additive,
+                        CompactNodeID   = treeCompactNodeID
                     });
 
-                    while (nodeQueue.Count > 0)
+                    while (nodeQueue.Length > 0)
                     {
-                        var parent      = nodeQueue.Dequeue();
-                        var nodeCount   = parent.treeNode.Count;
+                        var parentItem          = nodeQueue[0];
+                        var parentCompactNodeID = parentItem.compactNodeID;
+                        nodeQueue.RemoveAt(0);
+                        var nodeCount   = compactHierarchy.ChildCount(parentCompactNodeID);
                         if (nodeCount == 0)
                         {
-                            var item = hierarchyNodes[parent.compactHierarchyindex];
+                            var item = hierarchyNodes[parentItem.compactHierarchyindex];
                             item.childOffset = -1;
                             item.childCount = 0;
-                            hierarchyNodes[parent.compactHierarchyindex] = item;
+                            hierarchyNodes[parentItem.compactHierarchyindex] = item;
                             continue;
                         }
 
                         int firstCompactTreeIndex = 0;
                         // Skip all nodes that are not additive at the start of the branch since they will never produce any geometry
-                        for (; firstCompactTreeIndex < nodeCount && parent.treeNode[firstCompactTreeIndex].Valid &&
-                                            (parent.treeNode[firstCompactTreeIndex].Operation != CSGOperationType.Additive &&
-                                             parent.treeNode[firstCompactTreeIndex].Operation != CSGOperationType.Copy); firstCompactTreeIndex++)
-                            // NOP
-                            ;
+                        while (firstCompactTreeIndex < nodeCount)
+                        {
+                            var childCompactNodeID = compactHierarchy.GetChildIDAt(parentItem.compactNodeID, firstCompactTreeIndex);
+                            if (!compactHierarchy.IsValidCompactNodeID(childCompactNodeID))
+                                break;
+                            var operation = compactHierarchy.GetOperation(childCompactNodeID);
+                            if (operation == CSGOperationType.Additive ||
+                                operation == CSGOperationType.Copy)
+                                break;
+                            firstCompactTreeIndex++;
+                        } 
 
                         var firstChildIndex = hierarchyNodes.Length;
                         for (int i = firstCompactTreeIndex; i < nodeCount; i++)
                         {
-                            var child = parent.treeNode[i];
+                            var childCompactNodeID = compactHierarchy.GetChildIDAt(parentItem.compactNodeID, i);
                             // skip invalid nodes (they don't contribute to the mesh)
-                            if (!child.Valid)
+                            if (!compactHierarchy.IsValidCompactNodeID(childCompactNodeID))
                                 continue;
 
-                            var childType = child.Type;
+                            var childType = compactHierarchy.GetTypeOfNode(childCompactNodeID);
                             if (childType != CSGNodeType.Brush)
-                                nodeQueue.Enqueue(new CompactTopDownBuilderNode()
+                                nodeQueue.Add(new CompactTopDownBuilderNode
                                 {
-                                    treeNode = child,
+                                    compactNodeID = childCompactNodeID,
                                     compactHierarchyindex = hierarchyNodes.Length
                                 });
-                            hierarchyNodes.Add(new CompactHierarchyNode()
+                            hierarchyNodes.Add(new CompactHierarchyNode
                             {
-                                Type        = childType,
-                                Operation   = child.Operation,
-                                nodeID      = CompactHierarchyManager.GetCompactNodeID(child)
+                                Type            = childType,
+                                Operation       = compactHierarchy.GetOperation(childCompactNodeID),
+                                CompactNodeID   = childCompactNodeID
                             });
                         }
 
                         {
-                            var item = hierarchyNodes[parent.compactHierarchyindex];
+                            var item = hierarchyNodes[parentItem.compactHierarchyindex];
                             item.childOffset = firstChildIndex;
                             item.childCount = hierarchyNodes.Length - firstChildIndex;
-                            hierarchyNodes[parent.compactHierarchyindex] = item;
+                            hierarchyNodes[parentItem.compactHierarchyindex] = item;
                         }
                     }
 

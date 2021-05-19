@@ -79,6 +79,7 @@ namespace Chisel.Components
             meshCollider.sharedMaterial = physicsMaterial;
         }
 
+        /*
         [BurstCompile(CompileSynchronously = true)]
         struct BakeColliderJob : IJobParallelFor
         {
@@ -95,7 +96,7 @@ namespace Chisel.Components
             public bool convex;
             public int  instanceID;
         }
-
+        */
         public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
         {
             if (colliders == null)

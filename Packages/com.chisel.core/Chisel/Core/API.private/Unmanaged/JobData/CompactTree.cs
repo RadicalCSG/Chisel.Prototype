@@ -8,11 +8,11 @@ namespace Chisel.Core
         // TODO: combine bits
         public CSGNodeType      Type;
         public CSGOperationType Operation;
-        public CompactNodeID    nodeID;
+        public CompactNodeID    CompactNodeID;
         public int              childCount;
         public int              childOffset;
 
-        public override string ToString() { return $"({nameof(Type)}: {Type}, {nameof(childCount)}: {childCount}, {nameof(childOffset)}: {childOffset}, {nameof(Operation)}: {Operation}, {nameof(nodeID)}: {nodeID})"; }
+        public override string ToString() { return $"({nameof(Type)}: {Type}, {nameof(childCount)}: {childCount}, {nameof(childOffset)}: {childOffset}, {nameof(Operation)}: {Operation}, {nameof(CompactNodeID)}: {CompactNodeID})"; }
     }
     
     struct BrushAncestorLegend

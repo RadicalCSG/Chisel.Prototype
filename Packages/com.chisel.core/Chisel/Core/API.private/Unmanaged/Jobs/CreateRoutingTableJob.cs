@@ -19,12 +19,12 @@ namespace Chisel.Core
     {
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                  allUpdateBrushIndexOrders;
-        [NoAlias, ReadOnly] public BlobAssetReference<CompactTree>          compactTree;
-        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>> brushesTouchedByBrushes;
+        [NoAlias, ReadOnly] public NativeReference<BlobAssetReference<CompactTree>>         compactTreeRef;
+        [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>   brushesTouchedByBrushes;
 
         // Write
         [NativeDisableParallelForRestriction]
-        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>   routingTableLookup;
+        [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<RoutingTable>>           routingTableLookup;
 
         // Per thread scratch memory
         [NativeDisableContainerSafetyRestriction, NoAlias] NativeArray<QueuedEvent>         queuedEvents;
@@ -52,8 +52,9 @@ namespace Chisel.Core
             if (brushesTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
                 return;
 
-            ref var topDownNodes = ref compactTree.Value.compactHierarchy;
-            ref var brushesTouchedByBrushValue = ref brushesTouchedByBrush.Value;
+            ref var compactTree                 = ref compactTreeRef.Value.Value;
+            ref var topDownNodes                = ref compactTree.compactHierarchy;
+            ref var brushesTouchedByBrushValue  = ref brushesTouchedByBrush.Value;
             var maxNodes    = math.max(1, brushesTouchedByBrushValue.brushIntersections.Length);
             var maxRoutes   = maxNodes * kMaxRoutesPerNode;
 
@@ -68,7 +69,7 @@ namespace Chisel.Core
 
             var categoryStackNodeCount = GetStackNodes(processedNodeID, ref brushesTouchedByBrushValue, 
                                                        ref routingTable,
-                                                       ref compactTree.Value.compactHierarchy,
+                                                       ref compactTree.compactHierarchy,
                                                        ref queuedEvents,
                                                        ref tempStackArray,
                                                        ref combineUsedIndices,
@@ -207,7 +208,7 @@ namespace Chisel.Core
             int haveGoneBeyondSelf = 0;
             int outputLength = 0;
             int queuedEventCount = 0;
-            queuedEvents[0] = QueuedEvent.GetStackNode(0, 0, brushesTouchedByBrush.Get(compactHierarchy[0].nodeID));
+            queuedEvents[0] = QueuedEvent.GetStackNode(0, 0, brushesTouchedByBrush.Get(compactHierarchy[0].CompactNodeID));
             queuedEventCount++;
             //ref var compactHierarchy = ref compactTree.Value.compactHierarchy;
             while (queuedEventCount > 0)
@@ -225,7 +226,7 @@ namespace Chisel.Core
                             break;
 
                         ref var currentNode = ref compactHierarchy[currEvent.currIndex];
-                        var currentNodeID = currentNode.nodeID;
+                        var currentNodeID = currentNode.CompactNodeID;
                         if (currentNode.Type == CSGNodeType.Brush)
                         {
                             if (intersectionType == IntersectionType.AInsideB) 
@@ -242,7 +243,7 @@ namespace Chisel.Core
                             }
 
                             // All surfaces of processedNode are aligned with it's own surfaces, so all categories are Aligned
-                            if (processedNodeID == currentNode.nodeID)
+                            if (processedNodeID == currentNode.CompactNodeID)
                             {
                                 haveGoneBeyondSelf = 1; // We're currently "ON" our brush
                                 output[outputLength] = new CategoryStackNode { NodeIDValue = currentNodeID.value, routingRow = CategoryRoutingRow.selfAligned };
@@ -284,7 +285,7 @@ namespace Chisel.Core
 
                             // 2. Combine the left stack (previous output stack) with the right stack
                             ref var childNode   = ref compactHierarchy[i];
-                            var childNodeID     = childNode.nodeID;
+                            var childNodeID     = childNode.CompactNodeID;
                             var childIntersectionType = brushesTouchedByBrush.Get(childNodeID);
                             if (childIntersectionType != IntersectionType.NoIntersection &&
                                 childIntersectionType != IntersectionType.InvalidValue)
@@ -296,7 +297,7 @@ namespace Chisel.Core
 
                         // 1. Get the first stack, which gets stored in output
                         ref var firstChildNode = ref compactHierarchy[firstIndex];
-                        var firstChildNodeID = firstChildNode.nodeID;
+                        var firstChildNodeID = firstChildNode.CompactNodeID;
                         var firstChildIntersectionType = brushesTouchedByBrush.Get(firstChildNodeID);
                         if (firstChildIntersectionType != IntersectionType.NoIntersection &&
                             firstChildIntersectionType != IntersectionType.InvalidValue)
