@@ -219,7 +219,7 @@ namespace Chisel.Core
 
             for (int i = 0; i < nodes.Length; i++)
             {
-                var brush       = (CSGTreeBrush)nodes[i];
+                var brush = (CSGTreeBrush)nodes[i];
                 if (!brush.Valid)
                     continue;
 
@@ -477,7 +477,7 @@ namespace Chisel.Core
                         if (surfaceDefinitions[i].IsCreated)
                             surfaceDefinitions[i].Dispose();
                     }
-                    catch(Exception ex) { Debug.LogException(ex); }
+                    catch (Exception ex) { Debug.LogException(ex); }
                 }
                 surfaceDefinitions.Clear();
             }

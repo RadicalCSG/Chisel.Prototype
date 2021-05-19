@@ -33,7 +33,7 @@ namespace Chisel.Core
         NeedAllTouchingUpdated      = 512,	// all brushes that touch this brush need to be updated,
         NeedFullUpdate              = ShapeModified | TransformationModified | OutlineModified | HierarchyModified,
         NeedCSGUpdate               = ShapeModified | TransformationModified | HierarchyModified,
-        NeedUpdateDirectOnly        = TransformationModified | OutlineModified,
+        NeedUpdateDirectOnly        = TransformationModified | OutlineModified
     };
     
     [BurstCompatible]
