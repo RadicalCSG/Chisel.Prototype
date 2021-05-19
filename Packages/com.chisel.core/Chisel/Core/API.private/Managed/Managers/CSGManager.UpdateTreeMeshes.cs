@@ -47,6 +47,7 @@ namespace Chisel.Core
         }
         #endregion
 
+        #region GetHash
         static unsafe uint GetHash(NativeList<uint> list)
         {
             return math.hash(list.GetUnsafePtr(), sizeof(uint) * list.Length);
@@ -67,64 +68,9 @@ namespace Chisel.Core
                 return GetHash(hashes);
             }
         }
+        #endregion
 
-
-        [BurstCompile]
-        private static void UpdateTransformations([ReadOnly] in CompactHierarchy treeHierarchy, [ReadOnly] NativeList<NodeOrderNodeID> transformTreeBrushIndicesList, [WriteOnly] NativeList<NodeTransformations> transformationCache)
-        {
-            for (int b = 0; b < transformTreeBrushIndicesList.Length; b++)
-            {
-                var lookup = transformTreeBrushIndicesList[b];
-                transformationCache[lookup.nodeOrder] = CompactHierarchyManager.GetNodeTransformation(in treeHierarchy, lookup.compactNodeID);
-            }
-        }
-
-        [BurstCompile]
-        private static void FindModifiedBrushes([ReadOnly] in CompactHierarchy hierarchy, [ReadOnly] in NativeList<CompactNodeID> allTreeBrushes, [ReadOnly] in NativeList<IndexOrder> allTreeBrushIndexOrders, [WriteOnly] ref NativeList<NodeOrderNodeID> transformTreeBrushIndicesList, [WriteOnly] ref NativeList<IndexOrder> rebuildTreeBrushIndexOrders)
-        {
-            using (var usedBrushes = new NativeBitArray(allTreeBrushes.Length, Allocator.Temp, NativeArrayOptions.ClearMemory))
-            {
-                for (int nodeOrder = 0; nodeOrder < allTreeBrushes.Length; nodeOrder++)
-                {
-                    var brushCompactNodeID = allTreeBrushes[nodeOrder];
-                    if (hierarchy.IsAnyStatusFlagSet(brushCompactNodeID))
-                    {
-                        var indexOrder = allTreeBrushIndexOrders[nodeOrder];
-                        Debug.Assert(indexOrder.nodeOrder == nodeOrder);
-                        if (!usedBrushes.IsSet(nodeOrder))
-                        {
-                            usedBrushes.Set(nodeOrder, true);
-                            rebuildTreeBrushIndexOrders.AddNoResize(indexOrder);
-                        }
-
-                        // Fix up all flags
-
-                        if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
-                        {
-                            // Need to update the basePolygons for this node
-                            hierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.ShapeModified);
-                            hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-                        }
-
-                        if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.HierarchyModified))
-                            hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-
-                        if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
-                        {
-                            if (hierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
-                            hierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.TransformationModified);
-                            hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-                        }
-                    }
-                }
-            }
-        }
-
-        static void CheckDependencies(bool runInParallel, JobHandle dependencies)
-        {
-            if (!runInParallel) dependencies.Complete();
-        }
+        static TreeUpdate[] s_TreeUpdates;
 
         internal unsafe static JobHandle ScheduleTreeMeshJobs(FinishMeshUpdate finishMeshUpdates, NativeList<CSGTree> trees)
         {
@@ -151,9 +97,6 @@ namespace Chisel.Core
 
             // TODO: use parameter1Count/parameter2Count for submeshes etc. just pre-allocate blocks for all possible meshes/submeshes
 
-            #region Do the setup for the CSG Jobs (not jobified)
-            Profiler.BeginSample("CSG_Prepare");
-
             #region Prepare Trees 
             Profiler.BeginSample("CSG_TreeUpdate_Allocate");
             if (s_TreeUpdates == null || s_TreeUpdates.Length < trees.Length)
@@ -161,21 +104,22 @@ namespace Chisel.Core
             Profiler.EndSample();
             #endregion
 
-
-            Profiler.BeginSample("CSG_GeneratorJobPool");
-            var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs();
-            Profiler.EndSample();
-            generatorPoolJobHandle.Complete();
-
-            Profiler.EndSample();
-            #endregion
-
             var treeUpdateLength = 0;
             try
             {
-                #region CSG Jobs
-                Profiler.BeginSample("CSG_Jobs");
+                //
+                // Schedule all the jobs that create new meshes based on our CSG trees
+                //
 
+                #region Schedule job to generate brushes (using generators)
+                Profiler.BeginSample("CSG_GeneratorJobPool");
+                var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs();
+                Profiler.EndSample();
+                generatorPoolJobHandle.Complete();
+                #endregion
+
+                #region Schedule Mesh Update Jobs
+                Profiler.BeginSample("CSG_RunMeshUpdateJobs");
                 for (int t = 0; t < trees.Length; t++)
                 {
                     ref var treeUpdate = ref s_TreeUpdates[t];
@@ -193,6 +137,9 @@ namespace Chisel.Core
                     treeUpdate.RunMeshUpdateJobs();
                     treeUpdateLength++;
                 }
+                Profiler.EndSample();
+                #endregion
+
 
                 //
                 // Wait for our scheduled mesh update jobs to finish, ensure our components are setup correctly, and upload our mesh data to the meshes
@@ -261,9 +208,6 @@ namespace Chisel.Core
                     }
                 }
                 finally { Profiler.EndSample(); }
-                #endregion
-
-                Profiler.EndSample();
                 #endregion
             }
             finally
@@ -362,17 +306,18 @@ namespace Chisel.Core
             public int                          maxNodeOrder;
             public int                          parameter1Count;
             public int                          parameter2Count;
-            
-            public NativeList<NodeOrderNodeID>  transformTreeBrushIndicesList;
-            public NativeList<CompactNodeID>    brushes;
-            public NativeList<CompactNodeID>    nodes;
-
             #region Meshes
             public UnityEngine.Mesh.MeshDataArray           meshDataArray;
             public NativeList<UnityEngine.Mesh.MeshData>    meshDatas;
             #endregion
 
-            #region All Native Collection Temporaries
+            #region All Native Collection Temporaries           
+            internal struct NodeOrderNodeID { public int nodeOrder; public CompactNodeID compactNodeID; }
+            public NativeList<NodeOrderNodeID>  transformTreeBrushIndicesList;
+
+            public NativeList<CompactNodeID>    brushes;
+            public NativeList<CompactNodeID>    nodes;
+
             public NativeList<IndexOrder>               allTreeBrushIndexOrders;
             public NativeList<IndexOrder>               rebuildTreeBrushIndexOrders;
             public NativeList<IndexOrder>               allUpdateBrushIndexOrders;
@@ -543,6 +488,92 @@ namespace Chisel.Core
                 Profiler.EndSample();
             }
 
+
+            [BurstCompile]
+            private static void UpdateTransformations([ReadOnly] in CompactHierarchy treeHierarchy, [ReadOnly] NativeList<NodeOrderNodeID> transformTreeBrushIndicesList, [WriteOnly] NativeList<NodeTransformations> transformationCache)
+            {
+                for (int b = 0; b < transformTreeBrushIndicesList.Length; b++)
+                {
+                    var lookup = transformTreeBrushIndicesList[b];
+                    transformationCache[lookup.nodeOrder] = CompactHierarchyManager.GetNodeTransformation(in treeHierarchy, lookup.compactNodeID);
+                }
+            }
+
+            [BurstCompile]
+            private static void FindModifiedBrushes([ReadOnly] in CompactHierarchy hierarchy, [ReadOnly] in NativeList<CompactNodeID> allTreeBrushes, [ReadOnly] in NativeList<IndexOrder> allTreeBrushIndexOrders, [WriteOnly] ref NativeList<NodeOrderNodeID> transformTreeBrushIndicesList, [WriteOnly] ref NativeList<IndexOrder> rebuildTreeBrushIndexOrders)
+            {
+                using (var usedBrushes = new NativeBitArray(allTreeBrushes.Length, Allocator.Temp, NativeArrayOptions.ClearMemory))
+                {
+                    for (int nodeOrder = 0; nodeOrder < allTreeBrushes.Length; nodeOrder++)
+                    {
+                        var brushCompactNodeID = allTreeBrushes[nodeOrder];
+                        if (hierarchy.IsAnyStatusFlagSet(brushCompactNodeID))
+                        {
+                            var indexOrder = allTreeBrushIndexOrders[nodeOrder];
+                            Debug.Assert(indexOrder.nodeOrder == nodeOrder);
+                            if (!usedBrushes.IsSet(nodeOrder))
+                            {
+                                usedBrushes.Set(nodeOrder, true);
+                                rebuildTreeBrushIndexOrders.AddNoResize(indexOrder);
+                            }
+
+                            // Fix up all flags
+
+                            if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
+                            {
+                                // Need to update the basePolygons for this node
+                                hierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.ShapeModified);
+                                hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
+                            }
+
+                            if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.HierarchyModified))
+                                hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
+
+                            if (hierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
+                            {
+                                if (hierarchy.IsValidCompactNodeID(brushCompactNodeID))
+                                    transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                                hierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.TransformationModified);
+                                hierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
+                            }
+                        }
+                    }
+                }
+            }
+
+            #region IndexOrderComparer - Sort index order to ensure consistency
+            struct IndexOrderComparer : System.Collections.Generic.IComparer<int2>
+            {
+                public int Compare(int2 x, int2 y)
+                {
+                    int yCompare = x.y.CompareTo(y.y);
+                    if (yCompare != 0)
+                        return yCompare;
+                    return x.x.CompareTo(y.x);
+                }
+            }
+            static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
+            #endregion
+
+            #region MeshQueryComparer - Sort mesh mesh queries to help ensure consistency
+            struct MeshQueryComparer : System.Collections.Generic.IComparer<MeshQuery>
+            {
+                public int Compare(MeshQuery x, MeshQuery y)
+                {
+                    if (x.LayerParameterIndex != y.LayerParameterIndex) return ((int)x.LayerParameterIndex) - ((int)y.LayerParameterIndex);
+                    if (x.LayerQuery != y.LayerQuery) return ((int)x.LayerQuery) - ((int)y.LayerQuery);
+                    return 0;
+                }
+            }
+
+            static readonly MeshQueryComparer meshQueryComparer = new MeshQueryComparer();
+            #endregion
+
+            static int[]        s_NodeIDValueToNodeOrderArray;
+
+            static int[]        s_IndexLookup;
+            static int2[]       s_RemapOldOrderToNewOrder;
+
             const bool runInParallelDefault = true;
             public void RunMeshUpdateJobs()
             {
@@ -559,8 +590,6 @@ namespace Chisel.Core
 
                     treeHierarchy.GetTreeNodes(this.nodes, this.brushes);
                     
-
-
                     #region Allocations/Resize
                     var newBrushCount = this.brushes.Length;
                     chiselLookupValues.EnsureCapacity(newBrushCount);
@@ -668,9 +697,9 @@ namespace Chisel.Core
                     Profiler.EndSample();
                     #endregion
 
+                    #region Remap Brush Tree Order For Cached Data
                     bool needRemapping = false;
 
-                    #region Remap Brush Tree Order For Cached Data
                     ref var brushIDValues               = ref chiselLookupValues.brushIDValues;
                     ref var basePolygonCache            = ref chiselLookupValues.basePolygonCache;
                     ref var routingTableCache           = ref chiselLookupValues.routingTableCache;
@@ -2292,6 +2321,8 @@ namespace Chisel.Core
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
+
+                    #endregion
                 }
 
                 #region Free all temporaries
@@ -2349,43 +2380,6 @@ namespace Chisel.Core
                 }
                 Profiler.EndSample();
                 #endregion
-
-                #endregion
-            }
-
-            //*
-            [BurstCompile]
-            public struct BuildCompactTreeJob : IJob
-            {
-                public void InitializeHierarchy(ref CompactHierarchy hierarchy)
-                {
-                    compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);
-                }
-
-                // Read
-                public CompactNodeID                                    treeCompactNodeID;
-                [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   brushes;
-                [NoAlias, ReadOnly] public NativeArray<CompactNodeID>   nodes;
-                [NativeDisableUnsafePtrRestriction]
-                [NoAlias, ReadOnly] public CompactHierarchy*            compactHierarchyPtr;
-
-
-                // Write
-                [NoAlias, WriteOnly] public NativeReference<BlobAssetReference<CompactTree>> compactTreeRef;
-
-                public void Execute()
-                {
-                    ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-                    compactTreeRef.Value = CompactTreeBuilder.Create(ref compactHierarchy, nodes, brushes, treeCompactNodeID);
-                }
-            }//*//
-
-            public void MeshUpdate()
-            {
-            }
-
-            public void PostMeshUpdate()
-            {
             }
 
             public JobHandle PreMeshUpdateDispose(JobHandle disposeJobHandle)
@@ -2507,45 +2501,8 @@ namespace Chisel.Core
             }
         }
 
-        internal struct NodeOrderNodeID
-        {
-            public int              nodeOrder;
-            public CompactNodeID    compactNodeID;
-        }
-
-        static int[]        s_NodeIDValueToNodeOrderArray;
-
-        static int[]        s_IndexLookup;
-        static int2[]       s_RemapOldOrderToNewOrder;
-
-        static TreeUpdate[] s_TreeUpdates;
-
-        #region IndexOrderComparer - Sort index order to ensure consistency
-        struct IndexOrderComparer : System.Collections.Generic.IComparer<int2>
-        {
-            public int Compare(int2 x, int2 y)
-            {
-                int yCompare = x.y.CompareTo(y.y);
-                if (yCompare != 0)
-                    return yCompare;
-                return x.x.CompareTo(y.x);
-            }
-        }
-        static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
-        #endregion
-
-        #region MeshQueryComparer - Sort mesh mesh queries to help ensure consistency
-        struct MeshQueryComparer : System.Collections.Generic.IComparer<MeshQuery>
-        {
-            public int Compare(MeshQuery x, MeshQuery y)
-            {
-                if (x.LayerParameterIndex != y.LayerParameterIndex) return ((int)x.LayerParameterIndex) - ((int)y.LayerParameterIndex);
-                if (x.LayerQuery != y.LayerQuery) return ((int)x.LayerQuery) - ((int)y.LayerQuery);
-                return 0;
-            }
-        }
-
-        static readonly MeshQueryComparer meshQueryComparer = new MeshQueryComparer();
+        #region CheckDependencies
+        static void CheckDependencies(bool runInParallel, JobHandle dependencies) { if (!runInParallel) dependencies.Complete(); }
         #endregion
 
         #region CombineDependencies

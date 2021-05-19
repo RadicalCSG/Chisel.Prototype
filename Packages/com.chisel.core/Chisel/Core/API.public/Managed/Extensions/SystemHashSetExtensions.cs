@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Chisel.Components
 {
-    public static class HashSetExtensions
+    public static class SystemHashSetExtensions
     {
         public static bool Set<T>(this HashSet<T> self, HashSet<T> other)
         {

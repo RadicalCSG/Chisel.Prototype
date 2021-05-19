@@ -65,9 +65,9 @@ namespace Chisel.Core
             unchecked
             {
                 return (int)math.hash(
-                            new uint3(math.hash(polygons     .GetUnsafePtr(), sizeof(Polygon) * polygons.Length),
-                                      math.hash(localVertices.GetUnsafePtr(), sizeof(float3) * localVertices.Length),
-                                      math.hash(halfEdges    .GetUnsafePtr(), sizeof(BrushMesh.HalfEdge) * halfEdges.Length)));
+                            new uint3(polygons     .Length == 0 ? 0 : math.hash(polygons     .GetUnsafePtr(), UnsafeUtility.SizeOf<Polygon>()  * polygons.Length),
+                                      localVertices.Length == 0 ? 0 : math.hash(localVertices.GetUnsafePtr(), UnsafeUtility.SizeOf<float3>()   * localVertices.Length),
+                                      halfEdges    .Length == 0 ? 0 : math.hash(halfEdges    .GetUnsafePtr(), UnsafeUtility.SizeOf<HalfEdge>() * halfEdges.Length)));
             }
         }
 
