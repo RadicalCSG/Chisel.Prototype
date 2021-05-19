@@ -20,7 +20,7 @@ namespace Chisel.Core
             ref var brushOutline = ref brush.Outline;
             if (brushOutline.vertices.Length < 3)
             {
-                UnityEngine.Debug.Log($"{brushOutline.vertices.Length} {brushOutline.surfaceVisibleOuterLines.Length} {brushOutline.visibleOuterLines.Length} {brushOutline.hash}");
+                //UnityEngine.Debug.Log($"{brushOutline.vertices.Length} {brushOutline.surfaceVisibleOuterLines.Length} {brushOutline.visibleOuterLines.Length} {brushOutline.hash}");
                 return false;
             }
 

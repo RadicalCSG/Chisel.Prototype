@@ -124,6 +124,7 @@ namespace Chisel.Components
                     meshCollider.enabled = expectedEnabled;
             }
 
+            /*
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
             //          hopefully that will make it easier for Unity to not screw up the scheduling
             var bakingSettings = new NativeArray<BakeData>(colliders.Length, Allocator.TempJob);
@@ -153,9 +154,9 @@ namespace Chisel.Components
 
             // WHY ARE ALL OF THESE JOBS SEQUENTIAL ON A SINGLE WORKER THREAD?
             var jobHandle = bakeColliderJob.Schedule(colliders.Length, 1);
-
             jobHandle.Complete();
             bakingSettings.Dispose(jobHandle);
+            */
 
             // TODO: is there a way to defer forcing the collider to update?
             for (int i = 0; i < colliders.Length; i++)

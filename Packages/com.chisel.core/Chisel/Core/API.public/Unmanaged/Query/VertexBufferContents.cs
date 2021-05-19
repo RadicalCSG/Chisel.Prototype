@@ -76,6 +76,19 @@ namespace Chisel.Core
             if (subMeshSections.IsCreated) subMeshSections.Clear();
         }
 
+        public bool IsCreated
+        {
+            get
+            {
+                return meshDescriptions.IsCreated &&
+                        subMeshSections.IsCreated &&
+                        triangleBrushIndices.IsCreated &&
+                        meshes.IsCreated &&
+                        renderDescriptors.IsCreated &&
+                        colliderDescriptors.IsCreated;
+            }
+        }
+
         public JobHandle Dispose(JobHandle dependency) 
         {
             JobHandle lastJobHandle = default;

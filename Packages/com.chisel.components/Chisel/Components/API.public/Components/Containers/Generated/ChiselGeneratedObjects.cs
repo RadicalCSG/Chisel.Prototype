@@ -447,12 +447,10 @@ namespace Chisel.Components
                 colliderObjects.Capacity = colliderCount;
             for (int i = 0; i < colliderCount; i++)
                 colliderObjects.Add(null);
-
-            for (int i = 0; i < renderMeshes.Length; i++)
-                renderMeshUpdates.Add(renderMeshes[i]);
-
             for (int i = 0; i < debugHelperMeshes.Length; i++)
                 renderMeshUpdates.Add(debugHelperMeshes[i]);
+            for (int i = 0; i < renderMeshes.Length; i++)
+                renderMeshUpdates.Add(renderMeshes[i]);
             renderMeshUpdates.Sort(delegate (ChiselMeshUpdate x, ChiselMeshUpdate y)
             {
                 return x.contentsIndex - y.contentsIndex;
