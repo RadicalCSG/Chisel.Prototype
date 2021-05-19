@@ -420,7 +420,7 @@ namespace Chisel.Core
             if (nodeIndex == -1)
                 throw new ArgumentException(nameof(compactNodeID), $"{nameof(compactNodeID)} is invalid");
 
-            var parentID = compactNodes[nodeIndex].parentID;
+            var parentID    = compactNodes[nodeIndex].parentID;
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex == -1)
             {
@@ -546,7 +546,7 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 return;
 
-            var parentHierarchy = compactNodes[parentIndex];
+            var parentHierarchy  = compactNodes[parentIndex];
             var parentChildCount = parentHierarchy.childCount;
             AttachInternal(parentID, parentIndex, parentChildCount, compactNodeID);
         }

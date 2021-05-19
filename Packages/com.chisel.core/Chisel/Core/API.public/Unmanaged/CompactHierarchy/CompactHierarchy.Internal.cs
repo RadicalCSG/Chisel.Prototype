@@ -403,7 +403,8 @@ namespace Chisel.Core
         {
             for (int i = 0; i < brushOutlines.Length; i++)
             {
-                brushOutlines[i].Dispose();
+                if (brushOutlines[i].IsCreated)
+                    brushOutlines[i].Dispose();
                 brushOutlines[i] = default;
             }
         }
@@ -496,7 +497,8 @@ namespace Chisel.Core
                 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
-                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default;
+                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                brushOutlines[i] = default;
                 compactNodes[i] = default;
             }
 
@@ -515,7 +517,8 @@ namespace Chisel.Core
 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
-                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
+                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                brushOutlines[i] = default; 
                 compactNodes[i] = default;
             }
 
@@ -531,14 +534,14 @@ namespace Chisel.Core
             if (parentNodeIndex < 0 || parentNodeIndex >= compactNodes.Length)
                 throw new ArgumentException($"{nameof(parentNodeIndex)} ({parentNodeIndex}) must be between 0 and {compactNodes.Length}", nameof(parentNodeIndex));
 
-            var node = compactNodes[parentNodeIndex];
-            if (node.childCount > 0)
+            var parentNode = compactNodes[parentNodeIndex];
+            if (parentNode.childCount > 0)
                 throw new ArgumentException($"{nameof(parentNodeIndex)} already has children", nameof(parentNodeIndex));
 
-            node.childOffset = idManager.AllocateIndexRange(length);
-            node.childCount = length;
-            compactNodes[parentNodeIndex] = node;
-            return node.childOffset;
+            parentNode.childOffset = idManager.AllocateIndexRange(length);
+            parentNode.childCount = length;
+            compactNodes[parentNodeIndex] = parentNode;
+            return parentNode.childOffset;
         }
         #endregion
 
@@ -632,9 +635,9 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         int SiblingIndexOfInternal(int parentIndex, int nodeIndex)
         {
-            var parentHierarchy = compactNodes[parentIndex];
-            var parentChildOffset = parentHierarchy.childOffset;
-            var parentChildCount = parentHierarchy.childCount;
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildOffset   = parentHierarchy.childOffset;
+            var parentChildCount    = parentHierarchy.childCount;
 
             var index = nodeIndex - parentChildOffset;
             Debug.Assert(index >= 0 && index < parentChildCount);
@@ -668,8 +671,8 @@ namespace Chisel.Core
                 // Detach all children of the nodes we're going to delete
                 for (int i = parentChildOffset + siblingIndex, lastIndex = (parentChildOffset + siblingIndex + range); i < lastIndex; i++)
                 {
-                    var childHierarchy = compactNodes[i];
-                    var childCount = childHierarchy.childCount;
+                    var childHierarchy  = compactNodes[i];
+                    var childCount      = childHierarchy.childCount;
                     DetachRangeInternal(i, 0, childCount);
                 }
             }
@@ -686,8 +689,9 @@ namespace Chisel.Core
 
                 for (int i = nodeIndex; i < nodeIndex + range; i++)
                 {
-                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
-                    compactNodes[i] = default;
+                    //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                    brushOutlines[i] = default; 
+                    compactNodes[i]  = default;
                 }
 
                 // If the range is identical to the number of children, we're deleting all the children
@@ -714,8 +718,9 @@ namespace Chisel.Core
 
                 for (int i = nodeIndex; i < nodeIndex + range; i++)
                 {
-                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
-                    compactNodes[i] = default;
+                    //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                    brushOutlines[i] = default; 
+                    compactNodes[i]  = default;
                 }
 
                 // In that case, we can just decrease the number of children in the list
@@ -736,7 +741,8 @@ namespace Chisel.Core
 
             for (int i = nodeIndex + count; i < parentChildOffset + parentChildCount; i++)
             {
-                if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default; 
+                //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                brushOutlines[i] = default; 
                 compactNodes[i] = default;
             }
 
@@ -870,6 +876,7 @@ namespace Chisel.Core
 
             // Make a temporary copy of our node in case we need to move it
             var nodeItem            = compactNodes[nodeIndex];
+            var brushOutlineItem    = brushOutlines[nodeIndex];
             var oldParentID         = nodeItem.parentID;
             var parentChildOffset   = parentHierarchy.childOffset;
             var desiredIndex        = parentChildOffset + insertIndex;
@@ -896,6 +903,7 @@ namespace Chisel.Core
                 compactNodes[parentIndex] = parentHierarchy;
                 
                 nodeItem.parentID = parentID;
+                brushOutlines[nodeIndex] = brushOutlineItem;
                 compactNodes[nodeIndex] = nodeItem;
                 return true;
             }
@@ -912,6 +920,7 @@ namespace Chisel.Core
                 compactNodes[parentIndex] = parentHierarchy;
 
                 nodeItem.parentID = parentID;
+                brushOutlines[nodeIndex] = brushOutlineItem;
                 compactNodes[nodeIndex] = nodeItem;
                 return true;
             }
@@ -956,13 +965,15 @@ namespace Chisel.Core
                 // Then we copy our node to the new location
                 var newNodeIndex = parentChildOffset + insertIndex;
                 nodeItem.parentID = parentID;
+                brushOutlines[newNodeIndex] = brushOutlineItem;
                 compactNodes[newNodeIndex] = nodeItem;
 
                 // Then we set the old indices to 0
                 var newCount = originalCount + 1;
                 if (nodeIndex < parentChildOffset || nodeIndex >= parentChildOffset + newCount)
                 {
-                    if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); brushOutlines[nodeIndex] = default; 
+                    //if (brushOutlines[nodeIndex].IsCreated) brushOutlines[nodeIndex].Dispose(); 
+                    brushOutlines[nodeIndex] = default; 
                     compactNodes[nodeIndex] = default;
                 }
                 for (int i = originalOffset, lastIndex = (originalOffset + originalCount); i < lastIndex; i++)
@@ -970,7 +981,8 @@ namespace Chisel.Core
                     if (i >= parentChildOffset && i < parentChildOffset + newCount)
                         continue;
 
-                    if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); brushOutlines[i] = default;
+                    //if (brushOutlines[i].IsCreated) brushOutlines[i].Dispose(); 
+                    brushOutlines[i] = default;
                     compactNodes[i] = default;
                 }
 
