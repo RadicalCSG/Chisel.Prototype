@@ -206,11 +206,6 @@ namespace Chisel.Core
                     {
                         ref var treeUpdate  = ref s_TreeUpdates[t];
                         ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(treeUpdate.treeCompactNodeID);
-                        if (treeUpdate.updateCount == 0)
-                        {
-                            treeHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
-                            continue;
-                        }
 
                         var dependencies    = CombineDependencies(treeUpdate.meshDatasJobHandle,
                                                                 treeUpdate.colliderMeshUpdatesJobHandle,
@@ -221,6 +216,9 @@ namespace Chisel.Core
                         bool meshUpdated = false;
                         try
                         {
+                            if (treeUpdate.updateCount == 0)
+                                continue;
+
                             for (int b = 0; b < treeUpdate.brushCount; b++)
                             {
                                 var brushIndexOrder = treeUpdate.allTreeBrushIndexOrders[b];
@@ -234,13 +232,13 @@ namespace Chisel.Core
                             //if (!treeHierarchy.IsStatusFlagSet(treeUpdate.treeCompactNodeID, NodeStatusFlags.TreeMeshNeedsUpdate))
                             //    continue;
 
-                            bool wasDirty = treeHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID);
+                            //bool wasDirty = treeHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID);
 
                             treeHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
 
                             // Don't update the mesh if the tree hasn't actually been modified
-                            if (!wasDirty)
-                                continue;
+                            //if (!wasDirty)
+                            //    continue;
 
                             if (finishMeshUpdates != null)
                             {
@@ -255,12 +253,10 @@ namespace Chisel.Core
                         }
                         finally
                         {
+                            treeHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
                             dependencies.Complete(); // Whatever happens, our jobs need to be completed at this point
-                            if (!meshUpdated)
-                            {
-                                treeHierarchy.ClearAllStatusFlags(treeUpdate.treeCompactNodeID);
+                            if (treeUpdate.updateCount > 0 && !meshUpdated)
                                 treeUpdate.meshDataArray.Dispose();
-                            }
                         }
                     }
                 }
@@ -342,8 +338,6 @@ namespace Chisel.Core
                                                             treeUpdate.meshDatasJobHandle)
                                                 );
                         dependencies.Complete();
-                        treeUpdate.lastJobHandle.Complete();
-                        treeUpdate.lastJobHandle = default;
                         treeUpdate.Dispose(dependencies);
 
                         // We let the final JobHandle dependend on the dependencies, but not on the disposal, 
@@ -496,7 +490,7 @@ namespace Chisel.Core
 
             public unsafe void EnsureSize(int newBrushCount)
             {
-                Debug.Log("EnsureSize");
+                //Debug.Log("EnsureSize");
                 meshDataArray   = default;
                 meshDatas       = new NativeList<UnityEngine.Mesh.MeshData>(Allocator.TempJob);
 
@@ -2396,7 +2390,7 @@ namespace Chisel.Core
 
             public JobHandle PreMeshUpdateDispose(JobHandle disposeJobHandle)
             {
-                Debug.Log("PreMeshUpdateDispose");
+                //Debug.Log("PreMeshUpdateDispose");
                 lastJobHandle = disposeJobHandle;
 
                 Profiler.BeginSample("DISPOSE_ARRAY");
@@ -2435,8 +2429,6 @@ namespace Chisel.Core
                 
                 if (meshQueries.IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, meshQueries.Dispose(disposeJobHandle));
 
-                lastJobHandle.Complete();
-
                 meshQueries = default;
                 transformTreeBrushIndicesList = default;
                 brushes                         = default;
@@ -2466,7 +2458,7 @@ namespace Chisel.Core
 
             public JobHandle Dispose(JobHandle disposeJobHandle)
             {
-                Debug.Log($"Dispose");
+                //Debug.Log($"Dispose");
                 lastJobHandle = CombineDependencies(lastJobHandle, disposeJobHandle);
 
                 Profiler.BeginSample("DISPOSE_LIST");

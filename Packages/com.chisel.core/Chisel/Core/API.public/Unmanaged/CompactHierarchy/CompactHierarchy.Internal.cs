@@ -452,7 +452,7 @@ namespace Chisel.Core
         {
             Debug.Assert(IsCreated);
             var index = HierarchyIndexOfInternal(compactNodeID);
-            if (index < 0 || index >= brushOutlines.length)
+            if (index < 0 || index >= compactNodes.length)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             return compactNodes[index].nodeInformation.brushMeshID;
