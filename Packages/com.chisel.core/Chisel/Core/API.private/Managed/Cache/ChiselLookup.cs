@@ -289,17 +289,22 @@ namespace Chisel.Core
             {
                 if (brushMeshBlobs.IsCreated)
                 {
-                    using (var items = brushMeshBlobs.GetValueArray(Allocator.Temp))
+                    try
                     {
-                        brushMeshBlobs.Clear();
-                        brushMeshBlobs.Dispose();
-                        foreach (var item in items)
+                        using (var items = brushMeshBlobs.GetValueArray(Allocator.Persistent))
                         {
-                            if (item.brushMeshBlob.IsCreated)
-                                item.brushMeshBlob.Dispose();
+                            foreach (var item in items)
+                            {
+                                if (item.brushMeshBlob.IsCreated)
+                                    item.brushMeshBlob.Dispose();
+                            }
                         }
                     }
-                    brushMeshBlobs = default;
+                    finally
+                    {
+                        brushMeshBlobs.Dispose();
+                        brushMeshBlobs = default;
+                    }
                 }
                 // temporary hack
                 CompactHierarchyManager.ClearOutlines();
