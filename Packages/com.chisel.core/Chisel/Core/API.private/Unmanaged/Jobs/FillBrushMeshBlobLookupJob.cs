@@ -14,7 +14,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobs;        
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>   allTreeBrushIndexOrders;
-        [NoAlias, ReadOnly] public NativeArray<int>          allBrushMeshInstanceIDs;
+        [NoAlias, ReadOnly] public NativeArray<int>          allBrushMeshIDs;
 
         // Write
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>> brushMeshLookup;
@@ -23,9 +23,9 @@ namespace Chisel.Core
         public void Execute()
         {
             int surfaceCount = 0;
-            for (int nodeOrder = 0; nodeOrder < allBrushMeshInstanceIDs.Length; nodeOrder++)
+            for (int nodeOrder = 0; nodeOrder < allBrushMeshIDs.Length; nodeOrder++)
             {
-                int brushMeshHash = allBrushMeshInstanceIDs[nodeOrder];
+                int brushMeshHash = allBrushMeshIDs[nodeOrder];
                 if (brushMeshHash == 0)
                 {
                     // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly

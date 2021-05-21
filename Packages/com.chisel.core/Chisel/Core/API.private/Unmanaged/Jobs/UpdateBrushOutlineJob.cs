@@ -26,9 +26,9 @@ namespace Chisel.Core
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            for (int b = 0; b < allUpdateBrushIndexOrders.Length; b++)
+            for (int index = 0; index < allUpdateBrushIndexOrders.Length; index++)
             {
-                var brushIndexOrder     = allUpdateBrushIndexOrders[b];
+                var brushIndexOrder     = allUpdateBrushIndexOrders[index];
                 var brushNodeID         = brushIndexOrder.compactNodeID;
                 var brushMeshHash       = compactHierarchy.GetBrushMeshID(brushNodeID);
                 if (brushMeshBlobs.TryGetValue(brushMeshHash, out var item) && item.brushMeshBlob.IsCreated)

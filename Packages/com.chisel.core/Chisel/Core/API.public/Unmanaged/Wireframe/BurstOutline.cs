@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
@@ -19,9 +21,9 @@ namespace Chisel.Core
             return new BrushOutline
             {
                 initialized                   = true,
-                vertices                      = new UnsafeList<float3>(64, Allocator.Persistent),
-                visibleOuterLines             = new UnsafeList<int>(64, Allocator.Persistent),
-                surfaceVisibleOuterLines      = new UnsafeList<int>(64, Allocator.Persistent),
+                vertices                      = new UnsafeList<float3>(512, Allocator.Persistent),
+                visibleOuterLines             = new UnsafeList<int>(256, Allocator.Persistent),
+                surfaceVisibleOuterLines      = new UnsafeList<int>(256, Allocator.Persistent),
                 surfaceVisibleOuterLineRanges = new UnsafeList<int>(64, Allocator.Persistent)
             };
         }
@@ -61,6 +63,8 @@ namespace Chisel.Core
             }
         }
 
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
             vertices                     .Clear();
@@ -76,12 +80,16 @@ namespace Chisel.Core
             return math.hash(list.GetUnsafePtr(), list.Length * sizeof(T));
         }
 
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static unsafe uint GetListHash<T>(ref UnsafeList<T> list)
             where T : unmanaged
         {
             return math.hash(list.Ptr, list.Length * sizeof(T));
         }
 
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void UpdateHash()
         {
             hash = math.hash(new uint4(GetListHash(ref vertices),
@@ -90,7 +98,8 @@ namespace Chisel.Core
                                        GetListHash(ref surfaceVisibleOuterLineRanges)));
         }
 
-        // TODO: use BrushMeshBlob instead
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Fill(ref BrushMeshBlob brushMesh)
         {
             if (!IsCreated)
@@ -99,20 +108,34 @@ namespace Chisel.Core
                 return;
             }
             Reset();
+            
+            ref var polygons = ref brushMesh.polygons;
+            ref var halfEdges = ref brushMesh.halfEdges;
+            ref var localVertices = ref brushMesh.localVertices;
 
-            vertices.AddRange(ref brushMesh.localVertices);
-            UnityEngine.Debug.Assert(vertices.length == brushMesh.localVertices.Length);
-            for (int p = 0; p < brushMesh.polygons.Length; p++)
+            vertices.AddRange(ref localVertices);
+
+            surfaceVisibleOuterLines.Clear();
+            if (surfaceVisibleOuterLines.Capacity < halfEdges.Length * 2)
+                surfaceVisibleOuterLines.SetCapacity(halfEdges.Length * 2);
+
+            visibleOuterLines.Clear();
+            if (visibleOuterLines.Capacity < halfEdges.Length * 2)
+                visibleOuterLines.SetCapacity(halfEdges.Length * 2);
+
+            surfaceVisibleOuterLineRanges.Resize(polygons.Length, NativeArrayOptions.ClearMemory);
+            UnityEngine.Debug.Assert(vertices.length == localVertices.Length);
+            for (int p = 0; p < polygons.Length; p++)
             {
-                var firstEdge = brushMesh.polygons[p].firstEdge;
-                var edgeCount = brushMesh.polygons[p].edgeCount;
+                var firstEdge = polygons[p].firstEdge;
+                var edgeCount = polygons[p].edgeCount;
                 var lastEdge  = firstEdge + edgeCount;
 
-                var vertexIndex0 = brushMesh.halfEdges[lastEdge - 1].vertexIndex;
+                var vertexIndex0 = halfEdges[lastEdge - 1].vertexIndex;
                 var vertexIndex1 = 0;
                 for (int h = firstEdge; h < lastEdge; vertexIndex0 = vertexIndex1, h++)
                 {
-                    vertexIndex1 = brushMesh.halfEdges[h].vertexIndex;
+                    vertexIndex1 = halfEdges[h].vertexIndex;
                     if (vertexIndex0 > vertexIndex1) // avoid duplicate edges
                     {
                         visibleOuterLines.Add(vertexIndex0);
@@ -121,7 +144,7 @@ namespace Chisel.Core
                     surfaceVisibleOuterLines.Add(vertexIndex0);
                     surfaceVisibleOuterLines.Add(vertexIndex1);
                 }
-                surfaceVisibleOuterLineRanges.Add(surfaceVisibleOuterLines.Length);
+                surfaceVisibleOuterLineRanges[p] = surfaceVisibleOuterLines.Length;
             }
             UpdateHash();
         }

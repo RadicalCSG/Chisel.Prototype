@@ -436,6 +436,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BurstCompile]
         public unsafe void FillOutline(CompactNodeID compactNodeID, ref BrushMeshBlob brushMesh)
         {
             Debug.Assert(IsCreated);

@@ -141,6 +141,14 @@ namespace Chisel.Core
             list.AddRange(elements.Ptr, elements.Length);
         }
 
+        public static void AddRange<T>(this NativeList<T> list, NativeArray<T> elements) where T : unmanaged
+        {
+            CheckCreated(list.IsCreated);
+            if (elements.Length == 0)
+                return;
+            list.AddRange(elements.GetUnsafePtr(), elements.Length);
+        }
+
         public static void AddRange<T>(ref this UnsafeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)

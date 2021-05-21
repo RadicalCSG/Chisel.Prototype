@@ -14,7 +14,7 @@ namespace Chisel.Core
             public NativeList<CompactNodeID>    brushIDValues;
             public ChiselLayerParameters        parameters1;
             public ChiselLayerParameters        parameters2;
-            public HashSet<int>                 allKnownBrushMeshIndices    = new HashSet<int>();
+            public NativeHashSet<int>           allKnownBrushMeshIndices;
 
             public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
@@ -31,7 +31,8 @@ namespace Chisel.Core
             internal void Initialize()
             {
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
-                
+                allKnownBrushMeshIndices    = new NativeHashSet<int>(1000, Allocator.Persistent);
+
                 brushTreeSpaceBoundLookup   = new NativeHashMap<CompactNodeID, MinMaxAABB>(1000, Allocator.Persistent);
                 brushRenderBufferLookup     = new NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
@@ -60,6 +61,9 @@ namespace Chisel.Core
                 if (brushIDValues.Capacity < brushCount)
                     brushIDValues.Capacity = brushCount;
 
+                if (allKnownBrushMeshIndices.Capacity < brushCount)
+                    allKnownBrushMeshIndices.Capacity = brushCount;
+
                 if (basePolygonCache.Capacity < brushCount)
                     basePolygonCache.Capacity = brushCount;
 
@@ -87,6 +91,12 @@ namespace Chisel.Core
 
             internal void Dispose()
             {
+                if (allKnownBrushMeshIndices.IsCreated)
+                {
+                    allKnownBrushMeshIndices.Clear();
+                    allKnownBrushMeshIndices.Dispose();
+                }
+                allKnownBrushMeshIndices = default;
                 if (brushIDValues.IsCreated)
                     brushIDValues.Dispose();
                 brushIDValues = default;

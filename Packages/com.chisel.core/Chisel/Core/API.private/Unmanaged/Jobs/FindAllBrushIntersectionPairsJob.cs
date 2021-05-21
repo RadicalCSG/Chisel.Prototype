@@ -240,6 +240,11 @@ namespace Chisel.Core
             //*/
         }
     }
+
+
+    // TODO: create separate job to dispose all the items that need to be disposed & 
+    //          just set them to default in these arrays .. then we can just let the 
+    //          dispose job run without us having to wait for it
     [BurstCompile(CompileSynchronously = true)]
     struct InvalidateBrushCacheJob : IJobParallelForDefer
     {
@@ -260,6 +265,14 @@ namespace Chisel.Core
         [NativeDisableParallelForRestriction]
         [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
 
+        // Write
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BasePolygonsBlob>>.ParallelWriter             basePolygonDisposeList;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>.ParallelWriter   treeSpaceVerticesDisposeList;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>.ParallelWriter        brushesTouchedByBrushDisposeList;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<RoutingTable>>.ParallelWriter                 routingTableDisposeList;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>.ParallelWriter         brushTreeSpacePlaneDisposeList;
+        [NoAlias, WriteOnly] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>.ParallelWriter      brushRenderBufferDisposeList;
+
         public void Execute(int index)
         {
             var indexOrder = rebuildTreeBrushIndexOrders[index];
@@ -276,32 +289,38 @@ namespace Chisel.Core
             {
                 { 
                     var original = basePolygonCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        basePolygonDisposeList.AddNoResize(original);
                     basePolygonCache[nodeOrder] = default;
                 }
                 {
                     var original = treeSpaceVerticesCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        treeSpaceVerticesDisposeList.AddNoResize(original);
                     treeSpaceVerticesCache[nodeOrder] = default;
                 }
                 {
                     var original = brushesTouchedByBrushCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        brushesTouchedByBrushDisposeList.AddNoResize(original);
                     brushesTouchedByBrushCache[nodeOrder] = default;
                 }
                 {
                     var original = routingTableCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        routingTableDisposeList.AddNoResize(original);
                     routingTableCache[nodeOrder] = default;
                 }
                 {
                     var original = brushTreeSpacePlaneCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        brushTreeSpacePlaneDisposeList.AddNoResize(original);
                     brushTreeSpacePlaneCache[nodeOrder] = default;
                 }
                 {
                     var original = brushRenderBufferCache[nodeOrder];
-                    if (original != default && original.IsCreated) original.Dispose();
+                    if (original != default && original.IsCreated)
+                        brushRenderBufferDisposeList.AddNoResize(original);
                     brushRenderBufferCache[nodeOrder] = default;
                 }
 
@@ -309,7 +328,37 @@ namespace Chisel.Core
             //catch { Debug.Log($"FAIL {indexOrder.nodeIndex}"); throw; }
         }
     }
-    
+
+    public class DisposeTool
+    {
+        public static JobHandle Dispose<T>(bool runInParallel, NativeList<T> list, JobHandle dependencies)
+            where T : unmanaged, IDisposable
+        {
+            var disposeListJob = new DisposeListJob<T>
+            {
+                list = list
+            };
+            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+            currentHandle = list.Dispose(currentHandle);
+            return currentHandle;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct DisposeListJob<T> : IJob
+        where T: unmanaged, IDisposable
+    {
+        // Read / Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeList<T> list;
+
+        public void Execute()
+        {
+            for (int i = 0; i < list.Length; i++)
+                list[i].Dispose();
+        }
+    }
+
 
     [BurstCompile(CompileSynchronously = true)]
     struct InvalidateIndirectBrushCacheJob : IJobParallelForDefer
