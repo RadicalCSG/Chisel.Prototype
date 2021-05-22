@@ -132,6 +132,8 @@ namespace Chisel.Core
         public static unsafe void MemMove<T>(ref this UnsafeList<T> list, int destIndex, int sourceIndex, int count)
             where T : unmanaged
         {
+            if (destIndex == sourceIndex)
+                return;
             if (destIndex < 0)
                 throw new ArgumentOutOfRangeException($"{nameof(destIndex)} must be positive.", nameof(destIndex));
             if (sourceIndex < 0)
@@ -142,7 +144,7 @@ namespace Chisel.Core
                 throw new ArgumentOutOfRangeException($"{nameof(destIndex)} + {nameof(count)} must be within bounds of list ({list.Length}).", nameof(count));
             if (sourceIndex + count > list.Length)
                 throw new ArgumentOutOfRangeException($"{nameof(sourceIndex)} + {nameof(count)} must be within bounds of list ({list.Length}).", nameof(count));
-            if (count == 0)
+            if (count <= 0)
                 return;
             if (destIndex == sourceIndex)
                 return;

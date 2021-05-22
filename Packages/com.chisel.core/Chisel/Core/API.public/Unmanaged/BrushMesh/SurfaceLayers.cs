@@ -115,10 +115,19 @@ namespace Chisel.Core
     [Serializable, StructLayout(LayoutKind.Sequential)]
     public unsafe struct SurfaceLayers
     {
+        public const int ParameterCount = 2;
+        public static readonly LayerUsageFlags[] kLayerUsageFlags = new[]
+        {
+            LayerUsageFlags.Renderable,
+            LayerUsageFlags.Collidable
+        };
+        public const int kRenderableLayer = 0;
+        public const int kColliderLayer = 1;
+
         public static readonly SurfaceLayers Empty = new SurfaceLayers
         {
             layerUsage      = LayerUsageFlags.None,
-            layerParameters = int3.zero
+            layerParameters = int2.zero
         };
 
         /// <value>Describe to what layers this surface belongs.</value>
@@ -154,6 +163,6 @@ namespace Chisel.Core
         public Int32			layerParameter3 { get { return layerParameters[2]; } set { layerParameters[2] = value; } }
 
         // .. this could be extended in the future, when necessary
-        public int3             layerParameters;
+        public int2             layerParameters;
     }
 }

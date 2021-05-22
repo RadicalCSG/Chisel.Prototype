@@ -436,7 +436,7 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly allTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<int>.ReadOnly        nodeIDValueToNodeOrderArray;
-        [NoAlias, ReadOnly] public int                              nodeIDValueToNodeOrderOffset;
+        [NoAlias, ReadOnly] public NativeReference<int>             nodeIDValueToNodeOrderOffsetRef;
 
         // Read Write
         [NativeDisableParallelForRestriction]
@@ -446,6 +446,7 @@ namespace Chisel.Core
 
         public void Execute(int index)
         {
+            var nodeIDValueToNodeOrderOffset = nodeIDValueToNodeOrderOffsetRef.Value;
             var indexOrder  = allTreeBrushIndexOrders[index];
             int nodeOrder   = indexOrder.nodeOrder;
 

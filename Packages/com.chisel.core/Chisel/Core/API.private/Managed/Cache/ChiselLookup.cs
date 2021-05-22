@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -11,10 +12,9 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
-            public NativeList<CompactNodeID>    brushIDValues;
-            public ChiselLayerParameters        parameters1;
-            public ChiselLayerParameters        parameters2;
-            public NativeHashSet<int>           allKnownBrushMeshIndices;
+            public NativeList<CompactNodeID>                brushIDValues;
+            public NativeArray<ChiselLayerParameters>       parameters;
+            public NativeHashSet<int>                       allKnownBrushMeshIndices;
 
             public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
             public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
@@ -28,7 +28,7 @@ namespace Chisel.Core
             public NativeHashMap<CompactNodeID, MinMaxAABB>                                     brushTreeSpaceBoundLookup;
             public NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;
 
-            internal void Initialize()
+            internal unsafe void Initialize()
             {
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
                 allKnownBrushMeshIndices    = new NativeHashSet<int>(1000, Allocator.Persistent);
@@ -46,8 +46,15 @@ namespace Chisel.Core
                 transformationCache         = new NativeList<NodeTransformations>(1000, Allocator.Persistent);
                 brushRenderBufferCache      = new NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 
-                parameters1.Initialize();
-                parameters2.Initialize();
+                parameters                  = new NativeArray<ChiselLayerParameters>(SurfaceLayers.ParameterCount, Allocator.Persistent);
+                // Regular index operator will return a copy instead of a reference *sigh*
+                var parameterPtr = parameters.GetUnsafePtr();
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    ref var parameter = ref UnsafeUtility.ArrayElementAsRef<ChiselLayerParameters>(parameterPtr, i);
+                    parameter.Initialize(); 
+                    Debug.Assert(parameter.IsCreated);
+                }
             }
 
             internal void EnsureCapacity(int brushCount)
@@ -184,11 +191,16 @@ namespace Chisel.Core
                 if (brushRenderBufferLookup.IsCreated)
                     brushRenderBufferLookup.Dispose();
                 brushRenderBufferLookup = default;
-
-                parameters1.Dispose();
-                parameters1 = default;
-                parameters2.Dispose();
-                parameters2 = default;
+                if (parameters.IsCreated)
+                {
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        if (parameters[i].IsCreated)
+                            parameters[i].Dispose();
+                    }
+                    parameters.Dispose();
+                }
+                parameters = default;
             }
         }
 

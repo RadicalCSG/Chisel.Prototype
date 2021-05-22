@@ -53,7 +53,7 @@ namespace Chisel.Core
             return math.hash(list.GetUnsafePtr(), sizeof(uint) * list.Length);
         }
 
-        static unsafe uint GetHash(in CompactHierarchy hierarchy, NativeList<CSGTreeBrush> list)
+        static unsafe uint GetHash(ref CompactHierarchy hierarchy, NativeList<CSGTreeBrush> list)
         {
             using (var hashes = new NativeList<uint>(Allocator.Temp))
             {
@@ -250,8 +250,9 @@ namespace Chisel.Core
                         // to work with while things are still being re-arranged.
                         var dependencies = CombineDependencies(
                                                         CombineDependencies(
-                                                            treeUpdate.allBrushMeshInstanceIDsJobHandle,
+                                                            treeUpdate.allBrushMeshIDsJobHandle,
                                                             treeUpdate.allUpdateBrushIndexOrdersJobHandle,
+                                                            treeUpdate.brushIDValuesJobHandle,
                                                             treeUpdate.basePolygonCacheJobHandle,
                                                             treeUpdate.brushBrushIntersectionsJobHandle,
                                                             treeUpdate.brushesTouchedByBrushCacheJobHandle,
@@ -272,7 +273,7 @@ namespace Chisel.Core
                                                             treeUpdate.intersectingBrushesStreamJobHandle,
                                                             treeUpdate.loopVerticesLookupJobHandle,
                                                             treeUpdate.meshQueriesJobHandle,
-                                                            treeUpdate.nodeIndexToNodeOrderArrayJobHandle,
+                                                            treeUpdate.nodeIDValueToNodeOrderArrayJobHandle,
                                                             treeUpdate.outputSurfaceVerticesJobHandle,
                                                             treeUpdate.outputSurfacesJobHandle,
                                                             treeUpdate.outputSurfacesRangeJobHandle),
@@ -286,6 +287,13 @@ namespace Chisel.Core
                                                             treeUpdate.transformationCacheJobHandle,
                                                             treeUpdate.uniqueBrushPairsJobHandle),
                                                         CombineDependencies(
+                                                            treeUpdate.transformTreeBrushIndicesListJobHandle,
+                                                            treeUpdate.brushesJobHandle,
+                                                            treeUpdate.nodesJobHandle,
+                                                            treeUpdate.parametersJobHandle,
+                                                            treeUpdate.allKnownBrushMeshIndicesJobHandle,
+                                                            treeUpdate.parameterCountsJobHandle),
+                                                        CombineDependencies(
                                                             treeUpdate.updateBrushOutlineJobHandle,
                                                             treeUpdate.storeToCacheJobHandle,
 
@@ -294,7 +302,9 @@ namespace Chisel.Core
                                                             treeUpdate.debugHelperMeshesJobHandle,
                                                             treeUpdate.renderMeshesJobHandle,
                                                             treeUpdate.surfaceCountRefJobHandle,
-                                                            treeUpdate.compactTreeRefJobHandle),
+                                                            treeUpdate.compactTreeRefJobHandle,
+                                                            treeUpdate.needRemappingRefJobHandle,
+                                                            treeUpdate.nodeIDValueToNodeOrderOffsetRefJobHandle),
                                                         CombineDependencies(
                                                             treeUpdate.vertexBufferContents_renderDescriptorsJobHandle,
                                                             treeUpdate.vertexBufferContents_colliderDescriptorsJobHandle,
@@ -325,20 +335,20 @@ namespace Chisel.Core
             public CSGTree                      tree;
             public CompactNodeID                treeCompactNodeID;
             public int                          brushCount;
-            public int                          updateCount;
             public int                          maxNodeOrder;
-            public int                          parameter1Count;
-            public int                          parameter2Count;
+            public int                          updateCount;
+
             #region Meshes
             public UnityEngine.Mesh.MeshDataArray           meshDataArray;
             public NativeList<UnityEngine.Mesh.MeshData>    meshDatas;
             #endregion
 
-            #region All Native Collection Temporaries           
-            public NativeList<NodeOrderNodeID>  transformTreeBrushIndicesList;
+            #region All Native Collection Temporaries
+            public NativeArray<int>                     parameterCounts;
+            public NativeList<NodeOrderNodeID>          transformTreeBrushIndicesList;
 
-            public NativeList<CompactNodeID>    brushes;
-            public NativeList<CompactNodeID>    nodes;
+            public NativeList<CompactNodeID>            brushes;
+            public NativeList<CompactNodeID>            nodes;
 
             public NativeList<IndexOrder>               allTreeBrushIndexOrders;
             public NativeList<IndexOrder>               rebuildTreeBrushIndexOrders;
@@ -366,11 +376,12 @@ namespace Chisel.Core
 
             public NativeReference<int>                 surfaceCountRef;
             public NativeReference<BlobAssetReference<CompactTree>> compactTreeRef;
+            public NativeReference<bool>                needRemappingRef;
 
             public VertexBufferContents                 vertexBufferContents;
 
             public NativeList<int>                      nodeIDValueToNodeOrderArray;
-            public int                                  nodeIDValueToNodeOrderOffset;
+            public NativeReference<int>                 nodeIDValueToNodeOrderOffsetRef;
 
             public NativeList<BrushData>                brushRenderData;
             public NativeList<SubMeshCounts>            subMeshCounts;
@@ -397,10 +408,18 @@ namespace Chisel.Core
 
             #region In Between JobHandles
 
-            internal JobHandle allBrushMeshInstanceIDsJobHandle;
+            internal JobHandle transformTreeBrushIndicesListJobHandle;
+            internal JobHandle brushesJobHandle;
+            internal JobHandle nodesJobHandle;
+            internal JobHandle parametersJobHandle;
+            internal JobHandle allKnownBrushMeshIndicesJobHandle;
+            internal JobHandle parameterCountsJobHandle;
+
+            internal JobHandle allBrushMeshIDsJobHandle;
             internal JobHandle allTreeBrushIndexOrdersJobHandle;
             internal JobHandle allUpdateBrushIndexOrdersJobHandle;
 
+            internal JobHandle brushIDValuesJobHandle;
             internal JobHandle basePolygonCacheJobHandle;
             internal JobHandle brushBrushIntersectionsJobHandle;
             internal JobHandle brushesTouchedByBrushCacheJobHandle;
@@ -424,7 +443,7 @@ namespace Chisel.Core
 
             internal JobHandle meshQueriesJobHandle;
 
-            internal JobHandle nodeIndexToNodeOrderArrayJobHandle;
+            internal JobHandle nodeIDValueToNodeOrderArrayJobHandle;
             
             internal JobHandle outputSurfaceVerticesJobHandle;
             internal JobHandle outputSurfacesJobHandle;
@@ -436,6 +455,8 @@ namespace Chisel.Core
             internal JobHandle sectionsJobHandle;
             internal JobHandle surfaceCountRefJobHandle;
             internal JobHandle compactTreeRefJobHandle;
+            internal JobHandle needRemappingRefJobHandle;
+            internal JobHandle nodeIDValueToNodeOrderOffsetRefJobHandle;
             internal JobHandle subMeshSurfacesJobHandle;
             internal JobHandle subMeshCountsJobHandle;
 
@@ -484,9 +505,11 @@ namespace Chisel.Core
                 outputSurfaces                  = new NativeList<BrushIntersectionLoop>(newBrushCount * 16, Allocator.TempJob);
                 brushIntersectionsWith          = new NativeList<BrushIntersectWith>(newBrushCount, Allocator.TempJob);
 
+                nodeIDValueToNodeOrderOffsetRef = new NativeReference<int>(Allocator.TempJob);
                 surfaceCountRef                 = new NativeReference<int>(Allocator.TempJob);
                 compactTreeRef                  = new NativeReference<BlobAssetReference<CompactTree>>(Allocator.TempJob);
-                
+                needRemappingRef                = new NativeReference<bool>(Allocator.TempJob);
+
                 uniqueBrushPairs                = new NativeList<BrushPair2>(newBrushCount * 16, Allocator.TempJob);
                 
                 rebuildTreeBrushIndexOrders     = new NativeList<IndexOrder>(newBrushCount, Allocator.TempJob);
@@ -509,420 +532,16 @@ namespace Chisel.Core
                 loopVerticesLookup.ResizeExact(brushCount);
                 
                 vertexBufferContents.EnsureInitialized();
-                
+
+                var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
+                var parameterPtr = (ChiselLayerParameters*)chiselLookupValues.parameters.GetUnsafePtr();
+                // Regular index operator will return a copy instead of a reference *sigh*
+                for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
+                    parameterPtr[l].Clear();
+
                 meshQueries = default;
             }
-
-            private static void BuildLookupTables([ReadOnly] NativeList<CompactNodeID>  brushes, 
-                                                  [ReadOnly] int                        brushCount,
-                                                  
-                                                  // Read/Write
-                                                  NativeList<int>                       nodeIDValueToNodeOrderArray,
-                                                  [WriteOnly] out int                   nodeIDValueToNodeOrderOffset,
-
-                                                  [WriteOnly] NativeList<IndexOrder>    allTreeBrushIndexOrders,
-                                                  [WriteOnly] NativeList<CompactNodeID> brushIDValues)
-            {
-                if (brushIDValues.Length != brushCount)
-                    brushIDValues.ResizeUninitialized(brushCount);
-
-                var nodeIDValueMin = int.MaxValue;
-                var nodeIDValueMax = 0;
-                if (brushCount > 0)
-                {
-                    Debug.Assert(brushCount == brushes.Length);
-                    for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
-                    {
-                        var brushCompactNodeID      = brushes[nodeOrder];
-                        var brushCompactNodeIDValue = brushCompactNodeID.value;
-                        nodeIDValueMin = math.min(nodeIDValueMin, brushCompactNodeIDValue);
-                        nodeIDValueMax = math.max(nodeIDValueMax, brushCompactNodeIDValue);
-                    }
-                } else
-                    nodeIDValueMin = 0;
-
-                nodeIDValueToNodeOrderOffset = nodeIDValueMin;
-                var desiredLength = (nodeIDValueMax + 1) - nodeIDValueMin;
-                    
-                nodeIDValueToNodeOrderArray.Clear();
-                nodeIDValueToNodeOrderArray.Resize(desiredLength, NativeArrayOptions.ClearMemory);
-                for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
-                {
-                    var brushCompactNodeID      = brushes[nodeOrder];
-                    var brushCompactNodeIDValue = brushCompactNodeID.value;
-                    nodeIDValueToNodeOrderArray[brushCompactNodeIDValue - nodeIDValueToNodeOrderOffset] = nodeOrder;
-                    
-                    // We need the index into the tree to ensure deterministic ordering
-                    var brushIndexOrder = new IndexOrder { compactNodeID = brushCompactNodeID, nodeOrder = nodeOrder };
-                    allTreeBrushIndexOrders[nodeOrder] = brushIndexOrder;
-                    brushIDValues[nodeOrder] = brushCompactNodeID;
-                }
-            }
-
-
-            private static void CacheRemapping([ReadOnly] in CompactHierarchy                                   compactHierarchy,
-                                               [ReadOnly] NativeList<int>                                       nodeIDValueToNodeOrderArray,
-                                               [ReadOnly] int                                                   nodeIDToNodeOrderOffset,
-                                               [ReadOnly] NativeList<CompactNodeID>                             brushes,
-                                               [ReadOnly] int                                                   brushCount,
-                                               [ReadOnly] NativeList<IndexOrder>                                allTreeBrushIndexOrders,
-                                               
-                                               // Read/Write
-                                               ref NativeList<CompactNodeID>                                    brushIDValues,
-                                               ref NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache,
-                                               ref NativeList<BlobAssetReference<RoutingTable>>                 routingTableCache,
-                                               ref NativeList<NodeTransformations>                              transformationCache,
-                                               ref NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache,
-                                               ref NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache,
-                                               ref NativeList<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache,
-                                               ref NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache,
-                                               ref NativeList<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache,
-
-                                               [WriteOnly] NativeHashSet<IndexOrder>                            brushesThatNeedIndirectUpdateHashMap,
-                                               [WriteOnly] out bool                                             needRemapping)
-            {                    
-                needRemapping = false;
-                
-                // Remaps all cached data from previous brush order in tree, to new brush order
-                // TODO: if all brushes need to be rebuild, don't bother to remap since everything is going to be redone anyway
-                var previousBrushIDValuesLength = brushIDValues.Length;
-                if (previousBrushIDValuesLength > 0)
-                {
-                    var indexLookup = new NativeArray<int>(nodeIDValueToNodeOrderArray.Length, Allocator.Temp);
-                    var remapOldOrderToNewOrder = new NativeArray<int2>(previousBrushIDValuesLength, Allocator.Temp);
-
-                    for (int n = 0; n < brushCount; n++)
-                    {
-                        var compactNodeID = allTreeBrushIndexOrders[n].compactNodeID;
-                        var offsetIDValue = compactNodeID.value - nodeIDToNodeOrderOffset;
-                        indexLookup[offsetIDValue] = (n + 1);
-                    }
-                    using (indexLookup)
-                    {
-                        using (var removedBrushes = new NativeList<IndexOrder>(previousBrushIDValuesLength, Allocator.Temp))
-                        { 
-                            var maxCount = math.max(brushCount, previousBrushIDValuesLength) + 1;
-                            for (int n = 0; n < previousBrushIDValuesLength; n++)
-                            {
-                                var sourceID        = brushIDValues[n];
-                                var sourceIDValue   = sourceID.value;
-                                var sourceOffset    = sourceIDValue - nodeIDToNodeOrderOffset;
-                                var destination = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrderArray.Length) ? -1 : indexLookup[sourceOffset] - 1;
-                                if (destination == -1)
-                                {
-                                    removedBrushes.Add(new IndexOrder { compactNodeID = sourceID, nodeOrder = n });
-                                    destination = -1;
-                                    needRemapping = true;
-                                } else
-                                    maxCount = math.max(maxCount, destination + 1);
-                                remapOldOrderToNewOrder[n] = new int2(n, destination);
-                                needRemapping = needRemapping || (n != destination);
-                            }
-                            
-                            if (needRemapping)
-                            {
-                                for (int b = 0; b < removedBrushes.Length; b++)
-                                {
-                                    var indexOrder  = removedBrushes[b];
-                                    //int nodeIndex = indexOrder.nodeIndex;
-                                    int nodeOrder   = indexOrder.nodeOrder;
-
-                                    var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
-                                    if (!brushTouchedByBrush.IsCreated ||
-                                        brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
-                                        continue;
-
-                                    ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;
-                                    for (int i = 0; i < brushIntersections.Length; i++)
-                                    {
-                                        var otherBrushID        = brushIntersections[i].nodeIndexOrder.compactNodeID;
-                                    
-                                        if (!compactHierarchy.IsValidCompactNodeID(otherBrushID))
-                                            continue;
-
-                                        // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                                        if (!brushes.Contains(otherBrushID))
-                                            continue;
-
-                                        var otherBrushIDValue   = otherBrushID.value;
-                                        var otherBrushOrder     = nodeIDValueToNodeOrderArray[otherBrushIDValue - nodeIDToNodeOrderOffset];
-                                        var otherIndexOrder     = new IndexOrder { compactNodeID = otherBrushID, nodeOrder = otherBrushOrder };
-                                        brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
-                                    }
-                                }
-                                
-                                remapOldOrderToNewOrder.Sort(indexOrderComparer);
-                                
-                                for (int n = 0; n < previousBrushIDValuesLength; n++)
-                                {
-                                    var overwrittenValue = remapOldOrderToNewOrder[n].y;
-                                    var originValue = remapOldOrderToNewOrder[n].x;
-                                    if (overwrittenValue == originValue)
-                                        continue;
-                                    // TODO: OPTIMIZE!
-                                    for (int n2 = n + 1; n2 < previousBrushIDValuesLength; n2++)
-                                    {
-                                        var tmp = remapOldOrderToNewOrder[n2];
-                                        if (tmp.x == overwrittenValue)
-                                        {
-                                            if (tmp.y == originValue ||
-                                                tmp.y >= previousBrushIDValuesLength)
-                                            {
-                                                remapOldOrderToNewOrder[n2] = new int2(-1, -1);
-                                                break;
-                                            }
-                                            remapOldOrderToNewOrder[n2] = new int2(originValue, tmp.y);
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                using (remapOldOrderToNewOrder)
-                                {
-                                    if (basePolygonCache.Length < maxCount)
-                                        basePolygonCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (routingTableCache.Length < maxCount)
-                                        routingTableCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (transformationCache.Length < maxCount)
-                                        transformationCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (brushRenderBufferCache.Length < maxCount)
-                                        brushRenderBufferCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (treeSpaceVerticesCache.Length < maxCount)
-                                        treeSpaceVerticesCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (brushTreeSpaceBoundCache.Length < maxCount)
-                                        brushTreeSpaceBoundCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (brushTreeSpacePlaneCache.Length < maxCount)
-                                        brushTreeSpacePlaneCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    if (brushesTouchedByBrushCache.Length < maxCount)
-                                        brushesTouchedByBrushCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                    
-                                    for (int n = 0; n < previousBrushIDValuesLength; n++)
-                                    {
-                                        var source = remapOldOrderToNewOrder[n].x;
-                                        var destination = remapOldOrderToNewOrder[n].y;
-                                        if (source == -1)
-                                            continue;
-
-                                        if (source == destination)
-                                            continue;
-
-                                        if (destination == -1)
-                                        {
-                                            { var tmp = basePolygonCache[source]; basePolygonCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            { var tmp = routingTableCache[source]; routingTableCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            { var tmp = transformationCache[source]; transformationCache[source] = default; }
-                                            { var tmp = brushRenderBufferCache[source]; brushRenderBufferCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            { var tmp = treeSpaceVerticesCache[source]; treeSpaceVerticesCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            { var tmp = brushTreeSpaceBoundCache[source]; brushTreeSpaceBoundCache[source] = default; }
-                                            { var tmp = brushTreeSpacePlaneCache[source]; brushTreeSpacePlaneCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            { var tmp = brushesTouchedByBrushCache[source]; brushesTouchedByBrushCache[source] = default; if (tmp.IsCreated) tmp.Dispose(); }
-                                            continue;
-                                        }
-
-                                        { var tmp = basePolygonCache[destination]; basePolygonCache[destination] = basePolygonCache[source]; basePolygonCache[source] = tmp; }
-                                        { var tmp = routingTableCache[destination]; routingTableCache[destination] = routingTableCache[source]; routingTableCache[source] = tmp; }
-                                        { var tmp = transformationCache[destination]; transformationCache[destination] = transformationCache[source]; transformationCache[source] = tmp; }
-                                        { var tmp = brushRenderBufferCache[destination]; brushRenderBufferCache[destination] = brushRenderBufferCache[source]; brushRenderBufferCache[source] = tmp; }
-                                        { var tmp = treeSpaceVerticesCache[destination]; treeSpaceVerticesCache[destination] = treeSpaceVerticesCache[source]; treeSpaceVerticesCache[source] = tmp; }
-                                        { var tmp = brushTreeSpaceBoundCache[destination]; brushTreeSpaceBoundCache[destination] = brushTreeSpaceBoundCache[source]; brushTreeSpaceBoundCache[source] = tmp; }
-                                        { var tmp = brushTreeSpacePlaneCache[destination]; brushTreeSpacePlaneCache[destination] = brushTreeSpacePlaneCache[source]; brushTreeSpacePlaneCache[source] = tmp; }
-                                        { var tmp = brushesTouchedByBrushCache[destination]; brushesTouchedByBrushCache[destination] = brushesTouchedByBrushCache[source]; brushesTouchedByBrushCache[source] = tmp; }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            private static void FindModifiedBrushes([ReadOnly] in CompactHierarchy          compactHierarchy, 
-                                                    [ReadOnly] in NativeList<CompactNodeID> brushes, 
-                                                    [ReadOnly] in NativeList<IndexOrder>    allTreeBrushIndexOrders,
-                                                    int brushCount,
-                                                    [WriteOnly] ref NativeList<NodeOrderNodeID> transformTreeBrushIndicesList, 
-                                                    [WriteOnly] ref NativeList<IndexOrder> rebuildTreeBrushIndexOrders,
-                                                    [WriteOnly] out int updateCount)
-            {
-                transformTreeBrushIndicesList.Clear();
-                rebuildTreeBrushIndexOrders.Clear();
-                if (rebuildTreeBrushIndexOrders.Capacity < brushCount)
-                    rebuildTreeBrushIndexOrders.Capacity = brushCount;
-
-                using (var usedBrushes = new NativeBitArray(brushes.Length, Allocator.Temp, NativeArrayOptions.ClearMemory))
-                {
-                    for (int nodeOrder = 0; nodeOrder < brushes.Length; nodeOrder++)
-                    {
-                        var brushCompactNodeID = brushes[nodeOrder];
-                        if (compactHierarchy.IsAnyStatusFlagSet(brushCompactNodeID))
-                        {
-                            var indexOrder = allTreeBrushIndexOrders[nodeOrder];
-                            Debug.Assert(indexOrder.nodeOrder == nodeOrder);
-                            if (!usedBrushes.IsSet(nodeOrder))
-                            {
-                                usedBrushes.Set(nodeOrder, true);
-                                rebuildTreeBrushIndexOrders.AddNoResize(indexOrder);
-                            }
-
-                            // Fix up all flags
-
-                            if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
-                            {
-                                // Need to update the basePolygons for this node
-                                compactHierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.ShapeModified);
-                                compactHierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-                            }
-
-                            if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.HierarchyModified))
-                                compactHierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-
-                            if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
-                            {
-                                if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
-                                    transformTreeBrushIndicesList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
-                                compactHierarchy.ClearStatusFlag(brushCompactNodeID, NodeStatusFlags.TransformationModified);
-                                compactHierarchy.SetStatusFlag(brushCompactNodeID, NodeStatusFlags.NeedAllTouchingUpdated);
-                            }
-                        }
-                    }
-                }
-                updateCount = rebuildTreeBrushIndexOrders.Length;
-            }
-
-            private static void InvalidateBrushes([ReadOnly] in CompactHierarchy                                    compactHierarchy,
-                                                  bool                                                              needRemapping,
-                                                  [ReadOnly] NativeList<IndexOrder>                                 rebuildTreeBrushIndexOrders,
-                                                  [ReadOnly] NativeList<BlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache,
-                                                  [ReadOnly] NativeList<CompactNodeID>                              brushes,
-                                                  int                                                               brushCount,
-                                                  [ReadOnly] NativeList<int>                                        nodeIDValueToNodeOrderArray,
-                                                  int                                                               nodeIDToNodeOrderOffset,
-                                                  [WriteOnly] NativeHashSet<IndexOrder>                             brushesThatNeedIndirectUpdateHashMap)
-            {
-                if (rebuildTreeBrushIndexOrders.Length == brushCount && !needRemapping)
-                    return;
-                
-                for (int b = 0; b < rebuildTreeBrushIndexOrders.Length; b++)
-                {
-                    var indexOrder  = rebuildTreeBrushIndexOrders[b];
-                    var brush       = CSGTreeBrush.Find(indexOrder.compactNodeID);
-                    int nodeOrder   = indexOrder.nodeOrder;
-
-                    if (!brush.IsStatusFlagSet(NodeStatusFlags.NeedAllTouchingUpdated))
-                        continue;
-
-                    var brushTouchedByBrush = brushesTouchedByBrushCache[nodeOrder];
-                    if (!brushTouchedByBrush.IsCreated ||
-                        brushTouchedByBrush == BlobAssetReference<BrushesTouchedByBrush>.Null)
-                        continue;
-
-                    ref var brushIntersections = ref brushTouchedByBrush.Value.brushIntersections;
-                    for (int i = 0; i < brushIntersections.Length; i++)
-                    {
-                        var otherBrushID = brushIntersections[i].nodeIndexOrder.compactNodeID;
-                                
-                        if (!compactHierarchy.IsValidCompactNodeID(otherBrushID))
-                            continue;
-
-                        // TODO: investigate how a brush can be "valid" but not be part of treeBrushes
-                        if (!brushes.Contains(otherBrushID))
-                            continue;
-
-                        var otherBrushIDValue   = otherBrushID.value;
-                        var otherBrushOrder     = nodeIDValueToNodeOrderArray[otherBrushIDValue - nodeIDToNodeOrderOffset];
-                        var otherIndexOrder     = new IndexOrder { compactNodeID = otherBrushID, nodeOrder = otherBrushOrder };
-                        brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
-                    }
-                }
-            }
-
-            private static void UpdateBrushMeshInstanceIDs([ReadOnly] in CompactHierarchy compactHierarchy, 
-                                                           ref ChiselLayerParameters    parameters1, 
-                                                           ref ChiselLayerParameters    parameters2,
-                                                           NativeHashSet<int>           allKnownBrushMeshIndices,
-                                                           NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobs,
-                                                           int brushCount,
-                                                           NativeList<CompactNodeID>    brushes,
-                                                           NativeArray<int>             allBrushMeshIDs,
-                                                           out int parameter1Count,
-                                                           out int parameter2Count)
-            {   
-                bool rebuildParameterList = true;
-                var capacity = math.max(allKnownBrushMeshIndices.Count(), brushCount);
-                using (var foundBrushMeshIndices = new NativeHashSet<int>(capacity, Allocator.Temp))
-                {
-                    foundBrushMeshIndices.Clear();
-                    for (int nodeOrder = 0; nodeOrder < brushCount; nodeOrder++)
-                    {
-                        var brushCompactNodeID = brushes[nodeOrder];
-                        int brushMeshHash = 0;
-                        if (!compactHierarchy.IsValidCompactNodeID(brushCompactNodeID) ||
-                            // NOTE: Assignment is intended, this is not supposed to be a comparison
-                            (brushMeshHash = compactHierarchy.GetBrushMeshID(brushCompactNodeID)) == 0)
-                        {
-                            // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                            Debug.LogError($"Brush with ID {brushCompactNodeID} has its brushMeshID set to {brushMeshHash}, which is invalid.");
-                            allBrushMeshIDs[nodeOrder] = 0;
-                        } else
-                        {
-                            allBrushMeshIDs[nodeOrder] = brushMeshHash;
-                            foundBrushMeshIndices.Add(brushMeshHash);
-                        }
-                    }
-
-                    // TODO: optimize all of this, especially slow for complete update
-                    using (var removeBrushMeshIndices = new NativeHashSet<int>(capacity, Allocator.Temp))
-                    {
-                        removeBrushMeshIndices.Clear();
-                        foreach (var brushMeshIndex in allKnownBrushMeshIndices)
-                        {
-                            if (foundBrushMeshIndices.Contains(brushMeshIndex))
-                                foundBrushMeshIndices.Remove(brushMeshIndex);
-                            else
-                                removeBrushMeshIndices.Add(brushMeshIndex);
-                        }
-
-                        if (rebuildParameterList)
-                        {
-                            foreach (int brushMeshIndex in removeBrushMeshIndices)
-                                allKnownBrushMeshIndices.Remove(brushMeshIndex);
-                            parameters1.Clear();
-                            parameters2.Clear();
-                            foreach (var brushMeshIndex in allKnownBrushMeshIndices)
-                            {
-                                ref var polygons = ref brushMeshBlobs[brushMeshIndex].brushMeshBlob.Value.polygons;
-                                for (int p = 0; p < polygons.Length; p++)
-                                {
-                                    ref var polygon = ref polygons[p];
-                                    var layerUsage = polygon.surface.layerDefinition.layerUsage;
-                                    if ((layerUsage & LayerUsageFlags.Renderable) != 0) parameters1.RegisterParameter(polygon.surface.layerDefinition.layerParameter1);
-                                    if ((layerUsage & LayerUsageFlags.Collidable) != 0) parameters2.RegisterParameter(polygon.surface.layerDefinition.layerParameter2);
-                                }
-                            }
-                        }
-
-                        foreach (int brushMeshIndex in foundBrushMeshIndices)
-                            allKnownBrushMeshIndices.Add(brushMeshIndex);
-                    }
-                }
-
-                parameter1Count = parameters1.uniqueParameterCount;
-                parameter2Count = parameters2.uniqueParameterCount;
-            }
-
-
-            #region IndexOrderComparer - Sort index order to ensure consistency
-            struct IndexOrderComparer : System.Collections.Generic.IComparer<int2>
-            {
-                public int Compare(int2 x, int2 y)
-                {
-                    int yCompare = x.y.CompareTo(y.y);
-                    if (yCompare != 0)
-                        return yCompare;
-                    return x.x.CompareTo(y.x);
-                }
-            }
-            static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
-            #endregion
+            
 
             #region MeshQueryComparer - Sort mesh mesh queries to help ensure consistency
             struct MeshQueryComparer : System.Collections.Generic.IComparer<MeshQuery>
@@ -948,6 +567,7 @@ namespace Chisel.Core
                 this.lastJobHandle.Complete();
                 this.lastJobHandle = default;
 
+                this.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, Allocator.TempJob);
                 this.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(Allocator.TempJob);
                 this.nodes                          = new NativeList<CompactNodeID>(Allocator.TempJob);
                 this.brushes                        = new NativeList<CompactNodeID>(Allocator.TempJob);
@@ -1024,68 +644,19 @@ namespace Chisel.Core
             const bool runInParallelDefault = true;
             public void RunMeshUpdateJobs()
             {
-                var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
-                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
-                ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
-                {
-                    BuildLookupTables(this.brushes, this.brushCount,
-
-                                      // Read/Write
-                                      this.nodeIDValueToNodeOrderArray, out this.nodeIDValueToNodeOrderOffset,
-
-                                      this.allTreeBrushIndexOrders,
-                                      chiselLookupValues.brushIDValues);
-
-                    CacheRemapping(in compactHierarchy,
-                                   nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffset,
-                                   brushes, brushCount,
-                                   allTreeBrushIndexOrders,
-
-                                   // Read/Write
-                                   ref chiselLookupValues.brushIDValues,
-                                   ref chiselLookupValues.basePolygonCache,
-                                   ref chiselLookupValues.routingTableCache,
-                                   ref chiselLookupValues.transformationCache,
-                                   ref chiselLookupValues.brushRenderBufferCache,
-                                   ref chiselLookupValues.treeSpaceVerticesCache,
-                                   ref chiselLookupValues.brushTreeSpacePlaneCache,
-                                   ref chiselLookupValues.brushTreeSpaceBoundCache,
-                                   ref chiselLookupValues.brushesTouchedByBrushCache,
-
-                                   brushesThatNeedIndirectUpdateHashMap,
-                                   out var needRemapping);
-
-                    FindModifiedBrushes(in compactHierarchy, 
-                                        in this.brushes, 
-                                        in this.allTreeBrushIndexOrders, 
-                                        brushCount, 
-                                        ref this.transformTreeBrushIndicesList, 
-                                        ref this.rebuildTreeBrushIndexOrders, 
-                                        out this.updateCount);
-
-                    InvalidateBrushes(in compactHierarchy,
-                                      needRemapping, rebuildTreeBrushIndexOrders,
-                                      chiselLookupValues.brushesTouchedByBrushCache,
-                                      brushes, brushCount,
-                                      nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffset,
-                                      brushesThatNeedIndirectUpdateHashMap);
-
-                    UpdateBrushMeshInstanceIDs(in compactHierarchy,
-                                               ref chiselLookupValues.parameters1,
-                                               ref chiselLookupValues.parameters2,
-                                               chiselLookupValues.allKnownBrushMeshIndices,
-                                               brushMeshBlobs,
-                                               brushCount, brushes,
-                                               allBrushMeshIDs,
-                                               out this.parameter1Count,
-                                               out this.parameter2Count);
-                }
 
                 #region Reset All JobHandles
-                this.allBrushMeshInstanceIDsJobHandle = default;
+                this.transformTreeBrushIndicesListJobHandle = default;
+                this.brushesJobHandle = default;
+                this.nodesJobHandle = default;
+                this.parametersJobHandle = default;
+                this.allKnownBrushMeshIndicesJobHandle = default;
+                this.parameterCountsJobHandle = default;
+                this.allBrushMeshIDsJobHandle = default;
                 this.allTreeBrushIndexOrdersJobHandle = default;
                 this.allUpdateBrushIndexOrdersJobHandle = default;
-                
+
+                this.brushIDValuesJobHandle = default;
                 this.basePolygonCacheJobHandle = default;
                 this.brushBrushIntersectionsJobHandle = default;
                 this.brushesTouchedByBrushCacheJobHandle = default;
@@ -1109,7 +680,7 @@ namespace Chisel.Core
 
                 this.meshQueriesJobHandle = default;
 
-                this.nodeIndexToNodeOrderArrayJobHandle = default;
+                this.nodeIDValueToNodeOrderArrayJobHandle = default;
             
                 this.outputSurfaceVerticesJobHandle = default;
                 this.outputSurfacesJobHandle = default;
@@ -1121,6 +692,8 @@ namespace Chisel.Core
                 this.sectionsJobHandle = default;
                 this.surfaceCountRefJobHandle = default;
                 this.compactTreeRefJobHandle = default;
+                this.needRemappingRefJobHandle = default;
+                this.nodeIDValueToNodeOrderOffsetRefJobHandle = default;
                 this.subMeshSurfacesJobHandle = default;
                 this.subMeshCountsJobHandle = default;
 
@@ -1146,18 +719,318 @@ namespace Chisel.Core
                 this.preMeshUpdateCombinedJobHandle = default;
                 #endregion
 
-                if (updateCount > 0)
+                var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
+                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
+                ref var compactHierarchy = ref CompactHierarchyManager.GetHierarchy(this.treeCompactNodeID);
+                {
+                    #region Build Lookup Tables
+                    Profiler.BeginSample("Job_BuildLookupTables");
+                    try
+                    {
+                        const bool runInParallel = false;//runInParallelDefault;
+                        var dependencies = CombineDependencies(brushesJobHandle,
+                                                               nodeIDValueToNodeOrderArrayJobHandle,
+                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               allTreeBrushIndexOrdersJobHandle,
+                                                               brushIDValuesJobHandle);
+                        /*
+                        dependencies.Complete();
+                        BuildLookupTablesJob.BuildLookupTables(this.brushes, this.brushCount,
+
+                                                               // Read/Write
+                                                               chiselLookupValues.brushIDValues,
+                                                               this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
+
+                                                               this.allTreeBrushIndexOrders);
+                        /*/
+                        var buildLookupTablesJob = new BuildLookupTablesJob
+                        {
+                            brushes                         = this.brushes,
+                            brushCount                      = this.brushCount,
+
+                            // Read/Write
+                            brushIDValues                   = chiselLookupValues.brushIDValues,
+                            nodeIDValueToNodeOrderArray     = this.nodeIDValueToNodeOrderArray,
+
+                            // Write
+                            nodeIDValueToNodeOrderOffsetRef = this.nodeIDValueToNodeOrderOffsetRef,
+                            allTreeBrushIndexOrders         = this.allTreeBrushIndexOrders
+                        };
+                        var currentJobHandle = buildLookupTablesJob.Schedule(runInParallel, dependencies);
+
+                        //brushesJobHandle                       = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        nodeIDValueToNodeOrderArrayJobHandle     = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderArrayJobHandle);
+                        nodeIDValueToNodeOrderOffsetRefJobHandle = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        allTreeBrushIndexOrdersJobHandle         = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+                        brushIDValuesJobHandle                   = CombineDependencies(currentJobHandle, brushIDValuesJobHandle);
+                        //*/
+                    } 
+                    finally { Profiler.EndSample(); }
+                    #endregion
+
+                    #region CacheRemapping
+                    Profiler.BeginSample("Job_CacheRemapping");
+                    try
+                    {
+                        const bool runInParallel = false;//runInParallelDefault;
+                        var dependencies = CombineDependencies(nodeIDValueToNodeOrderArrayJobHandle,
+                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               brushesJobHandle,
+                                                               allTreeBrushIndexOrdersJobHandle,
+                                                               
+                                                               brushIDValuesJobHandle,
+                                                               basePolygonCacheJobHandle,
+                                                               routingTableCacheJobHandle,
+                                                               transformationCacheJobHandle,
+                                                               brushRenderBufferCacheJobHandle,
+                                                               treeSpaceVerticesCacheJobHandle,
+                                                               brushTreeSpacePlaneCacheJobHandle,
+                                                               brushTreeSpaceBoundCacheJobHandle,
+                                                               brushesTouchedByBrushCacheJobHandle,
+
+                                                               brushesThatNeedIndirectUpdateHashMapJobHandle,
+                                                               needRemappingRefJobHandle);
+                        /*
+                        dependencies.Complete();
+                        CacheRemappingJob.CacheRemapping(ref compactHierarchy,
+                                                         this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
+                                                         this.brushes, this.brushCount,
+                                                         this.allTreeBrushIndexOrders,
+
+                                                         // Read/Write
+                                                         chiselLookupValues.brushIDValues,
+                                                         chiselLookupValues.basePolygonCache,
+                                                         chiselLookupValues.routingTableCache,
+                                                         chiselLookupValues.transformationCache,
+                                                         chiselLookupValues.brushRenderBufferCache,
+                                                         chiselLookupValues.treeSpaceVerticesCache,
+                                                         chiselLookupValues.brushTreeSpacePlaneCache,
+                                                         chiselLookupValues.brushTreeSpaceBoundCache,
+                                                         chiselLookupValues.brushesTouchedByBrushCache,
+
+                                                         this.brushesThatNeedIndirectUpdateHashMap,
+                                                         this.needRemappingRef);
+                        /*/
+                        var cacheRemappingJob = new CacheRemappingJob
+                        {
+                            // Read
+                            //compactHierarchy              = compactHierarchy,  //<-- cannot do ref or pointer here
+                                                                                 //    so we set it below using InitializeHierarchy
+
+                            nodeIDValueToNodeOrderArray     = this.nodeIDValueToNodeOrderArray,
+                            nodeIDValueToNodeOrderOffsetRef = this.nodeIDValueToNodeOrderOffsetRef,
+                            brushes                         = this.brushes,
+                            brushCount                      = this.brushCount,
+                            allTreeBrushIndexOrders         = this.allTreeBrushIndexOrders,
+
+                            // Read/Write
+                            brushIDValues                   = chiselLookupValues.brushIDValues,
+                            basePolygonCache                = chiselLookupValues.basePolygonCache,
+                            routingTableCache               = chiselLookupValues.routingTableCache,
+                            transformationCache             = chiselLookupValues.transformationCache,
+                            brushRenderBufferCache          = chiselLookupValues.brushRenderBufferCache,
+                            treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache,
+                            brushTreeSpacePlaneCache        = chiselLookupValues.brushTreeSpacePlaneCache,
+                            brushTreeSpaceBoundCache        = chiselLookupValues.brushTreeSpaceBoundCache,
+                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache,
+
+                            // Write
+                            brushesThatNeedIndirectUpdateHashMap = this.brushesThatNeedIndirectUpdateHashMap,
+                            needRemappingRef                     = this.needRemappingRef
+                        };
+                        cacheRemappingJob.InitializeHierarchy(ref compactHierarchy);
+                        var currentJobHandle = cacheRemappingJob.Schedule(runInParallel, dependencies);
+
+                        //nodeIDValueToNodeOrderArrayJobHandle          = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderArrayJobHandle);
+                        //nodeIDValueToNodeOrderOffsetRefJobHandle      = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        //brushesJobHandle                              = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        //allTreeBrushIndexOrdersJobHandle              = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+
+                        brushIDValuesJobHandle                          = CombineDependencies(currentJobHandle, brushIDValuesJobHandle);
+                        basePolygonCacheJobHandle                       = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
+                        routingTableCacheJobHandle                      = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
+                        transformationCacheJobHandle                    = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
+                        brushRenderBufferCacheJobHandle                 = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
+                        treeSpaceVerticesCacheJobHandle                 = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
+                        brushTreeSpacePlaneCacheJobHandle               = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
+                        brushTreeSpaceBoundCacheJobHandle               = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
+                        brushesTouchedByBrushCacheJobHandle             = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+
+                        brushesThatNeedIndirectUpdateHashMapJobHandle   = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        needRemappingRefJobHandle                       = CombineDependencies(currentJobHandle, needRemappingRefJobHandle);
+                        //*/
+                    } 
+                    finally { Profiler.EndSample(); }
+                    #endregion
+
+                    #region Find Modified Brushes
+                    Profiler.BeginSample("Job_FindModifiedBrushes");
+                    try
+                    {
+                        const bool runInParallel = false;// runInParallelDefault;
+                        var dependencies = CombineDependencies(brushesJobHandle,
+                                                               allTreeBrushIndexOrdersJobHandle,
+                                                               transformTreeBrushIndicesListJobHandle,
+                                                               rebuildTreeBrushIndexOrdersJobHandle);
+                        /*
+                        dependencies.Complete();
+                        FindModifiedBrushesJob.FindModifiedBrushes(ref compactHierarchy, 
+                                                                   this.brushes, this.brushCount,
+                                                                   this.allTreeBrushIndexOrders, 
+                                                                   this.rebuildTreeBrushIndexOrders, 
+                                                                   this.transformTreeBrushIndicesList);
+                        /*/
+                        var findModifiedBrushesJob = new FindModifiedBrushesJob
+                        {
+                            // Read
+                            //compactHierarchy              = compactHierarchy,  //<-- cannot do ref or pointer here
+                                                                                 //    so we set it below using InitializeHierarchy
+
+                            brushes                         = this.brushes,
+                            brushCount                      = this.brushCount,
+                            allTreeBrushIndexOrders         = this.allTreeBrushIndexOrders,
+
+                            // Read/Write
+                            rebuildTreeBrushIndexOrders     = this.rebuildTreeBrushIndexOrders,
+
+                            // Write
+                            transformTreeBrushIndicesList   = this.transformTreeBrushIndicesList,
+                        };
+                        findModifiedBrushesJob.InitializeHierarchy(ref compactHierarchy);
+                        var currentJobHandle = findModifiedBrushesJob.Schedule(runInParallel, dependencies);
+
+                        //brushesJobHandle                      = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        //allTreeBrushIndexOrdersJobHandle      = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+                        transformTreeBrushIndicesListJobHandle  = CombineDependencies(currentJobHandle, transformTreeBrushIndicesListJobHandle);
+                        rebuildTreeBrushIndexOrdersJobHandle    = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
+                        //*/
+                    } 
+                    finally { Profiler.EndSample(); }
+                    #endregion
+
+                    #region Invalidate Brushes
+                    Profiler.BeginSample("Job_InvalidateBrushes");
+                    try
+                    {
+                        const bool runInParallel = false;// runInParallelDefault;
+                        var dependencies = CombineDependencies(needRemappingRefJobHandle,
+                                                               rebuildTreeBrushIndexOrdersJobHandle,
+                                                               brushesTouchedByBrushCacheJobHandle,
+                                                               brushesJobHandle,
+                                                               nodeIDValueToNodeOrderArrayJobHandle,
+                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        /*
+                        dependencies.Complete();
+                        InvalidateBrushesJob.InvalidateBrushes(ref compactHierarchy,
+                                                               this.needRemappingRef, 
+                                                               this.rebuildTreeBrushIndexOrders,
+                                                               chiselLookupValues.brushesTouchedByBrushCache,
+                                                               this.brushes, this.brushCount,
+                                                               this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
+                                                               this.brushesThatNeedIndirectUpdateHashMap);
+                        /*/
+                        var invalidateBrushesJob = new InvalidateBrushesJob
+                        {
+                            // Read
+                            //compactHierarchy              = compactHierarchy,  //<-- cannot do ref or pointer here
+                                                                                 //    so we set it below using InitializeHierarchy
+
+                            needRemappingRef                = this.needRemappingRef,
+                            rebuildTreeBrushIndexOrders     = this.rebuildTreeBrushIndexOrders,
+                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache,
+                            brushes                         = this.brushes,
+                            brushCount                      = this.brushCount,
+                            nodeIDValueToNodeOrderArray     = this.nodeIDValueToNodeOrderArray,
+                            nodeIDValueToNodeOrderOffsetRef = this.nodeIDValueToNodeOrderOffsetRef,
+
+                            // Write
+                            brushesThatNeedIndirectUpdateHashMap = this.brushesThatNeedIndirectUpdateHashMap
+                        };
+                        invalidateBrushesJob.InitializeHierarchy(ref compactHierarchy);
+                        var currentJobHandle = invalidateBrushesJob.Schedule(runInParallel, dependencies);
+
+                        //needRemappingRefJobHandle                   = CombineDependencies(currentJobHandle, needRemappingRefJobHandle);                        
+                        //rebuildTreeBrushIndexOrdersJobHandle        = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);                        
+                        //brushesTouchedByBrushCacheJobHandle         = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+                        //brushesJobHandle                            = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        //nodeIDToNodeOrderArrayJobHandle             = CombineDependencies(currentJobHandle, nodeIDToNodeOrderArrayJobHandle);
+                        //nodeIDValueToNodeOrderOffsetRefJobHandle    = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        brushesThatNeedIndirectUpdateHashMapJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        //*/
+                    } 
+                    finally { Profiler.EndSample(); }
+                    #endregion
+
+                    #region Update BrushMesh IDs
+                    Profiler.BeginSample("Job_UpdateBrushMeshIDs");
+                    try
+                    {
+                        const bool runInParallel = false;// runInParallelDefault;
+                        var dependencies = CombineDependencies(brushMeshBlobsLookupJobHandle,
+                                                               brushesJobHandle,
+                                                               parametersJobHandle,
+                                                               allKnownBrushMeshIndicesJobHandle,
+                                                               allBrushMeshIDsJobHandle,
+                                                               parameterCountsJobHandle);
+                        /*
+                        dependencies.Complete();
+                        UpdateBrushMeshIDsJob.UpdateBrushMeshIDs(ref compactHierarchy,
+                                                                    brushMeshBlobs,
+                                                                    this.brushCount, this.brushes,
+                                                                    chiselLookupValues.allKnownBrushMeshIndices,
+                                                                    chiselLookupValues.parameters,
+                                                                    this.parameterCounts,
+                                                                    this.allBrushMeshIDs);
+                        /*/
+                        var updateBrushMeshIDsJob = new UpdateBrushMeshIDsJob
+                        {
+                            // Read
+                            //compactHierarchy          = compactHierarchy,  //<-- cannot do ref or pointer here
+                                                                                //    so we set it below using InitializeHierarchy
+
+                            brushMeshBlobs              = brushMeshBlobs,
+                            brushCount                  = this.brushCount,
+                            brushes                     = this.brushes,
+
+                            // Read / Write
+                            allKnownBrushMeshIndices    = chiselLookupValues.allKnownBrushMeshIndices,
+                            parameters                  = chiselLookupValues.parameters,
+                            parameterCounts             = this.parameterCounts,
+
+                            // Write
+                            allBrushMeshIDs             = this.allBrushMeshIDs
+                        };
+                        updateBrushMeshIDsJob.InitializeHierarchy(ref compactHierarchy);
+                        var currentJobHandle = updateBrushMeshIDsJob.Schedule(runInParallel, dependencies);
+
+                        //brushMeshBlobsLookupJobHandle     = CombineDependencies(currentJobHandle, brushMeshBlobsLookupJobHandle);
+                        //brushesJobHandle                  = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        parametersJobHandle                 = CombineDependencies(currentJobHandle, parametersJobHandle);                        
+                        allKnownBrushMeshIndicesJobHandle   = CombineDependencies(currentJobHandle, allKnownBrushMeshIndicesJobHandle);
+                        allBrushMeshIDsJobHandle            = CombineDependencies(currentJobHandle, allBrushMeshIDsJobHandle);
+                        parameterCountsJobHandle            = CombineDependencies(currentJobHandle, parameterCountsJobHandle);
+                        //*/
+                    } 
+                    finally { Profiler.EndSample(); }
+                    #endregion
+                }
+
+                rebuildTreeBrushIndexOrdersJobHandle.Complete();
+                this.updateCount = rebuildTreeBrushIndexOrders.Length;
+                if (this.updateCount > 0)
                 {                 
                     #region Perform CSG
 
                     #region Prepare
-
+                     
                     #region Build Transformations
                     Profiler.BeginSample("Job_UpdateTransformations");
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = transformationCacheJobHandle;
+                        var dependencies = CombineDependencies(transformTreeBrushIndicesListJobHandle,
+                                                               transformationCacheJobHandle);
                         var updateTransformationsJob = new UpdateTransformationsJob
                         {
                             // Read
@@ -1171,7 +1044,8 @@ namespace Chisel.Core
                         updateTransformationsJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = updateTransformationsJob.Schedule(runInParallel, transformTreeBrushIndicesList, 8, dependencies);
 
-                        transformationCacheJobHandle        = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
+                        //transformTreeBrushIndicesListJobHandle    = CombineDependencies(currentJobHandle, transformTreeBrushIndicesListJobHandle);
+                        transformationCacheJobHandle                = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -1180,7 +1054,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = compactTreeRefJobHandle;
+                        var dependencies = CombineDependencies(brushesJobHandle,
+                                                               nodesJobHandle,
+                                                               compactTreeRefJobHandle);
                         var buildCompactTreeJob = new BuildCompactTreeJob
                         {
                             // Read
@@ -1195,6 +1071,9 @@ namespace Chisel.Core
                         };
                         buildCompactTreeJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = buildCompactTreeJob.Schedule(runInParallel, dependencies);
+
+                        //brushesJobHandle      = CombineDependencies(currentJobHandle, brushesJobHandle);
+                        //nodesJobHandle        = CombineDependencies(currentJobHandle, nodesJobHandle);
                         compactTreeRefJobHandle = CombineDependencies(currentJobHandle, compactTreeRefJobHandle);
                     }
                     finally { Profiler.EndSample(); }
@@ -1206,7 +1085,7 @@ namespace Chisel.Core
                         const bool runInParallel = runInParallelDefault;
                         var dependencies            = CombineDependencies(brushMeshBlobsLookupJobHandle,
                                                                           allTreeBrushIndexOrdersJobHandle,
-                                                                          allBrushMeshInstanceIDsJobHandle,
+                                                                          allBrushMeshIDsJobHandle,
                                                                           brushMeshLookupJobHandle,
                                                                           surfaceCountRefJobHandle);
                         CheckDependencies(runInParallel, dependencies);
@@ -1225,7 +1104,7 @@ namespace Chisel.Core
 
                         //brushMeshBlobsLookupJobHandle      = CombineDependencies(currentJobHandle, brushMeshBlobsLookupJobHandle);
                         //allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //allBrushMeshInstanceIDsJobHandle   = CombineDependencies(currentJobHandle, allBrushMeshInstanceIDsJobHandle);
+                        //allBrushMeshIDsJobHandle           = CombineDependencies(currentJobHandle, allBrushMeshIDsJobHandle);
                         brushMeshLookupJobHandle             = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
                         surfaceCountRefJobHandle             = CombineDependencies(currentJobHandle, surfaceCountRefJobHandle);
                     }
@@ -1284,7 +1163,8 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;                    
                         var dependencies            = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                                          nodeIndexToNodeOrderArrayJobHandle,
+                                                                          nodeIDValueToNodeOrderArrayJobHandle,
+                                                                          nodeIDValueToNodeOrderOffsetRefJobHandle,
                                                                           basePolygonCacheJobHandle,
                                                                           brushesTouchedByBrushCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
@@ -1293,7 +1173,7 @@ namespace Chisel.Core
                             // Read
                             allTreeBrushIndexOrders         = allTreeBrushIndexOrders.AsArray().AsReadOnly(),
                             nodeIDValueToNodeOrderArray     = nodeIDValueToNodeOrderArray.AsArray().AsReadOnly(),
-                            nodeIDValueToNodeOrderOffset    = nodeIDValueToNodeOrderOffset,
+                            nodeIDValueToNodeOrderOffsetRef = nodeIDValueToNodeOrderOffsetRef,
 
                             // Read Write
                             basePolygonCache                = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel),
@@ -1301,10 +1181,11 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = fixupBrushCacheIndicesJob.Schedule(runInParallel, allTreeBrushIndexOrders, 16, dependencies);
                         
-                        //allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //nodeIndexToNodeOrderArrayJobHandle = CombineDependencies(currentJobHandle, nodeIndexToNodeOrderArrayJobHandle);
-                        basePolygonCacheJobHandle            = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        brushesTouchedByBrushCacheJobHandle  = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+                        //allTreeBrushIndexOrdersJobHandle          = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+                        //nodeIndexToNodeOrderArrayJobHandle        = CombineDependencies(currentJobHandle, nodeIndexToNodeOrderArrayJobHandle);
+                        //nodeIDValueToNodeOrderOffsetRefJobHandle  = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        basePolygonCacheJobHandle                   = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
+                        brushesTouchedByBrushCacheJobHandle         = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2045,14 +1926,16 @@ namespace Chisel.Core
                         brushRenderBufferCacheJobHandle      = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
-                
+                    #endregion
+
                     // Schedule all the jobs
                     //JobHandle.ScheduleBatchedJobs();
-                    #endregion
 
                     //
                     // Create meshes out of ALL the generated and cached surfaces
                     //
+
+                    parameterCountsJobHandle.Complete();
 
                     #region Create Meshes
                     Profiler.BeginSample("Mesh.AllocateWritableMeshData");
@@ -2076,7 +1959,7 @@ namespace Chisel.Core
                             else if ((meshQuery.LayerQuery & LayerUsageFlags.Collidable) != 0 && surfaceParameterIndex == 2)
                             {
                                 // Each PhysicMaterial is stored in its own separate mesh
-                                meshAllocations += parameter2Count; 
+                                meshAllocations += parameterCounts[SurfaceLayers.kColliderLayer];
                             } else
                                 meshAllocations++;
                         }
@@ -2426,8 +2309,9 @@ namespace Chisel.Core
                     // to work with while things are still being re-arranged.
                     disposeJobHandle = CombineDependencies(
                                                 CombineDependencies(
-                                                    allBrushMeshInstanceIDsJobHandle,
+                                                    allBrushMeshIDsJobHandle,
                                                     allUpdateBrushIndexOrdersJobHandle,
+                                                    brushIDValuesJobHandle,
                                                     basePolygonCacheJobHandle,
                                                     brushBrushIntersectionsJobHandle,
                                                     brushesTouchedByBrushCacheJobHandle,
@@ -2448,7 +2332,7 @@ namespace Chisel.Core
                                                     intersectingBrushesStreamJobHandle,
                                                     loopVerticesLookupJobHandle,
                                                     meshQueriesJobHandle,
-                                                    nodeIndexToNodeOrderArrayJobHandle,
+                                                    nodeIDValueToNodeOrderArrayJobHandle,
                                                     outputSurfaceVerticesJobHandle,
                                                     outputSurfacesJobHandle,
                                                     outputSurfacesRangeJobHandle),
@@ -2462,6 +2346,12 @@ namespace Chisel.Core
                                                     transformationCacheJobHandle,
                                                     uniqueBrushPairsJobHandle),
                                                 CombineDependencies(
+                                                    brushesJobHandle,
+                                                    nodesJobHandle,
+                                                    parametersJobHandle,
+                                                    allKnownBrushMeshIndicesJobHandle,
+                                                    parameterCountsJobHandle,
+
                                                     updateBrushOutlineJobHandle,
                                                     storeToCacheJobHandle)
                                             );
@@ -2478,6 +2368,7 @@ namespace Chisel.Core
                 if (brushMeshLookup              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushMeshLookup              .Dispose(disposeJobHandle));
                 if (brushIntersectionsWithRange  .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, brushIntersectionsWithRange  .Dispose(disposeJobHandle));
                 if (outputSurfacesRange          .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, outputSurfacesRange          .Dispose(disposeJobHandle));
+                if (parameterCounts              .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, parameterCounts              .Dispose(disposeJobHandle));
                 
                 if (loopVerticesLookup           .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, loopVerticesLookup           .Dispose(disposeJobHandle));
                 
@@ -2513,6 +2404,7 @@ namespace Chisel.Core
 
                 meshQueries                     = default;
                 transformTreeBrushIndicesList   = default;
+                parameterCounts                 = default;
                 brushes                         = default;
                 nodes                           = default;
 
@@ -2556,7 +2448,7 @@ namespace Chisel.Core
                 surfaceCountRefJobHandle.Complete();
                 surfaceCountRefJobHandle = default;
                 if (surfaceCountRef.IsCreated) surfaceCountRef.Dispose();
-                
+
                 compactTreeRefJobHandle.Complete();
                 compactTreeRefJobHandle = default;
                 if (compactTreeRef.IsCreated)
@@ -2564,8 +2456,14 @@ namespace Chisel.Core
                     if (compactTreeRef.Value.IsCreated) compactTreeRef.Value.Dispose();
                     compactTreeRef.Dispose();
                 }
-                
 
+                needRemappingRefJobHandle.Complete();
+                needRemappingRefJobHandle = default;
+                if (needRemappingRef.IsCreated) needRemappingRef.Dispose();
+
+                nodeIDValueToNodeOrderOffsetRefJobHandle.Complete();
+                nodeIDValueToNodeOrderOffsetRefJobHandle = default;
+                if (nodeIDValueToNodeOrderOffsetRef.IsCreated) nodeIDValueToNodeOrderOffsetRef.Dispose();
                 
                 allTreeBrushIndexOrders         = default;
                 colliderMeshUpdates             = default;
@@ -2575,7 +2473,9 @@ namespace Chisel.Core
                 meshDataArray                   = default;
                 meshDatas                       = default;
                 surfaceCountRef                 = default;
+                nodeIDValueToNodeOrderOffsetRef = default;
                 compactTreeRef                  = default;
+                needRemappingRef                = default;
 
                 brushCount = 0;
 

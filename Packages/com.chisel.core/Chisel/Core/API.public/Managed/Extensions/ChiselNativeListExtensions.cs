@@ -400,7 +400,7 @@ namespace Chisel.Core
             list[index] = item;
         }
 
-        public static void RemoveRange<T>(NativeList<T> list, int index, int count) where T : unmanaged
+        public static void RemoveRange<T>(ref this UnsafeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)
                 return;
@@ -422,7 +422,29 @@ namespace Chisel.Core
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
 
-        public static void RemoveRange<T>(NativeArray<T> array, int index, int count, ref int arrayLength) where T : unmanaged
+        public static void RemoveRange<T>(this NativeList<T> list, int index, int count) where T : unmanaged
+        {
+            if (count == 0)
+                return;
+
+            CheckCreated(list.IsCreated);
+            if (index < 0 || index + count > list.Length)
+            {
+                LogRangeError();
+                return;
+            }
+            if (index == 0 && count == list.Length)
+            {
+                list.Clear();
+                return;
+            }
+
+            if (index + count < list.Length)
+                list.MemMove(index, index + count, list.Length - (index + count));
+            list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
+        }
+
+        public static void RemoveRange<T>(this NativeArray<T> array, int index, int count, ref int arrayLength) where T : unmanaged
         {
             if (count == 0)
                 return;
@@ -448,7 +470,7 @@ namespace Chisel.Core
             arrayLength -= count;
         }
 
-        public static void RemoveRange<T>(NativeArray<T> array, ref int arrayLength, int index, int count) where T : unmanaged
+        public static void RemoveRange<T>(this NativeArray<T> array, ref int arrayLength, int index, int count) where T : unmanaged
         {
             if (count == 0)
                 return;
@@ -469,9 +491,14 @@ namespace Chisel.Core
             arrayLength -= count;
         }
 
+        public static void RemoveAt<T>(ref this UnsafeList<T> list, int index) where T : unmanaged
+        {
+            list.RemoveRange(index, 1);
+        }
+
         public static void RemoveAt<T>(this NativeList<T> list, int index) where T : unmanaged
         {
-            RemoveRange(list, index, 1);
+            list.RemoveRange(index, 1);
         }
 
         
@@ -517,45 +544,47 @@ namespace Chisel.Core
             }
         }
         */
-        public static void Remove(this NativeListArray<int>.NativeList list, int item) 
+        public static bool Remove(this NativeListArray<int>.NativeList list, int item) 
         {
             for (int index = 0; index < list.Length; index++)
             {
                 if (list[index] == item)
                 {
                     RemoveRange(list, index, 1);
-                    return;
+                    return true;
                 }
             }
+            return false;
         }
 
-        internal static void Remove(this NativeListArray<Edge>.NativeList list, Edge item) 
-        {
-            for (int index = 0; index < list.Length; index++)
-            {
-                if (list[index].index1 == item.index1 &&
-                    list[index].index2 == item.index2)
-                {
-                    RemoveRange(list, index, 1);
-                    return;
-                }
-            }
-        }
-
-        public static void Remove<T>(this NativeList<T> list, T item) 
+        public static bool Remove<T>(ref this UnsafeList<T> list, T item)
             where T : unmanaged
         {
             for (int index = 0; index < list.Length; index++)
             {
                 if (list[index].Equals(item))
                 {
-                    RemoveRange(list, index, 1);
-                    return;
+                    list.RemoveRange(index, 1);
+                    return true; 
                 }
             }
+            return false;
         }
 
-        internal static void Remove(this NativeList<Edge> list, Edge item)
+        public static bool Remove(ref this UnsafeList<int> list, int item)
+        {
+            for (int index = 0; index < list.Length; index++)
+            {
+                if (list[index] == item)
+                {
+                    list.RemoveRange(index, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool Remove(this NativeListArray<Edge>.NativeList list, Edge item) 
         {
             for (int index = 0; index < list.Length; index++)
             {
@@ -563,12 +592,41 @@ namespace Chisel.Core
                     list[index].index2 == item.index2)
                 {
                     RemoveRange(list, index, 1);
-                    return;
+                    return true;
                 }
             }
+            return false;
         }
 
-        public static bool Contains<T>(ref BlobArray<T> array, T value)
+        public static bool Remove<T>(this NativeList<T> list, T item) 
+            where T : unmanaged
+        { 
+            for (int index = 0; index < list.Length; index++)
+            {
+                if (list[index].Equals(item))
+                {
+                    RemoveRange(list, index, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal static bool Remove(this NativeList<Edge> list, Edge item)
+        {
+            for (int index = 0; index < list.Length; index++)
+            {
+                if (list[index].index1 == item.index1 &&
+                    list[index].index2 == item.index2)
+                {
+                    list.RemoveRange(index, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool Contains<T>(ref this BlobArray<T> array, T value)
             where T : struct, IEquatable<T>
         {
             for (int i = 0; i < array.Length; i++)

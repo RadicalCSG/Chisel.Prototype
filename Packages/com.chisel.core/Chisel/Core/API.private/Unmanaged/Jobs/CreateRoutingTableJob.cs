@@ -586,7 +586,7 @@ namespace Chisel.Core
                     // Unfortunately there's a Collections version out there that adds RemoveRange to NativeList, 
                     // but used (begin, end) instead of (begin, count), which is inconsistent with List<>
                     var removeCount = lastRemoveCount - outputStackStart;
-                    ChiselNativeListExtensions.RemoveRange(outputStack, outputStackStart, removeCount, ref leftStackEnd);
+                    outputStack.RemoveRange(outputStackStart, removeCount, ref leftStackEnd);
                 }
 #endif
             }

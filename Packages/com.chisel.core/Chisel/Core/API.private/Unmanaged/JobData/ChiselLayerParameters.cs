@@ -4,6 +4,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Chisel.Core
 {
@@ -16,8 +17,17 @@ namespace Chisel.Core
     // TODO: store this PER TREE
     struct ChiselLayerParameters
     {
-        public NativeHashMap<int, ChiselLayerParameterIndex> uniqueParameters;
+        public UnsafeHashMap<int, ChiselLayerParameterIndex> uniqueParameters;
         public int uniqueParameterCount;
+
+
+        public bool IsCreated
+        {
+            get
+            {
+                return uniqueParameters.IsCreated;
+            }
+        }
 
         internal void UnregisterParameter(int parameter)
         {
@@ -60,7 +70,7 @@ namespace Chisel.Core
 
         internal void Initialize()
         {
-            uniqueParameters = new NativeHashMap<int, ChiselLayerParameterIndex>(1000, Allocator.Persistent);
+            uniqueParameters = new UnsafeHashMap<int, ChiselLayerParameterIndex>(1000, Allocator.Persistent);
             uniqueParameterCount = 0;
         }
 
