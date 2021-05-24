@@ -719,11 +719,11 @@ namespace Chisel.Core
                         {
                             // Read
                             needRemappingRef                = Temporaries.needRemappingRef,
-                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
-                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache,
-                            brushes                         = Temporaries.brushes,
+                            rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders       .AsJobArray(runInParallel).AsReadOnly(),
+                            brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel).AsReadOnly(),
+                            brushes                         = Temporaries.brushes                           .AsJobArray(runInParallel).AsReadOnly(),
                             brushCount                      = this.brushCount,
-                            nodeIDValueToNodeOrderArray     = Temporaries.nodeIDValueToNodeOrderArray,
+                            nodeIDValueToNodeOrderArray     = Temporaries.nodeIDValueToNodeOrderArray       .AsJobArray(runInParallel).AsReadOnly(),
                             nodeIDValueToNodeOrderOffsetRef = Temporaries.nodeIDValueToNodeOrderOffsetRef,
                             //compactHierarchy              = compactHierarchy, //<-- cannot do ref or pointer here
                                                                                 //    so we set it below using InitializeHierarchy
@@ -879,15 +879,15 @@ namespace Chisel.Core
                     var invalidateBrushCacheJob = new InvalidateBrushCacheJob
                     {
                         // Read
-                        rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders.AsArray().AsReadOnly(),
+                        rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders               .AsArray().AsReadOnly(),
 
-                        // Read Write
-                        basePolygonCache            = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
-                        routingTableCache           = chiselLookupValues.routingTableCache          .AsJobArray(runInParallel),
-                        brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache   .AsJobArray(runInParallel),
-                        brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache     .AsJobArray(runInParallel),
+                        // Read/Write
+                        basePolygonCache            = chiselLookupValues.basePolygonCache,
+                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache,
+                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache,
+                        routingTableCache           = chiselLookupValues.routingTableCache,
+                        brushTreeSpacePlaneCache    = chiselLookupValues.brushTreeSpacePlaneCache,
+                        brushRenderBufferCache      = chiselLookupValues.brushRenderBufferCache,
 
                         // Write
                         basePolygonDisposeList              = Temporaries.basePolygonDisposeList            .AsParallelWriter(),
@@ -1242,8 +1242,8 @@ namespace Chisel.Core
                     {
                         // Read
                         maxOrder                    = brushCount,
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                        brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
+                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
+                        brushesTouchedByBrushes     = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
 
                         // Read (Re-allocate) / Write
                         uniqueBrushPairs            = Temporaries.uniqueBrushPairs.GetUnsafeList()
@@ -1451,9 +1451,9 @@ namespace Chisel.Core
                     var mergeTouchingBrushVerticesIndirectJob = new MergeTouchingBrushVerticesIndirectJob
                     {
                         // Read
-                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders.AsJobArray(runInParallel),
-                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache.AsJobArray(runInParallel),
-                        treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
+                        allUpdateBrushIndexOrders   = Temporaries.allUpdateBrushIndexOrders         .AsJobArray(runInParallel),
+                        brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel),
+                        treeSpaceVerticesArray      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
 
                         // Read Write
                         loopVerticesLookup          = Temporaries.loopVerticesLookup,
@@ -1792,8 +1792,8 @@ namespace Chisel.Core
                     var renderCopyToMeshJob = new CopyToRenderMeshJob
                     {
                         // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-                        subMeshCounts           = Temporaries.subMeshCounts.AsJobArray(runInParallel),
+                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections      .AsJobArray(runInParallel),
+                        subMeshCounts           = Temporaries.subMeshCounts                             .AsJobArray(runInParallel),
                         subMeshSurfaces         = Temporaries.subMeshSurfaces,
                         renderDescriptors       = Temporaries.vertexBufferContents.renderDescriptors,
                         renderMeshes            = Temporaries.renderMeshes,
@@ -1810,7 +1810,6 @@ namespace Chisel.Core
                             JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
                             JobHandles.renderMeshesJobHandle),
                         new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle, // Why?
                             ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
                             ref JobHandles.vertexBufferContents_meshesJobHandle));
 
@@ -1835,7 +1834,6 @@ namespace Chisel.Core
                             JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
                             JobHandles.debugHelperMeshesJobHandle),
                         new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle, // Why?
                             ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
                             ref JobHandles.vertexBufferContents_meshesJobHandle));
 
@@ -2096,6 +2094,8 @@ namespace Chisel.Core
                                                     JobHandles.vertexBufferContents_meshesJobHandle,
                                                     JobHandles.meshDatasJobHandle)
                                         );
+
+                dependencies.Complete(); // Technically not necessary, but Unity will complain about memory leaks that aren't there (jobs just haven't finished yet)
 
                 // We let the final JobHandle dependend on the dependencies, but not on the disposal, 
                 // because we do not need to wait for the disposal of native collections do use our generated data

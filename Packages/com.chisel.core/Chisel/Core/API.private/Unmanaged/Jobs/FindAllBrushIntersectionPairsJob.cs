@@ -251,19 +251,19 @@ namespace Chisel.Core
         // Read
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>.ReadOnly rebuildTreeBrushIndexOrders;
 
-        // Read Write
+        // Read/Write
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
+        [NoAlias] public NativeList<BlobAssetReference<BasePolygonsBlob>>               basePolygonCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>     treeSpaceVerticesCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushesTouchedByBrush>>          brushesTouchedByBrushCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<RoutingTable>>                 routingTableCache;
+        [NoAlias] public NativeList<BlobAssetReference<RoutingTable>>                   routingTableCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
+        [NoAlias] public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>           brushTreeSpacePlaneCache;
         [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+        [NoAlias] public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>        brushRenderBufferCache;
 
         // Write
         [NoAlias, WriteOnly] public NativeList<BlobAssetReference<BasePolygonsBlob>>.ParallelWriter             basePolygonDisposeList;
