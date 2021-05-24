@@ -329,36 +329,6 @@ namespace Chisel.Core
         }
     }
 
-    public class DisposeTool
-    {
-        public static JobHandle Dispose<T>(bool runInParallel, NativeList<T> list, JobHandle dependencies)
-            where T : unmanaged, IDisposable
-        {
-            var disposeListJob = new DisposeListJob<T>
-            {
-                list = list
-            };
-            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
-            currentHandle = list.Dispose(currentHandle);
-            return currentHandle;
-        }
-    }
-
-    [BurstCompile(CompileSynchronously = true)]
-    public struct DisposeListJob<T> : IJob
-        where T: unmanaged, IDisposable
-    {
-        // Read / Write
-        [NativeDisableParallelForRestriction]
-        [NoAlias] public NativeList<T> list;
-
-        public void Execute()
-        {
-            for (int i = 0; i < list.Length; i++)
-                list[i].Dispose();
-        }
-    }
-
 
     [BurstCompile(CompileSynchronously = true)]
     struct InvalidateIndirectBrushCacheJob : IJobParallelForDefer

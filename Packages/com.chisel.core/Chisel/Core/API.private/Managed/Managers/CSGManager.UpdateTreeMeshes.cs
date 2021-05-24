@@ -1308,13 +1308,11 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        NativeCollection.ScheduleSetCapacity(runInParallel, ref Temporaries.outputSurfaces, Temporaries.surfaceCountRef,
+                        NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.outputSurfaces, Temporaries.surfaceCountRef,
                                                            new ReadJobHandles(
-                                                               JobHandles.surfaceCountRefJobHandle
-                                                               ),
+                                                               JobHandles.surfaceCountRefJobHandle),
                                                             new WriteJobHandles(
-                                                                ref JobHandles.outputSurfacesJobHandle
-                                                                ),
+                                                                ref JobHandles.outputSurfacesJobHandle),
                                                             Allocator.TempJob);
 
                         var createIntersectionLoopsJob = new CreateIntersectionLoopsJob
@@ -1600,17 +1598,12 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        { 
-                            var dependencies = JobHandleExtensions.CombineDependencies(JobHandles.meshQueriesJobHandle,
-                                                                                                  JobHandles.allTreeBrushIndexOrdersJobHandle,
-                                                                                                  JobHandles.brushRenderBufferCacheJobHandle,
-                                                                                                  JobHandles.brushRenderDataJobHandle,
-                                                                                                  JobHandles.subMeshSurfacesJobHandle,
-                                                                                                  JobHandles.subMeshCountsJobHandle,
-                                                                                                  JobHandles.vertexBufferContents_subMeshSectionsJobHandle);
-                            var brushRenderDataCapacity = ChiselNativeListExtensions.ScheduleEnsureCapacity(Temporaries.brushRenderData, Temporaries.allTreeBrushIndexOrders, dependencies);
-                            JobHandles.brushRenderDataJobHandle.AddDependency(brushRenderDataCapacity);
-                        }
+                        NativeCollection.ScheduleEnsureCapacity(runInParallel, ref Temporaries.brushRenderData, Temporaries.allTreeBrushIndexOrders,
+                                                           new ReadJobHandles(
+                                                               JobHandles.allTreeBrushIndexOrdersJobHandle),
+                                                            new WriteJobHandles(
+                                                                ref JobHandles.brushRenderDataJobHandle),
+                                                            Allocator.TempJob);
 
                         var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
                         {
@@ -1742,7 +1735,7 @@ namespace Chisel.Core
                     Profiler.BeginSample("Job_CopyToMeshes");
                     try
                     {
-                        const bool runInParallel = runInParallelDefault;                         
+                        const bool runInParallel = runInParallelDefault;
                         var assignMeshesJob = new AssignMeshesJob
                         {
                             // Read
@@ -1910,7 +1903,7 @@ namespace Chisel.Core
 
             public JobHandle PreMeshUpdateDispose()
             {
-                var disposeJobHandle = JobHandleExtensions.CombineDependencies(
+                var dependencies = JobHandleExtensions.CombineDependencies(
                                                 JobHandleExtensions.CombineDependencies(
                                                     JobHandles.allBrushMeshIDsJobHandle,
                                                     JobHandles.allUpdateBrushIndexOrdersJobHandle,
@@ -1951,51 +1944,62 @@ namespace Chisel.Core
                                                 JobHandleExtensions.CombineDependencies(
                                                     JobHandles.brushesJobHandle,
                                                     JobHandles.nodesJobHandle, 
-                                                    JobHandles.compactTreeRefJobHandle,
                                                     JobHandles.parametersJobHandle,
                                                     JobHandles.allKnownBrushMeshIndicesJobHandle,
                                                     JobHandles.parameterCountsJobHandle,
-                                                    JobHandles.storeToCacheJobHandle)
+                                                    JobHandles.storeToCacheJobHandle),
+                                                JobHandleExtensions.CombineDependencies(
+                                                    JobHandles.surfaceCountRefJobHandle,
+                                                    JobHandles.compactTreeRefJobHandle,
+                                                    JobHandles.needRemappingRefJobHandle,
+                                                    JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle)
                                             );
-                lastJobHandle = disposeJobHandle;
+                lastJobHandle = dependencies;
                 //Debug.Log("PreMeshUpdateDispose");
 
-                if (Temporaries.brushMeshLookup              .IsCreated) lastJobHandle.AddDependency(Temporaries.brushMeshLookup              .Dispose(disposeJobHandle));
-                if (Temporaries.brushIntersectionsWithRange  .IsCreated) lastJobHandle.AddDependency(Temporaries.brushIntersectionsWithRange  .Dispose(disposeJobHandle));
-                if (Temporaries.outputSurfacesRange          .IsCreated) lastJobHandle.AddDependency(Temporaries.outputSurfacesRange          .Dispose(disposeJobHandle));
-                if (Temporaries.parameterCounts              .IsCreated) lastJobHandle.AddDependency(Temporaries.parameterCounts              .Dispose(disposeJobHandle));
+                lastJobHandle.AddDependency(Temporaries.brushMeshLookup              .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWithRange  .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.outputSurfacesRange          .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.parameterCounts              .Dispose(dependencies));
                 
-                if (Temporaries.loopVerticesLookup           .IsCreated) lastJobHandle.AddDependency(Temporaries.loopVerticesLookup           .Dispose(disposeJobHandle));
+                lastJobHandle.AddDependency(Temporaries.loopVerticesLookup           .Dispose(dependencies));
                 
-                if (Temporaries.transformTreeBrushIndicesList.IsCreated) lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.Dispose(disposeJobHandle));
-                if (Temporaries.brushes                      .IsCreated) lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(disposeJobHandle));
-                if (Temporaries.nodes                        .IsCreated) lastJobHandle.AddDependency(Temporaries.nodes                        .Dispose(disposeJobHandle));
-                if (Temporaries.brushRenderData              .IsCreated) lastJobHandle.AddDependency(Temporaries.brushRenderData              .Dispose(disposeJobHandle));
-                if (Temporaries.subMeshCounts                .IsCreated) lastJobHandle.AddDependency(Temporaries.subMeshCounts                .Dispose(disposeJobHandle));
-                if (Temporaries.subMeshSurfaces              .IsCreated) lastJobHandle.AddDependency(Temporaries.subMeshSurfaces              .Dispose(disposeJobHandle));
-                if (Temporaries.rebuildTreeBrushIndexOrders  .IsCreated) lastJobHandle.AddDependency(Temporaries.rebuildTreeBrushIndexOrders  .Dispose(disposeJobHandle));
-                if (Temporaries.allUpdateBrushIndexOrders    .IsCreated) lastJobHandle.AddDependency(Temporaries.allUpdateBrushIndexOrders    .Dispose(disposeJobHandle));
-                if (Temporaries.allBrushMeshIDs              .IsCreated) lastJobHandle.AddDependency(Temporaries.allBrushMeshIDs              .Dispose(disposeJobHandle));
-                if (Temporaries.uniqueBrushPairs             .IsCreated) lastJobHandle.AddDependency(Temporaries.uniqueBrushPairs             .Dispose(disposeJobHandle));
-                if (Temporaries.brushIntersectionsWith       .IsCreated) lastJobHandle.AddDependency(Temporaries.brushIntersectionsWith       .Dispose(disposeJobHandle));
-                if (Temporaries.outputSurfaceVertices        .IsCreated) lastJobHandle.AddDependency(Temporaries.outputSurfaceVertices        .Dispose(disposeJobHandle));
-                if (Temporaries.outputSurfaces               .IsCreated) lastJobHandle.AddDependency(Temporaries.outputSurfaces               .Dispose(disposeJobHandle));
-                if (Temporaries.brushesThatNeedIndirectUpdate.IsCreated) lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdate.Dispose(disposeJobHandle));
-                if (Temporaries.nodeIDValueToNodeOrderArray  .IsCreated) lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderArray  .Dispose(disposeJobHandle));
+                lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.nodes                        .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushRenderData              .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.subMeshCounts                .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.subMeshSurfaces              .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.rebuildTreeBrushIndexOrders  .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.allUpdateBrushIndexOrders    .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.allBrushMeshIDs              .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.uniqueBrushPairs             .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushIntersectionsWith       .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.outputSurfaceVertices        .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.outputSurfaces               .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdate.Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderArray  .Dispose(dependencies));
                 
-                if (Temporaries.brushesThatNeedIndirectUpdateHashMap.IsCreated) lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdateHashMap.Dispose(disposeJobHandle));
-                if (Temporaries.brushBrushIntersections             .IsCreated) lastJobHandle.AddDependency(Temporaries.brushBrushIntersections             .Dispose(disposeJobHandle));
+                lastJobHandle.AddDependency(Temporaries.brushesThatNeedIndirectUpdateHashMap.Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushBrushIntersections             .Dispose(dependencies));
                 
                 
                 // Note: cannot use "IsCreated" on this job, for some reason it won't be scheduled and then complain that it's leaking? Bug in IsCreated?
-                lastJobHandle.AddDependency(Temporaries.meshQueries.Dispose(disposeJobHandle));
+                lastJobHandle.AddDependency(Temporaries.meshQueries.Dispose(dependencies));
 
-                lastJobHandle.AddDependency(DisposeTool.Dispose(true, Temporaries.basePolygonDisposeList,           disposeJobHandle),
-                                            DisposeTool.Dispose(true, Temporaries.treeSpaceVerticesDisposeList,     disposeJobHandle),
-                                            DisposeTool.Dispose(true, Temporaries.brushesTouchedByBrushDisposeList, disposeJobHandle),
-                                            DisposeTool.Dispose(true, Temporaries.routingTableDisposeList,          disposeJobHandle),
-                                            DisposeTool.Dispose(true, Temporaries.brushTreeSpacePlaneDisposeList,   disposeJobHandle),
-                                            DisposeTool.Dispose(true, Temporaries.brushRenderBufferDisposeList,     disposeJobHandle));
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.basePolygonDisposeList,           dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.treeSpaceVerticesDisposeList,     dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.brushesTouchedByBrushDisposeList, dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.routingTableDisposeList,          dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.brushTreeSpacePlaneDisposeList,   dependencies),
+                                            NativeCollection.DisposeDeep(Temporaries.brushRenderBufferDisposeList,     dependencies));
+                
+
+                lastJobHandle.AddDependency(Temporaries.surfaceCountRef                .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.needRemappingRef               .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.nodeIDValueToNodeOrderOffsetRef.Dispose(dependencies));
+                lastJobHandle.AddDependency(NativeCollection.DisposeDeep(Temporaries.compactTreeRef, dependencies));
+
 
                 Temporaries.meshQueries                     = default;
                 Temporaries.transformTreeBrushIndicesList   = default;
@@ -2102,35 +2106,12 @@ namespace Chisel.Core
                 // because we do not need to wait for the disposal of native collections do use our generated data
                 finalJobHandle.AddDependency(dependencies);
 
-                if (Temporaries.allTreeBrushIndexOrders      .IsCreated) lastJobHandle.AddDependency(Temporaries.allTreeBrushIndexOrders      .Dispose(dependencies));
-                if (Temporaries.colliderMeshUpdates          .IsCreated) lastJobHandle.AddDependency(Temporaries.colliderMeshUpdates          .Dispose(dependencies));
-                if (Temporaries.debugHelperMeshes            .IsCreated) lastJobHandle.AddDependency(Temporaries.debugHelperMeshes            .Dispose(dependencies));
-                if (Temporaries.renderMeshes                 .IsCreated) lastJobHandle.AddDependency(Temporaries.renderMeshes                 .Dispose(dependencies));
-                if (Temporaries.meshDatas                    .IsCreated) lastJobHandle.AddDependency(Temporaries.meshDatas                    .Dispose(dependencies));
-                
-                if (Temporaries.vertexBufferContents         .IsCreated) lastJobHandle.AddDependency(Temporaries.vertexBufferContents         .Dispose(dependencies));
-
-
-
-                JobHandles.surfaceCountRefJobHandle.Complete();
-                JobHandles.surfaceCountRefJobHandle = default;
-                if (Temporaries.surfaceCountRef.IsCreated) Temporaries.surfaceCountRef.Dispose();
-
-                JobHandles.compactTreeRefJobHandle.Complete();
-                JobHandles.compactTreeRefJobHandle = default;
-                if (Temporaries.compactTreeRef.IsCreated)
-                {
-                    if (Temporaries.compactTreeRef.Value.IsCreated) Temporaries.compactTreeRef.Value.Dispose();
-                    Temporaries.compactTreeRef.Dispose();
-                }
-
-                JobHandles.needRemappingRefJobHandle.Complete();
-                JobHandles.needRemappingRefJobHandle = default;
-                if (Temporaries.needRemappingRef.IsCreated) Temporaries.needRemappingRef.Dispose();
-
-                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle.Complete();
-                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle = default;
-                if (Temporaries.nodeIDValueToNodeOrderOffsetRef.IsCreated) Temporaries.nodeIDValueToNodeOrderOffsetRef.Dispose();
+                lastJobHandle.AddDependency(Temporaries.allTreeBrushIndexOrders      .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.colliderMeshUpdates          .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.debugHelperMeshes            .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.renderMeshes                 .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.meshDatas                    .Dispose(dependencies));                
+                lastJobHandle.AddDependency(Temporaries.vertexBufferContents         .Dispose(dependencies));
 
                 Temporaries.allTreeBrushIndexOrders         = default;
                 Temporaries.colliderMeshUpdates             = default;

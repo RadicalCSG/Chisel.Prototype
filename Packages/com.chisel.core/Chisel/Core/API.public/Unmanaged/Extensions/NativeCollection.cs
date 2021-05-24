@@ -34,6 +34,42 @@ namespace Chisel.Core
             return currentJobHandle;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static JobHandle ScheduleEnsureCapacity<T, U>(bool runInParallel, ref NativeList<T> list, NativeList<U> forEachCountFromList, Allocator allocator, JobHandle dependsOn = default)
+            where T : struct
+            where U : struct
+        {
+            if (runInParallel)
+                return ScheduleSetCapacity(ref list, forEachCountFromList, allocator, dependsOn);
+
+            dependsOn.Complete();
+            if (list.Capacity < forEachCountFromList.Length)
+                list.Capacity = forEachCountFromList.Length;
+            return default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static JobHandle ScheduleSetCapacity<T, U>(ref NativeList<T> list, NativeList<U> forEachCountFromList, Allocator allocator, JobHandle dependsOn = default)
+            where T : struct
+            where U : struct
+        {
+            if (!list.IsCreated)
+                list = new NativeList<T>(0, allocator);
+            var jobData = new EnsureCapacityListForEachCountFromListJob<T, U> { list = list, forEachCountFromList = forEachCountFromList };
+            return jobData.Schedule(dependsOn);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static JobHandle ScheduleEnsureCapacity<T, U>(bool runInParallel, ref NativeList<T> list, NativeList<U> forEachCountFromList, ReadJobHandles readDependencies, WriteJobHandles writeDependencies, Allocator allocator)
+            where T : struct
+            where U : struct
+        {
+            var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
+            JobExtensions.CheckDependencies(runInParallel, dependencies);
+            var currentJobHandle = ScheduleEnsureCapacity(runInParallel, ref list, forEachCountFromList, allocator, dependencies);
+            writeDependencies.AddWriteDependency(currentJobHandle);
+            return currentJobHandle;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static JobHandle ScheduleSetCapacity<T>(ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
@@ -41,12 +77,12 @@ namespace Chisel.Core
         {
             if (!list.IsCreated)
                 list = new NativeList<T>(0, allocator);
-            var jobData = new ConstructListJob<T> { List = list.GetUnsafeList(), size = capacity };
+            var jobData = new EnsureCapacityListReferenceJob<T> { list = list, reference = capacity };
             return jobData.Schedule(dependsOn);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JobHandle ScheduleSetCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
+        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
             where T : struct
         {
             if (runInParallel)
@@ -59,12 +95,12 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static JobHandle ScheduleSetCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, ReadJobHandles readDependencies, WriteJobHandles writeDependencies, Allocator allocator)
+        public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, ReadJobHandles readDependencies, WriteJobHandles writeDependencies, Allocator allocator)
             where T : struct
         {
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
             JobExtensions.CheckDependencies(runInParallel, dependencies);
-            var currentJobHandle = ScheduleSetCapacity(runInParallel, ref list, capacity, allocator, dependencies);
+            var currentJobHandle = ScheduleEnsureCapacity(runInParallel, ref list, capacity, allocator, dependencies);
             writeDependencies.AddWriteDependency(currentJobHandle);
             return currentJobHandle;
         }
@@ -84,22 +120,137 @@ namespace Chisel.Core
             dataStream = default;
             return default;
         }
+
+        public static JobHandle DisposeDeep<T>(bool runInParallel, NativeList<T> list, JobHandle dependencies)
+            where T : unmanaged, IDisposable
+        {
+            var disposeListJob = new DisposeListChildrenJob<T> { list = list };
+            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+            if (runInParallel)
+                return list.Dispose(currentHandle);
+
+            currentHandle.Complete();
+            list.Dispose();
+            return default;
+        }
+
+        public static JobHandle DisposeDeep<T>(NativeList<T> list, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep(true, list, dependencies); }
+
+        public static JobHandle DisposeDeep<T>(bool runInParallel, NativeReference<T> reference, JobHandle dependencies)
+            where T : unmanaged, IDisposable
+        {
+            var disposeListJob = new DisposeReferenceChildJob<T> { reference = reference };
+            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+            if (runInParallel)
+                return reference.Dispose(currentHandle);
+
+            currentHandle.Complete();
+            reference.Dispose();
+            return default;
+        }
+
+        public static JobHandle DisposeDeep<T>(NativeReference<T> reference, JobHandle dependencies) where T : unmanaged, IDisposable { return DisposeDeep<T>(true, reference, dependencies); }
+
+        public static JobHandle DisposeDeep<T>(bool runInParallel, NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) 
+            where T : unmanaged
+        {
+            var disposeListJob = new DisposeReferenceChildBlobAssetReferenceJob<T> { reference = reference };
+            var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
+            if (runInParallel)
+                return reference.Dispose(currentHandle);
+
+            currentHandle.Complete();
+            reference.Dispose();
+            return default;
+        }
+
+        public static JobHandle DisposeDeep<T>(NativeReference<BlobAssetReference<T>> reference, JobHandle dependencies) where T : unmanaged { return DisposeDeep(true, reference, dependencies); }
+
     }
 
     [BurstCompile(CompileSynchronously = true)]
-    public unsafe struct ConstructListJob<T> : IJob
+    public unsafe struct EnsureCapacityListForEachCountFromListJob<T, U> : IJob
         where T : struct
+        where U : struct
     {
-        [NativeDisableUnsafePtrRestriction]
-        public UnsafeList* List;
+        // Read
+        [NoAlias,ReadOnly] public NativeList<U> forEachCountFromList;
 
-        [ReadOnly]
-        public NativeReference<int> size;
+        // Read/Write
+        [NoAlias] public NativeList<T> list;
 
         public void Execute()
         {
-            if (List->Capacity < size.Value)
-                List->SetCapacity<T>(size.Value);
+            if (list.Capacity < forEachCountFromList.Length)
+                list.Capacity = forEachCountFromList.Length;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public unsafe struct EnsureCapacityListReferenceJob<T> : IJob
+        where T : struct
+    {
+        // Read
+        [NoAlias, ReadOnly] public NativeReference<int> reference;
+
+        // Read/Write
+        [NoAlias] public NativeList<T> list;
+
+        public void Execute()
+        {
+            if (list.Capacity < reference.Value)
+                list.Capacity = reference.Value;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct DisposeListChildrenJob<T> : IJob
+        where T : unmanaged, IDisposable
+    {
+        // Read / Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeList<T> list;
+
+        public void Execute()
+        {
+            if (!list.IsCreated)
+                return;
+            for (int i = 0; i < list.Length; i++)
+                list[i].Dispose();
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct DisposeReferenceChildJob<T> : IJob
+        where T : unmanaged, IDisposable
+    {
+        // Read / Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeReference<T> reference;
+
+        public void Execute()
+        {
+            if (!reference.IsCreated)
+                return;
+            reference.Value.Dispose();
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
+    public struct DisposeReferenceChildBlobAssetReferenceJob<T> : IJob
+        where T : unmanaged
+    {
+        // Read / Write
+        [NativeDisableParallelForRestriction]
+        [NoAlias] public NativeReference<BlobAssetReference<T>> reference;
+
+        public void Execute()
+        {
+            if (!reference.IsCreated)
+                return;
+            if (!reference.Value.IsCreated)
+                return;
+            reference.Value.Dispose();
         }
     }
 }
