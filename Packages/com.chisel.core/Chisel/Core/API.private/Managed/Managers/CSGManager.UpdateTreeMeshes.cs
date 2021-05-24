@@ -177,12 +177,12 @@ namespace Chisel.Core
                         if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
                             continue;
 
-                        var dependencies = CombineDependencies(treeUpdate.meshDatasJobHandle,
-                                                               treeUpdate.colliderMeshUpdatesJobHandle,
-                                                               treeUpdate.debugHelperMeshesJobHandle,
-                                                               treeUpdate.renderMeshesJobHandle,
-                                                               treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                               treeUpdate.vertexBufferContents_meshesJobHandle);
+                        var dependencies = CombineDependencies(treeUpdate.JobHandles.meshDatasJobHandle,
+                                                               treeUpdate.JobHandles.colliderMeshUpdatesJobHandle,
+                                                               treeUpdate.JobHandles.debugHelperMeshesJobHandle,
+                                                               treeUpdate.JobHandles.renderMeshesJobHandle,
+                                                               treeUpdate.JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                               treeUpdate.JobHandles.vertexBufferContents_meshesJobHandle);
                         bool meshUpdated = false;
                         try
                         {
@@ -250,69 +250,69 @@ namespace Chisel.Core
                         // to work with while things are still being re-arranged.
                         var dependencies = CombineDependencies(
                                                         CombineDependencies(
-                                                            treeUpdate.allBrushMeshIDsJobHandle,
-                                                            treeUpdate.allUpdateBrushIndexOrdersJobHandle,
-                                                            treeUpdate.brushIDValuesJobHandle,
-                                                            treeUpdate.basePolygonCacheJobHandle,
-                                                            treeUpdate.brushBrushIntersectionsJobHandle,
-                                                            treeUpdate.brushesTouchedByBrushCacheJobHandle,
-                                                            treeUpdate.brushRenderBufferCacheJobHandle,
-                                                            treeUpdate.brushRenderDataJobHandle,
-                                                            treeUpdate.brushTreeSpacePlaneCacheJobHandle),
+                                                            treeUpdate.JobHandles.allBrushMeshIDsJobHandle,
+                                                            treeUpdate.JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                            treeUpdate.JobHandles.brushIDValuesJobHandle,
+                                                            treeUpdate.JobHandles.basePolygonCacheJobHandle,
+                                                            treeUpdate.JobHandles.brushBrushIntersectionsJobHandle,
+                                                            treeUpdate.JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                            treeUpdate.JobHandles.brushRenderBufferCacheJobHandle,
+                                                            treeUpdate.JobHandles.brushRenderDataJobHandle,
+                                                            treeUpdate.JobHandles.brushTreeSpacePlaneCacheJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.brushMeshBlobsLookupJobHandle,
-                                                            treeUpdate.brushMeshLookupJobHandle,
-                                                            treeUpdate.brushIntersectionsWithJobHandle,
-                                                            treeUpdate.brushIntersectionsWithRangeJobHandle,
-                                                            treeUpdate.brushesThatNeedIndirectUpdateHashMapJobHandle,
-                                                            treeUpdate.brushesThatNeedIndirectUpdateJobHandle,
-                                                            treeUpdate.brushTreeSpaceBoundCacheJobHandle),
+                                                            treeUpdate.JobHandles.brushMeshBlobsLookupJobHandle,
+                                                            treeUpdate.JobHandles.brushMeshLookupJobHandle,
+                                                            treeUpdate.JobHandles.brushIntersectionsWithJobHandle,
+                                                            treeUpdate.JobHandles.brushIntersectionsWithRangeJobHandle,
+                                                            treeUpdate.JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
+                                                            treeUpdate.JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                            treeUpdate.JobHandles.brushTreeSpaceBoundCacheJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.dataStream1JobHandle,
-                                                            treeUpdate.dataStream2JobHandle,
-                                                            treeUpdate.intersectingBrushesStreamJobHandle,
-                                                            treeUpdate.loopVerticesLookupJobHandle,
-                                                            treeUpdate.meshQueriesJobHandle,
-                                                            treeUpdate.nodeIDValueToNodeOrderArrayJobHandle,
-                                                            treeUpdate.outputSurfaceVerticesJobHandle,
-                                                            treeUpdate.outputSurfacesJobHandle,
-                                                            treeUpdate.outputSurfacesRangeJobHandle),
+                                                            treeUpdate.JobHandles.dataStream1JobHandle,
+                                                            treeUpdate.JobHandles.dataStream2JobHandle,
+                                                            treeUpdate.JobHandles.intersectingBrushesStreamJobHandle,
+                                                            treeUpdate.JobHandles.loopVerticesLookupJobHandle,
+                                                            treeUpdate.JobHandles.meshQueriesJobHandle,
+                                                            treeUpdate.JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                            treeUpdate.JobHandles.outputSurfaceVerticesJobHandle,
+                                                            treeUpdate.JobHandles.outputSurfacesJobHandle,
+                                                            treeUpdate.JobHandles.outputSurfacesRangeJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.routingTableCacheJobHandle,
-                                                            treeUpdate.rebuildTreeBrushIndexOrdersJobHandle,
-                                                            treeUpdate.sectionsJobHandle,
-                                                            treeUpdate.subMeshSurfacesJobHandle,
-                                                            treeUpdate.subMeshCountsJobHandle,
-                                                            treeUpdate.treeSpaceVerticesCacheJobHandle,
-                                                            treeUpdate.transformationCacheJobHandle,
-                                                            treeUpdate.uniqueBrushPairsJobHandle),
+                                                            treeUpdate.JobHandles.routingTableCacheJobHandle,
+                                                            treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                            treeUpdate.JobHandles.sectionsJobHandle,
+                                                            treeUpdate.JobHandles.subMeshSurfacesJobHandle,
+                                                            treeUpdate.JobHandles.subMeshCountsJobHandle,
+                                                            treeUpdate.JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                            treeUpdate.JobHandles.transformationCacheJobHandle,
+                                                            treeUpdate.JobHandles.uniqueBrushPairsJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.transformTreeBrushIndicesListJobHandle,
-                                                            treeUpdate.brushesJobHandle,
-                                                            treeUpdate.nodesJobHandle,
-                                                            treeUpdate.parametersJobHandle,
-                                                            treeUpdate.allKnownBrushMeshIndicesJobHandle,
-                                                            treeUpdate.parameterCountsJobHandle),
+                                                            treeUpdate.JobHandles.transformTreeBrushIndicesListJobHandle,
+                                                            treeUpdate.JobHandles.brushesJobHandle,
+                                                            treeUpdate.JobHandles.nodesJobHandle,
+                                                            treeUpdate.JobHandles.parametersJobHandle,
+                                                            treeUpdate.JobHandles.allKnownBrushMeshIndicesJobHandle,
+                                                            treeUpdate.JobHandles.parameterCountsJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.updateBrushOutlineJobHandle,
-                                                            treeUpdate.storeToCacheJobHandle,
+                                                            treeUpdate.JobHandles.updateBrushOutlineJobHandle,
+                                                            treeUpdate.JobHandles.storeToCacheJobHandle,
 
-                                                            treeUpdate.allTreeBrushIndexOrdersJobHandle,
-                                                            treeUpdate.colliderMeshUpdatesJobHandle,
-                                                            treeUpdate.debugHelperMeshesJobHandle,
-                                                            treeUpdate.renderMeshesJobHandle,
-                                                            treeUpdate.surfaceCountRefJobHandle,
-                                                            treeUpdate.compactTreeRefJobHandle,
-                                                            treeUpdate.needRemappingRefJobHandle,
-                                                            treeUpdate.nodeIDValueToNodeOrderOffsetRefJobHandle),
+                                                            treeUpdate.JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                            treeUpdate.JobHandles.colliderMeshUpdatesJobHandle,
+                                                            treeUpdate.JobHandles.debugHelperMeshesJobHandle,
+                                                            treeUpdate.JobHandles.renderMeshesJobHandle,
+                                                            treeUpdate.JobHandles.surfaceCountRefJobHandle,
+                                                            treeUpdate.JobHandles.compactTreeRefJobHandle,
+                                                            treeUpdate.JobHandles.needRemappingRefJobHandle,
+                                                            treeUpdate.JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle),
                                                         CombineDependencies(
-                                                            treeUpdate.vertexBufferContents_renderDescriptorsJobHandle,
-                                                            treeUpdate.vertexBufferContents_colliderDescriptorsJobHandle,
-                                                            treeUpdate.vertexBufferContents_subMeshSectionsJobHandle,
-                                                            treeUpdate.vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                            treeUpdate.vertexBufferContents_meshDescriptionsJobHandle,
-                                                            treeUpdate.vertexBufferContents_meshesJobHandle,
-                                                            treeUpdate.meshDatasJobHandle)
+                                                            treeUpdate.JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                                            treeUpdate.JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
+                                                            treeUpdate.JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                            treeUpdate.JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                            treeUpdate.JobHandles.vertexBufferContents_meshDescriptionsJobHandle,
+                                                            treeUpdate.JobHandles.vertexBufferContents_meshesJobHandle,
+                                                            treeUpdate.JobHandles.meshDatasJobHandle)
                                                 );
                         dependencies.Complete();
                         treeUpdate.Dispose(dependencies);
@@ -407,80 +407,84 @@ namespace Chisel.Core
 
 
             #region In Between JobHandles
+            internal struct JobHandlesStruct
+            {
 
-            internal JobHandle transformTreeBrushIndicesListJobHandle;
-            internal JobHandle brushesJobHandle;
-            internal JobHandle nodesJobHandle;
-            internal JobHandle parametersJobHandle;
-            internal JobHandle allKnownBrushMeshIndicesJobHandle;
-            internal JobHandle parameterCountsJobHandle;
+                internal JobHandle transformTreeBrushIndicesListJobHandle;
+                internal JobHandle brushesJobHandle;
+                internal JobHandle nodesJobHandle;
+                internal JobHandle parametersJobHandle;
+                internal JobHandle allKnownBrushMeshIndicesJobHandle;
+                internal JobHandle parameterCountsJobHandle;
 
-            internal JobHandle allBrushMeshIDsJobHandle;
-            internal JobHandle allTreeBrushIndexOrdersJobHandle;
-            internal JobHandle allUpdateBrushIndexOrdersJobHandle;
+                internal JobHandle allBrushMeshIDsJobHandle;
+                internal JobHandle allTreeBrushIndexOrdersJobHandle;
+                internal JobHandle allUpdateBrushIndexOrdersJobHandle;
 
-            internal JobHandle brushIDValuesJobHandle;
-            internal JobHandle basePolygonCacheJobHandle;
-            internal JobHandle brushBrushIntersectionsJobHandle;
-            internal JobHandle brushesTouchedByBrushCacheJobHandle;
-            internal JobHandle brushRenderBufferCacheJobHandle;
-            internal JobHandle brushRenderDataJobHandle;
-            internal JobHandle brushTreeSpacePlaneCacheJobHandle;
-            internal JobHandle brushMeshBlobsLookupJobHandle;
-            internal JobHandle brushMeshLookupJobHandle;
-            internal JobHandle brushIntersectionsWithJobHandle;
-            internal JobHandle brushIntersectionsWithRangeJobHandle;
-            internal JobHandle brushesThatNeedIndirectUpdateHashMapJobHandle;
-            internal JobHandle brushesThatNeedIndirectUpdateJobHandle;
-            internal JobHandle brushTreeSpaceBoundCacheJobHandle;
+                internal JobHandle brushIDValuesJobHandle;
+                internal JobHandle basePolygonCacheJobHandle;
+                internal JobHandle brushBrushIntersectionsJobHandle;
+                internal JobHandle brushesTouchedByBrushCacheJobHandle;
+                internal JobHandle brushRenderBufferCacheJobHandle;
+                internal JobHandle brushRenderDataJobHandle;
+                internal JobHandle brushTreeSpacePlaneCacheJobHandle;
+                internal JobHandle brushMeshBlobsLookupJobHandle;
+                internal JobHandle brushMeshLookupJobHandle;
+                internal JobHandle brushIntersectionsWithJobHandle;
+                internal JobHandle brushIntersectionsWithRangeJobHandle;
+                internal JobHandle brushesThatNeedIndirectUpdateHashMapJobHandle;
+                internal JobHandle brushesThatNeedIndirectUpdateJobHandle;
+                internal JobHandle brushTreeSpaceBoundCacheJobHandle;
 
-            internal JobHandle dataStream1JobHandle;
-            internal JobHandle dataStream2JobHandle;
+                internal JobHandle dataStream1JobHandle;
+                internal JobHandle dataStream2JobHandle;
 
-            internal JobHandle intersectingBrushesStreamJobHandle;
+                internal JobHandle intersectingBrushesStreamJobHandle;
 
-            internal JobHandle loopVerticesLookupJobHandle;
+                internal JobHandle loopVerticesLookupJobHandle;
 
-            internal JobHandle meshQueriesJobHandle;
+                internal JobHandle meshQueriesJobHandle;
 
-            internal JobHandle nodeIDValueToNodeOrderArrayJobHandle;
-            
-            internal JobHandle outputSurfaceVerticesJobHandle;
-            internal JobHandle outputSurfacesJobHandle;
-            internal JobHandle outputSurfacesRangeJobHandle;
+                internal JobHandle nodeIDValueToNodeOrderArrayJobHandle;
 
-            internal JobHandle routingTableCacheJobHandle;
-            internal JobHandle rebuildTreeBrushIndexOrdersJobHandle;
+                internal JobHandle outputSurfaceVerticesJobHandle;
+                internal JobHandle outputSurfacesJobHandle;
+                internal JobHandle outputSurfacesRangeJobHandle;
 
-            internal JobHandle sectionsJobHandle;
-            internal JobHandle surfaceCountRefJobHandle;
-            internal JobHandle compactTreeRefJobHandle;
-            internal JobHandle needRemappingRefJobHandle;
-            internal JobHandle nodeIDValueToNodeOrderOffsetRefJobHandle;
-            internal JobHandle subMeshSurfacesJobHandle;
-            internal JobHandle subMeshCountsJobHandle;
+                internal JobHandle routingTableCacheJobHandle;
+                internal JobHandle rebuildTreeBrushIndexOrdersJobHandle;
 
-            internal JobHandle treeSpaceVerticesCacheJobHandle;
-            internal JobHandle transformationCacheJobHandle;
+                internal JobHandle sectionsJobHandle;
+                internal JobHandle surfaceCountRefJobHandle;
+                internal JobHandle compactTreeRefJobHandle;
+                internal JobHandle needRemappingRefJobHandle;
+                internal JobHandle nodeIDValueToNodeOrderOffsetRefJobHandle;
+                internal JobHandle subMeshSurfacesJobHandle;
+                internal JobHandle subMeshCountsJobHandle;
 
-            internal JobHandle uniqueBrushPairsJobHandle;
-            
-            internal JobHandle vertexBufferContents_renderDescriptorsJobHandle;
-            internal JobHandle vertexBufferContents_colliderDescriptorsJobHandle;
-            internal JobHandle vertexBufferContents_subMeshSectionsJobHandle;
-            internal JobHandle vertexBufferContents_meshesJobHandle;
-            internal JobHandle colliderMeshUpdatesJobHandle;
-            internal JobHandle debugHelperMeshesJobHandle;
-            internal JobHandle renderMeshesJobHandle;
+                internal JobHandle treeSpaceVerticesCacheJobHandle;
+                internal JobHandle transformationCacheJobHandle;
 
-            internal JobHandle vertexBufferContents_triangleBrushIndicesJobHandle;
-            internal JobHandle vertexBufferContents_meshDescriptionsJobHandle;
+                internal JobHandle uniqueBrushPairsJobHandle;
 
-            internal JobHandle meshDatasJobHandle;
-            internal JobHandle storeToCacheJobHandle;
+                internal JobHandle vertexBufferContents_renderDescriptorsJobHandle;
+                internal JobHandle vertexBufferContents_colliderDescriptorsJobHandle;
+                internal JobHandle vertexBufferContents_subMeshSectionsJobHandle;
+                internal JobHandle vertexBufferContents_meshesJobHandle;
+                internal JobHandle colliderMeshUpdatesJobHandle;
+                internal JobHandle debugHelperMeshesJobHandle;
+                internal JobHandle renderMeshesJobHandle;
 
-            internal JobHandle updateBrushOutlineJobHandle;
-            internal JobHandle preMeshUpdateCombinedJobHandle;
+                internal JobHandle vertexBufferContents_triangleBrushIndicesJobHandle;
+                internal JobHandle vertexBufferContents_meshDescriptionsJobHandle;
+
+                internal JobHandle meshDatasJobHandle;
+                internal JobHandle storeToCacheJobHandle;
+
+                internal JobHandle updateBrushOutlineJobHandle;
+                internal JobHandle preMeshUpdateCombinedJobHandle;
+            }
+            internal JobHandlesStruct JobHandles;
 
             internal JobHandle disposeJobHandle;
             #endregion
@@ -636,80 +640,8 @@ namespace Chisel.Core
             const bool runInParallelDefault = true;
             public void RunMeshUpdateJobs()
             {
-
-                #region Reset All JobHandles
-                this.transformTreeBrushIndicesListJobHandle = default;
-                this.brushesJobHandle = default;
-                this.nodesJobHandle = default;
-                this.parametersJobHandle = default;
-                this.allKnownBrushMeshIndicesJobHandle = default;
-                this.parameterCountsJobHandle = default;
-                this.allBrushMeshIDsJobHandle = default;
-                this.allTreeBrushIndexOrdersJobHandle = default;
-                this.allUpdateBrushIndexOrdersJobHandle = default;
-
-                this.brushIDValuesJobHandle = default;
-                this.basePolygonCacheJobHandle = default;
-                this.brushBrushIntersectionsJobHandle = default;
-                this.brushesTouchedByBrushCacheJobHandle = default;
-                this.brushRenderBufferCacheJobHandle = default;
-                this.brushRenderDataJobHandle = default;
-                this.brushTreeSpacePlaneCacheJobHandle = default;
-                this.brushMeshBlobsLookupJobHandle = default;
-                this.brushMeshLookupJobHandle = default;
-                this.brushIntersectionsWithJobHandle = default;
-                this.brushIntersectionsWithRangeJobHandle = default;
-                this.brushesThatNeedIndirectUpdateHashMapJobHandle = default;
-                this.brushesThatNeedIndirectUpdateJobHandle = default;
-                this.brushTreeSpaceBoundCacheJobHandle = default;
-
-                this.dataStream1JobHandle = default;
-                this.dataStream2JobHandle = default;
-
-                this.intersectingBrushesStreamJobHandle = default;
-
-                this.loopVerticesLookupJobHandle = default;
-
-                this.meshQueriesJobHandle = default;
-
-                this.nodeIDValueToNodeOrderArrayJobHandle = default;
-            
-                this.outputSurfaceVerticesJobHandle = default;
-                this.outputSurfacesJobHandle = default;
-                this.outputSurfacesRangeJobHandle = default;
-
-                this.routingTableCacheJobHandle = default;
-                this.rebuildTreeBrushIndexOrdersJobHandle = default;
-
-                this.sectionsJobHandle = default;
-                this.surfaceCountRefJobHandle = default;
-                this.compactTreeRefJobHandle = default;
-                this.needRemappingRefJobHandle = default;
-                this.nodeIDValueToNodeOrderOffsetRefJobHandle = default;
-                this.subMeshSurfacesJobHandle = default;
-                this.subMeshCountsJobHandle = default;
-
-                this.treeSpaceVerticesCacheJobHandle = default;
-                this.transformationCacheJobHandle = default;
-
-                this.uniqueBrushPairsJobHandle = default;
-
-                this.vertexBufferContents_renderDescriptorsJobHandle = default;
-                this.vertexBufferContents_colliderDescriptorsJobHandle = default;
-                this.vertexBufferContents_subMeshSectionsJobHandle = default;
-                this.vertexBufferContents_meshesJobHandle = default;
-                this.colliderMeshUpdatesJobHandle = default;
-                this.debugHelperMeshesJobHandle = default;
-                this.renderMeshesJobHandle = default;
-
-                this.vertexBufferContents_triangleBrushIndicesJobHandle = default;
-                this.vertexBufferContents_meshDescriptionsJobHandle = default;
-
-                this.meshDatasJobHandle = default;
-                this.storeToCacheJobHandle = default;
-                this.updateBrushOutlineJobHandle = default;
-                this.preMeshUpdateCombinedJobHandle = default;
-                #endregion
+                // Reset All JobHandles
+                JobHandles = default;
 
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
                 ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
@@ -720,11 +652,11 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(brushesJobHandle,
-                                                               nodeIDValueToNodeOrderArrayJobHandle,
-                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
-                                                               allTreeBrushIndexOrdersJobHandle,
-                                                               brushIDValuesJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.brushesJobHandle,
+                                                               JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                               JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                               JobHandles.brushIDValuesJobHandle);
                         /*
                         dependencies.Complete();
                         BuildLookupTablesJob.BuildLookupTables(this.brushes, this.brushCount,
@@ -752,10 +684,10 @@ namespace Chisel.Core
                         var currentJobHandle = buildLookupTablesJob.Schedule(runInParallel, dependencies);
 
                         //brushesJobHandle                       = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        brushIDValuesJobHandle                   = CombineDependencies(currentJobHandle, brushIDValuesJobHandle);
-                        nodeIDValueToNodeOrderArrayJobHandle     = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderArrayJobHandle);
-                        nodeIDValueToNodeOrderOffsetRefJobHandle = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
-                        allTreeBrushIndexOrdersJobHandle         = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+                        JobHandles.brushIDValuesJobHandle                   = CombineDependencies(currentJobHandle, JobHandles.brushIDValuesJobHandle);
+                        JobHandles.nodeIDValueToNodeOrderArrayJobHandle     = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderArrayJobHandle);
+                        JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        JobHandles.allTreeBrushIndexOrdersJobHandle         = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
                         //*/
                     } 
                     finally { Profiler.EndSample(); }
@@ -766,23 +698,23 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = false;//runInParallelDefault;
-                        var dependencies = CombineDependencies(nodeIDValueToNodeOrderArrayJobHandle,
-                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
-                                                               brushesJobHandle,
-                                                               allTreeBrushIndexOrdersJobHandle,
-                                                               
-                                                               brushIDValuesJobHandle,
-                                                               basePolygonCacheJobHandle,
-                                                               routingTableCacheJobHandle,
-                                                               transformationCacheJobHandle,
-                                                               brushRenderBufferCacheJobHandle,
-                                                               treeSpaceVerticesCacheJobHandle,
-                                                               brushTreeSpacePlaneCacheJobHandle,
-                                                               brushTreeSpaceBoundCacheJobHandle,
-                                                               brushesTouchedByBrushCacheJobHandle,
+                        var dependencies = CombineDependencies(JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                               JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               JobHandles.brushesJobHandle,
+                                                               JobHandles.allTreeBrushIndexOrdersJobHandle,
 
-                                                               brushesThatNeedIndirectUpdateHashMapJobHandle,
-                                                               needRemappingRefJobHandle);
+                                                               JobHandles.brushIDValuesJobHandle,
+                                                               JobHandles.basePolygonCacheJobHandle,
+                                                               JobHandles.routingTableCacheJobHandle,
+                                                               JobHandles.transformationCacheJobHandle,
+                                                               JobHandles.brushRenderBufferCacheJobHandle,
+                                                               JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                               JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                               JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                               JobHandles.brushesTouchedByBrushCacheJobHandle,
+
+                                                               JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
+                                                               JobHandles.needRemappingRefJobHandle);
                         /*
                         dependencies.Complete();
                         CacheRemappingJob.CacheRemapping(ref compactHierarchy,
@@ -834,23 +766,23 @@ namespace Chisel.Core
                         cacheRemappingJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = cacheRemappingJob.Schedule(runInParallel, dependencies);
 
-                        //nodeIDValueToNodeOrderArrayJobHandle          = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderArrayJobHandle);
-                        //nodeIDValueToNodeOrderOffsetRefJobHandle      = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
-                        //brushesJobHandle                              = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        //allTreeBrushIndexOrdersJobHandle              = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.nodeIDValueToNodeOrderArrayJobHandle          = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderArrayJobHandle);
+                        //JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle      = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        //JobHandles.brushesJobHandle                              = CombineDependencies(currentJobHandle, JobHandles.brushesJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle              = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
 
-                        brushIDValuesJobHandle                          = CombineDependencies(currentJobHandle, brushIDValuesJobHandle);
-                        basePolygonCacheJobHandle                       = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        routingTableCacheJobHandle                      = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
-                        transformationCacheJobHandle                    = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        brushRenderBufferCacheJobHandle                 = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle                 = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
-                        brushTreeSpacePlaneCacheJobHandle               = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        brushTreeSpaceBoundCacheJobHandle               = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
-                        brushesTouchedByBrushCacheJobHandle             = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.brushIDValuesJobHandle                          = CombineDependencies(currentJobHandle, JobHandles.brushIDValuesJobHandle);
+                        JobHandles.basePolygonCacheJobHandle                       = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        JobHandles.routingTableCacheJobHandle                      = CombineDependencies(currentJobHandle, JobHandles.routingTableCacheJobHandle);
+                        JobHandles.transformationCacheJobHandle                    = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        JobHandles.brushRenderBufferCacheJobHandle                 = CombineDependencies(currentJobHandle, JobHandles.brushRenderBufferCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle                 = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
+                        JobHandles.brushTreeSpacePlaneCacheJobHandle               = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        JobHandles.brushTreeSpaceBoundCacheJobHandle               = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpaceBoundCacheJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle             = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
 
-                        brushesThatNeedIndirectUpdateHashMapJobHandle   = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
-                        needRemappingRefJobHandle                       = CombineDependencies(currentJobHandle, needRemappingRefJobHandle);
+                        JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle   = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        JobHandles.needRemappingRefJobHandle                       = CombineDependencies(currentJobHandle, JobHandles.needRemappingRefJobHandle);
                         //*/
                     } 
                     finally { Profiler.EndSample(); }
@@ -861,10 +793,10 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(brushesJobHandle,
-                                                               allTreeBrushIndexOrdersJobHandle,
-                                                               rebuildTreeBrushIndexOrdersJobHandle,
-                                                               transformTreeBrushIndicesListJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.brushesJobHandle,
+                                                               JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                               JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                               JobHandles.transformTreeBrushIndicesListJobHandle);
                         /*
                         dependencies.Complete();
                         FindModifiedBrushesJob.FindModifiedBrushes(ref compactHierarchy, 
@@ -892,10 +824,10 @@ namespace Chisel.Core
                         findModifiedBrushesJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = findModifiedBrushesJob.Schedule(runInParallel, dependencies);
 
-                        //brushesJobHandle                      = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        //allTreeBrushIndexOrdersJobHandle      = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        rebuildTreeBrushIndexOrdersJobHandle    = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        transformTreeBrushIndicesListJobHandle  = CombineDependencies(currentJobHandle, transformTreeBrushIndicesListJobHandle);
+                        //JobHandles.brushesJobHandle                      = CombineDependencies(currentJobHandle, JobHandles.brushesJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle      = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        JobHandles.rebuildTreeBrushIndexOrdersJobHandle    = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        JobHandles.transformTreeBrushIndicesListJobHandle  = CombineDependencies(currentJobHandle, JobHandles.transformTreeBrushIndicesListJobHandle);
                         //*/
                     } 
                     finally { Profiler.EndSample(); }
@@ -906,13 +838,13 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(needRemappingRefJobHandle,
-                                                               rebuildTreeBrushIndexOrdersJobHandle,
-                                                               brushesTouchedByBrushCacheJobHandle,
-                                                               brushesJobHandle,
-                                                               nodeIDValueToNodeOrderArrayJobHandle,
-                                                               nodeIDValueToNodeOrderOffsetRefJobHandle,
-                                                               brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.needRemappingRefJobHandle,
+                                                               JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                               JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                               JobHandles.brushesJobHandle,
+                                                               JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                               JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                               JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
                         /*
                         dependencies.Complete();
                         InvalidateBrushesJob.InvalidateBrushes(ref compactHierarchy,
@@ -943,13 +875,13 @@ namespace Chisel.Core
                         invalidateBrushesJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = invalidateBrushesJob.Schedule(runInParallel, dependencies);
 
-                        //needRemappingRefJobHandle                   = CombineDependencies(currentJobHandle, needRemappingRefJobHandle);                        
-                        //rebuildTreeBrushIndexOrdersJobHandle        = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        brushesTouchedByBrushCacheJobHandle           = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        //brushesJobHandle                            = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        //nodeIDToNodeOrderArrayJobHandle             = CombineDependencies(currentJobHandle, nodeIDToNodeOrderArrayJobHandle);
-                        //nodeIDValueToNodeOrderOffsetRefJobHandle    = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
-                        brushesThatNeedIndirectUpdateHashMapJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        //JobHandles.needRemappingRefJobHandle                   = CombineDependencies(currentJobHandle, JobHandles.needRemappingRefJobHandle);                        
+                        //JobHandles.rebuildTreeBrushIndexOrdersJobHandle        = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle           = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle); // Why?
+                        //JobHandles.brushesJobHandle                            = CombineDependencies(currentJobHandle, JobHandles.brushesJobHandle);
+                        //JobHandles.nodeIDToNodeOrderArrayJobHandle             = CombineDependencies(currentJobHandle, JobHandles.nodeIDToNodeOrderArrayJobHandle);
+                        //JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle    = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
                         //*/
                     } 
                     finally { Profiler.EndSample(); }
@@ -960,12 +892,12 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(brushMeshBlobsLookupJobHandle,
-                                                               brushesJobHandle,
-                                                               parametersJobHandle,
-                                                               allKnownBrushMeshIndicesJobHandle,
-                                                               allBrushMeshIDsJobHandle,
-                                                               parameterCountsJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.brushMeshBlobsLookupJobHandle,
+                                                               JobHandles.brushesJobHandle,
+                                                               JobHandles.parametersJobHandle,
+                                                               JobHandles.allKnownBrushMeshIndicesJobHandle,
+                                                               JobHandles.allBrushMeshIDsJobHandle,
+                                                               JobHandles.parameterCountsJobHandle);
                         /*
                         dependencies.Complete();
                         UpdateBrushMeshIDsJob.UpdateBrushMeshIDs(ref compactHierarchy,
@@ -997,19 +929,20 @@ namespace Chisel.Core
                         updateBrushMeshIDsJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = updateBrushMeshIDsJob.Schedule(runInParallel, dependencies);
 
-                        //brushMeshBlobsLookupJobHandle     = CombineDependencies(currentJobHandle, brushMeshBlobsLookupJobHandle);
-                        //brushesJobHandle                  = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        parametersJobHandle                 = CombineDependencies(currentJobHandle, parametersJobHandle);                        
-                        allKnownBrushMeshIndicesJobHandle   = CombineDependencies(currentJobHandle, allKnownBrushMeshIndicesJobHandle);
-                        allBrushMeshIDsJobHandle            = CombineDependencies(currentJobHandle, allBrushMeshIDsJobHandle);
-                        parameterCountsJobHandle            = CombineDependencies(currentJobHandle, parameterCountsJobHandle);
+                        //JobHandles.brushMeshBlobsLookupJobHandle     = CombineDependencies(currentJobHandle, JobHandles.brushMeshBlobsLookupJobHandle);
+                        //JobHandles.brushesJobHandle                  = CombineDependencies(currentJobHandle, JobHandles.brushesJobHandle);
+                        JobHandles.parametersJobHandle                 = CombineDependencies(currentJobHandle, JobHandles.parametersJobHandle);
+                        JobHandles.allKnownBrushMeshIndicesJobHandle   = CombineDependencies(currentJobHandle, JobHandles.allKnownBrushMeshIndicesJobHandle);
+                        JobHandles.allBrushMeshIDsJobHandle            = CombineDependencies(currentJobHandle, JobHandles.allBrushMeshIDsJobHandle);
+                        JobHandles.parameterCountsJobHandle            = CombineDependencies(currentJobHandle, JobHandles.parameterCountsJobHandle);
                         //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
                 }
 
-                rebuildTreeBrushIndexOrdersJobHandle.Complete();
+                
+                JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
                 this.updateCount = rebuildTreeBrushIndexOrders.Length;
                 if (this.updateCount > 0)
                 {                 
@@ -1022,8 +955,8 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(transformTreeBrushIndicesListJobHandle,
-                                                               transformationCacheJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.transformTreeBrushIndicesListJobHandle,
+                                                               JobHandles.transformationCacheJobHandle);
                         var updateTransformationsJob = new UpdateTransformationsJob
                         {
                             // Read
@@ -1037,8 +970,8 @@ namespace Chisel.Core
                         updateTransformationsJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = updateTransformationsJob.Schedule(runInParallel, transformTreeBrushIndicesList, 8, dependencies);
 
-                        //transformTreeBrushIndicesListJobHandle    = CombineDependencies(currentJobHandle, transformTreeBrushIndicesListJobHandle);
-                        transformationCacheJobHandle                = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
+                        //JobHandles.transformTreeBrushIndicesListJobHandle    = CombineDependencies(currentJobHandle, JobHandles.transformTreeBrushIndicesListJobHandle);
+                        JobHandles.transformationCacheJobHandle                = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -1047,9 +980,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(brushesJobHandle,
-                                                               nodesJobHandle,
-                                                               compactTreeRefJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.brushesJobHandle,
+                                                               JobHandles.nodesJobHandle,
+                                                               JobHandles.compactTreeRefJobHandle);
                         var buildCompactTreeJob = new BuildCompactTreeJob
                         {
                             // Read
@@ -1065,9 +998,9 @@ namespace Chisel.Core
                         buildCompactTreeJob.InitializeHierarchy(ref compactHierarchy);
                         var currentJobHandle = buildCompactTreeJob.Schedule(runInParallel, dependencies);
 
-                        //brushesJobHandle      = CombineDependencies(currentJobHandle, brushesJobHandle);
-                        //nodesJobHandle        = CombineDependencies(currentJobHandle, nodesJobHandle);
-                        compactTreeRefJobHandle = CombineDependencies(currentJobHandle, compactTreeRefJobHandle);
+                        //JobHandles.brushesJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushesJobHandle);
+                        //JobHandles.nodesJobHandle        = CombineDependencies(currentJobHandle, JobHandles.nodesJobHandle);
+                        JobHandles.compactTreeRefJobHandle = CombineDependencies(currentJobHandle, JobHandles.compactTreeRefJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1076,11 +1009,11 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(brushMeshBlobsLookupJobHandle,
-                                                                          allTreeBrushIndexOrdersJobHandle,
-                                                                          allBrushMeshIDsJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          surfaceCountRefJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.brushMeshBlobsLookupJobHandle,
+                                                                          JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.allBrushMeshIDsJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.surfaceCountRefJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var fillBrushMeshBlobLookupJob = new FillBrushMeshBlobLookupJob
                         {
@@ -1095,11 +1028,11 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = fillBrushMeshBlobLookupJob.Schedule(runInParallel, dependencies);
 
-                        //brushMeshBlobsLookupJobHandle      = CombineDependencies(currentJobHandle, brushMeshBlobsLookupJobHandle);
-                        //allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //allBrushMeshIDsJobHandle           = CombineDependencies(currentJobHandle, allBrushMeshIDsJobHandle);
-                        brushMeshLookupJobHandle             = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        surfaceCountRefJobHandle             = CombineDependencies(currentJobHandle, surfaceCountRefJobHandle);
+                        //JobHandles.brushMeshBlobsLookupJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushMeshBlobsLookupJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.allBrushMeshIDsJobHandle           = CombineDependencies(currentJobHandle, JobHandles.allBrushMeshIDsJobHandle);
+                        JobHandles.brushMeshLookupJobHandle             = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        JobHandles.surfaceCountRefJobHandle             = CombineDependencies(currentJobHandle, JobHandles.surfaceCountRefJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1108,13 +1041,13 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;                    
-                        var dependencies            = CombineDependencies(rebuildTreeBrushIndexOrdersJobHandle,
-                                                                          basePolygonCacheJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          routingTableCacheJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle,
-                                                                          brushRenderBufferCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.routingTableCacheJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                                          JobHandles.brushRenderBufferCacheJobHandle);
 
                         CheckDependencies(runInParallel, dependencies);
                         var invalidateBrushCacheJob = new InvalidateBrushCacheJob
@@ -1140,13 +1073,13 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = invalidateBrushCacheJob.Schedule(runInParallel, rebuildTreeBrushIndexOrders, 16, dependencies);
 
-                        //rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        basePolygonCacheJobHandle                = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
-                        brushesTouchedByBrushCacheJobHandle      = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        routingTableCacheJobHandle               = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
-                        brushTreeSpacePlaneCacheJobHandle        = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        brushRenderBufferCacheJobHandle          = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
+                        //JobHandles.rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        JobHandles.basePolygonCacheJobHandle                = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.routingTableCacheJobHandle               = CombineDependencies(currentJobHandle, JobHandles.routingTableCacheJobHandle);
+                        JobHandles.brushTreeSpacePlaneCacheJobHandle        = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        JobHandles.brushRenderBufferCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.brushRenderBufferCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1155,11 +1088,11 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;                    
-                        var dependencies            = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                                          nodeIDValueToNodeOrderArrayJobHandle,
-                                                                          nodeIDValueToNodeOrderOffsetRefJobHandle,
-                                                                          basePolygonCacheJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                                          JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var fixupBrushCacheIndicesJob   = new FixupBrushCacheIndicesJob
                         {
@@ -1173,12 +1106,12 @@ namespace Chisel.Core
                             brushesTouchedByBrushCache      = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel)
                         };
                         var currentJobHandle = fixupBrushCacheIndicesJob.Schedule(runInParallel, allTreeBrushIndexOrders, 16, dependencies);
-                        
-                        //allTreeBrushIndexOrdersJobHandle          = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //nodeIndexToNodeOrderArrayJobHandle        = CombineDependencies(currentJobHandle, nodeIndexToNodeOrderArrayJobHandle);
-                        //nodeIDValueToNodeOrderOffsetRefJobHandle  = CombineDependencies(currentJobHandle, nodeIDValueToNodeOrderOffsetRefJobHandle);
-                        basePolygonCacheJobHandle                   = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        brushesTouchedByBrushCacheJobHandle         = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle          = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.nodeIndexToNodeOrderArrayJobHandle        = CombineDependencies(currentJobHandle, JobHandles.nodeIndexToNodeOrderArrayJobHandle);
+                        //JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle  = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
+                        JobHandles.basePolygonCacheJobHandle                   = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle         = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1188,11 +1121,11 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself                    
-                        var dependencies            = CombineDependencies(rebuildTreeBrushIndexOrdersJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          brushTreeSpaceBoundCacheJobHandle,                                                                              
-                                                                          treeSpaceVerticesCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
@@ -1206,12 +1139,12 @@ namespace Chisel.Core
                             treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache.AsJobArray(runInParallel),
                         };
                         var currentJobHandle = createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, rebuildTreeBrushIndexOrders, 16, dependencies);
-                        
-                        //rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        //transformationCacheJobHandle           = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        brushTreeSpaceBoundCacheJobHandle        = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
+
+                        //JobHandles.rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.transformationCacheJobHandle           = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        JobHandles.brushTreeSpaceBoundCacheJobHandle        = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpaceBoundCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1222,13 +1155,13 @@ namespace Chisel.Core
                         const bool runInParallel = runInParallelDefault;
                         // TODO: only change when brush or any touching brush has been added/removed or changes operation/order
                         // TODO: optimize, use hashed grid                    
-                        var dependencies            = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          brushTreeSpaceBoundCacheJobHandle,
-                                                                          rebuildTreeBrushIndexOrdersJobHandle,
-                                                                          brushBrushIntersectionsJobHandle,
-                                                                          brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                                          JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushBrushIntersectionsJobHandle,
+                                                                          JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var findAllIntersectionsJob = new FindAllBrushIntersectionPairsJob
                         {
@@ -1247,13 +1180,13 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = findAllIntersectionsJob.Schedule(runInParallel, rebuildTreeBrushIndexOrders, 16, dependencies);
 
-                        //allTreeBrushIndexOrdersJobHandle               = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //transformationCacheJobHandle                   = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //brushMeshLookupJobHandle                       = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        //brushTreeSpaceBoundCacheJobHandle              = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
-                        //rebuildTreeBrushIndexOrdersJobHandle           = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        brushBrushIntersectionsJobHandle                 = CombineDependencies(currentJobHandle, brushBrushIntersectionsJobHandle);
-                        brushesThatNeedIndirectUpdateHashMapJobHandle    = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle               = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.transformationCacheJobHandle                   = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle                       = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        //JobHandles.brushTreeSpaceBoundCacheJobHandle              = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpaceBoundCacheJobHandle);
+                        //JobHandles.rebuildTreeBrushIndexOrdersJobHandle           = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        JobHandles.brushBrushIntersectionsJobHandle                 = CombineDependencies(currentJobHandle, JobHandles.brushBrushIntersectionsJobHandle);
+                        JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle    = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1263,8 +1196,8 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: optimize, use hashed grid                    
-                        var dependencies            = CombineDependencies(brushesThatNeedIndirectUpdateHashMapJobHandle,
-                                                                          brushesThatNeedIndirectUpdateJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
+                                                                          JobHandles.brushesThatNeedIndirectUpdateJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var createUniqueIndicesArrayJob = new FindUniqueIndirectBrushIntersectionsJob
                         {
@@ -1275,9 +1208,9 @@ namespace Chisel.Core
                             brushesThatNeedIndirectUpdate            = brushesThatNeedIndirectUpdate
                         };
                         var currentJobHandle = createUniqueIndicesArrayJob.Schedule(runInParallel, dependencies);
-                        
-                        //brushesThatNeedIndirectUpdateHashMapJobHandle  = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateHashMapJobHandle);
-                        brushesThatNeedIndirectUpdateJobHandle           = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateJobHandle);
+
+                        //JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle  = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
+                        JobHandles.brushesThatNeedIndirectUpdateJobHandle           = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1286,13 +1219,13 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;                    
-                        var dependencies            = CombineDependencies(brushesThatNeedIndirectUpdateJobHandle,
-                                                                          basePolygonCacheJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          routingTableCacheJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle,
-                                                                          brushRenderBufferCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.routingTableCacheJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                                          JobHandles.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var invalidateBrushCacheJob = new InvalidateIndirectBrushCacheJob
                         {
@@ -1308,14 +1241,14 @@ namespace Chisel.Core
                             brushRenderBufferCache          = chiselLookupValues.brushRenderBufferCache     .AsJobArray(runInParallel)
                         };
                         var currentJobHandle = invalidateBrushCacheJob.Schedule(runInParallel, brushesThatNeedIndirectUpdate, 16, dependencies);
-                        
-                        //brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateJobHandle);
-                        basePolygonCacheJobHandle                = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
-                        brushesTouchedByBrushCacheJobHandle      = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        routingTableCacheJobHandle               = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
-                        brushTreeSpacePlaneCacheJobHandle        = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        brushRenderBufferCacheJobHandle          = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
+
+                        //JobHandles.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateJobHandle);
+                        JobHandles.basePolygonCacheJobHandle                = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.routingTableCacheJobHandle               = CombineDependencies(currentJobHandle, JobHandles.routingTableCacheJobHandle);
+                        JobHandles.brushTreeSpacePlaneCacheJobHandle        = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        JobHandles.brushRenderBufferCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.brushRenderBufferCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1324,11 +1257,11 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;                    
-                        var dependencies            = CombineDependencies(brushesThatNeedIndirectUpdateJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          brushTreeSpaceBoundCacheJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                         {
@@ -1342,12 +1275,12 @@ namespace Chisel.Core
                             treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
                         };
                         var currentJobHandle = createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, brushesThatNeedIndirectUpdate, 16, dependencies);
-                        
-                        //brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateJobHandle);
-                        //transformationCacheJobHandle           = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        brushTreeSpaceBoundCacheJobHandle        = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
+
+                        //JobHandles.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateJobHandle);
+                        //JobHandles.transformationCacheJobHandle           = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        JobHandles.brushTreeSpaceBoundCacheJobHandle        = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpaceBoundCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1357,12 +1290,12 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: optimize, use hashed grid                    
-                        var dependencies            = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          brushTreeSpaceBoundCacheJobHandle,
-                                                                          brushesThatNeedIndirectUpdateJobHandle,
-                                                                          brushBrushIntersectionsJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                                          JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                                          JobHandles.brushBrushIntersectionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var findAllIntersectionsJob = new FindAllIndirectBrushIntersectionPairsJob
                         {
@@ -1378,12 +1311,12 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = findAllIntersectionsJob.Schedule(runInParallel, brushesThatNeedIndirectUpdate, 1, dependencies);
 
-                        //allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //transformationCacheJobHandle           = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        //brushTreeSpaceBoundCacheJobHandle      = CombineDependencies(currentJobHandle, brushTreeSpaceBoundCacheJobHandle);
-                        //brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateJobHandle);
-                        brushBrushIntersectionsJobHandle         = CombineDependencies(currentJobHandle, brushBrushIntersectionsJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.transformationCacheJobHandle           = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle               = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        //JobHandles.brushTreeSpaceBoundCacheJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpaceBoundCacheJobHandle);
+                        //JobHandles.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateJobHandle);
+                        JobHandles.brushBrushIntersectionsJobHandle         = CombineDependencies(currentJobHandle, JobHandles.brushBrushIntersectionsJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1392,10 +1325,10 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                                          brushesThatNeedIndirectUpdateJobHandle,
-                                                                          rebuildTreeBrushIndexOrdersJobHandle,
-                                                                          allUpdateBrushIndexOrdersJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                                          JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.allUpdateBrushIndexOrdersJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var findAllIntersectionsJob = new AddIndirectUpdatedBrushesToListAndSortJob
                         {
@@ -1408,11 +1341,11 @@ namespace Chisel.Core
                             allUpdateBrushIndexOrders       = allUpdateBrushIndexOrders      .AsParallelWriter(),
                         };
                         var currentJobHandle = findAllIntersectionsJob.Schedule(runInParallel, dependencies);
-                        
-                        //allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, brushesThatNeedIndirectUpdateJobHandle);
-                        //rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, rebuildTreeBrushIndexOrdersJobHandle);
-                        allUpdateBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
+
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesThatNeedIndirectUpdateJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateJobHandle);
+                        //JobHandles.rebuildTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
+                        JobHandles.allUpdateBrushIndexOrdersJobHandle       = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1421,9 +1354,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(brushBrushIntersectionsJobHandle,
-                                                                          brushIntersectionsWithJobHandle,
-                                                                          brushIntersectionsWithRangeJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.brushBrushIntersectionsJobHandle,
+                                                                          JobHandles.brushIntersectionsWithJobHandle,
+                                                                          JobHandles.brushIntersectionsWithRangeJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var gatherBrushIntersectionsJob = new GatherBrushIntersectionPairsJob
                         {
@@ -1435,17 +1368,17 @@ namespace Chisel.Core
                             brushIntersectionsWithRange     = brushIntersectionsWithRange
                         };
                         var currentJobHandle = gatherBrushIntersectionsJob.Schedule(runInParallel, dependencies);
-                        
-                        //brushBrushIntersectionsJobHandle   = CombineDependencies(currentJobHandle, brushBrushIntersectionsJobHandle);
-                        brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, brushIntersectionsWithJobHandle);
-                        brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, brushIntersectionsWithRangeJobHandle);
 
-                        dependencies                = CombineDependencies(compactTreeRefJobHandle,
-                                                                          allTreeBrushIndexOrdersJobHandle,
-                                                                          allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushIntersectionsWithJobHandle,
-                                                                          brushIntersectionsWithRangeJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle);
+                        //JobHandles.brushBrushIntersectionsJobHandle   = CombineDependencies(currentJobHandle, JobHandles.brushBrushIntersectionsJobHandle);
+                        JobHandles.brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushIntersectionsWithJobHandle);
+                        JobHandles.brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushIntersectionsWithRangeJobHandle);
+
+                        dependencies                = CombineDependencies(JobHandles.compactTreeRefJobHandle,
+                                                                          JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushIntersectionsWithJobHandle,
+                                                                          JobHandles.brushIntersectionsWithRangeJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle);
                         var storeBrushIntersectionsJob = new StoreBrushIntersectionsJob
                         {
                             // Read
@@ -1461,13 +1394,13 @@ namespace Chisel.Core
                             brushesTouchedByBrushCache  = chiselLookupValues.brushesTouchedByBrushCache .AsJobArray(runInParallel)
                         };
                         currentJobHandle = storeBrushIntersectionsJob.Schedule(runInParallel, allUpdateBrushIndexOrders, 16, dependencies);
-                        
-                        //compactTreeRefJobHandle            = CombineDependencies(currentJobHandle, compactTreeRefJobHandle);
-                        //allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, brushIntersectionsWithJobHandle);
-                        brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, brushIntersectionsWithRangeJobHandle);
-                        brushesTouchedByBrushCacheJobHandle  = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
+
+                        //JobHandles.compactTreeRefJobHandle            = CombineDependencies(currentJobHandle, JobHandles.compactTreeRefJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle   = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        JobHandles.brushIntersectionsWithJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushIntersectionsWithJobHandle);
+                        JobHandles.brushIntersectionsWithRangeJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushIntersectionsWithRangeJobHandle);
+                        JobHandles.brushesTouchedByBrushCacheJobHandle  = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
                     } finally { Profiler.EndSample(); }
                     #endregion
 
@@ -1480,9 +1413,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
 
                         // ************************
@@ -1512,9 +1445,9 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = mergeTouchingBrushVerticesJob.Schedule(sequential, allUpdateBrushIndexOrders, 16, dependencies);
 
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        treeSpaceVerticesCacheJobHandle       = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.treeSpaceVerticesCacheJobHandle       = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -1529,9 +1462,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          uniqueBrushPairsJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.uniqueBrushPairsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var findBrushPairsJob       = new FindBrushPairsJob
                         {
@@ -1545,22 +1478,22 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = findBrushPairsJob.Schedule(runInParallel, dependencies);
 
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        uniqueBrushPairsJobHandle             = CombineDependencies(currentJobHandle, uniqueBrushPairsJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.uniqueBrushPairsJobHandle             = CombineDependencies(currentJobHandle, JobHandles.uniqueBrushPairsJobHandle);
 
-                        dependencies                = CombineDependencies(intersectingBrushesStreamJobHandle,
-                                                                          uniqueBrushPairsJobHandle);
+                        dependencies                = CombineDependencies(JobHandles.intersectingBrushesStreamJobHandle,
+                                                                          JobHandles.uniqueBrushPairsJobHandle);
 
                         currentJobHandle            = NativeStream.ScheduleConstruct(out intersectingBrushesStream, uniqueBrushPairs, dependencies, Allocator.TempJob);
-                        
-                        //uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, uniqueBrushPairsJobHandle);
-                        intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, intersectingBrushesStreamJobHandle);
 
-                        dependencies                = CombineDependencies(uniqueBrushPairsJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          intersectingBrushesStreamJobHandle);
+                        //JobHandles.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, JobHandles.uniqueBrushPairsJobHandle);
+                        JobHandles.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, JobHandles.intersectingBrushesStreamJobHandle);
+
+                        dependencies                = CombineDependencies(JobHandles.uniqueBrushPairsJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.intersectingBrushesStreamJobHandle);
                         var prepareBrushPairIntersectionsJob = new PrepareBrushPairIntersectionsJob
                         {
                             // Read
@@ -1573,10 +1506,10 @@ namespace Chisel.Core
                         };
                         currentJobHandle = prepareBrushPairIntersectionsJob.Schedule(runInParallel, uniqueBrushPairs, 1, dependencies);
 
-                        //uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, uniqueBrushPairsJobHandle);
-                        //transformationCacheJobHandle       = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, intersectingBrushesStreamJobHandle);
+                        //JobHandles.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, JobHandles.uniqueBrushPairsJobHandle);
+                        //JobHandles.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        JobHandles.intersectingBrushesStreamJobHandle   = CombineDependencies(currentJobHandle, JobHandles.intersectingBrushesStreamJobHandle);
                     } finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("Job_GenerateBasePolygonLoops");
@@ -1584,11 +1517,11 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this once at creation time, part of brushMeshBlob? store with brush component itself
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle, 
-                                                                          basePolygonCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var createBlobPolygonsBlobs = new CreateBlobPolygonsBlobsJob
                         {
@@ -1602,12 +1535,12 @@ namespace Chisel.Core
                             basePolygonCache            = chiselLookupValues.basePolygonCache           .AsJobArray(runInParallel)
                         };
                         var currentJobHandle = createBlobPolygonsBlobs.Schedule(runInParallel, allUpdateBrushIndexOrders, 16, dependencies);
-                        
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        //brushMeshLookupJobHandle            = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        //treeSpaceVerticesCacheJobHandle     = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
-                        basePolygonCacheJobHandle             = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
+
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle            = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        //JobHandles.treeSpaceVerticesCacheJobHandle     = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
+                        JobHandles.basePolygonCacheJobHandle             = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1616,10 +1549,10 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only do this at creation time + when moved / store with brush component itself
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushMeshLookupJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushMeshLookupJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var createBrushTreeSpacePlanesJob = new CreateBrushTreeSpacePlanesJob
                         {
@@ -1632,11 +1565,11 @@ namespace Chisel.Core
                             brushTreeSpacePlanes        = chiselLookupValues.brushTreeSpacePlaneCache.AsJobArray(runInParallel)
                         };
                         var currentJobHandle = createBrushTreeSpacePlanesJob.Schedule(runInParallel, allUpdateBrushIndexOrders, 16, dependencies);
-                        
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, brushMeshLookupJobHandle);
-                        //transformationCacheJobHandle       = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        brushTreeSpacePlaneCacheJobHandle    = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
+
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushMeshLookupJobHandle           = CombineDependencies(currentJobHandle, JobHandles.brushMeshLookupJobHandle);
+                        //JobHandles.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        JobHandles.brushTreeSpacePlaneCacheJobHandle    = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -1644,19 +1577,20 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;                        
-                        var dependencies            = CombineDependencies(surfaceCountRefJobHandle,
-                                                                          outputSurfacesJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.surfaceCountRefJobHandle,
+                                                                          JobHandles.outputSurfacesJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var currentJobHandle        = NativeConstruct.ScheduleSetCapacity(ref outputSurfaces, surfaceCountRef, dependencies, Allocator.Persistent);
-                        
-                        outputSurfacesJobHandle  = CombineDependencies(currentJobHandle, outputSurfacesJobHandle);
 
-                        dependencies                = CombineDependencies(uniqueBrushPairsJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle,
-                                                                          intersectingBrushesStreamJobHandle,
-                                                                          outputSurfaceVerticesJobHandle,
-                                                                          outputSurfacesJobHandle);
+                        JobHandles.outputSurfacesJobHandle  = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesJobHandle);
+
+
+                        dependencies                = CombineDependencies(JobHandles.uniqueBrushPairsJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                                          JobHandles.intersectingBrushesStreamJobHandle,
+                                                                          JobHandles.outputSurfaceVerticesJobHandle,
+                                                                          JobHandles.outputSurfacesJobHandle);
                         var findAllIntersectionLoopsJob = new CreateIntersectionLoopsJob
                         {
                             // Needed for count (forced & unused)
@@ -1677,20 +1611,20 @@ namespace Chisel.Core
                         
                         intersectingBrushesStream = default;
 
-                        //uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, uniqueBrushPairsJobHandle);
-                        //brushTreeSpacePlaneCacheJobHandle  = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        //treeSpaceVerticesCacheJobHandle    = CombineDependencies(currentJobHandle, treeSpaceVerticesCacheJobHandle);
-                        //intersectingBrushesStreamJobHandle = CombineDependencies(currentJobHandle, intersectingBrushesStreamJobHandle);
-                        outputSurfaceVerticesJobHandle       = CombineDependencies(currentJobHandle, outputSurfaceVerticesJobHandle);
-                        outputSurfacesJobHandle              = CombineDependencies(currentJobHandle, outputSurfacesJobHandle);
+                        //JobHandles.uniqueBrushPairsJobHandle          = CombineDependencies(currentJobHandle, JobHandles.uniqueBrushPairsJobHandle);
+                        //JobHandles.brushTreeSpacePlaneCacheJobHandle  = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        //JobHandles.treeSpaceVerticesCacheJobHandle    = CombineDependencies(currentJobHandle, JobHandles.treeSpaceVerticesCacheJobHandle);
+                        //JobHandles.intersectingBrushesStreamJobHandle = CombineDependencies(currentJobHandle, JobHandles.intersectingBrushesStreamJobHandle);
+                        JobHandles.outputSurfaceVerticesJobHandle       = CombineDependencies(currentJobHandle, JobHandles.outputSurfaceVerticesJobHandle);
+                        JobHandles.outputSurfacesJobHandle              = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesJobHandle);
                     } finally { Profiler.EndSample(); }
             
                     Profiler.BeginSample("Job_GatherOutputSurfaces");
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(outputSurfacesJobHandle,
-                                                                          outputSurfacesRangeJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.outputSurfacesJobHandle,
+                                                                          JobHandles.outputSurfacesRangeJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var gatherOutputSurfacesJob = new GatherOutputSurfacesJob
                         {
@@ -1701,31 +1635,31 @@ namespace Chisel.Core
                             outputSurfacesRange     = outputSurfacesRange
                         };
                         var currentJobHandle = gatherOutputSurfacesJob.Schedule(runInParallel, dependencies);
-                        
-                        outputSurfacesJobHandle          = CombineDependencies(currentJobHandle, outputSurfacesJobHandle);
-                        outputSurfacesRangeJobHandle     = CombineDependencies(currentJobHandle, outputSurfacesRangeJobHandle);
+
+                        JobHandles.outputSurfacesJobHandle          = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesJobHandle);
+                        JobHandles.outputSurfacesRangeJobHandle     = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesRangeJobHandle);
                     } finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("Job_FindLoopOverlapIntersections");
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(dataStream1JobHandle,
-                                                                          allUpdateBrushIndexOrdersJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.dataStream1JobHandle,
+                                                                          JobHandles.allUpdateBrushIndexOrdersJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var currentJobHandle        = NativeStream.ScheduleConstruct(out dataStream1, allUpdateBrushIndexOrders, dependencies, Allocator.TempJob);
-                        
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        dataStream1JobHandle                 = CombineDependencies(currentJobHandle, dataStream1JobHandle);
 
-                        dependencies                = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          outputSurfaceVerticesJobHandle,
-                                                                          outputSurfacesJobHandle,
-                                                                          outputSurfacesRangeJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle,
-                                                                          basePolygonCacheJobHandle,
-                                                                          loopVerticesLookupJobHandle,
-                                                                          dataStream1JobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        JobHandles.dataStream1JobHandle                 = CombineDependencies(currentJobHandle, JobHandles.dataStream1JobHandle);
+
+                        dependencies                = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.outputSurfaceVerticesJobHandle,
+                                                                          JobHandles.outputSurfacesJobHandle,
+                                                                          JobHandles.outputSurfacesRangeJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle,
+                                                                          JobHandles.loopVerticesLookupJobHandle,
+                                                                          JobHandles.dataStream1JobHandle);
                         var findLoopOverlapIntersectionsJob = new FindLoopOverlapIntersectionsJob
                         {
                             // Read
@@ -1745,14 +1679,14 @@ namespace Chisel.Core
                         };
                         currentJobHandle = findLoopOverlapIntersectionsJob.Schedule(runInParallel, allUpdateBrushIndexOrders, 1, dependencies);
 
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //outputSurfaceVerticesJobHandle     = CombineDependencies(currentJobHandle, outputSurfaceVerticesJobHandle);
-                        //outputSurfacesJobHandle            = CombineDependencies(currentJobHandle, outputSurfacesJobHandle);
-                        //outputSurfacesRangeJobHandle       = CombineDependencies(currentJobHandle, outputSurfacesRangeJobHandle);
-                        //brushTreeSpacePlaneCacheJobHandle  = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        //basePolygonCacheJobHandle          = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        loopVerticesLookupJobHandle          = CombineDependencies(currentJobHandle, loopVerticesLookupJobHandle);
-                        dataStream1JobHandle                 = CombineDependencies(currentJobHandle, dataStream1JobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.outputSurfaceVerticesJobHandle     = CombineDependencies(currentJobHandle, JobHandles.outputSurfaceVerticesJobHandle);
+                        //JobHandles.outputSurfacesJobHandle            = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesJobHandle);
+                        //JobHandles.outputSurfacesRangeJobHandle       = CombineDependencies(currentJobHandle, JobHandles.outputSurfacesRangeJobHandle);
+                        //JobHandles.brushTreeSpacePlaneCacheJobHandle  = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        //JobHandles.basePolygonCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        JobHandles.loopVerticesLookupJobHandle          = CombineDependencies(currentJobHandle, JobHandles.loopVerticesLookupJobHandle);
+                        JobHandles.dataStream1JobHandle                 = CombineDependencies(currentJobHandle, JobHandles.dataStream1JobHandle);
                     } finally { Profiler.EndSample(); }
                     #endregion
 
@@ -1767,10 +1701,10 @@ namespace Chisel.Core
                         const bool runInParallel = runInParallelDefault;
                         // TODO: should only try to merge the vertices beyond the original mesh vertices (the intersection vertices)
                         //       should also try to limit vertices to those that are on the same surfaces (somehow)
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          treeSpaceVerticesCacheJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          loopVerticesLookupJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.loopVerticesLookupJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var mergeTouchingBrushVerticesJob = new MergeTouchingBrushVerticesIndirectJob
                         {
@@ -1784,9 +1718,9 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = mergeTouchingBrushVerticesJob.Schedule(runInParallel, allUpdateBrushIndexOrders, 16, dependencies);
 
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        loopVerticesLookupJobHandle           = CombineDependencies(currentJobHandle, loopVerticesLookupJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        JobHandles.loopVerticesLookupJobHandle           = CombineDependencies(currentJobHandle, JobHandles.loopVerticesLookupJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -1801,10 +1735,10 @@ namespace Chisel.Core
                     {
                         const bool runInParallel = runInParallelDefault;
                         // TODO: only update when brush or any touching brush has been added/removed or changes operation/order
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          compactTreeRefJobHandle,
-                                                                          routingTableCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.compactTreeRefJobHandle,
+                                                                          JobHandles.routingTableCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         // Build categorization trees for brushes
                         var createRoutingTableJob   = new CreateRoutingTableJob
@@ -1819,32 +1753,32 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = createRoutingTableJob.Schedule(runInParallel, allUpdateBrushIndexOrders, 1, dependencies);
 
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        //compactTreeRefJobHandle             = CombineDependencies(currentJobHandle, compactTreeRefJobHandle);
-                        routingTableCacheJobHandle            = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        //JobHandles.compactTreeRefJobHandle             = CombineDependencies(currentJobHandle, JobHandles.compactTreeRefJobHandle);
+                        JobHandles.routingTableCacheJobHandle            = CombineDependencies(currentJobHandle, JobHandles.routingTableCacheJobHandle);
                     } finally { Profiler.EndSample(); }
 
                     Profiler.BeginSample("Job_PerformCSG");
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(dataStream2JobHandle,
-                                                                          allUpdateBrushIndexOrdersJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.dataStream2JobHandle,
+                                                                          JobHandles.allUpdateBrushIndexOrdersJobHandle);
                         CheckDependencies(runInParallel, dependencies);
 
                         var currentJobHandle        = NativeStream.ScheduleConstruct(out dataStream2, allUpdateBrushIndexOrders, dependencies, Allocator.TempJob);
-                        
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        dataStream2JobHandle                 = CombineDependencies(currentJobHandle, dataStream2JobHandle);
 
-                        dependencies                = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          routingTableCacheJobHandle,
-                                                                          brushTreeSpacePlaneCacheJobHandle,
-                                                                          brushesTouchedByBrushCacheJobHandle,
-                                                                          dataStream1JobHandle,
-                                                                          loopVerticesLookupJobHandle,
-                                                                          dataStream2JobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        JobHandles.dataStream2JobHandle                 = CombineDependencies(currentJobHandle, JobHandles.dataStream2JobHandle);
+
+                        dependencies                = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.routingTableCacheJobHandle,
+                                                                          JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                                          JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                                          JobHandles.dataStream1JobHandle,
+                                                                          JobHandles.loopVerticesLookupJobHandle,
+                                                                          JobHandles.dataStream2JobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         // Perform CSG
                         // TODO: determine when a brush is completely inside another brush
@@ -1868,13 +1802,13 @@ namespace Chisel.Core
                         
                         dataStream1 = default;
 
-                        //allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //routingTableCacheJobHandle          = CombineDependencies(currentJobHandle, routingTableCacheJobHandle);
-                        //brushTreeSpacePlaneCacheJobHandle   = CombineDependencies(currentJobHandle, brushTreeSpacePlaneCacheJobHandle);
-                        //brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, brushesTouchedByBrushCacheJobHandle);
-                        //dataStream1JobHandle                = CombineDependencies(currentJobHandle, dataStream1JobHandle);
-                        //loopVerticesLookupJobHandle         = CombineDependencies(currentJobHandle, loopVerticesLookupJobHandle);
-                        dataStream2JobHandle                  = CombineDependencies(currentJobHandle, dataStream2JobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle  = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.routingTableCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.routingTableCacheJobHandle);
+                        //JobHandles.brushTreeSpacePlaneCacheJobHandle   = CombineDependencies(currentJobHandle, JobHandles.brushTreeSpacePlaneCacheJobHandle);
+                        //JobHandles.brushesTouchedByBrushCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesTouchedByBrushCacheJobHandle);
+                        //JobHandles.dataStream1JobHandle                = CombineDependencies(currentJobHandle, JobHandles.dataStream1JobHandle);
+                        //JobHandles.loopVerticesLookupJobHandle         = CombineDependencies(currentJobHandle, JobHandles.loopVerticesLookupJobHandle);
+                        JobHandles.dataStream2JobHandle                  = CombineDependencies(currentJobHandle, JobHandles.dataStream2JobHandle);
                     } finally { Profiler.EndSample(); }
                     #endregion
 
@@ -1887,12 +1821,12 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(allUpdateBrushIndexOrdersJobHandle,
-                                                                          meshQueriesJobHandle,
-                                                                          basePolygonCacheJobHandle,
-                                                                          transformationCacheJobHandle,
-                                                                          dataStream2JobHandle,
-                                                                          brushRenderBufferCacheJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                                          JobHandles.meshQueriesJobHandle,
+                                                                          JobHandles.basePolygonCacheJobHandle,
+                                                                          JobHandles.transformationCacheJobHandle,
+                                                                          JobHandles.dataStream2JobHandle,
+                                                                          JobHandles.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         // TODO: Potentially merge this with PerformCSGJob?
                         var generateSurfaceRenderBuffers = new GenerateSurfaceTrianglesJob
@@ -1912,11 +1846,11 @@ namespace Chisel.Core
 
                         dataStream2 = default;
 
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
-                        //basePolygonCacheJobHandle          = CombineDependencies(currentJobHandle, basePolygonCacheJobHandle);
-                        //transformationCacheJobHandle       = CombineDependencies(currentJobHandle, transformationCacheJobHandle);
-                        //dataStream2JobHandle               = CombineDependencies(currentJobHandle, dataStream2JobHandle);
-                        brushRenderBufferCacheJobHandle      = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.basePolygonCacheJobHandle          = CombineDependencies(currentJobHandle, JobHandles.basePolygonCacheJobHandle);
+                        //JobHandles.transformationCacheJobHandle       = CombineDependencies(currentJobHandle, JobHandles.transformationCacheJobHandle);
+                        //JobHandles.dataStream2JobHandle               = CombineDependencies(currentJobHandle, JobHandles.dataStream2JobHandle);
+                        JobHandles.brushRenderBufferCacheJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushRenderBufferCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -1928,7 +1862,9 @@ namespace Chisel.Core
                     // Create meshes out of ALL the generated and cached surfaces
                     //
 
-                    parameterCountsJobHandle.Complete();
+                    // TODO: store parameterCounts per brush (precalculated), manage these counts in the hierarchy when brushes are added/removed/modified
+                    //       then we don't need to count them here & don't need to do a "complete" here
+                    JobHandles.parameterCountsJobHandle.Complete();
 
                     #region Create Meshes
                     Profiler.BeginSample("Mesh.AllocateWritableMeshData");
@@ -1939,8 +1875,8 @@ namespace Chisel.Core
                         {
                             var meshQuery = meshQueries[m];
                             var surfaceParameterIndex = (meshQuery.LayerParameterIndex >= LayerParameterIndex.LayerParameter1 &&
-                                                            meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
-                                                            (int)meshQuery.LayerParameterIndex : 0;
+                                                         meshQuery.LayerParameterIndex <= LayerParameterIndex.MaxLayerParameterIndex) ?
+                                                         (int)meshQuery.LayerParameterIndex : 0;
 
                             // Query uses Material
                             if ((meshQuery.LayerQuery & LayerUsageFlags.Renderable) != 0 && surfaceParameterIndex == 1)
@@ -1968,13 +1904,13 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(meshQueriesJobHandle,
-                                                                          allTreeBrushIndexOrdersJobHandle,
-                                                                          brushRenderBufferCacheJobHandle,
-                                                                          brushRenderDataJobHandle,
-                                                                          subMeshSurfacesJobHandle,
-                                                                          subMeshCountsJobHandle,
-                                                                          vertexBufferContents_subMeshSectionsJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.meshQueriesJobHandle,
+                                                                          JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                                          JobHandles.brushRenderBufferCacheJobHandle,
+                                                                          JobHandles.brushRenderDataJobHandle,
+                                                                          JobHandles.subMeshSurfacesJobHandle,
+                                                                          JobHandles.subMeshCountsJobHandle,
+                                                                          JobHandles.vertexBufferContents_subMeshSectionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         dependencies                = ChiselNativeListExtensions.ScheduleEnsureCapacity(brushRenderData, allTreeBrushIndexOrders, dependencies);
                         var findBrushRenderBuffersJob = new FindBrushRenderBuffersJob
@@ -1991,13 +1927,13 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = findBrushRenderBuffersJob.Schedule(runInParallel, dependencies);
 
-                        //meshQueriesJobHandle                           = CombineDependencies(currentJobHandle, meshQueriesJobHandle);
-                        //allTreeBrushIndexOrdersJobHandle               = CombineDependencies(currentJobHandle, allTreeBrushIndexOrdersJobHandle);
-                        //reeUpdate.brushRenderBufferCacheJobHandle      = CombineDependencies(currentJobHandle, brushRenderBufferCacheJobHandle);
-                        brushRenderDataJobHandle                         = CombineDependencies(currentJobHandle, brushRenderDataJobHandle);
-                        subMeshSurfacesJobHandle                         = CombineDependencies(currentJobHandle, subMeshSurfacesJobHandle);
-                        subMeshCountsJobHandle                           = CombineDependencies(currentJobHandle, subMeshCountsJobHandle);
-                        vertexBufferContents_subMeshSectionsJobHandle    = CombineDependencies(currentJobHandle, vertexBufferContents_subMeshSectionsJobHandle);
+                        //JobHandles.meshQueriesJobHandle                           = CombineDependencies(currentJobHandle, JobHandles.meshQueriesJobHandle);
+                        //JobHandles.allTreeBrushIndexOrdersJobHandle               = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
+                        //JobHandles.brushRenderBufferCacheJobHandle                = CombineDependencies(currentJobHandle, JobHandles.brushRenderBufferCacheJobHandle);
+                        JobHandles.brushRenderDataJobHandle                         = CombineDependencies(currentJobHandle, JobHandles.brushRenderDataJobHandle);
+                        JobHandles.subMeshSurfacesJobHandle                         = CombineDependencies(currentJobHandle, JobHandles.subMeshSurfacesJobHandle);
+                        JobHandles.subMeshCountsJobHandle                           = CombineDependencies(currentJobHandle, JobHandles.subMeshCountsJobHandle);
+                        JobHandles.vertexBufferContents_subMeshSectionsJobHandle    = CombineDependencies(currentJobHandle, JobHandles.vertexBufferContents_subMeshSectionsJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2005,10 +1941,10 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(meshQueriesJobHandle,
-                                                                          brushRenderDataJobHandle,
-                                                                          sectionsJobHandle,
-                                                                          subMeshSurfacesJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.meshQueriesJobHandle,
+                                                                          JobHandles.brushRenderDataJobHandle,
+                                                                          JobHandles.sectionsJobHandle,
+                                                                          JobHandles.subMeshSurfacesJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var prepareJob = new PrepareSubSectionsJob
                         {
@@ -2021,10 +1957,10 @@ namespace Chisel.Core
                         };
                         var currentJobHandle    = prepareJob.Schedule(runInParallel, meshQueriesLength, 1, dependencies);
 
-                        //meshQueriesJobHandle       = CombineDependencies(currentJobHandle, meshQueriesJobHandle);
-                        //brushRenderDataJobHandle   = CombineDependencies(currentJobHandle, brushRenderDataJobHandle);
-                        sectionsJobHandle            = CombineDependencies(currentJobHandle, sectionsJobHandle);
-                        subMeshSurfacesJobHandle     = CombineDependencies(currentJobHandle, subMeshSurfacesJobHandle);
+                        //JobHandles.meshQueriesJobHandle       = CombineDependencies(currentJobHandle, JobHandles.meshQueriesJobHandle);
+                        //JobHandles.brushRenderDataJobHandle   = CombineDependencies(currentJobHandle, JobHandles.brushRenderDataJobHandle);
+                        JobHandles.sectionsJobHandle            = CombineDependencies(currentJobHandle, JobHandles.sectionsJobHandle);
+                        JobHandles.subMeshSurfacesJobHandle     = CombineDependencies(currentJobHandle, JobHandles.subMeshSurfacesJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2032,10 +1968,10 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(sectionsJobHandle,
-                                                               subMeshSurfacesJobHandle,
-                                                               subMeshCountsJobHandle,
-                                                               vertexBufferContents_subMeshSectionsJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.sectionsJobHandle,
+                                                               JobHandles.subMeshSurfacesJobHandle,
+                                                               JobHandles.subMeshCountsJobHandle,
+                                                               JobHandles.vertexBufferContents_subMeshSectionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var parallelSortJob = new SortSurfacesParallelJob
                         {
@@ -2048,15 +1984,15 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = parallelSortJob.Schedule(runInParallel, dependencies);
 
-                        //sectionsJobHandle          = CombineDependencies(currentJobHandle, sectionsJobHandle);
-                        //subMeshSurfacesJobHandle   = CombineDependencies(currentJobHandle, subMeshSurfacesJobHandle);
-                        subMeshCountsJobHandle       = CombineDependencies(currentJobHandle, subMeshCountsJobHandle);
+                        //JobHandles.sectionsJobHandle          = CombineDependencies(currentJobHandle, JobHandles.sectionsJobHandle);
+                        //JobHandles.subMeshSurfacesJobHandle   = CombineDependencies(currentJobHandle, JobHandles.subMeshSurfacesJobHandle);
+                        JobHandles.subMeshCountsJobHandle       = CombineDependencies(currentJobHandle, JobHandles.subMeshCountsJobHandle);
 
 
-                        dependencies = CombineDependencies(sectionsJobHandle,
-                                                           subMeshSurfacesJobHandle,
-                                                           subMeshCountsJobHandle,
-                                                           vertexBufferContents_subMeshSectionsJobHandle,
+                        dependencies = CombineDependencies(JobHandles.sectionsJobHandle,
+                                                           JobHandles.subMeshSurfacesJobHandle,
+                                                           JobHandles.subMeshCountsJobHandle,
+                                                           JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
                                                            currentJobHandle);
 
                         var sortJobGather = new GatherSurfacesJob
@@ -2069,8 +2005,8 @@ namespace Chisel.Core
                         };
                         currentJobHandle = sortJobGather.Schedule(runInParallel, dependencies);
 
-                        subMeshCountsJobHandle                           = CombineDependencies(currentJobHandle, subMeshCountsJobHandle);
-                        vertexBufferContents_subMeshSectionsJobHandle    = CombineDependencies(currentJobHandle, vertexBufferContents_subMeshSectionsJobHandle);
+                        JobHandles.subMeshCountsJobHandle                           = CombineDependencies(currentJobHandle, JobHandles.subMeshCountsJobHandle);
+                        JobHandles.vertexBufferContents_subMeshSectionsJobHandle    = CombineDependencies(currentJobHandle, JobHandles.vertexBufferContents_subMeshSectionsJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2078,8 +2014,8 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(vertexBufferContents_subMeshSectionsJobHandle,
-                                                                          vertexBufferContents_triangleBrushIndicesJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                                          JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var allocateVertexBuffersJob = new AllocateVertexBuffersJob
                         {
@@ -2091,7 +2027,7 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = allocateVertexBuffersJob.Schedule(runInParallel, dependencies);
 
-                        vertexBufferContents_triangleBrushIndicesJobHandle   = CombineDependencies(currentJobHandle, vertexBufferContents_triangleBrushIndicesJobHandle);
+                        JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle   = CombineDependencies(currentJobHandle, JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2099,8 +2035,8 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies            = CombineDependencies(subMeshCountsJobHandle,
-                                                                          vertexBufferContents_meshDescriptionsJobHandle);
+                        var dependencies            = CombineDependencies(JobHandles.subMeshCountsJobHandle,
+                                                                          JobHandles.vertexBufferContents_meshDescriptionsJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var generateMeshDescriptionJob = new GenerateMeshDescriptionJob
                         {
@@ -2112,8 +2048,8 @@ namespace Chisel.Core
                         };
                         var currentJobHandle = generateMeshDescriptionJob.Schedule(runInParallel, dependencies);
 
-                        vertexBufferContents_meshDescriptionsJobHandle = CombineDependencies(currentJobHandle, vertexBufferContents_meshDescriptionsJobHandle);
-                        subMeshCountsJobHandle                         = CombineDependencies(currentJobHandle, subMeshCountsJobHandle);
+                        JobHandles.vertexBufferContents_meshDescriptionsJobHandle = CombineDependencies(currentJobHandle, JobHandles.vertexBufferContents_meshDescriptionsJobHandle);
+                        JobHandles.subMeshCountsJobHandle                         = CombineDependencies(currentJobHandle, JobHandles.subMeshCountsJobHandle);
                     }
                     finally { Profiler.EndSample(); }
 
@@ -2123,13 +2059,13 @@ namespace Chisel.Core
                         const bool runInParallel = runInParallelDefault;
                         JobHandle dependencies;
                         { 
-                            dependencies = CombineDependencies(vertexBufferContents_meshDescriptionsJobHandle,
-                                                               vertexBufferContents_subMeshSectionsJobHandle,
-                                                               meshDatasJobHandle,
-                                                               vertexBufferContents_meshesJobHandle,
-                                                               colliderMeshUpdatesJobHandle,
-                                                               debugHelperMeshesJobHandle,
-                                                               renderMeshesJobHandle);
+                            dependencies = CombineDependencies(JobHandles.vertexBufferContents_meshDescriptionsJobHandle,
+                                                               JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                               JobHandles.meshDatasJobHandle,
+                                                               JobHandles.vertexBufferContents_meshesJobHandle,
+                                                               JobHandles.colliderMeshUpdatesJobHandle,
+                                                               JobHandles.debugHelperMeshesJobHandle,
+                                                               JobHandles.renderMeshesJobHandle);
                             var assignMeshesJob = new AssignMeshesJob
                             {
                                 // Read
@@ -2147,19 +2083,19 @@ namespace Chisel.Core
                             };
                             var currentJobHandle = assignMeshesJob.Schedule(runInParallel, dependencies);
 
-                            vertexBufferContents_meshesJobHandle = CombineDependencies(currentJobHandle, vertexBufferContents_meshesJobHandle);
-                            debugHelperMeshesJobHandle           = CombineDependencies(currentJobHandle, debugHelperMeshesJobHandle);
-                            renderMeshesJobHandle                = CombineDependencies(currentJobHandle, renderMeshesJobHandle);
-                            colliderMeshUpdatesJobHandle         = CombineDependencies(currentJobHandle, colliderMeshUpdatesJobHandle);
+                            JobHandles.vertexBufferContents_meshesJobHandle = CombineDependencies(currentJobHandle, JobHandles.vertexBufferContents_meshesJobHandle);
+                            JobHandles.debugHelperMeshesJobHandle           = CombineDependencies(currentJobHandle, JobHandles.debugHelperMeshesJobHandle);
+                            JobHandles.renderMeshesJobHandle                = CombineDependencies(currentJobHandle, JobHandles.renderMeshesJobHandle);
+                            JobHandles.colliderMeshUpdatesJobHandle         = CombineDependencies(currentJobHandle, JobHandles.colliderMeshUpdatesJobHandle);
                         }
 
-                        dependencies = CombineDependencies(vertexBufferContents_subMeshSectionsJobHandle,
-                                                           subMeshCountsJobHandle,
-                                                           subMeshSurfacesJobHandle,                                                            
-                                                           vertexBufferContents_renderDescriptorsJobHandle,
-                                                           renderMeshesJobHandle,
-                                                           vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                           vertexBufferContents_meshesJobHandle);
+                        dependencies = CombineDependencies(JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                           JobHandles.subMeshCountsJobHandle,
+                                                           JobHandles.subMeshSurfacesJobHandle,
+                                                           JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                                           JobHandles.renderMeshesJobHandle,
+                                                           JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                           JobHandles.vertexBufferContents_meshesJobHandle);
                         var renderCopyToMeshJob = new CopyToRenderMeshJob
                         {
                             // Read
@@ -2175,13 +2111,13 @@ namespace Chisel.Core
                         };
                         var renderMeshJobHandle = renderCopyToMeshJob.Schedule(runInParallel, renderMeshes, 1, dependencies);
 
-                        dependencies = CombineDependencies(vertexBufferContents_subMeshSectionsJobHandle,
-                                                           subMeshCountsJobHandle,
-                                                           subMeshSurfacesJobHandle,                                                           
-                                                           vertexBufferContents_renderDescriptorsJobHandle,
-                                                           debugHelperMeshesJobHandle,
-                                                           vertexBufferContents_triangleBrushIndicesJobHandle,
-                                                           vertexBufferContents_meshesJobHandle);
+                        dependencies = CombineDependencies(JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                           JobHandles.subMeshCountsJobHandle,
+                                                           JobHandles.subMeshSurfacesJobHandle,
+                                                           JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                                           JobHandles.debugHelperMeshesJobHandle,
+                                                           JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
+                                                           JobHandles.vertexBufferContents_meshesJobHandle);
                         var helperCopyToMeshJob = new CopyToRenderMeshJob
                         {
                             // Read
@@ -2197,13 +2133,12 @@ namespace Chisel.Core
                         };
                         var helperMeshJobHandle = helperCopyToMeshJob.Schedule(runInParallel, debugHelperMeshes, 1, dependencies);
 
-                        dependencies = CombineDependencies(vertexBufferContents_subMeshSectionsJobHandle,
-                                                           subMeshCountsJobHandle,
-                                                           subMeshSurfacesJobHandle,
-
-                                                           vertexBufferContents_colliderDescriptorsJobHandle,
-                                                           colliderMeshUpdatesJobHandle,
-                                                           vertexBufferContents_meshesJobHandle);
+                        dependencies = CombineDependencies(JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                                           JobHandles.subMeshCountsJobHandle,
+                                                           JobHandles.subMeshSurfacesJobHandle,
+                                                           JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
+                                                           JobHandles.colliderMeshUpdatesJobHandle,
+                                                           JobHandles.vertexBufferContents_meshesJobHandle);
                         var colliderCopyToMeshJob = new CopyToColliderMeshJob
                         {
                             // Read
@@ -2219,14 +2154,14 @@ namespace Chisel.Core
                         var colliderMeshJobHandle = colliderCopyToMeshJob.Schedule(runInParallel, colliderMeshUpdates, 16, dependencies);
 
 
-                        subMeshCountsJobHandle = CombineDependencies(renderMeshJobHandle, helperMeshJobHandle, colliderMeshJobHandle, subMeshCountsJobHandle);
+                        JobHandles.subMeshCountsJobHandle = CombineDependencies(renderMeshJobHandle, helperMeshJobHandle, colliderMeshJobHandle, JobHandles.subMeshCountsJobHandle);
 
-                        vertexBufferContents_triangleBrushIndicesJobHandle = CombineDependencies(renderMeshJobHandle, vertexBufferContents_triangleBrushIndicesJobHandle);
-                        vertexBufferContents_triangleBrushIndicesJobHandle = CombineDependencies(helperMeshJobHandle, vertexBufferContents_triangleBrushIndicesJobHandle);
-                        
-                        vertexBufferContents_meshesJobHandle = CombineDependencies(renderMeshJobHandle, vertexBufferContents_meshesJobHandle);
-                        vertexBufferContents_meshesJobHandle = CombineDependencies(helperMeshJobHandle, vertexBufferContents_meshesJobHandle);
-                        vertexBufferContents_meshesJobHandle = CombineDependencies(colliderMeshJobHandle, vertexBufferContents_meshesJobHandle);
+                        JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle = CombineDependencies(renderMeshJobHandle, JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+                        JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle = CombineDependencies(helperMeshJobHandle, JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+
+                        JobHandles.vertexBufferContents_meshesJobHandle = CombineDependencies(renderMeshJobHandle, JobHandles.vertexBufferContents_meshesJobHandle);
+                        JobHandles.vertexBufferContents_meshesJobHandle = CombineDependencies(helperMeshJobHandle, JobHandles.vertexBufferContents_meshesJobHandle);
+                        JobHandles.vertexBufferContents_meshesJobHandle = CombineDependencies(colliderMeshJobHandle, JobHandles.vertexBufferContents_meshesJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -2240,9 +2175,9 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = CombineDependencies(allTreeBrushIndexOrdersJobHandle,
-                                                               brushTreeSpaceBoundCacheJobHandle,
-                                                               brushRenderBufferCacheJobHandle);
+                        var dependencies = CombineDependencies(JobHandles.allTreeBrushIndexOrdersJobHandle,
+                                                               JobHandles.brushTreeSpaceBoundCacheJobHandle,
+                                                               JobHandles.brushRenderBufferCacheJobHandle);
                         CheckDependencies(runInParallel, dependencies);
                         var storeToCacheJob = new StoreToCacheJob
                         {
@@ -2256,7 +2191,7 @@ namespace Chisel.Core
                             brushRenderBufferLookup     = chiselLookupValues.brushRenderBufferLookup
                         };
                         var currentJobHandle = storeToCacheJob.Schedule(runInParallel, dependencies);
-                        storeToCacheJobHandle = CombineDependencies(currentJobHandle, storeToCacheJobHandle);
+                        JobHandles.storeToCacheJobHandle = CombineDependencies(currentJobHandle, JobHandles.storeToCacheJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -2266,21 +2201,24 @@ namespace Chisel.Core
                     try
                     {
                         const bool runInParallel = runInParallelDefault;
-                        var dependencies = allUpdateBrushIndexOrdersJobHandle;
+                        var dependencies = CombineDependencies(JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                               JobHandles.brushMeshBlobsLookupJobHandle);
                         var updateBrushOutlineJob = new UpdateBrushOutlineJob
                         {
                             // Read
-                            allUpdateBrushIndexOrders = allUpdateBrushIndexOrders,
-                            brushMeshBlobs = brushMeshBlobs
+                            allUpdateBrushIndexOrders   = allUpdateBrushIndexOrders,
+                            brushMeshBlobs              = brushMeshBlobs
 
                             // Write
                             //compactHierarchy          = compactHierarchy,  //<-- cannot do ref or pointer here
                         };
                         updateBrushOutlineJob.InitializeHierarchy(ref compactHierarchy);
-                        updateBrushOutlineJobHandle = updateBrushOutlineJob.Schedule(runInParallel, dependencies);
+                        var currentJobHandle = updateBrushOutlineJob.Schedule(runInParallel, dependencies);
+                        JobHandles.updateBrushOutlineJobHandle = currentJobHandle;
 
-                        //brushMeshBlobsLookupJobHandle      = CombineDependencies(currentJobHandle, brushMeshBlobsLookupJobHandle);
-                        //allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, allUpdateBrushIndexOrdersJobHandle);
+                        //JobHandles.brushMeshBlobsLookupJobHandle      = CombineDependencies(currentJobHandle, JobHandles.brushMeshBlobsLookupJobHandle);
+                        //JobHandles.allUpdateBrushIndexOrdersJobHandle = CombineDependencies(currentJobHandle, JobHandles.allUpdateBrushIndexOrdersJobHandle);
+                        JobHandles.compactTreeRefJobHandle              = CombineDependencies(currentJobHandle, JobHandles.compactTreeRefJobHandle);
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -2302,51 +2240,51 @@ namespace Chisel.Core
                     // to work with while things are still being re-arranged.
                     disposeJobHandle = CombineDependencies(
                                                 CombineDependencies(
-                                                    allBrushMeshIDsJobHandle,
-                                                    allUpdateBrushIndexOrdersJobHandle,
-                                                    brushIDValuesJobHandle,
-                                                    basePolygonCacheJobHandle,
-                                                    brushBrushIntersectionsJobHandle,
-                                                    brushesTouchedByBrushCacheJobHandle,
-                                                    brushRenderBufferCacheJobHandle,
-                                                    brushRenderDataJobHandle),
+                                                    JobHandles.allBrushMeshIDsJobHandle,
+                                                    JobHandles.allUpdateBrushIndexOrdersJobHandle,
+                                                    JobHandles.brushIDValuesJobHandle,
+                                                    JobHandles.basePolygonCacheJobHandle,
+                                                    JobHandles.brushBrushIntersectionsJobHandle,
+                                                    JobHandles.brushesTouchedByBrushCacheJobHandle,
+                                                    JobHandles.brushRenderBufferCacheJobHandle,
+                                                    JobHandles.brushRenderDataJobHandle),
                                                 CombineDependencies(
-                                                    brushTreeSpacePlaneCacheJobHandle,
-                                                    brushMeshBlobsLookupJobHandle,
-                                                    brushMeshLookupJobHandle,
-                                                    brushIntersectionsWithJobHandle,
-                                                    brushIntersectionsWithRangeJobHandle,
-                                                    brushesThatNeedIndirectUpdateHashMapJobHandle,
-                                                    brushesThatNeedIndirectUpdateJobHandle,
-                                                    brushTreeSpaceBoundCacheJobHandle),
+                                                    JobHandles.brushTreeSpacePlaneCacheJobHandle,
+                                                    JobHandles.brushMeshBlobsLookupJobHandle,
+                                                    JobHandles.brushMeshLookupJobHandle,
+                                                    JobHandles.brushIntersectionsWithJobHandle,
+                                                    JobHandles.brushIntersectionsWithRangeJobHandle,
+                                                    JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
+                                                    JobHandles.brushesThatNeedIndirectUpdateJobHandle,
+                                                    JobHandles.brushTreeSpaceBoundCacheJobHandle),
                                                 CombineDependencies(
-                                                    dataStream1JobHandle,
-                                                    dataStream2JobHandle,
-                                                    intersectingBrushesStreamJobHandle,
-                                                    loopVerticesLookupJobHandle,
-                                                    meshQueriesJobHandle,
-                                                    nodeIDValueToNodeOrderArrayJobHandle,
-                                                    outputSurfaceVerticesJobHandle,
-                                                    outputSurfacesJobHandle,
-                                                    outputSurfacesRangeJobHandle),
+                                                    JobHandles.dataStream1JobHandle,
+                                                    JobHandles.dataStream2JobHandle,
+                                                    JobHandles.intersectingBrushesStreamJobHandle,
+                                                    JobHandles.loopVerticesLookupJobHandle,
+                                                    JobHandles.meshQueriesJobHandle,
+                                                    JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
+                                                    JobHandles.outputSurfaceVerticesJobHandle,
+                                                    JobHandles.outputSurfacesJobHandle,
+                                                    JobHandles.outputSurfacesRangeJobHandle),
                                                 CombineDependencies(
-                                                    routingTableCacheJobHandle,
-                                                    rebuildTreeBrushIndexOrdersJobHandle,
-                                                    sectionsJobHandle,
-                                                    subMeshSurfacesJobHandle,
-                                                    subMeshCountsJobHandle,
-                                                    treeSpaceVerticesCacheJobHandle,
-                                                    transformationCacheJobHandle,
-                                                    uniqueBrushPairsJobHandle),
+                                                    JobHandles.routingTableCacheJobHandle,
+                                                    JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
+                                                    JobHandles.sectionsJobHandle,
+                                                    JobHandles.subMeshSurfacesJobHandle,
+                                                    JobHandles.subMeshCountsJobHandle,
+                                                    JobHandles.treeSpaceVerticesCacheJobHandle,
+                                                    JobHandles.transformationCacheJobHandle,
+                                                    JobHandles.uniqueBrushPairsJobHandle),
                                                 CombineDependencies(
-                                                    brushesJobHandle,
-                                                    nodesJobHandle,
-                                                    parametersJobHandle,
-                                                    allKnownBrushMeshIndicesJobHandle,
-                                                    parameterCountsJobHandle,
+                                                    JobHandles.brushesJobHandle,
+                                                    JobHandles.nodesJobHandle,
+                                                    JobHandles.parametersJobHandle,
+                                                    JobHandles.allKnownBrushMeshIndicesJobHandle,
+                                                    JobHandles.parameterCountsJobHandle,
 
-                                                    updateBrushOutlineJobHandle,
-                                                    storeToCacheJobHandle)
+                                                    JobHandles.updateBrushOutlineJobHandle,
+                                                    JobHandles.storeToCacheJobHandle)
                                             );
                 }
                 Profiler.EndSample();
@@ -2435,27 +2373,27 @@ namespace Chisel.Core
                 if (meshDatas                    .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, meshDatas                    .Dispose(disposeJobHandle));
                 
                 if (vertexBufferContents         .IsCreated) lastJobHandle = CombineDependencies(lastJobHandle, vertexBufferContents         .Dispose(disposeJobHandle));
-                
 
 
-                surfaceCountRefJobHandle.Complete();
-                surfaceCountRefJobHandle = default;
+
+                JobHandles.surfaceCountRefJobHandle.Complete();
+                JobHandles.surfaceCountRefJobHandle = default;
                 if (surfaceCountRef.IsCreated) surfaceCountRef.Dispose();
 
-                compactTreeRefJobHandle.Complete();
-                compactTreeRefJobHandle = default;
+                JobHandles.compactTreeRefJobHandle.Complete();
+                JobHandles.compactTreeRefJobHandle = default;
                 if (compactTreeRef.IsCreated)
                 {
                     if (compactTreeRef.Value.IsCreated) compactTreeRef.Value.Dispose();
                     compactTreeRef.Dispose();
                 }
 
-                needRemappingRefJobHandle.Complete();
-                needRemappingRefJobHandle = default;
+                JobHandles.needRemappingRefJobHandle.Complete();
+                JobHandles.needRemappingRefJobHandle = default;
                 if (needRemappingRef.IsCreated) needRemappingRef.Dispose();
 
-                nodeIDValueToNodeOrderOffsetRefJobHandle.Complete();
-                nodeIDValueToNodeOrderOffsetRefJobHandle = default;
+                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle.Complete();
+                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle = default;
                 if (nodeIDValueToNodeOrderOffsetRef.IsCreated) nodeIDValueToNodeOrderOffsetRef.Dispose();
                 
                 allTreeBrushIndexOrders         = default;
