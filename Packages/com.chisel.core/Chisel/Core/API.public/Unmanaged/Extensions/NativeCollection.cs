@@ -15,6 +15,7 @@ namespace Chisel.Core
         public static JobHandle ScheduleConstruct<U>(bool runInParallel, out NativeStream dataStream, NativeList<U> forEachCountFromList, Allocator allocator, JobHandle dependsOn = default)
             where U : struct
         {
+            JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return NativeStream.ScheduleConstruct(out dataStream, forEachCountFromList, dependsOn, allocator);
 
@@ -39,6 +40,7 @@ namespace Chisel.Core
             where T : struct
             where U : struct
         {
+            JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return ScheduleSetCapacity(ref list, forEachCountFromList, allocator, dependsOn);
 
@@ -85,6 +87,7 @@ namespace Chisel.Core
         public static JobHandle ScheduleEnsureCapacity<T>(bool runInParallel, ref NativeList<T> list, NativeReference<int> capacity, Allocator allocator, JobHandle dependsOn = default)
             where T : struct
         {
+            JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return ScheduleSetCapacity(ref list, capacity, allocator, dependsOn);
 
@@ -108,6 +111,7 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JobHandle ScheduleDispose(bool runInParallel, ref NativeStream dataStream, JobHandle dependsOn = default)
         {
+            JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
             {
                 var result = dataStream.Dispose(dependsOn);
@@ -125,6 +129,7 @@ namespace Chisel.Core
             where T : unmanaged, IDisposable
         {
             var disposeListJob = new DisposeListChildrenJob<T> { list = list };
+            JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
             if (runInParallel)
                 return list.Dispose(currentHandle);
@@ -140,6 +145,7 @@ namespace Chisel.Core
             where T : unmanaged, IDisposable
         {
             var disposeListJob = new DisposeReferenceChildJob<T> { reference = reference };
+            JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
             if (runInParallel)
                 return reference.Dispose(currentHandle);
@@ -155,6 +161,7 @@ namespace Chisel.Core
             where T : unmanaged
         {
             var disposeListJob = new DisposeReferenceChildBlobAssetReferenceJob<T> { reference = reference };
+            JobExtensions.CheckDependencies(runInParallel, dependencies);
             var currentHandle = disposeListJob.Schedule(runInParallel, dependencies);
             if (runInParallel)
                 return reference.Dispose(currentHandle);

@@ -24,6 +24,7 @@ namespace Chisel.Core
             where T : struct, IJobParallelForDefer
             where U : struct
         {
+            CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return jobData.Schedule(list, innerloopBatchCount, dependsOn);
             
@@ -36,6 +37,7 @@ namespace Chisel.Core
         public static JobHandle Schedule<T>(this T jobData, bool runInParallel, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default)
             where T : struct, IJobParallelFor
         {
+            CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return jobData.Schedule(arrayLength, innerloopBatchCount, dependsOn);
             
@@ -48,6 +50,7 @@ namespace Chisel.Core
         public static JobHandle Schedule<T>(this T jobData, bool runInParallel, JobHandle dependsOn = default)
             where T : struct, IJob
         {
+            CheckDependencies(runInParallel, dependsOn);
             if (runInParallel)
                 return jobData.Schedule(dependsOn);
             
@@ -76,6 +79,7 @@ namespace Chisel.Core
             where T : struct, IJob
         {
             var dependencies = JobHandleExtensions.CombineDependencies(readDependencies.Handles, writeDependencies.Handles);
+            CheckDependencies(runInParallel, dependencies);
             var currentJobHandle = jobData.Schedule(runInParallel, dependencies);
             writeDependencies.AddWriteDependency(currentJobHandle);
 
