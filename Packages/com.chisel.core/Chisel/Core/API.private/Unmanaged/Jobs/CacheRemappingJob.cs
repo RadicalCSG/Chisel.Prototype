@@ -39,9 +39,9 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushes;
         [NoAlias, ReadOnly] public int                                  brushCount;
         [NoAlias, ReadOnly] public NativeList<IndexOrder>               allTreeBrushIndexOrders;
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID>            brushIDValues;
 
         // Read/Write
-        [NoAlias] public NativeList<CompactNodeID>                                   brushIDValues;
         [NoAlias] public NativeList<BlobAssetReference<BasePolygonsBlob>>            basePolygonCache;
         [NoAlias] public NativeList<BlobAssetReference<RoutingTable>>                routingTableCache;
         [NoAlias] public NativeList<NodeTransformations>                             transformationCache;
