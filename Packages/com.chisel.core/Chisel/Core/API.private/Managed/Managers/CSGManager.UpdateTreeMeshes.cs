@@ -657,16 +657,7 @@ namespace Chisel.Core
                                                                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
                                                                JobHandles.allTreeBrushIndexOrdersJobHandle,
                                                                JobHandles.brushIDValuesJobHandle);
-                        /*
-                        dependencies.Complete();
-                        BuildLookupTablesJob.BuildLookupTables(this.brushes, this.brushCount,
 
-                                                               // Read/Write
-                                                               chiselLookupValues.brushIDValues,
-                                                               this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
-
-                                                               this.allTreeBrushIndexOrders);
-                        /*/
                         var buildLookupTablesJob = new BuildLookupTablesJob
                         {
                             // Read
@@ -688,7 +679,6 @@ namespace Chisel.Core
                         JobHandles.nodeIDValueToNodeOrderArrayJobHandle     = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderArrayJobHandle);
                         JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
                         JobHandles.allTreeBrushIndexOrdersJobHandle         = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
-                        //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -715,27 +705,7 @@ namespace Chisel.Core
 
                                                                JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
                                                                JobHandles.needRemappingRefJobHandle);
-                        /*
-                        dependencies.Complete();
-                        CacheRemappingJob.CacheRemapping(ref compactHierarchy,
-                                                         this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
-                                                         this.brushes, this.brushCount,
-                                                         this.allTreeBrushIndexOrders,
 
-                                                         // Read/Write
-                                                         chiselLookupValues.brushIDValues,
-                                                         chiselLookupValues.basePolygonCache,
-                                                         chiselLookupValues.routingTableCache,
-                                                         chiselLookupValues.transformationCache,
-                                                         chiselLookupValues.brushRenderBufferCache,
-                                                         chiselLookupValues.treeSpaceVerticesCache,
-                                                         chiselLookupValues.brushTreeSpacePlaneCache,
-                                                         chiselLookupValues.brushTreeSpaceBoundCache,
-                                                         chiselLookupValues.brushesTouchedByBrushCache,
-
-                                                         this.brushesThatNeedIndirectUpdateHashMap,
-                                                         this.needRemappingRef);
-                        /*/
                         var cacheRemappingJob = new CacheRemappingJob
                         {
                             // Read
@@ -783,7 +753,6 @@ namespace Chisel.Core
 
                         JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle   = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
                         JobHandles.needRemappingRefJobHandle                       = CombineDependencies(currentJobHandle, JobHandles.needRemappingRefJobHandle);
-                        //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -797,14 +766,7 @@ namespace Chisel.Core
                                                                JobHandles.allTreeBrushIndexOrdersJobHandle,
                                                                JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
                                                                JobHandles.transformTreeBrushIndicesListJobHandle);
-                        /*
-                        dependencies.Complete();
-                        FindModifiedBrushesJob.FindModifiedBrushes(ref compactHierarchy, 
-                                                                   this.brushes, this.brushCount,
-                                                                   this.allTreeBrushIndexOrders, 
-                                                                   this.rebuildTreeBrushIndexOrders, 
-                                                                   this.transformTreeBrushIndicesList);
-                        /*/
+
                         var findModifiedBrushesJob = new FindModifiedBrushesJob
                         {
                             // Read
@@ -828,7 +790,6 @@ namespace Chisel.Core
                         //JobHandles.allTreeBrushIndexOrdersJobHandle      = CombineDependencies(currentJobHandle, JobHandles.allTreeBrushIndexOrdersJobHandle);
                         JobHandles.rebuildTreeBrushIndexOrdersJobHandle    = CombineDependencies(currentJobHandle, JobHandles.rebuildTreeBrushIndexOrdersJobHandle);
                         JobHandles.transformTreeBrushIndicesListJobHandle  = CombineDependencies(currentJobHandle, JobHandles.transformTreeBrushIndicesListJobHandle);
-                        //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -845,16 +806,7 @@ namespace Chisel.Core
                                                                JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
                                                                JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
                                                                JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
-                        /*
-                        dependencies.Complete();
-                        InvalidateBrushesJob.InvalidateBrushes(ref compactHierarchy,
-                                                               this.needRemappingRef, 
-                                                               this.rebuildTreeBrushIndexOrders,
-                                                               chiselLookupValues.brushesTouchedByBrushCache,
-                                                               this.brushes, this.brushCount,
-                                                               this.nodeIDValueToNodeOrderArray, this.nodeIDValueToNodeOrderOffsetRef,
-                                                               this.brushesThatNeedIndirectUpdateHashMap);
-                        /*/
+
                         var invalidateBrushesJob = new InvalidateBrushesJob
                         {
                             // Read
@@ -882,7 +834,6 @@ namespace Chisel.Core
                         //JobHandles.nodeIDToNodeOrderArrayJobHandle             = CombineDependencies(currentJobHandle, JobHandles.nodeIDToNodeOrderArrayJobHandle);
                         //JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle    = CombineDependencies(currentJobHandle, JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle);
                         JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle = CombineDependencies(currentJobHandle, JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle);
-                        //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -898,16 +849,7 @@ namespace Chisel.Core
                                                                JobHandles.allKnownBrushMeshIndicesJobHandle,
                                                                JobHandles.allBrushMeshIDsJobHandle,
                                                                JobHandles.parameterCountsJobHandle);
-                        /*
-                        dependencies.Complete();
-                        UpdateBrushMeshIDsJob.UpdateBrushMeshIDs(ref compactHierarchy,
-                                                                    brushMeshBlobs,
-                                                                    this.brushCount, this.brushes,
-                                                                    chiselLookupValues.allKnownBrushMeshIndices,
-                                                                    chiselLookupValues.parameters,
-                                                                    this.parameterCounts,
-                                                                    this.allBrushMeshIDs);
-                        /*/
+
                         var updateBrushMeshIDsJob = new UpdateBrushMeshIDsJob
                         {
                             // Read
@@ -935,7 +877,6 @@ namespace Chisel.Core
                         JobHandles.allKnownBrushMeshIndicesJobHandle   = CombineDependencies(currentJobHandle, JobHandles.allKnownBrushMeshIndicesJobHandle);
                         JobHandles.allBrushMeshIDsJobHandle            = CombineDependencies(currentJobHandle, JobHandles.allBrushMeshIDsJobHandle);
                         JobHandles.parameterCountsJobHandle            = CombineDependencies(currentJobHandle, JobHandles.parameterCountsJobHandle);
-                        //*/
                     } 
                     finally { Profiler.EndSample(); }
                     #endregion

@@ -10,6 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
+    // TODO: make cache part of compactHierarchy? no need for remapping?
     [BurstCompile]
     unsafe struct CacheRemappingJob : IJob
     {
@@ -57,45 +58,6 @@ namespace Chisel.Core
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            CacheRemapping(ref compactHierarchy,
-                            nodeIDValueToNodeOrderArray, nodeIDValueToNodeOrderOffsetRef,
-                            brushes, brushCount,
-                            allTreeBrushIndexOrders,
-                            brushIDValues,
-                            basePolygonCache,
-                            routingTableCache,
-                            transformationCache,
-                            brushRenderBufferCache,
-                            treeSpaceVerticesCache,
-                            brushTreeSpacePlaneCache,
-                            brushTreeSpaceBoundCache,
-                            brushesTouchedByBrushCache,
-                            brushesThatNeedIndirectUpdateHashMap,
-                            needRemappingRef);
-        }
-        
-        public static void CacheRemapping([NoAlias, ReadOnly] ref CompactHierarchy                              compactHierarchy,
-                                          [NoAlias, ReadOnly] NativeList<int>                                   nodeIDValueToNodeOrderArray,
-                                          [NoAlias, ReadOnly] NativeReference<int>                              nodeIDValueToNodeOrderOffsetRef,
-                                          [NoAlias, ReadOnly] NativeList<CompactNodeID>                         brushes,
-                                          [NoAlias, ReadOnly] int                                               brushCount,
-                                          [NoAlias, ReadOnly] NativeList<IndexOrder>                            allTreeBrushIndexOrders,
-
-                                          // Read/Write
-                                          [NoAlias] NativeList<CompactNodeID>                                   brushIDValues,
-                                          [NoAlias] NativeList<BlobAssetReference<BasePolygonsBlob>>            basePolygonCache,
-                                          [NoAlias] NativeList<BlobAssetReference<RoutingTable>>                routingTableCache,
-                                          [NoAlias] NativeList<NodeTransformations>                             transformationCache,
-                                          [NoAlias] NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>     brushRenderBufferCache,
-                                          [NoAlias] NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>  treeSpaceVerticesCache,
-                                          [NoAlias] NativeList<BlobAssetReference<BrushTreeSpacePlanes>>        brushTreeSpacePlaneCache,
-                                          [NoAlias] NativeList<MinMaxAABB>                                      brushTreeSpaceBoundCache,
-                                          [NoAlias] NativeList<BlobAssetReference<BrushesTouchedByBrush>>       brushesTouchedByBrushCache,
-
-                                          // Write
-                                          [NoAlias, WriteOnly] NativeHashSet<IndexOrder>                        brushesThatNeedIndirectUpdateHashMap,
-                                          [NoAlias, WriteOnly] NativeReference<bool>                            needRemappingRef)
-        {
             var needRemapping = false;
             var nodeIDValueToNodeOrderOffset = nodeIDValueToNodeOrderOffsetRef.Value;
 

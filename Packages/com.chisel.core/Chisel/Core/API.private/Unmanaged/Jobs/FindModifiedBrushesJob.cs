@@ -34,25 +34,6 @@ namespace Chisel.Core
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            FindModifiedBrushes(ref compactHierarchy,
-                                brushes,
-                                brushCount,
-                                allTreeBrushIndexOrders,
-                                rebuildTreeBrushIndexOrders,
-                                transformTreeBrushIndicesList);
-        }
-
-        public static void FindModifiedBrushes([NoAlias, ReadOnly] ref CompactHierarchy         compactHierarchy, 
-                                               [NoAlias, ReadOnly] NativeList<CompactNodeID>    brushes,
-                                               [NoAlias, ReadOnly] int                          brushCount,
-                                               [NoAlias, ReadOnly] NativeList<IndexOrder>       allTreeBrushIndexOrders,
-                                               
-                                               // Read/Write
-                                               [NoAlias, WriteOnly] NativeList<IndexOrder>      rebuildTreeBrushIndexOrders,
-
-                                               // Write
-                                               [NoAlias, WriteOnly] NativeList<NodeOrderNodeID> transformTreeBrushIndicesList)
-        {
             transformTreeBrushIndicesList.Clear();
             rebuildTreeBrushIndexOrders.Clear();
             if (rebuildTreeBrushIndexOrders.Capacity < brushCount)
@@ -95,6 +76,6 @@ namespace Chisel.Core
                     }
                 }
             }
-        }            
+        }
     }
 }

@@ -34,25 +34,6 @@ namespace Chisel.Core
         public void Execute()
         {
             ref var compactHierarchy = ref UnsafeUtility.AsRef<CompactHierarchy>(compactHierarchyPtr);
-            InvalidateBrushes(ref compactHierarchy,
-                              needRemappingRef,
-                              rebuildTreeBrushIndexOrders,
-                              brushesTouchedByBrushCache,
-                              brushes, brushCount,
-                              nodeIDValueToNodeOrderArray, nodeIDValueToNodeOrderOffsetRef,
-                              brushesThatNeedIndirectUpdateHashMap);
-        }
-        
-        public static void InvalidateBrushes([NoAlias, ReadOnly] ref CompactHierarchy                                   compactHierarchy,
-                                             [NoAlias, ReadOnly] NativeReference<bool>                                  needRemappingRef,
-                                             [NoAlias, ReadOnly] NativeList<IndexOrder>                                 rebuildTreeBrushIndexOrders,
-                                             [NoAlias, ReadOnly] NativeList<BlobAssetReference<BrushesTouchedByBrush>>  brushesTouchedByBrushCache,
-                                             [NoAlias, ReadOnly] NativeList<CompactNodeID>                              brushes,
-                                             [NoAlias, ReadOnly] int                                                    brushCount,
-                                             [NoAlias, ReadOnly] NativeList<int>                                        nodeIDValueToNodeOrderArray,
-                                             [NoAlias, ReadOnly] NativeReference<int>                                   nodeIDValueToNodeOrderOffsetRef,
-                                             [NoAlias, WriteOnly] NativeHashSet<IndexOrder>                             brushesThatNeedIndirectUpdateHashMap)
-        {
             if (rebuildTreeBrushIndexOrders.Length == brushCount && !needRemappingRef.Value)
                 return;
 

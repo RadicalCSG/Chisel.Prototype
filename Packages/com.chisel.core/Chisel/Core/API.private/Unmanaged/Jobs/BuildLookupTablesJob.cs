@@ -26,23 +26,6 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            BuildLookupTables(brushes, brushCount, 
-                              brushIDValues,
-                              nodeIDValueToNodeOrderArray, nodeIDValueToNodeOrderOffsetRef,
-                              allTreeBrushIndexOrders);
-        }
-
-        public static void BuildLookupTables([NoAlias, ReadOnly] NativeList<CompactNodeID>  brushes, 
-                                             [NoAlias, ReadOnly] int                        brushCount,
-
-                                             // Read/Write
-                                             [NoAlias, WriteOnly] NativeList<CompactNodeID> brushIDValues,
-                                             [NoAlias] NativeList<int>                      nodeIDValueToNodeOrderArray,
-                                             [NoAlias, WriteOnly] NativeReference<int>      nodeIDValueToNodeOrderOffsetRef,
-
-                                             // Write
-                                             [NoAlias, WriteOnly] NativeList<IndexOrder>    allTreeBrushIndexOrders)
-        {
             if (brushIDValues.Length != brushCount)
                 brushIDValues.ResizeUninitialized(brushCount);
 
@@ -77,7 +60,7 @@ namespace Chisel.Core
                 var brushIndexOrder = new IndexOrder { compactNodeID = brushCompactNodeID, nodeOrder = nodeOrder };
                 allTreeBrushIndexOrders[nodeOrder] = brushIndexOrder;
                 brushIDValues[nodeOrder] = brushCompactNodeID;
-            }
+            }        
         }
     }
 }
