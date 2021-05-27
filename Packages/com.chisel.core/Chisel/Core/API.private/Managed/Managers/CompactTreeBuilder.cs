@@ -130,7 +130,7 @@ namespace Chisel.Core
                         // Skip all nodes that are not additive at the start of the branch since they will never produce any geometry
                         while (firstCompactTreeIndex < nodeCount)
                         {
-                            var childCompactNodeID = compactHierarchy.GetChildIDAt(parentItem.compactNodeID, firstCompactTreeIndex);
+                            var childCompactNodeID = compactHierarchy.GetChildCompactNodeIDAt(parentItem.compactNodeID, firstCompactTreeIndex);
                             if (!compactHierarchy.IsValidCompactNodeID(childCompactNodeID))
                                 break;
                             var operation = compactHierarchy.GetOperation(childCompactNodeID);
@@ -143,7 +143,7 @@ namespace Chisel.Core
                         var firstChildIndex = hierarchyNodes.Length;
                         for (int i = firstCompactTreeIndex; i < nodeCount; i++)
                         {
-                            var childCompactNodeID = compactHierarchy.GetChildIDAt(parentItem.compactNodeID, i);
+                            var childCompactNodeID = compactHierarchy.GetChildCompactNodeIDAt(parentItem.compactNodeID, i);
                             // skip invalid nodes (they don't contribute to the mesh)
                             if (!compactHierarchy.IsValidCompactNodeID(childCompactNodeID))
                                 continue;

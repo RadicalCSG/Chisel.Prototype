@@ -170,7 +170,7 @@ namespace Chisel.Core
         /// <summary>Gets child at the specified index.</summary>
         /// <param name="index">The zero-based index of the child to get.</param>
         /// <returns>The element at the specified index.</returns>
-        public CSGTreeNode		this[int index]	    { get { return Find(Hierarchy.GetChildIDAt(CompactNodeID, index)); } }
+        public CSGTreeNode		this[int index]	    { get { return Find(Hierarchy.GetChildCompactNodeIDAt(CompactNodeID, index)); } }
 
 
         /// <summary>Adds a <see cref="Chisel.Core.CSGTreeNode"/> to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
@@ -316,13 +316,13 @@ namespace Chisel.Core
         [SerializeField] internal CompactHierarchyID compactHierarchyID;
 
 
-        internal CompactNodeID      CompactNodeID     { get { return CompactHierarchyManager.GetCompactNodeID(nodeID); } }
-        internal CompactHierarchyID HierarchyID       { get { return CompactNodeID.hierarchyID; } }
+        internal CompactNodeID      CompactNodeID       { get { return CompactHierarchyManager.GetCompactNodeID(nodeID); } }
+        internal CompactHierarchyID CompactHierarchyID  { get { return CompactNodeID.hierarchyID; } }
         ref CompactHierarchy Hierarchy
         {
             get
             {
-                var hierarchyID = HierarchyID;
+                var hierarchyID = CompactHierarchyID;
                 if (hierarchyID == CompactHierarchyID.Invalid)
                     throw new InvalidOperationException($"Invalid NodeID");
                 return ref CompactHierarchyManager.GetHierarchy(hierarchyID);

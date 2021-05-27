@@ -5,6 +5,9 @@ using Unity.Mathematics;
 using Unity.Entities;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
+using Unity.Burst;
+using System.Runtime.CompilerServices;
 
 namespace Chisel.Core
 {
@@ -293,27 +296,27 @@ namespace Chisel.Core
     {
         public unsafe class Data
         {
-            public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobs;
+            public NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache;
 
             internal void Initialize()
             {
-                brushMeshBlobs = new NativeHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
-                BrushMeshManager.brushMeshBlobs = brushMeshBlobs; // hack
+                brushMeshBlobCache = new NativeHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
+                BrushMeshManager.brushMeshBlobCache = brushMeshBlobCache; // hack
             }
 
             public void EnsureCapacity(int capacity)
             {
-                if (brushMeshBlobs.Capacity < capacity)
-                    brushMeshBlobs.Capacity = capacity;
+                if (brushMeshBlobCache.Capacity < capacity)
+                    brushMeshBlobCache.Capacity = capacity;
             }
 
             internal void Dispose()
             {
-                if (brushMeshBlobs.IsCreated)
+                if (brushMeshBlobCache.IsCreated)
                 {
                     try
                     {
-                        using (var items = brushMeshBlobs.GetValueArray(Allocator.Persistent))
+                        using (var items = brushMeshBlobCache.GetValueArray(Allocator.Persistent))
                         {
                             foreach (var item in items)
                             {
@@ -324,8 +327,8 @@ namespace Chisel.Core
                     }
                     finally
                     {
-                        brushMeshBlobs.Dispose();
-                        brushMeshBlobs = default;
+                        brushMeshBlobCache.Dispose();
+                        brushMeshBlobCache = default;
                     }
                 }
                 // temporary hack

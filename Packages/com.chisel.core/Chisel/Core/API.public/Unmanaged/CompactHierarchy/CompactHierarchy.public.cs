@@ -136,13 +136,13 @@ namespace Chisel.Core
         public float4x4             transformation;
         public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes        
         
-        public Int32                brushMeshID;    // TODO: use hash of mesh as "ID"
+        public Int32                brushMeshHash;    // TODO: use hash of mesh as "ID"
         public MinMaxAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe uint GetHash() { return math.hash(UnsafeUtility.AddressOf(ref this), sizeof(CompactNode)); }
 
-        public override string ToString() { return $"{nameof(brushMeshID)} = {brushMeshID}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
+        public override string ToString() { return $"{nameof(brushMeshHash)} = {brushMeshHash}, {nameof(operation)} = {operation}, {nameof(userID)} = {userID}, {nameof(transformation)} = {transformation}"; }
     }
 
     [BurstCompatible]
@@ -159,7 +159,7 @@ namespace Chisel.Core
 
         public static readonly CompactChildNode Invalid = default;
 
-        public override string ToString() { return $"{nameof(compactNodeID)} = {compactNodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshID)} = {nodeInformation.brushMeshID}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}"; }
+        public override string ToString() { return $"{nameof(compactNodeID)} = {compactNodeID.value}, {nameof(parentID)} = {parentID.value}, {nameof(nodeInformation.userID)} = {nodeInformation.userID}, {nameof(childCount)} = {childCount}, {nameof(childOffset)} = {childOffset}, {nameof(nodeInformation.brushMeshHash)} = {nodeInformation.brushMeshHash}, {nameof(nodeInformation.operation)} = {nodeInformation.operation}, {nameof(nodeInformation.transformation)} = {nodeInformation.transformation}"; }
     }
 
     // TODO: make sure everything is covered in tests
@@ -194,7 +194,7 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = CSGOperationType.Additive,
                 transformation  = float4x4.identity,
-                brushMeshID     = Int32.MaxValue
+                brushMeshHash     = Int32.MaxValue
             });
             return compactHierarchy;
         }
@@ -212,7 +212,7 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = operation,
                 transformation  = transformation,
-                brushMeshID     = Int32.MaxValue
+                brushMeshHash     = Int32.MaxValue
             });
         }
         #endregion
@@ -229,13 +229,14 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = operation,
                 transformation  = transformation,
-                brushMeshID     = brushMeshID, 
+                brushMeshHash     = brushMeshID, 
                 bounds          = BrushMeshManager.CalculateBounds(brushMeshID, in transformation)
             });
         }
         #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -355,17 +356,17 @@ namespace Chisel.Core
         /// WARNING: The returned reference will become invalid after modifying the hierarchy!
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ref CompactChildNode GetNodeRef(CompactNodeID compactNodeID) { return ref SafeGetNodeRefAtInternal(compactNodeID); }
+        internal ref CompactChildNode GetNodeRef(CompactNodeID compactNodeID) { return ref UnsafeGetNodeRefAtInternal(compactNodeID); }
 
 
         /// <summary>
         /// WARNING: The returned reference will become invalid after modifying the hierarchy!
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref CompactNode GetChildRef(CompactNodeID compactNodeID) { return ref SafeGetChildRefAtInternal(compactNodeID); }
+        public ref CompactNode GetChildRef(CompactNodeID compactNodeID) { return ref UnsafeGetChildRefAtInternal(compactNodeID); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CompactNode GetChild(CompactNodeID compactNodeID) { return SafeGetChildRefAtInternal(compactNodeID); }
+        public CompactNode GetChild(CompactNodeID compactNodeID) { return UnsafeGetChildRefAtInternal(compactNodeID); }
 
         /// <summary>
         /// WARNING: The returned reference will become invalid after modifying the hierarchy!
@@ -377,15 +378,17 @@ namespace Chisel.Core
         public CompactNode GetChildAt(CompactNodeID compactNodeID, int index) { return SafeGetChildRefAtInternal(compactNodeID, index); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CompactNodeID GetChildIDAt(CompactNodeID compactNodeID, int index) { return GetChildIDAtInternal(compactNodeID, index); }
+        public CompactNodeID GetChildCompactNodeIDAt(CompactNodeID compactNodeID, int index) { return GetChildCompactNodeIDAtInternal(compactNodeID, index); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool Compact()
         {
             Debug.Assert(IsCreated);
             return CompactInternal();
         }
 
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool Delete(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -411,6 +414,7 @@ namespace Chisel.Core
             return DeleteRangeInternal(parentIndex, index, range: 1, deleteChildren: false);
         }
 
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DeleteRecursive(CompactNodeID compactNodeID)
         {
             if (compactNodeID == RootID) // Cannot remove root
@@ -436,6 +440,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DeleteChildFromParentAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -446,6 +451,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DeleteChildFromParentRecursiveAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -456,6 +462,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DeleteChildrenFromParentAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
@@ -466,6 +473,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DeleteChildrenFromParentRecursiveAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
@@ -476,6 +484,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool Detach(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
@@ -496,6 +505,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DetachChildFromParentAt(CompactNodeID parentID, int index)
         {
             Debug.Assert(IsCreated);
@@ -506,6 +516,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DetachChildrenFromParentAt(CompactNodeID parentID, int index, int range)
         {
             Debug.Assert(IsCreated);
@@ -516,6 +527,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DetachAllChildrenFromParent(CompactNodeID parentID)
         {
             Debug.Assert(IsCreated);
@@ -526,6 +538,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool DestroyAllChildrenFromParent(CompactNodeID parentID)
         {
             Debug.Assert(IsCreated);
@@ -552,6 +565,7 @@ namespace Chisel.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public bool AttachToParentAt(CompactNodeID parentID, int index, CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);

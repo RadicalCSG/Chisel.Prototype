@@ -114,10 +114,10 @@ namespace Chisel.Core
                             compactNodes[i].parentID != default ||
                             compactNodes[i].childCount != 0 ||
                             compactNodes[i].childOffset != 0 ||
-                            compactNodes[i].nodeInformation.brushMeshID != 0 ||
+                            compactNodes[i].nodeInformation.brushMeshHash != 0 ||
                             compactNodes[i].nodeInformation.userID != 0)
                         {
-                            Debug.LogError($"{compactNodes[i].nodeID} != default ||\n{compactNodes[i].parentID} != default ||\n{compactNodes[i].childCount} != 0 ||\n{compactNodes[i].childOffset} != 0 ||\n{compactNodes[i].nodeInformation.brushMeshID != 0} ||\n{compactNodes[i].nodeInformation.userID} != 0");
+                            Debug.LogError($"{compactNodes[i].nodeID} != default ||\n{compactNodes[i].parentID} != default ||\n{compactNodes[i].childCount} != 0 ||\n{compactNodes[i].childOffset} != 0 ||\n{compactNodes[i].nodeInformation.brushMeshHash != 0} ||\n{compactNodes[i].nodeInformation.userID} != 0");
                             return false;
                         }
                         continue;
@@ -176,11 +176,11 @@ namespace Chisel.Core
                         }
                     }
 
-                    if (compactNodes[i].nodeInformation.brushMeshID != Int32.MaxValue)
+                    if (compactNodes[i].nodeInformation.brushMeshHash != Int32.MaxValue)
                     {
-                        if (!brushMeshKeys.Contains(compactNodes[i].nodeInformation.brushMeshID))
+                        if (!brushMeshKeys.Contains(compactNodes[i].nodeInformation.brushMeshHash))
                         {
-                            Debug.LogError($"!brushMeshKeys.Contains(compactNodes[{i}].nodeInformation.brushMeshID) {compactNodes[i].nodeInformation.brushMeshID}");
+                            Debug.LogError($"!brushMeshKeys.Contains(compactNodes[{i}].nodeInformation.brushMeshID) {compactNodes[i].nodeInformation.brushMeshHash}");
                             return false;
                         }
 
@@ -328,8 +328,8 @@ namespace Chisel.Core
                 childOffset     = 0,
                 childCount      = 0
             };
-            if (nodeInformation.brushMeshID != Int32.MaxValue)
-                brushMeshToBrush.Add(nodeInformation.brushMeshID, compactNodeID);
+            if (nodeInformation.brushMeshHash != Int32.MaxValue)
+                brushMeshToBrush.Add(nodeInformation.brushMeshHash, compactNodeID);
             Debug.Assert(IsValidCompactNodeID(compactNodeID), "newly created ID is invalid");
             Debug.Assert(GetChildRef(compactNodeID).userID == nodeInformation.userID, "newly created ID is invalid");
             return compactNodeID;
@@ -457,7 +457,7 @@ namespace Chisel.Core
             if (index < 0 || index >= compactNodes.length)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
-            return compactNodes[index].nodeInformation.brushMeshID;
+            return compactNodes[index].nodeInformation.brushMeshHash;
         }
 
         #region ID / Memory Management
@@ -494,7 +494,7 @@ namespace Chisel.Core
             for (int i = index, lastNode = index + range; i < lastNode; i++)
             {
                 var compactNodeID   = compactNodes[i].compactNodeID;
-                var brushMeshID     = compactNodes[i].nodeInformation.brushMeshID;
+                var brushMeshID     = compactNodes[i].nodeInformation.brushMeshHash;
                 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
@@ -514,7 +514,7 @@ namespace Chisel.Core
             for (int i = index, lastNode = index + range; i < lastNode; i++)
             {
                 var compactNodeID   = compactNodes[i].compactNodeID;
-                var brushMeshID     = compactNodes[i].nodeInformation.brushMeshID;
+                var brushMeshID     = compactNodes[i].nodeInformation.brushMeshHash;
 
                 RemoveMeshReference(compactNodeID, brushMeshID);
 
@@ -577,7 +577,7 @@ namespace Chisel.Core
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe ref CompactChildNode SafeGetNodeRefAtInternal(CompactNodeID compactNodeID)
+        unsafe ref CompactChildNode UnsafeGetNodeRefAtInternal(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var nodeIndex       = UnsafeHierarchyIndexOfInternal(compactNodeID);
@@ -587,7 +587,7 @@ namespace Chisel.Core
 
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        unsafe ref CompactNode SafeGetChildRefAtInternal(CompactNodeID compactNodeID)
+        unsafe ref CompactNode UnsafeGetChildRefAtInternal(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var nodeIndex       = UnsafeHierarchyIndexOfInternal(compactNodeID);
@@ -595,9 +595,29 @@ namespace Chisel.Core
             return ref compactNodesPtr[nodeIndex].nodeInformation;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe CompactNodeID GetChildIDAtInternalNoError(CompactNodeID parentD, int index)
+        {
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            var parentIndex         = UnsafeHierarchyIndexOfInternal(parentD);
+            var parentHierarchy     = compactNodes[parentIndex];
+            var parentChildOffset   = parentHierarchy.childOffset;
+            var parentChildCount    = parentHierarchy.childCount;
+
+            if (index < 0 || index >= parentChildCount)
+                return CompactNodeID.Invalid;
+
+            var nodeIndex = parentChildOffset + index;
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
+                return CompactNodeID.Invalid;
+
+            var compactNodesPtr = compactNodes.Ptr;
+            return compactNodesPtr[nodeIndex].compactNodeID;
+        }
+
         // WARNING: The returned reference will become invalid after modifying the hierarchy!
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe CompactNodeID GetChildIDAtInternal(CompactNodeID parentD, int index)
+        public unsafe CompactNodeID GetChildCompactNodeIDAtInternal(CompactNodeID parentD, int index)
         {
             Debug.Assert(IsCreated, "Hierarchy has not been initialized");
             var parentIndex         = UnsafeHierarchyIndexOfInternal(parentD);
@@ -609,6 +629,27 @@ namespace Chisel.Core
 
             var nodeIndex = parentChildOffset + index;
             if (nodeIndex < 0 || nodeIndex >= compactNodes.Length) throw new ArgumentOutOfRangeException(nameof(nodeIndex));
+
+            var compactNodesPtr = compactNodes.Ptr;
+            return compactNodesPtr[nodeIndex].compactNodeID;
+        }
+
+        // WARNING: The returned reference will become invalid after modifying the hierarchy!
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe CompactNodeID GetChildCompactNodeIDAtNoError(CompactNodeID parentD, int index)
+        {
+            Debug.Assert(IsCreated, "Hierarchy has not been initialized");
+            var parentIndex = UnsafeHierarchyIndexOfInternal(parentD);
+            var parentHierarchy = compactNodes[parentIndex];
+            var parentChildOffset = parentHierarchy.childOffset;
+            var parentChildCount = parentHierarchy.childCount;
+
+            if (index < 0 || index >= parentChildCount)
+                return CompactNodeID.Invalid;
+
+            var nodeIndex = parentChildOffset + index;
+            if (nodeIndex < 0 || nodeIndex >= compactNodes.Length)
+                return CompactNodeID.Invalid;
 
             var compactNodesPtr = compactNodes.Ptr;
             return compactNodesPtr[nodeIndex].compactNodeID;
@@ -1038,7 +1079,7 @@ namespace Chisel.Core
                         for (int i = 0, childIndex = node.childOffset + node.childCount - 1, childCount = node.childCount; i < childCount; i++, childIndex--)
                             nodeStack.Add(childIndex);
                     } else
-                    if (node.nodeInformation.brushMeshID != Int32.MaxValue && brushes.IsCreated)
+                    if (node.nodeInformation.brushMeshHash != Int32.MaxValue && brushes.IsCreated)
                     {
                         brushes.Add(node.compactNodeID);
                     }
@@ -1218,7 +1259,7 @@ namespace Chisel.Core
             ref var node = ref GetChildRef(compactNodeID);
             CSGNodeType nodeType;
             if (RootID != compactNodeID)
-                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+                nodeType = (node.brushMeshHash == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
             else
                 nodeType = CSGNodeType.Tree;
 
@@ -1238,14 +1279,14 @@ namespace Chisel.Core
                 return false;
 
             ref var node = ref GetChildRef(compactNodeID);
-            if (node.brushMeshID != Int32.MaxValue)
+            if (node.brushMeshHash != Int32.MaxValue)
                 return false;
 
             var result = true;
             var count = ChildCount(compactNodeID);
             for (int i = 0; i < count; i++)
             {
-                var childID = GetChildIDAtInternal(compactNodeID, i);
+                var childID = GetChildCompactNodeIDAtInternal(compactNodeID, i);
                 result = SetDirty(childID) && result;
             }
             return result;
@@ -1260,7 +1301,7 @@ namespace Chisel.Core
             ref var node = ref GetChildRef(compactNodeID);
             CSGNodeType nodeType;
             if (RootID != compactNodeID)
-                nodeType = (node.brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+                nodeType = (node.brushMeshHash == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
             else
                 nodeType = CSGNodeType.Tree;
 
@@ -1318,7 +1359,7 @@ namespace Chisel.Core
             if (RootID == compactNodeID)
                 return CSGNodeType.Tree;
 
-            return (GetChildRef(compactNodeID).brushMeshID == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
+            return (GetChildRef(compactNodeID).brushMeshHash == Int32.MaxValue) ? CSGNodeType.Branch : CSGNodeType.Brush;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1358,6 +1399,83 @@ namespace Chisel.Core
             return true;
         }
 
+        internal void SetTreeDirty()
+        {
+            ref var rootNode = ref GetChildRef(RootID);
+            rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+        }
+
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal bool SetBrushMeshIDTransformation(CompactNodeID compactNodeID, NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash, float4x4 transformation)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            nodeRef.brushMeshHash   = brushMeshHash;
+            nodeRef.transformation  = transformation;
+            if (nodeRef.brushMeshHash != 0)
+            {
+                if (!brushMeshBlobCache.TryGetValue(nodeRef.brushMeshHash, out var refCountedBrushMeshBlob) &&
+                    refCountedBrushMeshBlob.brushMeshBlob.IsCreated)
+                    nodeRef.bounds = BoundsExtensions.Create(transformation, ref refCountedBrushMeshBlob.brushMeshBlob.Value.localVertices);
+                else
+                    nodeRef.bounds = default;
+            } else
+                nodeRef.bounds = default;
+
+            nodeRef.flags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated | NodeStatusFlags.TransformationModified;
+            return true;
+        }
+
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal bool SetTransformation(CompactNodeID compactNodeID, NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, float4x4 transformation)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            nodeRef.transformation = transformation;
+            if (nodeRef.brushMeshHash != 0)
+            {
+                if (!brushMeshBlobCache.TryGetValue(nodeRef.brushMeshHash, out var refCountedBrushMeshBlob) &&
+                    refCountedBrushMeshBlob.brushMeshBlob.IsCreated)
+                    nodeRef.bounds = BoundsExtensions.Create(transformation, ref refCountedBrushMeshBlob.brushMeshBlob.Value.localVertices);
+                else
+                    nodeRef.bounds = default;
+            } else
+                nodeRef.bounds = default;
+
+            nodeRef.flags |= NodeStatusFlags.TransformationModified;
+            return true;
+        }
+
+        internal float4x4 GetTransformation(CompactNodeID compactNodeID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            return nodeRef.transformation;
+        }
+
+
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal bool SetBrushMeshID(CompactNodeID compactNodeID, Int32 brushMeshID)
+        {
+            if (!IsValidCompactNodeID(compactNodeID))
+                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
+
+            ref var nodeRef = ref GetChildRef(compactNodeID);
+            nodeRef.brushMeshHash = brushMeshID;
+            if (nodeRef.brushMeshHash != 0)
+                nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
+            else
+                nodeRef.bounds = default;
+
+            nodeRef.flags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated;
+            return true;
+        }
 
         internal MinMaxAABB GetBrushBounds(CompactNodeID compactNodeID)
         {
@@ -1365,7 +1483,7 @@ namespace Chisel.Core
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             ref var nodeRef = ref GetChildRef(compactNodeID);
-            if (nodeRef.brushMeshID == Int32.MaxValue)
+            if (nodeRef.brushMeshHash == Int32.MaxValue)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             return nodeRef.bounds;
@@ -1377,10 +1495,10 @@ namespace Chisel.Core
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             ref var nodeRef = ref GetChildRef(compactNodeID);
-            if (nodeRef.brushMeshID == Int32.MaxValue)
+            if (nodeRef.brushMeshHash == Int32.MaxValue)
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
-            return BrushMeshManager.CalculateBounds(nodeRef.brushMeshID, in transformation);
+            return BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in transformation);
         }
 
         public CompactNodeID GetRootOfNode(CompactNodeID compactNodeID)

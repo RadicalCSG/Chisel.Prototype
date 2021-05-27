@@ -9,7 +9,7 @@ namespace Chisel.Core
     /// <note>Be careful when keeping track of <see cref="Chisel.Core.BrushMeshInstance"/>s because <see cref="Chisel.Core.BrushMeshInstance.BrushMeshID"/>s can be recycled after being Destroyed.</note></remarks>
     /// <seealso cref="Chisel.Core.BrushMesh"/>
     /// <seealso cref="Chisel.Core.CSGTreeBrush"/>
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    [StructLayout(LayoutKind.Sequential)]
     public partial struct BrushMeshInstance
     {
         public Int32			brushMeshHash;

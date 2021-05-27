@@ -102,6 +102,7 @@ namespace Chisel.Core
             Profiler.EndSample();
             #endregion
 
+            var hierarchyList = CompactHierarchyManager.HierarchyList;
             var treeUpdateLength = 0;
             try
             {
@@ -112,8 +113,8 @@ namespace Chisel.Core
                 #region Schedule job to generate brushes (using generators)
                 Profiler.BeginSample("CSG_GeneratorJobPool");
                 var generatorPoolJobHandle = GeneratorJobPoolManager.ScheduleJobs();
-                Profiler.EndSample();
                 generatorPoolJobHandle.Complete();
+                Profiler.EndSample();
                 #endregion
 
                 #region Schedule Mesh Update Jobs
@@ -134,7 +135,7 @@ namespace Chisel.Core
                     if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
                         continue;
 
-                    treeUpdate.RunMeshInitJobs(ref compactHierarchy);
+                    treeUpdate.RunMeshInitJobs(ref compactHierarchy, generatorPoolJobHandle);
                     treeUpdateLength++;
                 }
                 Profiler.EndSample();
@@ -154,6 +155,7 @@ namespace Chisel.Core
                     if (!compactHierarchy.IsNodeDirty(treeUpdate.treeCompactNodeID))
                         continue;
 
+                    // TODO: figure out if there's a way around this ....
                     treeUpdate.JobHandles.rebuildTreeBrushIndexOrdersJobHandle.Complete();
                     treeUpdate.updateCount = treeUpdate.Temporaries.rebuildTreeBrushIndexOrders.Length;
 
@@ -451,7 +453,7 @@ namespace Chisel.Core
 
                 // Make sure that if we, somehow, run this while parts of the previous update is still running, we wait for the previous run to complete
 
-                // TODO: STORE THIS ON THE TREE!!!
+                // TODO: STORE THIS ON THE TREE!!! THIS WILL BE FORGOTTEN
                 this.lastJobHandle.Complete();
                 this.lastJobHandle = default;
 
@@ -582,15 +584,18 @@ namespace Chisel.Core
             }
 
             const bool runInParallelDefault = true;
-            public void RunMeshInitJobs(ref CompactHierarchy compactHierarchy)
+            public void RunMeshInitJobs(ref CompactHierarchy compactHierarchy, JobHandle dependsOn)
             {
+                // TODO: Remove the need for this Complete
+                dependsOn.Complete(); // <-- Initialize has code that depends on the current state of the tree
+
                 // Reset everything
                 JobHandles = default;
                 Temporaries = default;
                 Initialize();
 
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
-                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
+                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
                 {
                     #region Build Lookup Tables
                     Profiler.BeginSample("Job_BuildLookupTables");
@@ -787,7 +792,7 @@ namespace Chisel.Core
             public void RunMeshUpdateJobs(ref CompactHierarchy compactHierarchy)
             {
                 var chiselLookupValues = ChiselTreeLookup.Value[this.tree];
-                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobs;
+                ref var brushMeshBlobs = ref ChiselMeshLookup.Value.brushMeshBlobCache;
 
                 #region Perform CSG
 
@@ -1907,6 +1912,7 @@ namespace Chisel.Core
 
                         // Write
                         //compactHierarchy          = compactHierarchy,  //<-- cannot do ref or pointer here
+                                                                         //    so we set it below using InitializeHierarchy
                     };
                     updateBrushOutlineJob.InitializeHierarchy(ref compactHierarchy);
                     updateBrushOutlineJob.Schedule(runInParallel,
@@ -2095,7 +2101,10 @@ namespace Chisel.Core
                                                     JobHandles.meshDatasJobHandle)
                                         );
 
-                dependencies.Complete(); // Technically not necessary, but Unity will complain about memory leaks that aren't there (jobs just haven't finished yet)
+                // Technically not necessary, but Unity will complain about memory leaks that aren't there (jobs just haven't finished yet)
+                // TODO: see if we can use domain reload events to ensure this job is completed before a domain reload occurs
+                dependencies.Complete(); 
+                                            
 
                 // We let the final JobHandle dependend on the dependencies, but not on the disposal, 
                 // because we do not need to wait for the disposal of native collections do use our generated data

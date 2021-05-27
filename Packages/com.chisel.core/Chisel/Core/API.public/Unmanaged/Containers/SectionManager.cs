@@ -11,6 +11,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -27,8 +28,8 @@ namespace Chisel.Core
             public int  length; // TODO: make this explicit as the difference between start and the next integer
             public int  end { get { return start + length - 1; } }
         }
-        UnsafeList<Section> sections; // TODO: use UnsafeList instead, so we can more easily store them without getting 
-                                      //       "lists in lists" problems
+        [NoAlias, ReadOnly] UnsafeList<Section> sections;   // TODO: use UnsafeList instead, so we can more easily store them without getting 
+                                                            //       "lists in lists" problems
 
         // We merge all allocated and free sections, which means they alternate between being free and allocated
         // We then store if the first element is allocated or not, with that we can determine if an even or odd 

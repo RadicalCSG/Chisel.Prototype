@@ -2,9 +2,11 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -21,10 +23,10 @@ namespace Chisel.Core
             public Int32 generation;
         }
 
-        UnsafeList<IndexLookup> idToIndex;
-        UnsafeList<int>         indexToID;
-        SectionManager          sectionManager;
-        UnsafeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
+        [NoAlias, ReadOnly] UnsafeList<IndexLookup> idToIndex;
+        [NoAlias, ReadOnly] UnsafeList<int>         indexToID;
+        [NoAlias, ReadOnly] SectionManager          sectionManager;
+        [NoAlias, ReadOnly] UnsafeList<int>         freeIDs; // TODO: use SectionManager, or something like that, so we can easily allocate ids/id ranges in order
 
 
         [BurstCompatible]
