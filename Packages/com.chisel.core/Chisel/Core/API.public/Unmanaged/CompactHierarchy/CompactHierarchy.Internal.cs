@@ -9,6 +9,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 
 namespace Chisel.Core
 {
@@ -67,11 +68,11 @@ namespace Chisel.Core
     [BurstCompatible]
     public partial struct CompactHierarchy : IDisposable
     {
-        UnsafeMultiHashMap<int, CompactNodeID> brushMeshToBrush;
+        [NoAlias] UnsafeMultiHashMap<int, CompactNodeID> brushMeshToBrush;
 
-        UnsafeList<CompactChildNode> compactNodes;
-        UnsafeList<BrushOutline>     brushOutlines;
-        IDManager                    idManager;
+        [NoAlias] UnsafeList<CompactChildNode> compactNodes;
+        [NoAlias] UnsafeList<BrushOutline>     brushOutlines;
+        [NoAlias] IDManager                    idManager;
 
         
         public CompactNodeID        RootID      { [MethodImpl(MethodImplOptions.AggressiveInlining)] get; [MethodImpl(MethodImplOptions.AggressiveInlining)] internal set; }
@@ -1406,7 +1407,7 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        internal bool SetBrushMeshIDTransformation(CompactNodeID compactNodeID, NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash, float4x4 transformation)
+        internal bool SetBrushMeshIDTransformation(CompactNodeID compactNodeID, [NoAlias, ReadOnly] NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash, float4x4 transformation)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
@@ -1429,12 +1430,12 @@ namespace Chisel.Core
         }
 
         [return: MarshalAs(UnmanagedType.U1)]
-        internal bool SetTransformation(CompactNodeID compactNodeID, NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, float4x4 transformation)
+        internal bool SetTransformation(CompactNodeID compactNodeID, [NoAlias, ReadOnly] NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, float4x4 transformation)
         {
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
-            ref var nodeRef = ref GetChildRef(compactNodeID);
+            ref var nodeRef = ref UnsafeGetChildRefAtInternal(compactNodeID);
             nodeRef.transformation = transformation;
             if (nodeRef.brushMeshHash != 0)
             {

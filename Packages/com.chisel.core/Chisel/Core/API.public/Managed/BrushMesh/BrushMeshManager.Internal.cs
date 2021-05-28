@@ -445,7 +445,7 @@ namespace Chisel.Core
         unsafe struct RegisterBrushesJob : IJob
         {
             [NoAlias, ReadOnly] public NativeList<GeneratedNodeDefinition>  generatedNodes;
-            [NoAlias, WriteOnly] public NativeArray<int>                    brushMeshHashes;
+            [NoAlias, WriteOnly] public NativeList<int>                     brushMeshHashes;
             
             [NoAlias] public NativeHashMap<int, RefCountedBrushMeshBlob>    brushMeshBlobCache;
 
@@ -531,7 +531,7 @@ namespace Chisel.Core
         }
 
 
-        internal static JobHandle ScheduleBrushRegistration(bool runInParallel, NativeList<GeneratedNodeDefinition> inGeneratedNodes, NativeArray<int> outBrushMeshHashes, JobHandle dependsOn)
+        internal static JobHandle ScheduleBrushRegistration(bool runInParallel, NativeList<GeneratedNodeDefinition> inGeneratedNodes, NativeList<int> outBrushMeshHashes, JobHandle dependsOn)
         {
             JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (!runInParallel)
