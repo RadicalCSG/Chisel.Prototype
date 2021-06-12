@@ -886,9 +886,7 @@ namespace Chisel.Core
                     var rootCompactNodeID       = CompactHierarchyManager.GetCompactNodeIDNoError(ref nodeIDLookup, nodesLookup, rootNodeID);
                     var hierarchyIndex          = CompactHierarchyManager.GetHierarchyIndexUnsafe(ref hierarchyIDLookup, rootCompactNodeID);
                     ref var compactHierarchy    = ref hierarchyListPtr[hierarchyIndex];
-                    // TODO: set transformation properly
-                    var transformation          = compactHierarchy.GetLocalTransformation(rootCompactNodeID);//generatedNodes[m].transformation
-
+                    
                     // TODO: just pass an array of compactNodeIDs along from the place were we create these nodes (no lookup needed)
                     // TODO: how can we re-use existing compactNodeIDs instead re-creating them when possible?
                     var childCompactNodeIDs     = new NativeArray<CompactNodeID>(range.Length, Allocator.Temp);
@@ -910,7 +908,7 @@ namespace Chisel.Core
                         if (prevParentIndex != parentIndex)
                             siblingIndex = 0;
                         var parentCompactNodeID = (parentIndex == -1) ? rootCompactNodeID : childCompactNodeIDs[parentIndex];
-                        //var transformation    = generatedNodes[m].transformation
+                        var transformation      = generatedNodes[m].transformation;
                         generatedNodeDefinitions.AddNoResize(new GeneratedNodeDefinition
                         {
                             parentCompactNodeID = parentCompactNodeID,

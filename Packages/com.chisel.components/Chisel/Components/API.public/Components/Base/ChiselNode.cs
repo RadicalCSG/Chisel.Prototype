@@ -76,8 +76,38 @@ namespace Chisel.Components
             ChiselNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
 
-        public virtual void UpdateTransformation() { }
+        public virtual void UpdateTransformation()
+        {
+            var node = TopTreeNode;
+            if (!node.Valid)
+                return;
 
+            var transform = hierarchyItem.Transform;
+            if (transform == null)
+                return;
+
+            // TODO: Optimize
+            var localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+            // We can't just use the transformation of this brush, because it might have gameobjects as parents that 
+            // do not have any chisel components. So we need to consider all transformations in between as well.
+            do
+            {
+                transform = transform.parent;
+                if (transform == null)
+                    break;
+
+                // If we find a ChiselNode we continue, unless it's a Composite set to passthrough
+                if (transform.TryGetComponent<ChiselNode>(out var component))
+                {
+                    var composite = component as ChiselComposite;
+                    if (composite == null || !composite.PassThrough)
+                        break;
+                }
+
+                localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale) * localTransformation;
+            } while (true);
+            node.LocalTransformation = localTransformation;
+        }
 
         internal abstract CSGTreeNode RebuildTreeNodes();
         public void ResetTreeNodes()

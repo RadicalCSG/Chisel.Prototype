@@ -235,15 +235,36 @@ namespace Chisel.Components
         {
             get
             {
-                // TODO: fix this mess
+                // TODO: Optimize
+                var transform       = hierarchyItem.Transform;
 
-                var localTransformationWithPivot = transform.localToWorldMatrix;
+                localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+                // We can't just use the transformation of this brush, because it might have gameobjects as parents that 
+                // do not have any chisel components. So we need to consider all transformations in between as well.
+                do
+                {
+                    transform = transform.parent;
+                    if (transform == null)
+                        break;
+
+                    // If we find a ChiselNode we continue, unless it's a Composite set to passthrough
+                    if (transform.TryGetComponent<ChiselNode>(out var component))
+                    {
+                        var composite = component as ChiselComposite;
+                        if (composite == null || !composite.PassThrough)
+                            break;
+                    }
+
+                    localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale) * localTransformation;
+                } while (true);
+
+
+                // Finally, we need to add the pivot to it. This is here so that when we change the pivot we do 
+                // not actually need to modify meshes of brushes.
+                var localTransformationWithPivot = localTransformation;
                 if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
                     localTransformationWithPivot *= Matrix4x4.TRS(pivotOffset, Quaternion.identity, Vector3.one);
 
-                var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
-                if (modelTransform)
-                    localTransformationWithPivot = modelTransform.worldToLocalMatrix * localTransformationWithPivot;
                 return localTransformationWithPivot;
             }
         }
@@ -299,7 +320,7 @@ namespace Chisel.Components
             var transform = hierarchyItem.Transform;
             if (!transform)
                 return;
-
+            /*
             // TODO: fix this mess
             var localToWorldMatrix = transform.localToWorldMatrix;
             var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
@@ -307,18 +328,13 @@ namespace Chisel.Components
                 localTransformation = modelTransform.worldToLocalMatrix * localToWorldMatrix;
             else
                 localTransformation = localToWorldMatrix;
-
-            if (!ValidNodes)
-                return;
-
+            */
+            
             UpdateInternalTransformation();
         }
 
         void UpdateInternalTransformation()
         {
-            if (!ValidNodes)
-                return;
-
             Node.LocalTransformation = LocalTransformationWithPivot;
         }
 

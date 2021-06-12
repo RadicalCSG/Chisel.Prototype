@@ -559,7 +559,7 @@ namespace Chisel.Core
 
             nodes[index] = compactNodeID;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactNodeID GetCompactNodeIDNoError(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID, out int index)
         {
@@ -572,7 +572,7 @@ namespace Chisel.Core
                 return CompactNodeID.Invalid;
 
             return nodes[index];
-        } 
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactNodeID GetCompactNodeIDNoError(ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, NodeID nodeID)
@@ -850,7 +850,7 @@ namespace Chisel.Core
 
             if (index < 0 || index >= hierarchies.Length)
                 return false;
-
+             
             ref var hierarchy = ref ((CompactHierarchy*)hierarchies.GetUnsafePtr())[index];
             return hierarchy.IsValidCompactNodeID(compactNodeID);
         }
@@ -880,17 +880,42 @@ namespace Chisel.Core
             return GetHierarchy(compactNodeID).GetChildRef(compactNodeID).transformation;
         }
 
+        static readonly NodeTransformations kIdentityNodeTransformation = new NodeTransformations
+        {
+            nodeToTree = float4x4.identity,
+            treeToNode = float4x4.identity
+        };
 
+
+        // TODO: Optimize this, doing A LOT of redundant work here
         internal static NodeTransformations GetNodeTransformation(in CompactHierarchy hierarchy, CompactNodeID compactNodeID)
         {
             if (!hierarchy.IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
-            var localTransformations = hierarchy.GetChildRef(compactNodeID).transformation;
+            if (compactNodeID == hierarchy.RootID)
+                return kIdentityNodeTransformation;
+
+            ref var childNode = ref hierarchy.GetChildRef(compactNodeID);
+
+            var localNodeToTree = childNode.transformation;
+            var localTreeToNode = math.inverse(localNodeToTree);
+
+            var parentCompactNodeID = hierarchy.ParentOf(compactNodeID);
+            if (parentCompactNodeID == CompactNodeID.Invalid)
+            {
+                return new NodeTransformations
+                {
+                    nodeToTree = localNodeToTree,
+                    treeToNode = localTreeToNode
+                };
+            }
+
+            var parentTransformation = GetNodeTransformation(in hierarchy, parentCompactNodeID);
             return new NodeTransformations
             {
-                nodeToTree = localTransformations,
-                treeToNode = math.inverse(localTransformations)
+                nodeToTree = math.mul(parentTransformation.nodeToTree, localNodeToTree),
+                treeToNode = math.mul(localTreeToNode, parentTransformation.treeToNode)
             };
         }
 

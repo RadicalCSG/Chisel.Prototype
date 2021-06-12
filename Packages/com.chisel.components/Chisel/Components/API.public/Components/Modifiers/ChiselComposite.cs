@@ -28,7 +28,6 @@ namespace Chisel.Components
         [SerializeField,HideInInspector] CSGOperationType operation; // NOTE: name is used in ChiselCompositeEditor
         public CSGOperationType Operation { get { return operation; } set { if (value == operation) return; operation = value; if (Node.Valid) Node.Operation = operation; } }
 
-
         // TODO: improve warning messages
         const string kModelHasNoChildrenMessage = kNodeTypeName + " has no children and will not have an effect";
         const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of " + kNodeTypeName + " (this should never happen)";
