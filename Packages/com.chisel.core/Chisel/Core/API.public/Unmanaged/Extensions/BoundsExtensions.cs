@@ -60,7 +60,7 @@ namespace Chisel.Core
             return new MinMaxAABB { Min = min, Max = max };
         }
 
-        public static MinMaxAABB Create(float4x4 transformation, ref BlobArray<float3> vertices)
+        public static MinMaxAABB Create(ref BlobArray<float3> vertices, float4x4 transformation)
         {
             if (vertices.Length == 0)
                 return default;

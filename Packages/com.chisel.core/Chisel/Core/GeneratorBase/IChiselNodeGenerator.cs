@@ -60,15 +60,52 @@ namespace Chisel.Core
         public abstract void OnEdit(IChiselHandles handles);
     }
 
+    public struct GeneratedNode
+    {
+        public int                                  parentIndex;    // -1 means root of generated node
+        public CSGOperationType                     operation;
+        public float4x4                             transformation;
+        public BlobAssetReference<BrushMeshBlob>    brushMesh;      // Note: ignored if type is not Brush
+
+
+        public static GeneratedNode GenerateBrush(BlobAssetReference<BrushMeshBlob> brushMesh, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        {
+            return GenerateBrush(brushMesh, float4x4.identity, operation, parentIndex);
+        }
+
+        public static GeneratedNode GenerateBrush(BlobAssetReference<BrushMeshBlob> brushMesh, float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        {
+            return new GeneratedNode
+            {
+                parentIndex     = parentIndex,
+                transformation  = transformation,
+                operation       = operation,
+                brushMesh       = brushMesh
+            };
+        }
+
+        public static GeneratedNode GenerateBranch(CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        {
+            return GenerateBranch(float4x4.identity, operation, parentIndex);
+        }
+
+        public static GeneratedNode GenerateBranch(float4x4 transformation, CSGOperationType operation = CSGOperationType.Additive, int parentIndex = -1)
+        {
+            return new GeneratedNode
+            {
+                parentIndex     = parentIndex,
+                transformation  = transformation,
+                operation       = operation,
+                brushMesh       = BlobAssetReference<BrushMeshBlob>.Null
+            };
+        }
+    }
+
     public interface IBranchGenerator
     {
         int PrepareAndCountRequiredBrushMeshes();
-        bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator);
+        bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator);
         void Dispose();
-
-        // TODO: Fix Temporary workaround, make it possible to setup hierarchy from within jobs
-        void FixupOperations(CSGTreeBranch branch);
-
 
         void Reset();
         int RequiredSurfaceCount { get; }

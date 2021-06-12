@@ -48,36 +48,39 @@ namespace Chisel.Core
         }
 
         [BurstCompile()]
-        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            ref var curve = ref curveBlob.Value;
-            var bounds = stairs.bounds;
-
-            if (!BrushMeshFactory.GeneratePathedStairs(brushMeshes,
-                                                        shapeVertices, closed, bounds,
-                                                        stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
-                                                        stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
-                                                        stairs.leftSide, stairs.rightSide,
-                                                        stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
-                                                        in surfaceDefinitionBlob, Allocator.Persistent))
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
             {
-                for (int i = 0; i < brushMeshes.Length; i++)
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                ref var curve = ref curveBlob.Value;
+                var bounds = stairs.bounds;
+
+                if (!BrushMeshFactory.GeneratePathedStairs(generatedBrushMeshes,
+                                                            shapeVertices, closed, bounds,
+                                                            stairs.stepHeight, stairs.stepDepth, stairs.treadHeight, stairs.nosingDepth,
+                                                            stairs.plateauHeight, stairs.riserType, stairs.riserDepth,
+                                                            stairs.leftSide, stairs.rightSide,
+                                                            stairs.sideWidth, stairs.sideHeight, stairs.sideDepth,
+                                                            in surfaceDefinitionBlob, allocator))
                 {
-                    if (brushMeshes[i].IsCreated)
-                        brushMeshes[i].Dispose();
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    {
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
+                    }
+                    return false;
                 }
-                return false;
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                return true;
             }
-            return true;
         }
 
         public void Dispose()
         {
             if (curveBlob.IsCreated) curveBlob.Dispose();
         }
-
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch) { }
         #endregion
 
         #region Surfaces

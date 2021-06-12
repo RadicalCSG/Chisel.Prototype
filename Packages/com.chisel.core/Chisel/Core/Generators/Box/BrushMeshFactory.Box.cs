@@ -437,6 +437,8 @@ namespace Chisel.Core
                 halfEdges	= boxHalfEdges.ToArray(),
                 vertices	= vertices
             };
+            box.UpdateHalfEdgePolygonIndices();
+            box.CalculatePlanes();
         }
 
         /// <summary>

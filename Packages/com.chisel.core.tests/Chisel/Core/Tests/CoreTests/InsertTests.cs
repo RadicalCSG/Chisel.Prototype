@@ -13,10 +13,17 @@ namespace FoundationTests
     [TestFixture]
     public partial class InsertTests
     {
+        BrushMeshInstance dummyBrushMeshInstance;
+
         [SetUp]
         public void Init()
         {
             CompactHierarchyManager.Clear();
+            BrushMeshFactory.CreateBox(Vector3.one, 0, out var brushMesh);
+            var surfaceDefinition = new ChiselSurfaceDefinition();
+            surfaceDefinition.EnsureSize(6);
+            var brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, surfaceDefinition);
+            dummyBrushMeshInstance = new BrushMeshInstance { brushMeshHash = brushMeshHash };
         }
 
         //[Test]
@@ -98,7 +105,7 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(brush);
             CompactHierarchyManager.ClearDirty(branch);
@@ -121,7 +128,7 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(brush);
             CompactHierarchyManager.ClearDirty(branch);
@@ -144,7 +151,7 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
             CompactHierarchyManager.ClearDirty(brush);
             CompactHierarchyManager.ClearDirty(branch);
@@ -168,9 +175,9 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int branchUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);
@@ -207,9 +214,9 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int branchUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);
@@ -247,9 +254,9 @@ namespace FoundationTests
             const int brushUserID3 = 12;
             const int branchUserID = 13;
             const int treeUserID = 14;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
             var tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { branch });
             CompactHierarchyManager.ClearDirty(brush1);
@@ -295,7 +302,7 @@ namespace FoundationTests
             const int treeUserID2 = 12;
             const int branchUserID1 = 13;
             const int branchUserID2 = 14;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch2 = CSGTreeBranch.Create(branchUserID2);
             var tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { branch2 });
             var branch1 = CSGTreeBranch.Create(branchUserID1, new CSGTreeNode[] { brush });
@@ -340,7 +347,7 @@ namespace FoundationTests
             const int brushUserID = 10;
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var tree2 = CSGTree.Create(treeUserID2);
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { brush });
             CompactHierarchyManager.ClearDirty(brush);
@@ -374,7 +381,7 @@ namespace FoundationTests
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
             const int branchUserID1 = 13;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var tree2 = CSGTree.Create(treeUserID2);
             var branch1 = CSGTreeBranch.Create(branchUserID1, new CSGTreeNode[] { brush });
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { branch1 });
@@ -414,7 +421,7 @@ namespace FoundationTests
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
             const int branchUserID2 = 14;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch2 = CSGTreeBranch.Create(branchUserID2);
             var tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { branch2 });
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { brush });

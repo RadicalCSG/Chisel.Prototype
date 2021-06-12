@@ -13,14 +13,21 @@ namespace FoundationTests
     [TestFixture]
     public partial class InsertRangeTests
     {
+        BrushMeshInstance dummyBrushMeshInstance;
+
         [SetUp]
         public void Init()
         {
             CompactHierarchyManager.Clear();
+            BrushMeshFactory.CreateBox(Vector3.one, 0, out var brushMesh);
+            var surfaceDefinition = new ChiselSurfaceDefinition();
+            surfaceDefinition.EnsureSize(6);
+            var brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, surfaceDefinition);
+            dummyBrushMeshInstance = new BrushMeshInstance { brushMeshHash = brushMeshHash };
         }
 
 
-        [Test]
+        [Test] 
         public void TreeWithNoChildren_InsertRangeWithInvalidNode_TreeStaysEmpty()
         {
             const int treeUserID = 13;
@@ -103,9 +110,9 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int treeUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var tree = CSGTree.Create(treeUserID);
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);
@@ -145,9 +152,9 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int treeUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { brush3 });
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);
@@ -187,9 +194,9 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int treeUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { brush3 });
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);
@@ -231,10 +238,10 @@ namespace FoundationTests
             const int brushUserID3 = 12;
             const int brushUserID4 = 13;
             const int treeUserID = 14;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
-            var brush4 = CSGTreeBrush.Create(userID: brushUserID4);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
+            var brush4 = CSGTreeBrush.Create(userID: brushUserID4, dummyBrushMeshInstance);
             var tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { brush3, brush4 });
             CompactHierarchyManager.ClearDirty(brush1);
             CompactHierarchyManager.ClearDirty(brush2);

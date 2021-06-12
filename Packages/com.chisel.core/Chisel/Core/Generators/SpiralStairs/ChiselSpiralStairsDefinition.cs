@@ -107,50 +107,57 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateSpiralStairs(brushMeshes,
-                                                       ref this,
-                                                       in surfaceDefinitionBlob,
-                                                       Allocator.Persistent))
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
             {
-                for (int i = 0; i < brushMeshes.Length; i++)
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                if (!BrushMeshFactory.GenerateSpiralStairs(generatedBrushMeshes,
+                                                           ref this,
+                                                           in surfaceDefinitionBlob,
+                                                           allocator))
                 {
-                    if (brushMeshes[i].IsCreated)
-                        brushMeshes[i].Dispose();
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    {
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
+                    }
+                    return false;
                 }
-                return false;
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+
+                // TODO: clean this up
+                {
+                    var subMeshIndex = TreadStart - CylinderSubMeshCount;
+                    var node = nodes[subMeshIndex];
+                    node.operation = CSGOperationType.Intersecting;
+                    nodes[subMeshIndex] = node;
+
+                    subMeshIndex = RequiredSubMeshCount - CylinderSubMeshCount;
+                    node = nodes[subMeshIndex];
+                    node.operation = CSGOperationType.Intersecting;
+                    nodes[subMeshIndex] = node;
+                }
+
+                if (HaveInnerCylinder)
+                {
+                    var subMeshIndex = TreadStart - 1;
+                    var node = nodes[subMeshIndex];
+                    node.operation = CSGOperationType.Subtractive;
+                    nodes[subMeshIndex] = node;
+
+                    subMeshIndex = RequiredSubMeshCount - 1;
+                    node = nodes[subMeshIndex];
+                    node.operation = CSGOperationType.Subtractive;
+                    nodes[subMeshIndex] = node;
+                }
+
+                return true;
             }
-            return true;
         }
 
         public void Dispose() {}
-
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch)
-        {
-            // TODO: somehow make this possible to set up from within the job without requiring the treeBranches/treeBrushes
-            {
-                var subMeshIndex = TreadStart - CylinderSubMeshCount;
-                var brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Intersecting;
-
-                subMeshIndex = RequiredSubMeshCount - CylinderSubMeshCount;
-                brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Intersecting;
-            }
-
-            if (HaveInnerCylinder)
-            {
-                var subMeshIndex = TreadStart - 1;
-                var brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Subtractive;
-
-                subMeshIndex = RequiredSubMeshCount - 1;
-                brush = (CSGTreeBrush)branch[subMeshIndex];
-                brush.Operation = CSGOperationType.Subtractive;
-            }
-        }
         #endregion
 
         #region Surfaces

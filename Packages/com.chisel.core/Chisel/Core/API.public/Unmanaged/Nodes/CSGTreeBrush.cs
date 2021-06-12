@@ -58,7 +58,7 @@ namespace Chisel.Core
         /// <returns>A new <see cref="Chisel.Core.CSGTreeBrush"/>. May be an invalid node if it failed to create it.</returns>
         public static CSGTreeBrush Create(Int32 userID = 0, BrushMeshInstance brushMesh = default(BrushMeshInstance), CSGOperationType operation = CSGOperationType.Additive)
         {
-            return Create(userID, default(Matrix4x4), brushMesh, operation);
+            return Create(userID, float4x4.identity, brushMesh, operation);
         }
         #endregion
 

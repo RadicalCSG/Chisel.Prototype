@@ -136,7 +136,7 @@ namespace Chisel.Core
         public float4x4             transformation;
         public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes        
         
-        public Int32                brushMeshHash;    // TODO: use hash of mesh as "ID"
+        public Int32                brushMeshHash;  // TODO: use hash of mesh as "ID"
         public MinMaxAABB           bounds;         // TODO: move this somewhere else, 1:1 relationship with brushMeshID
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -194,7 +194,7 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = CSGOperationType.Additive,
                 transformation  = float4x4.identity,
-                brushMeshHash     = Int32.MaxValue
+                brushMeshHash   = Int32.MaxValue
             });
             return compactHierarchy;
         }
@@ -212,7 +212,7 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = operation,
                 transformation  = transformation,
-                brushMeshHash     = Int32.MaxValue
+                brushMeshHash   = Int32.MaxValue
             });
         }
         #endregion
@@ -229,7 +229,7 @@ namespace Chisel.Core
                 userID          = userID,
                 operation       = operation,
                 transformation  = transformation,
-                brushMeshHash     = brushMeshID, 
+                brushMeshHash   = brushMeshID, 
                 bounds          = BrushMeshManager.CalculateBounds(brushMeshID, in transformation)
             });
         }
@@ -551,6 +551,12 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AttachToParent(CompactNodeID parentID, CompactNodeID compactNodeID)
         {
+            AttachToParent(ref CompactHierarchyManager.HierarchyIDLookup, CompactHierarchyManager.HierarchyList, ref CompactHierarchyManager.NodeIDLookup, CompactHierarchyManager.Nodes, parentID, compactNodeID);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void AttachToParent(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, CompactNodeID compactNodeID)
+        {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
             if (parentIndex == -1)
@@ -559,14 +565,21 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 return;
 
-            var parentHierarchy  = compactNodes[parentIndex];
+            var parentHierarchy = compactNodes[parentIndex];
             var parentChildCount = parentHierarchy.childCount;
-            AttachInternal(parentID, parentIndex, parentChildCount, compactNodeID);
+            AttachInternal(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, parentID, parentIndex, parentChildCount, compactNodeID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: MarshalAs(UnmanagedType.U1)]
         public bool AttachToParentAt(CompactNodeID parentID, int index, CompactNodeID compactNodeID)
+        {
+            return AttachToParentAt(ref CompactHierarchyManager.HierarchyIDLookup, CompactHierarchyManager.HierarchyList, ref CompactHierarchyManager.NodeIDLookup, CompactHierarchyManager.Nodes, parentID, index, compactNodeID);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        internal bool AttachToParentAt(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, int index, CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
             if (index < 0)
@@ -581,7 +594,7 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;
 
-            return AttachInternal(parentID, parentIndex, index, compactNodeID);
+            return AttachInternal(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, parentID, parentIndex, index, compactNodeID);
         }
     }
 }

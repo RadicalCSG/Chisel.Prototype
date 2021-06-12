@@ -43,26 +43,30 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
             // TODO: maybe just not bother with pathblob and just convert to path-matrices directly?
             using (var pathMatrices = pathBlob.Value.GetUnsafeMatrices(Allocator.Temp))
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
             {
-                if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
                                                             in polygonVerticesList,
                                                             in polygonVerticesSegments,
                                                             in pathMatrices,
                                                             in surfaceDefinitionBlob,
-                                                            Allocator.Persistent))
+                                                            allocator))
                 {
-                    for (int i = 0; i < brushMeshes.Length; i++)
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
                     {
-                        if (brushMeshes[i].IsCreated)
-                            brushMeshes[i].Dispose();
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
                     }
                     return false;
                 }
-                return true; 
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                return true;
             }
         }
 
@@ -77,9 +81,6 @@ namespace Chisel.Core
             polygonVerticesList = default;
             polygonVerticesSegments = default;
         }
-
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch) { }
         #endregion
         
         #region Surfaces

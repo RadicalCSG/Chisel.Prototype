@@ -48,23 +48,29 @@ namespace Chisel.Core
         }
 
         [BurstCompile()]
-        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            if (!BrushMeshFactory.GenerateExtrudedShape(brushMeshes,
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            {
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
                                                         in polygonVerticesList,
                                                         in polygonVerticesSegments,
                                                         in pathMatrices,
                                                         in surfaceDefinitionBlob,
-                                                        Allocator.Persistent))
-            {
-                for (int i = 0; i < brushMeshes.Length; i++)
+                                                        allocator))
                 {
-                    if (brushMeshes[i].IsCreated)
-                        brushMeshes[i].Dispose();
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    {
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
+                    }
+                    return false;
                 }
-                return false;
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                return true;
             }
-            return true;
         }
 
         public void Dispose()
@@ -74,9 +80,6 @@ namespace Chisel.Core
             if (polygonVerticesSegments.IsCreated) polygonVerticesSegments.Dispose(); polygonVerticesSegments = default;
             if (pathMatrices.IsCreated) pathMatrices.Dispose(); pathMatrices = default;
         }
-
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch) { }
         #endregion
 
         #region Surfaces

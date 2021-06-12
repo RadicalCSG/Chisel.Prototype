@@ -37,7 +37,7 @@ namespace Chisel.Core
         // TODO: create spiral sides support
         [BurstCompile]
         public static bool GenerateSpiralStairs(NativeList<BlobAssetReference<BrushMeshBlob>>        brushMeshes, 
-                                                ref ChiselSpiralStairs                             definition, 
+                                                ref ChiselSpiralStairs                               definition, 
                                                 in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
                                                 Allocator                                            allocator)
         {

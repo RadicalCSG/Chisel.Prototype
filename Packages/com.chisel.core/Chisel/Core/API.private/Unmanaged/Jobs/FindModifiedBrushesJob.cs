@@ -11,6 +11,39 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile]
+    unsafe struct UpdateBrushBoundsJob : IJob
+    {
+        public void InitializeLookups()
+        {
+            hierarchyIDLookupPtr    = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.HierarchyIDLookup);
+        }
+
+        // Read
+        [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager* hierarchyIDLookupPtr;
+        [NoAlias, ReadOnly] public NativeList<NodeOrderNodeID>                  brushBoundsUpdateList;
+        [NoAlias, ReadOnly] public NativeArray<NodeTransformations>             transformationCache;
+        [NoAlias, ReadOnly] public NativeHashMap<int, RefCountedBrushMeshBlob>  brushMeshBlobCache;
+
+        // Read/Write
+        [NativeDisableContainerSafetyRestriction, NoAlias, ReadOnly] public NativeArray<CompactHierarchy> hierarchyList;
+
+        public void Execute()
+        {
+            ref var hierarchyIDLookup = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
+            var hierarchyListPtr = (CompactHierarchy*)hierarchyList.GetUnsafePtr();
+            for (int i = 0; i < brushBoundsUpdateList.Length; i++)
+            {
+                var compactNodeID   = brushBoundsUpdateList[i].compactNodeID;
+                var nodeOrder       = brushBoundsUpdateList[i].nodeOrder;
+                var hierarchyIndex  = CompactHierarchyManager.GetHierarchyIndexUnsafe(ref hierarchyIDLookup, compactNodeID);
+                ref var compactHierarchy = ref hierarchyListPtr[hierarchyIndex];
+                var nodeTransformation = transformationCache[nodeOrder];
+                compactHierarchy.UpdateBounds(brushMeshBlobCache, compactNodeID, nodeTransformation.nodeToTree);
+            }
+        }
+    }
+        
+    [BurstCompile]
     unsafe struct FindModifiedBrushesJob : IJob
     {
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
@@ -30,6 +63,7 @@ namespace Chisel.Core
 
         // Write
         [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     transformTreeBrushIndicesList;
+        [NoAlias, WriteOnly] public NativeList<NodeOrderNodeID>     brushBoundsUpdateList;
 
         public void Execute()
         {
@@ -55,6 +89,13 @@ namespace Chisel.Core
                         }
 
                         // Fix up all flags
+
+                        if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified) ||
+                            compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.TransformationModified))
+                        {
+                            if (compactHierarchy.IsValidCompactNodeID(brushCompactNodeID))
+                                brushBoundsUpdateList.Add(new NodeOrderNodeID { nodeOrder = indexOrder.nodeOrder, compactNodeID = brushCompactNodeID });
+                        }
 
                         if (compactHierarchy.IsStatusFlagSet(brushCompactNodeID, NodeStatusFlags.ShapeModified))
                         {

@@ -36,6 +36,7 @@ namespace Chisel.Core
                 brushIDValues               = new NativeList<CompactNodeID>(1000, Allocator.Persistent);
                 allKnownBrushMeshIndices    = new NativeHashSet<int>(1000, Allocator.Persistent);
 
+                // TODO: not used??
                 brushTreeSpaceBoundLookup   = new NativeHashMap<CompactNodeID, MinMaxAABB>(1000, Allocator.Persistent);
                 brushRenderBufferLookup     = new NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>(1000, Allocator.Persistent);
 

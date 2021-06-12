@@ -102,7 +102,6 @@ namespace Chisel.Core
             Profiler.EndSample();
             #endregion
 
-            var hierarchyList = CompactHierarchyManager.HierarchyList;
             var treeUpdateLength = 0;
             try
             {
@@ -290,6 +289,7 @@ namespace Chisel.Core
 
                 public NativeArray<int>                     parameterCounts;
                 public NativeList<NodeOrderNodeID>          transformTreeBrushIndicesList;
+                public NativeList<NodeOrderNodeID>          brushBoundsUpdateList;
 
                 public NativeList<CompactNodeID>            brushes;
                 public NativeList<CompactNodeID>            nodes;
@@ -355,6 +355,7 @@ namespace Chisel.Core
             internal struct JobHandlesStruct
             {
                 internal JobHandle transformTreeBrushIndicesListJobHandle;
+                internal JobHandle brushBoundsUpdateListJobHandle;
                 internal JobHandle brushesJobHandle;
                 internal JobHandle nodesJobHandle;
                 internal JobHandle parametersJobHandle;
@@ -373,6 +374,8 @@ namespace Chisel.Core
                 internal JobHandle brushRenderDataJobHandle;
                 internal JobHandle brushTreeSpacePlaneCacheJobHandle;
                 internal JobHandle brushMeshBlobsLookupJobHandle;
+                internal JobHandle hierarchyIDJobHandle;
+                internal JobHandle hierarchyListJobHandle;
                 internal JobHandle brushMeshLookupJobHandle;
                 internal JobHandle brushIntersectionsWithJobHandle;
                 internal JobHandle brushIntersectionsWithRangeJobHandle;
@@ -463,6 +466,7 @@ namespace Chisel.Core
 
                 Temporaries.parameterCounts                = new NativeArray<int>(chiselLookupValues.parameters.Length, allocator);
                 Temporaries.transformTreeBrushIndicesList  = new NativeList<NodeOrderNodeID>(allocator);
+                Temporaries.brushBoundsUpdateList          = new NativeList<NodeOrderNodeID>(allocator);
                 Temporaries.nodes                          = new NativeList<CompactNodeID>(allocator);
                 Temporaries.brushes                        = new NativeList<CompactNodeID>(allocator);
 
@@ -694,14 +698,15 @@ namespace Chisel.Core
                             brushes                         = Temporaries.brushes,
                             brushCount                      = this.brushCount,
                             allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders,
-                            //compactHierarchy              = compactHierarchy, //<-- cannot do ref or pointer here
-                                                                                //    so we set it below using InitializeHierarchy
+                            //ref compactHierarchy          = ref compactHierarchy, //<-- cannot do ref or pointer here
+                                                                                    //    so we set it below using InitializeHierarchy
 
                             // Read/Write
                             rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders,
 
                             // Write
                             transformTreeBrushIndicesList   = Temporaries.transformTreeBrushIndicesList,
+                            brushBoundsUpdateList           = Temporaries.brushBoundsUpdateList
                         };
                         findModifiedBrushesJob.InitializeHierarchy(ref compactHierarchy);
                         findModifiedBrushesJob.Schedule(runInParallel,
@@ -710,7 +715,8 @@ namespace Chisel.Core
                                 JobHandles.allTreeBrushIndexOrdersJobHandle),
                             new WriteJobHandles(
                                 ref JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
-                                ref JobHandles.transformTreeBrushIndicesListJobHandle));
+                                ref JobHandles.transformTreeBrushIndicesListJobHandle,
+                                ref JobHandles.brushBoundsUpdateListJobHandle));
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -820,6 +826,36 @@ namespace Chisel.Core
                         new WriteJobHandles(
                             ref JobHandles.transformationCacheJobHandle));
                 } 
+                finally { Profiler.EndSample(); }
+                #endregion
+
+                #region Find Modified Brushes
+                Profiler.BeginSample("Job_UpdateBrushBounds");
+                try
+                {
+                    const bool runInParallel = runInParallelDefault;
+                    var updateBrushBoundsJobJob = new UpdateBrushBoundsJob
+                    {
+                        // Read
+                        brushBoundsUpdateList   = Temporaries.brushBoundsUpdateList,
+                        brushMeshBlobCache      = brushMeshBlobs,
+                        transformationCache     = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                        //ref hierarchyIDLookup = ref CompactHierarchyManager.HierarchyIDLookup, //<-- cannot do ref or pointer here
+                                                                                                         //    so we set it below using InitializeHierarchy
+
+                        // Read/Write
+                        hierarchyList           = CompactHierarchyManager.HierarchyList,
+                    };
+                    updateBrushBoundsJobJob.InitializeLookups();
+                    updateBrushBoundsJobJob.Schedule(runInParallel,
+                        new ReadJobHandles(
+                            JobHandles.brushBoundsUpdateListJobHandle,
+                            JobHandles.transformationCacheJobHandle,
+                            JobHandles.brushMeshBlobsLookupJobHandle,
+                            JobHandles.hierarchyIDJobHandle),
+                        new WriteJobHandles(
+                            ref JobHandles.hierarchyListJobHandle));
+                }
                 finally { Profiler.EndSample(); }
                 #endregion
 
@@ -1939,10 +1975,12 @@ namespace Chisel.Core
                                                     JobHandles.brushBrushIntersectionsJobHandle,
                                                     JobHandles.brushesTouchedByBrushCacheJobHandle,
                                                     JobHandles.brushRenderBufferCacheJobHandle,
-                                                    JobHandles.brushRenderDataJobHandle),
+                                                    JobHandles.brushRenderDataJobHandle,
+                                                    JobHandles.brushTreeSpacePlaneCacheJobHandle),
                                                 JobHandleExtensions.CombineDependencies(
-                                                    JobHandles.brushTreeSpacePlaneCacheJobHandle,
                                                     JobHandles.brushMeshBlobsLookupJobHandle,
+                                                    JobHandles.hierarchyIDJobHandle,
+                                                    JobHandles.hierarchyListJobHandle,
                                                     JobHandles.brushMeshLookupJobHandle,
                                                     JobHandles.brushIntersectionsWithJobHandle,
                                                     JobHandles.brushIntersectionsWithRangeJobHandle,
@@ -1991,6 +2029,7 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.loopVerticesLookup           .Dispose(dependencies));
                 
                 lastJobHandle.AddDependency(Temporaries.transformTreeBrushIndicesList.Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.brushBoundsUpdateList        .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.nodes                        .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.brushRenderData              .Dispose(dependencies));
@@ -2048,6 +2087,8 @@ namespace Chisel.Core
                                                     JobHandles.brushTreeSpacePlaneCacheJobHandle),
                                                 JobHandleExtensions.CombineDependencies(
                                                     JobHandles.brushMeshBlobsLookupJobHandle,
+                                                    JobHandles.hierarchyIDJobHandle,
+                                                    JobHandles.hierarchyListJobHandle,
                                                     JobHandles.brushMeshLookupJobHandle,
                                                     JobHandles.brushIntersectionsWithJobHandle,
                                                     JobHandles.brushIntersectionsWithRangeJobHandle,
@@ -2075,6 +2116,7 @@ namespace Chisel.Core
                                                     JobHandles.uniqueBrushPairsJobHandle),
                                                 JobHandleExtensions.CombineDependencies(
                                                     JobHandles.transformTreeBrushIndicesListJobHandle,
+                                                    JobHandles.brushBoundsUpdateListJobHandle,
                                                     JobHandles.brushesJobHandle,
                                                     JobHandles.nodesJobHandle,
                                                     JobHandles.parametersJobHandle,

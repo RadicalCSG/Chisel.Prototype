@@ -61,9 +61,12 @@ namespace Chisel.Core
         }
 
         [BurstCompile]
-        public bool GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<BlobAssetReference<BrushMeshBlob>> brushMeshes, Allocator allocator)
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            using var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter,
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            {
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                using var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter,
                                                                         tubeWidth,
                                                                         tubeHeight,
                                                                         tubeRotation,
@@ -73,30 +76,30 @@ namespace Chisel.Core
                                                                         horizontalSegments,
                                                                         fitCircle,
                                                                         Allocator.Temp);
-            
-            if (!BrushMeshFactory.GenerateTorus(brushMeshes,
-                                                in vertices,
-                                                verticalSegments,
-                                                horizontalSegments,
-                                                in surfaceDefinitionBlob,
-                                                Allocator.Persistent))
-            {
-                for (int i = 0; i < brushMeshes.Length; i++)
-                {
-                    if (brushMeshes[i].IsCreated)
-                        brushMeshes[i].Dispose();
-                }
-                return false;
-            }
 
-            return true;
+                if (!BrushMeshFactory.GenerateTorus(generatedBrushMeshes,
+                                                    in vertices,
+                                                    verticalSegments,
+                                                    horizontalSegments,
+                                                    in surfaceDefinitionBlob,
+                                                    allocator))
+                {
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    {
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
+                    }
+                    return false;
+                }
+
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                return true;
+            }
         }
 
         [BurstCompile]
         public void Dispose() { }
-        
-        [BurstDiscard]
-        public void FixupOperations(CSGTreeBranch branch) { }
         #endregion
 
         #region Surfaces

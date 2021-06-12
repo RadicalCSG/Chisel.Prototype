@@ -228,6 +228,49 @@ namespace FoundationTests
         }
 
         [Test]
+        public void HierarchyWithNodesWithChildBrush_AttachNodeToSameParent_NoErrors()
+        {
+            var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp);
+            Add2Branches(ref compactHierarchy, out var parent_ID, out _, userID1: 1, userID2: 2);
+            using (compactHierarchy)
+            {
+                var brush_ID = compactHierarchy.CreateBrush(NodeID.Invalid, 7, userID: 7);
+                compactHierarchy.AttachToParentAt(parent_ID, 0, brush_ID);
+                Assume.That(compactHierarchy.ParentOf(brush_ID), Is.EqualTo(parent_ID));
+
+                compactHierarchy.AttachToParentAt(parent_ID, 0, brush_ID);
+
+                Assert.AreEqual((0,1), 
+                                (compactHierarchy.SiblingIndexOf(brush_ID), 
+                                compactHierarchy.ChildCount(parent_ID)));
+            }
+        }
+
+        // TODO: Add more tests for AttachToParentAt 
+
+        [Test]
+        public void HierarchyWithNodesWithChildBrushes_AttachNodeToSameParentDifferentIndex_NodeIsMoved()
+        {
+            var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp);
+            Add2Branches(ref compactHierarchy, out var parent_ID, out _, userID1: 1, userID2: 2);
+            using (compactHierarchy)
+            {
+                var brush1_ID = compactHierarchy.CreateBrush(NodeID.Invalid, 7, userID: 7);
+                var brush2_ID = compactHierarchy.CreateBrush(NodeID.Invalid, 8, userID: 8);
+                compactHierarchy.AttachToParentAt(parent_ID, 0, brush1_ID);
+                compactHierarchy.AttachToParentAt(parent_ID, 1, brush2_ID);
+                Assume.That(compactHierarchy.ParentOf(brush1_ID), Is.EqualTo(parent_ID));
+
+                compactHierarchy.AttachToParentAt(parent_ID, 2, brush1_ID);
+
+                Assert.AreEqual((1, 0, 2),
+                                (compactHierarchy.SiblingIndexOf(brush1_ID),
+                                 compactHierarchy.SiblingIndexOf(brush2_ID),
+                                 compactHierarchy.ChildCount(parent_ID)));
+            }
+        }
+
+        [Test]
         public void HierarchyWithNodesInBranches_InsertChildInBetweenChildren_ChildrenHaveShifted()
         {
             var compactHierarchy = CompactHierarchy.CreateHierarchy(NodeID.Invalid, Allocator.Temp);
@@ -235,7 +278,7 @@ namespace FoundationTests
             Add2Brushes (ref compactHierarchy, parentID: branch0_ID, out var branch0_brush0_ID, out var branch0_brush2_ID, brushMeshID1: 1, brushMeshID2: 3);
             Add2Brushes (ref compactHierarchy, parentID: branch1_ID, out var branch1_brush0_ID, out var branch1_brush1_ID, brushMeshID1: 4, brushMeshID2: 5);
             using (compactHierarchy)
-            {     
+            {      
                 var branch0_brush1_ID = compactHierarchy.CreateBrush(NodeID.Invalid, brushMeshID: 2);
 
                 compactHierarchy.AttachToParentAt(branch0_ID, 1, branch0_brush1_ID);

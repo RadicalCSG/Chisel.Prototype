@@ -149,6 +149,7 @@ namespace Chisel.Core
                 brushMesh.vertices == null ||
                 brushMesh.polygons == null ||
                 brushMesh.halfEdges == null ||
+                brushMesh.planes == null ||
                 brushMesh.halfEdgePolygonIndices == null ||
                 brushMesh.vertices.Length < 4 ||
                 brushMesh.polygons.Length < 4 ||
@@ -341,7 +342,7 @@ namespace Chisel.Core
             if (!brushMeshBlob.IsCreated)
                 return default;
 
-            return BoundsExtensions.Create(transformation, ref brushMeshBlob.Value.localVertices);
+            return BoundsExtensions.Create(ref brushMeshBlob.Value.localVertices, transformation);
         }
 
         public static BlobAssetReference<BrushMeshBlob> GetBrushMeshBlob(Int32 brushMeshHash)
@@ -390,6 +391,22 @@ namespace Chisel.Core
             return brushMeshHash;
         }
 
+        internal static void RegisterBrushMeshHash(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 newBrushMeshHash, Int32 oldBrushMeshHash = 0)
+        {
+            if (oldBrushMeshHash != 0)
+            {
+                if (oldBrushMeshHash == newBrushMeshHash)
+                    return;
+                DecreaseRefCount(brushMeshBlobCache, oldBrushMeshHash);
+            }
+
+            if (!brushMeshBlobCache.TryGetValue(newBrushMeshHash, out var refCountedBrushMeshBlob))
+                throw new InvalidOperationException("Unknown brushMeshHash used");
+            
+            refCountedBrushMeshBlob.refCount++;
+            brushMeshBlobCache[newBrushMeshHash] = refCountedBrushMeshBlob;
+        }
+
         internal static Int32 RegisterBrushMesh(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, BlobAssetReference<BrushMeshBlob> brushMeshBlobRef, Int32 oldBrushMeshHash = 0)
         {
             if (!brushMeshBlobRef.IsCreated)
@@ -406,7 +423,7 @@ namespace Chisel.Core
             if (oldBrushMeshHash != 0)
             {
                 if (oldBrushMeshHash == brushMeshHash) return oldBrushMeshHash;
-                DecreaseRefCount(oldBrushMeshHash);
+                DecreaseRefCount(brushMeshBlobCache, oldBrushMeshHash);
             }
 
             if (!brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))
@@ -424,6 +441,11 @@ namespace Chisel.Core
 
         internal static bool DecreaseRefCount(Int32 brushMeshHash)
         {
+            return DecreaseRefCount(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshHash);
+        }
+
+        internal static bool DecreaseRefCount(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        {
             if (!AssertBrushMeshIDValid(brushMeshHash))
                 return false;
 
@@ -440,14 +462,15 @@ namespace Chisel.Core
             return true;
         }
 
-                    
+
         [BurstCompile]
         unsafe struct RegisterBrushesJob : IJob
         {
-            [NoAlias, ReadOnly] public NativeList<GeneratedNodeDefinition>  generatedNodes;
-            [NoAlias, WriteOnly] public NativeList<int>                     brushMeshHashes;
-            
+            [NoAlias, ReadOnly] public NativeList<BlobAssetReference<BrushMeshBlob>>    brushMeshBlobs;
+
+            [NoAlias] public NativeList<GeneratedNodeDefinition>            generatedNodeDefinition;
             [NoAlias] public NativeHashMap<int, RefCountedBrushMeshBlob>    brushMeshBlobCache;
+
 
             // TODO: this is based on RegisterBrushMesh in BrushMeshManager, remove redundancy
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -519,32 +542,36 @@ namespace Chisel.Core
 
             public void Execute()
             {
-                for (int i = 0; i < generatedNodes.Length; i++)
+                for (int i = 0; i < brushMeshBlobs.Length; i++)
                 {
-                    var brushMesh = generatedNodes[i].brushMeshBlob;
+                    var brushMeshBlob = brushMeshBlobs[i];
                     int brushMeshHash = 0;
-                    if (brushMesh != BlobAssetReference<BrushMeshBlob>.Null)
-                        brushMeshHash = brushMesh.IsCreated ? RegisterBrushMesh(brushMeshBlobCache, brushMesh) : BrushMeshInstance.InvalidInstance.BrushMeshID;
-                    brushMeshHashes[i] = brushMeshHash;
+                    if (brushMeshBlob != BlobAssetReference<BrushMeshBlob>.Null)
+                        brushMeshHash = brushMeshBlob.IsCreated ? RegisterBrushMesh(brushMeshBlobCache, brushMeshBlob) : BrushMeshInstance.InvalidInstance.BrushMeshID;
+                    
+                    var definition = generatedNodeDefinition[i];
+                    definition.brushMeshHash = brushMeshHash;
+                    generatedNodeDefinition[i] = definition;
                 }
             }
         }
 
 
-        internal static JobHandle ScheduleBrushRegistration(bool runInParallel, NativeList<GeneratedNodeDefinition> inGeneratedNodes, NativeList<int> outBrushMeshHashes, JobHandle dependsOn)
+        internal static JobHandle ScheduleBrushRegistration(bool runInParallel,
+                                                            [NoAlias, ReadOnly] NativeList<BlobAssetReference<BrushMeshBlob>>   brushMeshBlobs,
+                                                            [NoAlias, WriteOnly] NativeList<GeneratedNodeDefinition>            generatedNodeDefinitions, 
+                                                            JobHandle dependsOn)
         {
             JobExtensions.CheckDependencies(runInParallel, dependsOn);
             if (!runInParallel)
             {
-                Debug.Assert(inGeneratedNodes.IsCreated);
-                Debug.Assert(outBrushMeshHashes.IsCreated);
-                Debug.Assert(inGeneratedNodes.Length == outBrushMeshHashes.Length);
+                Debug.Assert(generatedNodeDefinitions.IsCreated);
             }
             var registerBrushesJob = new RegisterBrushesJob
             {
-                generatedNodes      = inGeneratedNodes,
-                brushMeshHashes     = outBrushMeshHashes,
-                brushMeshBlobCache  = brushMeshBlobCache
+                brushMeshBlobs          = brushMeshBlobs,
+                generatedNodeDefinition = generatedNodeDefinitions,
+                brushMeshBlobCache      = brushMeshBlobCache
             };
             return registerBrushesJob.Schedule(runInParallel, dependsOn);
         }   
