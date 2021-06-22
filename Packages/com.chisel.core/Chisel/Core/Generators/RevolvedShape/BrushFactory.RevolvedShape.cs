@@ -86,8 +86,7 @@ namespace Chisel.Core
                     for (; r < polygonVerticesSegments.Length; r++)
                         polygonVerticesSegments[r] -= delta;
 
-                    // TODO: set this to 0 after the topology can handle this situation (zero area polygon) 
-                    const float kCenter = 0.0f;
+                    const float kAxisCenter = 0.0f;
 
                     // positive side polygon
                     for (int i = 0; i < polygon.Length; i++)
@@ -99,7 +98,7 @@ namespace Chisel.Core
                         if (p.x > kEpsilon)
                             polygonVerticesList.Add(v); 
                         else
-                            polygonVerticesList.Add(new SegmentVertex { position = new float2(kCenter, p.y), segmentIndex = defaultSegment });
+                            polygonVerticesList.Add(new SegmentVertex { position = new float2(kAxisCenter, p.y), segmentIndex = defaultSegment });
                     }
                     polygonVerticesSegments.Add(polygonVerticesList.Length);
 
@@ -114,7 +113,7 @@ namespace Chisel.Core
                         if (p.x < -kEpsilon)
                             polygonVerticesList.Add(v); 
                         else
-                            polygonVerticesList.Add(new SegmentVertex { position = new float2(-kCenter, p.y), segmentIndex = defaultSegment });
+                            polygonVerticesList.Add(new SegmentVertex { position = new float2(-kAxisCenter, p.y), segmentIndex = defaultSegment });
                     }
                     polygonVerticesSegments.Add(polygonVerticesList.Length);
                 }

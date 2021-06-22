@@ -352,16 +352,16 @@ namespace Chisel.Core
             UpdateHash(ChiselMeshLookup.Value.brushMeshBlobCache, compactNodeID, newBrushMeshHash);
         }
 
-        internal void UpdateHash(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
+        internal bool UpdateHash(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, int newBrushMeshHash)
         {
             var nodeIndex = HierarchyIndexOfInternal(compactNodeID);
             if (nodeIndex == -1)
-                return;
+                return false;
 
             var compactNode         = compactNodes[nodeIndex];
             var prevBrushMeshHash   = compactNode.nodeInformation.brushMeshHash;
             if (prevBrushMeshHash == newBrushMeshHash)
-                return;
+                return false;
 
             BrushMeshManager.RegisterBrushMeshHash(brushMeshBlobCache, newBrushMeshHash, prevBrushMeshHash);
             if (newBrushMeshHash != 0 && 
@@ -370,6 +370,7 @@ namespace Chisel.Core
 
             compactNode.nodeInformation.brushMeshHash = newBrushMeshHash;
             compactNodes[nodeIndex] = compactNode;
+            return true;
         }
 
         struct HashStruct
@@ -1456,59 +1457,32 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
-            ref var nodeRef = ref GetChildRef(compactNodeID);
+            ref var nodeRef = ref UnsafeGetChildRefAtInternal(compactNodeID);
             nodeRef.operation       = operation;
             nodeRef.transformation  = transformation;
-            if (brushMeshHash != 0)
-            {
-                UpdateHash(brushMeshBlobCache, compactNodeID, brushMeshHash);
+            
+            if (UpdateHash(brushMeshBlobCache, compactNodeID, brushMeshHash))
+                nodeRef.flags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated | NodeStatusFlags.TransformationModified;
+            else
+                nodeRef.flags |= NodeStatusFlags.NeedAllTouchingUpdated | NodeStatusFlags.TransformationModified;
+
+            {                
+                /*
                 if (!brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob) &&
                     refCountedBrushMeshBlob.brushMeshBlob.IsCreated)
                     nodeRef.bounds = BoundsExtensions.Create(ref refCountedBrushMeshBlob.brushMeshBlob.Value.localVertices, transformation);
                 else
-                    nodeRef.bounds = default;
-            } else
-                nodeRef.bounds = default;
+                    nodeRef.bounds = default;*/
+            } /*else
+                nodeRef.bounds = default;*/
             nodeRef.brushMeshHash = brushMeshHash;
-            nodeRef.flags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated | NodeStatusFlags.TransformationModified;
             return true;
         }
 
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal bool SetState(CompactNodeID compactNodeID, [NoAlias, ReadOnly] NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CSGOperationType operation, float4x4 transformation)
-        {
-            if (!IsValidCompactNodeID(compactNodeID))
-                throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
-
-            ref var nodeRef = ref UnsafeGetChildRefAtInternal(compactNodeID);
-            nodeRef.operation       = operation;
-            nodeRef.transformation  = transformation;
-            if (nodeRef.brushMeshHash != 0)
-            {
-                if (!brushMeshBlobCache.TryGetValue(nodeRef.brushMeshHash, out var refCountedBrushMeshBlob) &&
-                    refCountedBrushMeshBlob.brushMeshBlob.IsCreated)
-                    nodeRef.bounds = BoundsExtensions.Create(ref refCountedBrushMeshBlob.brushMeshBlob.Value.localVertices, transformation);
-                else
-                    nodeRef.bounds = default;
-            } else
-                nodeRef.bounds = default;
-
-            nodeRef.flags |= NodeStatusFlags.TransformationModified;
-            return true;
-        }
-
-        internal void UpdateBounds([NoAlias, ReadOnly] NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, CompactNodeID compactNodeID, float4x4 transformation)
+        internal void UpdateBounds(CompactNodeID compactNodeID, MinMaxAABB bounds)
         {
             ref var nodeRef = ref UnsafeGetChildRefAtInternal(compactNodeID);
-            if (nodeRef.brushMeshHash != 0)
-            {
-                if (!brushMeshBlobCache.TryGetValue(nodeRef.brushMeshHash, out var refCountedBrushMeshBlob) &&
-                    refCountedBrushMeshBlob.brushMeshBlob.IsCreated)
-                    nodeRef.bounds = BoundsExtensions.Create(ref refCountedBrushMeshBlob.brushMeshBlob.Value.localVertices, transformation);
-                else
-                    nodeRef.bounds = default;
-            } else
-                nodeRef.bounds = default;
+            nodeRef.bounds = bounds;
         }
 
         internal float4x4 GetLocalTransformation(CompactNodeID compactNodeID)
@@ -1528,11 +1502,11 @@ namespace Chisel.Core
                 throw new ArgumentException($"The {nameof(CompactNodeID)} {nameof(compactNodeID)} (value: {compactNodeID.value}, generation: {compactNodeID.generation}) is invalid", nameof(compactNodeID));
 
             ref var nodeRef = ref GetChildRef(compactNodeID);
-            nodeRef.brushMeshHash = brushMeshID;
+            nodeRef.brushMeshHash = brushMeshID;/*
             if (nodeRef.brushMeshHash != 0)
                 nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
             else
-                nodeRef.bounds = default;
+                nodeRef.bounds = default;*/
 
             nodeRef.flags |= NodeStatusFlags.ShapeModified | NodeStatusFlags.NeedAllTouchingUpdated;
             return true;

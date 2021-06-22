@@ -133,7 +133,7 @@ namespace Chisel.Core
         public Int32                userID;
 
         public CSGOperationType     operation;
-        public float4x4             transformation;
+        public float4x4             transformation; // local (may include non-ChiselNode parent transformations)
         public NodeStatusFlags      flags;          // TODO: replace with using hashes to compare changes        
         
         public Int32                brushMeshHash;  // TODO: use hash of mesh as "ID"
@@ -230,7 +230,7 @@ namespace Chisel.Core
                 operation       = operation,
                 transformation  = transformation,
                 brushMeshHash   = brushMeshID, 
-                bounds          = BrushMeshManager.CalculateBounds(brushMeshID, in transformation)
+                //bounds        = BrushMeshManager.CalculateBounds(brushMeshID, in transformation)
             });
         }
         #endregion

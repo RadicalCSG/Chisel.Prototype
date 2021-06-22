@@ -166,6 +166,7 @@ namespace Chisel.Core
             return direction;
         }
 
+
         [BurstCompile]
         public bool ConvexPartition(int curveSegments, out NativeList<SegmentVertex> polygonVerticesArray, out NativeList<int> polygonVerticesSegments, Allocator allocator)
         {

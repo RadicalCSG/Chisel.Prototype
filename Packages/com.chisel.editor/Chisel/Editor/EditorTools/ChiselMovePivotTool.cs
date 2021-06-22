@@ -53,7 +53,7 @@ namespace Chisel.Editors
                 var selectedNodes = SelectedNodes;
                 if (selectedNodes != null && selectedNodes.Count != 0)
                 {
-                    var center = FindSelectionCenter(selectedNodes);
+                    var center = FindSelectionWorldSpaceCenter(selectedNodes);
                     MovePivotTo(selectedNodes, center);
                 }
             }
@@ -67,41 +67,46 @@ namespace Chisel.Editors
             }
         }
 
-        static Vector3 FindSelectionCenter(ChiselNode selectedNode)
+        static Vector3 FindSelectionWorldSpaceCenter(ChiselNode selectedNode)
         {
-            var bounds = selectedNode.hierarchyItem.Bounds;
-            var min = bounds.min;
-            var max = bounds.max;
-            var center = (min + max) * 0.5f;
+            var hierarchyItem = selectedNode.hierarchyItem;
+            var bounds          = hierarchyItem.Bounds; // Note: bounds in tree space, not world space
+            var modelTransform  = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+            var center = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
             return center;
         }
 
-        static Vector3 FindSelectionCenter(List<ChiselNode> selectedNodes)
+        static Vector3 FindSelectionWorldSpaceCenter(List<ChiselNode> selectedNodes)
         {
             if (selectedNodes == null || selectedNodes.Count == 0)
                 return Vector3.zero;
 
             Vector3 center;
-            if (selectedNodes.Count > 1)
+            var hierarchyItem = selectedNodes[0].hierarchyItem;
+            var bounds = hierarchyItem.Bounds;
+            var modelTransform = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+            var boundsCenter = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
+            if (selectedNodes.Count == 1)
+                return boundsCenter;
+
+            var min = boundsCenter;
+            var max = boundsCenter;
+            for (int i = 1; i < selectedNodes.Count; i++)
             {
-                var bounds = selectedNodes[0].hierarchyItem.Bounds;
-                var min = bounds.min;
-                var max = bounds.max;
-                for (int i = 1; i < selectedNodes.Count; i++)
-                {
-                    bounds = selectedNodes[i].hierarchyItem.Bounds;
+                hierarchyItem = selectedNodes[i].hierarchyItem;
+                bounds = hierarchyItem.Bounds; // Note: bounds in tree space, not world space
+                modelTransform = hierarchyItem.Model.hierarchyItem.LocalToWorldMatrix;
+                boundsCenter = modelTransform.MultiplyPoint((bounds.min + bounds.max) * 0.5f);
 
-                    min.x = Mathf.Min(min.x, bounds.min.x);
-                    min.y = Mathf.Min(min.y, bounds.min.y);
-                    min.z = Mathf.Min(min.z, bounds.min.z);
+                min.x = Mathf.Min(min.x, boundsCenter.x);
+                min.y = Mathf.Min(min.y, boundsCenter.y);
+                min.z = Mathf.Min(min.z, boundsCenter.z);
 
-                    max.x = Mathf.Max(max.x, bounds.max.x);
-                    max.y = Mathf.Max(max.y, bounds.max.y);
-                    max.z = Mathf.Max(max.z, bounds.max.z);
-                }
-                center = (min + max) * 0.5f;
-            } else
-                center = selectedNodes[0].hierarchyItem.Bounds.center;
+                max.x = Mathf.Max(max.x, boundsCenter.x);
+                max.y = Mathf.Max(max.y, boundsCenter.y);
+                max.z = Mathf.Max(max.z, boundsCenter.z);
+            }
+            center = (min + max) * 0.5f;
             return center;
         }
         #endregion
@@ -912,39 +917,45 @@ namespace Chisel.Editors
 
         public static void MovePivotTo(List<ChiselNode> nodes, Vector3 newPosition)
         {
-            var nodesWithChildren = new HashSet<UnityEngine.Object>();
+            // TODO: optimize
+            var nodesWithChildObjects = new HashSet<UnityEngine.Object>();
+            var nodesWithChildren = new HashSet<ChiselNode>();
             foreach (var node in nodes)
             {
                 var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildObjects.Add(child);
+                    nodesWithChildObjects.Add(child.hierarchyItem.Transform);
                 }
             }
 
-            Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
-            foreach (var node in nodes)
+            Undo.RecordObjects(nodesWithChildObjects.ToArray(), "Move Pivot");
+            foreach (var node in nodesWithChildren)
                 node.SetPivot(newPosition);
         }
 
         public static void MovePivotToCenter(List<ChiselNode> nodes)
         {
-            var nodesWithChildren = new HashSet<UnityEngine.Object>();
+            // TODO: optimize
+            var nodesWithChildObjects = new HashSet<UnityEngine.Object>();
+            var nodesWithChildren = new HashSet<ChiselNode>();
             foreach (var node in nodes)
             {
                 var children = node.GetComponentsInChildren<ChiselNode>(includeInactive: true);
                 foreach (var child in children)
                 {
                     nodesWithChildren.Add(child);
-                    nodesWithChildren.Add(child.hierarchyItem.Transform);
+                    nodesWithChildObjects.Add(child);
+                    nodesWithChildObjects.Add(child.hierarchyItem.Transform);
                 }
             }
 
-            Undo.RecordObjects(nodesWithChildren.ToArray(), "Move Pivot");
-            foreach (var node in nodes)
+            Undo.RecordObjects(nodesWithChildObjects.ToArray(), "Move Pivot");
+            foreach (var node in nodesWithChildren)
             {
-                var newPosition = FindSelectionCenter(node);
+                var newPosition = FindSelectionWorldSpaceCenter(node);
                 node.SetPivot(newPosition);
             }
         }

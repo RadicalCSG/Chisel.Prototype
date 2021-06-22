@@ -54,11 +54,11 @@ namespace Chisel.Core
             {
                 generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
                 if (!BrushMeshFactory.GenerateExtrudedShape(generatedBrushMeshes,
-                                                        in polygonVerticesList,
-                                                        in polygonVerticesSegments,
-                                                        in pathMatrices,
-                                                        in surfaceDefinitionBlob,
-                                                        allocator))
+                                                            in polygonVerticesList,
+                                                            in polygonVerticesSegments,
+                                                            in pathMatrices,
+                                                            in surfaceDefinitionBlob,
+                                                            allocator))
                 {
                     for (int i = 0; i < generatedBrushMeshes.Length; i++)
                     {

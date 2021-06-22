@@ -1,6 +1,7 @@
 using System;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -10,9 +11,15 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 namespace Chisel.Core
 {
     [BurstCompile(CompileSynchronously = true)]
-    struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelForDefer
-    {
+    unsafe struct CreateTreeSpaceVerticesAndBoundsJob : IJobParallelForDefer
+    {        
+        public void InitializeLookups()
+        {
+            hierarchyIDLookupPtr    = (IDManager*)UnsafeUtility.AddressOf(ref CompactHierarchyManager.HierarchyIDLookup);
+        }
+
         // Read
+        [NativeDisableUnsafePtrRestriction, NoAlias, ReadOnly] public IDManager*            hierarchyIDLookupPtr;
         [NoAlias, ReadOnly] public NativeArray<IndexOrder>                                  rebuildTreeBrushIndexOrders;
         [NoAlias, ReadOnly] public NativeArray<NodeTransformations>                         transformationCache;
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<BrushMeshBlob>>.ReadOnly  brushMeshLookup;
@@ -22,7 +29,10 @@ namespace Chisel.Core
         [NoAlias, WriteOnly] public NativeArray<MinMaxAABB>                                     brushTreeSpaceBounds;
         [NativeDisableParallelForRestriction]
         [NoAlias, WriteOnly] public NativeArray<BlobAssetReference<BrushTreeSpaceVerticesBlob>> treeSpaceVerticesCache;
-        
+
+        // Read/Write
+        [NativeDisableContainerSafetyRestriction, NoAlias, ReadOnly] public NativeArray<CompactHierarchy> hierarchyList;
+
         unsafe static BlobAssetReference<BrushTreeSpaceVerticesBlob> Build(ref BlobArray<float3> localVertices, float4x4 nodeToTreeSpaceMatrix)
         {
             var totalSize   = localVertices.Length * sizeof(float3);
@@ -40,12 +50,22 @@ namespace Chisel.Core
         {
             var brushIndexOrder = rebuildTreeBrushIndexOrders[b];
             int brushNodeOrder  = brushIndexOrder.nodeOrder;
+            var compactNodeID   = brushIndexOrder.compactNodeID;
             var transform       = transformationCache[brushNodeOrder];
 
+            ref var hierarchyIDLookup   = ref UnsafeUtility.AsRef<IDManager>(hierarchyIDLookupPtr);
+            var hierarchyIndex          = CompactHierarchyManager.GetHierarchyIndexUnsafe(ref hierarchyIDLookup, compactNodeID);
+            var hierarchyListPtr        = (CompactHierarchy*)hierarchyList.GetUnsafePtr();
+            ref var compactHierarchy    = ref hierarchyListPtr[hierarchyIndex];
+            
             var mesh            = brushMeshLookup[brushNodeOrder];
             if (mesh == BlobAssetReference<BrushMeshBlob>.Null ||
                 !mesh.IsCreated)
+            {
+                compactHierarchy.UpdateBounds(compactNodeID, default);
                 return;
+            }
+            
             ref var vertices            = ref mesh.Value.localVertices;
             var nodeToTreeSpaceMatrix   = transform.nodeToTree;
 
@@ -60,10 +80,11 @@ namespace Chisel.Core
                 treeSpaceVertex = brushTreeSpaceVertices[vertexIndex];
                 min = math.min(min, treeSpaceVertex); max = math.max(max, treeSpaceVertex);
             }
-
+            
             var bounds = new MinMaxAABB() { Min = min, Max = max };
             brushTreeSpaceBounds[brushNodeOrder] = bounds;
             treeSpaceVerticesCache[brushIndexOrder.nodeOrder] = brushTreeSpaceVerticesBlob;
+            compactHierarchy.UpdateBounds(compactNodeID, bounds);
         }
     }
 }

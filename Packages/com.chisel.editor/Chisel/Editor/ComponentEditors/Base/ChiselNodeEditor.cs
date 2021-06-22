@@ -507,7 +507,7 @@ namespace Chisel.Editors
             var topNode = chiselNode.TopTreeNode;
             // Set the treeNode to default in the component
             // (so when we destroy it the original treeNode doesn't get destroyed)
-            chiselNode.ResetTreeNodes();
+            chiselNode.ResetTreeNodes(doNotDestroy: true);
             // Destroy the component
             UnityEditor.Undo.DestroyObjectImmediate(chiselNode);
             // ... and then destroy the treeNode ourselves after we're done with it
@@ -1103,13 +1103,12 @@ namespace Chisel.Editors
 
             var generator   = target as T;
             var sceneView   = SceneView.currentDrawingSceneView;
-            var modelMatrix = ChiselNodeHierarchyManager.FindModelTransformMatrixOfTransform(generator.hierarchyItem.Transform);
             
             // NOTE: allow invalid nodes to be edited to be able to recover from invalid state
 
             // NOTE: could loop over multiple instances from here, once we support that
             {
-                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, modelMatrix * generator.LocalTransformationWithPivot))
+                using (new UnityEditor.Handles.DrawingScope(SceneHandles.handleColor, generator.GlobalTransformation))
                 {
                     handles.Start(generator, sceneView);
                     {

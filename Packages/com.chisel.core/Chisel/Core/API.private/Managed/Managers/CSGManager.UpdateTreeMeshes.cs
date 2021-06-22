@@ -829,36 +829,6 @@ namespace Chisel.Core
                 finally { Profiler.EndSample(); }
                 #endregion
 
-                #region Find Modified Brushes
-                Profiler.BeginSample("Job_UpdateBrushBounds");
-                try
-                {
-                    const bool runInParallel = runInParallelDefault;
-                    var updateBrushBoundsJobJob = new UpdateBrushBoundsJob
-                    {
-                        // Read
-                        brushBoundsUpdateList   = Temporaries.brushBoundsUpdateList,
-                        brushMeshBlobCache      = brushMeshBlobs,
-                        transformationCache     = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
-                        //ref hierarchyIDLookup = ref CompactHierarchyManager.HierarchyIDLookup, //<-- cannot do ref or pointer here
-                                                                                                         //    so we set it below using InitializeHierarchy
-
-                        // Read/Write
-                        hierarchyList           = CompactHierarchyManager.HierarchyList,
-                    };
-                    updateBrushBoundsJobJob.InitializeLookups();
-                    updateBrushBoundsJobJob.Schedule(runInParallel,
-                        new ReadJobHandles(
-                            JobHandles.brushBoundsUpdateListJobHandle,
-                            JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshBlobsLookupJobHandle,
-                            JobHandles.hierarchyIDJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.hierarchyListJobHandle));
-                }
-                finally { Profiler.EndSample(); }
-                #endregion
-
                 Profiler.BeginSample("Job_CompactTreeBuilder");
                 try
                 {
@@ -990,19 +960,28 @@ namespace Chisel.Core
                         rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders   .AsArray(),
                         transformationCache         = chiselLookupValues.transformationCache    .AsJobArray(runInParallel),
                         brushMeshLookup             = Temporaries.brushMeshLookup               .AsReadOnly(),
+                        //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
+                                                                                                        //    so we set it below using InitializeHierarchy
 
+                        // Read/Write
+                        hierarchyList               = CompactHierarchyManager.HierarchyList,
+                        
                         // Write
                         brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
                         treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
                     };
+                    createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
                     createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.rebuildTreeBrushIndexOrders, 16,
                         new ReadJobHandles(
                             JobHandles.rebuildTreeBrushIndexOrdersJobHandle,
                             JobHandles.transformationCacheJobHandle,
+                            JobHandles.brushMeshBlobsLookupJobHandle,
+                            JobHandles.hierarchyIDJobHandle,
                             JobHandles.brushMeshLookupJobHandle),
                         new WriteJobHandles(
                             ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle));
+                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                            ref JobHandles.hierarchyListJobHandle));
                 }
                 finally { Profiler.EndSample(); }
 
@@ -1016,14 +995,14 @@ namespace Chisel.Core
                     var findAllBrushIntersectionPairsJob = new FindAllBrushIntersectionPairsJob
                     {
                         // Read
-                        allTreeBrushIndexOrders         = Temporaries.allTreeBrushIndexOrders           .AsArray().AsReadOnly(),
-                        transformationCache             = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
-                        brushMeshLookup                 = Temporaries.brushMeshLookup                   .AsReadOnly(),
-                        brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        rebuildTreeBrushIndexOrders     = Temporaries.rebuildTreeBrushIndexOrders       .AsArray().AsReadOnly(),
+                        allTreeBrushIndexOrders     = Temporaries.allTreeBrushIndexOrders           .AsArray().AsReadOnly(),
+                        transformationCache         = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
+                        brushMeshLookup             = Temporaries.brushMeshLookup                   .AsReadOnly(),
+                        brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
+                        rebuildTreeBrushIndexOrders = Temporaries.rebuildTreeBrushIndexOrders       .AsArray().AsReadOnly(),
                             
                         // Read / Write
-                        brushBrushIntersections         = Temporaries.brushBrushIntersections,
+                        brushBrushIntersections     = Temporaries.brushBrushIntersections,
                             
                         // Write
                         brushesThatNeedIndirectUpdateHashMap = Temporaries.brushesThatNeedIndirectUpdateHashMap.AsParallelWriter()
@@ -1102,22 +1081,32 @@ namespace Chisel.Core
                     var createTreeSpaceVerticesAndBoundsJob = new CreateTreeSpaceVerticesAndBoundsJob
                     {
                         // Read
-                        rebuildTreeBrushIndexOrders     = Temporaries.brushesThatNeedIndirectUpdate     .AsJobArray(runInParallel),
-                        transformationCache             = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
-                        brushMeshLookup                 = Temporaries.brushMeshLookup                   .AsReadOnly(),
+                        rebuildTreeBrushIndexOrders = Temporaries.brushesThatNeedIndirectUpdate     .AsJobArray(runInParallel),
+                        transformationCache         = chiselLookupValues.transformationCache        .AsJobArray(runInParallel),
+                        brushMeshLookup             = Temporaries.brushMeshLookup                   .AsReadOnly(),
+                        //ref hierarchyIDLookup     = ref CompactHierarchyManager.HierarchyIDLookup,    //<-- cannot do ref or pointer here
+                                                                                                        //    so we set it below using InitializeHierarchy
 
+                        // Read/Write
+                        hierarchyList               = CompactHierarchyManager.HierarchyList,
+                        
+                        
                         // Write
-                        brushTreeSpaceBounds            = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
-                        treeSpaceVerticesCache          = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
+                        brushTreeSpaceBounds        = chiselLookupValues.brushTreeSpaceBoundCache   .AsJobArray(runInParallel),
+                        treeSpaceVerticesCache      = chiselLookupValues.treeSpaceVerticesCache     .AsJobArray(runInParallel),
                     };
+                    createTreeSpaceVerticesAndBoundsJob.InitializeLookups();
                     createTreeSpaceVerticesAndBoundsJob.Schedule(runInParallel, Temporaries.brushesThatNeedIndirectUpdate, 16,
                         new ReadJobHandles(
                             JobHandles.brushesThatNeedIndirectUpdateJobHandle,
                             JobHandles.transformationCacheJobHandle,
-                            JobHandles.brushMeshLookupJobHandle),
+                            JobHandles.brushMeshLookupJobHandle,
+                            //JobHandles.brushMeshBlobsLookupJobHandle,
+                            JobHandles.hierarchyIDJobHandle),
                         new WriteJobHandles(
                             ref JobHandles.brushTreeSpaceBoundCacheJobHandle,
-                            ref JobHandles.treeSpaceVerticesCacheJobHandle));
+                            ref JobHandles.treeSpaceVerticesCacheJobHandle,
+                            ref JobHandles.hierarchyListJobHandle));
                 }
                 finally { Profiler.EndSample(); }
 
@@ -1222,7 +1211,37 @@ namespace Chisel.Core
                             ref JobHandles.brushesTouchedByBrushCacheJobHandle));
                 } finally { Profiler.EndSample(); }
                 #endregion
+                /*
+                #region Find Modified Brushes
+                Profiler.BeginSample("Job_UpdateBrushBounds");
+                try
+                {
+                    const bool runInParallel = runInParallelDefault;
+                    var updateBrushBoundsJobJob = new UpdateBrushBoundsJob
+                    {
+                        // Read
+                        brushBoundsUpdateList   = Temporaries.brushBoundsUpdateList,
+                        brushMeshBlobCache      = brushMeshBlobs,
+                        transformationCache     = chiselLookupValues.transformationCache.AsJobArray(runInParallel),
+                        //ref hierarchyIDLookup = ref CompactHierarchyManager.HierarchyIDLookup, //<-- cannot do ref or pointer here
+                                                                                                         //    so we set it below using InitializeHierarchy
 
+                        // Read/Write
+                        hierarchyList           = CompactHierarchyManager.HierarchyList,
+                    };
+                    updateBrushBoundsJobJob.InitializeLookups();
+                    updateBrushBoundsJobJob.Schedule(runInParallel,
+                        new ReadJobHandles(
+                            JobHandles.brushBoundsUpdateListJobHandle,
+                            JobHandles.transformationCacheJobHandle,
+                            JobHandles.brushMeshBlobsLookupJobHandle,
+                            JobHandles.hierarchyIDJobHandle),
+                        new WriteJobHandles(
+                            ref JobHandles.hierarchyListJobHandle));
+                }
+                finally { Profiler.EndSample(); }
+                #endregion
+                */
                 //
                 // Ensure vertices that should be identical on different brushes, ARE actually identical
                 //

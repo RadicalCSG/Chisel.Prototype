@@ -110,10 +110,10 @@ namespace Chisel.Components
         }
 
         internal abstract CSGTreeNode RebuildTreeNodes();
-        public void ResetTreeNodes()
+        public void ResetTreeNodes(bool doNotDestroy = false)
         {
             var topNode = TopTreeNode;
-            if (topNode.Valid)
+            if (!doNotDestroy && topNode.Valid)
                 topNode.Destroy();
             TopTreeNode = default;
         }
@@ -136,7 +136,7 @@ namespace Chisel.Components
             if (currentPosition == newWorldPosition)
                 return Vector3.zero;
             transform.position = newWorldPosition;
-            var delta = newWorldPosition - currentPosition;
+            var delta = newWorldPosition - currentPosition; 
             AddPivotOffset(-delta);
             return delta;
         }

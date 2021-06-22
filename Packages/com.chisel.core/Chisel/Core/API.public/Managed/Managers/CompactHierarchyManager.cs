@@ -932,7 +932,7 @@ namespace Chisel.Core
             ref var hierarchy = ref GetHierarchy(compactNodeID);
             ref var nodeRef = ref hierarchy.GetChildRef(compactNodeID);
             nodeRef.transformation = result;
-            nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
+            //nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
 
             nodeRef.flags |= NodeStatusFlags.TransformationModified;
             ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
@@ -951,8 +951,10 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;
 
-            // TODO: fix temporary "solution"
-            result = math.inverse(GetHierarchy(compactNodeID).GetChildRef(compactNodeID).transformation);
+            // TODO: Optimize
+            ref var hierarchy = ref GetHierarchy(compactNodeID);
+            var nodeTransformation = GetNodeTransformation(in hierarchy, compactNodeID);
+            result = nodeTransformation.treeToNode;
             return true;
         }
 
@@ -967,8 +969,10 @@ namespace Chisel.Core
             if (!IsValidCompactNodeID(compactNodeID))
                 return false;
 
-            // TODO: fix temporary "solution"
-            result = GetHierarchy(compactNodeID).GetChildRef(compactNodeID).transformation;
+            // TODO: Optimize
+            ref var hierarchy = ref GetHierarchy(compactNodeID);
+            var nodeTransformation = GetNodeTransformation(in hierarchy, compactNodeID);
+            result = nodeTransformation.nodeToTree;
             return true;
         }
         #endregion

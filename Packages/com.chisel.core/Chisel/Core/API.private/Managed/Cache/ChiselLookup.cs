@@ -302,7 +302,6 @@ namespace Chisel.Core
             internal void Initialize()
             {
                 brushMeshBlobCache = new NativeHashMap<int, RefCountedBrushMeshBlob>(1000, Allocator.Persistent);
-                BrushMeshManager.brushMeshBlobCache = brushMeshBlobCache; // hack
             }
 
             public void EnsureCapacity(int capacity)

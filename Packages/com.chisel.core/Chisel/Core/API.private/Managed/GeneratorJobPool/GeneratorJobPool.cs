@@ -155,7 +155,7 @@ namespace Chisel.Core
             lastJobHandle = ScheduleAssignMeshesJob(true, hierarchyList, generatedNodeDefinitions, lastJobHandle);
             previousJobHandle = lastJobHandle;
 
-            var generatedNodeDefinitionsDisposeJobHandle    = generatedNodeDefinitions .Dispose(lastJobHandle);
+            var generatedNodeDefinitionsDisposeJobHandle    = generatedNodeDefinitions.Dispose(lastJobHandle);
             var brushMeshBlobsDisposeJobHandle              = brushMeshBlobs.Dispose(lastJobHandle);
             var allDisposes = JobHandle.CombineDependencies(generatedNodeDefinitionsDisposeJobHandle,
                                                             brushMeshBlobsDisposeJobHandle);
@@ -217,7 +217,7 @@ namespace Chisel.Core
             }
 
             // ReadOnly
-            [NoAlias, ReadOnly] public NativeList<GeneratedNodeDefinition>          generatedNodeDefinitions;
+            [NoAlias, ReadOnly] public NativeList<GeneratedNodeDefinition>      generatedNodeDefinitions;
 
             // Read/Write
             [NativeDisableUnsafePtrRestriction, NoAlias] public IDManager*      hierarchyIDLookupPtr;
@@ -241,11 +241,11 @@ namespace Chisel.Core
                     var transformation  = generatedNodeDefinitions[index].transformation;
                     var operation       = generatedNodeDefinitions[index].operation;
                     var brushMeshHash   = generatedNodeDefinitions[index].brushMeshHash;
-                     
+
                     ref var compactHierarchy = ref hierarchyListPtr[hierarchyIndex];
                     compactHierarchy.SetState(compactNodeID, brushMeshBlobCache, brushMeshHash, operation, transformation);
                     compactHierarchy.SetTreeDirty(); 
-                }
+                } 
 
                 // Reverse order so that we don't move nodes around when they're already in order (which is the fast path)
                 for (int index = generatedNodeDefinitions.Length - 1; index >= 0; index--) 
@@ -271,11 +271,17 @@ namespace Chisel.Core
             var brushMeshBlobCache  = ChiselMeshLookup.Value.brushMeshBlobCache;
             var assignJob = new AssignMeshesJob
             {
+                // Read
                 generatedNodeDefinitions = generatedNodeDefinitions,
+                
+                // Read/Write
+                //hierarchyIDLookupPtr
+                //nodeIDLookupPtr
+                //nodesLookup
                 hierarchyList            = hierarchyList,
                 brushMeshBlobCache       = brushMeshBlobCache
             };
-            assignJob.InitializeLookups();
+            assignJob.InitializeLookups(); 
             return assignJob.Schedule(runInParallel, sortJobHandle);
         }
 

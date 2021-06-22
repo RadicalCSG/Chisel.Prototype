@@ -67,7 +67,8 @@ namespace Chisel.Core
 
         public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
         {
-            if (surfaceDefinition.surfaces.Length == 0)
+            if (surfaceDefinition.surfaces == null ||
+                surfaceDefinition.surfaces.Length == 0)
                 return;
 
             for (int p = 0; p < brushOutline.polygons.Length; p++)

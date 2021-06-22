@@ -140,8 +140,7 @@ namespace Chisel.Components
         public abstract ChiselSurfaceDefinition SurfaceDefinition { get; }
 
         [SerializeField, HideInInspector] protected CSGOperationType    operation;		    // NOTE: do not rename, name is directly used in editors
-        [SerializeField, HideInInspector] protected Matrix4x4           localTransformation = Matrix4x4.identity;
-        [SerializeField, HideInInspector] protected Vector3             pivotOffset = Vector3.zero;
+        [SerializeField] protected Vector3                              pivotOffset         = Vector3.zero;
 
         public override CSGTreeNode TopTreeNode { get { if (!ValidNodes) return CSGTreeNode.Invalid; return Node; } protected set { Node = value; } }
         bool ValidNodes { get { return Node.Valid; } }
@@ -180,28 +179,6 @@ namespace Chisel.Components
                     return;
                 pivotOffset = value;
 
-                UpdateInternalTransformation();
-
-                // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
-                ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
-            }
-        }
-
-        public Matrix4x4 LocalTransformation
-        {
-            get
-            {
-                return localTransformation;
-            }
-            set
-            {
-                if (value == localTransformation)
-                    return;
-
-                localTransformation = value;
-
-                UpdateInternalTransformation();
-
                 // Let the hierarchy manager know that this node has moved, so we can regenerate meshes
                 ChiselNodeHierarchyManager.UpdateTreeNodeTransformation(this);
             }
@@ -231,14 +208,32 @@ namespace Chisel.Components
             }
         }
 
-        public Matrix4x4 LocalTransformationWithPivot
+        public Matrix4x4 LocalPivotTransformation
         {
             get
             {
                 // TODO: Optimize
                 var transform       = hierarchyItem.Transform;
 
-                localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+                var localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+                // We need to add the pivot to it. This is here so that when we change the pivot we do 
+                // not actually need to modify meshes of brushes.
+                if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
+                    localTransformation *= Matrix4x4.TRS(pivotOffset, Quaternion.identity, Vector3.one);
+
+                return localTransformation;
+            }
+        }
+
+        public Matrix4x4 LocalPivotTransformationWithHiddenParents
+        {
+            get
+            {
+                // TODO: Optimize
+                var transform = hierarchyItem.Transform;
+
+                var localTransformation = LocalPivotTransformation;
+
                 // We can't just use the transformation of this brush, because it might have gameobjects as parents that 
                 // do not have any chisel components. So we need to consider all transformations in between as well.
                 do
@@ -258,14 +253,23 @@ namespace Chisel.Components
                     localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale) * localTransformation;
                 } while (true);
 
+                return localTransformation;
+            }
+        }
 
-                // Finally, we need to add the pivot to it. This is here so that when we change the pivot we do 
-                // not actually need to modify meshes of brushes.
-                var localTransformationWithPivot = localTransformation;
-                if (pivotOffset.x != 0 || pivotOffset.y != 0 || pivotOffset.z != 0)
-                    localTransformationWithPivot *= Matrix4x4.TRS(pivotOffset, Quaternion.identity, Vector3.one);
+        public Matrix4x4 GlobalTransformation
+        {
+            get
+            {
+                // TODO: Optimize
+                var transform = hierarchyItem.Transform;
 
-                return localTransformationWithPivot;
+                var localTransformation = LocalPivotTransformation;
+                var parentTransform = transform.parent;
+                if (parentTransform != null)
+                    localTransformation = parentTransform.localToWorldMatrix * localTransformation;
+
+                return localTransformation;
             }
         }
 
@@ -320,22 +324,13 @@ namespace Chisel.Components
             var transform = hierarchyItem.Transform;
             if (!transform)
                 return;
-            /*
-            // TODO: fix this mess
-            var localToWorldMatrix = transform.localToWorldMatrix;
-            var modelTransform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(transform);
-            if (modelTransform)
-                localTransformation = modelTransform.worldToLocalMatrix * localToWorldMatrix;
-            else
-                localTransformation = localToWorldMatrix;
-            */
             
             UpdateInternalTransformation();
         }
 
         void UpdateInternalTransformation()
         {
-            Node.LocalTransformation = LocalTransformationWithPivot;
+            Node.LocalTransformation = LocalPivotTransformationWithHiddenParents;
         }
 
         protected override void OnResetInternal()
@@ -387,8 +382,9 @@ namespace Chisel.Components
 
         internal override void AddPivotOffset(Vector3 worldSpaceDelta)
         {
-            PivotOffset += this.transform.worldToLocalMatrix.MultiplyVector(worldSpaceDelta);
-            base.AddPivotOffset(worldSpaceDelta);
+            var transform = hierarchyItem.Transform;
+            var localSpaceDelta = transform.worldToLocalMatrix.MultiplyVector(worldSpaceDelta);
+            PivotOffset += localSpaceDelta;
         }
 
         public override void UpdateBrushMeshInstances()
