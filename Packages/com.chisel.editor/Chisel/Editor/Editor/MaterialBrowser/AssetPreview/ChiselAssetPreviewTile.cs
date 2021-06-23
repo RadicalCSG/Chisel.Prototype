@@ -1,8 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-Chisel.Editors.ChiselMaterialBrowserTile.cs
-
-License: MIT (https://tldrlegal.com/license/mit-license)
-Author: Daniel Cornelius
+License:    MIT (https://tldrlegal.com/license/mit-license)
+Author:     Daniel Cornelius
 
 * * * * * * * * * * * * * * * * * * * * * */
 
@@ -12,12 +10,12 @@ using UnityEngine;
 
 namespace Chisel.Editors
 {
-    internal class ChiselMaterialBrowserTile : IDisposable
+    internal class ChiselAssetPreviewTile<T> : IDisposable where T : UnityEngine.Object
     {
         public readonly string   path;
         public readonly string   guid;
         public readonly string   shaderName;
-        public readonly string   materialName;
+        public readonly string   assetName;
         public readonly string[] labels;
         public readonly int      id;
 
@@ -34,31 +32,37 @@ namespace Chisel.Editors
         {
             if( scrollPos.y + scrollViewHeight < ( yOffset - thumbnailSize ) ) return false;
             if( yOffset     + thumbnailSize    < scrollPos.y ) return false;
+
             return true;
         }
 
         public void RenderPreview()
         {
-            // dont include specific materials
+            // dont include specific assets
             if( ( m_Preview && m_Preview != AssetPreview.GetMiniTypeThumbnail( typeof( Material ) ) )
                 || AssetPreview.IsLoadingAssetPreview( id )
-                || materialName.Contains( "Font Material" )
-                || !ChiselMaterialBrowserUtilities.IsValidEntry( this ) ) { return; }
+                || !ChiselMaterialBrowserUtilities.IsValidEntry( this ) )
+            {
+                return;
+            }
 
             m_Preview = ChiselMaterialBrowserUtilities.GetAssetPreviewFromGUID( guid );
         }
 
-        public ChiselMaterialBrowserTile( string instID )
+        public ChiselAssetPreviewTile( string instID )
         {
             path = AssetDatabase.GUIDToAssetPath( instID );
 
-            Material m = AssetDatabase.LoadAssetAtPath<Material>( path );
+            T asset = AssetDatabase.LoadAssetAtPath<T>( path );
 
-            id           = m.GetInstanceID();
-            guid         = instID;
-            labels       = AssetDatabase.GetLabels( m );
-            shaderName   = m.shader.name;
-            materialName = m.name;
+            id     = asset.GetInstanceID();
+            guid   = instID;
+            labels = AssetDatabase.GetLabels( asset );
+
+            if( asset is Material material )
+                shaderName = material.shader.name;
+
+            assetName = asset.name;
 
             RenderPreview();
         }

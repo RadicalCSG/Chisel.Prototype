@@ -1,8 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-Chisel.Editors.ChiselMaterialBrowserWindow.cs
-
-License: MIT (https://tldrlegal.com/license/mit-license)
-Author: Daniel Cornelius
+License:    MIT (https://tldrlegal.com/license/mit-license)
+Author:     Daniel Cornelius
 
 * * * * * * * * * * * * * * * * * * * * * */
 

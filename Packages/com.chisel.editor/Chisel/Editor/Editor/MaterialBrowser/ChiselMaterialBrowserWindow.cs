@@ -1,8 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-Chisel.Editors.ChiselMaterialBrowserWindow.cs
-
-License: MIT (https://tldrlegal.com/license/mit-license)
-Author: Daniel Cornelius
+License:    MIT (https://tldrlegal.com/license/mit-license)
+Author:     Daniel Cornelius
 
 * * * * * * * * * * * * * * * * * * * * * */
 
@@ -22,11 +20,10 @@ namespace Chisel.Editors
         private const string TILE_LABEL_PREF_KEY   = "chisel_matbrowser_pviewShowLabel";
         private const string TILE_LAST_TAB_OPT_KEY = "chisel_matbrowser_currentTileTab";
 
-        private static List<ChiselMaterialBrowserTile>      m_Tiles        = new List<ChiselMaterialBrowserTile>();
-        private static List<ChiselMaterialBrowserTile>      m_UsedTiles    = new List<ChiselMaterialBrowserTile>();
-        private static List<ChiselSurfacePresetBrowserTile> m_SurfaceTiles = new List<ChiselSurfacePresetBrowserTile>();
-        private static List<string>                         m_Labels       = new List<string>();
-        private static List<ChiselModel>                    m_Models       = new List<ChiselModel>();
+        private static List<ChiselAssetPreviewTile<Material>> m_Tiles     = new List<ChiselAssetPreviewTile<Material>>();
+        private static List<ChiselAssetPreviewTile<Material>> m_UsedTiles = new List<ChiselAssetPreviewTile<Material>>();
+        private static List<string>                           m_Labels    = new List<string>();
+        private static List<ChiselModel>                      m_Models    = new List<ChiselModel>();
 
         private static ChiselMaterialBrowserTab m_CurrentTilesTab = 0;
 
@@ -41,7 +38,7 @@ namespace Chisel.Editors
 
         private readonly GUIContent[] m_PropsTabLabels = new GUIContent[]
         {
-                new GUIContent( "Labels\t    " ), new GUIContent( "Current Selection    " ),
+            new GUIContent( "Labels\t    " ), new GUIContent( "Current Selection    " ),
         };
 
         // event that gets triggered by ChiselMaterialBrowserHooks on project change.
@@ -65,17 +62,23 @@ namespace Chisel.Editors
             EditorPrefs.SetBool( TILE_LABEL_PREF_KEY, showNameLabels );
             EditorPrefs.SetInt( TILE_LAST_TAB_OPT_KEY, (int) m_CurrentTilesTab );
 
-            m_Tiles.ForEach( e =>
-            {
-                e.Dispose();
-                e = null;
-            } );
+            m_Tiles.ForEach
+            (
+                    e =>
+                    {
+                        e.Dispose();
+                        e = null;
+                    }
+            );
 
-            m_UsedTiles.ForEach( e =>
-            {
-                e.Dispose();
-                e = null;
-            } );
+            m_UsedTiles.ForEach
+            (
+                    e =>
+                    {
+                        e.Dispose();
+                        e = null;
+                    }
+            );
 
             m_Tiles.Clear();
             m_UsedTiles.Clear();
@@ -122,7 +125,10 @@ namespace Chisel.Editors
             m_NotifRect.width  = 400;
             m_NotifRect.height = 150;
 
-            if( EditorApplication.isCompiling ) { GUI.Box( m_NotifRect, "Please wait...", "NotificationBackground" ); }
+            if( EditorApplication.isCompiling )
+            {
+                GUI.Box( m_NotifRect, "Please wait...", "NotificationBackground" );
+            }
 
             if( EditorApplication.isPlaying || EditorApplication.isPaused ) GUI.Box( m_NotifRect, "Exit Playmode to Edit Materials", "NotificationBackground" );
 
@@ -163,12 +169,7 @@ namespace Chisel.Editors
                 searchText = EditorGUI.DelayedTextField( m_ToolbarRect, string.Empty, searchText, EditorStyles.toolbarSearchField );
                 if( EditorGUI.EndChangeCheck() )
                 {
-                    if( m_CurrentTilesTab != ChiselMaterialBrowserTab.Surfaces )
-                    {
-                        ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText );
-                    }
-                    else
-                        ChiselMaterialBrowserUtilities.GetSurfacePresets( ref m_SurfaceTiles, ref m_Labels, false, searchText: searchText );
+                    ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText );
                 }
 
                 // all/used material filter
@@ -183,20 +184,15 @@ namespace Chisel.Editors
                 {
                     EditorPrefs.SetInt( TILE_LAST_TAB_OPT_KEY, (int) m_CurrentTilesTab );
 
-                    if( m_CurrentTilesTab != ChiselMaterialBrowserTab.Surfaces )
-                    {
-                        previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex = 0 ) );
-                        ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText );
-                    }
-                    else
-                        ChiselMaterialBrowserUtilities.GetSurfacePresets( ref m_SurfaceTiles, ref m_Labels, false, searchText: searchText );
+                    previewEditor = Editor.CreateEditor( previewMaterial = GetPreviewMaterial( lastSelectedMaterialIndex = 0 ) );
+                    ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false, searchText: searchText );
                 }
 
                 m_ToolbarRect.width = 40;
                 m_ToolbarRect.x     = position.width - ( m_ShowPropsArea ? 412 : 175 );
                 GUI.Label( m_ToolbarRect, "Show", EditorStyles.toolbarButton );
 
-                if( m_Tiles.Count > 0 && m_CurrentTilesTab != ChiselMaterialBrowserTab.Surfaces )
+                if( m_Tiles.Count > 0 )
                 {
                     if( m_ShowPropsArea )
                     {
@@ -250,6 +246,7 @@ namespace Chisel.Editors
                                         }
                                     }
                                 }
+
                                 GUI.EndScrollView();
 
                                 break;
@@ -270,7 +267,7 @@ namespace Chisel.Editors
                                     m_PropsAreaRect.x      = 0;
                                     m_PropsAreaRect.y      = 0;
                                     m_PropsAreaRect.height = 22;
-                                    GUI.Label( m_PropsAreaRect, $"{m_Tiles[lastSelectedMaterialIndex].materialName}", EditorStyles.toolbarButton );
+                                    GUI.Label( m_PropsAreaRect, $"{m_Tiles[lastSelectedMaterialIndex].assetName}", EditorStyles.toolbarButton );
 
                                     // interactive preview
                                     m_PropsAreaRect.x      = 2;
@@ -316,8 +313,12 @@ namespace Chisel.Editors
                                             }
 
                                             m_PropsAreaRect.y += 24;
-                                            if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) ) { ApplySelectedMaterial(); }
+                                            if( GUI.Button( m_PropsAreaRect, applyToSelectedFaceLabelContent, "largebutton" ) )
+                                            {
+                                                ApplySelectedMaterial();
+                                            }
                                         }
+
                                         GUI.EndGroup();
 
                                         // labels on the selected material
@@ -363,10 +364,12 @@ namespace Chisel.Editors
                                                     yOffset =  22 + ( 22 * row );
                                                 }
                                             }
+
                                             GUI.EndGroup();
                                         }
                                     }
                                 }
+
                                 GUI.EndGroup();
 
                                 break;
@@ -396,6 +399,7 @@ namespace Chisel.Editors
 
                     DrawTileArea( (ChiselMaterialBrowserTab) m_CurrentTilesTab );
                 }
+
                 // search has no results, show notification to convey this
                 else
                 {
@@ -403,8 +407,6 @@ namespace Chisel.Editors
                     m_NotifRect.y      = ( position.height * 0.5f ) - 80;
                     m_NotifRect.width  = 400;
                     m_NotifRect.height = 130;
-
-                    if( m_CurrentTilesTab == ChiselMaterialBrowserTab.Surfaces && m_SurfaceTiles.Count < 1 ) { GUI.Box( m_NotifRect, "No Results", "NotificationBackground" ); }
 
                     GUI.Box( m_NotifRect, "No Results", "NotificationBackground" );
                 }
@@ -448,6 +450,7 @@ namespace Chisel.Editors
                 m_TileContentRect.height = tileScrollViewHeight;
             }
 
+
             // tile scroll area
             tileScrollPos = GUI.BeginScrollView( m_ScrollViewRect, tileScrollPos, m_TileContentRect, false, true );
             {
@@ -456,84 +459,75 @@ namespace Chisel.Editors
                 int   row     = 0;
 
                 // show content for used/all tiles
-                List<ChiselMaterialBrowserTile> current = selectedTab switch
+                List<ChiselAssetPreviewTile<Material>> current = selectedTab switch
                 {
-                        ChiselMaterialBrowserTab.All  => m_Tiles,
-                        ChiselMaterialBrowserTab.Used => m_UsedTiles,
-                        _                             => m_Tiles
+                    ChiselMaterialBrowserTab.All  => m_Tiles,
+                    ChiselMaterialBrowserTab.Used => m_UsedTiles,
+                    _                             => m_Tiles
                 };
 
-                // only draw preview tiles for materials if we arent browsing surface presets
-                if( selectedTab != ChiselMaterialBrowserTab.Surfaces )
+                foreach( ChiselAssetPreviewTile<Material> entry in current )
                 {
-                    foreach( ChiselMaterialBrowserTile entry in current )
+                    if( current.Count == 0 ) break;
+                    if( idx           == current.Count ) break;
+
+                    // begin horizontal
+                    for( int x = 0; x < numColumns; x++ )
                     {
+                        xOffset = ( tileSize * x ) + 4;
+
                         if( idx == current.Count ) break;
 
-                        // begin horizontal
-                        for( int x = 0; x < numColumns; x++ )
+                        m_TileContentRect.x      = xOffset;
+                        m_TileContentRect.y      = yOffset;
+                        m_TileContentRect.width  = tileSize - 2;
+                        m_TileContentRect.height = tileSize - 4;
+
+                        if( current[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height ) )
                         {
-                            xOffset = ( tileSize * x ) + 4;
+                            current[idx].RenderPreview();
+                            m_TileContentText.image   = current[idx].Preview;
+                            m_TileContentText.tooltip = $"{current[idx].assetName}\n\n\nClick to apply to the currently selected surface.";
 
-                            if( idx == current.Count ) break;
+                            SetButtonStyleBG( in idx );
 
-                            m_TileContentRect.x      = xOffset;
-                            m_TileContentRect.y      = yOffset;
-                            m_TileContentRect.width  = tileSize - 2;
-                            m_TileContentRect.height = tileSize - 4;
-
-                            if( current[idx].CheckVisible( yOffset, tileSize, tileScrollPos, m_ScrollViewRect.height ) )
+                            // tile
+                            if( GUI.Button( m_TileContentRect, m_TileContentText, tileButtonStyle ) )
                             {
-                                current[idx].RenderPreview();
-                                m_TileContentText.image   = current[idx].Preview;
-                                m_TileContentText.tooltip = $"{current[idx].materialName}\n\nClick to apply to the currently selected surface.";
+                                previewMaterial = GetPreviewMaterial( idx );
+                                previewEditor   = null;
 
-                                SetButtonStyleBG( in idx );
+                                lastSelectedMaterialIndex = idx;
 
-                                // tile
-                                if( GUI.Button( m_TileContentRect, m_TileContentText, tileButtonStyle ) )
-                                {
-                                    previewMaterial = GetPreviewMaterial( idx );
-                                    previewEditor   = null;
-
-                                    lastSelectedMaterialIndex = idx;
-
-                                    ApplySelectedMaterial();
-                                }
-
-                                // tile label
-                                if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels && lastSelectedMaterialIndex != idx )
-                                {
-                                    m_TileContentRect.height = 22;
-                                    m_TileContentRect.y      = ( m_TileContentRect.y ) + tileSize - 22;
-
-                                    GUI.Box( m_TileContentRect, "", tileLabelBGStyle );
-
-                                    m_TileContentRect.x     += 4;
-                                    m_TileContentRect.width -= 8;
-
-                                    GUI.Label( m_TileContentRect, current[idx].materialName, tileLabelStyle );
-                                }
+                                ApplySelectedMaterial();
                             }
 
-                            idx++;
+                            // tile label
+                            if( !m_TileContentRect.Contains( Event.current.mousePosition ) && tileSize > 100 && showNameLabels && lastSelectedMaterialIndex != idx )
+                            {
+                                m_TileContentRect.height = 22;
+                                m_TileContentRect.y      = ( m_TileContentRect.y ) + tileSize - 22;
+
+                                GUI.Box( m_TileContentRect, "", tileLabelBGStyle );
+
+                                m_TileContentRect.x     += 4;
+                                m_TileContentRect.width -= 8;
+
+                                GUI.Label( m_TileContentRect, current[idx].assetName, tileLabelStyle );
+                            }
                         }
 
-                        row                  += 1;
-                        yOffset              =  ( tileSize * row );
-                        tileScrollViewHeight =  yOffset;
+                        idx++;
+                    }
 
-                        // end horizontal
-                    }
-                }
-                else
-                {
-                    foreach( ChiselSurfacePresetBrowserTile tile in m_SurfaceTiles )
-                    {
-                        tile.Draw( m_TileContentRect, m_ScrollViewRect );
-                    }
+                    row                  += 1;
+                    yOffset              =  ( tileSize * row );
+                    tileScrollViewHeight =  yOffset;
+
+                    // end horizontal
                 }
             }
+
             GUI.EndScrollView();
 
             // bottom info bar
@@ -563,6 +557,19 @@ namespace Chisel.Editors
 
         private static Material GetPreviewMaterial( int index )
         {
+            switch( m_CurrentTilesTab )
+            {
+                case ChiselMaterialBrowserTab.All:
+                    if( m_Tiles.Count == 0 ) return null;
+
+                    break;
+
+                case ChiselMaterialBrowserTab.Used:
+                    if( m_UsedTiles.Count == 0 ) return null;
+
+                    break;
+            }
+
             Material m = AssetDatabase.LoadAssetAtPath<Material>( AssetDatabase.GUIDToAssetPath( m_CurrentTilesTab > 0 ? m_UsedTiles[index].guid : m_Tiles[index].guid ) );
 
             return m == null ? ChiselMaterialManager.DefaultMaterial : m;
@@ -574,7 +581,10 @@ namespace Chisel.Editors
             if( lastSelectedMaterialIndex > m_Tiles.Count )
                 return;
 
-            if( m_Tiles[lastSelectedMaterialIndex] != null ) { ApplyMaterial( GetPreviewMaterial( lastSelectedMaterialIndex ) ); }
+            if( m_Tiles[lastSelectedMaterialIndex] != null )
+            {
+                ApplyMaterial( GetPreviewMaterial( lastSelectedMaterialIndex ) );
+            }
         }
 
         private static void ApplyMaterial( Material material )
@@ -583,7 +593,10 @@ namespace Chisel.Editors
             {
                 HashSet<SurfaceReference> selected = ChiselSurfaceSelectionManager.Selection;
 
-                foreach( SurfaceReference surf in selected ) { surf.BrushMaterial.RenderMaterial = material; }
+                foreach( SurfaceReference surf in selected )
+                {
+                    surf.BrushMaterial.RenderMaterial = material;
+                }
             }
         }
     }

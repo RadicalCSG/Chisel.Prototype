@@ -1,3 +1,9 @@
+/* * * * * * * * * * * * * * * * * * * * * *
+License:    MIT (https://tldrlegal.com/license/mit-license)
+Author:     Daniel Cornelius
+
+* * * * * * * * * * * * * * * * * * * * * */
+
 using System;
 using UnityEditor;
 using UnityEngine;
