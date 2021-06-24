@@ -1,12 +1,14 @@
 /* * * * * * * * * * * * * * * * * * * * * *
+URL:     https://github.com/RadicalCSG/Chisel.Prototype
 License: MIT (https://tldrlegal.com/license/mit-license)
-Author: Daniel Cornelius
+Author:  Daniel Cornelius
 
+Various utility methods used throughout ChiselMaterialBrowser
+and its various classes
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Chisel.Components;
 using UnityEditor;
@@ -17,8 +19,6 @@ namespace Chisel.Editors
 {
     internal static class ChiselMaterialBrowserUtilities
     {
-        private const string chiselPath = "";
-
         private static readonly string[] ignored = new[]
         {
             "packages/com.unity.searcher/",                                        // 0, we ignore this to get rid of the built-in font materials
