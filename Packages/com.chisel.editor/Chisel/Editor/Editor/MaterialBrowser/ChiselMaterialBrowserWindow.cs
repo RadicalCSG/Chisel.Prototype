@@ -1,7 +1,11 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-License:    MIT (https://tldrlegal.com/license/mit-license)
-Author:     Daniel Cornelius
+URL:     https://github.com/RadicalCSG/Chisel.Prototype
+License: MIT (https://tldrlegal.com/license/mit-license)
+Author:  Daniel Cornelius
 
+Core class of the material browser component for chisel.
+Various comments are left throughout the file noting
+anything important or needing change.
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;
@@ -41,7 +45,7 @@ namespace Chisel.Editors
             new GUIContent( "Labels\t    " ), new GUIContent( "Current Selection    " ),
         };
 
-        // event that gets triggered by ChiselMaterialBrowserHooks on project change.
+        // event that gets triggered on project change.
         private void Reload()
         {
             OnDisable();
@@ -56,6 +60,7 @@ namespace Chisel.Editors
             window.minSize = new Vector2( 420,  342 );
         }
 
+        // set any prefs and then clean up memory when the window closes.
         private void OnDisable()
         {
             EditorPrefs.SetInt( PREVIEW_SIZE_PREF_KEY, tileSize );
@@ -84,12 +89,14 @@ namespace Chisel.Editors
             m_UsedTiles.Clear();
             m_Labels.Clear();
 
+            // we do the following 3 method calls below to release any memory that was used for thumbnails that no longer are used.
             AssetDatabase.ReleaseCachedFileHandles();
             EditorUtility.UnloadUnusedAssetsImmediate( true );
 
             GC.Collect( GC.GetGeneration( this ), GCCollectionMode.Forced, false, true );
         }
 
+        // ensure the window loads any content when the project changes, and then set up any prefs and necessary data.
         private void OnEnable()
         {
             EditorApplication.projectChanged -= Reload;
@@ -102,6 +109,7 @@ namespace Chisel.Editors
             ChiselMaterialBrowserUtilities.GetMaterials( ref m_Tiles, ref m_UsedTiles, ref m_Labels, ref m_Models, false );
         }
 
+        // $TODO: Clean up rect code... i can probably use more rects at the cost of a slight bit of memory in order to make code easier to follow.
         public  Material previewMaterial;
         public  Editor   previewEditor;
         private Rect     m_PropsAreaRect       = Rect.zero;
@@ -159,6 +167,10 @@ namespace Chisel.Editors
                     ResetStyles();
                 }
 
+                /* $TODO: merge search field with current display type.
+                 * |> it needs to be clear it isnt used specifically for search, but that it is being considered for such.
+                 * |> something like https://user-images.githubusercontent.com/157976/108815534-eca91880-75b4-11eb-9ba5-1a8a7ef9dbd3.png
+                 */
                 // search field
                 m_ToolbarRect.x      =  position.width < 600 ? 66 : 6;
                 m_ToolbarRect.y      += position.width < 600 ? 0 : 28;
@@ -557,6 +569,8 @@ namespace Chisel.Editors
 
         private static Material GetPreviewMaterial( int index )
         {
+            // this is done to avoid a bug where if one or the other collection had zero items in it, it would not render,
+            // even if the list requested had valid items
             switch( m_CurrentTilesTab )
             {
                 case ChiselMaterialBrowserTab.All:
@@ -570,6 +584,7 @@ namespace Chisel.Editors
                     break;
             }
 
+            // note: i really dont like that i have to do this. is there *any* possible way to avoid loading the material into memory? -Daniel
             Material m = AssetDatabase.LoadAssetAtPath<Material>( AssetDatabase.GUIDToAssetPath( m_CurrentTilesTab > 0 ? m_UsedTiles[index].guid : m_Tiles[index].guid ) );
 
             return m == null ? ChiselMaterialManager.DefaultMaterial : m;
@@ -587,6 +602,7 @@ namespace Chisel.Editors
             }
         }
 
+        // $TODO: This can be a built-in method so it can be used for others. I may include this in a separate PR as part of an API update.
         private static void ApplyMaterial( Material material )
         {
             if( ChiselSurfaceSelectionManager.HaveSelection )

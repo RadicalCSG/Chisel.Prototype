@@ -1,7 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-License:    MIT (https://tldrlegal.com/license/mit-license)
-Author:     Daniel Cornelius
+URL:     https://github.com/RadicalCSG/Chisel.Prototype
+License: MIT (https://tldrlegal.com/license/mit-license)
+Author:  Daniel Cornelius
 
+GUIContent, UI labels, and other various UI components for the
+material browser
 * * * * * * * * * * * * * * * * * * * * * */
 
 using UnityEditor;

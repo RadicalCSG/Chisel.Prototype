@@ -1,7 +1,9 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-License:    MIT (https://tldrlegal.com/license/mit-license)
-Author:     Daniel Cornelius
+URL:     https://github.com/RadicalCSG/Chisel.Prototype
+License: MIT (https://tldrlegal.com/license/mit-license)
+Author:  Daniel Cornelius
 
+Static class for textures commonly used within Chisel
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;

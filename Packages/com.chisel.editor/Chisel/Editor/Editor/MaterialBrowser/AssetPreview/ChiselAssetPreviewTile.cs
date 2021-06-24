@@ -1,7 +1,9 @@
 /* * * * * * * * * * * * * * * * * * * * * *
-License:    MIT (https://tldrlegal.com/license/mit-license)
-Author:     Daniel Cornelius
+URL:     https://github.com/RadicalCSG/Chisel.Prototype
+License: MIT (https://tldrlegal.com/license/mit-license)
+Author:  Daniel Cornelius
 
+Generic base class for getting thumbnail previews for use in IMGUI
 * * * * * * * * * * * * * * * * * * * * * */
 
 using System;
