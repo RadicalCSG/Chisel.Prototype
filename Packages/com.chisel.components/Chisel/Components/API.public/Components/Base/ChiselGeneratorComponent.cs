@@ -384,7 +384,12 @@ namespace Chisel.Components
         {
             var transform = hierarchyItem.Transform;
             var localSpaceDelta = transform.worldToLocalMatrix.MultiplyVector(worldSpaceDelta);
+            if (localSpaceDelta.x == 0 &&
+                localSpaceDelta.y == 0 &&
+                localSpaceDelta.z == 0)
+                return;
             PivotOffset += localSpaceDelta;
+            UpdateTransformation();
         }
 
         public override void UpdateBrushMeshInstances()

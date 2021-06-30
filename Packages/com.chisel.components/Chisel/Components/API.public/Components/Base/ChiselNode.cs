@@ -148,6 +148,7 @@ namespace Chisel.Components
                 var child = hierarchyItem.Children[c];
                 child.Component.AddPivotOffset(worldSpaceDelta);
             }
+            UpdateTransformation();
         }
     }
 }
