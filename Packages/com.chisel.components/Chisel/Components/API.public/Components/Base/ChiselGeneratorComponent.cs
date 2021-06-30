@@ -389,7 +389,7 @@ namespace Chisel.Components
                 localSpaceDelta.z == 0)
                 return;
             PivotOffset += localSpaceDelta;
-            UpdateTransformation();
+            UpdateInternalTransformation();
         }
 
         public override void UpdateBrushMeshInstances()

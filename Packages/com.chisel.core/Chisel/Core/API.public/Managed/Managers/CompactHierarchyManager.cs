@@ -919,6 +919,25 @@ namespace Chisel.Core
             };
         }
 
+        // TODO: Optimize
+        internal static void FlagTransformationChangedDeep(ref CompactHierarchy hierarchy, CompactNodeID compactNodeID)
+        {
+            var childCount = hierarchy.ChildCount(compactNodeID);
+            if (childCount == 0)
+                return;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                var childCompactNodeID = hierarchy.GetChildCompactNodeIDAt(compactNodeID, i);
+                ref var childNodeRef = ref hierarchy.GetChildRefAt(compactNodeID, i);
+                if ((childNodeRef.flags & NodeStatusFlags.TransformationModified) == NodeStatusFlags.TransformationModified)
+                    continue;
+                
+                childNodeRef.flags |= NodeStatusFlags.TransformationModified;
+                FlagTransformationChangedDeep(ref hierarchy, childCompactNodeID);
+            }
+        }
+
         [return: MarshalAs(UnmanagedType.U1)]
         internal static bool SetNodeLocalTransformation(NodeID nodeID, in float4x4 result)
         {   
@@ -939,7 +958,13 @@ namespace Chisel.Core
                 nodeRef.transformation = result;
                 //nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
 
-                nodeRef.flags |= NodeStatusFlags.TransformationModified;
+                // TODO: not sure why this test doesn't work?
+                //if ((nodeRef.flags & NodeStatusFlags.TransformationModified) != NodeStatusFlags.TransformationModified)
+                {
+                    nodeRef.flags |= NodeStatusFlags.TransformationModified;
+                    FlagTransformationChangedDeep(ref hierarchy, compactNodeID);
+                }
+
                 ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
                 rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
             }
