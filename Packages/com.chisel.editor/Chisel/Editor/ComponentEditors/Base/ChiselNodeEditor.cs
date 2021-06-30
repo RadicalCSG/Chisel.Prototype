@@ -79,14 +79,32 @@ namespace Chisel.Editors
         [MenuItem("GameObject/Chisel/Set operation/" + nameof(CSGOperationType.Intersecting), true)] protected static bool ValidateIntersectingOperation(MenuCommand menuCommand) { return MenuValidateOperation(menuCommand); }
 
 
+        protected static bool ValidateEncapsulateInCompositeInternal(GameObject[] gameObjects)
+        {
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
+                    gameObjects[i].GetComponent<ChiselComposite>())
+                    continue;
+                return false;
+            }
+            return true;
+        }
+
+
 
         [MenuItem("GameObject/Group in Composite", false, -1)]
         protected static void EncapsulateInComposite(MenuCommand menuCommand)
         {
-            if (!ValidateEncapsulateInComposite(menuCommand))
-                return;
-            
             var gameObjects = Selection.gameObjects;
+
+            if (gameObjects == null || gameObjects.Length == 0 ||                
+                // Workaround for "Unity calls each object in selection individually in menu item"
+                menuCommand.context != gameObjects[0])
+                return;
+
+            if (!ValidateEncapsulateInCompositeInternal(gameObjects))
+                return;
 
             // TODO: sort gameObjects by their siblingIndex / hierarchy position
 
@@ -99,7 +117,7 @@ namespace Chisel.Editors
             var compositeTransform  = composite.transform;
             compositeTransform.SetSiblingIndex(childSiblingIndex);
             Undo.RegisterCreatedObjectUndo(compositeGameObject, "Create " + compositeGameObject.name);
-            
+
             for (int i = 0; i < gameObjects.Length; i++)
                 Undo.SetTransformParent(gameObjects[i].transform, compositeTransform, "Moved GameObject under Composite");
 
@@ -116,17 +134,10 @@ namespace Chisel.Editors
         {
             var gameObjects = Selection.gameObjects;
             if (gameObjects == null ||
-                gameObjects.Length < 1)
+                gameObjects.Length == 0)
                 return false;
 
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                if (gameObjects[i].GetComponent<ChiselGeneratorComponent>() ||
-                    gameObjects[i].GetComponent<ChiselComposite>())
-                    continue;
-                return false;
-            }
-            return true;
+            return ValidateEncapsulateInCompositeInternal(gameObjects);
         }
 
         public static bool InSceneSettingsContext = false;
