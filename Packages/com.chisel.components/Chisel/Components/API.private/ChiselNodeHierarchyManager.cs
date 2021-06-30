@@ -1168,6 +1168,7 @@ namespace Chisel.Components
                     var sceneHierarchy = hierarchyItem.sceneHierarchy;
 
                     var defaultModel = false;
+                    hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
                     if (ReferenceEquals(hierarchyItem.parentComponent, null))
                     {
                         if (!(hierarchyItem.Component is ChiselModel))

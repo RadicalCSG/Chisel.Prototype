@@ -22,8 +22,16 @@ namespace Chisel.Editors
         {
             Selection.selectionChanged -= OnSelectionChanged;
             Selection.selectionChanged += OnSelectionChanged;
+
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
         }
-         
+
+        private void OnHierarchyChanged()
+        {
+            this.Repaint();
+        }
+
         public void OnSelectionChanged()
         {
             this.Repaint();
