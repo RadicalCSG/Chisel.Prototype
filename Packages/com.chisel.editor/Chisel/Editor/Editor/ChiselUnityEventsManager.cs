@@ -232,7 +232,6 @@ namespace Chisel.Editors
             try
             {
                 ChiselNodeHierarchyManager.Update();
-                ChiselNodeHierarchyManager.Update();
                 ChiselGeneratedModelMeshManager.UpdateModels();
                 ChiselNodeEditorBase.HandleCancelEvent();
             }

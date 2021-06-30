@@ -931,12 +931,18 @@ namespace Chisel.Core
 
             ref var hierarchy = ref GetHierarchy(compactNodeID);
             ref var nodeRef = ref hierarchy.GetChildRef(compactNodeID);
-            nodeRef.transformation = result;
-            //nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
+            if (math.any(nodeRef.transformation.c0 != result.c0) ||
+                math.any(nodeRef.transformation.c1 != result.c1) ||
+                math.any(nodeRef.transformation.c2 != result.c2) ||
+                math.any(nodeRef.transformation.c3 != result.c3))
+            {
+                nodeRef.transformation = result;
+                //nodeRef.bounds = BrushMeshManager.CalculateBounds(nodeRef.brushMeshHash, in nodeRef.transformation);
 
-            nodeRef.flags |= NodeStatusFlags.TransformationModified;
-            ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
-            rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+                nodeRef.flags |= NodeStatusFlags.TransformationModified;
+                ref var rootNode = ref hierarchy.GetChildRef(hierarchy.RootID);
+                rootNode.flags |= NodeStatusFlags.TreeNeedsUpdate;
+            }
             return true;
         }
 
