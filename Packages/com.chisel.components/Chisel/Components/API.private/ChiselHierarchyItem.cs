@@ -28,6 +28,7 @@ namespace Chisel.Components
         public readonly List<ChiselHierarchyItem>   Children            = new List<ChiselHierarchyItem>();
 
         public ChiselSceneHierarchy sceneHierarchy;
+        public ChiselNode           parentComponent;
         public Scene                Scene;
         
         Transform m_Transform;

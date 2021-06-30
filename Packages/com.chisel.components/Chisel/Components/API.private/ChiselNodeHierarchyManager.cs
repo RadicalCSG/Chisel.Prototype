@@ -45,19 +45,12 @@ namespace Chisel.Components
         static readonly HashSet<ChiselNode> unregisterQueueLookup = new HashSet<ChiselNode>();
         static readonly List<ChiselNode> unregisterQueue = new List<ChiselNode>();
 
-        static readonly HashSet<ChiselSceneHierarchy> createDefaultModels = new HashSet<ChiselSceneHierarchy>();
-
-        // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
-        // so we remember them, and re-register at the end.
-        static readonly List<ChiselModel> reregisterModelQueue = new List<ChiselModel>();
-
         static readonly List<ChiselHierarchyItem> findChildrenQueue = new List<ChiselHierarchyItem>();
 
         static readonly HashSet<CSGTreeNode> destroyNodesList = new HashSet<CSGTreeNode>();
 
         static readonly Dictionary<ChiselNode, ChiselHierarchyItem> addToHierarchyLookup = new Dictionary<ChiselNode, ChiselHierarchyItem>();
         static readonly List<ChiselHierarchyItem> addToHierarchyQueue = new List<ChiselHierarchyItem>(5000);
-        static readonly List<ChiselHierarchyItem> deferAddToHierarchyQueue = new List<ChiselHierarchyItem>(5000);
 
         static readonly HashSet<ChiselNode> rebuildTreeNodes = new HashSet<ChiselNode>();
 
@@ -158,13 +151,9 @@ namespace Chisel.Components
             hierarchyItemLookup.Clear();
             treeNodeLookup.Clear();
 
-            reregisterModelQueue.Clear();
-
-            
             foreach(var item in destroyNodesList)
                 item.Destroy();
 
-            reregisterModelQueue.Clear();
             ClearQueues();
             ClearTemporaries();
 
@@ -181,15 +170,12 @@ namespace Chisel.Components
             unregisterQueueLookup.Clear();
             unregisterQueue.Clear();
 
-            createDefaultModels.Clear();
-
             findChildrenQueue.Clear();
 
             destroyNodesList.Clear();
 
             addToHierarchyLookup.Clear();
             addToHierarchyQueue.Clear();
-            deferAddToHierarchyQueue.Clear();
 
             rebuildTreeNodes.Clear();
 
@@ -634,14 +620,6 @@ namespace Chisel.Components
 
         public static void Update()
         {
-            int loops = 0;
-UpdateAgain:
-            reregisterModelQueue.Clear();
-
-            // Unfortunately we might need to create default models during the update loop, which kind of screws up the order of things.
-            // so we remember them, and re-register at the end.
-            bool tryAgain = false;
-
             try
             {
                 Profiler.BeginSample("UpdateTrampoline");
@@ -653,30 +631,6 @@ UpdateAgain:
             {
                 ClearTemporaries();
                 ClearQueues();
-            }
-
-            if (reregisterModelQueue.Count > 0)
-            {
-                for (int i = 0; i < reregisterModelQueue.Count; i++)
-                {
-                    reregisterModelQueue[i].hierarchyItem.Registered = false;
-                    Register(reregisterModelQueue[i]);
-                }
-                tryAgain = true;
-            }
-
-            if (createDefaultModels.Count > 0)
-                tryAgain = true;
-
-            if (deferAddToHierarchyQueue.Count > 0)
-                tryAgain = true;
-
-            if (tryAgain)
-            {
-                loops++;
-                if (loops > 2) // defense against infinite loop bugs
-                    return;
-                goto UpdateAgain;
             }
         }
 
@@ -738,28 +692,7 @@ UpdateAgain:
         internal static bool prevPlaying = false;
         internal static void UpdateTrampoline()
         {
-            Profiler.BeginSample("UpdateTrampoline.Setup");
-            if (createDefaultModels.Count > 0)
-            {
-                foreach (var sceneHierarchy in createDefaultModels)
-                {
-                    if (sceneHierarchy.DefaultModel ||
-                        !sceneHierarchy.Scene.IsValid() ||
-                        !sceneHierarchy.Scene.isLoaded)
-                        continue;
-                    sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
-                }
-                createDefaultModels.Clear();
-            }
-
-            // Used to defers the contents of addToHierarchyQueue to the next tick
-            if (deferAddToHierarchyQueue.Count > 0)
-            {
-                addToHierarchyQueue.AddRange(deferAddToHierarchyQueue);
-                deferAddToHierarchyQueue.Clear();
-            }
-
-
+            Profiler.BeginSample("UpdateTrampoline.Setup");            
 #if UNITY_EDITOR
             // *Workaround*
             // Events are not properly called, and can be even duplicated, on entering and exiting playmode
@@ -1091,6 +1024,38 @@ UpdateAgain:
             Profiler.BeginSample("UpdateTrampoline.hierarchyUpdateQueue");
             if (addToHierarchyQueue.Count > 0)
             {
+                for (int i = addToHierarchyQueue.Count - 1; i >= 0; i--)
+                {
+                    var hierarchyItem = addToHierarchyQueue[i];
+                    if (!hierarchyItem.Component ||
+                        !hierarchyItem.Component.IsActive)
+                    {
+                        addToHierarchyQueue.RemoveAt(i);
+                        continue;
+                    }
+
+                    hierarchyItem.Component.ResetTreeNodes();
+
+                    //Debug.Log($"addToHierarchyQueue {hierarchyItem.Component}", hierarchyItem.Component);
+                    var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
+                    hierarchyItem.sceneHierarchy = sceneHierarchy;
+
+                    hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
+                    if (ReferenceEquals(hierarchyItem.parentComponent, null))
+                    {
+                        if (!(hierarchyItem.Component is ChiselModel))
+                        {
+                            if (!sceneHierarchy.DefaultModel)
+                            {
+                                if (sceneHierarchy.DefaultModel ||
+                                    !sceneHierarchy.Scene.IsValid() ||
+                                    !sceneHierarchy.Scene.isLoaded)
+                                    continue;
+                                sceneHierarchy.DefaultModel = ChiselGeneratedComponentManager.CreateDefaultModel(sceneHierarchy);
+                            }
+                        }
+                    }
+                }
                 foreach(var node in addToHierarchyQueue)
                     hierarchyUpdateQueue.Add(node.Component);
             }
@@ -1169,6 +1134,17 @@ UpdateAgain:
                     {
                         addToHierarchyLookup.Add(hierarchyItem.Component, hierarchyItem);
                         addToHierarchyQueue.Add(hierarchyItem);
+
+                        if (hierarchyItem.Component &&
+                            hierarchyItem.Component.IsActive)
+                        {
+                            hierarchyItem.Component.ResetTreeNodes();
+
+                            var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
+                            hierarchyItem.sceneHierarchy = sceneHierarchy;
+
+                            hierarchyItem.parentComponent = UpdateSiblingIndices(hierarchyItem);
+                        }
                     }
                 }
                 hierarchyUpdateQueue.Clear();
@@ -1188,34 +1164,21 @@ UpdateAgain:
                         continue;
                     }
 
-                    hierarchyItem.Component.ResetTreeNodes();
-
-                    //Debug.Log($"addToHierarchyQueue {hierarchyItem.Component}", hierarchyItem.Component);
-                    var sceneHierarchy = GetSceneHierarchyForScene(hierarchyItem.Scene);
-                    hierarchyItem.sceneHierarchy = sceneHierarchy;
+                    var sceneHierarchy = hierarchyItem.sceneHierarchy;
 
                     var defaultModel = false;
-                    var parentComponent = UpdateSiblingIndices(hierarchyItem);
-                    if (ReferenceEquals(parentComponent, null))
+                    if (ReferenceEquals(hierarchyItem.parentComponent, null))
                     {
                         if (!(hierarchyItem.Component is ChiselModel))
                         {
-                            if (!sceneHierarchy.DefaultModel)
-                            {
-                                createDefaultModels.Add(sceneHierarchy);
-                                // defer adding the item to the next tick because the default model has not been created yet
-                                deferAddToHierarchyQueue.Add(hierarchyItem);
-                                continue;
-                            }
-
-                            parentComponent = sceneHierarchy.DefaultModel;
+                            hierarchyItem.parentComponent = sceneHierarchy.DefaultModel;
                             defaultModel = true;
                         }
                     }
 
-                    if (!ReferenceEquals(parentComponent, null))
+                    if (!ReferenceEquals(hierarchyItem.parentComponent, null))
                     {
-                        var parentHierarchyItem = parentComponent.hierarchyItem;
+                        var parentHierarchyItem = hierarchyItem.parentComponent.hierarchyItem;
                         hierarchyItem.Parent = parentHierarchyItem;
 
                         if (defaultModel)
@@ -1441,10 +1404,9 @@ UpdateAgain:
                 ChiselSceneHierarchy sceneHierarchy = __prevSceneHierarchy[i].Value;
                 if (!sceneHierarchy.Scene.IsValid() ||
                     !sceneHierarchy.Scene.isLoaded ||
-                    (sceneHierarchy.RootItems.Count == 0 && !sceneHierarchy.DefaultModel && !createDefaultModels.Contains(sceneHierarchy)))
+                    (sceneHierarchy.RootItems.Count == 0 && !sceneHierarchy.DefaultModel))
                 {
                     sceneHierarchies.Remove(__prevSceneHierarchy[i].Key);
-                    createDefaultModels.Remove(sceneHierarchy);
                 }
             }
             __prevSceneHierarchy.Clear();
