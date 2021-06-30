@@ -551,11 +551,11 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AttachToParent(CompactNodeID parentID, CompactNodeID compactNodeID)
         {
-            AttachToParent(ref CompactHierarchyManager.HierarchyIDLookup, CompactHierarchyManager.HierarchyList, ref CompactHierarchyManager.NodeIDLookup, CompactHierarchyManager.Nodes, parentID, compactNodeID);
+            AttachToParent(ref CompactHierarchyManager.HierarchyIDLookup, CompactHierarchyManager.HierarchyList, ref CompactHierarchyManager.NodeIDLookup, CompactHierarchyManager.Nodes, parentID, compactNodeID, ignoreBrushMeshHashes: true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void AttachToParent(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, CompactNodeID compactNodeID)
+        internal void AttachToParent(ref IDManager hierarchyIDLookup, NativeList<CompactHierarchy> hierarchies, ref IDManager nodeIDLookup, NativeList<CompactNodeID> nodes, CompactNodeID parentID, CompactNodeID compactNodeID, bool ignoreBrushMeshHashes = false)
         {
             Debug.Assert(IsCreated);
             var parentIndex = HierarchyIndexOfInternal(parentID);
@@ -567,7 +567,7 @@ namespace Chisel.Core
 
             var parentHierarchy = compactNodes[parentIndex];
             var parentChildCount = parentHierarchy.childCount;
-            AttachInternal(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, parentID, parentIndex, parentChildCount, compactNodeID);
+            AttachInternal(ref hierarchyIDLookup, hierarchies, ref nodeIDLookup, nodes, parentID, parentIndex, parentChildCount, compactNodeID, ignoreBrushMeshHashes);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
