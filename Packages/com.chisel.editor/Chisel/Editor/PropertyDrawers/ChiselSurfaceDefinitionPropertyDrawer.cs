@@ -21,7 +21,9 @@ namespace Chisel.Editors
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            if (ChiselNodeEditorBase.InSceneSettingsContext)
+            if (ChiselNodeEditorBase.InSceneSettingsContext ||
+                property.serializedObject.isEditingMultipleObjects || 
+                property.hasMultipleDifferentValues)
                 return 0;
             return base.GetPropertyHeight(property, label);
         }
@@ -38,9 +40,9 @@ namespace Chisel.Editors
             var surfacesProp = property.FindPropertyRelative(nameof(ChiselSurfaceDefinition.surfaces));
 
             EditorGUI.BeginProperty(position, label, surfacesProp);
-            bool prevShowMixedValue = EditorGUI.showMixedValue;
-            try
+            if (!surfacesProp.serializedObject.isEditingMultipleObjects && !property.hasMultipleDifferentValues && !ChiselNodeEditorBase.InSceneSettingsContext)
             {
+                
                 EditorGUI.BeginChangeCheck();
                 var path = surfacesProp.propertyPath;
                 var surfacesVisible = SessionState.GetBool(path, false);
@@ -75,11 +77,7 @@ namespace Chisel.Editors
                 }
                 finally { EditorGUILayout.EndFoldoutHeaderGroup(); }
             }
-            finally
-            {
-                EditorGUI.showMixedValue = prevShowMixedValue;
-                EditorGUI.EndProperty();
-            }
+            EditorGUI.EndProperty();
         }
     }
 }

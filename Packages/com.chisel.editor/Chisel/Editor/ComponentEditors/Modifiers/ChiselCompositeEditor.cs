@@ -66,6 +66,9 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
+            if (!target)
+                return;
+
             Profiler.BeginSample("OnInspectorGUI");
             base.OnInspectorGUI();
             try
