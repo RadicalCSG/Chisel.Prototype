@@ -1088,6 +1088,7 @@ namespace Chisel.Components
                             SetChildScenes(hierarchyItem, currentScene);
                         }
                     }
+                    updateTransformationNodes.Add(component);
                 }
                 
                 foreach (var component in hierarchyUpdateQueue)
