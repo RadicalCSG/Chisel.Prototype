@@ -36,7 +36,7 @@ namespace Chisel.Editors
         }
 
         const int kPrimaryOrder = 98;
-        
+
         const string                    kOverlayTitle   = "Chisel Tools";
         static readonly ChiselOverlay   OverlayWindow   = new ChiselOverlay(kOverlayTitle, DisplayControls, kPrimaryOrder);
 
@@ -71,7 +71,7 @@ namespace Chisel.Editors
         }
 
         static void EditModeButton(Rect position, bool enabled, ChiselEditToolBase editMode, GUIStyle style)
-        { 
+        {
             var editModeType = editMode.GetType();
             using (new EditorGUI.DisabledScope(!enabled))
             {
@@ -154,7 +154,7 @@ namespace Chisel.Editors
                     if (gameObject.TryGetComponent<ChiselNode>(out _))
                         return true;
             }
-            return Selection.GetFiltered<ChiselNode>(SelectionMode.OnlyUserModifiable).Length > 0;
+            return Selection.GetFiltered<ChiselNode>(SelectionMode.Editable).Length > 0;
         }
 
 
