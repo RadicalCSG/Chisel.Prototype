@@ -175,21 +175,6 @@ namespace Chisel.Editors
         }
         static List<StackItem>  itemStack = new List<StackItem>();
 
-        static int GetVisibleItems(Dictionary<CSGTreeNode, CSGTreeNode[]> sceneHierarchies, ref Dictionary<CSGTreeNode, bool> openNodes)
-        {
-            if (sceneHierarchies == null || sceneHierarchies.Count == 0)
-                return 0;
-
-            int totalCount = 0;
-            foreach (var item in sceneHierarchies)
-            {
-                totalCount += 1; // scene foldout itself
-                itemStack.Clear();
-                totalCount += GetVisibleItems(item.Value, ref openNodes);
-            }
-            return totalCount;
-        }
-        
         static int GetVisibleItems(CSGTreeNode[] hierarchyItems, ref Dictionary<CSGTreeNode, bool> openNodes)
         {
             if (hierarchyItems == null)
@@ -265,7 +250,7 @@ namespace Chisel.Editors
             {
                 name =  obj.name;
             }
-            return $"{name} [{treeNode}:{userID}:{treeNode.Type}]";
+            return $"{name} [{treeNode}:{userID}]";
         }
 
         static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, Color defaultColor, ref Dictionary<CSGTreeNode, bool> openNodes)

@@ -72,8 +72,8 @@ namespace Chisel.Core
             var compactNodeID = CompactHierarchyManager.GetCompactNodeID(nodeID);
             if (compactNodeID == CompactNodeID.Invalid)
                 return CSGTreeBrush.Invalid;
-            var compactHierarchyID = CompactHierarchyManager.GetHierarchyID(nodeID);
-            return Encapsulate(nodeID, compactNodeID, compactHierarchyID);
+            //var compactHierarchyID = CompactHierarchyManager.GetHierarchyID(nodeID);
+            return Encapsulate(nodeID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,8 +85,8 @@ namespace Chisel.Core
             var nodeID = hierarchy.GetNodeID(compactNodeID);
             if (nodeID == NodeID.Invalid)
                 return CSGTreeBrush.Invalid;
-            var compactHierarchyID = hierarchy.HierarchyID;
-            return Encapsulate(nodeID, compactNodeID, compactHierarchyID);
+            //var compactHierarchyID = hierarchy.HierarchyID;
+            return Encapsulate(nodeID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,21 +98,21 @@ namespace Chisel.Core
             var nodeID = hierarchy.GetNodeIDNoErrors(compactNodeID);
             if (nodeID == NodeID.Invalid)
                 return CSGTreeBrush.Invalid;
-            var compactHierarchyID = hierarchy.HierarchyID;
-            return Encapsulate(nodeID, compactNodeID, compactHierarchyID);
+            //var compactHierarchyID = hierarchy.HierarchyID;
+            return Encapsulate(nodeID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static CSGTreeBrush Encapsulate(NodeID nodeID, CompactNodeID compactNodeID, CompactHierarchyID compactHierarchyID)
+        internal static CSGTreeBrush Encapsulate(NodeID nodeID)
         {
-            return new CSGTreeBrush() { nodeID = nodeID, compactNodeID = compactNodeID, compactHierarchyID = compactHierarchyID };
+            return new CSGTreeBrush() { nodeID = nodeID };
         }
 
 
         #region Node
         /// <value>Returns if the current <see cref="Chisel.Core.CSGTreeBrush"/> is valid or not.</value>
         /// <remarks><note>If <paramref name="Valid"/> is <b>false</b> that could mean that this node has been destroyed.</note></remarks>
-        public bool				Valid			{ get { return nodeID != NodeID.Invalid && compactNodeID != CompactNodeID.Invalid && compactHierarchyID != CompactHierarchyID.Invalid && CompactHierarchyManager.IsValidNodeID(nodeID); } }
+        public bool				Valid			{ get { return nodeID != NodeID.Invalid && CompactHierarchyManager.IsValidNodeID(nodeID); } }
 
         /// <value>Gets the <see cref="Chisel.Core.CSGTreeBrush.NodeID"/> of the <see cref="Chisel.Core.CSGTreeBrush"/>, which is a unique ID of this node.</value>
         /// <remarks><note>NodeIDs are eventually recycled, so be careful holding on to Nodes that have been destroyed.</note></remarks>
@@ -184,23 +184,17 @@ namespace Chisel.Core
         
         #region Comparison
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator == (CSGTreeBrush left, CSGTreeBrush right) { return //left.compactHierarchyID == right.compactHierarchyID && left.compactNodeID == right.compactNodeID && 
-                                                                                        left.nodeID == right.nodeID; }
+        public static bool operator == (CSGTreeBrush left, CSGTreeBrush right) { return left.nodeID == right.nodeID; }
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator != (CSGTreeBrush left, CSGTreeBrush right) { return //left.compactHierarchyID != right.compactHierarchyID || left.compactNodeID != right.compactNodeID || 
-                                                                                        left.nodeID != right.nodeID; }
+        public static bool operator != (CSGTreeBrush left, CSGTreeBrush right) { return left.nodeID != right.nodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator ==(CSGTreeBrush left, CSGTreeNode right) { return //left.compactHierarchyID == right.compactHierarchyID && left.compactNodeID == right.compactNodeID && 
-                                                                                      left.nodeID == right.nodeID; }
+        public static bool operator ==(CSGTreeBrush left, CSGTreeNode right) { return left.nodeID == right.nodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator !=(CSGTreeBrush left, CSGTreeNode right) { return //left.compactHierarchyID != right.compactHierarchyID || left.compactNodeID != right.compactNodeID || 
-                                                                                      left.nodeID != right.nodeID; }
+        public static bool operator !=(CSGTreeBrush left, CSGTreeNode right) { return left.nodeID != right.nodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator ==(CSGTreeNode left, CSGTreeBrush right) { return //left.compactHierarchyID == right.compactHierarchyID && left.compactNodeID == right.compactNodeID && 
-                                                                                      left.nodeID == right.nodeID; }
+        public static bool operator ==(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID == right.nodeID; }
 		[EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool operator !=(CSGTreeNode left, CSGTreeBrush right) { return //left.compactHierarchyID != right.compactHierarchyID || left.compactNodeID != right.compactNodeID || 
-                                                                                      left.nodeID != right.nodeID; }
+        public static bool operator !=(CSGTreeNode left, CSGTreeBrush right) { return left.nodeID != right.nodeID; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object obj)
@@ -216,7 +210,7 @@ namespace Chisel.Core
         #endregion
 
         /// <value>An invalid node</value>
-        public static readonly CSGTreeBrush Invalid = new CSGTreeBrush { nodeID = NodeID.Invalid, compactNodeID = CompactNodeID.Invalid, compactHierarchyID = CompactHierarchyID.Invalid };
+        public static readonly CSGTreeBrush Invalid = new CSGTreeBrush { nodeID = NodeID.Invalid };
 
         // Temporary workaround until we can switch to hashes
         internal bool IsAnyStatusFlagSet()                  { return Hierarchy.IsAnyStatusFlagSet(CompactNodeID); }
@@ -227,8 +221,6 @@ namespace Chisel.Core
 
 
         [SerializeField] internal NodeID nodeID;
-        [SerializeField] internal CompactNodeID compactNodeID;
-        [SerializeField] internal CompactHierarchyID compactHierarchyID;
 
 
         internal CompactNodeID      CompactNodeID       { get { return CompactHierarchyManager.GetCompactNodeID(nodeID); } }
@@ -243,5 +235,7 @@ namespace Chisel.Core
                 return ref CompactHierarchyManager.GetHierarchy(hierarchyID);
             }
         }
+
+        public override string ToString() => $"{((CSGTreeNode)this).Type} ({nodeID})";
     }
 }

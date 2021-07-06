@@ -75,6 +75,37 @@ namespace Chisel.Components
         public Matrix4x4            LocalToWorldMatrix      = Matrix4x4.identity;
         public Matrix4x4            WorldToLocalMatrix      = Matrix4x4.identity;
 
+        public bool UpdateSiblingIndices(bool ignoreWhenParentIsChiselNode)
+        {
+            var index = (SiblingIndices?.Count ?? 0) - 1;
+            if (index <= 0)
+                return false;
+            
+            var iterator = Component?.transform;
+            if (iterator == null)
+                return false;
+
+            var parentTransform = parentComponent?.transform;
+            // TODO: handle scene root transforms
+            if (parentTransform == null)
+                return false;
+
+            if (parentTransform == iterator.parent &&
+                ignoreWhenParentIsChiselNode)
+                return false;
+
+            do
+            {
+                var knownSiblingIndex = this.SiblingIndices[index];
+                var currentSiblingIndex = iterator.GetSiblingIndex();
+                if (knownSiblingIndex != currentSiblingIndex)
+                    return true;
+                index--;
+                iterator = iterator.parent;
+            } while (iterator != null && index >= 0 && iterator != parentTransform);
+            return false;
+        }
+
         // TODO: Move bounds handling code to separate class, keep this clean
         public void					UpdateBounds()
         {

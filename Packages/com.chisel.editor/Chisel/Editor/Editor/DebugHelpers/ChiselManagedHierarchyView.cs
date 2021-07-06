@@ -306,14 +306,29 @@ namespace Chisel.Editors
             goto ContinueOnNextStackItem;
         }
 
+        static StringBuilder stringBuilder = new StringBuilder();
+        static string StringForSiblingIndices(ChiselHierarchyItem node, int index)
+        {
+            stringBuilder.Clear();
+            for (;index < node.SiblingIndices.Count; index++)
+            {
+                int value = node.SiblingIndices[index];
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(',');
+                stringBuilder.Append(value);
+            }
+            return stringBuilder.ToString();
+        }
+
         static string NameForTreeNode(ChiselHierarchyItem node)
         {
             var treeNode = node.Component.TopTreeNode;
             var instanceID = node.Component.GetInstanceID();
             var obj = node.Transform;
+            var siblingIndices = StringForSiblingIndices(node, (node.Parent == null) ? 0 : node.Parent.SiblingIndices.Count);
             if (!obj)
-                return string.Format("<unknown> [{0}:{1}]", treeNode, instanceID);
-            return obj.name + string.Format(" [{0}:{1}]", treeNode, instanceID);
+                return $"[{siblingIndices}] <unknown> [{treeNode}:{instanceID}]";
+            return $"[{siblingIndices}] {obj.name} [{treeNode}:{instanceID}]";
         }
 
         void OnGUI()
