@@ -17,7 +17,6 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public int brushCount;
 
         // Read/Write
-        [NoAlias] public NativeList<CompactNodeID> brushIDValues;
         [NoAlias] public NativeList<int>           nodeIDValueToNodeOrderArray;
 
         // Write
@@ -26,9 +25,6 @@ namespace Chisel.Core
 
         public void Execute()
         {
-            if (brushIDValues.Length != brushCount)
-                brushIDValues.ResizeUninitialized(brushCount);
-
             var nodeIDValueMin = int.MaxValue;
             var nodeIDValueMax = 0;
             if (brushCount > 0)
@@ -59,6 +55,29 @@ namespace Chisel.Core
                 // We need the index into the tree to ensure deterministic ordering
                 var brushIndexOrder = new IndexOrder { compactNodeID = brushCompactNodeID, nodeOrder = nodeOrder };
                 allTreeBrushIndexOrders[nodeOrder] = brushIndexOrder;
+            }        
+        }
+    }
+
+    [BurstCompile]
+    unsafe struct UpdateBrushIDValuesJob : IJob
+    {
+        [NoAlias, ReadOnly] public NativeList<CompactNodeID> brushes;
+        [NoAlias, ReadOnly] public int brushCount;
+
+        // Read/Write
+        [NoAlias] public NativeList<CompactNodeID> brushIDValues;
+
+        public void Execute()
+        {
+            if (brushIDValues.Length != brushCount)
+            {
+                brushIDValues.Resize(brushCount, NativeArrayOptions.ClearMemory);
+            }
+
+            for (int nodeOrder  = 0; nodeOrder  < brushCount; nodeOrder ++)
+            {
+                var brushCompactNodeID = brushes[nodeOrder];
                 brushIDValues[nodeOrder] = brushCompactNodeID;
             }        
         }

@@ -81,11 +81,11 @@ namespace Chisel.Components
             if (index <= 0)
                 return false;
             
-            var iterator = Component?.transform;
+            var iterator = (Component == null) ? null : Component.transform;
             if (iterator == null)
                 return false;
 
-            var parentTransform = parentComponent?.transform;
+            var parentTransform = (parentComponent == null) ? null : parentComponent.transform;
             // TODO: handle scene root transforms
             if (parentTransform == null)
                 return false;

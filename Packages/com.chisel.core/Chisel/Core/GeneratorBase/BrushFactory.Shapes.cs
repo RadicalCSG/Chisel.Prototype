@@ -696,5 +696,23 @@ namespace Chisel.Core
                 new BrushMesh.Polygon{ firstEdge = 20, edgeCount = 4, descriptionIndex = descriptionIndex }
             };
         }
+
+        static BrushMesh.Polygon[] CreateBoxPolygons()
+        {
+            return new[]
+            {
+                // left/right
+                new BrushMesh.Polygon{ firstEdge =  0, edgeCount = 4, descriptionIndex = 0 },
+                new BrushMesh.Polygon{ firstEdge =  4, edgeCount = 4, descriptionIndex = 1 },
+                
+                // front/back
+                new BrushMesh.Polygon{ firstEdge =  8, edgeCount = 4, descriptionIndex = 2 },
+                new BrushMesh.Polygon{ firstEdge = 12, edgeCount = 4, descriptionIndex = 3 },
+                
+                // top/down
+                new BrushMesh.Polygon{ firstEdge = 16, edgeCount = 4, descriptionIndex = 4 },
+                new BrushMesh.Polygon{ firstEdge = 20, edgeCount = 4, descriptionIndex = 5 }
+            };
+        }
     }
 }

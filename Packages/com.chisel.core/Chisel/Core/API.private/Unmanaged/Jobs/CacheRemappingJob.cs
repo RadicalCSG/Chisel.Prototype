@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -17,16 +17,17 @@ namespace Chisel.Core
         #region IndexOrderComparer - Sort index order to ensure consistency
         struct IndexOrderComparer : System.Collections.Generic.IComparer<int2>
         {
-            public int Compare(int2 x, int2 y)
+            public int Compare(int2 a, int2 b)
             {
-                int yCompare = x.y.CompareTo(y.y);
+                int yCompare = a.y.CompareTo(b.y);
                 if (yCompare != 0)
                     return yCompare;
-                return x.x.CompareTo(y.x);
+                return a.x.CompareTo(b.x);
             }
         }
         static readonly IndexOrderComparer indexOrderComparer = new IndexOrderComparer();
         #endregion
+        
         public void InitializeHierarchy(ref CompactHierarchy hierarchy)
         {
             compactHierarchyPtr = (CompactHierarchy*)UnsafeUtility.AddressOf(ref hierarchy);
@@ -85,7 +86,7 @@ namespace Chisel.Core
                             var sourceID        = brushIDValues[n];
                             var sourceIDValue   = sourceID.value;
                             var sourceOffset    = sourceIDValue - nodeIDValueToNodeOrderOffset;
-                            var destination = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrderArray.Length) ? -1 : indexLookup[sourceOffset] - 1;
+                            var destination     = (sourceOffset < 0 || sourceOffset >= nodeIDValueToNodeOrderArray.Length) ? -1 : indexLookup[sourceOffset] - 1;
                             if (destination == -1)
                             {
                                 removedBrushes.Add(new IndexOrder { compactNodeID = sourceID, nodeOrder = n });
@@ -128,9 +129,26 @@ namespace Chisel.Core
                                     brushesThatNeedIndirectUpdateHashMap.Add(otherIndexOrder);
                                 }
                             }
-                                
-                            remapOldOrderToNewOrder.Sort(indexOrderComparer);
-                                
+
+                            // Cannot rely on unity code. Sorting does not work. do you guys not test anything??
+                            //remapOldOrderToNewOrder.Sort(indexOrderComparer);
+
+                            // TODO: OPTIMIZE!
+                            for (int a = 0; a < remapOldOrderToNewOrder.Length - 1; a++)
+                            {
+                                var val_a = remapOldOrderToNewOrder[a];
+                                for (int b = a + 1; b < remapOldOrderToNewOrder.Length; b++)
+                                {
+                                    var val_b = remapOldOrderToNewOrder[b];
+                                    var compare = indexOrderComparer.Compare(val_a, val_b);
+                                    if (compare >= 0)
+                                        continue;
+
+                                    remapOldOrderToNewOrder[b] = val_a;
+                                    remapOldOrderToNewOrder[a] = val_b;
+                                    val_a = val_b;
+                                }
+                            }
                             for (int n = 0; n < previousBrushIDValuesLength; n++)
                             {
                                 var overwrittenValue = remapOldOrderToNewOrder[n].y;
@@ -163,10 +181,10 @@ namespace Chisel.Core
                                     routingTableCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
                                 if (transformationCache.Length < maxCount)
                                     transformationCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
-                                if (brushRenderBufferCache.Length < maxCount)
-                                    brushRenderBufferCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
                                 if (treeSpaceVerticesCache.Length < maxCount)
                                     treeSpaceVerticesCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
+                                if (brushRenderBufferCache.Length < maxCount)
+                                    brushRenderBufferCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
                                 if (brushTreeSpaceBoundCache.Length < maxCount)
                                     brushTreeSpaceBoundCache.Resize(maxCount, NativeArrayOptions.ClearMemory);
                                 if (brushTreeSpacePlaneCache.Length < maxCount)

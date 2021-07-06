@@ -613,7 +613,6 @@ namespace Chisel.Core
                             brushCount                      = this.brushCount,
 
                             // Read/Write
-                            brushIDValues                   = chiselLookupValues.brushIDValues,
                             nodeIDValueToNodeOrderArray     = Temporaries.nodeIDValueToNodeOrderArray,
 
                             // Write
@@ -626,8 +625,7 @@ namespace Chisel.Core
                             new WriteJobHandles(
                                 ref JobHandles.nodeIDValueToNodeOrderArrayJobHandle,
                                 ref JobHandles.nodeIDValueToNodeOrderOffsetRefJobHandle,
-                                ref JobHandles.allTreeBrushIndexOrdersJobHandle,
-                                ref JobHandles.brushIDValuesJobHandle));
+                                ref JobHandles.allTreeBrushIndexOrdersJobHandle));
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -636,7 +634,7 @@ namespace Chisel.Core
                     Profiler.BeginSample("Job_CacheRemapping");
                     try
                     {
-                        const bool runInParallel = runInParallelDefault;
+                        const bool runInParallel = false;// runInParallelDefault;
                         // TODO: update "previous siblings" when something with an intersection operation has been modified
                         var cacheRemappingJob = new CacheRemappingJob
                         {
@@ -683,6 +681,29 @@ namespace Chisel.Core
                                 ref JobHandles.brushesTouchedByBrushCacheJobHandle,
                                 ref JobHandles.brushesThatNeedIndirectUpdateHashMapJobHandle,
                                 ref JobHandles.needRemappingRefJobHandle));
+                    }
+                    finally { Profiler.EndSample(); }
+                    #endregion
+                    
+                    #region Update BrushID Values
+                    Profiler.BeginSample("Job_UpdateBrushIDValues");
+                    try
+                    {
+                        const bool runInParallel = runInParallelDefault;
+                        var updateBrushIDValuesJob = new UpdateBrushIDValuesJob
+                        {
+                            // Read
+                            brushes         = Temporaries.brushes,
+                            brushCount      = this.brushCount,
+
+                            // Read/Write
+                            brushIDValues   = chiselLookupValues.brushIDValues
+                        };
+                        updateBrushIDValuesJob.Schedule(runInParallel,
+                            new ReadJobHandles(
+                                JobHandles.brushesJobHandle),
+                            new WriteJobHandles(
+                                ref JobHandles.brushIDValuesJobHandle));
                     }
                     finally { Profiler.EndSample(); }
                     #endregion
@@ -840,7 +861,7 @@ namespace Chisel.Core
                         brushes             = Temporaries.brushes.AsArray(),
                         nodes               = nodes.AsArray(),
                         //compactHierarchy  = compactHierarchy,  //<-- cannot do ref or pointer here, 
-                                                                    //    so we set it below using InitializeHierarchy
+                                                                 //    so we set it below using InitializeHierarchy
 
                         // Write
                         compactTreeRef      = Temporaries.compactTreeRef

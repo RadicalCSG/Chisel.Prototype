@@ -20,13 +20,13 @@ namespace Chisel.Core
             public NativeHashSet<int>                       allKnownBrushMeshIndices;
 
             public NativeList<BlobAssetReference<BasePolygonsBlob>>             basePolygonCache;
-            public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
-            public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
             public NativeList<BlobAssetReference<RoutingTable>>                 routingTableCache;
+            public NativeList<NodeTransformations>                              transformationCache;
+            public NativeList<BlobAssetReference<BrushTreeSpaceVerticesBlob>>   treeSpaceVerticesCache;
+            public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
+            public NativeList<MinMaxAABB>                                       brushTreeSpaceBoundCache;
             public NativeList<BlobAssetReference<BrushTreeSpacePlanes>>         brushTreeSpacePlaneCache;
             public NativeList<BlobAssetReference<BrushesTouchedByBrush>>        brushesTouchedByBrushCache;
-            public NativeList<NodeTransformations>                              transformationCache;
-            public NativeList<BlobAssetReference<ChiselBrushRenderBuffer>>      brushRenderBufferCache;
             
             public NativeHashMap<CompactNodeID, MinMaxAABB>                                     brushTreeSpaceBoundLookup;
             public NativeHashMap<CompactNodeID, BlobAssetReference<ChiselBrushRenderBuffer>>    brushRenderBufferLookup;

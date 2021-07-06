@@ -414,6 +414,33 @@ namespace Chisel.Core
             return vertices;
         }
 
+        public static void CreateBox(Vector3 min, Vector3 max, out BrushMesh box)
+        {
+            if (!BoundsExtensions.IsValid(min, max))
+            {
+                box = default;
+                return;
+            }
+
+            if (min.x > max.x) { float x = min.x; min.x = max.x; max.x = x; }
+            if (min.y > max.y) { float y = min.y; min.y = max.y; max.y = y; }
+            if (min.z > max.z) { float z = min.z; min.z = max.z; max.z = z; }
+
+            var vec_vertices = CreateBoxVertices(min, max);
+            var vertices = new float3[vec_vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+                vertices[i] = vec_vertices[i];
+
+            box = new BrushMesh
+            {
+                polygons = CreateBoxPolygons(),
+                halfEdges = boxHalfEdges.ToArray(),
+                vertices = vertices
+            };
+            box.UpdateHalfEdgePolygonIndices();
+            box.CalculatePlanes();
+        }
+
         public static void CreateBox(Vector3 min, Vector3 max, int descriptionIndex, out BrushMesh box)
         {
             if (!BoundsExtensions.IsValid(min, max))

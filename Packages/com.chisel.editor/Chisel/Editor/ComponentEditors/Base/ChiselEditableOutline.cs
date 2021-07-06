@@ -711,10 +711,10 @@ namespace Chisel.Editors
             if (afterBrushMesh == null)
                 return;
 
-            var beforBrushMesh = brushMesh;
+            var beforeBrushMesh = brushMesh;
 
-            var afterHalfEdges = afterBrushMesh.halfEdges;
-            var beforeHalfEdges = beforBrushMesh.halfEdges;
+            var afterHalfEdges  = afterBrushMesh.halfEdges;
+            var beforeHalfEdges = beforeBrushMesh.halfEdges;
 
             // If before and after have the same number of edges, then we don't have any soft edges
             if (afterHalfEdges.Length == beforeHalfEdges.Length)
@@ -722,9 +722,9 @@ namespace Chisel.Editors
 
 
             var afterPolygons = afterBrushMesh.polygons;
-            var beforePolygons = beforBrushMesh.polygons;
+            var beforePolygons = beforeBrushMesh.polygons;
             var afterHalfEdgePolygonIndices = afterBrushMesh.halfEdgePolygonIndices;
-            var beforeHalfEdgePolygonIndices = beforBrushMesh.halfEdgePolygonIndices;
+            var beforeHalfEdgePolygonIndices = beforeBrushMesh.halfEdgePolygonIndices;
 
             var afterPlanes     = afterBrushMesh.planes;
             var afterVertices   = afterBrushMesh.vertices;

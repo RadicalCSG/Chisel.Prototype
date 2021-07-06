@@ -250,7 +250,20 @@ namespace Chisel.Editors
             {
                 name =  obj.name;
             }
-            return $"{name} [{treeNode}:{userID}]";
+            if (treeNode.Type == CSGNodeType.Brush)
+            {
+                var brush = (CSGTreeBrush)treeNode;
+                if (treeNode.Valid)
+                    return $"{name} [{treeNode}:{userID}:{brush.BrushMesh.BrushMeshID}]";
+                else
+                    return $"{name} [{treeNode}:{userID}:{brush.BrushMesh.BrushMeshID}] (INVALID)";
+            } else
+            {
+                if (treeNode.Valid)
+                    return $"{name} [{treeNode}:{userID}]";
+                else
+                    return $"{name} [{treeNode}:{userID}] (INVALID)";
+            }
         }
 
         static void AddFoldOuts(ref Rect itemRect, ref Rect visibleArea, CSGTreeNode[] hierarchyItems, HashSet<int> selectedInstanceIDs, Color defaultColor, ref Dictionary<CSGTreeNode, bool> openNodes)
