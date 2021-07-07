@@ -315,16 +315,27 @@ namespace Chisel.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool		IsBrushMeshIDValid		(Int32 brushMeshHash)
         {
-            var brushMeshBlobCache = ChiselMeshLookup.Value.brushMeshBlobCache;
+            return IsBrushMeshIDValid(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshHash);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool		IsBrushMeshIDValid		(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        {
             if (!brushMeshBlobCache.IsCreated)
                 return false;
             return brushMeshBlobCache.ContainsKey(brushMeshHash);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool			AssertBrushMeshIDValid	(Int32 brushMeshHash)
+        private static bool AssertBrushMeshIDValid(Int32 brushMeshHash)
         {
-            if (!IsBrushMeshIDValid(brushMeshHash))
+            return AssertBrushMeshIDValid(ChiselMeshLookup.Value.brushMeshBlobCache, brushMeshHash);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool			AssertBrushMeshIDValid	(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
+        {
+            if (!IsBrushMeshIDValid(brushMeshBlobCache, brushMeshHash))
             {
                 Debug.LogError($"Invalid ID {brushMeshHash}");
                 return false;
@@ -448,7 +459,7 @@ namespace Chisel.Core
 
         internal static bool DecreaseRefCount(NativeHashMap<int, RefCountedBrushMeshBlob> brushMeshBlobCache, Int32 brushMeshHash)
         {
-            if (!AssertBrushMeshIDValid(brushMeshHash))
+            if (!AssertBrushMeshIDValid(brushMeshBlobCache, brushMeshHash))
                 return false;
 
             if (brushMeshBlobCache.TryGetValue(brushMeshHash, out var refCountedBrushMeshBlob))

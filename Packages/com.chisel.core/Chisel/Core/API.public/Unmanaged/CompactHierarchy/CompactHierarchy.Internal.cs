@@ -135,7 +135,7 @@ namespace Chisel.Core
                         return false;
                     }
 
-                    if (!CompactHierarchyManager.IsValidNodeID(ref hierarchyIDLookup, hierarchies, nodes, compactNodes[i].nodeID))
+                    if (!CompactHierarchyManager.IsValidNodeID(ref nodeIDLookup, ref hierarchyIDLookup, hierarchies, nodes, compactNodes[i].nodeID))
                     {
                         Debug.LogError($"!CompactHierarchyManager.IsValidNodeID({compactNodes[i].nodeID})");
                         return false;

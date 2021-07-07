@@ -14,23 +14,21 @@ namespace Chisel.Core
     partial class CompactHierarchyManager
     {
         #region Update / Rebuild
-        static NativeList<CSGTree>  allTrees;
-        static NativeList<CSGTree>  updatedTrees;
         internal static bool UpdateAllTreeMeshes(FinishMeshUpdate finishMeshUpdates, out JobHandle allTrees)
         {
             allTrees = default(JobHandle);
             bool needUpdate = false;
 
-            CompactHierarchyManager.GetAllTrees(CompactHierarchyManager.allTrees);
+            CompactHierarchyManager.GetAllTrees(instance.allTrees);
             // Check if we have a tree that needs updates
-            updatedTrees.Clear();
-            for (int t = 0; t < CompactHierarchyManager.allTrees.Length; t++)
+            instance.updatedTrees.Clear();
+            for (int t = 0; t < instance.allTrees.Length; t++)
             {
-                var tree = CompactHierarchyManager.allTrees[t];
+                var tree = instance.allTrees[t];
                 if (tree.Valid &&
                     tree.IsStatusFlagSet(NodeStatusFlags.TreeNeedsUpdate))
                 {
-                    updatedTrees.Add(tree);
+                    instance.updatedTrees.Add(tree);
                     needUpdate = true;
                 }
             }
@@ -39,7 +37,7 @@ namespace Chisel.Core
                 return false;
 
             UnityEngine.Profiling.Profiler.BeginSample("UpdateTreeMeshes");
-            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, updatedTrees);
+            allTrees = ScheduleTreeMeshJobs(finishMeshUpdates, instance.updatedTrees);
             UnityEngine.Profiling.Profiler.EndSample();
             return true;
         }
@@ -859,7 +857,7 @@ namespace Chisel.Core
                         // Read
                         treeCompactNodeID   = this.treeCompactNodeID,
                         brushes             = Temporaries.brushes.AsArray(),
-                        nodes               = nodes.AsArray(),
+                        nodes               = Temporaries.nodes.AsArray(),
                         //compactHierarchy  = compactHierarchy,  //<-- cannot do ref or pointer here, 
                                                                  //    so we set it below using InitializeHierarchy
 
