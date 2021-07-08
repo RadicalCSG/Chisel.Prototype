@@ -176,12 +176,14 @@ namespace Chisel.Core
         /// <summary>Adds a <see cref="Chisel.Core.CSGTreeNode"/> to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Add			(CSGTreeNode item)	{ return CompactHierarchyManager.AddChildNode(nodeID, item.nodeID); }
 
         /// <summary>Adds the <see cref="Chisel.Core.CSGTreeNode"/>s of the specified array to the end of the  <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="arrayPtr">The pointer to the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. The array itself cannot be null.</param>
         /// <param name="length">The length of the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be added to the end of the <see cref="Chisel.Core.CSGTreeBranch"/>. </param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool AddRange	(CSGTreeNode* arrayPtr, int length) 
         { 
             if (arrayPtr == null) 
@@ -197,6 +199,7 @@ namespace Chisel.Core
         /// <param name="index">The zero-based index at which <paramref name="item"/> should be inserted.</param>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to insert.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Insert		(int index, CSGTreeNode item)	        { return CompactHierarchyManager.InsertChildNode(nodeID, index, item.nodeID); }
 
         /// <summary>Inserts an array of <see cref="Chisel.Core.CSGTreeNode"/>s into the <see cref="Chisel.Core.CSGTreeBranch"/> at the specified index.</summary>
@@ -205,6 +208,7 @@ namespace Chisel.Core
         /// <param name="length">The length of the array whose <see cref="Chisel.Core.CSGTreeNode"/>s should be inserted into the <see cref="Chisel.Core.CSGTreeBranch"/>. </param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool InsertRange(int index, CSGTreeNode* arrayPtr, int length)
         {
             if (arrayPtr == null)
@@ -219,30 +223,36 @@ namespace Chisel.Core
         /// <summary>Removes a specific <see cref="Chisel.Core.CSGTreeNode"/> from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to remove from the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove		(CSGTreeNode item)				{ return CompactHierarchyManager.RemoveChildNode(nodeID, item.nodeID); }
 
         /// <summary>Removes the child at the specified index of the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="index">The zero-based index of the child to remove.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool RemoveAt	(int index)						{ return CompactHierarchyManager.RemoveChildNodeAt(nodeID, index); }
 
         /// <summary>Removes a range of children from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="index">The zero-based starting index of the range of children to remove.</param>
         /// <param name="count">The number of children to remove.</param>
         /// <returns><b>true</b> on success, <b>false</b> on failure</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool RemoveRange	(int index, int count)			{ return CompactHierarchyManager.RemoveChildNodeRange(nodeID, index, count); }
 
         /// <summary>Removes all children from the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear		()								{ CompactHierarchyManager.ClearChildNodes(nodeID); }
 
         /// <summary>Determines the index of a specific child in the <see cref="Chisel.Core.CSGTreeBranch"/>.</summary>
         /// <param name="item">The <see cref="Chisel.Core.CSGTreeNode"/> to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns>The index of <paramref name="item"/> if found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, –1.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int  IndexOf		(CSGTreeNode item)              { return Hierarchy.SiblingIndexOf(CompactNodeID, item.CompactNodeID); }
 
         /// <summary>Determines whether the <see cref="Chisel.Core.CSGTreeBranch"/> contains a specific value.</summary>
         /// <param name="item">The Object to locate in the <see cref="Chisel.Core.CSGTreeBranch"/>.</param>
         /// <returns><b>true</b> if item is found in the <see cref="Chisel.Core.CSGTreeBranch"/>; otherwise, <b>false</b>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains	(CSGTreeNode item)				{ return IndexOf(item) != -1; }
         #endregion
         

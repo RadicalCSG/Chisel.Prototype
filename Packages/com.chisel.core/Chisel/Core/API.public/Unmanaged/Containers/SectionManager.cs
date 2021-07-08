@@ -26,7 +26,7 @@ namespace Chisel.Core
         {
             public int  start;
             public int  length; // TODO: make this explicit as the difference between start and the next integer
-            public int  end { get { return start + length - 1; } }
+            public int  end { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return start + length - 1; } }
         }
         [NoAlias, ReadOnly] UnsafeList<Section> sections;   // TODO: use UnsafeList instead, so we can more easily store them without getting 
                                                             //       "lists in lists" problems
@@ -92,6 +92,7 @@ namespace Chisel.Core
         struct SectionFindStack { public int first, last; }
 
         // Find section by offset using binary search
+        [BurstCompile]
         unsafe bool FindSectionByOffset(int findOffset, out int foundSection)
         {
             foundSection = -1;
@@ -103,7 +104,7 @@ namespace Chisel.Core
             if (findOffset < 0 || findOffset > sectionsPtr[sectionsLength - 1].end)
                 return false;
 
-            var searchStack = stackalloc SectionFindStack[8]; // should be be more than enough, we'd be running into integer size issues before then
+            var searchStack = stackalloc SectionFindStack[16]; // should be be more than enough, we'd be running into integer size issues before then
             int searchLength;
 
             searchStack[0] = new SectionFindStack { first = 0, last = sectionsLength - 1 };
@@ -272,7 +273,7 @@ namespace Chisel.Core
                         start  = offset,
                         length = length
                     });
-                    if (sectionIndex == 0)
+                    if (sectionIndex == 0) 
                         firstElementFree = desiredFree;
                     Debug.Assert(IsSectionFree(sectionIndex) == desiredFree);
                 } else

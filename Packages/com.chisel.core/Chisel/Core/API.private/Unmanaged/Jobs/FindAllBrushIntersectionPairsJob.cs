@@ -94,10 +94,7 @@ namespace Chisel.Core
                                                                       ref brushMeshLookup, ref brushTreeSpaceBounds, ref transformationCache,
                                                                       ref transformedPlanes0, ref transformedPlanes1);
                     if (result == IntersectionType.NoIntersection)
-                    {
-                        brushesThatNeedIndirectUpdateHashMap.Add(brush0IndexOrder);
                         continue;
-                    }
                     if (!found)
                     {
                         if (!usedBrushes.IsSet(brush0IndexOrder.nodeOrder))

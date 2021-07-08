@@ -151,9 +151,10 @@ namespace Chisel.Core
         public unsafe void GetID(int index, out int id, out int generation)
         {
             id = default; //out
-            generation = default;//out
+            generation = default; //out
 
-            if (!sectionManager.IsAllocatedIndex(index))
+            if (index < 0 || index >= indexToID.Length ||
+                !sectionManager.IsAllocatedIndex(index))
                 throw new ArgumentOutOfRangeException($"{nameof(index)} ({index}) must be allocated and lie between 0 ... {indexToID.Length}");
 
             var idInternal = indexToID.Ptr[index] - 1;

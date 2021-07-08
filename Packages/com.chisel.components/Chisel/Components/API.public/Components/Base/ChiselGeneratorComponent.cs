@@ -312,9 +312,8 @@ namespace Chisel.Components
                 return;
             }
 
-            UpdateBrushMeshInstances();
-
-            ChiselNodeHierarchyManager.NotifyContentsModified(this);
+            if (TopTreeNode.Dirty)
+                ChiselNodeHierarchyManager.NotifyContentsModified(this);
             base.OnValidateState();
         }
 

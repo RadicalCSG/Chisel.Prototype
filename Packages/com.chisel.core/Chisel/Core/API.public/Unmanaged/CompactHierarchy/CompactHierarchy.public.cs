@@ -179,6 +179,7 @@ namespace Chisel.Core
             return CreateHierarchy(CompactHierarchyID.Invalid, nodeID, 0, allocator);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CompactHierarchy CreateHierarchy(CompactHierarchyID hierarchyID, NodeID nodeID, Int32 userID, Allocator allocator)
         {
             var compactHierarchy = new CompactHierarchy
@@ -187,7 +188,8 @@ namespace Chisel.Core
                 compactNodes     = new UnsafeList<CompactChildNode>(1024, allocator),
                 brushOutlines    = new UnsafeList<BrushOutline>(1024, allocator),
                 idManager        = IDManager.Create(allocator),
-                HierarchyID      = hierarchyID
+                HierarchyID      = hierarchyID,
+                isCreated        = true
             };
             compactHierarchy.RootID = compactHierarchy.CreateNode(nodeID, new CompactNode
             {
@@ -235,8 +237,8 @@ namespace Chisel.Core
         }
         #endregion
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: MarshalAs(UnmanagedType.U1)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValidCompactNodeID(CompactNodeID compactNodeID)
         {
             Debug.Assert(IsCreated);
