@@ -600,18 +600,29 @@ namespace Chisel.Components
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
                                                  UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
+            Profiler.EndSample();
 
-            // Unfortunately the MeshData API is a big bag of buggy bullshit and it doesn't actually update the bounds (no matter what flags you use)
-            for (int i = 0; i < realMeshDataArraySize; i++)
-                foundMeshes[i].RecalculateBounds();
+            Profiler.BeginSample("UpdateColliders");
+            var colliderBakingJobs = ChiselColliderObjects.BeginUpdateProperties(model, this.colliders);
             Profiler.EndSample();
 
             Profiler.BeginSample("UpdateProperties");
             ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
             Profiler.EndSample();
 
-            Profiler.BeginSample("UpdateColliders");
-            ChiselColliderObjects.UpdateProperties(model, this.colliders);
+            Profiler.BeginSample("UpdateBounds");
+            // Unfortunately the MeshData API is a big bag of buggy bullshit and it doesn't actually update the bounds (no matter what flags you use)
+            for (int i = 0; i < realMeshDataArraySize; i++)
+            {
+                foundMeshes[i].bounds = foundMeshes[i].bounds;
+                //foundMeshes[i].RecalculateBounds();
+            }
+            Profiler.EndSample();
+
+            colliderBakingJobs.Complete();
+
+            Profiler.BeginSample("Finish");
+            ChiselColliderObjects.FinishUpdateProperties(this.colliders);
             Profiler.EndSample();
 
             this.needVisibilityMeshUpdate = true;

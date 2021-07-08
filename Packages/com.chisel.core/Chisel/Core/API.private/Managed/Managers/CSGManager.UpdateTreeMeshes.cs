@@ -1752,6 +1752,7 @@ namespace Chisel.Core
                     gatherSurfacesJob.Schedule(runInParallel,
                         new ReadJobHandles(
                             JobHandles.sectionsJobHandle,
+                            JobHandles.subMeshCountsJobHandle,
                             JobHandles.subMeshSurfacesJobHandle),
                         new WriteJobHandles(
                             ref JobHandles.subMeshCountsJobHandle,
@@ -1868,29 +1869,49 @@ namespace Chisel.Core
                             ref JobHandles.renderMeshesJobHandle,
                             ref JobHandles.colliderMeshUpdatesJobHandle));
 
-                    var renderCopyToMeshJob = new CopyToRenderMeshJob
+                    var colliderCopyToMeshJob = new CopyToColliderMeshJob
                     {
                         // Read
                         subMeshSections         = Temporaries.vertexBufferContents.subMeshSections      .AsJobArray(runInParallel),
                         subMeshCounts           = Temporaries.subMeshCounts                             .AsJobArray(runInParallel),
                         subMeshSurfaces         = Temporaries.subMeshSurfaces,
+                        colliderDescriptors     = Temporaries.vertexBufferContents.colliderDescriptors,
+                        colliderMeshes          = Temporaries.colliderMeshUpdates                       .AsJobArray(runInParallel),
+                            
+                        // Read/Write
+                        meshes                  = Temporaries.vertexBufferContents.meshes,
+                    };
+                    var dependencies1 = JobHandleExtensions.CombineDependencies(
+                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                            JobHandles.subMeshCountsJobHandle,
+                                            JobHandles.subMeshSurfacesJobHandle,
+                                            JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
+                                            JobHandles.colliderMeshUpdatesJobHandle,
+                                            JobHandles.vertexBufferContents_meshesJobHandle);
+                    var job1 = colliderCopyToMeshJob.Schedule(runInParallel, Temporaries.colliderMeshUpdates, 1, dependencies1);
+
+                    var renderCopyToMeshJob = new CopyToRenderMeshJob
+                    {
+                        // Read
+                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections  .AsJobArray(runInParallel),
+                        subMeshCounts           = Temporaries.subMeshCounts                         .AsJobArray(runInParallel),
+                        subMeshSurfaces         = Temporaries.subMeshSurfaces,
                         renderDescriptors       = Temporaries.vertexBufferContents.renderDescriptors,
-                        renderMeshes            = Temporaries.renderMeshes,
+                        renderMeshes            = Temporaries.renderMeshes                          .AsJobArray(runInParallel),
 
                         // Read/Write
                         triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
                         meshes                  = Temporaries.vertexBufferContents.meshes,
                     };
-                    renderCopyToMeshJob.Schedule(runInParallel, Temporaries.renderMeshes, 1,
-                        new ReadJobHandles(
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                            JobHandles.subMeshCountsJobHandle,
-                            JobHandles.subMeshSurfacesJobHandle,
-                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
-                            JobHandles.renderMeshesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
-                            ref JobHandles.vertexBufferContents_meshesJobHandle));
+                    var dependencies2 = JobHandleExtensions.CombineDependencies(
+                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                            JobHandles.subMeshCountsJobHandle,
+                                            JobHandles.subMeshSurfacesJobHandle,
+                                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                            JobHandles.renderMeshesJobHandle,
+                                            JobHandles.vertexBufferContents_meshesJobHandle,
+                                            JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+                    var job2 = renderCopyToMeshJob.Schedule(runInParallel, Temporaries.renderMeshes, 1, dependencies2);
 
                     var helperCopyToMeshJob = new CopyToRenderMeshJob
                     {
@@ -1899,45 +1920,25 @@ namespace Chisel.Core
                         subMeshCounts           = Temporaries.subMeshCounts                         .AsJobArray(runInParallel),
                         subMeshSurfaces         = Temporaries.subMeshSurfaces,
                         renderDescriptors       = Temporaries.vertexBufferContents.renderDescriptors,
-                        renderMeshes            = Temporaries.debugHelperMeshes,
+                        renderMeshes            = Temporaries.debugHelperMeshes                     .AsJobArray(runInParallel),
 
                         // Read/Write
                         triangleBrushIndices    = Temporaries.vertexBufferContents.triangleBrushIndices,
                         meshes                  = Temporaries.vertexBufferContents.meshes,
                     };
-                    helperCopyToMeshJob.Schedule(runInParallel, Temporaries.debugHelperMeshes, 1,
-                        new ReadJobHandles(
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                            JobHandles.subMeshCountsJobHandle,
-                            JobHandles.subMeshSurfacesJobHandle,
-                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
-                            JobHandles.debugHelperMeshesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle,
-                            ref JobHandles.vertexBufferContents_meshesJobHandle));
+                    var dependencies3 = JobHandleExtensions.CombineDependencies(
+                                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
+                                            JobHandles.subMeshCountsJobHandle,
+                                            JobHandles.subMeshSurfacesJobHandle,
+                                            JobHandles.vertexBufferContents_renderDescriptorsJobHandle,
+                                            JobHandles.debugHelperMeshesJobHandle,
+                                            JobHandles.vertexBufferContents_meshesJobHandle,
+                                            JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle);
+                    var job3 = helperCopyToMeshJob.Schedule(runInParallel, Temporaries.debugHelperMeshes, 1, dependencies3);
 
-                    var colliderCopyToMeshJob = new CopyToColliderMeshJob
-                    {
-                        // Read
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections.AsJobArray(runInParallel),
-                        subMeshCounts           = Temporaries.subMeshCounts.AsJobArray(runInParallel),
-                        subMeshSurfaces         = Temporaries.subMeshSurfaces,
-                        colliderDescriptors     = Temporaries.vertexBufferContents.colliderDescriptors,
-                        colliderMeshes          = Temporaries.colliderMeshUpdates,
-                            
-                        // Read/Write
-                        meshes                  = Temporaries.vertexBufferContents.meshes,
-                    };
-                    colliderCopyToMeshJob.Schedule(runInParallel, Temporaries.colliderMeshUpdates, 16,
-                        new ReadJobHandles(
-                            JobHandles.vertexBufferContents_subMeshSectionsJobHandle,
-                            JobHandles.subMeshCountsJobHandle,
-                            JobHandles.subMeshSurfacesJobHandle,
-                            JobHandles.vertexBufferContents_colliderDescriptorsJobHandle,
-                            JobHandles.colliderMeshUpdatesJobHandle),
-                        new WriteJobHandles(
-                            ref JobHandles.subMeshCountsJobHandle, // Why?
-                            ref JobHandles.vertexBufferContents_meshesJobHandle));
+                    var copyJobs = JobHandle.CombineDependencies(job1, job2, job3);
+                    JobHandles.vertexBufferContents_meshesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_meshesJobHandle, copyJobs);
+                    JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle = JobHandle.CombineDependencies(JobHandles.vertexBufferContents_triangleBrushIndicesJobHandle, copyJobs);
                 }
                 finally { Profiler.EndSample(); }
                 #endregion
@@ -2071,8 +2072,6 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.brushes                      .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.nodes                        .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.brushRenderData              .Dispose(dependencies));
-                lastJobHandle.AddDependency(Temporaries.subMeshCounts                .Dispose(dependencies));
-                lastJobHandle.AddDependency(Temporaries.subMeshSurfaces              .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.rebuildTreeBrushIndexOrders  .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.allUpdateBrushIndexOrders    .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.allBrushMeshIDs              .Dispose(dependencies));
@@ -2197,6 +2196,8 @@ namespace Chisel.Core
                 lastJobHandle.AddDependency(Temporaries.renderMeshes            .Dispose(dependencies));
                 lastJobHandle.AddDependency(Temporaries.meshDatas               .Dispose(dependencies));                
                 lastJobHandle.AddDependency(Temporaries.vertexBufferContents    .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.subMeshCounts           .Dispose(dependencies));
+                lastJobHandle.AddDependency(Temporaries.subMeshSurfaces         .Dispose(dependencies));
 
                 return lastJobHandle;
             }

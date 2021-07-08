@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -16,6 +17,7 @@ namespace Chisel.Core
 {
     public static unsafe class ChiselNativeListExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T[] ToArray<T>(ref this UnsafeList<T> input) 
             where T : unmanaged
         {
@@ -34,6 +36,7 @@ namespace Chisel.Core
         [BurstDiscard] static void LogRangeError() { Debug.LogError("Invalid range used in RemoveRange"); }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckLengthInRange(int length, int range)
         {
             if (length < 0 || length > range)
@@ -43,6 +46,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckIndexInRangeExc(int index, int length)
         {
             if (index < 0 || index >= length)
@@ -50,6 +54,7 @@ namespace Chisel.Core
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void CheckIndexInRangeInc(int index, int length)
         {
             if (index < 0 || index > length)
@@ -63,6 +68,7 @@ namespace Chisel.Core
                 throw new ArgumentException("isCreated");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
         {
             CheckCreated(list.IsCreated);
@@ -71,6 +77,7 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(ref this UnsafeList<T> list, ref UnsafeList<T> elements) where T : unmanaged
         {
             CheckCreated(elements.Ptr != null && elements.IsCreated);
@@ -81,6 +88,7 @@ namespace Chisel.Core
             list.AddRange(elements.Ptr, elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, NativeArray<T> elements) where T : unmanaged
         {
             CheckCreated(list.IsCreated);
@@ -89,6 +97,7 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafePtr(), elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(ref this UnsafeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
@@ -97,6 +106,7 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafePtr(), elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, ref UnsafeList<T> elements) where T : unmanaged
         {
             CheckCreated(elements.Ptr != null && elements.IsCreated);
@@ -107,6 +117,7 @@ namespace Chisel.Core
             list.AddRange(elements.Ptr, elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
@@ -115,7 +126,8 @@ namespace Chisel.Core
             CheckLengthInRange(elements.Length, list.Length);
             list.AddRange(elements.GetUnsafePtr(), elements.Length);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
             if (length == 0)
@@ -125,6 +137,7 @@ namespace Chisel.Core
             list.AddRange(elements.GetUnsafePtr(), length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements, int length) where T : unmanaged
         {
             if (length == 0)
@@ -134,6 +147,7 @@ namespace Chisel.Core
             list.AddRangeNoResize(elements.GetUnsafePtr(), length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, ref BlobArray<T> elements) where T : unmanaged
         {
             if (elements.Length == 0)
@@ -143,6 +157,7 @@ namespace Chisel.Core
             list.AddRangeNoResize(elements.GetUnsafePtr(), elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Hash<T>(this NativeList<T> list, int length) where T : unmanaged
         {
             CheckCreated(list.IsCreated);
@@ -152,6 +167,7 @@ namespace Chisel.Core
             return math.hash(list.GetUnsafeReadOnlyPtr(), length * sizeof(T));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeListArray<T>.NativeList elements) where T : unmanaged
         {
             if (elements.Length == 0)
@@ -160,6 +176,7 @@ namespace Chisel.Core
             list.AddRangeNoResize(elements.GetUnsafeReadOnlyPtr(), elements.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRange<T>(this NativeList<T> list, T[] elements) where T : struct
         {
             if (elements.Length == 0)
@@ -169,6 +186,7 @@ namespace Chisel.Core
                 list.Add(item);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, T[] elements) where T : struct
         {
             if (elements.Length == 0)
@@ -178,6 +196,7 @@ namespace Chisel.Core
                 list.AddNoResize(item);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, List<T> elements) where T : struct
         {
             if (elements.Count == 0)
@@ -187,6 +206,7 @@ namespace Chisel.Core
                 list.AddNoResize(item);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void AddRangeNoResize<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
@@ -198,6 +218,7 @@ namespace Chisel.Core
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeList<T> list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
@@ -211,6 +232,7 @@ namespace Chisel.Core
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeListArray<T>.NativeList list, NativeList<T> elements, int start, int count) where T : unmanaged
         {
             if (count == 0)
@@ -223,7 +245,7 @@ namespace Chisel.Core
             list.AddRangeNoResize((T*)elements.GetUnsafeReadOnlyPtr() + start, count);
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeList<T> srcList, int start, int count) where T : unmanaged
         {
             if (count == 0)
@@ -240,6 +262,7 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, count * UnsafeUtility.SizeOf<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeArray<T> dstArray, NativeArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
@@ -256,6 +279,7 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeArray<T> dstArray, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
@@ -272,6 +296,7 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeList<T> dstList, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
@@ -288,6 +313,7 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CopyFrom<T>(this NativeSlice<T> dstSlice, int dstIndex, ref BlobArray<T> srcArray, int srcIndex, int srcCount) where T : unmanaged
         {
             if (srcCount == 0)
@@ -303,6 +329,7 @@ namespace Chisel.Core
             UnsafeUtility.MemCpy(dstPtr, srcPtr, srcCount * UnsafeUtility.SizeOf<T>());
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InsertAt<T>(this NativeList<T> list, int index, T item) where T : unmanaged
         {
             CheckCreated(list.IsCreated);
@@ -321,6 +348,7 @@ namespace Chisel.Core
             list[index] = item;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InsertAt<T>(ref this UnsafeList<T> list, int index, T item) where T : unmanaged
         {
             CheckCreated(list.IsCreated);
@@ -340,6 +368,7 @@ namespace Chisel.Core
             list[index] = item;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveRange<T>(ref this UnsafeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)
@@ -362,6 +391,7 @@ namespace Chisel.Core
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveRange<T>(this NativeList<T> list, int index, int count) where T : unmanaged
         {
             if (count == 0)
@@ -384,6 +414,7 @@ namespace Chisel.Core
             list.Resize(list.Length - count, NativeArrayOptions.ClearMemory);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveRange<T>(this NativeArray<T> array, int index, int count, ref int arrayLength) where T : unmanaged
         {
             if (count == 0)
@@ -410,6 +441,7 @@ namespace Chisel.Core
             arrayLength -= count;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveRange<T>(this NativeArray<T> array, ref int arrayLength, int index, int count) where T : unmanaged
         {
             if (count == 0)
@@ -431,17 +463,20 @@ namespace Chisel.Core
             arrayLength -= count;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveAt<T>(ref this UnsafeList<T> list, int index) where T : unmanaged
         {
             list.RemoveRange(index, 1);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveAt<T>(this NativeList<T> list, int index) where T : unmanaged
         {
             list.RemoveRange(index, 1);
         }
 
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RemoveRange<T>(this NativeListArray<T>.NativeList list, int index, int count) where T : unmanaged
         {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
@@ -484,6 +519,7 @@ namespace Chisel.Core
             }
         }
         */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove(this NativeListArray<int>.NativeList list, int item) 
         {
             for (int index = 0; index < list.Length; index++)
@@ -497,6 +533,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove<T>(ref this UnsafeList<T> list, T item)
             where T : unmanaged
         {
@@ -511,6 +548,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove(ref this UnsafeList<int> list, int item)
         {
             for (int index = 0; index < list.Length; index++)
@@ -524,6 +562,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool Remove(this NativeListArray<Edge>.NativeList list, Edge item) 
         {
             for (int index = 0; index < list.Length; index++)
@@ -538,6 +577,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Remove<T>(this NativeList<T> list, T item) 
             where T : unmanaged
         { 
@@ -552,6 +592,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool Remove(this NativeList<Edge> list, Edge item)
         {
             for (int index = 0; index < list.Length; index++)
@@ -566,6 +607,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(ref this BlobArray<T> array, T value)
             where T : struct, IEquatable<T>
         {
@@ -577,6 +619,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(this NativeList<T> array, T value)
             where T : struct, IEquatable<T>
         {
@@ -588,6 +631,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Contains<T>(this NativeListArray<T>.NativeList array, T item)
             where T : unmanaged, IEquatable<T>
         {
@@ -599,6 +643,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool Contains(this NativeListArray<Edge>.NativeList array, Edge item)
         {
             for (int index = 0; index < array.Length; index++)
@@ -610,6 +655,7 @@ namespace Chisel.Core
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* GetUnsafePtr<T>(this NativeListArray<T>.NativeList list) 
             where T : unmanaged
         {
@@ -619,6 +665,7 @@ namespace Chisel.Core
             return list.m_ListData->Ptr;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeList<T> ToNativeList<T>(this List<T> list, Allocator allocator) where T : unmanaged
         {
             var nativeList = new NativeList<T>(list.Count, allocator);
@@ -627,6 +674,7 @@ namespace Chisel.Core
             return nativeList;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NativeList<T> ToNativeList<T>(this HashSet<T> hashSet, Allocator allocator) where T : unmanaged
         {
             var nativeList = new NativeList<T>(hashSet.Count, allocator);
