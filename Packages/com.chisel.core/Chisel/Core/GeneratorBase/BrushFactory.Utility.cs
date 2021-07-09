@@ -8,6 +8,7 @@ using Quaternion = UnityEngine.Quaternion;
 using Matrix4x4 = UnityEngine.Matrix4x4;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
+using Bounds = UnityEngine.Bounds;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
@@ -1087,5 +1088,47 @@ namespace Chisel.Core
             return true;
         }
 
+
+        /// <summary>
+        /// Creates a brush out of a set of planes. A brush consists of several faces, each of which can be defined by a plane (of which there must be at least four).
+        /// Each plane defines a half space, that is, an infinite set of points that is bounded by a plane. The intersection of these half spaces forms a convex polyhedron.
+        /// The brush geometry is not centered unless your planes are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
+        /// <para>Note: The current algorithm only works within a limited working area, specified by the <paramref name="bounds"/> parameter.
+        /// If you do not know the size of the resulting brush beforehand, this can also be oversized. For example +-4096 world units from the world center.
+        /// If possible, perform your operations near the center of the world for optimal accuracy.</para>
+        /// </summary>
+        public static void CreateFromPlanes(float4[] planes, Bounds bounds, ref ChiselSurfaceDefinition surfaceDefinition, ref BrushMesh brushMesh)
+        {
+            Debug.Assert(planes != null && planes.Length >= 4);
+
+            // create a box brush with the size of the specified bounds.
+            surfaceDefinition.EnsureSize(planes.Length);
+            CreateBox(bounds.min, bounds.max, out brushMesh);
+
+            // cut the brush using the given planes.
+            brushMesh.Cut(planes);
+        }
+
+        /// <summary>
+        /// Creates a brush out of a set of points. A convex hull is generated that encompasses all points (of which there must be at least four).
+        /// The brush geometry is not centered unless your points are, use <seealso cref="BrushMesh.CenterAndSnapPlanes"/> to center and position the game object to match.
+        /// <para>If possible, place your points near the center of the world for optimal accuracy.</para>
+        /// </summary>
+        public static void CreateFromPoints(Vector3[] points, ref ChiselSurfaceDefinition surfaceDefinition, ref BrushMesh brushMesh)
+        {
+            Debug.Assert(points != null && points.Length >= 4);
+
+            // guess a capacity that's large enough to hold the planes, division by 6 due to triangulation.
+            // the convex hull has duplicate polygons, degenerate triangles and T-Junctions.
+            // as such this should be more than we will need to store a handful of unique planes.
+            var planes = new List<float4>(points.Length / 6);
+
+            // calculate a convex hull out of the points.
+            ConvexHullCalculator convexHullCalculator = new ConvexHullCalculator();
+            convexHullCalculator.GenerateHull(points, ref planes, out Bounds bounds);
+
+            // create a brush out of the convex hull.
+            CreateFromPlanes(planes.ToArray(), bounds, ref surfaceDefinition, ref brushMesh);
+        }
     }
 }

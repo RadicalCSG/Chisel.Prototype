@@ -33,7 +33,7 @@ namespace Chisel.Editors
         }
 
         const int kPrimaryOrder = 98;
-        
+
         const string                    kOverlayTitle   = "Chisel Tools";
         static readonly ChiselOverlay   OverlayWindow   = new ChiselOverlay(kOverlayTitle, DisplayControls, kPrimaryOrder);
 
@@ -68,7 +68,7 @@ namespace Chisel.Editors
         }
 
         static void EditModeButton(Rect position, bool enabled, ChiselEditToolBase editMode, GUIStyle style)
-        { 
+        {
             var editModeType = editMode.GetType();
             using (new EditorGUI.DisabledScope(!enabled))
             {
