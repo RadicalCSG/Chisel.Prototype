@@ -57,7 +57,8 @@ namespace Chisel.Core
         public BlobArray<HalfEdge>	halfEdges;
         public BlobArray<int>       halfEdgePolygonIndices;
         public BlobArray<Polygon>	polygons;
-        public BlobArray<float4>    localPlanes;
+        public BlobArray<float4>    localPlanes;        // surface planes + edge planes (to reject vertices at sharp plane intersections)
+        public int                  localPlaneCount;    // number of surface planes
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override unsafe int GetHashCode()

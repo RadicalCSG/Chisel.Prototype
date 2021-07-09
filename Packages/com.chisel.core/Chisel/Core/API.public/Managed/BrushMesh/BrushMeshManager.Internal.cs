@@ -175,14 +175,48 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
             root.localBounds = localBounds;
-            builder.Construct(ref root.localVertices, srcVertices);
-            var halfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
+            
+            var dstHalfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
+            var hashedVertices = new HashedVertices(//CSGConstants.kVertexEqualEpsilonDouble, 
+                                                    srcVertices.Length, Allocator.Temp);
             for (int e = 0; e < brushMesh.halfEdges.Length; e++)
             {
                 ref var srcHalfEdge = ref brushMesh.halfEdges[e];
-                halfEdges[e].twinIndex   = srcHalfEdge.twinIndex;
-                halfEdges[e].vertexIndex = srcHalfEdge.vertexIndex;
+                dstHalfEdges[e].twinIndex = srcHalfEdge.twinIndex;
+                dstHalfEdges[e].vertexIndex = hashedVertices.AddNoResize(srcVertices[srcHalfEdge.vertexIndex]);
             }
+            //builder.Construct(ref root.localVertices, srcVertices);
+            var dstVertices = builder.Allocate(ref root.localVertices, hashedVertices.Length);
+            for (int i = 0; i < dstVertices.Length; i++)
+                dstVertices[i] = hashedVertices[i];
+            hashedVertices.Dispose();
+
+            //builder.Construct(ref root.localPlanes, brushMesh.planes);
+            root.localPlaneCount = brushMesh.planes.Length;
+            var localPlanes = builder.Allocate(ref root.localPlanes, brushMesh.planes.Length + brushMesh.halfEdges.Length);
+            for (int e = 0; e < brushMesh.planes.Length; e++)
+            {
+                localPlanes[e] = brushMesh.planes[e];
+            }
+            // Add additional planes for vertex "inside brush" testing, by adding average planes at edges. 
+            // This prevents vertices from being accepted when two planes that intersect at edges having very sharp angles, 
+            // which would otherwise accept vertices that are far away from the brush.
+            for (int e = 0, o = brushMesh.planes.Length; e < brushMesh.halfEdges.Length; e++, o++)
+            {
+                var vertexIndex     = brushMesh.halfEdges[e].vertexIndex;
+                var twinIndex       = brushMesh.halfEdges[e].twinIndex;
+                var polygonIndex1   = brushMesh.halfEdgePolygonIndices[e];
+                var polygonIndex2   = brushMesh.halfEdgePolygonIndices[twinIndex];
+                var vertex          = brushMesh.vertices[vertexIndex];
+                var plane1          = brushMesh.planes[polygonIndex1];
+                var plane2          = brushMesh.planes[polygonIndex2];
+                var averageNormal   = math.normalize(plane1.xyz + plane2.xyz);
+                var distanceToPlane = -math.dot(averageNormal, vertex);
+                var averagePlane    = new float4(averageNormal, distanceToPlane);
+                localPlanes[o]  = averagePlane;
+            }
+
+
             builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
             var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
             for (int p = 0; p < brushMesh.polygons.Length; p++)
@@ -192,68 +226,11 @@ namespace Chisel.Core
                 Convert(in srcPolygon, in surfaceDefinition, ref dstPolygon);
             }
 
-            builder.Construct(ref root.localPlanes, brushMesh.planes);
             var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();
             return result;
         }
         
-        public unsafe static BlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, ChiselSurfaceDefinition surfaceDefinition, Allocator allocator = Allocator.Persistent)
-        {
-            if (brushMesh == null ||
-                brushMesh.vertices == null ||
-                brushMesh.polygons == null ||
-                brushMesh.halfEdges == null ||
-                brushMesh.halfEdgePolygonIndices == null ||
-                brushMesh.vertices.Length < 4 ||
-                brushMesh.polygons.Length < 4 ||
-                brushMesh.halfEdges.Length < 12)
-                return BlobAssetReference<BrushMeshBlob>.Null;
-
-            var srcVertices             = brushMesh.vertices;
-            
-            var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
-            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
-            var totalPolygonSize        = 16 + (brushMesh.polygons.Length  * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
-            var totalPlaneSize          = 16 + (brushMesh.planes.Length    * UnsafeUtility.SizeOf<float4>());
-            var totalVertexSize         = 16 + (srcVertices.Length         * UnsafeUtility.SizeOf<float3>());
-            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
-
-            var min = srcVertices[0];
-            var max = srcVertices[0];
-            for (int i = 1; i < srcVertices.Length; i++)
-            {
-                min = math.min(min, srcVertices[i]);
-                max = math.max(max, srcVertices[i]);
-            }
-            var localBounds = new MinMaxAABB { Min = min, Max = max };
-
-            var builder = new BlobBuilder(Allocator.Temp, totalSize);
-            ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
-            root.localBounds = localBounds;
-            builder.Construct(ref root.localVertices, srcVertices);
-            var halfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
-            for (int e = 0; e < brushMesh.halfEdges.Length; e++)
-            {
-                ref var srcHalfEdge = ref brushMesh.halfEdges[e];
-                halfEdges[e].twinIndex   = srcHalfEdge.twinIndex;
-                halfEdges[e].vertexIndex = srcHalfEdge.vertexIndex;
-            }
-            builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
-            var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
-            for (int p = 0; p < brushMesh.polygons.Length; p++)
-            {
-                ref var srcPolygon = ref brushMesh.polygons[p];
-                ref var dstPolygon = ref polygonArray[p];
-                Convert(in srcPolygon, in surfaceDefinition, ref dstPolygon);
-            }
-
-            builder.Construct(ref root.localPlanes, brushMesh.planes);
-            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
-            builder.Dispose();
-            return result;
-        }
-
         public unsafe static BlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator = Allocator.Persistent)
         {
             if (brushMesh == null ||
@@ -288,14 +265,47 @@ namespace Chisel.Core
             var builder = new BlobBuilder(Allocator.Temp, totalSize);
             ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
             root.localBounds = localBounds;
-            builder.Construct(ref root.localVertices, srcVertices);
-            var halfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
+
+            var dstHalfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
+            var hashedVertices = new HashedVertices(//CSGConstants.kVertexEqualEpsilonDouble, 
+                                                    srcVertices.Length, Allocator.Temp);
             for (int e = 0; e < brushMesh.halfEdges.Length; e++)
             {
                 ref var srcHalfEdge = ref brushMesh.halfEdges[e];
-                halfEdges[e].twinIndex   = srcHalfEdge.twinIndex;
-                halfEdges[e].vertexIndex = srcHalfEdge.vertexIndex;
+                dstHalfEdges[e].twinIndex = srcHalfEdge.twinIndex;
+                dstHalfEdges[e].vertexIndex = hashedVertices.AddNoResize(srcVertices[srcHalfEdge.vertexIndex]);
             }
+            //builder.Construct(ref root.localVertices, srcVertices);
+            var dstVertices = builder.Allocate(ref root.localVertices, hashedVertices.Length);
+            for (int i = 0; i < dstVertices.Length; i++)
+                dstVertices[i] = hashedVertices[i];
+            hashedVertices.Dispose();
+
+            //builder.Construct(ref root.localPlanes, brushMesh.planes);
+            root.localPlaneCount = brushMesh.planes.Length;
+            var localPlanes = builder.Allocate(ref root.localPlanes, brushMesh.planes.Length + brushMesh.halfEdges.Length);
+            for (int e = 0; e < brushMesh.planes.Length; e++)
+            {
+                localPlanes[e] = brushMesh.planes[e];
+            }
+            // Add additional planes for vertex "inside brush" testing, by adding average planes at edges. 
+            // This prevents vertices from being accepted when two planes that intersect at edges having very sharp angles, 
+            // which would otherwise accept vertices that are far away from the brush.
+            for (int e = 0, o = brushMesh.planes.Length; e < brushMesh.halfEdges.Length; e++, o++)
+            {
+                var vertexIndex = brushMesh.halfEdges[e].vertexIndex;
+                var twinIndex = brushMesh.halfEdges[e].twinIndex;
+                var polygonIndex1 = brushMesh.halfEdgePolygonIndices[e];
+                var polygonIndex2 = brushMesh.halfEdgePolygonIndices[twinIndex];
+                var vertex = brushMesh.vertices[vertexIndex];
+                var plane1 = brushMesh.planes[polygonIndex1];
+                var plane2 = brushMesh.planes[polygonIndex2];
+                var averageNormal = math.normalize(plane1.xyz + plane2.xyz);
+                var distanceToPlane = -math.dot(averageNormal, vertex);
+                var averagePlane = new float4(averageNormal, distanceToPlane);
+                localPlanes[o] = averagePlane;
+            }
+
             builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
             var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
             for (int p = 0; p < brushMesh.polygons.Length; p++)
@@ -305,7 +315,6 @@ namespace Chisel.Core
                 Convert(in srcPolygon, ref surfaceDefinition, ref dstPolygon);
             }
 
-            builder.Construct(ref root.localPlanes, brushMesh.planes);
             var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();
             return result;
@@ -328,12 +337,13 @@ namespace Chisel.Core
                 vertices                = brushMeshBlob.localVertices.ToArray(),
                 halfEdges               = BlobArrayExtensions.ToArray<BrushMeshBlob.HalfEdge, BrushMesh.HalfEdge>(ref brushMeshBlob.halfEdges),
                 halfEdgePolygonIndices  = brushMeshBlob.halfEdgePolygonIndices.ToArray(),
-                planes                  = brushMeshBlob.localPlanes.ToArray(),
+                planes                  = new float4[brushMeshBlob.polygons.Length],
                 polygons                = new BrushMesh.Polygon[brushMeshBlob.polygons.Length]
             };
 
             for (int p = 0; p < brushMeshBlob.polygons.Length; p++)
             {
+                brushMesh.planes[p] = brushMeshBlob.localPlanes[p];
                 ref var dstPolygon = ref brushMesh.polygons[p];
                 ref var srcPolygon = ref brushMeshBlob.polygons[p];
                 Convert(in srcPolygon, ref dstPolygon);

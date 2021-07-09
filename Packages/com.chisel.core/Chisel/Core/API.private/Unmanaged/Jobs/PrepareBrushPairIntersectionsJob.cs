@@ -57,17 +57,21 @@ namespace Chisel.Core
         
 
         // TODO: turn into job
-        static void GetIntersectingPlanes(IntersectionType type,
-                                          [NoAlias] ref BlobArray<float4> localPlanes, 
-                                          [NoAlias] ref BlobArray<float3> vertices, 
-                                          MinMaxAABB selfBounds, float4x4 treeToNodeSpaceInverseTransposed, 
-                                          [NoAlias] ref NativeArray<int> intersectingPlaneIndices, 
-                                          [NoAlias] out int intersectingPlaneLength)
+        static void GetIntersectingPlanes(IntersectionType                  type,
+                                          [NoAlias] ref BlobArray<float4>   localPlanes,
+                                          int                               localPlaneCount,
+                                          [NoAlias] ref BlobArray<float3>   vertices, 
+                                          MinMaxAABB                        selfBounds, 
+                                          float4x4                          treeToNodeSpaceInverseTransposed, 
+                                          [NoAlias] ref NativeArray<int>    intersectingPlaneIndices, 
+                                          [NoAlias] out int                 intersectingPlaneLength,
+                                          [NoAlias] out int                 intersectingPlanesAndEdgesLength)
         {
             NativeCollectionHelpers.EnsureMinimumSize(ref intersectingPlaneIndices, localPlanes.Length);
             if (type != IntersectionType.Intersection)
             {
-                intersectingPlaneLength = localPlanes.Length;
+                intersectingPlaneLength = localPlaneCount;
+                intersectingPlanesAndEdgesLength = localPlanes.Length;
                 for (int i = 0; i < intersectingPlaneLength; i++) intersectingPlaneIndices[i] = i;
                 return;
             }
@@ -78,6 +82,7 @@ namespace Chisel.Core
             //Debug.Log($"{localPlanes.Length}");
 
             intersectingPlaneLength = 0;
+            intersectingPlanesAndEdgesLength = 0;
             var verticesLength = vertices.Length;
             for (int i = 0; i < localPlanes.Length; i++)
             {
@@ -98,6 +103,7 @@ namespace Chisel.Core
                 if (forward > kFatPlaneWidthEpsilon) // closest point is outside
                 {
                     intersectingPlaneLength = 0;
+                    intersectingPlanesAndEdgesLength = 0;
                     return;
                 }
 
@@ -125,8 +131,16 @@ namespace Chisel.Core
                 if ((minDistance > kFatPlaneWidthEpsilon || maxDistance < -kFatPlaneWidthEpsilon))
                     continue;
 
-                intersectingPlaneIndices[intersectingPlaneLength] = i;
-                intersectingPlaneLength++;
+                if (i < localPlaneCount)
+                {
+                    intersectingPlaneIndices[intersectingPlaneLength] = i;
+                    intersectingPlaneLength++;
+                    intersectingPlanesAndEdgesLength++;
+                } else
+                {
+                    intersectingPlaneIndices[intersectingPlanesAndEdgesLength] = i;
+                    intersectingPlanesAndEdgesLength++;
+                }
             }
         }
         
@@ -399,24 +413,27 @@ namespace Chisel.Core
 
             var node1ToNode0 = math.mul(transformations0.treeToNode, transformations1.nodeToTree);
             var inversedNode0ToNode1 = math.transpose(node1ToNode0);
-            GetIntersectingPlanes(type, ref mesh0.localPlanes, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, ref intersectingPlaneIndices0, out int intersectingPlanesLength0);
+            GetIntersectingPlanes(type, ref mesh0.localPlanes, mesh0.localPlaneCount, ref mesh1.localVertices, mesh1.localBounds, inversedNode0ToNode1, ref intersectingPlaneIndices0, out int intersectingPlanesLength0, out int intersectingPlanesAndEdgesLength0);
             if (intersectingPlanesLength0 == 0) goto Fail;
 
             var node0ToNode1 = math.mul(transformations1.treeToNode, transformations0.nodeToTree);
             var inversedNode1ToNode0 = math.transpose(node0ToNode1);
-            GetIntersectingPlanes(type, ref mesh1.localPlanes, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, ref intersectingPlaneIndices1, out int intersectingPlanesLength1);
+            GetIntersectingPlanes(type, ref mesh1.localPlanes, mesh1.localPlaneCount, ref mesh0.localVertices, mesh0.localBounds, inversedNode1ToNode0, ref intersectingPlaneIndices1, out int intersectingPlanesLength1, out int intersectingPlanesAndEdgesLength1);
             if (intersectingPlanesLength1 == 0) goto Fail;
+
+            // TODO: for each edge of each polygon that is considered an intersecting plane, find the plane that's in between both planes on each side of the edge, and add these planes.
+            //       this is to avoid very sharp plane intersections accepting vertices that are obviously outside of the convex polytope
 
             GetLocalAndIndirectPlanes(ref mesh0.localPlanes,                       ref localSpacePlanes0, mesh0.localPlanes.Length,
                                       ref mesh1.localPlanes, inversedNode1ToNode0, ref localSpacePlanes1, mesh1.localPlanes.Length,
-                                      ref intersectingPlaneIndices0, intersectingPlanesLength0, ref intersectingLocalSpacePlanes0,
-                                      ref intersectingPlaneIndices1, intersectingPlanesLength1, ref intersectingLocalSpacePlanes1);
+                                      ref intersectingPlaneIndices0, intersectingPlanesAndEdgesLength0, ref intersectingLocalSpacePlanes0,
+                                      ref intersectingPlaneIndices1, intersectingPlanesAndEdgesLength1, ref intersectingLocalSpacePlanes1);
 
             FindPlanePairs(type, ref mesh0, intersectingPlaneIndices0, intersectingPlanesLength0, localSpacePlanes0, ref vertexUsed, float4x4.identity, false, ref usedPlanePairs0, ref usedVertices0, out int usedPlanePairsLength0, out int usedVerticesLength0);
             FindPlanePairs(type, ref mesh1, intersectingPlaneIndices1, intersectingPlanesLength1, localSpacePlanes1, ref vertexUsed, node1ToNode0,      true,  ref usedPlanePairs1, ref usedVertices1, out int usedPlanePairsLength1, out int usedVerticesLength1);
             
-            FindAlignedPlanes(type, ref intersectingPlaneIndices0, intersectingPlanesLength0, ref localSpacePlanes0, mesh0.localPlanes.Length, ref surfaceInfos0,
-                                    ref intersectingPlaneIndices1, intersectingPlanesLength1, ref localSpacePlanes1, mesh1.localPlanes.Length, ref surfaceInfos1);
+            FindAlignedPlanes(type, ref intersectingPlaneIndices0, intersectingPlanesLength0, ref localSpacePlanes0, mesh0.localPlaneCount, ref surfaceInfos0,
+                                    ref intersectingPlaneIndices1, intersectingPlanesLength1, ref localSpacePlanes1, mesh1.localPlaneCount, ref surfaceInfos1);
 
             FindPlanesIntersectingVertices(ref usedVertices0, usedVerticesLength0,
                                            ref intersectingPlaneIndices0, intersectingPlanesLength0,
@@ -437,7 +454,8 @@ namespace Chisel.Core
             intersectingBrushesStream.Write(node0ToNode1);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref usedVertices0, usedVerticesLength0);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref usedPlanePairs0, usedPlanePairsLength0);
-            NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingLocalSpacePlanes0, intersectingPlanesLength0);
+            NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingLocalSpacePlanes0, intersectingPlanesAndEdgesLength0);
+            intersectingBrushesStream.Write(intersectingPlanesLength0);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingPlaneIndices0, intersectingPlanesLength0);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref vertexIntersectionPlanes0, vertexIntersectionPlaneCount0);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref vertexIntersectionSegments0, usedVerticesLength0);
@@ -448,7 +466,8 @@ namespace Chisel.Core
             intersectingBrushesStream.Write(node1ToNode0);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref usedVertices1, usedVerticesLength1);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref usedPlanePairs1, usedPlanePairsLength1);
-            NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingLocalSpacePlanes1, intersectingPlanesLength1);
+            NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingLocalSpacePlanes1, intersectingPlanesAndEdgesLength1);
+            intersectingBrushesStream.Write(intersectingPlanesLength1);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref intersectingPlaneIndices1, intersectingPlanesLength1);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref vertexIntersectionPlanes1, vertexIntersectionPlaneCount1);
             NativeStreamExtensions.WriteArray(ref intersectingBrushesStream, ref vertexIntersectionSegments1, usedVerticesLength1);
