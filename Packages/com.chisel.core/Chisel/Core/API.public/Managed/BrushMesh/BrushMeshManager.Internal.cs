@@ -197,6 +197,62 @@ namespace Chisel.Core
             builder.Dispose();
             return result;
         }
+        
+        public unsafe static BlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, ChiselSurfaceDefinition surfaceDefinition, Allocator allocator = Allocator.Persistent)
+        {
+            if (brushMesh == null ||
+                brushMesh.vertices == null ||
+                brushMesh.polygons == null ||
+                brushMesh.halfEdges == null ||
+                brushMesh.halfEdgePolygonIndices == null ||
+                brushMesh.vertices.Length < 4 ||
+                brushMesh.polygons.Length < 4 ||
+                brushMesh.halfEdges.Length < 12)
+                return BlobAssetReference<BrushMeshBlob>.Null;
+
+            var srcVertices             = brushMesh.vertices;
+            
+            var totalPolygonIndicesSize = 16 + (brushMesh.halfEdgePolygonIndices.Length * UnsafeUtility.SizeOf<int>());
+            var totalHalfEdgeSize       = 16 + (brushMesh.halfEdges.Length * UnsafeUtility.SizeOf<BrushMesh.HalfEdge>());
+            var totalPolygonSize        = 16 + (brushMesh.polygons.Length  * UnsafeUtility.SizeOf<BrushMeshBlob.Polygon>());
+            var totalPlaneSize          = 16 + (brushMesh.planes.Length    * UnsafeUtility.SizeOf<float4>());
+            var totalVertexSize         = 16 + (srcVertices.Length         * UnsafeUtility.SizeOf<float3>());
+            var totalSize               = totalPlaneSize + totalPolygonSize + totalPolygonIndicesSize + totalHalfEdgeSize + totalVertexSize;
+
+            var min = srcVertices[0];
+            var max = srcVertices[0];
+            for (int i = 1; i < srcVertices.Length; i++)
+            {
+                min = math.min(min, srcVertices[i]);
+                max = math.max(max, srcVertices[i]);
+            }
+            var localBounds = new MinMaxAABB { Min = min, Max = max };
+
+            var builder = new BlobBuilder(Allocator.Temp, totalSize);
+            ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+            root.localBounds = localBounds;
+            builder.Construct(ref root.localVertices, srcVertices);
+            var halfEdges = builder.Allocate(ref root.halfEdges, brushMesh.halfEdges.Length);
+            for (int e = 0; e < brushMesh.halfEdges.Length; e++)
+            {
+                ref var srcHalfEdge = ref brushMesh.halfEdges[e];
+                halfEdges[e].twinIndex   = srcHalfEdge.twinIndex;
+                halfEdges[e].vertexIndex = srcHalfEdge.vertexIndex;
+            }
+            builder.Construct(ref root.halfEdgePolygonIndices, brushMesh.halfEdgePolygonIndices);
+            var polygonArray = builder.Allocate(ref root.polygons, brushMesh.polygons.Length);
+            for (int p = 0; p < brushMesh.polygons.Length; p++)
+            {
+                ref var srcPolygon = ref brushMesh.polygons[p];
+                ref var dstPolygon = ref polygonArray[p];
+                Convert(in srcPolygon, in surfaceDefinition, ref dstPolygon);
+            }
+
+            builder.Construct(ref root.localPlanes, brushMesh.planes);
+            var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+            builder.Dispose();
+            return result;
+        }
 
         public unsafe static BlobAssetReference<BrushMeshBlob> ConvertToBrushMeshBlob(BrushMesh brushMesh, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator = Allocator.Persistent)
         {

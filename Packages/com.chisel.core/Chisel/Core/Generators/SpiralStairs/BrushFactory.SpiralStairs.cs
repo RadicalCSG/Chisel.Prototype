@@ -23,6 +23,16 @@ namespace Chisel.Core
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
+        public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in ChiselSurfaceDefinition surfaceDefinition)
+        {
+            // TODO: eventually remove when it's more battle tested
+            if (!brushMesh.Validate(logErrors: true))
+                return BlobAssetReference<BrushMeshBlob>.Null;
+            brushMesh.CalculatePlanes();
+            brushMesh.UpdateHalfEdgePolygonIndices();
+            return BrushMeshManager.ConvertToBrushMeshBlob(brushMesh, in surfaceDefinition, Allocator.Persistent);
+        }
+
         public static BlobAssetReference<BrushMeshBlob> CreateBrushBlob(BrushMesh brushMesh, in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob)
         {
             // TODO: eventually remove when it's more battle tested

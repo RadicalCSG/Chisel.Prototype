@@ -23,16 +23,16 @@ namespace Chisel.Core
         
         // TODO: avoid storing surfaceDefinition and surfaces in brushOutline twice, which is wasteful and causes potential conflicts
         [HideInInspector]
-        public BrushMesh                brushOutline;
+        public BrushMesh        brushOutline;
 
 
         [HideInInspector]
-        [SerializeField] bool           isInsideOut = false;
+        [SerializeField] bool   isInsideOut = false;
         [HideInInspector]
-        [SerializeField] bool           validState = true;
+        [SerializeField] bool   validState = true;
 
-        public bool ValidState      { get { return validState; } set { validState = value; } }
-        public bool IsInsideOut     { get { return isInsideOut; } }
+        public bool ValidState  { get { return validState; } set { validState = value; } }
+        public bool IsInsideOut { get { return isInsideOut; } }
 
         public bool IsValid
         {

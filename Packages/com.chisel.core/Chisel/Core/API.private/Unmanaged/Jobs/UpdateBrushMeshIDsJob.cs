@@ -58,11 +58,10 @@ namespace Chisel.Core
                     {
                         allBrushMeshIDs[nodeOrder] = brushMeshHash;
 
-                        if (!allKnownBrushMeshIndices.Contains(brushMeshHash))
-                            allKnownBrushMeshIndices.Add(brushMeshHash);
-
                         if (removeBrushMeshIndices.Add(brushMeshHash))
                             allKnownBrushMeshIndices.Remove(brushMeshHash);
+                        else
+                            allKnownBrushMeshIndices.Add(brushMeshHash);
                     } 
                 }
 
@@ -73,8 +72,8 @@ namespace Chisel.Core
                 var brushMeshIndicesArray = allKnownBrushMeshIndices.ToNativeArray(Allocator.Temp); // NativeHashSet iterator is broken, so need to copy it to an array *sigh*
                 foreach (int brushMeshHash in brushMeshIndicesArray)
                 {
-                    if (removeBrushMeshIndices.Contains(brushMeshHash)) 
-                        continue;
+                    //if (removeBrushMeshIndices.Contains(brushMeshHash)) 
+                    //    continue;
                     
                     if (!brushMeshBlobs.ContainsKey(brushMeshHash))
                         continue;
@@ -93,8 +92,8 @@ namespace Chisel.Core
                 }
                 brushMeshIndicesArray.Dispose();
 
-                foreach (int brushMeshHash in removeBrushMeshIndices)
-                    allKnownBrushMeshIndices.Remove(brushMeshHash);
+                //foreach (int brushMeshHash in removeBrushMeshIndices)
+                //    allKnownBrushMeshIndices.Remove(brushMeshHash);
 
                 for (int l = 0; l < SurfaceLayers.ParameterCount; l++)
                     parameterCounts[l] = parameterPtr[l].uniqueParameterCount;

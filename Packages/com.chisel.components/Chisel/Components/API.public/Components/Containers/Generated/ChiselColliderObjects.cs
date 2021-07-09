@@ -90,7 +90,7 @@ namespace Chisel.Components
                     Physics.BakeMesh(bakingSettings[index].instanceID, bakingSettings[index].convex);
             }
         }
-
+        /*
         [BurstCompile(CompileSynchronously = true)]
         struct BakeColliderJob : IJob
         {
@@ -101,7 +101,7 @@ namespace Chisel.Components
                     Physics.BakeMesh(bakingSettings.instanceID, bakingSettings.convex);
             }
         }
-
+        */
         struct BakeData
         {
             public bool convex;
@@ -109,11 +109,8 @@ namespace Chisel.Components
         }
 
         //*/
-        public static JobHandle BeginUpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
+        public static void UpdateProperties(ChiselModel model, ChiselColliderObjects[] colliders)
         {
-            if (colliders == null)
-                return default;
-
             var colliderSettings = model.ColliderSettings;
             for (int i = 0; i < colliders.Length; i++)
             {
@@ -136,7 +133,11 @@ namespace Chisel.Components
                 if (meshCollider.enabled != expectedEnabled)
                     meshCollider.enabled = expectedEnabled;
             }
+        }
 
+        public static void ScheduleColliderBake(ChiselModel model, ChiselColliderObjects[] colliders)
+        {
+            var colliderSettings = model.ColliderSettings;
             //*
             // TODO: find all the instanceIDs before we start doing CSG, then we can do the Bake's in the same job that sets the meshes
             //          hopefully that will make it easier for Unity to not screw up the scheduling
@@ -182,11 +183,7 @@ namespace Chisel.Components
 
             bakingSettings.Dispose(allJobHandles);
             //*/
-            return allJobHandles;
-        }
-
-        public static void FinishUpdateProperties(ChiselColliderObjects[] colliders)
-        {
+            /*
             // TODO: is there a way to defer forcing the collider to update?
             for (int i = 0; i < colliders.Length; i++)
             {
@@ -195,7 +192,7 @@ namespace Chisel.Components
                     continue;
 
                 meshCollider.sharedMesh = colliders[i].sharedMesh;
-            }
+            }*/
         }
     }
 }

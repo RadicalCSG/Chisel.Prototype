@@ -107,6 +107,7 @@ namespace Chisel.Core
         [HideInInspector]
         [SerializeField] int version = kLatestVersion;  // Serialization will overwrite the version number 
                                                         // new instances will have the latest version
+                                                        // This allows us to detect changes and support upgrades
 
         public BrushMesh() { }
         public BrushMesh(BrushMesh other)

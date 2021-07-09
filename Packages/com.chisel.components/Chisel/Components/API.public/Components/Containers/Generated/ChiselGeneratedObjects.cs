@@ -597,32 +597,21 @@ namespace Chisel.Components
                 }
             }
 
+            Profiler.BeginSample("UpdateColliders");
+            ChiselColliderObjects.UpdateProperties(model, this.colliders);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("UpdateMeshRenderers");
+            ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
+            Profiler.EndSample();
+
             Profiler.BeginSample("ApplyAndDisposeWritableMeshData");
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, foundMeshes,
                                                  UnityEngine.Rendering.MeshUpdateFlags.DontRecalculateBounds);
             Profiler.EndSample();
 
-            Profiler.BeginSample("UpdateColliders");
-            var colliderBakingJobs = ChiselColliderObjects.BeginUpdateProperties(model, this.colliders);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateProperties");
-            ChiselRenderObjects.UpdateProperties(model, this.meshRenderers);
-            Profiler.EndSample();
-
-            Profiler.BeginSample("UpdateBounds");
-            // Unfortunately the MeshData API is a big bag of buggy bullshit and it doesn't actually update the bounds (no matter what flags you use)
-            for (int i = 0; i < realMeshDataArraySize; i++)
-            {
-                foundMeshes[i].bounds = foundMeshes[i].bounds;
-                //foundMeshes[i].RecalculateBounds();
-            }
-            Profiler.EndSample();
-
-            colliderBakingJobs.Complete();
-
-            Profiler.BeginSample("Finish");
-            ChiselColliderObjects.FinishUpdateProperties(this.colliders);
+            Profiler.BeginSample("Schedule Collider bake");
+            ChiselColliderObjects.ScheduleColliderBake(model, this.colliders);
             Profiler.EndSample();
 
             this.needVisibilityMeshUpdate = true;

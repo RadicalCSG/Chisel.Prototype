@@ -58,17 +58,18 @@ namespace Chisel.Components
                     Profiler.EndSample();
                 }
                 
-                var currMaterialHash    = surfaceDefinition?.GetHashCode() ?? 0;
-                var currMeshHash        = definition.brushOutline?.GetHashCode() ?? 0;
+                var currMaterialHash = surfaceDefinition?.GetHashCode() ?? 0;
+                var currMeshHash     = definition.brushOutline?.GetHashCode() ?? 0;
                 if (prevMaterialHash == currMaterialHash && prevMeshHash == currMeshHash && brush.BrushMesh != BrushMeshInstance.InvalidInstance)
                     return;
 
                 prevMaterialHash = currMaterialHash;
-                prevMeshHash = currMeshHash;
+                prevMeshHash     = currMeshHash;
 
                 Profiler.BeginSample("BuildSurfaceDefinitionBlob");
                 var surfaceDefinitionBlob = BrushMeshManager.BuildSurfaceDefinitionBlob(in surfaceDefinition, Allocator.Temp);
                 Profiler.EndSample();
+
                 if (!surfaceDefinitionBlob.IsCreated)
                     return;
 
@@ -79,10 +80,11 @@ namespace Chisel.Components
                     Profiler.EndSample();
 
                     Profiler.BeginSample("Set");
-                    if (!brushMesh.IsCreated)
-                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;// TODO: deregister
-                    else
+                    // TODO: deregister previous brushMesh (when different)
+                    if (brushMesh.IsCreated)
                         brush.BrushMesh = new BrushMeshInstance { brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh) };
+                    else
+                        brush.BrushMesh = BrushMeshInstance.InvalidInstance;
                     Profiler.EndSample();
                 }
             }
