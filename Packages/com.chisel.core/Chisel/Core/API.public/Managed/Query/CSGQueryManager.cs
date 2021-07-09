@@ -78,7 +78,8 @@ namespace Chisel.Core
 
             ref var brushMesh = ref brushMeshBlob.Value;
             ref var planes = ref brushMesh.localPlanes;
-            if (planes.Length == 0)
+            ref var planeCount = ref brushMesh.localPlaneCount;
+            if (planeCount == 0)
 		        return false;
 
             var treeToNodeSpace = (Matrix4x4)brush.TreeToNodeSpaceMatrix;
@@ -92,7 +93,7 @@ namespace Chisel.Core
 
             var brush_ray_start	= brushRayStart;
             var brush_ray_end	= brushRayEnd;
-            for (var s = 0; s < planes.Length; s++)
+            for (var s = 0; s < planeCount; s++)
             {
                 // Compare surface with 'current' meshquery (is this surface even being rendered???)
                 if (ignoreCulled)
@@ -123,7 +124,7 @@ namespace Chisel.Core
                 //if (!brushMesh.localBounds.Contains(intersection))
                 //    continue;
                 bool skipSurface = false;
-                for (var s2 = 0; s2 < planes.Length; s2++)
+                for (var s2 = 0; s2 < planeCount; s2++)
                 {
                     if (s == s2)
                         continue;

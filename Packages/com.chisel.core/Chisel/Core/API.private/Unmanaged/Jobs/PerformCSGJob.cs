@@ -106,18 +106,18 @@ namespace Chisel.Core
             return -1;
         }
         
-        void IntersectLoopsJob([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
+        void IntersectLoops([NoAlias] in HashedVertices                   hashedTreeSpaceVertices,
 
-                               [NoAlias] ref NativeListArray<int>.NativeList loopIndices, 
-                               int                                           surfaceLoopIndex,
+                            [NoAlias] ref NativeListArray<int>.NativeList loopIndices, 
+                            int                                           surfaceLoopIndex,
 
-                               [NoAlias] ref NativeListArray<int>            holeIndices,
-                               [NoAlias] ref NativeList<IndexSurfaceInfo>    allInfos,
-                               [NoAlias] ref NativeListArray<Edge>           allEdges,
+                            [NoAlias] ref NativeListArray<int>            holeIndices,
+                            [NoAlias] ref NativeList<IndexSurfaceInfo>    allInfos,
+                            [NoAlias] ref NativeListArray<Edge>           allEdges,
 
-                               [NoAlias] in NativeListArray<Edge>.NativeList intersectionLoop, 
-                               CategoryGroupIndex                            intersectionCategory,
-                               IndexSurfaceInfo                              intersectionInfo)
+                            [NoAlias] in NativeListArray<Edge>.NativeList intersectionLoop, 
+                            CategoryGroupIndex                            intersectionCategory,
+                            IndexSurfaceInfo                              intersectionInfo)
         {
             if (intersectionLoop.Length == 0)
                 return;
@@ -136,38 +136,36 @@ namespace Chisel.Core
             if (currentLoopEdges.Length == 0)
                 return;
 
-            var maxLength       = math.max(16, intersectionLoop.Length + currentLoopEdges.Length);
+            var maxLength = math.max(16, intersectionLoop.Length + currentLoopEdges.Length);
             if (maxLength < 3)
                 return;
 
             NativeCollectionHelpers.EnsureMinimumSize(ref categories1, intersectionLoop.Length);
             NativeCollectionHelpers.EnsureMinimumSize(ref categories2, currentLoopEdges.Length);
 
-            int inside2 = 0, outside2 = 0;
-            //var categories2           = stackalloc EdgeCategory[currentLoopEdges.Length];
-            int intersectionBrushOrder  = intersectionInfo.brushIndexOrder.nodeOrder;
-            var treeSpacePlanes1        = brushTreeSpacePlaneCache[intersectionBrushOrder];
-            for (int e = 0; e < currentLoopEdges.Length; e++)
-            {
-                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1.Value.treeSpacePlanes, in intersectionLoop, in hashedTreeSpaceVertices);
-                categories2[e] = category;
-                if      (category == EdgeCategory.Inside) inside2++;
-                else if (category == EdgeCategory.Outside) outside2++;
-            }
-            var aligned2 = currentLoopEdges.Length - (inside2 + outside2);
-
             int inside1 = 0, outside1 = 0;
-            //var categories1       = stackalloc EdgeCategory[intersectionLoop.Length];
-            int currentBrushOrder   = currentInfo.brushIndexOrder.nodeOrder;
-            var treeSpacePlanes2    = brushTreeSpacePlaneCache[currentBrushOrder];
+            int currentBrushOrder = currentInfo.brushIndexOrder.nodeOrder;
+            ref var treeSpacePlanes2 = ref brushTreeSpacePlaneCache[currentBrushOrder].Value.treeSpacePlanes;
             for (int e = 0; e < intersectionLoop.Length; e++)
             {
-                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2.Value.treeSpacePlanes, in currentLoopEdges, in hashedTreeSpaceVertices);
+                var category = BooleanEdgesUtility.CategorizeEdge(intersectionLoop[e], ref treeSpacePlanes2, in currentLoopEdges, in hashedTreeSpaceVertices);
                 categories1[e] = category;
                 if      (category == EdgeCategory.Inside) inside1++;
                 else if (category == EdgeCategory.Outside) outside1++;
             }
             var aligned1 = intersectionLoop.Length - (inside1 + outside1);
+
+            int intersectionBrushOrder  = intersectionInfo.brushIndexOrder.nodeOrder;
+            ref var treeSpacePlanes1    = ref brushTreeSpacePlaneCache[intersectionBrushOrder].Value.treeSpacePlanes;
+            int inside2 = 0, outside2 = 0;
+            for (int e = 0; e < currentLoopEdges.Length; e++)
+            {
+                var category = BooleanEdgesUtility.CategorizeEdge(currentLoopEdges[e], ref treeSpacePlanes1, in intersectionLoop, in hashedTreeSpaceVertices);
+                categories2[e] = category;
+                if      (category == EdgeCategory.Inside) inside2++;
+                else if (category == EdgeCategory.Outside) outside2++;
+            }
+            var aligned2 = currentLoopEdges.Length - (inside2 + outside2);
 
             // Completely outside
             if ((inside1 + aligned1) == 0 && (aligned2 + inside2) == 0)
@@ -958,11 +956,11 @@ namespace Chisel.Core
                             if (intersectionCategory == surfaceLoopInfo.interiorCategory)
                                 continue;
 
-                            IntersectLoopsJob(in hashedTreeSpaceVertices, ref loopIndices, surfaceLoopIndex,
-                                              ref holeIndices, ref allInfos, ref allEdges,
-                                              in intersectionLoop, 
-                                              intersectionCategory, 
-                                              intersectionInfo);
+                            IntersectLoops(in hashedTreeSpaceVertices, ref loopIndices, surfaceLoopIndex,
+                                           ref holeIndices, ref allInfos, ref allEdges,
+                                           in intersectionLoop, 
+                                           intersectionCategory, 
+                                           intersectionInfo);
                         }
                     }
                 }

@@ -779,9 +779,8 @@ namespace Chisel.Core
                     var vertex1 = combinedVertices[vertexIndex1];
 
                     tempList.Clear();
-                    tempList.AddNoResize(vertexIndex0);
 
-                    var delta = (vertex1 - vertex0);
+                    var delta = math.normalize(vertex1 - vertex0);
                     var max = math.dot(vertex1 - vertex0, delta);
                     for (int v1 = otherVerticesLength - 1; v1 >= 0; v1--)
                     {
@@ -805,22 +804,18 @@ namespace Chisel.Core
                         //    otherVertices[v1] = otherVertices[otherVerticesLength - 1];
                         //otherVerticesLength--;
                     }
-                    tempList.AddNoResize(vertexIndex1);
 
-                    if (tempList.Length > 2)
+                    if (tempList.Length > 0)
                     {
                         float dot1, dot2;
-                        var last = tempList.Length - 1;
-                        for (int v1 = 1; v1 < last - 1; v1++)
+                        for (int v1 = 0; v1 < tempList.Length - 1; v1++)
                         {
-                            for (int v2 = 2; v2 < last; v2++)
+                            for (int v2 = v1 + 1; v2 < tempList.Length; v2++)
                             {
                                 var otherVertexIndex1 = tempList[v1];
                                 var otherVertexIndex2 = tempList[v2];
-                                var otherVertex1 = combinedVertices[otherVertexIndex1];
-                                var otherVertex2 = combinedVertices[otherVertexIndex2];
-                                dot1 = math.dot(delta, otherVertex1);
-                                dot2 = math.dot(delta, otherVertex2);
+                                dot1 = math.dot(combinedVertices[otherVertexIndex1] - vertex0, delta);
+                                dot2 = math.dot(combinedVertices[otherVertexIndex2] - vertex0, delta);
                                 if (dot1 >= dot2)
                                 {
                                     tempList[v1] = otherVertexIndex2;
@@ -828,11 +823,15 @@ namespace Chisel.Core
                                 }
                             }
                         }
+                        if (vertexIndex0 != tempList[0])
+                            selfEdges.AddNoResize(new Edge { index1 = vertexIndex0, index2 = tempList[0] });
                         for (int i = 1; i < tempList.Length; i++)
                         {
                             if (tempList[i - 1] != tempList[i])
                                 selfEdges.AddNoResize(new Edge { index1 = tempList[i - 1], index2 = tempList[i] });
                         }
+                        if (tempList[tempList.Length - 1] != vertexIndex1)
+                            selfEdges.AddNoResize(new Edge { index1 = tempList[tempList.Length - 1], index2 = vertexIndex1 });
                     } else
                     {
                         selfEdges.AddNoResize(newSelfEdges[e]);
