@@ -42,11 +42,14 @@ namespace Chisel.Components
     {
         public const string kIsTriggerName      = nameof(isTrigger);
         public const string kConvexName         = nameof(convex);
-//      public const string kCookingOptionsName = nameof(cookingOptions);
-//      public const string kSkinWidthName      = nameof(skinWidth);
 
         public bool                         isTrigger;
         public bool		                    convex;
+        
+        // If the cookingOptions are not the default values it would force a full slow rebake later, 
+        // even if we already did a Bake in a job
+//      public const string kCookingOptionsName = nameof(cookingOptions);
+//      public const string kSkinWidthName      = nameof(skinWidth);
 //      public MeshColliderCookingOptions   cookingOptions;
 //      public float	                    skinWidth;
 
@@ -162,9 +165,8 @@ namespace Chisel.Components
     }
 
 
-    [ExecuteInEditMode]
-    [HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
-    [AddComponentMenu("Chisel/" + kNodeTypeName)]
+    [ExecuteInEditMode, HelpURL(kDocumentationBaseURL + kNodeTypeName + kDocumentationExtension)]
+    [DisallowMultipleComponent, AddComponentMenu("Chisel/" + kNodeTypeName)]
     public sealed class ChiselModel : ChiselNode
     {
         public const string kRenderSettingsName             = nameof(renderSettings);
@@ -177,15 +179,14 @@ namespace Chisel.Components
 
 
         public const string kNodeTypeName = "Model";
-        public override string NodeTypeName { get { return kNodeTypeName; } }
+        public override string ChiselNodeTypeName { get { return kNodeTypeName; } }
 
 
         public ChiselGeneratedColliderSettings  ColliderSettings        { get { return colliderSettings; } }
         public ChiselGeneratedRenderSettings    RenderSettings          { get { return renderSettings; } }
         public SerializableUnwrapParam          UVGenerationSettings    { get { return uvGenerationSettings; } internal set { uvGenerationSettings = value; } }
         public bool                 IsInitialized               { get { return initialized; } }
-        public override int         NodeID                      { get { return Node.NodeID; } }
-        public override bool        CanHaveChildNodes           { get { return IsActive; } }
+        public override bool        IsContainer           { get { return IsActive; } }
 
         // TODO: put all bools in flags (makes it harder to work with in the ModelEditor though)
         public bool                 CreateRenderComponents      = true;
@@ -200,6 +201,7 @@ namespace Chisel.Components
         public bool IsDefaultModel { get; internal set; } = false;
 
         [HideInInspector] public CSGTree                Node;
+        public override CSGTreeNode TopTreeNode { get { return Node; } protected set { Node = (CSGTree)value; } }
 
         [HideInInspector] bool                          initialized = false;
 
@@ -208,6 +210,7 @@ namespace Chisel.Components
 
         public override void OnInitialize()
         {
+            base.OnInitialize();
             if (generated != null &&
                 !generated.generatedDataContainer)
                 generated.Destroy();
@@ -260,45 +263,33 @@ namespace Chisel.Components
         public ChiselModel() : base() { }
 
 
-        internal override void ClearTreeNodes(bool clearCaches = false) { Node.SetInvalid(); }
-        internal override CSGTreeNode[] CreateTreeNodes()
+        internal override CSGTreeNode RebuildTreeNodes()
         {
             if (Node.Valid)
                 Debug.LogWarning($"{nameof(ChiselModel)} already has a treeNode, but trying to create a new one?", this);
             var userID = GetInstanceID();
             Node = CSGTree.Create(userID: userID);
-            return new CSGTreeNode[] { Node };
+            return Node;
         }
 
-
-        internal override void SetChildren(List<CSGTreeNode> childNodes)
-        {
-            if (!Node.Valid)
-            {
-                Debug.LogWarning($"SetChildren called on a {nameof(ChiselModel)} that isn't properly initialized", this);
-                return;
-            }
-            if (childNodes.Count == 0)
-                return;
-            if (!Node.SetChildren(childNodes))
-                Debug.LogError("Failed to assign list of children to tree node");
-        }
-
-        public override void CollectCSGTreeNodes(List<CSGTreeNode> childNodes)
-        {
-            // No parent can hold a model as a child, so we don't add anything
-        }
-
+        // TODO: improve warning messages
+        const string kModelHasNoChildrenMessage = kNodeTypeName + " has no children and will not have an effect";
+        const string kFailedToGenerateNodeMessage = "Failed to generate internal representation of " + kNodeTypeName + " (this should never happen)";
 
         // Will show a warning icon in hierarchy when generator has a problem (do not make this method slow, it is called a lot!)
-        public override bool HasValidState()
+        public override void GetWarningMessages(IChiselMessageHandler messages)
         {
             if (!Node.Valid)
-                return false;
+                messages.Warning(kFailedToGenerateNodeMessage);
+
             // A model makes no sense without any children
             if (hierarchyItem != null)
-                return (hierarchyItem.Children.Count > 0);
-            return (transform.childCount > 0);
+            {
+                if (hierarchyItem.Children.Count == 0)
+                    messages.Warning(kModelHasNoChildrenMessage);
+            } else
+            if (transform.childCount == 0)
+                messages.Warning(kModelHasNoChildrenMessage);
         }
 
         public override void SetDirty() { if (Node.Valid) Node.SetDirty(); }
@@ -310,63 +301,7 @@ namespace Chisel.Components
                 if (!this && generated.generatedDataContainer)
                     generated.DestroyWithUndo();
             }
-        }
-
-        public override int GetAllTreeBrushCount()
-        {
-            return 0;
-        }
-
-        // Get all brushes directly contained by this ChiselNode (not its children)
-        public override void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes)
-        {
-            // A Model doesn't contain a CSGTreeBrush node
-        }
-        
-        // TODO: cache this
-        public override Bounds CalculateBounds()
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds();
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
-        }
-
-        // TODO: cache this
-        public override Bounds CalculateBounds(Matrix4x4 transformation)
-        {
-            var bounds = ChiselHierarchyItem.EmptyBounds;
-            var haveBounds = false;
-            for (int c = 0; c < hierarchyItem.Children.Count; c++)
-            {
-                var child = hierarchyItem.Children[c];
-                if (!child.Component)
-                    continue;
-                var childBounds = child.Component.CalculateBounds(transformation);
-                if (childBounds.size.sqrMagnitude == 0)
-                    continue;
-                if (!haveBounds)
-                {
-                    bounds = childBounds;
-                    haveBounds = true;
-                } else
-                    bounds.Encapsulate(childBounds);
-            }
-            return bounds;
+            base.OnCleanup();
         }
 
 #if UNITY_EDITOR

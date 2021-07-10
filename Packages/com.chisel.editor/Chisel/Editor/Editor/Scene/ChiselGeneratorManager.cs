@@ -37,7 +37,7 @@ namespace Chisel.Editors
 
                 // Our generator component needs to inherit from ChiselDefinedGeneratorComponent<DefinitionType>
                 //  in the type definition we pass along the definition type we belong to
-                var baseType = type.GetGenericBaseClass(typeof(ChiselDefinedGeneratorComponent<>));
+                var baseType = type.GetGenericBaseClass(typeof(ChiselNodeGeneratorComponent<>));
                 if (baseType == null)
                     continue;
 
@@ -223,7 +223,7 @@ namespace Chisel.Editors
                     return;
                 }
 
-                GeneratorMode = generatorModes[0];
+                GeneratorMode = generatorModes?[0];
             }
         }
 

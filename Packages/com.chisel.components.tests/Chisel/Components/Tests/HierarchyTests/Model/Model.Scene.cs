@@ -8,7 +8,7 @@ using Chisel.Core;
 using Chisel.Components;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Model_Scene
@@ -167,8 +167,8 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
             
             Assert.AreEqual(model.hierarchyItem, brush.hierarchyItem.Parent);
-            Assert.AreEqual(model.NodeID, brush.hierarchyItem.Parent.Component.NodeID);
-            Assert.AreEqual(model.NodeID, brush.TopNode.Tree.NodeID);
+            Assert.AreEqual(model, brush.hierarchyItem.Parent.Component);
+            Assert.AreEqual(model, brush.TopNode.Tree);
             
             Assert.AreEqual(scene2, model.gameObject.scene, "Model is not part of expected scene");
             Assert.AreEqual(scene2, model.hierarchyItem.Scene, "Model is not registered to expected scene");
@@ -221,4 +221,4 @@ namespace HierarchyTests
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
         }
     }
-}
+}*/

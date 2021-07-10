@@ -2,7 +2,7 @@
 using NUnit.Framework;
 using Chisel;
 using Chisel.Core;
-
+/*
 namespace FoundationTests
 {
     [TestFixture]
@@ -35,7 +35,7 @@ namespace FoundationTests
 
             BrushMeshInstance coreBrushMesh = BrushMeshInstance.Create(brushMesh);
 
-            Assert.AreEqual(true, coreBrushMesh.Valid);
+            Assert.IsTrue(coreBrushMesh.Valid);
         }
 
         [Test]
@@ -46,7 +46,7 @@ namespace FoundationTests
 
             brushMeshInstance.Destroy();
 
-            Assert.AreEqual(false, brushMeshInstance.Valid);
+            Assert.IsFalse(brushMeshInstance.Valid);
         }
 
 
@@ -55,7 +55,7 @@ namespace FoundationTests
         {
             BrushMeshInstance coreBrushMesh = BrushMeshInstance.Create(null);
 
-            Assert.AreEqual(false, coreBrushMesh.Valid);
+            Assert.IsFalse(coreBrushMesh.Valid);
         }
     }
-}
+}*/

@@ -5,8 +5,8 @@ namespace Chisel.Core
     [ChiselPlacementTool(name: ChiselHemisphereDefinition.kNodeTypeName, group: ChiselToolGroups.kBasePrimitives)]
     public sealed class ChiselHemispherePlacementTool : ChiselBoundsPlacementTool<ChiselHemisphereDefinition>
     {
-        public int horizontalSegments   = ChiselHemisphereDefinition.kDefaultHorizontalSegments;
-        public int verticalSegments     = ChiselHemisphereDefinition.kDefaultVerticalSegments;
+        public int horizontalSegments   = ChiselHemisphere.DefaultValues.horizontalSegments;
+        public int verticalSegments     = ChiselHemisphere.DefaultValues.verticalSegments;
         
 
         [ToggleFlags(includeFlags: (int)(PlacementFlags.SameLengthXZ | PlacementFlags.HeightEqualsHalfXZ | PlacementFlags.GenerateFromCenterXZ))]
@@ -15,13 +15,13 @@ namespace Chisel.Core
 
         public override void OnCreate(ref ChiselHemisphereDefinition definition) 
         {
-            definition.verticalSegments     = verticalSegments;
-            definition.horizontalSegments   = horizontalSegments;
+            definition.settings.verticalSegments     = verticalSegments;
+            definition.settings.horizontalSegments   = horizontalSegments;
         }
 
         public override void OnUpdate(ref ChiselHemisphereDefinition definition, Bounds bounds)
         {
-            definition.diameterXYZ = bounds.size;
+            definition.settings.diameterXYZ = bounds.size;
         }
 
         public override void OnPaint(IChiselHandleRenderer renderer, Bounds bounds)

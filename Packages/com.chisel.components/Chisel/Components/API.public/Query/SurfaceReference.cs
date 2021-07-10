@@ -4,103 +4,91 @@ using System;
 using Chisel.Core;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using Unity.Entities;
+using Unity.Collections;
 
 namespace Chisel.Components
 {
     [Serializable]
     public sealed class SurfaceReference : IEquatable<SurfaceReference>, IEqualityComparer<SurfaceReference>
     {
-        public ChiselNode			       node;
-        public ChiselBrushContainerAsset   brushContainerAsset;
+        public ChiselGeneratorComponent     node;
+        public CSGTreeBrush                 brush;
 
-        public int  subNodeIndex;
-        public int  subMeshIndex;
-        public int  surfaceID;
-        public int  surfaceIndex;
+        public int      descriptionIndex;
+        public int      surfaceIndex;
 
-        public SurfaceReference(ChiselNode node, ChiselBrushContainerAsset brushContainerAsset, int subNodeIndex, int subMeshIndex, int surfaceIndex, int surfaceID)
+        public SurfaceReference(ChiselNode node, int descriptionIndex, CSGTreeBrush brush, int surfaceIndex)
         {
-            this.node                   = node;
-            this.brushContainerAsset    = brushContainerAsset;
-            this.subNodeIndex           = subNodeIndex;
-            this.subMeshIndex           = subMeshIndex;
+            this.node                   = node as ChiselGeneratorComponent;
+            this.brush                  = brush;
+            this.descriptionIndex       = descriptionIndex;
             this.surfaceIndex           = surfaceIndex;
-            this.surfaceID              = surfaceID;
         }
 
         public void SetDirty()
         {
-            brushContainerAsset.SetDirty();
-        }
-
-        public ChiselSurface BrushSurface
-        {
-            get
-            {
-                if (!brushContainerAsset)
-                    return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
-                    return null;
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
-                    return null;
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                    return null;
-                return brushMesh.polygons[surfaceIndex].surface;
-            }
+            //brushContainerAsset.SetDirty();
         }
 
         public ChiselBrushMaterial BrushMaterial
         {
             get
             {
-                if (!brushContainerAsset)
+                if (!node)
                     return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
-                    return null;
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
-                    return null;
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                    return null;
-                var surface = brushMesh.polygons[surfaceIndex].surface;
-                if (surface == null)
-                    return null;
-                return surface.brushMaterial;
+
+                return node.GetBrushMaterial(descriptionIndex);
             }
         }
 
         // A default polygon to return when we actually can't return a polygon
-        static BrushMesh.Polygon s_DefaultPolygon = new BrushMesh.Polygon();
-        public ref BrushMesh.Polygon Polygon
+        //static BrushMeshBlob.Polygon s_DefaultPolygon = default;
+        public UVMatrix UV0
         {
             get
             {
-                if (!brushContainerAsset)
-                    return ref s_DefaultPolygon;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
-                    return ref s_DefaultPolygon;
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
-                    return ref s_DefaultPolygon;
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                    return ref s_DefaultPolygon;
-                return ref brushMesh.polygons[surfaceIndex];
+                if (!node)
+                    return UVMatrix.identity;
+
+                return node.GetSurfaceUV0(descriptionIndex);
+            }
+            set
+            {
+                if (!node)
+                    return;
+                node.SetSurfaceUV0(descriptionIndex, value);
+            }
+        }
+        public SurfaceDescription SurfaceDescription
+        {
+            get
+            {
+                if (!node)
+                    return SurfaceDescription.Default;
+
+                return node.GetSurfaceDescription(descriptionIndex);
+            }
+            set
+            {
+                if (!node)
+                    return;
+                node.SetSurfaceDescription(descriptionIndex, value);
             }
         }
 
-        public BrushMesh BrushMesh
+        public BlobAssetReference<BrushMeshBlob> BrushMesh
         {
             get
             {
-                if (!brushContainerAsset)
-                    return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
-                    return null;
-                var brushMeshes = brushContainerAsset.BrushMeshes;
-                if (brushMeshes == null)
-                    return null;
-                return brushMeshes[subMeshIndex];
+                if (!brush.Valid)
+                    return default;
+
+                var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
+                if (!brushMeshBlob.IsCreated)
+                    return default;
+
+                return brushMeshBlob;
             }
         }
 
@@ -108,22 +96,21 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushContainerAsset)
+                if (!brush.Valid)
                     yield break;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
+
+                var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
+                if (!brushMeshBlob.IsCreated)
                     yield break;
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
+
+                if (surfaceIndex < 0 || surfaceIndex >= brushMeshBlob.Value.polygons.Length)
                     yield break;
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
-                    yield break;
-                var polygon		= brushMesh.polygons[surfaceIndex];
-                var edges		= brushMesh.halfEdges;
-                var vertices	= brushMesh.vertices;
-                var firstEdge	= polygon.firstEdge;
-                var lastEdge	= firstEdge + polygon.edgeCount;
+
+                var polygon = brushMeshBlob.Value.polygons[surfaceIndex];                
+                var firstEdge = polygon.firstEdge;
+                var lastEdge  = firstEdge + polygon.edgeCount;
                 for (int e = firstEdge; e < lastEdge; e++)
-                    yield return vertices[edges[e].vertexIndex];
+                    yield return brushMeshBlob.Value.localVertices[brushMeshBlob.Value.halfEdges[e].vertexIndex];
             }
         }
 
@@ -131,19 +118,19 @@ namespace Chisel.Components
         {
             get
             {
-                if (!brushContainerAsset)
-                    return null;
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
-                    return null;
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
-                    return null;
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.planes.Length)
+                if (!brush.Valid)
                     return null;
 
-                var localPlaneVector = brushMesh.planes[surfaceIndex];
-                var localPlane       = new Plane(localPlaneVector.xyz, localPlaneVector.w);
-                //localPlane.Translate(node.PivotOffset);
+                var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
+                if (!brushMeshBlob.IsCreated)
+                    return null;
+
+                ref var brushMesh = ref brushMeshBlob.Value;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
+                    return null;
+
+                var localPlaneVector = brushMesh.localPlanes[surfaceIndex];
+                var localPlane = new Plane(localPlaneVector.xyz, localPlaneVector.w);
                 return LocalToWorldSpace.TransformPlane(localPlane);
             }
         }
@@ -153,8 +140,8 @@ namespace Chisel.Components
             get
             {
                 if (node == null)
-                    return (CSGTreeBrush)CSGTreeNode.InvalidNode;
-                return (CSGTreeBrush)node.GetTreeNodeByIndex(subNodeIndex);
+                    return (CSGTreeBrush)CSGTreeNode.Invalid;
+                return brush;
             }
         }
 
@@ -165,10 +152,7 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                var generator = node as ChiselGeneratorComponent;
-                if (generator != null)
-                    return node.hierarchyItem.LocalToWorldMatrix * generator.PivotTransformation; 
-                return node.hierarchyItem.LocalToWorldMatrix;
+                return node.hierarchyItem.LocalToWorldMatrix * node.PivotTransformation;
             }
         }
 
@@ -179,10 +163,7 @@ namespace Chisel.Components
                 if (node == null)
                     return Matrix4x4.identity;
 
-                var generator = node as ChiselGeneratorComponent;
-                if (generator != null)
-                    return generator.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
-                return node.hierarchyItem.WorldToLocalMatrix;
+                return node.InversePivotTransformation * node.hierarchyItem.WorldToLocalMatrix;
             }
         }
 
@@ -190,23 +171,19 @@ namespace Chisel.Components
         {
             get
             {
-                if (node == null)
+                if (!brush.Valid)
                     return Matrix4x4.identity;
 
-                if (!brushContainerAsset)
+                var brushMeshBlob = BrushMeshManager.GetBrushMeshBlob(brush.BrushMesh.BrushMeshID);
+                if (!brushMeshBlob.IsCreated)
                     return Matrix4x4.identity;
 
-                if (subMeshIndex < 0 || subMeshIndex >= brushContainerAsset.SubMeshCount)
+                ref var brushMesh = ref brushMeshBlob.Value;
+                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.polygons.Length)
                     return Matrix4x4.identity;
 
-                var brushMesh = brushContainerAsset.BrushMeshes[subMeshIndex];
-                if (brushMesh == null)
-                    return Matrix4x4.identity;
-                
-                if (surfaceIndex < 0 || surfaceIndex >= brushMesh.planes.Length)
-                    return Matrix4x4.identity;
-                
-                var localToPlaneSpace   = (Matrix4x4)MathExtensions.GenerateLocalToPlaneSpaceMatrix(brushMesh.planes[surfaceIndex]);
+                var localPlaneVector = brushMesh.localPlanes[surfaceIndex];
+                var localToPlaneSpace   = (Matrix4x4)MathExtensions.GenerateLocalToPlaneSpaceMatrix(localPlaneVector);
                 var worldToLocal        = WorldToLocalSpace;
                 return localToPlaneSpace * worldToLocal;
             }	
@@ -228,13 +205,11 @@ namespace Chisel.Components
 
         public void PlaneSpaceTransformUV(in Matrix4x4 planeSpaceTransformation, in UVMatrix originalMatrix)
         {
-            if (Polygon.surface == null)
-                return;
             // TODO: We're modifying uv coordinates for the generated brush-meshes, 
             //       when we should be changing surfaces descriptions in the generators that generate the brush-meshes ..
             //       Now all UVs are overridden everytime we rebuild the geometry
-            Polygon.surface.surfaceDescription.UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
-            brushContainerAsset.SetDirty();
+            UV0 = (UVMatrix)((Matrix4x4)originalMatrix * planeSpaceTransformation);
+            //brushContainerAsset.SetDirty();
         }
 
 
@@ -251,11 +226,8 @@ namespace Chisel.Components
             if (ReferenceEquals(x, null) ||
                 ReferenceEquals(y, null))
                 return false;
-            return	//x.treeBrush			== y.treeBrush &&
-                    x.brushContainerAsset	== y.brushContainerAsset &&
-                    x.subNodeIndex		== y.subNodeIndex &&
-                    x.subMeshIndex		== y.subMeshIndex &&
-                    x.surfaceID			== y.surfaceID &&
+            return	x.brush             == y.brush &&
+                    x.descriptionIndex  == y.descriptionIndex &&
                     x.surfaceIndex		== y.surfaceIndex;
         }
         
@@ -279,11 +251,8 @@ namespace Chisel.Components
         public int GetHashCode(SurfaceReference obj)
         {
             // TODO: use a better hash combiner ..
-            return  //obj.treeBrush.NodeID.GetHashCode() ^
-                    ((obj.brushContainerAsset == null) ? 0 : obj.brushContainerAsset.GetInstanceID()) ^
-                    obj.subNodeIndex ^
-                    obj.subMeshIndex ^
-                    obj.surfaceID ^
+            return  obj.brush.GetHashCode() ^
+                    obj.descriptionIndex ^
                     obj.surfaceIndex;
         }
         #endregion

@@ -132,8 +132,6 @@ namespace Chisel.Editors
                 }
             }
 
-
-
             ChiselOptionsOverlay.AdditionalSettings = OnInSceneOptionsGUI;
             generatorMode.ShowSceneGUI(sceneView, dragArea);
         }

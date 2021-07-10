@@ -6,6 +6,9 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
+using System;
+using System.Collections.Generic;
+using Unity.Collections;
 
 namespace FoundationTests
 {
@@ -27,68 +30,108 @@ namespace FoundationTests
             return material;
         }
 
-        public static void CreateBox(Vector3 size, ChiselBrushMaterial brushMaterial, out BrushMesh box)
+        public static void CreateBox(Vector3 size, int descriptionIndex, out BrushMesh box)
         {
-            var chiselSurface = new ChiselSurface();
-            chiselSurface.brushMaterial = brushMaterial;
-            BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface, out box);
+            BrushMeshFactory.CreateBox(size, descriptionIndex, out box);
         }
 
         public static void ExpectValidBrushWithUserID(ref CSGTreeBrush brush, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(brush.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)brush).Type;
 
-            Assert.AreEqual(true, brush.Valid);
-            Assert.AreNotEqual(0, brush.NodeID);
+            Assert.IsTrue(brush.Valid);
             Assert.AreEqual(userID, brush.UserID);
             Assert.AreEqual(CSGNodeType.Brush, type);
         }
 
         public static void ExpectInvalidBrush(ref CSGTreeBrush brush)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(brush.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)brush).Type;
 
-            Assert.AreEqual(false, brush.Valid);
+            Assert.IsFalse(brush.Valid);
             Assert.AreEqual(0, brush.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
 
         public static void ExpectValidBranchWithUserID(ref CSGTreeBranch branch, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)branch).Type;
 
-            Assert.AreEqual(true, branch.Valid);
-            Assert.AreNotEqual(0, branch.NodeID);
+            Assert.IsTrue(branch.Valid);
             Assert.AreEqual(userID, branch.UserID);
             Assert.AreEqual(CSGNodeType.Branch, type);
         }
 
         public static void ExpectInvalidBranch(ref CSGTreeBranch branch)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(branch.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)branch).Type;
 
-            Assert.AreEqual(false, branch.Valid);
+            Assert.IsFalse(branch.Valid);
             Assert.AreEqual(0, branch.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
 
-        public static void ExpectValidTreeWithUserID(ref CSGTree model, int userID)
+        public static void ExpectValidTreeWithUserID(ref CSGTree tree, int userID)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(model.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(true, model.Valid);
-            Assert.AreNotEqual(0, model.NodeID);
-            Assert.AreEqual(userID, model.UserID);
+            Assert.IsTrue(tree.Valid);
+            Assert.AreEqual(userID, tree.UserID);
             Assert.AreEqual(CSGNodeType.Tree, type);
         }
 
-        public static void ExpectInvalidTree(ref CSGTree model)
+        public static void ExpectInvalidTree(ref CSGTree tree)
         {
-            CSGNodeType type = CSGTreeNode.Encapsulate(model.NodeID).Type;
+            CSGNodeType type = ((CSGTreeNode)tree).Type;
 
-            Assert.AreEqual(false, model.Valid);
-            Assert.AreEqual(0, model.UserID);
+            Assert.IsFalse(tree.Valid);
+            Assert.AreEqual(0, tree.UserID);
             Assert.AreEqual(CSGNodeType.None, type);
         }
+        
+        public static int CountOfBrushesInTree(CSGTree tree)
+        {
+            using (var brushes = new NativeList<CompactNodeID>(Allocator.Temp))
+            {
+                CompactHierarchyManager.GetHierarchy(tree).GetTreeNodes(default, brushes);
+                return brushes.Length;
+            }
+        }
+
+
+        public static bool IsInTree(CSGTree tree, CSGTreeBrush brush)
+        {
+            using (var brushes = new NativeList<CompactNodeID>(Allocator.Temp))
+            {
+                var brushCompactNodeID = CompactHierarchyManager.GetCompactNodeID(brush);
+                var compactHierarchy = CompactHierarchyManager.GetHierarchy(tree);
+                compactHierarchy.GetTreeNodes(default, brushes);
+                return brushes.IndexOf(brushCompactNodeID) != -1;
+            }
+        }
+
+        public static int GetChildCount(NodeID parent)
+        {
+            var parentNodeCompactID = CompactHierarchyManager.GetCompactNodeID(parent);
+            var hierarchyID         = parentNodeCompactID.hierarchyID;
+            ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(hierarchyID);
+            return treeHierarchy.ChildCount(parentNodeCompactID);
+        }
+
+        public static NodeID GetParentOfNode(NodeID parent)
+        {
+            var parentNodeCompactID = CompactHierarchyManager.GetCompactNodeID(parent);
+            if (parentNodeCompactID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+            var hierarchyID = parentNodeCompactID.hierarchyID;
+            if (hierarchyID == CompactHierarchyID.Invalid)
+                return NodeID.Invalid;
+            ref var treeHierarchy = ref CompactHierarchyManager.GetHierarchy(hierarchyID);
+            var parentNodeID = treeHierarchy.ParentOf(parentNodeCompactID);
+            if (parentNodeID == CompactNodeID.Invalid)
+                return NodeID.Invalid;
+            return treeHierarchy.GetNodeID(parentNodeID);
+        }
+
     }
 }

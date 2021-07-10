@@ -1,91 +1,146 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector3 = UnityEngine.Vector3;
-using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
-using UnityEngine.Profiling;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
+using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
+using AOT;
+using System.Runtime.InteropServices;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselTorusDefinition : IChiselGenerator
+    [BurstCompile()]
+    public struct ChiselTorus : IBranchGenerator
     {
-        public const string kNodeTypeName = "Torus";
-
-        public const float kMinTubeDiameter			   = 0.1f;
-        public const int   kDefaultHorizontalSegments  = 8;
-        public const int   kDefaultVerticalSegments    = 8;
+        public readonly static ChiselTorus DefaultValues = new ChiselTorus
+        {
+            tubeWidth           = 0.5f,
+            tubeHeight          = 0.5f,
+            outerDiameter       = 1.0f,
+            tubeRotation        = 0,
+            startAngle          = 0.0f,
+            totalAngle          = 360.0f,
+            horizontalSegments  = 8,
+            verticalSegments    = 8,
+            fitCircle           = true
+        };
 
         // TODO: add scale the tube in y-direction (use transform instead?)
         // TODO: add start/total angle of tube
 
-        public float                outerDiameter; 
-        public float                innerDiameter	{ get { return CalcInnerDiameter(outerDiameter, tubeWidth); } set { tubeWidth = CalcTubeWidth(outerDiameter, value); } }
-        public float                tubeWidth;
-        public float                tubeHeight;
-        public float                tubeRotation;
-        public float                startAngle;
-        public float                totalAngle;
-        public int                  verticalSegments;
-        public int                  horizontalSegments;
+        public float    outerDiameter;
+        public float    tubeWidth;
+        public float    tubeHeight;
+        public float    tubeRotation;
+        public float    startAngle;
+        public float    totalAngle;
+        public int      verticalSegments;
+        public int      horizontalSegments;
 
-        public bool                 fitCircle;
+        [MarshalAs(UnmanagedType.U1)]
+        public bool     fitCircle;
 
-        [NamedItems(overflow = "Surface {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
 
-        public static float CalcInnerDiameter(float outerDiameter, float tubeWidth)
+        #region Properties
+
+        const float kMinTubeDiameter = 0.1f;
+
+        public float InnerDiameter { get { return math.max(0, outerDiameter - (tubeWidth * 2)); } set { tubeWidth = math.max(kMinTubeDiameter, (outerDiameter - InnerDiameter) * 0.5f); } }
+        #endregion
+
+        #region Generate
+        [BurstCompile]
+        public int PrepareAndCountRequiredBrushMeshes()
         {
-            var innerDiameter = outerDiameter - (tubeWidth * 2);
-            return Mathf.Max(0, innerDiameter);
+            return horizontalSegments;
         }
 
-        public static float CalcTubeWidth(float outerDiameter, float innerDiameter)
+        [BurstCompile]
+        public bool GenerateNodes(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, NativeList<GeneratedNode> nodes, Allocator allocator)
         {
-            var tubeWidth = (outerDiameter - innerDiameter) * 0.5f;
-            return Mathf.Max(kMinTubeDiameter, tubeWidth);
+            using (var generatedBrushMeshes = new NativeList<BlobAssetReference<BrushMeshBlob>>(nodes.Length, Allocator.Temp))
+            {
+                generatedBrushMeshes.Resize(nodes.Length, NativeArrayOptions.ClearMemory);
+                using var vertices = BrushMeshFactory.GenerateTorusVertices(outerDiameter,
+                                                                        tubeWidth,
+                                                                        tubeHeight,
+                                                                        tubeRotation,
+                                                                        startAngle,
+                                                                        totalAngle,
+                                                                        verticalSegments,
+                                                                        horizontalSegments,
+                                                                        fitCircle,
+                                                                        Allocator.Temp);
+
+                if (!BrushMeshFactory.GenerateTorus(generatedBrushMeshes,
+                                                    in vertices,
+                                                    verticalSegments,
+                                                    horizontalSegments,
+                                                    in surfaceDefinitionBlob,
+                                                    allocator))
+                {
+                    for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    {
+                        if (generatedBrushMeshes[i].IsCreated)
+                            generatedBrushMeshes[i].Dispose();
+                    }
+                    return false;
+                }
+
+                for (int i = 0; i < generatedBrushMeshes.Length; i++)
+                    nodes[i] = GeneratedNode.GenerateBrush(generatedBrushMeshes[i]);
+                return true;
+            }
         }
 
-        public void Reset()
-        {
-            // TODO: create constants
-            tubeWidth			= 0.5f;
-            tubeHeight			= 0.5f;
-            outerDiameter		= 1.0f;
-            tubeRotation		= 0;
-            startAngle			= 0.0f;
-            totalAngle			= 360.0f;
-            horizontalSegments	= kDefaultHorizontalSegments;
-            verticalSegments	= kDefaultVerticalSegments;
+        [BurstCompile]
+        public void Dispose() { }
+        #endregion
 
-            fitCircle			= true;
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 6; } }
 
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
-        }
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
 
+        #region Validation
         public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            tubeWidth			= math.max(tubeWidth,  kMinTubeDiameter);
+            tubeHeight			= math.max(tubeHeight, kMinTubeDiameter);
+            outerDiameter		= math.max(outerDiameter, tubeWidth * 2);
 
-            tubeWidth			= Mathf.Max(tubeWidth,  kMinTubeDiameter);
-            tubeHeight			= Mathf.Max(tubeHeight, kMinTubeDiameter);
-            outerDiameter		= Mathf.Max(outerDiameter, tubeWidth * 2);
-            
-            horizontalSegments	= Mathf.Max(horizontalSegments, 3);
-            verticalSegments	= Mathf.Max(verticalSegments, 3);
+            horizontalSegments	= math.max(horizontalSegments, 3);
+            verticalSegments	= math.max(verticalSegments, 3);
 
-            totalAngle			= Mathf.Clamp(totalAngle, 1, 360); // TODO: constants
-            
-            surfaceDefinition.EnsureSize(6);
+            totalAngle			= math.clamp(totalAngle, 1, 360); // TODO: constants
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
-        {
-            return BrushMeshFactory.GenerateTorus(ref brushContainer, ref this);
-        }
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages) { }
+        #endregion
 
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
+    }
 
+    [Serializable]
+    public class ChiselTorusDefinition : SerializedBranchGenerator<ChiselTorus>
+    {
+        public const string kNodeTypeName = "Torus";
+
+        //[NamedItems(overflow = "Surface {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -97,12 +152,12 @@ namespace Chisel.Core
         const float kCapLineThickness			= 2.0f;
         const float kCapLineThicknessSelected   = 2.5f;
 
-        static void DrawOutline(IChiselHandleRenderer renderer, ChiselTorusDefinition definition, Vector3[] vertices, LineMode lineMode)
+        static void DrawOutline(IChiselHandleRenderer renderer, ChiselTorusDefinition definition, float3[] vertices, LineMode lineMode)
         {
-            var horzSegments	= definition.horizontalSegments;
-            var vertSegments	= definition.verticalSegments;
+            var horzSegments	= definition.settings.horizontalSegments;
+            var vertSegments	= definition.settings.verticalSegments;
             
-            if (definition.totalAngle != 360)
+            if (definition.settings.totalAngle != 360)
                 horzSegments++;
             
             var prevColor		= renderer.color;
@@ -119,7 +174,7 @@ namespace Chisel.Core
                 for (int i = 0, j = 0; i < horzSegments - 1; i++, j += vertSegments)
                     renderer.DrawLine(vertices[j + k], vertices[j + k + vertSegments], lineMode: lineMode, thickness: kHorzLineThickness);
             }
-            if (definition.totalAngle == 360)
+            if (definition.settings.totalAngle == 360)
             {
                 for (int k = 0; k < vertSegments; k++)
                 {
@@ -129,11 +184,11 @@ namespace Chisel.Core
             renderer.color = prevColor;
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var normal			= Vector3.up;
 
-            Vector3[] vertices = null;
+            float3[] vertices = null;
             if (BrushMeshFactory.GenerateTorusVertices(this, ref vertices))
             {
                 var baseColor = handles.color;
@@ -144,26 +199,23 @@ namespace Chisel.Core
                 handles.color = baseColor;
             }
 
-            var outerRadius = this.outerDiameter * 0.5f;
-            var innerRadius = this.innerDiameter * 0.5f;
-            var topPoint	= normal * (this.tubeHeight * 0.5f);
-            var bottomPoint	= normal * (-this.tubeHeight * 0.5f);
+            var outerRadius = settings.outerDiameter * 0.5f;
+            var innerRadius = settings.InnerDiameter * 0.5f;
+            var topPoint	= normal * (settings.tubeHeight * 0.5f);
+            var bottomPoint	= normal * (-settings.tubeHeight * 0.5f);
 
-            handles.DoRadiusHandle(ref outerRadius, normal, Vector3.zero);
-            handles.DoRadiusHandle(ref innerRadius, normal, Vector3.zero);
+            handles.DoRadiusHandle(ref outerRadius, normal, float3.zero);
+            handles.DoRadiusHandle(ref innerRadius, normal, float3.zero);
             handles.DoDirectionHandle(ref bottomPoint, -normal);
             handles.DoDirectionHandle(ref topPoint, normal);
             if (handles.modified)
             {
-                this.outerDiameter	= outerRadius * 2.0f;
-                this.innerDiameter	= innerRadius * 2.0f;
-                this.tubeHeight		= (topPoint.y - bottomPoint.y);
+                settings.outerDiameter	= outerRadius * 2.0f;
+                settings.InnerDiameter	= innerRadius * 2.0f;
+                settings.tubeHeight		= (topPoint.y - bottomPoint.y);
                 // TODO: handle sizing down
             }
         }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
+        #endregion
     }
 }

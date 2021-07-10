@@ -15,12 +15,7 @@ namespace Chisel.Editors
     {
         public override GUIContent GetHierarchyIcon(ChiselComposite node)
         {
-            return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.NodeTypeName);
-        }
-
-        public override bool HasValidState(ChiselComposite node)
-        {
-            return node.HasValidState();
+            return ChiselDefaultGeneratorDetails.GetHierarchyIcon(node.Operation, node.ChiselNodeTypeName);
         }
     }
 
@@ -71,6 +66,9 @@ namespace Chisel.Editors
 
         public override void OnInspectorGUI()
         {
+            if (!target)
+                return;
+
             Profiler.BeginSample("OnInspectorGUI");
             base.OnInspectorGUI();
             try

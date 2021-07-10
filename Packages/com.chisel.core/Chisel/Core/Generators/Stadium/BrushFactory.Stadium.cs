@@ -10,72 +10,153 @@ using Mathf = UnityEngine.Mathf;
 using Plane = UnityEngine.Plane;
 using Debug = UnityEngine.Debug;
 using Unity.Mathematics;
+using Unity.Entities;
+using Unity.Collections;
+using Unity.Burst;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-        public static bool GenerateStadium(ref ChiselBrushContainer brushContainer, ref ChiselStadiumDefinition definition)
+        [BurstCompile]
+        public static unsafe bool GenerateStadium(float width, float height, float length,
+                                                  float topLength,     int topSides,
+                                                  float bottomLength,  int bottomSides, 
+                                                  in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                  out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                                  Allocator allocator)
         {
-            definition.Validate();
-            Vector3[] vertices = null;
-            if (!GenerateStadiumVertices(definition, ref vertices))
-                return false;
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            using (var builder = new BlobBuilder(Allocator.Temp))
+            {
+                ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
+                if (!GenerateStadiumVertices(width, height, length,
+                                             topLength, topSides,
+                                             bottomLength, bottomSides, in builder, ref root, out var localVertices))
+                    return false;
+                
+                var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
+                var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
+                var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadium.kNoCenterEpsilon;
+                var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
 
-            brushContainer.EnsureSize(1);
+                CreateExtrudedSubMesh(sides, null, 0, 0, 1, 
+                                      in localVertices, in surfaceDefinitionBlob, in builder, ref root,
+                                      out var polygons, out var halfEdges);
 
-            var surfaceIndices = new int[vertices.Length + 2];
-            return BrushMeshFactory.CreateExtrudedSubMesh(ref brushContainer.brushMeshes[0], definition.sides, surfaceIndices, 0, 1, vertices, definition.surfaceDefinition);
+                // TODO: eventually remove when it's more battle tested
+                if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
+                    return false;
+
+                var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
+                var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
+                root.localBounds = CalculateBounds(in localVertices);
+                brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+                return true;
+            }
         }
-
-        public static bool GenerateStadium(ref BrushMesh brushMesh, ref ChiselStadiumDefinition definition)
+        
+        [BurstCompile]
+        public static bool GenerateStadiumVertices(float diameter, float height, float length,
+                                                   float topLength, int topSides,
+                                                   float bottomLength, int bottomSides, 
+                                                   in BlobBuilder               builder,
+                                                   ref BrushMeshBlob            root,
+                                                   out BlobBuilderArray<float3> vertices)
         {
-            definition.Validate();
-            Vector3[] vertices = null;
-            if (!GenerateStadiumVertices(definition, ref vertices))
-            {
-                brushMesh.Clear();
-                return false;
-            }
+            var haveRoundedTop      = (topLength    > 0) && (topSides    > 1);
+            var haveRoundedBottom   = (bottomLength > 0) && (bottomSides > 1);
+            var haveCenter			= (length - ((haveRoundedTop ? topLength : 0) + (haveRoundedBottom ? bottomLength : 0))) >= ChiselStadium.kNoCenterEpsilon;
+            var sides               = (haveCenter ? 2 : 0) + math.max(topSides, 1) + math.max(bottomSides, 1);
             
-            var surfaceIndices	= new int[vertices.Length + 2];
-            if (!BrushMeshFactory.CreateExtrudedSubMesh(ref brushMesh, definition.sides, surfaceIndices, 0, 1, vertices, definition.surfaceDefinition))
-            {
-                brushMesh.Clear();
-                return false;
-            }
+            var radius			= diameter * 0.5f;
+
+            vertices = builder.Allocate(ref root.localVertices, sides * 2);
             
+            int vertexIndex = 0;
+            if (!haveRoundedTop)
+            {
+                vertices[vertexIndex] = new float3(-radius, 0, length * -0.5f); vertexIndex++;
+                vertices[vertexIndex] = new float3( radius, 0, length * -0.5f); vertexIndex++;
+            } else
+            {
+                var degreeOffset		= math.radians(-180.0f);
+                var degreePerSegment	= math.radians(180.0f / topSides);
+                var center				= new float3(0, 0, (length * -0.5f) + topLength);
+                for (int s = 0; s <= topSides; s++)
+                {
+                    var hRad = (s * degreePerSegment) + degreeOffset;
+
+                    var x = center.x + (math.cos(hRad) * radius);
+                    var y = center.y;
+                    var z = center.z + (math.sin(hRad) * topLength);
+
+                    vertices[vertexIndex] = new float3(x, y, z);
+                    vertexIndex++;
+                }
+            }
+
+            if (!haveCenter)
+                vertexIndex--;
+
+            //vertexIndex = definition.firstBottomSide;
+            if (!haveRoundedBottom)
+            {
+                vertices[vertexIndex] = new float3( radius, 0, length * 0.5f); vertexIndex++;
+                vertices[vertexIndex] = new float3(-radius, 0, length * 0.5f); vertexIndex++;
+            } else
+            {
+                var degreeOffset		= 0.0f;
+                var degreePerSegment	= math.radians(180.0f / bottomSides);
+                var center				= new float3(0, 0, (length * 0.5f) - bottomLength);
+                for (int s = 0; s <= bottomSides; s++)
+                {
+                    var hRad = (s * degreePerSegment) + degreeOffset;
+
+                    var x = center.x + (math.cos(hRad) * radius);
+                    var y = center.y;
+                    var z = center.z + (math.sin(hRad) * bottomLength);
+
+                    vertices[vertexIndex] = new float3(x, y, z);
+                    vertexIndex++;
+                }
+            }
+
+            var extrusion = new float3(0, 1, 0) * height;
+            for (int s = 0; s < sides; s++)
+                vertices[s + sides] = vertices[s] + extrusion;
             return true;
         }
 
         public static bool GenerateStadiumVertices(ChiselStadiumDefinition definition, ref Vector3[] vertices)
         {
-            definition.Validate();
-            
-            var topSides		= definition.topSides;
-            var bottomSides		= definition.bottomSides;
-            var sides			= definition.sides;
+            var topSides		= definition.settings.topSides;
+            var bottomSides		= definition.settings.bottomSides;
+            var sides			= definition.settings.Sides;
 
-            var length			= definition.length;
-            var topLength		= definition.topLength;
-            var bottomLength	= definition.bottomLength;
-            var diameter		= definition.diameter;
+            var length			= definition.settings.length;
+            var topLength		= definition.settings.topLength;
+            var bottomLength	= definition.settings.bottomLength;
+            var diameter		= definition.settings.width;
             var radius			= diameter * 0.5f;
 
             if (vertices == null ||
                 vertices.Length != sides * 2)
                 vertices		= new Vector3[sides * 2];
             
-            var firstTopSide	= definition.firstTopSide;
-            var lastTopSide		= definition.lastTopSide;
-            var firstBottomSide = definition.firstBottomSide;
-            var lastBottomSide  = definition.lastBottomSide;
+            var firstTopSide	= definition.settings.FirstTopSide;
+            var lastTopSide		= definition.settings.LastTopSide;
+            var firstBottomSide = definition.settings.FirstBottomSide;
+            var lastBottomSide  = definition.settings.LastBottomSide;
 
-            var haveCenter		= definition.haveCenter;
+            var haveCenter		= definition.settings.HaveCenter;
             
             int vertexIndex = 0;
-            if (!definition.haveRoundedTop)
+            if (!definition.settings.HaveRoundedTop)
             {
                 vertices[vertexIndex] = new Vector3(-radius, 0, length * -0.5f); vertexIndex++;
                 vertices[vertexIndex] = new Vector3( radius, 0, length * -0.5f); vertexIndex++;
@@ -101,7 +182,7 @@ namespace Chisel.Core
                 vertexIndex--;
 
             //vertexIndex = definition.firstBottomSide;
-            if (!definition.haveRoundedBottom)
+            if (!definition.settings.HaveRoundedBottom)
             {
                 vertices[vertexIndex] = new Vector3( radius, 0, length * 0.5f); vertexIndex++;
                 vertices[vertexIndex] = new Vector3(-radius, 0, length * 0.5f); vertexIndex++;
@@ -123,7 +204,7 @@ namespace Chisel.Core
                 }
             }
 
-            var extrusion = new Vector3(0, 1, 0) * definition.height;
+            var extrusion = new Vector3(0, 1, 0) * definition.settings.height;
             for (int s = 0; s < sides; s++)
                 vertices[s + sides] = vertices[s] + extrusion;
             return true;

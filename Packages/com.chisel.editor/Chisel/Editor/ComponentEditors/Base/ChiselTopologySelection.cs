@@ -189,7 +189,7 @@ namespace Chisel.Editors
         }
 
 
-        public static void RemapVertexSelection(ChiselBrush generator, int[] vertexRemap)
+        public static void RemapVertexSelection(ChiselBrushComponent generator, int[] vertexRemap)
         {
             if (vertexRemap == null)
                 return;
@@ -197,7 +197,7 @@ namespace Chisel.Editors
             selection.RemapVertexSelection(vertexRemap);
         }
 
-        public static void RemapEdgeSelection(ChiselBrush generator, int[] edgeRemap)
+        public static void RemapEdgeSelection(ChiselBrushComponent generator, int[] edgeRemap)
         {
             if (edgeRemap == null)
                 return;
@@ -205,7 +205,7 @@ namespace Chisel.Editors
             selection.RemapEdgeSelection(edgeRemap);
         }
 
-        public static void RemapPolygonSelection(ChiselBrush generator, int[] polygonRemap)
+        public static void RemapPolygonSelection(ChiselBrushComponent generator, int[] polygonRemap)
         {
             if (polygonRemap == null)
                 return;

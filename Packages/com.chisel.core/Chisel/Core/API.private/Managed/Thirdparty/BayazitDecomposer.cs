@@ -1,19 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Vector2 = UnityEngine.Vector2;
-using Debug = UnityEngine.Debug;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;
+using UnitySceneExtensions;
+using Debug = UnityEngine.Debug;
 
-namespace Chisel.Core
+namespace Chisel.Core.External
 {
     // TODO: propertly encapusulate this w/ license etc.
 
     // From https://github.com/craftworkgames/FarseerPhysics.Portable
 
     // From phed rev 36: http://code.google.com/p/phed/source/browse/trunk/Polygon.cpp
+
+    // Modified to work with Burst / Optimized
 
     /// <summary>
     /// Convex decomposition algorithm created by Mark Bayazit (http://mnbayazit.com/)
@@ -31,239 +33,186 @@ namespace Chisel.Core
         const float kConvexTestEpsilon  = 0.00001f;
         const float kDistanceEpsilon    = 0.0006f;
 
-        /// <summary>
-        /// Gets the signed area.
-        /// If the area is less than 0, it indicates that the polygon is clockwise winded.
-        /// </summary>
-        /// <returns>The signed area</returns>
-        static float GetSignedArea(List<Vector2> vertices)
-        {
-            //The simplest polygon which can exist in the Euclidean plane has 3 sides.
-            if (vertices.Count < 3)
-                return 0;
-
-            float area = 0;
-            for (int i = 0, count = vertices.Count; i < count; i++)
-            {
-                int j = (i + 1) % count;
-
-                Vector2 vi = vertices[i];
-                Vector2 vj = vertices[j];
-
-                area += vi.x * vj.y;
-                area -= vi.y * vj.x;
-            }
-            area /= 2.0f;
-            return area;
-        }
-
-        /// <summary>
-        /// Indicates if the vertices are in counter clockwise order.
-        /// Warning: If the area of the polygon is 0, it is unable to determine the winding.
-        /// </summary>
-        static bool IsCounterClockWise(List<Vector2> vertices)
-        {
-            //The simplest polygon which can exist in the Euclidean plane has 3 sides.
-            if (vertices.Count < 3)
-                return false;
-
-            return (GetSignedArea(vertices) > 0.0f);
-        }
 
         /// <summary>
         /// Decompose the polygon into several smaller non-concave polygon.
         /// If the polygon is already convex, it will return the original polygon, unless it is over MaxPolygonVertices.
         /// </summary>
-        public static Vector2[][] ConvexPartition(List<Vector2> vertices)
+        public static bool ConvexPartition(List<SegmentVertex> srcVertices, List<SegmentVertex> outputVertices, List<int> outputRanges, int defaultSegment = 0)
         {
-            Debug.Assert(vertices.Count > 3);
+            Debug.Assert(srcVertices.Count > 3);
 
-            if (!IsCounterClockWise(vertices))
-                vertices.Reverse();
+            List<SegmentVertex> allVertices = new List<SegmentVertex>();
+            allVertices.AddRange(srcVertices);
 
-            var result = TriangulatePolygon(vertices);
-            if (result == null)
-                return null;
-            var returnValue = new Vector2[result.Count][];
-            for (int i = 0; i < result.Count; i++)
-            {
-                returnValue[i] = result[i].ToArray();
-            }
-            return returnValue;
-        }
-
-        static List<List<Vector2>> TriangulatePolygon(List<Vector2> srcVertices)
-        {
-            List<List<Vector2>> list    = new List<List<Vector2>>();
-	        List<List<Vector2>> srcList = new List<List<Vector2>>();
-	        srcList.Add(srcVertices);
+            List<Range> ranges = new List<Range>();
+            ranges.Add(new Range { start = 0, end = srcVertices.Count });
 
             var originalVertexCount = srcVertices.Count * 2;
-
-
+            
             int counter = 0;
-	        while (counter < srcList.Count)
-	        {
-		        var vertices = srcList[counter];
-		        counter++;
+            while (counter < ranges.Count)
+            {
+                var vertices    = allVertices;
+                var range       = ranges[counter];
+
+                counter++;
 		        if (counter > originalVertexCount)
 		        {
 			        Debug.LogWarning($"counter > {originalVertexCount}");
-			        return null;
+			        return false;
 		        }
 
-		        int lowerIndex = 0, upperIndex = 0;
-                var lowerPoly = new List<Vector2>();
-                var upperPoly = new List<Vector2>();
-		        float d, lowerDist, upperDist;
-		        Vector2 lowerInt = Vector2.zero, upperInt = Vector2.zero;
+                var count = range.Length;
+                if (count == 0)
+                    continue;
 
-		        ForceCounterClockWise(vertices);
+                ForceCounterClockWise(vertices, range);
+                
+                int reflexIndex;
+                for (reflexIndex = 0; reflexIndex < count; ++reflexIndex)
+                {
+                    if (Reflex(reflexIndex, vertices, range))
+                        break;
+                }
+                
+                // Check if polygon is already convex
+                if (reflexIndex == count) 
+                {
+                    // Check if polygon is degenerate, in which case we skip it
+                    if (math.abs(GetSignedDoubleArea(vertices, range)) <= 0.0f)
+                        continue;
+                    
+                    var desiredCapacity = outputVertices.Count + range.Length;
+                    if (outputVertices.Capacity < desiredCapacity)
+                        outputVertices.Capacity = desiredCapacity;
+                    for (int n = range.start; n < range.end; n++)
+                        outputVertices.Add(vertices[n]);
+                    outputRanges.Add(outputVertices.Count);
+                    continue;
+                }
 
-		        bool is_convex = true;
+                int i = reflexIndex;
+                    
+                var lowerDist = float.PositiveInfinity;
+                var lowerInt = float2.zero;
+                var lowerIndex = 0;
+                    
+                var upperDist = float.PositiveInfinity;
+                var upperInt = float2.zero;
+                var upperIndex = 0;
+                for (int j = 0; j < count; ++j)
+				{
+					// if line intersects with an edge
+					if (Left   (At(i - 1, vertices, range).position, At(i, vertices, range).position, At(j    , vertices, range).position) &&
+						RightOn(At(i - 1, vertices, range).position, At(i, vertices, range).position, At(j - 1, vertices, range).position))
+					{
+						// find the point of intersection
+						var p = LineIntersect(At(i - 1, vertices, range).position, At(i, vertices, range).position, At(j, vertices, range).position, At(j - 1, vertices, range).position);
+						if (RightOn(At(i + 1, vertices, range).position, At(i, vertices, range).position, p))
+						{
+							// make sure it's inside the poly
+							var d = SquareDist(At(i, vertices, range).position, p);
+							if (d < lowerDist)
+							{
+								// keep only the closest intersection
+								lowerDist = d;
+								lowerInt = p;
+								lowerIndex = j;
+							}
+						}
+					}
 
-		        for (int i = 0; i < vertices.Count; ++i)
-		        {
-			        if (Reflex(i, vertices))
-			        {
-				        is_convex = false;
-				        lowerDist = upperDist = float.PositiveInfinity;
-				        for (int j = 0; j < vertices.Count; ++j)
-				        {
-					        // if line intersects with an edge
-					        if (Left   (At(i - 1, vertices), At(i, vertices), At(j    , vertices)) &&
-						        RightOn(At(i - 1, vertices), At(i, vertices), At(j - 1, vertices)))
-					        {
-						        // find the point of intersection
-						        var p = LineIntersect(At(i - 1, vertices), At(i, vertices), At(j, vertices), At(j - 1, vertices));
-						        if (RightOn(At(i + 1, vertices), At(i, vertices), p))
-						        {
-							        // make sure it's inside the poly
-							        d = SquareDist(At(i, vertices), p);
-							        if (d < lowerDist)
-							        {
-								        // keep only the closest intersection
-								        lowerDist = d;
-								        lowerInt = p;
-								        lowerIndex = j;
-							        }
-						        }
-					        }
+					if (Left   (At(i + 1, vertices, range).position, At(i, vertices, range).position, At(j + 1, vertices, range).position) &&
+						RightOn(At(i + 1, vertices, range).position, At(i, vertices, range).position, At(j    , vertices, range).position))
+					{
+						var p = LineIntersect(At(i + 1, vertices, range).position, At(i, vertices, range).position, At(j, vertices, range).position, At(j + 1, vertices, range).position);
+						if (LeftOn(At(i - 1, vertices, range).position, At(i, vertices, range).position, p))
+						{
+							var d = SquareDist(At(i, vertices, range).position, p);
+							if (d < upperDist)
+							{
+								upperDist = d;
+								upperIndex = j;
+								upperInt = p;
+							}
+						}
+					}
+				}
 
-					        if (Left   (At(i + 1, vertices), At(i, vertices), At(j + 1, vertices)) &&
-						        RightOn(At(i + 1, vertices), At(i, vertices), At(j    , vertices)))
-					        {
-						        var p = LineIntersect(At(i + 1, vertices), At(i, vertices), At(j, vertices), At(j + 1, vertices));
-						        if (LeftOn(At(i - 1, vertices), At(i, vertices), p))
-						        {
-							        d = SquareDist(At(i, vertices), p);
-							        if (d < upperDist)
-							        {
-								        upperDist = d;
-								        upperIndex = j;
-								        upperInt = p;
-							        }
-						        }
-					        }
-				        }
 
-				        // if there are no vertices to connect to, choose a Vector2 in the middle
-				        if (lowerIndex == (upperIndex + 1) % vertices.Count)
-				        {
-					        Vector2 sp = ((lowerInt + upperInt) / 2.0f);
+                // if there are no vertices to connect to, choose a float2 in the middle
+                if (lowerIndex == (upperIndex + 1) % count)
+				{
+                    var sp = ((lowerInt + upperInt) / 2.0f);
 
-					        Copy(i, upperIndex, vertices, ref lowerPoly);
-					        lowerPoly.Add(sp);
+                    var newRange = Copy(i, upperIndex, vertices, range, allVertices);
+                    allVertices.Add(new SegmentVertex { position = sp, segmentIndex = defaultSegment });
+                    newRange.end++;
+                    ranges.Add(newRange);
 
-					        Copy(lowerIndex, i, vertices, ref upperPoly);
-					        upperPoly.Add(sp);
-				        } else
-				        {
-					        double highestScore = 0;
-					        double bestIndex = lowerIndex;
-					        while (upperIndex < lowerIndex)
-						        upperIndex += vertices.Count;
+                    newRange = Copy(lowerIndex, i, vertices, range, allVertices);
+                    allVertices.Add(new SegmentVertex { position = sp, segmentIndex = defaultSegment });
+                    newRange.end++;
+                    ranges.Add(newRange);
+                } else
+				{
+					double highestScore = 0;
+					double bestIndex = lowerIndex;
+					while (upperIndex < lowerIndex)
+						upperIndex += count;
 
-					        for (int j = lowerIndex; j <= upperIndex; ++j)
-					        {
-						        if (CanSee(i, j, vertices))
-						        {
-							        double score = 1 / (SquareDist(At(i, vertices), At(j, vertices)) + 1);
-							        if (Reflex(j, vertices))
-							        {
-								        if (RightOn(At(j - 1, vertices), At(j, vertices), At(i, vertices)) &&
-									        LeftOn(At(j + 1, vertices), At(j, vertices), At(i, vertices)))
-									        score += 3;
-								        else
-									        score += 2;
-							        } else
-								        score += 1;
+					for (int j = lowerIndex; j <= upperIndex; ++j)
+					{
+                        if (!CanSee(i, j, vertices, range))
+                            continue;
+						
+						double score = 1 / (SquareDist(At(i, vertices, range).position, At(j, vertices, range).position) + 1);
+						if (Reflex(j, vertices, range))
+						{
+							if (RightOn(At(j - 1, vertices, range).position, At(j, vertices, range).position, At(i, vertices, range).position) &&
+								LeftOn(At(j + 1, vertices, range).position, At(j, vertices, range).position, At(i, vertices, range).position))
+								score += 3;
+							else
+								score += 2;
+						} else
+							score += 1;
 
-							        if (score > highestScore)
-							        {
-								        bestIndex = j;
-								        highestScore = score;
-							        }
-						        }
-					        }
-					        Copy(i, (int)(bestIndex), vertices, ref lowerPoly);
-					        Copy((int)(bestIndex), i, vertices, ref upperPoly);
-				        }
+						if (score > highestScore)
+						{
+							bestIndex = j;
+							highestScore = score;
+						}
+					}
 
-				        srcList.Add(lowerPoly);
-				        srcList.Add(upperPoly);
-				        /*
-				        auto lower = ConvexPartition(lowerPoly);
-				        for (auto p : lower)
-					        srcList.emplace_back(p);
+                    ranges.Add(Copy(i, (int)(bestIndex), vertices, range, allVertices));
+                    ranges.Add(Copy((int)(bestIndex), i, vertices, range, allVertices));
+                }
 
-				        auto upper = ConvexPartition(upperPoly);
-				        for (auto p : upper)
-					        srcList.emplace_back(p);*/
-				        break;
-			        }
-		        }
-
-		        if (is_convex)
-		        {
-			        // polygon is already convex
-			        if (Mathf.Abs(GetSignedArea(vertices)) > 0)
-				        list.Add(vertices);
-		        }
 	        }
-	        return list;
+	        return outputRanges.Count > 0;
         }
 
-
-        static Vector2 At(int i, List<Vector2> vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static SegmentVertex At(int i, List<SegmentVertex> vertices, Range range)
         {
-	        var s = vertices.Count;
+	        var s = range.Length;
 	        var index = (i < 0) ? ((s + (i % s)) % s) : (i % s);
-	        return vertices[index];
+	        return vertices[range.start + index];
         }
 
-        static void Copy(int i, int j, List<Vector2> vertices, ref List<Vector2> to)
-        {
-	        to.Clear();
-
-	        var count = vertices.Count;
-	        while (j < i)
-		        j += count;
-
-	        for (; i <= j; ++i)
-		        to.Add(At(i, vertices));
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool AlmostZero(float value1)
         {
-	        return Mathf.Abs(value1) <= kConvexTestEpsilon;
+	        return math.abs(value1) <= kConvexTestEpsilon;
         }
 
 
         // From Mark Bayazit's convex decomposition algorithm
-        static Vector2 LineIntersect(Vector2 p1, Vector2 p2, Vector2 q1, Vector2 q2)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float2 LineIntersect(float2 p1, float2 p2, float2 q1, float2 q2)
         {
-	        var i = Vector2.zero;
+	        var i = float2.zero;
 	        var a1 = p2.y - p1.y;
             var b1 = p1.x - p2.x;
             var c1 = a1 * p1.x + b1 * p1.y;
@@ -283,11 +232,10 @@ namespace Chisel.Core
 
         // From Eric Jordan's convex decomposition library, it checks if the lines a0->a1 and b0->b1 cross.
         // Grazing lines should not return true.
-        static bool IsLineIntersecting(Vector2 a0, Vector2 a1, Vector2 b0, Vector2 b1)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool AreLinesIntersecting(float2 a0, float2 a1, float2 b0, float2 b1)
         {
-	        //intersectionPoint = Vector2.zero;
-
-	        if (a0 == b0 || a0 == b1 || a1 == b0 || a1 == b1)
+            if (math.all(a0 == b0) || math.all(a0 == b1) || math.all(a1 == b0) || math.all(a1 == b1))
 		        return false;
 
             var x1 = a0.x;
@@ -295,8 +243,8 @@ namespace Chisel.Core
             var x3 = b0.x;
             var x4 = b1.x;
 
-	        //AABB early exit
-	        if (Mathf.Max(x1, x2) < Mathf.Min(x3, x4) || Mathf.Max(x3, x4) < Mathf.Min(x1, x2))
+	        // AABB early exit
+	        if (math.max(x1, x2) < math.min(x3, x4) || math.max(x3, x4) < math.min(x1, x2))
 		        return false;
 
             var y1 = a0.y;
@@ -304,68 +252,66 @@ namespace Chisel.Core
             var y3 = b0.y;
 	        var y4 = b1.y;
 
-	        if (Mathf.Max(y1, y2) < Mathf.Min(y3, y4) || Mathf.Max(y3, y4) < Mathf.Min(y1, y2))
+	        if (math.max(y1, y2) < math.min(y3, y4) || math.max(y3, y4) < math.min(y1, y2))
 		        return false;
 
             var denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-	        if (Mathf.Abs(denom) < kDistanceEpsilon)
+	        if (math.abs(denom) < kDistanceEpsilon)
 	        {
-		        //Lines are too close to parallel to call
+		        // Lines are too close to parallel to call
 		        return false;
 	        }
 
             var ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
             var ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
 
-	        if ((0 < ua) && (ua < 1) && (0 < ub) && (ub < 1))
-	        {
-		        //intersectionPoint.x = (x1 + ua * (x2 - x1));
-		        //intersectionPoint.y = (y1 + ua * (y2 - y1));
-		        return true;
-	        }
-
-	        return false;
+            return (0 < ua) && (ua < 1) && (0 < ub) && (ub < 1);
         }
 
-        private static bool CanSee(int i, int j, List<Vector2> vertices)
+        private static bool CanSee(int i, int j, List<SegmentVertex> vertices, Range range)
         {
-            if (Reflex(i, vertices))
+            if (Reflex(i, vertices, range))
             {
-                if (LeftOn(At(i, vertices), At(i - 1, vertices), At(j, vertices)) &&
-                    RightOn(At(i, vertices), At(i + 1, vertices), At(j, vertices))) return false;
+                if (LeftOn(At(i, vertices, range).position, At(i - 1, vertices, range).position, At(j, vertices, range).position) &&
+                    RightOn(At(i, vertices, range).position, At(i + 1, vertices, range).position, At(j, vertices, range).position)) return false;
             } else
             {
-                if (RightOn(At(i, vertices), At(i + 1, vertices), At(j, vertices)) ||
-                    LeftOn(At(i, vertices), At(i - 1, vertices), At(j, vertices))) return false;
+                if (RightOn(At(i, vertices, range).position, At(i + 1, vertices, range).position, At(j, vertices, range).position) ||
+                    LeftOn(At(i, vertices, range).position, At(i - 1, vertices, range).position, At(j, vertices, range).position)) return false;
             }
-            if (Reflex(j, vertices))
+            if (Reflex(j, vertices, range))
             {
-                if (LeftOn(At(j, vertices), At(j - 1, vertices), At(i, vertices)) &&
-                    RightOn(At(j, vertices), At(j + 1, vertices), At(i, vertices))) return false;
+                if (LeftOn(At(j, vertices, range).position, At(j - 1, vertices, range).position, At(i, vertices, range).position) &&
+                    RightOn(At(j, vertices, range).position, At(j + 1, vertices, range).position, At(i, vertices, range).position)) return false;
             } else
             {
-                if (RightOn(At(j, vertices), At(j + 1, vertices), At(i, vertices)) ||
-                    LeftOn(At(j, vertices), At(j - 1, vertices), At(i, vertices))) return false;
+                if (RightOn(At(j, vertices, range).position, At(j + 1, vertices, range).position, At(i, vertices, range).position) ||
+                    LeftOn(At(j, vertices, range).position, At(j - 1, vertices, range).position, At(i, vertices, range).position)) return false;
             }
-            for (int k = 0, count = vertices.Count; k < count; ++k)
+
+            for (int k = 0, count = range.Length; k < count; ++k)
             {
                 if ((k + 1) % count == i || k == i || (k + 1) % count == j || k == j)
                     continue; // ignore incident edges
 
-                if (IsLineIntersecting(At(i, vertices), At(j, vertices), At(k, vertices), At(k + 1, vertices)))
+                if (AreLinesIntersecting(At(i, vertices, range).position, At(j, vertices, range).position, At(k, vertices, range).position, At(k + 1, vertices, range).position))
                     return false;
             }
             return true;
         }
 
-        private static bool Reflex(int i, List<Vector2> vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Reflex(int i, List<SegmentVertex> vertices, Range range)
         {
-            return Right(i, vertices);
+            return Right(i, vertices, range);
         }
 
-        private static bool Right(int i, List<Vector2> vertices)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Right(int i, List<SegmentVertex> vertices, Range range)
         {
-	        return Right(At(i - 1, vertices), At(i, vertices), At(i + 1, vertices));
+	        return Right(At(i - 1, vertices, range).position, 
+                         At(i    , vertices, range).position, 
+                         At(i + 1, vertices, range).position);
         }
 
         /// <summary>
@@ -373,45 +319,116 @@ namespace Chisel.Core
         /// </summary>
         /// <returns>Positive number if point is left, negative if point is right, 
         /// and 0 if points are collinear.</returns>
-        private static float Area(Vector2 a, Vector2 b, Vector2 c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float Area(float2 a, float2 b, float2 c)
         {
             return a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y);
         }
 
-        private static bool Left(Vector2 a, Vector2 b, Vector2 c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Left(float2 a, float2 b, float2 c)
         {
 	        return Area(a, b, c) > 0;
         }
 
-        private static bool LeftOn(Vector2 a, Vector2 b, Vector2 c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool LeftOn(float2 a, float2 b, float2 c)
         {
 	        return Area(a, b, c) >= 0;
         }
 
-        private static bool Right(Vector2 a, Vector2 b, Vector2 c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Right(float2 a, float2 b, float2 c)
         {
 	        return Area(a, b, c) < 0;
         }
 
-        private static bool RightOn(Vector2 a, Vector2 b, Vector2 c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool RightOn(float2 a, float2 b, float2 c)
         {
 	        return Area(a, b, c) <= 0;
         }
 
-        private static float SquareDist(Vector2 a, Vector2 b)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float SquareDist(float2 a, float2 b)
         {
             var dx = b.x - a.x;
             var dy = b.y - a.y;
             return dx * dx + dy * dy;
         }
 
-        //forces counter clock wise order.
-        private static void ForceCounterClockWise(List<Vector2> vertices)
+        /// <summary>
+        /// Gets the signed area.
+        /// If the area is less than 0, it indicates that the polygon is clockwise winded.
+        /// </summary>
+        /// <returns>The signed area * 2</returns>
+        static float GetSignedDoubleArea(List<SegmentVertex> vertices, Range range)
         {
-	        if (!IsCounterClockWise(vertices))
-	        {
-		        vertices.Reverse();
-	        }
+            // The simplest polygon which can exist in the Euclidean plane has 3 sides.
+            var count = range.Length;
+            if (count < 3)
+                return 0;
+
+            float area = 0;
+            for (int i = range.start; i < range.end; i++)
+            {
+                int j = range.start + ((i - range.start + 1) % count);
+
+                var vi = vertices[i].position;
+                var vj = vertices[j].position;
+
+                area += vi.x * vj.y;
+                area -= vi.y * vj.x;
+            }
+            //area /= 2.0f;
+            return area;
+        }
+
+        /// <summary>
+        /// Indicates if the vertices are in counter clockwise order.
+        /// Warning: If the area of the polygon is 0, it is unable to determine the winding.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool IsCounterClockWise(List<SegmentVertex> vertices, Range range)
+        {
+            // The simplest polygon which can exist in the Euclidean plane has 3 sides.
+            if (range.Length < 3)
+                return false;
+
+            return (GetSignedDoubleArea(vertices, range) > 0.0f);
+        }
+
+        // Forces counter clock wise order.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ForceCounterClockWise(List<SegmentVertex> vertices, Range range)
+        {
+	        if (!IsCounterClockWise(vertices, range))
+                Reverse(vertices, range);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Range Copy(int lowerIndex, int upperIndex, List<SegmentVertex> vertices, Range range, List<SegmentVertex> dstVertices)
+        {
+            // TODO: do this with math instead
+            var count = range.Length;
+            while (upperIndex < lowerIndex)
+                upperIndex += count;
+
+            var start = dstVertices.Count;
+            for (; lowerIndex <= upperIndex; ++lowerIndex)
+                dstVertices.Add(At(lowerIndex, vertices, range));
+            return new Range { start = start, end = dstVertices.Count };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Reverse(List<SegmentVertex> vertices, Range range)
+        {
+            for (int i1 = range.start, i2 = range.end - 1, center = range.Center; i1 < center; i1++, i2--)
+            {
+                var temp = vertices[i1];
+                vertices[i1] = vertices[i2];
+                vertices[i2] = temp;
+            }
         }
     }
 }

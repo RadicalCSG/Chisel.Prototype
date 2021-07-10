@@ -6,57 +6,61 @@ using System.Collections;
 using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
+using System.Text.RegularExpressions;
 
 namespace FoundationTests
 {
     [TestFixture]
     public partial class InsertTests
     {
+        BrushMeshInstance dummyBrushMeshInstance;
+
         [SetUp]
         public void Init()
         {
-            CSGManager.Clear();
+            CompactHierarchyManager.Clear();
+            BrushMeshFactory.CreateBox(Vector3.one, 0, out var brushMesh);
+            var surfaceDefinition = new ChiselSurfaceDefinition();
+            surfaceDefinition.EnsureSize(6);
+            var brushMeshHash = BrushMeshManager.RegisterBrushMesh(brushMesh, surfaceDefinition);
+            dummyBrushMeshInstance = new BrushMeshInstance { brushMeshHash = brushMeshHash };
         }
 
-        /*
-        [Test]
-        public void InvalidNode_InsertBranch_ReturnsFalse()
-        {
-            const int branchUserID = 10;
-            var branch = CSGTreeBranch.Create(branchUserID);
-            var invalidNode = CSGTreeNode.InvalidNode;
-            CSGUtility.ClearDirty(branch);
+        //[Test]
+        //public void InvalidNode_InsertBranch_ReturnsFalse()
+        //{
+         //   const int branchUserID = 10;
+         //   var branch = CSGTreeBranch.Create(branchUserID);
+         //   var invalidNode = CSGTreeNode.InvalidNode;
+         //   CSGUtility.ClearDirty(branch);
 
-            var result = invalidNode.Insert(0, branch);
+         //   var result = invalidNode.Insert(0, branch);
 
-            Assert.AreEqual(false, result);
-            TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGUtility.TreeBrushCount);
-            Assert.AreEqual(0, CSGUtility.TreeCount);
-            Assert.AreEqual(1, CSGUtility.TreeBranchCount);
-            Assert.AreEqual(1, CSGUtility.TreeNodeCount);
-        }
-        */
+            //Assert.IsFalse(result);
+            //TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
+            //Assert.IsFalse(branch.Dirty);
+            //Assert.AreEqual(0, branch.Count);
+            //Assert.AreEqual(0, CSGUtility.TreeBrushCount);
+            //Assert.AreEqual(0, CSGUtility.TreeCount);
+            //Assert.AreEqual(1, CSGUtility.TreeBranchCount);
+            //Assert.AreEqual(1, CSGUtility.TreeNodeCount);
+        //}
 
         [Test]
         public void Branch_InsertInvalidNode_ReturnsFalse()
         {
             const int branchUserID = 10;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(branch);
 
-            var result = branch.Insert(0, CSGTreeNode.InvalidNode);
+            var result = branch.Insert(0, CSGTreeNode.Invalid);
+            LogAssert.Expect(LogType.Error, new Regex("Cannot add an invalid child"));
+            
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
+            Assert.IsFalse(branch.Dirty);
             Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
         }
 
         [Test]
@@ -64,18 +68,15 @@ namespace FoundationTests
         {
             const int branchUserID = 10;
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(0, branch);
+            LogAssert.Expect(LogType.Error, new Regex("A node cannot be its own child"));            
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
+            Assert.IsFalse(branch.Dirty);
             Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(1, CSGManager.TreeNodeCount, "Expected 1 TreeNode to Exist");
         }
 
         [Test]
@@ -85,21 +86,18 @@ namespace FoundationTests
             const int treeUserID = 11;
             var tree = CSGTree.Create(treeUserID);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(tree);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(tree);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(0, tree);
+            LogAssert.Expect(LogType.Error, new Regex("Cannot add a tree as a child"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
             TestUtility.ExpectValidTreeWithUserID(ref tree, treeUserID);
-            Assert.AreEqual(false, tree.Dirty);
-            Assert.AreEqual(false, branch.Dirty);
+            Assert.IsFalse(tree.Dirty);
+            Assert.IsFalse(branch.Dirty);
             Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeBrushCount, "Expected 0 TreeBrushes to Exist");
-            Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
         }
 
         [Test]
@@ -107,25 +105,22 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(1, brush);
+            LogAssert.Expect(LogType.Error, new Regex("index is invalid"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(false, brush.Dirty);
-            Assert.AreEqual(0, brush.Parent.NodeID);
-            Assert.AreEqual(0, brush.Tree.NodeID);
+            Assert.IsFalse(branch.Dirty);
+            Assert.IsFalse(brush.Dirty);
+            Assert.IsFalse(brush.Parent.Valid);
+            Assert.IsFalse(brush.Tree.Valid);
             Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
         }
 
         [Test]
@@ -133,25 +128,22 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(-1, brush);
+            LogAssert.Expect(LogType.Error, new Regex("index is invalid"));
 
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(false, brush.Dirty);
-            Assert.AreEqual(false, branch.Dirty);
-            Assert.AreEqual(0, brush.Parent.NodeID);
-            Assert.AreEqual(0, brush.Tree.NodeID);
+            Assert.IsFalse(brush.Dirty);
+            Assert.IsFalse(branch.Dirty);
+            Assert.IsFalse(brush.Parent.Valid);
+            Assert.IsFalse(brush.Tree.Valid);
             Assert.AreEqual(0, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
         }
 
         [Test]
@@ -159,25 +151,21 @@ namespace FoundationTests
         {
             const int brushUserID = 10;
             const int branchUserID = 11;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID);
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(0, brush);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(branch.NodeID, brush.Parent.NodeID);
-            Assert.AreEqual(0, brush.Tree.NodeID);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush.Tree.Valid);
             Assert.AreEqual(1, branch.Count);
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush.Parent);
         }
 
         [Test]
@@ -187,40 +175,36 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int branchUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(1, brush3);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(true, brush3.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(0, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(0, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(0, brush3.Tree.NodeID);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsTrue(brush3.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
+            Assert.IsFalse(brush3.Tree.Valid);
             Assert.AreEqual(3, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush3.NodeID, branch[1].NodeID);
-            Assert.AreEqual(brush2.NodeID, branch[2].NodeID);
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(3, CSGManager.TreeBrushCount, "Expected 3 TreeBrushes to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[2]);
         }
 
         [Test]
@@ -230,40 +214,36 @@ namespace FoundationTests
             const int brushUserID2 = 11;
             const int brushUserID3 = 12;
             const int branchUserID = 13;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
 
             var result = branch.Insert(0, brush3);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(true, brush3.Dirty);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(0, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(0, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(0, brush3.Tree.NodeID);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsTrue(brush3.Dirty);
+            Assert.IsFalse(brush1.Tree.Valid);
+            Assert.IsFalse(brush2.Tree.Valid);
+            Assert.IsFalse(brush3.Tree.Valid);
             Assert.AreEqual(3, branch.Count);
-            Assert.AreEqual(brush3.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush1.NodeID, branch[1].NodeID);
-            Assert.AreEqual(brush2.NodeID, branch[2].NodeID);
-            Assert.AreEqual(0, CSGManager.TreeCount, "Expected 0 Trees to Exist");
-            Assert.AreEqual(3, CSGManager.TreeBrushCount, "Expected 3 TreeBrushes to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[2]);
         }
 
         [Test]
@@ -274,47 +254,43 @@ namespace FoundationTests
             const int brushUserID3 = 12;
             const int branchUserID = 13;
             const int treeUserID = 14;
-            var brush1 = CSGTreeBrush.Create(userID: brushUserID1);
-            var brush2 = CSGTreeBrush.Create(userID: brushUserID2);
-            var brush3 = CSGTreeBrush.Create(userID: brushUserID3);
+            var brush1 = CSGTreeBrush.Create(userID: brushUserID1, dummyBrushMeshInstance);
+            var brush2 = CSGTreeBrush.Create(userID: brushUserID2, dummyBrushMeshInstance);
+            var brush3 = CSGTreeBrush.Create(userID: brushUserID3, dummyBrushMeshInstance);
             var branch = CSGTreeBranch.Create(branchUserID, new CSGTreeNode[] { brush1, brush2 });
             var tree = CSGTree.Create(treeUserID, new CSGTreeNode[] { branch });
-            CSGManager.ClearDirty(brush1);
-            CSGManager.ClearDirty(brush2);
-            CSGManager.ClearDirty(brush3);
-            CSGManager.ClearDirty(branch);
-            CSGManager.ClearDirty(tree);
+            CompactHierarchyManager.ClearDirty(brush1);
+            CompactHierarchyManager.ClearDirty(brush2);
+            CompactHierarchyManager.ClearDirty(brush3);
+            CompactHierarchyManager.ClearDirty(branch);
+            CompactHierarchyManager.ClearDirty(tree);
 
             var result = branch.Insert(2, brush3);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             TestUtility.ExpectValidBrushWithUserID(ref brush1, brushUserID1);
             TestUtility.ExpectValidBrushWithUserID(ref brush2, brushUserID2);
             TestUtility.ExpectValidBrushWithUserID(ref brush3, brushUserID3);
             TestUtility.ExpectValidBranchWithUserID(ref branch, branchUserID);
-            Assert.AreEqual(true, tree.Dirty);
-            Assert.AreEqual(true, branch.Dirty);
-            Assert.AreEqual(false, brush1.Dirty);
-            Assert.AreEqual(false, brush2.Dirty);
-            Assert.AreEqual(true, brush3.Dirty);
-            Assert.AreEqual(true, tree.IsInTree(brush1));
-            Assert.AreEqual(true, tree.IsInTree(brush2));
-            Assert.AreEqual(true, tree.IsInTree(brush3));
-            Assert.AreEqual(3, tree.CountOfBrushesInTree);
-            Assert.AreEqual(branch.NodeID, brush1.Parent.NodeID);
-            Assert.AreEqual(tree.NodeID, brush1.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush2.Parent.NodeID);
-            Assert.AreEqual(tree.NodeID, brush2.Tree.NodeID);
-            Assert.AreEqual(branch.NodeID, brush3.Parent.NodeID);
-            Assert.AreEqual(tree.NodeID, brush3.Tree.NodeID);
+            Assert.IsTrue(tree.Dirty);
+            Assert.IsTrue(branch.Dirty);
+            Assert.IsFalse(brush1.Dirty);
+            Assert.IsFalse(brush2.Dirty);
+            Assert.IsTrue(brush3.Dirty);
+            Assert.IsTrue(TestUtility.IsInTree(tree, brush1));
+            Assert.IsTrue(TestUtility.IsInTree(tree, brush2));
+            Assert.IsTrue(TestUtility.IsInTree(tree, brush3));
+            Assert.AreEqual(3, TestUtility.CountOfBrushesInTree(tree));
             Assert.AreEqual(3, branch.Count);
-            Assert.AreEqual(brush1.NodeID, branch[0].NodeID);
-            Assert.AreEqual(brush2.NodeID, branch[1].NodeID);
-            Assert.AreEqual(brush3.NodeID, branch[2].NodeID);
-            Assert.AreEqual(1, CSGManager.TreeCount, "Expected 1 Tree to Exist");
-            Assert.AreEqual(3, CSGManager.TreeBrushCount, "Expected 3 TreeBrushes to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(5, CSGManager.TreeNodeCount);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush1.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush2.Parent);
+            Assert.AreEqual((CSGTreeNode)branch, (CSGTreeNode)brush3.Parent);
+            Assert.AreEqual((CSGTreeNode)tree, (CSGTreeNode)brush1.Tree);
+            Assert.AreEqual((CSGTreeNode)tree, (CSGTreeNode)brush2.Tree);
+            Assert.AreEqual((CSGTreeNode)tree, (CSGTreeNode)brush3.Tree);
+            Assert.AreEqual((CSGTreeNode)brush1, (CSGTreeNode)branch[0]);
+            Assert.AreEqual((CSGTreeNode)brush2, (CSGTreeNode)branch[1]);
+            Assert.AreEqual((CSGTreeNode)brush3, (CSGTreeNode)branch[2]);
         }
 
 
@@ -326,46 +302,42 @@ namespace FoundationTests
             const int treeUserID2 = 12;
             const int branchUserID1 = 13;
             const int branchUserID2 = 14;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch2 = CSGTreeBranch.Create(branchUserID2);
             var tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { branch2 });
             var branch1 = CSGTreeBranch.Create(branchUserID1, new CSGTreeNode[] { brush });
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { branch1 });
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch1);
-            CSGManager.ClearDirty(branch2);
-            CSGManager.ClearDirty(tree1);
-            CSGManager.ClearDirty(tree2);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch1);
+            CompactHierarchyManager.ClearDirty(branch2);
+            CompactHierarchyManager.ClearDirty(tree1);
+            CompactHierarchyManager.ClearDirty(tree2);
 
             var result = branch2.Insert(0, brush);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(branch1.Dirty);
+            Assert.IsTrue(branch2.Dirty);
+            Assert.IsTrue(tree1.Dirty);
+            Assert.IsTrue(tree2.Dirty);
+            Assert.IsFalse(TestUtility.IsInTree(tree1, brush));
+            Assert.IsTrue(TestUtility.IsInTree(tree2, brush));
+            Assert.AreEqual(0, TestUtility.CountOfBrushesInTree(tree1));
+            Assert.AreEqual(1, TestUtility.CountOfBrushesInTree(tree2));
+            Assert.AreEqual(0, branch1.Count);
+            Assert.AreEqual(1, branch2.Count);
+            Assert.AreEqual((CSGTreeNode)branch2, (CSGTreeNode)brush.Parent);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Tree);
+            Assert.AreEqual((CSGTreeNode)tree1, (CSGTreeNode)branch1.Tree);
+            Assert.AreEqual((CSGTreeNode)tree1, (CSGTreeNode)branch1.Parent);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)branch2.Tree);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)branch2.Parent);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch1, branchUserID1);
             TestUtility.ExpectValidBranchWithUserID(ref branch2, branchUserID2);
             TestUtility.ExpectValidTreeWithUserID(ref tree1, treeUserID1);
             TestUtility.ExpectValidTreeWithUserID(ref tree2, treeUserID2);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, branch1.Dirty);
-            Assert.AreEqual(true, branch2.Dirty);
-            Assert.AreEqual(true, tree1.Dirty);
-            Assert.AreEqual(true, tree2.Dirty);
-            Assert.AreEqual(false, tree1.IsInTree(brush));
-            Assert.AreEqual(true, tree2.IsInTree(brush));
-            Assert.AreEqual(0, tree1.CountOfBrushesInTree);
-            Assert.AreEqual(1, tree2.CountOfBrushesInTree);
-            Assert.AreEqual(tree2.NodeID, brush.Tree.NodeID);
-            Assert.AreEqual(branch2.NodeID, brush.Parent.NodeID);
-            Assert.AreEqual(tree1.NodeID, branch1.Tree.NodeID);
-            Assert.AreEqual(0, branch1.Parent.NodeID);
-            Assert.AreEqual(0, branch1.Count);
-            Assert.AreEqual(tree2.NodeID, branch2.Tree.NodeID);
-            Assert.AreEqual(0, branch2.Parent.NodeID);
-            Assert.AreEqual(1, branch2.Count);
-            Assert.AreEqual(2, CSGManager.TreeCount, "Expected 2 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(2, CSGManager.TreeBranchCount, "Expected 2 TreeBranches to Exist");
-            Assert.AreEqual(5, CSGManager.TreeNodeCount);
         }
 
 
@@ -375,34 +347,30 @@ namespace FoundationTests
             const int brushUserID = 10;
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var tree2 = CSGTree.Create(treeUserID2);
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { brush });
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(tree1);
-            CSGManager.ClearDirty(tree2);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(tree1);
+            CompactHierarchyManager.ClearDirty(tree2);
 
             var result = tree2.Insert(0, brush);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(tree1.Dirty);
+            Assert.IsTrue(tree2.Dirty);
+            Assert.IsFalse(TestUtility.IsInTree(tree1, brush));
+            Assert.IsTrue(TestUtility.IsInTree(tree2, brush));
+            Assert.AreEqual(0, TestUtility.CountOfBrushesInTree(tree1));
+            Assert.AreEqual(1, TestUtility.CountOfBrushesInTree(tree2));
+            Assert.AreEqual(0, tree1.Count);
+            Assert.AreEqual(1, tree2.Count);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Tree);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Parent);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidTreeWithUserID(ref tree1, treeUserID1);
             TestUtility.ExpectValidTreeWithUserID(ref tree2, treeUserID2);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, tree1.Dirty);
-            Assert.AreEqual(true, tree2.Dirty);
-            Assert.AreEqual(false, tree1.IsInTree(brush));
-            Assert.AreEqual(true, tree2.IsInTree(brush));
-            Assert.AreEqual(0, tree1.CountOfBrushesInTree);
-            Assert.AreEqual(1, tree2.CountOfBrushesInTree);
-            Assert.AreEqual(tree2.NodeID, brush.Tree.NodeID);
-            Assert.AreEqual(0, brush.Parent.NodeID);
-            Assert.AreEqual(0, tree1.Count);
-            Assert.AreEqual(1, tree2.Count);
-            Assert.AreEqual(2, CSGManager.TreeCount, "Expected 2 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
-            Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
         }
 
 
@@ -413,40 +381,36 @@ namespace FoundationTests
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
             const int branchUserID1 = 13;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var tree2 = CSGTree.Create(treeUserID2);
             var branch1 = CSGTreeBranch.Create(branchUserID1, new CSGTreeNode[] { brush });
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { branch1 });
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch1);
-            CSGManager.ClearDirty(tree1);
-            CSGManager.ClearDirty(tree2);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch1);
+            CompactHierarchyManager.ClearDirty(tree1);
+            CompactHierarchyManager.ClearDirty(tree2);
 
             var result = tree2.Insert(0, brush);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(branch1.Dirty);
+            Assert.IsTrue(tree1.Dirty);
+            Assert.IsTrue(tree2.Dirty);
+            Assert.IsFalse(TestUtility.IsInTree(tree1, brush));
+            Assert.IsTrue(TestUtility.IsInTree(tree2, brush));
+            Assert.AreEqual(0, TestUtility.CountOfBrushesInTree(tree1));
+            Assert.AreEqual(1, TestUtility.CountOfBrushesInTree(tree2));
+            Assert.AreEqual(0, branch1.Count);
+            Assert.AreEqual(1, tree2.Count);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Tree);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Parent);
+            Assert.AreEqual((CSGTreeNode)tree1, (CSGTreeNode)branch1.Tree);
+            Assert.AreEqual((CSGTreeNode)tree1, (CSGTreeNode)branch1.Parent);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch1, branchUserID1);
             TestUtility.ExpectValidTreeWithUserID(ref tree1, treeUserID1);
             TestUtility.ExpectValidTreeWithUserID(ref tree2, treeUserID2);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, branch1.Dirty);
-            Assert.AreEqual(true, tree1.Dirty);
-            Assert.AreEqual(true, tree2.Dirty);
-            Assert.AreEqual(false, tree1.IsInTree(brush));
-            Assert.AreEqual(true, tree2.IsInTree(brush));
-            Assert.AreEqual(0, tree1.CountOfBrushesInTree);
-            Assert.AreEqual(1, tree2.CountOfBrushesInTree);
-            Assert.AreEqual(tree2.NodeID, brush.Tree.NodeID);
-            Assert.AreEqual(0, brush.Parent.NodeID);
-            Assert.AreEqual(tree1.NodeID, branch1.Tree.NodeID);
-            Assert.AreEqual(0, branch1.Parent.NodeID);
-            Assert.AreEqual(0, branch1.Count);
-            Assert.AreEqual(1, tree2.Count);
-            Assert.AreEqual(2, CSGManager.TreeCount, "Expected 2 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
         }
 
 
@@ -457,40 +421,36 @@ namespace FoundationTests
             const int treeUserID1 = 11;
             const int treeUserID2 = 12;
             const int branchUserID2 = 14;
-            var brush = CSGTreeBrush.Create(userID: brushUserID);
+            var brush = CSGTreeBrush.Create(userID: brushUserID, dummyBrushMeshInstance);
             var branch2 = CSGTreeBranch.Create(branchUserID2);
             var tree2 = CSGTree.Create(treeUserID2, new CSGTreeNode[] { branch2 });
             var tree1 = CSGTree.Create(treeUserID1, new CSGTreeNode[] { brush });
-            CSGManager.ClearDirty(brush);
-            CSGManager.ClearDirty(branch2);
-            CSGManager.ClearDirty(tree1);
-            CSGManager.ClearDirty(tree2);
+            CompactHierarchyManager.ClearDirty(brush);
+            CompactHierarchyManager.ClearDirty(branch2);
+            CompactHierarchyManager.ClearDirty(tree1);
+            CompactHierarchyManager.ClearDirty(tree2);
 
             var result = branch2.Insert(0, brush);
 
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
+            Assert.IsTrue(brush.Dirty);
+            Assert.IsTrue(branch2.Dirty);
+            Assert.IsTrue(tree1.Dirty);
+            Assert.IsTrue(tree2.Dirty);
+            Assert.IsFalse(TestUtility.IsInTree(tree1, brush));
+            Assert.IsTrue(TestUtility.IsInTree(tree2, brush));
+            Assert.AreEqual(0, TestUtility.CountOfBrushesInTree(tree1));
+            Assert.AreEqual(1, TestUtility.CountOfBrushesInTree(tree2));
+            Assert.AreEqual(0, tree1.Count);
+            Assert.AreEqual(1, branch2.Count);
+            Assert.AreEqual((CSGTreeNode)branch2, (CSGTreeNode)brush.Parent);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)brush.Tree);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)branch2.Tree);
+            Assert.AreEqual((CSGTreeNode)tree2, (CSGTreeNode)branch2.Parent);
             TestUtility.ExpectValidBrushWithUserID(ref brush, brushUserID);
             TestUtility.ExpectValidBranchWithUserID(ref branch2, branchUserID2);
             TestUtility.ExpectValidTreeWithUserID(ref tree1, treeUserID1);
             TestUtility.ExpectValidTreeWithUserID(ref tree2, treeUserID2);
-            Assert.AreEqual(true, brush.Dirty);
-            Assert.AreEqual(true, branch2.Dirty);
-            Assert.AreEqual(true, tree1.Dirty);
-            Assert.AreEqual(true, tree2.Dirty);
-            Assert.AreEqual(false, tree1.IsInTree(brush));
-            Assert.AreEqual(true, tree2.IsInTree(brush));
-            Assert.AreEqual(0, tree1.CountOfBrushesInTree);
-            Assert.AreEqual(1, tree2.CountOfBrushesInTree);
-            Assert.AreEqual(tree2.NodeID, brush.Tree.NodeID);
-            Assert.AreEqual(branch2.NodeID, brush.Parent.NodeID);
-            Assert.AreEqual(0, tree1.Count);
-            Assert.AreEqual(tree2.NodeID, branch2.Tree.NodeID);
-            Assert.AreEqual(0, branch2.Parent.NodeID);
-            Assert.AreEqual(1, branch2.Count);
-            Assert.AreEqual(2, CSGManager.TreeCount, "Expected 2 Trees to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
-            Assert.AreEqual(1, CSGManager.TreeBranchCount, "Expected 1 TreeBranch to Exist");
-            Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
         }
 
     }

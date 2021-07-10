@@ -23,15 +23,21 @@ namespace Chisel.Components
         public ChiselHierarchyItem(ChiselNode node) { Component = node; }
 
         public ChiselHierarchyItem                  Parent;
+        internal int                                siblingIndicesUntilNode;
         public readonly List<int>                   SiblingIndices      = new List<int>();
         public readonly List<ChiselHierarchyItem>   Children            = new List<ChiselHierarchyItem>();
 
         public ChiselSceneHierarchy sceneHierarchy;
+        public ChiselNode           parentComponent;
         public Scene                Scene;
-        public Transform            Transform;
-        public GameObject           GameObject;
-        public readonly ChiselNode  Component;
         
+        Transform m_Transform;
+        public Transform            Transform       => (Component == null) ? null : (m_Transform != null) ? m_Transform : (m_Transform = Component.transform);
+        GameObject m_GameObject;
+        public GameObject           GameObject      => (Component == null) ? null : (m_GameObject != null) ? m_GameObject : (m_GameObject = Component.gameObject);
+        
+        public readonly ChiselNode  Component;
+
         // TODO: should cache this instead
         public ChiselModel Model
         {
@@ -49,16 +55,56 @@ namespace Chisel.Components
             }
         }
 
-        private Bounds				Bounds				= EmptyBounds;
-        private Bounds              ChildBounds         = EmptyBounds;
-        private bool				BoundsDirty			= true;
-        private bool                ChildBoundsDirty	= true;
+        public Bounds Bounds
+        {
+            get
+            {
+                UpdateBounds();
+                return SelfWithChildrenBounds;
+            }
+        }
 
-        public bool                 Registered			= false;
-        public bool                 IsOpen				= true;
+        private Bounds				SelfBounds			    = EmptyBounds;
+        private Bounds              SelfWithChildrenBounds  = EmptyBounds;
+        private bool				BoundsDirty			    = true;
+        private bool                ChildBoundsDirty	    = true;
 
-        public Matrix4x4            LocalToWorldMatrix  = Matrix4x4.identity;
-        public Matrix4x4            WorldToLocalMatrix  = Matrix4x4.identity;
+        public bool                 Registered			    = false;
+        public bool                 IsOpen				    = true;
+
+        public Matrix4x4            LocalToWorldMatrix      = Matrix4x4.identity;
+        public Matrix4x4            WorldToLocalMatrix      = Matrix4x4.identity;
+
+        public bool UpdateSiblingIndices(bool ignoreWhenParentIsChiselNode)
+        {
+            var index = (SiblingIndices?.Count ?? 0) - 1;
+            if (index <= 0)
+                return false;
+            
+            var iterator = (Component == null) ? null : Component.transform;
+            if (iterator == null)
+                return false;
+
+            var parentTransform = (parentComponent == null) ? null : parentComponent.transform;
+            // TODO: handle scene root transforms
+            if (parentTransform == null)
+                return false;
+
+            if (parentTransform == iterator.parent &&
+                ignoreWhenParentIsChiselNode)
+                return false;
+
+            do
+            {
+                var knownSiblingIndex = this.SiblingIndices[index];
+                var currentSiblingIndex = iterator.GetSiblingIndex();
+                if (knownSiblingIndex != currentSiblingIndex)
+                    return true;
+                index--;
+                iterator = iterator.parent;
+            } while (iterator != null && index >= 0 && iterator != parentTransform);
+            return false;
+        }
 
         // TODO: Move bounds handling code to separate class, keep this clean
         public void					UpdateBounds()
@@ -67,19 +113,19 @@ namespace Chisel.Components
             {
                 if (Component)
                 {
-                    if (!Transform)
-                        Transform = Component.transform;
-                    Bounds = Component.CalculateBounds();
+                    var generator = Component as ChiselGeneratorComponent;
+                    if (generator)
+                        SelfBounds = ChiselBoundsUtility.CalculateBounds(generator);
                     ChildBoundsDirty = true;
                     BoundsDirty = false;
                 }
             }
             if (ChildBoundsDirty)
             {
-                ChildBounds = Bounds;
+                SelfWithChildrenBounds = SelfBounds;
                 // TODO: make this non-iterative
                 for (int i = 0; i < Children.Count; i++)
-                    Children[i].EncapsulateBounds(ref ChildBounds);
+                    Children[i].EncapsulateBounds(ref SelfWithChildrenBounds);
                 ChildBoundsDirty = false;
             }
         }
@@ -90,9 +136,9 @@ namespace Chisel.Components
             var gridBounds = new Bounds();
             if (Component)
             {
-                if (!Transform)
-                    Transform = Component.transform;
-                gridBounds = Component.CalculateBounds(transformation);
+                var generator = Component as ChiselGeneratorComponent;
+                if (generator)
+                    SelfBounds = ChiselBoundsUtility.CalculateBounds(generator, transformation);
             }
 
             // TODO: make this non-iterative
@@ -104,18 +150,18 @@ namespace Chisel.Components
         public void		EncapsulateBounds(ref Bounds outBounds)
         {
             UpdateBounds();
-            if (ChildBounds.size.sqrMagnitude != 0)
+            if (SelfWithChildrenBounds.size.sqrMagnitude != 0)
             {
-                float magnitude = ChildBounds.size.sqrMagnitude;
+                float magnitude = SelfWithChildrenBounds.size.sqrMagnitude;
                 if (float.IsInfinity(magnitude) ||
                     float.IsNaN(magnitude))
                 {
                     var transformation = LocalToWorldMatrix;
                     var center = transformation.GetColumn(3);
-                    ChildBounds = new Bounds(center, Vector3.zero);
+                    SelfWithChildrenBounds = new Bounds(center, Vector3.zero);
                 }
-                if (outBounds.size.sqrMagnitude == 0) outBounds = ChildBounds;
-                else								  outBounds.Encapsulate(ChildBounds);
+                if (outBounds.size.sqrMagnitude == 0) outBounds = SelfWithChildrenBounds;
+                else								  outBounds.Encapsulate(SelfWithChildrenBounds);
             }
         }
         

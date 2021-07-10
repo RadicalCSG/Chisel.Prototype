@@ -8,7 +8,7 @@ using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using System.Text.RegularExpressions;
-
+/*
 namespace BrushMaterialTests
 {
     public sealed class BrushMaterialLifetimeTests
@@ -543,3 +543,4 @@ namespace BrushMaterialTests
         }
     }
 }
+*/

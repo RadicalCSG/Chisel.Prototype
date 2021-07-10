@@ -6,7 +6,7 @@ using System.Collections;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Composite_Parenting
@@ -38,7 +38,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite.Node.Count);
-            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite.Node, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -63,7 +63,7 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeBranchCount, "Expected 2 TreeBranches to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)composite2.Node.Parent);
         }
 
         [UnityTest]
@@ -94,7 +94,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite.Node.Count);
-            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite.Node, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -125,7 +125,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)brush.TopNode.Parent);
 
             var composite2			= TestUtility.CreateUndoableCompositeComponent(composite2GameObject);
             yield return null;
@@ -142,8 +142,8 @@ namespace HierarchyTests
             Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
             Assert.AreEqual(1, composite2.Node.Count);
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID);
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)composite2.Node.Parent);
+            Assert.AreEqual((CSGTreeNode)composite2.Node, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -167,7 +167,7 @@ namespace HierarchyTests
             Assert.AreEqual(0, CSGManager.TreeBranchCount, "Expected 0 TreeBranches to Exist");
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(2, CSGManager.TreeNodeCount, "Expected 2 TreeNodes to Exist");
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode.Parent);
 
             var composite			= TestUtility.CreateUndoableCompositeComponent(compositeGameObject);
             yield return null;
@@ -180,7 +180,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite.Node.Count);
-            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite.Node, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -201,7 +201,7 @@ namespace HierarchyTests
             var brush				= TestUtility.CreateUndoableGameObjectWithBrush();
             var brushGameObject		= brush.gameObject;
             
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode.Parent);
 
             brush.transform.parent = composite.transform;
             yield return null;
@@ -215,7 +215,7 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite.Node.Count);
-            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID); 
+            Assert.AreEqual((CSGTreeNode)composite.Node, (CSGTreeNode)brush.TopNode.Parent); 
         }
 
         [UnityTest]
@@ -233,7 +233,7 @@ namespace HierarchyTests
 
             var composite2				= TestUtility.CreateUndoableGameObjectWithComposite();
             var composite2GameObject	= composite2.gameObject;
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite2.Node.Parent);
 
             composite2.transform.parent = composite1.transform;
             yield return null;
@@ -246,7 +246,7 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeBranchCount, "Expected 2 TreeBranches to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID); 
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)composite2.Node.Parent); 
         }
 
         [UnityTest]
@@ -280,8 +280,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist"); 
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);	
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID); 		
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite2.Node);	
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -314,8 +314,8 @@ namespace HierarchyTests
             Assert.AreEqual(2, CSGManager.TreeBranchCount, "Expected 2 TreeBranches to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist"); 
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);	
-            Assert.AreEqual(composite1.Node.NodeID, composite3.Node.Parent.NodeID); 		
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite2.Node);	
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)composite3.Node.Parent); 		
         }
 
         [UnityTest]
@@ -348,11 +348,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite2.Node);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite1.Node);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode);
                 
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)brush.TopNode.Parent);
 
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(0, composite2.Node.Count);
@@ -360,7 +360,7 @@ namespace HierarchyTests
             brush.transform.parent	= composite2.transform;
             yield return null;
                 
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite2.Node, (CSGTreeNode)brush.TopNode.Parent);
 
             Assert.AreEqual(0, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
@@ -394,10 +394,10 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");
                 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite1.Node);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode);
                 
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)composite1.Node, (CSGTreeNode)brush.TopNode.Parent);
 
             Assert.AreEqual(1, composite1.Node.Count);
                 
@@ -405,7 +405,7 @@ namespace HierarchyTests
             yield return null;
 
             Assert.AreEqual(0, composite1.Node.Count);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode.Parent);
         }
 
         [UnityTest]
@@ -441,11 +441,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite2.Node);
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)composite1.Node;
+            Assert.AreNotEqual((CSGTreeNode)CSGTreeNode.InvalidNode, (CSGTreeNode)brush.TopNode);
                 
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent);
 
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(0, composite2.Node.Count);
@@ -453,7 +453,7 @@ namespace HierarchyTests
             brush.transform.parent	= plainGameObject.transform;
             yield return null;
                 
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent);
 
             Assert.AreEqual(0, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
@@ -492,11 +492,11 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite1.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, composite2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, composite1.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
                 
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent);
 
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(0, composite2.Node.Count);
@@ -504,7 +504,7 @@ namespace HierarchyTests
             brush.transform.parent	= composite2.transform;
             yield return null;
                 
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent);
 
             Assert.AreEqual(0, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
@@ -545,9 +545,9 @@ namespace HierarchyTests
 
             Assert.AreEqual(1, composite1.Node.Count);
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, composite2.Node);
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent);
 
             composite2.enabled = true;
             yield return null;
@@ -556,10 +556,10 @@ namespace HierarchyTests
             Assert.AreEqual(1, CSGManager.TreeBrushCount, "Expected 1 TreeBrush to Exist");
             Assert.AreEqual(4, CSGManager.TreeNodeCount, "Expected 4 TreeNodes to Exist");
 
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
-            Assert.AreNotEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID);
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, composite2.Node);
+            Assert.AreNotEqual(CSGTreeNode.InvalidNode, brush.TopNode);
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent);
+            Assert.AreEqual(composite1.Node, composite2.Node.Parent);
 
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
@@ -597,8 +597,8 @@ namespace HierarchyTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");	
 
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, composite2.Node);
         }
 
         [UnityTest]
@@ -627,7 +627,7 @@ namespace HierarchyTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");	
 
             Assert.AreEqual(1, composite.Node.Count);
-            Assert.AreEqual(composite.Node.NodeID, brush.TopNode.Parent.NodeID); 
+            Assert.AreEqual(composite.Node, brush.TopNode.Parent); 
         }
 
         [UnityTest]
@@ -662,8 +662,8 @@ namespace HierarchyTests
 
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID); 
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID); 
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent); 
+            Assert.AreEqual(composite1.Node, composite2.Node.Parent); 
             
             Undo.DestroyObjectImmediate(composite2);
             yield return null;
@@ -675,7 +675,7 @@ namespace HierarchyTests
             Assert.AreEqual(3, CSGManager.TreeNodeCount, "Expected 3 TreeNodes to Exist");	
             
             Assert.AreEqual(1, composite1.Node.Count);
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID); 
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent); 
         }
 
         [UnityTest]
@@ -711,8 +711,8 @@ namespace HierarchyTests
 
             Assert.AreEqual(1, composite1.Node.Count);
 
-            Assert.AreEqual(composite1.Node.NodeID, brush.TopNode.Parent.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
+            Assert.AreEqual(composite1.Node, brush.TopNode.Parent); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, composite2.Node);
             
             composite2.enabled				= true;
             yield return null;	
@@ -724,8 +724,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
 
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID); 
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID); 
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent); 
+            Assert.AreEqual(composite1.Node, composite2.Node.Parent); 
         }
 
         [UnityTest]
@@ -761,8 +761,8 @@ namespace HierarchyTests
 
             Assert.AreEqual(0, composite1.Node.Count);
 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, brush.TopNode.NodeID); 
-            Assert.AreEqual(CSGTreeNode.InvalidNode.NodeID, composite2.Node.NodeID);
+            Assert.AreEqual(CSGTreeNode.InvalidNode, brush.TopNode); 
+            Assert.AreEqual(CSGTreeNode.InvalidNode, composite2.Node);
             
             composite2GameObject.SetActive(true); 
             yield return null;	
@@ -773,8 +773,8 @@ namespace HierarchyTests
             Assert.AreEqual(1, composite1.Node.Count);
             Assert.AreEqual(1, composite2.Node.Count);
 
-            Assert.AreEqual(composite2.Node.NodeID, brush.TopNode.Parent.NodeID);
-            Assert.AreEqual(composite1.Node.NodeID, composite2.Node.Parent.NodeID);
+            Assert.AreEqual(composite2.Node, brush.TopNode.Parent);
+            Assert.AreEqual(composite1.Node, composite2.Node.Parent);
         }
 
         [UnityTest]
@@ -861,4 +861,4 @@ namespace HierarchyTests
             Assert.AreEqual(composite2.Node.Count, 1);
         }
     }
-}
+}*/

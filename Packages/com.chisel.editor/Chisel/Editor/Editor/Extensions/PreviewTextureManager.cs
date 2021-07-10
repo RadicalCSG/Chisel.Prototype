@@ -63,8 +63,6 @@ namespace Chisel.Editors
             if (styles == null)
                 styles = new Styles();
 
-            var background  = styles.background;
-
             var mesh        = GetPreviewSphere();
             var camera      = previewUtility.camera;
 
@@ -125,7 +123,7 @@ namespace Chisel.Editors
                     var material = request.material;
                     if (!s_MaterialTextures.ContainsKey(material))
                     { 
-                        var region  = new Rect(Vector3.zero, request.size);
+                        var region  = new Rect(Vector2.zero, request.size);
                         var texture = GetPreviewTexture(previewUtility, request.direction, region, material) as Texture2D;
                         if (!texture)
                             continue;

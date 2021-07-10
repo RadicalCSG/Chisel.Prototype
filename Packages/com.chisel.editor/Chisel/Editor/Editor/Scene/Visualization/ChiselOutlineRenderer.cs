@@ -263,9 +263,11 @@ namespace Chisel.Editors
                     {
                         for (int n = 0; n < nodes.Length; n++)
                         {
-                            var node = nodes[n];
+                            var node = nodes[n] as ChiselGeneratorComponent;
+                            if (node == null)
+                                continue;
                             foundTreeBrushes.Clear();
-                            node.GetAllTreeBrushes(foundTreeBrushes, ignoreSynchronizedBrushes: true);
+                            ChiselGeneratedComponentManager.GetAllTreeBrushes(node, foundTreeBrushes);
                             if (foundTreeBrushes.Count > 0)
                             {
                                 var directSelected = (// if component is directly select
@@ -275,7 +277,7 @@ namespace Chisel.Editors
                                                       // if we find CSGTreeBrushes directly on this node, but this node
                                                       // can also have child nodes, then we assume the CSGTreeBrushes are generated
                                                       // and we don't want to show those as directly selected
-                                                      !node.CanHaveChildNodes;
+                                                      !node.IsContainer;
                                 var transform = ChiselNodeHierarchyManager.FindModelTransformOfTransform(node.hierarchyItem.Transform);
                                 foreach (var treeBrush in foundTreeBrushes)
                                 {
@@ -514,7 +516,7 @@ namespace Chisel.Editors
         {
             if (!surfaceOutlineCache.TryGetValue(surface, out ChiselWireframe wireframe))
             {
-                wireframe = ChiselWireframe.CreateWireframe(surface.TreeBrush, surface.surfaceID);
+                wireframe = ChiselWireframe.CreateWireframe(surface.TreeBrush, surface.surfaceIndex);
                 surfaceOutlineCache[surface] = wireframe;
             }
             return wireframe;
@@ -600,7 +602,7 @@ namespace Chisel.Editors
                     {
                         Matrix4x4 transformation;
                         if (modelTransform)
-                            transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                            transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                         else
                             transformation = brush.NodeToTreeSpaceMatrix;
 
@@ -671,7 +673,7 @@ namespace Chisel.Editors
 
                     Matrix4x4 transformation;
                     if (modelTransform)
-                        transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                        transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                     else
                         transformation = brush.NodeToTreeSpaceMatrix;
 
@@ -697,7 +699,7 @@ namespace Chisel.Editors
 
                     Matrix4x4 transformation;
                     if (modelTransform)
-                        transformation = modelTransform.localToWorldMatrix * brush.NodeToTreeSpaceMatrix;
+                        transformation = modelTransform.localToWorldMatrix * (Matrix4x4)brush.NodeToTreeSpaceMatrix;
                     else
                         transformation = brush.NodeToTreeSpaceMatrix;
 

@@ -106,7 +106,7 @@ namespace Chisel.Components
             Profiler.BeginSample("Flush");
             try
             {
-                if (!CSGManager.Flush(s_FinishMeshUpdates))
+                if (!CompactHierarchyManager.Flush(s_FinishMeshUpdates))
                 {
                     ChiselGeneratedComponentManager.DelayedUVGeneration();
                     return; // Nothing to update ..

@@ -214,8 +214,9 @@ namespace Chisel.Editors
             Vector3 pos = rot * (-bounds.center);
 
             previewUtility.DrawMesh(mesh, pos, rot, material, 0);
-                        
-            return previewUtility.EndPreview();
+            var texture = previewUtility.EndPreview();
+            texture.hideFlags = HideFlags.HideAndDontSave;
+            return texture;
         }
 
         public override bool HasPreviewGUI()

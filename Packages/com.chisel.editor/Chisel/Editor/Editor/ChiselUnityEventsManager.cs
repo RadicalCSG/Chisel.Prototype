@@ -94,9 +94,6 @@ namespace Chisel.Editors
 
             ChiselClickSelectionManager.Instance.OnReset();
             ChiselOutlineRenderer.Instance.OnReset();
-
-            // TODO: clean this up
-            ChiselGeneratorComponent.GetSelectedVariantsOfBrushOrSelf = ChiselSyncSelection.GetSelectedVariantsOfBrushOrSelf;
         }
 
         private static void OnPickingChanged()
@@ -207,7 +204,7 @@ namespace Chisel.Editors
                 return;
 
             Editors.ChiselManagedHierarchyView.RepaintAll();
-            Editors.ChiselInternalHierarchyView.RepaintAll();
+            //Editors.ChiselInternalHierarchyView.RepaintAll();
             
             // THIS IS SLOW! DON'T DO THIS
             //UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
@@ -220,7 +217,7 @@ namespace Chisel.Editors
                 Event.current.type == EventType.Repaint)
                 return;
             Editors.ChiselManagedHierarchyView.RepaintAll();
-            Editors.ChiselInternalHierarchyView.RepaintAll(); 
+            //Editors.ChiselInternalHierarchyView.RepaintAll(); 
         }
 
         private static void OnPrefabInstanceUpdated(GameObject instance)
@@ -232,9 +229,16 @@ namespace Chisel.Editors
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
-            ChiselNodeHierarchyManager.Update();
-            ChiselGeneratedModelMeshManager.UpdateModels();
-            ChiselNodeEditorBase.HandleCancelEvent();
+            try
+            {
+                ChiselNodeHierarchyManager.Update();
+                ChiselGeneratedModelMeshManager.UpdateModels();
+                ChiselNodeEditorBase.HandleCancelEvent();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(ex);
+            }
         }
 
         private static void OnHierarchyWindowItemOnGUI(int instanceID, Rect selectionRect)

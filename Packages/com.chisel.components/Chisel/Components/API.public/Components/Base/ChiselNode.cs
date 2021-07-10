@@ -14,32 +14,25 @@ namespace Chisel.Components
         public const string kDocumentationBaseURL = "http://example.com/docs/"; // TODO: put somewhere else / put documentation online
         public const string kDocumentationExtension = ".html";
 
-        public abstract string NodeTypeName { get; }
-        /*
-        public virtual Vector3 PivotOffset
-        {
-            get
-            {
-                return Vector3.zero;
-            }
-            set { }
+        public abstract string          ChiselNodeTypeName  { get; }
+        public abstract CSGTreeNode     TopTreeNode         { get; protected set; }
+        internal virtual bool           IsActive            { get { return isActiveAndEnabled; } }
+        public virtual bool             IsContainer         { get { return false; } }
+
+
+        [NonSerialized] [HideInInspector] public readonly ChiselHierarchyItem hierarchyItem;
+
+
+        public ChiselNode() { hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }        
+        
+        protected virtual void OnCleanup() 
+        { 
+            ResetTreeNodes();
         }
-        */
-        public ChiselNode()			{ hierarchyItem = new ChiselHierarchyItem(this); ChiselNodeHierarchyManager.Register(this); }
-        protected void OnDestroy()	{ ChiselNodeHierarchyManager.Unregister(this); OnCleanup(); }
-        public void OnValidate()	{ OnValidateInternal(); }
 
-        protected virtual void OnValidateInternal() { SetDirty(); }
-
-        public void Reset() { OnResetInternal(); }
-        protected virtual void OnResetInternal() { OnInitialize(); }
-
-        public abstract bool HasValidState();
-
-        public virtual void OnInitialize() { }
-        protected virtual void OnCleanup() {  }
-
-        [NonSerialized][HideInInspector] public readonly ChiselHierarchyItem hierarchyItem;
+        public virtual void OnInitialize()
+        {
+        }
 
         protected void OnEnable()
         {
@@ -47,98 +40,99 @@ namespace Chisel.Components
             ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
 
-
-        public abstract Bounds CalculateBounds();
-        public abstract Bounds CalculateBounds(Matrix4x4 transformation);
-
-        public bool EncapsulateBounds(ref Bounds outBounds)
-        {
-            hierarchyItem.EncapsulateBounds(ref outBounds);
-            return true;
-        }
-
-        public bool EncapsulateBounds(ref Bounds outBounds, Matrix4x4 transformation)
-        {
-            hierarchyItem.EncapsulateBounds(ref outBounds, transformation);
-            return true;
-        }
-
         protected virtual void OnDisable()
         {
             // Note: cannot call OnCleanup here
             ChiselNodeHierarchyManager.UpdateAvailability(this);
         }
-        
+
+        protected void OnDestroy() 
+        { 
+            ChiselNodeHierarchyManager.Unregister(this); 
+            OnCleanup();
+        }
+
+
+        public void OnValidate() { OnValidateState(); }
+        protected virtual void OnValidateState() { SetDirty(); }
+
+        public abstract void GetWarningMessages(IChiselMessageHandler messages);
+
+        public void Reset() { OnResetInternal(); }
+        protected virtual void OnResetInternal() { OnInitialize(); }
+        public abstract void SetDirty();
+
+
+
         // Called when the parent property of the transform has changed.
         protected void OnTransformParentChanged()
         {
             ChiselNodeHierarchyManager.OnTransformParentChanged(this);
         }
-    
+
         // Called when the list of children of the transform has changed.
         protected void OnTransformChildrenChanged()
         {
             ChiselNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
-    
-        public bool				Dirty					{ get { return ChiselNodeHierarchyManager.IsNodeDirty(this); } }
-        public virtual int		NodeID					{ get { return CSGTreeNode.InvalidNode.NodeID; } }
-        internal virtual bool	IsActive			    { get { return isActiveAndEnabled; } }
 
-        // Can this Node contain child CSGNodes?
-        public virtual bool		CanHaveChildNodes		{ get { return false; } }
-
-        // Does this node have a container treeNode that can hold child treeNodes?
-        public virtual bool		HasContainerTreeNode	{ get { return CanHaveChildNodes; } }
-        public virtual bool		CreatesTreeNode			{ get { return true; } }
-        
-        public virtual CSGTreeNode	GetTreeNodeByIndex(int index)
+        // TODO: find a better solution for this
+        protected void LateUpdate()
         {
-            return CSGTreeNode.InvalidNode;
+            ChiselNodeHierarchyManager.OnCheckSiblingIndexChanged(this);
         }
 
-        public abstract void SetDirty();
-
-        internal abstract CSGTreeNode[] CreateTreeNodes();
-        internal abstract void			ClearTreeNodes(bool clearCaches = false);
-        public virtual void			    UpdateTransformation() { }
-        public virtual void				UpdateBrushMeshInstances() { }
-
-        internal virtual void SetChildren(List<CSGTreeNode> childNodes) { }
-
-        public virtual void CollectCSGTreeNodes(List<CSGTreeNode> childNodes) { }
-
-        public virtual bool GetUsedGeneratedBrushes(List<ChiselBrushContainerAsset> usedBrushes) { return false; }
-        
-        public abstract int GetAllTreeBrushCount();
-
-        // Get all brushes directly contained by this CSGNode
-        public abstract void GetAllTreeBrushes(HashSet<CSGTreeBrush> foundBrushes, bool ignoreSynchronizedBrushes);
-
-        public virtual ChiselBrushMaterial FindBrushMaterialBySurfaceIndex(CSGTreeBrush brush, int surfaceID)
+        public virtual void UpdateTransformation()
         {
-            return null;
+            var node = TopTreeNode;
+            if (!node.Valid)
+                return;
+
+            var transform = hierarchyItem.Transform;
+            if (transform == null)
+                return;
+
+            // TODO: Optimize
+            var localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale);
+            // We can't just use the transformation of this brush, because it might have gameobjects as parents that 
+            // do not have any chisel components. So we need to consider all transformations in between as well.
+            do
+            {
+                transform = transform.parent;
+                if (transform == null)
+                    break;
+
+                // If we find a ChiselNode we continue, unless it's a Composite set to passthrough
+                if (transform.TryGetComponent<ChiselNode>(out var component))
+                {
+                    var composite = component as ChiselComposite;
+                    if (composite == null || !composite.PassThrough)
+                        break;
+                }
+
+                localTransformation = Matrix4x4.TRS(transform.localPosition, transform.localRotation, transform.localScale) * localTransformation;
+            } while (true);
+            node.LocalTransformation = localTransformation;
         }
 
-        public virtual ChiselBrushMaterial[] GetAllBrushMaterials(CSGTreeBrush brush)
+        internal abstract CSGTreeNode RebuildTreeNodes();
+        public void ResetTreeNodes(bool doNotDestroy = false)
         {
-            return null;
+            var topNode = TopTreeNode;
+            if (!doNotDestroy && topNode.Valid)
+                topNode.Destroy();
+            TopTreeNode = default;
         }
-        
-        public virtual SurfaceReference FindSurfaceReference(CSGTreeBrush brush, int surfaceID)
-        {
-            return null;
-        }   
 
-        public virtual SurfaceReference[] GetAllSurfaceReferences(CSGTreeBrush brush)
+        protected void DestroyChildTreeNodes()
         {
-            return null;
+            var topNode = TopTreeNode;
+            if (topNode.Valid)
+                topNode.DestroyChildren();
         }
-        
-        public virtual SurfaceReference[] GetAllSurfaceReferences()
-        {
-            return null;
-        }
+
+        public virtual void UpdateBrushMeshInstances() { }
+
 
 
         public virtual Vector3 SetPivot(Vector3 newWorldPosition)
@@ -148,7 +142,7 @@ namespace Chisel.Components
             if (currentPosition == newWorldPosition)
                 return Vector3.zero;
             transform.position = newWorldPosition;
-            var delta = newWorldPosition - currentPosition;
+            var delta = newWorldPosition - currentPosition; 
             AddPivotOffset(-delta);
             return delta;
         }
@@ -160,13 +154,7 @@ namespace Chisel.Components
                 var child = hierarchyItem.Children[c];
                 child.Component.AddPivotOffset(worldSpaceDelta);
             }
+            UpdateTransformation();
         }
-
-#if UNITY_EDITOR
-        public virtual bool ConvertToBrushes()
-        {
-            return false;
-        }
-#endif
     }
 }

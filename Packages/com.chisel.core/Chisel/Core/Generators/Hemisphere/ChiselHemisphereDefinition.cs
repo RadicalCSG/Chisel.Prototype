@@ -1,68 +1,93 @@
 using System;
-using Bounds = UnityEngine.Bounds;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
 using UnitySceneExtensions;
-using UnityEngine.Profiling;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
     [Serializable]
-    public struct ChiselHemisphereDefinition : IChiselGenerator
+    public struct ChiselHemisphere : IBrushGenerator
     {
-        public const string kNodeTypeName = "Hemisphere";
-
-        public const float				kMinDiameter				= 0.01f;
-        public const float              kDefaultRotation            = 0.0f;
-        public const int				kDefaultHorizontalSegments  = 8;
-        public const int				kDefaultVerticalSegments    = 8;
-        public static readonly Vector3	kDefaultDiameter			= new Vector3(1.0f, 0.5f, 1.0f);
-
-        [DistanceValue] public Vector3	diameterXYZ;
-        public float                rotation; // TODO: useless?
-        public int					horizontalSegments;
-        public int					verticalSegments;
-
-        [NamedItems("Bottom", overflow = "Side {0}")]
-        public ChiselSurfaceDefinition  surfaceDefinition;
-
-        public void Reset()
+        public readonly static ChiselHemisphere DefaultValues = new ChiselHemisphere
         {
-            diameterXYZ			= kDefaultDiameter;
-            rotation			= kDefaultRotation;
-            horizontalSegments	= kDefaultHorizontalSegments;
-            verticalSegments	= kDefaultVerticalSegments;
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
+            diameterXYZ		    = new float3(1.0f, 0.5f, 1.0f),
+            rotation			= 0.0f,
+            horizontalSegments	= 8,
+            verticalSegments	= 8
+        };
+
+
+        [DistanceValue] public float3   diameterXYZ;
+        public float                    rotation; // TODO: useless?
+        public int                      horizontalSegments;
+        public int                      verticalSegments;
+
+
+        #region Generate
+        [BurstCompile(CompileSynchronously = true)]
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
+        {
+            if (!BrushMeshFactory.GenerateHemisphere(diameterXYZ,
+                                                     rotation, // TODO: useless?
+                                                     horizontalSegments,
+                                                     verticalSegments,
+                                                     in surfaceDefinitionBlob,
+                                                     out var newBrushMesh,
+                                                     allocator))
+                return default;
+            return newBrushMesh;
         }
+        #endregion
+
+        #region Surfaces
+        public int RequiredSurfaceCount { get { return 6; } }
+
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition) { }
+        #endregion
+
+        #region Validation
+        public const float kMinDiameter = 0.01f;
 
         public void Validate()
         {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
+            diameterXYZ.x = math.max(kMinDiameter, math.abs(diameterXYZ.x));
+            diameterXYZ.y = math.max(0,            math.abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
+            diameterXYZ.z = math.max(kMinDiameter, math.abs(diameterXYZ.z));
 
-            diameterXYZ.x = Mathf.Max(kMinDiameter, Mathf.Abs(diameterXYZ.x));
-            diameterXYZ.y = Mathf.Max(0,            Mathf.Abs(diameterXYZ.y)) * (diameterXYZ.y < 0 ? -1 : 1);
-            diameterXYZ.z = Mathf.Max(kMinDiameter, Mathf.Abs(diameterXYZ.z));
-
-            horizontalSegments	= Mathf.Max(horizontalSegments, 3);
-            verticalSegments	= Mathf.Max(verticalSegments, 1);
-            
-            surfaceDefinition.EnsureSize(6);
+            horizontalSegments	= math.max(horizontalSegments, 3);
+            verticalSegments	= math.max(verticalSegments, 1);
         }
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
+        public void GetWarningMessages(IChiselMessageHandler messages)
         {
-            return BrushMeshFactory.GenerateHemisphere(ref brushContainer, ref this);
         }
+        #endregion
 
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
+    }
 
+    [Serializable]
+    public class ChiselHemisphereDefinition : SerializedBrushGenerator<ChiselHemisphere>
+    {
+        public const string kNodeTypeName = "Hemisphere";
+
+        //[NamedItems("Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition  surfaceDefinition;
+
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
 
-        
+
         const float kLineDash					= 2.0f;
         const float kVertLineThickness			= 0.75f;
         const float kHorzLineThickness			= 1.0f;
@@ -71,9 +96,9 @@ namespace Chisel.Core
 
         static void DrawOutline(IChiselHandleRenderer renderer, ChiselHemisphereDefinition definition, Vector3[] vertices, LineMode lineMode)
         {
-            var sides			= definition.horizontalSegments;
+            var sides			= definition.settings.horizontalSegments;
 
-            var topSegments		= Mathf.Max(definition.verticalSegments,    0);
+            var topSegments		= math.max(definition.settings.verticalSegments,    0);
             var bottomCap		= false;
             var topCap			= (topSegments    != 0);
             var extraVertices	= ((topCap) ? 1 : 0) + ((bottomCap) ? 1 : 0);
@@ -107,12 +132,12 @@ namespace Chisel.Core
 
         static Vector3[] vertices = null; // TODO: store this per instance? or just allocate every frame?
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             var baseColor		= handles.color;
             var normal			= Vector3.up;
 
-            if (BrushMeshFactory.GenerateHemisphereVertices(ref this, ref vertices))
+            if (BrushMeshFactory.GenerateHemisphereVertices(ref settings, ref vertices))
             {
                 handles.color = handles.GetStateColor(baseColor, false, false);
                 DrawOutline(handles, this, vertices, lineMode: LineMode.ZTest);
@@ -123,10 +148,10 @@ namespace Chisel.Core
             }
             
 
-            var topPoint	= normal * this.diameterXYZ.y;
-            var radius2D	= new Vector2(this.diameterXYZ.x, this.diameterXYZ.z) * 0.5f;
+            var topPoint	= normal * settings.diameterXYZ.y;
+            var radius2D	= new float2(settings.diameterXYZ.x, settings.diameterXYZ.z) * 0.5f;
 
-            if (this.diameterXYZ.y < 0)
+            if (settings.diameterXYZ.y < 0)
                 normal = -normal;
             bool previousModified;
             previousModified = handles.modified;
@@ -145,16 +170,13 @@ namespace Chisel.Core
             }
             if (previousModified != handles.modified)
             {
-                var diameter = this.diameterXYZ;
+                var diameter = settings.diameterXYZ;
                 diameter.y = topPoint.y;
                 diameter.x = radius2D.x * 2.0f;
                 diameter.z = radius2D.x * 2.0f;
-                this.diameterXYZ = diameter;
+                settings.diameterXYZ = diameter;
             }
         }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-        }
+        #endregion
     }
 }

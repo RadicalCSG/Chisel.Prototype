@@ -17,15 +17,15 @@ namespace BrushFactoryTests
         [UnityTest]
         public IEnumerator CreateBrushContainerAsset_IsPartOfManager()
         {
-            var chiselSurface = new ChiselSurface();
-            BrushMeshFactory.CreateBox(Vector3.one, in chiselSurface, out BrushMesh box);
+            var surfaceDefinition = new ChiselSurfaceDefinition();
+            surfaceDefinition.EnsureSize(6);
+
+            BrushMeshFactory.CreateBox(Vector3.one, 0, out BrushMesh box);
             yield return null;
 
-            var instance = BrushMeshInstance.Create(box);
+            var instance = BrushMeshInstance.Create(box, in surfaceDefinition);
             Assert.IsTrue(instance.Valid);
             instance.Destroy();
         }
-
-
     }
 }

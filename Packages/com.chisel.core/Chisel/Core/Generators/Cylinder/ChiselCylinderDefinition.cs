@@ -1,12 +1,18 @@
 using System;
-using Vector3 = UnityEngine.Vector3;
-using Quaternion = UnityEngine.Quaternion;
-using Mathf = UnityEngine.Mathf;
 using Debug = UnityEngine.Debug;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Burst;
 using UnitySceneExtensions;
+using Vector3 = UnityEngine.Vector3;
 
 namespace Chisel.Core
 {
+    // TODO: beveled edges (for top and/or bottom)
+    //			-> makes this a capsule
     // TODO: maybe just have different generators + support converting between generators
     [Serializable]
     public enum CylinderShapeType : byte
@@ -21,9 +27,25 @@ namespace Chisel.Core
     // TODO: can end up with non convex shape when top ellipsoid is scaled larger than bottom on one (or more?) axi
     //          the quad triangulation needs to be reversed (figure out how to detect this)
     [Serializable]
-    public struct ChiselCylinderDefinition : IChiselGenerator
+    public struct ChiselCylinder : IBrushGenerator
     {
-        public const string kNodeTypeName = "Cylinder";
+        public readonly static ChiselCylinder DefaultValues = new ChiselCylinder
+        {
+            topDiameterX        = 1.0f,
+            topDiameterZ        = 1.0f,
+            height              = 1.0f,
+
+            bottomDiameterX     = 1.0f,
+            bottomDiameterZ     = 1.0f,
+            bottomOffset        = 0.0f,
+
+            rotation            = 0.0f,
+            isEllipsoid         = false,
+            fitToBounds         = true,
+            sides               = 16,
+            smoothingGroup      = 1,
+            type                = CylinderShapeType.Cylinder
+        };
 
         public CylinderShapeType type;
         public bool     isEllipsoid;
@@ -32,45 +54,41 @@ namespace Chisel.Core
 
         // Show the name for the top Diameter X as "Top Diameter X" or "Top Diameter" depending on isEllipsoid being true or false
         [ConditionalNamePart("{ellipsoid}", " X", "", nameof(isEllipsoid)),
-         ConditionalName("Top Diameter{ellipsoid}"),
-         // Show this field depending on the type being a ConicalFrustum
-         ConditionalHide(nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder), DistanceValue] 
+            ConditionalName("Top Diameter{ellipsoid}"),
+            // Show this field depending on the type being a ConicalFrustum
+            ConditionalHide(nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder), DistanceValue] 
         public float    topDiameterX;
 
         // Only show this field if it's a ConicalFrustum and isEllipsoid is true
         [ConditionalHide(nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
-         ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
+            ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
         public float    topDiameterZ;
 
         // Show the name for the bottom Diameter X as "Bottom Diameter X", "Bottom Diameter" or "Diameter" depending on isEllipsoid being true or false 
         // and if the type is a ConicalFrustum or not
         [ConditionalNamePart("{bottom}", "Bottom ", "", nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
-         ConditionalNamePart("{ellipsoid}", " X", "", nameof(isEllipsoid)),
-         ConditionalName("{bottom}Diameter{ellipsoid}"), DistanceValue] 
+            ConditionalNamePart("{ellipsoid}", " X", "", nameof(isEllipsoid)),
+            ConditionalName("{bottom}Diameter{ellipsoid}"), DistanceValue] 
         public float    bottomDiameterX;
 
         // Show the name for the bottom Diameter Z as "Bottom Diameter X" or "Diameter Z" depending on if the type is a ConicalFrustum or not
         [ConditionalNamePart("{bottom}", "Bottom ", "", nameof(type), CylinderShapeType.Cone, CylinderShapeType.Cylinder),
-         ConditionalName("{bottom}Diameter Z"),
-         // Only show this field if isEllipsoid is true
-         ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
+            ConditionalName("{bottom}Diameter Z"),
+            // Only show this field if isEllipsoid is true
+            ConditionalHide(nameof(isEllipsoid)), DistanceValue] // (z-diameter is only used for ellipsoids)
         public float    bottomDiameterZ;
 
         [DistanceValue] public float height;
         [DistanceValue] public float bottomOffset;
-
-        // TODO: show this in scene somehow
-        [NamedItems("Top", "Bottom", overflow = "Side {0}")]
-        public ChiselSurfaceDefinition surfaceDefinition;
-
 
         [UnityEngine.HideInInspector]
         public uint smoothingGroup; // TODO: show when we actually have normal smoothing + have custom property drawer for this
 
         [UnityEngine.HideInInspector, AngleValue]
         public float rotation;      // TODO: just get rid of this
+        
 
-
+        #region Properties
         public float TopDiameterX
         {
             get { return topDiameterX; }
@@ -201,70 +219,104 @@ namespace Chisel.Core
                 }
             }
         }
+        #endregion
 
-        public void Reset()
+        #region Generate
+        [BurstCompile]
+        public BlobAssetReference<BrushMeshBlob> GenerateMesh(BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob, Allocator allocator)
         {
-            topDiameterX = 1.0f;
-            topDiameterZ = 1.0f;
-            height = 1.0f;
+            var topDiameter     = new float2(topDiameterX, topDiameterZ);
+            var bottomDiameter  = new float2(bottomDiameterX, bottomDiameterZ);
 
-            bottomDiameterX = 1.0f;
-            bottomDiameterZ = 1.0f;
-            bottomOffset = 0.0f;
-
-            rotation = 0.0f;
-            isEllipsoid = false;
-            fitToBounds = true;
-            sides = 16;
-            smoothingGroup = 1;
-            type = CylinderShapeType.Cylinder;
-
-            if (surfaceDefinition != null) surfaceDefinition.Reset();
-        }
-
-        public void Validate()
-        {
-            if (surfaceDefinition == null)
-                surfaceDefinition = new ChiselSurfaceDefinition();
-
-            topDiameterX = Mathf.Abs(topDiameterX);
-            topDiameterZ = Mathf.Abs(topDiameterZ);
-            bottomDiameterX = Mathf.Abs(bottomDiameterX);
-            bottomDiameterZ = Mathf.Abs(bottomDiameterZ);
-
-            sides = Mathf.Max(3, sides);
-
-            if (surfaceDefinition.EnsureSize(2 + sides))
+            var topHeight = height + bottomOffset;
+            var bottomHeight = bottomOffset;
+            switch (type)
             {
-                // Top plane
-                surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
+                case CylinderShapeType.ConicalFrustum:  break;
+                case CylinderShapeType.Cylinder:        topDiameter = bottomDiameter; break;
+                case CylinderShapeType.Cone:            topDiameter = float2.zero; break;
+                default: throw new NotImplementedException();
+            }
 
-                // Bottom plane
-                surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
-                
-                float radius = topDiameterX * 0.5f;
-                float angle = (360.0f / sides);
-                float sideLength = (2 * Mathf.Sin((angle / 2.0f) * Mathf.Deg2Rad)) * radius;
+            if (!isEllipsoid)
+            {
+                topDiameter.y = topDiameter.x;
+                bottomDiameter.y = bottomDiameter.x;
+            }
 
-                // Side planes
-                for (int i = 2; i < 2 + sides; i++)
-                {
-                    var uv0 = UVMatrix.identity;
-                    uv0.U.w = ((i - 2) + 0.5f) * sideLength;
-                    // TODO: align with bottom
-                    //uv0.V.w = 0.5f;
-                    surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
-                    surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
-                }
+            if (!BrushMeshFactory.GenerateConicalFrustumSubMesh(topDiameter,    topHeight, 
+                                                                bottomDiameter, bottomHeight,
+                                                                rotation, sides, fitToBounds, 
+                                                                in surfaceDefinitionBlob, 
+                                                                out var newBrushMesh, 
+                                                                allocator))
+                return default;
+            return newBrushMesh;
+        }
+        #endregion
+
+        #region Surfaces
+        [BurstDiscard]
+        public int RequiredSurfaceCount { get { return 2 + sides; } }
+
+        [BurstDiscard]
+        public void UpdateSurfaces(ref ChiselSurfaceDefinition surfaceDefinition)
+        {
+            // Top plane
+            surfaceDefinition.surfaces[0].surfaceDescription.UV0 = UVMatrix.centered;
+
+            // Bottom plane
+            surfaceDefinition.surfaces[1].surfaceDescription.UV0 = UVMatrix.centered;
+
+            float radius = topDiameterX * 0.5f;
+            float angle = (360.0f / sides);
+            float sideLength = (2 * math.sin(math.radians(angle / 2.0f))) * radius;
+
+            // Side planes
+            for (int i = 2; i < 2 + sides; i++)
+            {
+                var uv0 = UVMatrix.identity;
+                uv0.U.w = ((i - 2) + 0.5f) * sideLength;
+                // TODO: align with bottom
+                //uv0.V.w = 0.5f;
+                surfaceDefinition.surfaces[i].surfaceDescription.UV0 = uv0;
+                surfaceDefinition.surfaces[i].surfaceDescription.smoothingGroup = smoothingGroup;
             }
         }
+        #endregion
 
-        public bool Generate(ref ChiselBrushContainer brushContainer)
+        #region Validation
+        public void Validate()
         {
-            return BrushMeshFactory.GenerateCylinder(ref brushContainer, ref this);
+            topDiameterX = math.abs(topDiameterX);
+            topDiameterZ = math.abs(topDiameterZ);
+            bottomDiameterX = math.abs(bottomDiameterX);
+            bottomDiameterZ = math.abs(bottomDiameterZ);
+
+            sides = math.max(3, sides);
         }
 
+        [BurstDiscard]
+        public void GetWarningMessages(IChiselMessageHandler messages)
+        {
+        }
+        #endregion
 
+        #region Reset
+        public void Reset() { this = DefaultValues; }
+        #endregion
+    }
+
+    [Serializable]
+    public class ChiselCylinderDefinition : SerializedBrushGenerator<ChiselCylinder>
+    {
+        public const string kNodeTypeName = "Cylinder";
+
+        // TODO: show this in scene somehow
+        //[NamedItems("Top", "Bottom", overflow = "Side {0}")]
+        //public ChiselSurfaceDefinition surfaceDefinition;
+
+        #region OnEdit
         //
         // TODO: code below needs to be cleaned up & simplified 
         //
@@ -315,14 +367,14 @@ namespace Chisel.Core
                     handles.RenderDistanceMeasurement(center, center + vecZ, radiusZ);
                 }
 
-                diameterX = Mathf.Abs(diameterX);
-                diameterZ = Mathf.Abs(diameterZ);
+                diameterX = math.abs(diameterX);
+                diameterZ = math.abs(diameterZ);
             } else
             {
                 Debug.Assert(radiusHandles.Length == 1);
 
                 handles.DoDistanceHandle(ref diameterX, center, up, radiusHandles[0]); // left
-                diameterX       = Mathf.Abs(diameterX);
+                diameterX       = math.abs(diameterX);
                 var radiusX     = diameterX * 0.5f;
 
                 if (handles.lastHandleHadFocus)
@@ -374,32 +426,32 @@ namespace Chisel.Core
         
             public void Update(IChiselHandles handles, ChiselCylinderDefinition definition)
             {
-                var tempBottomDiameterX	= definition.BottomDiameterX;
-                var tempBottomDiameterZ = definition.isEllipsoid ? definition.BottomDiameterZ : definition.BottomDiameterX;
+                var tempBottomDiameterX	= definition.settings.BottomDiameterX;
+                var tempBottomDiameterZ = definition.settings.isEllipsoid ? definition.settings.BottomDiameterZ : definition.settings.BottomDiameterX;
 
                 float tempTopDiameterX, tempTopDiameterZ;
-                if (definition.type == CylinderShapeType.Cone)
+                if (definition.settings.type == CylinderShapeType.Cone)
                 {
                     tempTopDiameterX     = 0;
                     tempTopDiameterZ     = 0;
                 } else
-                if (definition.type == CylinderShapeType.Cylinder)
+                if (definition.settings.type == CylinderShapeType.Cylinder)
                 { 
                     tempTopDiameterX	= tempBottomDiameterX;
                     tempTopDiameterZ	= tempBottomDiameterZ;
                 } else
                 {
-                    tempTopDiameterX	= definition.TopDiameterX;
-                    tempTopDiameterZ	= definition.isEllipsoid ? definition.TopDiameterZ : definition.TopDiameterX;
+                    tempTopDiameterX	= definition.settings.TopDiameterX;
+                    tempTopDiameterZ	= definition.settings.isEllipsoid ? definition.settings.TopDiameterZ : definition.settings.TopDiameterX;
                 }
             
-                topY            = (definition.height + definition.bottomOffset);
-                bottomY         = definition.bottomOffset;
-                var rotate		= Quaternion.AngleAxis(definition.rotation, Vector3.up);
-                topXVector		= rotate * Vector3.right   * tempTopDiameterX * 0.5f;
-                topZVector      = rotate * Vector3.forward * tempTopDiameterZ * 0.5f;
-                bottomXVector   = rotate * Vector3.right   * tempBottomDiameterX * 0.5f;
-                bottomZVector   = rotate * Vector3.forward * tempBottomDiameterZ * 0.5f;
+                topY            = (definition.settings.height + definition.settings.bottomOffset);
+                bottomY         = definition.settings.bottomOffset;
+                var rotate		= quaternion.AxisAngle(new float3(0,1,0), math.radians(definition.settings.rotation));
+                topXVector		= math.mul(rotate, new float3(1, 0, 0)) * tempTopDiameterX * 0.5f;
+                topZVector      = math.mul(rotate, new float3(0, 0, 1)) * tempTopDiameterZ * 0.5f;
+                bottomXVector   = math.mul(rotate, new float3(1, 0, 0)) * tempBottomDiameterX * 0.5f;
+                bottomZVector   = math.mul(rotate, new float3(0, 0, 1)) * tempBottomDiameterZ * 0.5f;
                 normal = Vector3.up;
                 if (topY < bottomY) normal = -Vector3.up; else normal = Vector3.up;
                 topPoint        = normal * topY;
@@ -461,53 +513,6 @@ namespace Chisel.Core
                     }
                     prevDot = currDot;
                 }
-
-    #if false
-                {
-                    var pointC      = (Vector3.right * (definition.topDiameterX * 0.5f)) + (Vector3.up * (definition.height + definition.bottomOffset));
-                    var pointD      = (Vector3.right * (definition.bottomDiameterX * 0.5f)) + (Vector3.up * definition.bottomOffset);
-                    //var deltar      = (pointC - pointD).normalized;
-                    //var normala     = -Vector3.Cross(Vector3.forward, deltar).normalized;
-
-
-                    var DT = (cameraPosition - topPoint);
-                    var DB = (cameraPosition - bottomPoint);
-                    var DmT = DT.magnitude;
-                    var DmB = DB.magnitude;
-                    //var Dv = D / Dm;
-
-                    var RmT = definition.topDiameterX * 0.5f;
-                    var RmB = definition.bottomDiameterX * 0.5f;
-
-                    var cosAT = RmT / DmT;
-                    var cosAB = RmB / DmB;
-                    var AT = Mathf.Acos(cosAT) * Mathf.Rad2Deg;
-                    var AB = Mathf.Acos(cosAB) * Mathf.Rad2Deg;
-                    var RvT = (Quaternion.AngleAxis(AT, Vector3.up) * DT).normalized;
-                    var RvB = (Quaternion.AngleAxis(AB, Vector3.up) * DB).normalized;
-                    //var R = Rv * Rm;
-
-                    var angleT = Vector3.SignedAngle(Vector3.right, RvT, Vector3.up);
-                    var angleB = Vector3.SignedAngle(Vector3.right, RvB, Vector3.up);
-
-                    var arotationT  = Quaternion.AngleAxis(angleT, Vector3.up);
-                    var arotationB  = Quaternion.AngleAxis(angleB, Vector3.up);
-                    var ptA = arotationT * pointC;
-                    var ptB = arotationB * pointD;
-                    var prevCol = handles.color;
-                    handles.color = UnityEngine.Color.red;
-                    handles.DrawLine(bottomPoint, bottomPoint + Vector3.right);
-                    //handles.DrawLine(bottomPoint, bottomPoint + Vector3.forward);
-                    //handles.DrawLine(bottomPoint, bottomPoint + normala);
-                    //handles.DrawLine(bottomPoint, bottomPoint + deltar);
-                    //handles.DrawLine(bottomPoint, bottomPoint + R);
-                    handles.DrawLine(bottomPoint, bottomPoint + RvT);
-                    handles.DrawLine(bottomPoint, bottomPoint + RvB);
-                    //handles.DrawLine(bottomPoint, bottomPoint + desired);
-                    handles.DrawLine(ptA, ptB);
-                    handles.color = prevCol;
-                }
-    #endif
 
 
                 /*/
@@ -573,7 +578,7 @@ namespace Chisel.Core
                 bottomHandle.Normal = -normal;
 
                 
-                if (definition.isEllipsoid)
+                if (definition.settings.isEllipsoid)
                 {
                     if (bottomRadiusHandles == null || bottomRadiusHandles.Length != 4)
                     {
@@ -603,7 +608,7 @@ namespace Chisel.Core
                         bottomRadiusHandles[i].Normal = -normal;
                         bottomRadiusHandles[i].DiameterX = tempBottomDiameterX;
                         bottomRadiusHandles[i].DiameterZ = tempBottomDiameterZ;
-                        bottomRadiusHandles[i].Rotation = definition.rotation;
+                        bottomRadiusHandles[i].Rotation = definition.settings.rotation;
                     }
 
                     for (int i = 0; i < topRadiusHandles.Length; i++)
@@ -612,12 +617,12 @@ namespace Chisel.Core
                         topRadiusHandles[i].Normal = normal;
                         topRadiusHandles[i].DiameterX = tempTopDiameterX;
                         topRadiusHandles[i].DiameterZ = tempTopDiameterZ;
-                        topRadiusHandles[i].Rotation = definition.rotation;
+                        topRadiusHandles[i].Rotation = definition.settings.rotation;
                     }
 
                     if (bottomHandles == null || bottomHandles.Length != 4)
                         bottomHandles   = new IChiselHandle[] { bottomHandle, bottomRadiusHandles[0], bottomRadiusHandles[1], bottomRadiusHandles[2], bottomRadiusHandles[3] };
-                    if (definition.type != CylinderShapeType.Cone)
+                    if (definition.settings.type != CylinderShapeType.Cone)
                     {
                         if (topHandles == null || topHandles.Length != 5)
                             topHandles = new IChiselHandle[] { topHandle, topRadiusHandles[0], topRadiusHandles[1], topRadiusHandles[2], topRadiusHandles[3] };
@@ -632,7 +637,7 @@ namespace Chisel.Core
                     if (topRadiusHandles == null || topRadiusHandles.Length    != 1) topRadiusHandles = new IChiselEllipsoidHandle[] { fullTopCircleHandle };
 
                     if (bottomHandles == null || bottomHandles.Length != 2) bottomHandles   = new IChiselHandle[] { bottomHandle, bottomRadiusHandles[0] };
-                    if (definition.type != CylinderShapeType.Cone)
+                    if (definition.settings.type != CylinderShapeType.Cone)
                     {
                         if (topHandles == null || topHandles.Length != 2)
                             topHandles = new IChiselHandle[] { topHandle, topRadiusHandles[0] };
@@ -645,7 +650,7 @@ namespace Chisel.Core
             }
         }
 
-        public void OnEdit(IChiselHandles handles)
+        public override void OnEdit(IChiselHandles handles)
         {
             // Store our allocated handles in generatorState to avoid reallocating them every frame
             var cylinderHandles = handles.generatorState as CylinderHandles;
@@ -670,15 +675,15 @@ namespace Chisel.Core
                 handles.DoSlider1DHandle(ref cylinderHandles.topPoint,     cylinderHandles.normal, cylinderHandles.topHandles);
                 haveFocus = haveFocus || handles.lastHandleHadFocus;
                 if (haveFocus)
-                    handles.RenderDistanceMeasurement(cylinderHandles.topPoint, cylinderHandles.bottomPoint, Mathf.Abs(height));
+                    handles.RenderDistanceMeasurement(cylinderHandles.topPoint, cylinderHandles.bottomPoint, math.abs(settings.height));
             }
             if (prevModified != handles.modified)
             {
                 cylinderHandles.topY    = Vector3.Dot(Vector3.up, cylinderHandles.topPoint);
                 cylinderHandles.bottomY = Vector3.Dot(Vector3.up, cylinderHandles.bottomPoint);
 
-                height = cylinderHandles.topY - cylinderHandles.bottomY;
-                bottomOffset = cylinderHandles.bottomY;
+                settings.height = cylinderHandles.topY - cylinderHandles.bottomY;
+                settings.bottomOffset = cylinderHandles.bottomY;
             }
 
 
@@ -686,30 +691,26 @@ namespace Chisel.Core
             prevModified = handles.modified;
             {
                 // Make the bottom circle draggable
-                DraggableRadius(handles, ref bottomDiameterX, ref bottomDiameterZ, cylinderHandles.bottomPoint, -cylinderHandles.normal, cylinderHandles.bottomXVector, cylinderHandles.bottomZVector, cylinderHandles.bottomRadiusHandles, this.isEllipsoid);
+                DraggableRadius(handles, ref settings.bottomDiameterX, ref settings.bottomDiameterZ, cylinderHandles.bottomPoint, -cylinderHandles.normal, cylinderHandles.bottomXVector, cylinderHandles.bottomZVector, cylinderHandles.bottomRadiusHandles, settings.isEllipsoid);
                 // If we're a Cylinder, the top circle actually changes the bottom circle too
-                if (type == CylinderShapeType.Cylinder)
-                    DraggableRadius(handles, ref bottomDiameterX, ref bottomDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, this.isEllipsoid);
+                if (settings.type == CylinderShapeType.Cylinder)
+                    DraggableRadius(handles, ref settings.bottomDiameterX, ref settings.bottomDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, settings.isEllipsoid);
                 else
                 // If we're a Conical Frustum, the top circle can be resized independently from the bottom circle
-                if (type == CylinderShapeType.ConicalFrustum)
-                    DraggableRadius(handles, ref topDiameterX, ref topDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, this.isEllipsoid);
+                if (settings.type == CylinderShapeType.ConicalFrustum)
+                    DraggableRadius(handles, ref settings.topDiameterX, ref settings.topDiameterZ, cylinderHandles.topPoint, cylinderHandles.normal, cylinderHandles.topXVector, cylinderHandles.topZVector, cylinderHandles.topRadiusHandles, settings.isEllipsoid);
                 // else; If we're a Cone, we ignore the top circle
             }
             if (prevModified != handles.modified)
             {
                 // Ensure that when our shape is circular and we modify it, that when we convert back to an ellipsoid, it'll still be circular
-                if (!this.isEllipsoid)
+                if (!settings.isEllipsoid)
                 {
-                    topDiameterZ    = topDiameterX;
-                    bottomDiameterZ = bottomDiameterX;
+                    settings.topDiameterZ    = settings.topDiameterX;
+                    settings.bottomDiameterZ = settings.bottomDiameterX;
                 }
             }
         }
-
-        public void OnMessages(IChiselMessages messages)
-        {
-            // TODO: show a message when height = 0 or when shape is a line or flat b/c diameters are 0
-        }
+        #endregion
     }
 }

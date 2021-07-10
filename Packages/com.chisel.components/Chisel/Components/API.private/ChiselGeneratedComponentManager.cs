@@ -121,12 +121,49 @@ namespace Chisel.Components
 
             UpdateModelFlags(model);
         }
+        
+        // Get all brushes directly contained by this CSGNode (not its children)
+        public static void GetAllTreeBrushes(ChiselGeneratorComponent component, HashSet<CSGTreeBrush> foundBrushes)
+        {
+            if (foundBrushes == null ||
+                !component.TopTreeNode.Valid)
+                return;
+
+            var brush = (CSGTreeBrush)component.TopTreeNode;
+            if (brush.Valid)
+            {
+                foundBrushes.Add(brush);
+            } else
+            {
+                var nodes = new List<CSGTreeNode>();
+                nodes.Add(component.TopTreeNode);
+                while (nodes.Count > 0)
+                {
+                    var lastIndex = nodes.Count - 1;
+                    var current = nodes[lastIndex];
+                    nodes.RemoveAt(lastIndex);
+                    var nodeType = current.Type;
+                    if (nodeType == CSGNodeType.Brush)
+                    {
+                        brush = (CSGTreeBrush)current;
+                            foundBrushes.Add(brush);
+                    } else
+                    {
+                        for (int i = current.Count - 1; i >= 0; i--)
+                            nodes.Add(current[i]);
+                    }
+                }
+            }
+        }
 
 #if UNITY_EDITOR
-        static Dictionary<int, VisibilityState> visibilityStateLookup = new Dictionary<int, VisibilityState>();
-        public static bool IsBrushVisible(int brushID) { return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; }
+        static Dictionary<CompactNodeID, VisibilityState> visibilityStateLookup = new Dictionary<CompactNodeID, VisibilityState>();
+        public static bool IsBrushVisible(CompactNodeID brushID) 
+        { 
+            return visibilityStateLookup.TryGetValue(brushID, out VisibilityState state) && state == VisibilityState.AllVisible; 
+        }
 
-        static bool updateVisibilityFlag = false;
+        static bool updateVisibilityFlag = true;
         public static void OnVisibilityChanged()
         {
             updateVisibilityFlag = true;
@@ -188,9 +225,28 @@ namespace Chisel.Components
             }
         }
 
-        public static void UpdateVisibility()
+        public static VisibilityState UpdateVisibility(UnityEditor.SceneVisibilityManager instance, ChiselGeneratorComponent generator)
         {
-            if (!updateVisibilityFlag)
+            var resultState     = VisibilityState.Unknown;
+            var visible         = !instance.IsHidden(generator.gameObject);
+            var pickingEnabled  = !instance.IsPickingDisabled(generator.gameObject);
+            var topNode         = generator.TopTreeNode;
+            if (topNode.Valid)
+            {
+                topNode.Visible         = visible;
+                topNode.PickingEnabled  = pickingEnabled;
+
+                if (visible)
+                    resultState |= VisibilityState.AllVisible;
+                else
+                    resultState |= VisibilityState.AllInvisible;
+            }
+            return resultState;
+        }
+
+        public static void UpdateVisibility(bool force = false)
+        { 
+            if (!updateVisibilityFlag && !force)
                 return;
 
             updateVisibilityFlag = false;
@@ -204,24 +260,40 @@ namespace Chisel.Components
             {
                 if (!node || !node.isActiveAndEnabled)
                     continue;
-                var generator = node as ChiselGeneratorComponent;
-                if (!generator)
-                    continue;
 
-                if (!visibilityStateLookup.TryGetValue(generator.hierarchyItem.Model.NodeID, out VisibilityState prevState))
-                    prevState = VisibilityState.Unknown;
-                var state = generator.UpdateVisibility(sceneVisibilityManager);
-                visibilityStateLookup[node.NodeID] = state;
-                visibilityStateLookup[generator.hierarchyItem.Model.NodeID] = state | prevState;
+                var brushGenerator = node as ChiselGeneratorComponent;
+                if (brushGenerator)
+                {
+                    var treeNode = node.TopTreeNode;
+                    if (!CompactHierarchyManager.IsValidNodeID(treeNode))
+                        continue;
+
+                    var model               = brushGenerator.hierarchyItem.Model;
+                    if (model == null)
+                        Debug.LogError($"{brushGenerator.hierarchyItem.Component} model {model} == null", brushGenerator.hierarchyItem.Component);
+                    if (model)
+                    { 
+                        var modelNode           = model.TopTreeNode;
+                        var compactNodeID       = CompactHierarchyManager.GetCompactNodeID(treeNode);
+                        var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
+                        if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState prevState))
+                            prevState = VisibilityState.Unknown;
+                        var state = UpdateVisibility(sceneVisibilityManager, brushGenerator);
+                        visibilityStateLookup[compactNodeID] = state;
+                        visibilityStateLookup[modelCompactNodeID] = state | prevState;
+                    }
+                }
             }
 
             foreach (var model in models)
             {
                 if (!model || !model.isActiveAndEnabled || model.generated == null)
                     continue;
-                if (!visibilityStateLookup.TryGetValue(model.NodeID, out VisibilityState state))
+                var modelNode           = model.TopTreeNode;
+                var modelCompactNodeID  = CompactHierarchyManager.GetCompactNodeID(modelNode);
+                if (!visibilityStateLookup.TryGetValue(modelCompactNodeID, out VisibilityState state))
                 {
-                    visibilityStateLookup[model.NodeID] = VisibilityState.AllVisible;
+                    visibilityStateLookup[modelCompactNodeID] = VisibilityState.AllVisible;
                     model.generated.visibilityState = VisibilityState.AllVisible;
                     continue;
                 }

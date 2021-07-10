@@ -7,7 +7,7 @@ using Chisel;
 using Chisel.Core;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
-
+/*
 namespace HierarchyTests
 {
     public partial class Brush_Transformation
@@ -19,4 +19,4 @@ namespace HierarchyTests
         // brush in model, move brush, generated box is also moved
         // brush in model, move model, generated box is not moved in mesh, but meshrenderer is moved in worldspace
     }
-}
+}*/

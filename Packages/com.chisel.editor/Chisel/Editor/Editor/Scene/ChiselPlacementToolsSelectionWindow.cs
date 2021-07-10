@@ -241,6 +241,11 @@ namespace Chisel.Editors
 
         Vector2 scrollPosition = Vector2.zero;
 
+        class TO : ScriptableObject
+        {
+
+        }
+
         public void OnGUI()
         {
             // TODO: add search functionality

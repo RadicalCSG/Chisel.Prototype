@@ -25,7 +25,7 @@ namespace Chisel.Editors
     // TODO: add support for "editors" to have an init/shutdown/update part so we can cache handles
     public sealed class ChiselEditorHandles : IChiselHandles
     {
-        public void Start(ChiselGeneratorComponent generator, SceneView sceneView = null)
+        public void Start(ChiselNode generator, SceneView sceneView = null)
         {
             this.focusControl = UnitySceneExtensions.SceneHandleUtility.focusControl;
             this.disabled = UnitySceneExtensions.SceneHandles.disabled;
@@ -105,7 +105,7 @@ namespace Chisel.Editors
 
         int focusControl;
 
-        ChiselGeneratorComponent generator;
+        ChiselNode generator;
         Transform generatorTransform;
         public bool modified { get; private set; }
 
@@ -134,7 +134,7 @@ namespace Chisel.Editors
             }
         }
 
-        public readonly Dictionary<ChiselGeneratorComponent, object> generatorStateLookup = new Dictionary<ChiselGeneratorComponent, object>();
+        public readonly Dictionary<ChiselNode, object> generatorStateLookup = new Dictionary<ChiselNode, object>();
 
         public object generatorState 
         { 
@@ -1084,7 +1084,17 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.DrawContinuousLines(points, 0, points.Length, lineMode, thickness, dashSize);
         }
 
+        public void DrawContinuousLines(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawContinuousLines(points, 0, points.Length, lineMode, thickness, dashSize);
+        }
+
         public void DrawContinuousLines(Vector3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize);
+        }
+
+        public void DrawContinuousLines(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
         {
             ChiselOutlineRenderer.DrawContinuousLines(points, startIndex, length, lineMode, thickness, dashSize);
         }
@@ -1094,7 +1104,17 @@ namespace Chisel.Editors
             ChiselOutlineRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize);
         }
 
+        public void DrawLineLoop(float3[] points, int startIndex, int length, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawLineLoop(points, startIndex, length, lineMode, thickness, dashSize);
+        }
+
         public void DrawLineLoop(Vector3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
+        {
+            ChiselOutlineRenderer.DrawLineLoop(points, 0, points.Length, lineMode, thickness, dashSize);
+        }
+
+        public void DrawLineLoop(float3[] points, LineMode lineMode = LineMode.NoZTest, float thickness = 1.0f, float dashSize = 0.0f)
         {
             ChiselOutlineRenderer.DrawLineLoop(points, 0, points.Length, lineMode, thickness, dashSize);
         }
@@ -1114,7 +1134,7 @@ namespace Chisel.Editors
         void RecordUndo(string undoMessage)
         {
             if (generator)
-                RecordUndo(undoMessage ?? $"Modified {generator.NodeTypeName}", generator);
+                RecordUndo(undoMessage ?? $"Modified {generator.ChiselNodeTypeName}", generator);
         }
 
         public bool DoBoundsHandle(ref Bounds bounds, Vector3? snappingSteps = null, string undoMessage = null)
@@ -1237,7 +1257,12 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, 90);
+                    /*
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
+                    else*/
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, 90);
                     return true;
                 }
                 case TurnState.AntiClockWise:
@@ -1248,7 +1273,12 @@ namespace Chisel.Editors
                     bounds.size = newSize;
                     GUI.changed = true;
                     this.modified = true;
-                    generatorTransform.RotateAround(generatorTransform.TransformPoint(center + generator.PivotOffset), generatorTransform.up, -90);
+                    /*
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
+                    else*/
+                    if (generator is ChiselGeneratorComponent)
+                        generatorTransform.RotateAround(generatorTransform.TransformPoint(center + ((ChiselGeneratorComponent)generator).PivotOffset), generatorTransform.up, -90);
                     return true;
                 }
             }
@@ -1355,7 +1385,7 @@ namespace Chisel.Editors
         }
     }
 
-    public sealed class ChiselEditorMessages : IChiselMessages
+    public sealed class ChiselComponentInspectorMessageHandler : IChiselMessageHandler
     {
         public void Warning(string message, Action buttonAction, string buttonText)
         {

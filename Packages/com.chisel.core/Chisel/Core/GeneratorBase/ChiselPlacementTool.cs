@@ -19,7 +19,7 @@ namespace Chisel.Core
     /// A placement tool that is placed by dragging a box like shape, and fitting the generator inside it
     /// Use <see cref="Chisel.Core.ChiselPlacementToolAttribute"/> to give it a name and group
     public abstract class ChiselBoundsPlacementTool<PlacementToolType> : ScriptableObject
-        where PlacementToolType : IChiselGenerator, new()
+        where PlacementToolType : IChiselNodeGenerator, new()
     {
         public abstract PlacementFlags PlacementFlags { get; }
         public virtual void OnCreate(ref PlacementToolType definition) { }
@@ -31,7 +31,7 @@ namespace Chisel.Core
     /// A placement tool that is placed by drawing a 2D shape and extruding it
     /// Use <see cref="Chisel.Core.ChiselPlacementToolAttribute"/> to give it a name and group
     public abstract class ChiselShapePlacementTool<PlacementToolType> : ScriptableObject
-        where PlacementToolType : IChiselGenerator, new()
+        where PlacementToolType : IChiselNodeGenerator, new()
     {
         public virtual void OnCreate(ref PlacementToolType definition, Curve2D shape) { }
         public abstract void OnUpdate(ref PlacementToolType definition, float height);

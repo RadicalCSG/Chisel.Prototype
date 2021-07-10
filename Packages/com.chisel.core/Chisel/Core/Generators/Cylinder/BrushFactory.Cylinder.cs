@@ -11,196 +11,268 @@ using Debug = UnityEngine.Debug;
 using UnitySceneExtensions;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using Unity.Entities;
+using Unity.Collections;
+using System.Runtime.CompilerServices;
+using Unity.Burst;
 
 namespace Chisel.Core
 {
     // TODO: rename
     public sealed partial class BrushMeshFactory
     {
-
         [Serializable]
         public struct ChiselCircleDefinition
         {
-            public ChiselCircleDefinition(float diameterX, float diameterZ, float height) { this.diameterX = diameterX; this.diameterZ = diameterZ; this.height = height; }
-            public ChiselCircleDefinition(float diameter, float height) { this.diameterX = diameter; this.diameterZ = diameter; this.height = height; }
-
             public float diameterX;
             public float diameterZ;
             public float height;
         }
 
-        public static bool GenerateCylinder(ref ChiselBrushContainer brushContainer, ref ChiselCylinderDefinition definition)
+        [BurstCompile]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GenerateCylinderSubMesh(float    diameter,
+                                                   float    topHeight, 
+                                                   float    bottomHeight, 
+                                                   float    rotation, 
+                                                   int      sides, 
+                                                   bool     fitToBounds, 
+                                                   in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                   out BlobAssetReference<BrushMeshBlob> brushMesh,
+                                                   Allocator allocator)
         {
-            definition.Validate();
-
-            var tempTop    = new ChiselCircleDefinition { diameterX = definition.topDiameterX, diameterZ = definition.topDiameterZ, height = definition.height + definition.bottomOffset };
-            var tempBottom = new ChiselCircleDefinition { diameterX = definition.bottomDiameterX, diameterZ = definition.bottomDiameterZ, height = definition.bottomOffset };
-
-            if (!definition.isEllipsoid)
-            {
-                tempTop   .diameterZ = tempTop.diameterX;
-                tempBottom.diameterZ = tempBottom.diameterX;
-            }
-
-            brushContainer.EnsureSize(1);
-
-            bool result = false;
-            switch (definition.type)
-            {
-                case CylinderShapeType.Cylinder:       result = BrushMeshFactory.GenerateCylinder(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.ConicalFrustum: result = BrushMeshFactory.GenerateConicalFrustum(ref brushContainer.brushMeshes[0], tempBottom, tempTop, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.Cone:           result = BrushMeshFactory.GenerateCone(ref brushContainer.brushMeshes[0], tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-            }
-            return result;
+            return GenerateConicalFrustumSubMesh(new float2(diameter, diameter), topHeight, 
+                                                 new float2(diameter, diameter), bottomHeight, 
+                                                 rotation, sides, fitToBounds, 
+                                                 in surfaceDefinitionBlob, out brushMesh, allocator);
         }
 
-        public static bool GenerateCylinder(ref BrushMesh brushMesh, ref ChiselCylinderDefinition definition)
+        [BurstCompile]
+        public static unsafe bool GenerateConicalFrustumSubMesh(float2 topDiameter,    float topHeight,
+                                                                float2 bottomDiameter, float bottomHeight, 
+                                                                float                  rotation, 
+                                                                int                    segments, 
+                                                                bool                   fitToBounds, 
+                                                                in BlobAssetReference<NativeChiselSurfaceDefinition> surfaceDefinitionBlob,
+                                                                out BlobAssetReference<BrushMeshBlob>                brushMesh,
+                                                                Allocator                                            allocator)
         {
-            definition.Validate();
-            
-            var tempTop    = new ChiselCircleDefinition { diameterX = definition.topDiameterX, diameterZ = definition.topDiameterZ, height = definition.height + definition.bottomOffset };
-            var tempBottom = new ChiselCircleDefinition { diameterX = definition.bottomDiameterX, diameterZ = definition.bottomDiameterZ, height = definition.bottomOffset };
-
-            if (!definition.isEllipsoid)
+            brushMesh = BlobAssetReference<BrushMeshBlob>.Null;
+            if (topHeight > bottomHeight) 
             {
-                tempTop   .diameterZ = tempTop.diameterX;
-                tempBottom.diameterZ = tempBottom.diameterX;
+                { var temp = topHeight; topHeight = bottomHeight; bottomHeight = temp; }
+                { var temp = topDiameter; topDiameter = bottomDiameter; bottomDiameter = temp; }
             }
-            
-            bool result = false;
-            switch (definition.type)
-            {
-                case CylinderShapeType.Cylinder:       result = BrushMeshFactory.GenerateCylinder(ref brushMesh, tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.ConicalFrustum: result = BrushMeshFactory.GenerateConicalFrustum(ref brushMesh, tempBottom, tempTop, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-                case CylinderShapeType.Cone:           result = BrushMeshFactory.GenerateCone(ref brushMesh, tempBottom, tempTop.height, definition.rotation, definition.sides, definition.fitToBounds, in definition.surfaceDefinition); break;
-            }
-            if (!result)
-                brushMesh.Clear();
-            return result;
-        }
-
-        public static bool GenerateCylinder(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  top;
-            top.diameterX = bottom.diameterX;
-            top.diameterZ = bottom.diameterZ;
-            top.height = topHeight;
-            return GenerateConicalFrustum(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
-        }
-
-        public static bool GenerateCone(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  top;
-            top.diameterX = 0;
-            top.diameterZ = 0;
-            top.height = topHeight;
-            return GenerateConicalFrustum(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
-        }
-
-        public static bool GenerateConicalFrustum(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, ChiselCircleDefinition top, float rotation, int segments, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
-            {
-                brushMesh.Clear();
+            if (segments < 3 || (topHeight - bottomHeight) == 0 || (bottomDiameter.x == 0 && topDiameter.x == 0) || (bottomDiameter.y == 0 && topDiameter.y == 0))
                 return false;
-            }
 
-            if (surfaceDefinition == null ||
-                surfaceDefinition.surfaces == null ||
-                surfaceDefinition.surfaces.Length != segments + 2)
-            {
-                brushMesh.Clear();
+            ref var surfaceDefinition = ref surfaceDefinitionBlob.Value;
+            if (surfaceDefinition.surfaces.Length < segments + 2)
                 return false;
-            }
 
-            if (!GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, segments, fitToBounds, in surfaceDefinition))
+            using (var builder = new BlobBuilder(Allocator.Temp))
             {
-                brushMesh.Clear();
-                return false;
+                ref var root = ref builder.ConstructRoot<BrushMeshBlob>();
+                BlobBuilderArray<float3>                    localVertices;
+                BlobBuilderArray<BrushMeshBlob.HalfEdge>    halfEdges;
+                BlobBuilderArray<BrushMeshBlob.Polygon>     polygons;
+
+                // TODO: handle situation where ellipsoid is a line
+
+                if (topDiameter.x == 0)
+                {
+                    GetConeFrustumVertices(topHeight, 
+                                           bottomDiameter, bottomHeight, 
+                                           rotation, segments, 
+                                           in builder, ref root, out localVertices, inverse: false, fitToBounds: fitToBounds);
+
+                    // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
+                    CreateConeSubMesh(segments, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                } else
+                if (bottomDiameter.x == 0)
+                {
+                    GetConeFrustumVertices(bottomHeight, 
+                                           topDiameter, topHeight, 
+                                           rotation, segments, 
+                                           in builder, ref root, out localVertices, inverse: true, fitToBounds: fitToBounds);
+
+                    // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
+                    CreateConeSubMesh(segments, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                } else
+                {
+                    GetConicalFrustumVertices(topDiameter,    topHeight,
+                                              bottomDiameter, bottomHeight, 
+                                              rotation, segments, 
+                                              in builder, ref root, out localVertices, fitToBounds: fitToBounds);
+
+                    // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
+                    CreateExtrudedSubMesh(segments, null, 0, 0, 1, in localVertices, in surfaceDefinitionBlob, in builder, ref root, out polygons, out halfEdges);
+                }
+
+                if (!Validate(in localVertices, in halfEdges, in polygons, logErrors: true))
+                    return false;
+                
+                var localPlanes             = builder.Allocate(ref root.localPlanes, polygons.Length);
+                var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
+                CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
+                UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
+                root.localBounds = CalculateBounds(in localVertices);
+                brushMesh = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
+                return true;
             }
-            
-            return true;
-        }
-
-        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameter, float bottomHeight, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  bottom;
-            bottom.diameterX = diameter;
-            bottom.diameterZ = diameter;
-            bottom.height = bottomHeight;
-            ChiselCircleDefinition  top;
-            top.diameterX = diameter;
-            top.diameterZ = diameter;
-            top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
-        }
-
-        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, float diameterX, float diameterZ, float bottomHeight, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  bottom;
-            bottom.diameterX = diameterX;
-            bottom.diameterZ = diameterZ;
-            bottom.height = bottomHeight;
-            ChiselCircleDefinition  top;
-            top.diameterX = diameterX;
-            top.diameterZ = diameterZ;
-            top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
-        }
-
-        public static bool GenerateCylinderSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition  bottom, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  top;
-            top.diameterX = bottom.diameterX;
-            top.diameterZ = bottom.diameterZ;
-            top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
-        }
-
-        public static bool GenerateConeSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition  bottom, float topHeight, float rotation, int sides, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ChiselCircleDefinition  top;
-            top.diameterX = 0;
-            top.diameterZ = 0;
-            top.height = topHeight;
-            return GenerateConicalFrustumSubMesh(ref brushMesh, bottom, top, rotation, sides, fitToBounds, in surfaceDefinition);
         }
         
         // TODO: could probably figure out "inverse" from direction of topY compared to bottomY
-        public static void GetConeFrustumVertices(ChiselCircleDefinition definition, float topHeight, float rotation, int segments, ref float3[] vertices, bool inverse = false, bool fitToBounds = false)
+        public static void GetConeFrustumVertices(float topHeight, float2 bottomDiameter, float bottomHeight, float rotation, int segments, 
+                                                  in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, 
+                                                  bool inverse = false, bool fitToBounds = false)
         {
-            var rotate			= Quaternion.AngleAxis(rotation, Vector3.up);
-            var bottomRadiusX	= (float3)(rotate * Vector3.right   * definition.diameterX * 0.5f);
-            var bottomRadiusZ	= (float3)(rotate * Vector3.forward * definition.diameterZ * 0.5f);
-            var topY			= (float3)(Vector3.up * topHeight);
-            var bottomY			= (float3)(Vector3.up * definition.height);
+            var rotate			= quaternion.AxisAngle(new float3(0, 1, 0), math.radians(rotation));
+            var bottomRadiusX	= math.mul(rotate, new float3(bottomDiameter.x * 0.5f, 0, 0));
+            var bottomRadiusZ	= math.mul(rotate, new float3(0, 0, bottomDiameter.y * 0.5f));
+            var topY			= new float3(0, topHeight, 0);
+            var bottomY			= new float3(0, bottomHeight, 0);
 
-            if (vertices == null ||
-                vertices.Length != segments + 1)
-                vertices = new float3[segments + 1];
+            localVertices = builder.Allocate(ref root.localVertices, segments + 1);
+            localVertices[0] = topY;
 
-            float angleOffset = ((segments & 1) == 1) ? 0.0f : ((360.0f / segments) * 0.5f);
-            
-            vertices[0] = topY;
-            for (int v = 0; v < segments; v++)
+            const float doublePI = (math.PI * 2);
+            var angleStep     = doublePI / segments;
+            var angleOffset = ((segments & 1) == 1) ? 0.0f : angleStep * 0.5f;
+            var angle = angleOffset;
+            for (int v = 0; v < segments; v++, angle += angleStep)
             {
-                var r = (((v * 360.0f) / (float)segments) + angleOffset) * Mathf.Deg2Rad;
-                var s = Mathf.Sin(r);
-                var c = Mathf.Cos(r);
+                var s = math.sin(angle);
+                var c = math.cos(angle);
 
                 var bottomVertex = (bottomRadiusX * c) + (bottomRadiusZ * s);
                 bottomVertex += bottomY;
+
                 var vi = inverse ? (segments - v) : (v + 1);
-                vertices[vi] = bottomVertex;
+                localVertices[vi] = bottomVertex;
             }
 
             if (fitToBounds)
-                FitXZ(vertices, 1, vertices.Length - 1, definition.diameterX, definition.diameterZ);
+                FitXZ(ref localVertices, 1, localVertices.Length - 1, bottomDiameter);
+        }
+        
+        public static void GetConicalFrustumVertices(float2 topDiameter, float topHeight,
+                                                     float2 bottomDiameter, float bottomHeight, 
+                                                     float rotation, int segments, 
+                                                     in BlobBuilder builder, ref BrushMeshBlob root, out BlobBuilderArray<float3> localVertices, 
+                                                     bool fitToBounds = false)
+        {
+            if (topHeight > bottomHeight) 
+            {
+                { var temp = topHeight;   topHeight   = bottomHeight;   bottomHeight   = temp; }
+                { var temp = topDiameter; topDiameter = bottomDiameter; bottomDiameter = temp; }
+            }
+            
+            var rotate		= quaternion.AxisAngle(new float3(0, 1, 0), math.radians(rotation));
+            var topAxisX	= math.mul(rotate, new float3(topDiameter.x * 0.5f, 0, 0));
+            var topAxisZ	= math.mul(rotate, new float3(0, 0, topDiameter.y * 0.5f));
+            var bottomAxisX = math.mul(rotate, new float3(bottomDiameter.x * 0.5f, 0, 0));
+            var bottomAxisZ = math.mul(rotate, new float3(0, 0, bottomDiameter.y * 0.5f));
+            var topY		= new float3(0, topHeight, 0);
+            var bottomY		= new float3(0, bottomHeight, 0);
+
+            // TODO: handle situation where diameterX & diameterZ are 0 (only create one vertex)
+
+            localVertices = builder.Allocate(ref root.localVertices, segments * 2);
+            
+            const float doublePI = (math.PI * 2);
+            var angleStep   = doublePI / segments;
+            var angleOffset = ((segments & 1) == 1) ? 0.0f : angleStep * 0.5f;
+            var angle       = angleOffset;
+            for (int v = 0; v < segments; v++, angle += angleStep)
+            {
+                var s = Mathf.Sin(angle);
+                var c = Mathf.Cos(angle);
+
+                var topVertex = (topAxisX * c) + (topAxisZ * s);
+                var bottomVertex = (bottomAxisX * c) + (bottomAxisZ * s);
+                topVertex += topY;
+                bottomVertex += bottomY;
+                localVertices[v] = topVertex;
+                localVertices[v + segments] = bottomVertex;
+            }
+
+            if (fitToBounds)
+            {
+                FitXZ(ref localVertices, 0, segments, topDiameter);
+                FitXZ(ref localVertices, segments, segments, bottomDiameter);
+            }
         }
 
-        public static void FitXZ(float3[] vertices, int offset, int count, float diameterX, float diameterZ)
+        static void CreateConeSubMesh(int segments, 
+                                      in BlobBuilderArray<float3>                           localVertices, 
+                                      in BlobAssetReference<NativeChiselSurfaceDefinition>  surfaceDefinitionBlob, 
+                                      in BlobBuilder builder, ref BrushMeshBlob root,
+                                      out BlobBuilderArray<BrushMeshBlob.Polygon>           polygons,
+                                      out BlobBuilderArray<BrushMeshBlob.HalfEdge>          halfEdges)
         {
-            var expectedSize = new float2(diameterX, diameterZ);
+            ref var surfaceDefinition   = ref surfaceDefinitionBlob.Value;
+            const int descriptionIndex0 = 0;
+            ref var chiselSurface0      = ref surfaceDefinition.surfaces[descriptionIndex0];
+
+            polygons = builder.Allocate(ref root.polygons, segments + 1);
+            polygons[0] = new BrushMeshBlob.Polygon { firstEdge = 0, edgeCount = segments, descriptionIndex = descriptionIndex0, surface = chiselSurface0 };
+
+            for (int s = 0, surfaceID = 1; s < segments; s++)
+            {
+                var descriptionIndex = s + 2;
+                polygons[surfaceID] = new BrushMeshBlob.Polygon 
+                { 
+                    firstEdge           = segments + (s * 3), 
+                    edgeCount           = 3, 
+                    descriptionIndex    = descriptionIndex,
+                    surface             = surfaceDefinition.surfaces[descriptionIndex] 
+                };
+                surfaceID++;
+            }
+
+            halfEdges = builder.Allocate(ref root.halfEdges, 4 * segments);
+            for (int n = 0, e = segments - 1; n < segments; e=n, n++)
+            {
+                var p = (n + 1) % segments; // TODO: optimize away
+                //			 	    v0	 
+                //	                 *             
+                //                ^ /^ \
+                //               / /  \ \
+                //			    / / e2 \ \   
+                //             / /      \ \  
+                //	       t2 / /e3 q2 e2\ \ t3
+                //           / /          \ \  
+                //			/ v     e1     \ v
+                //	 ------>   ----------->   ----->
+                //        v2 *              * v1
+                //	 <-----    <----------    <-----  
+                //			        e0    
+
+                var v0 = 0;
+                var v1 = n + 1;
+                var v2 = e + 1;
+                
+                var e0 = n;
+                var e1 = ((n * 3) + segments) + 0;
+                var e2 = ((n * 3) + segments) + 1;
+                var e3 = ((n * 3) + segments) + 2;
+
+                var t3 = ((e * 3) + segments) + 2;
+                var t2 = ((p * 3) + segments) + 1;
+
+                // bottom polygon
+                halfEdges[e0] = new BrushMeshBlob.HalfEdge { vertexIndex = v1, twinIndex = e1 };
+
+                // triangle
+                halfEdges[e1] = new BrushMeshBlob.HalfEdge { vertexIndex = v2, twinIndex = e0 };
+                halfEdges[e2] = new BrushMeshBlob.HalfEdge { vertexIndex = v0, twinIndex = t3 };
+                halfEdges[e3] = new BrushMeshBlob.HalfEdge { vertexIndex = v1, twinIndex = t2 };
+            }
+        }
+
+        public static void FitXZ(float3[] vertices, int offset, int count, float2 expectedSize)
+        {
             if (math.any(expectedSize == float2.zero))
                 return;
             float2 min = vertices[offset].xz, max = vertices[offset].xz;
@@ -265,50 +337,9 @@ namespace Chisel.Core
             }
 
             if (fitToBounds)
-                FitXZ(vertices, 0, vertices.Length, radiusX * 2.0f, radiusZ * 2.0f);
+                FitXZ(vertices, 0, vertices.Length, new float2(radiusX, radiusZ) * 2.0f);
         }
         
-        public static void GetConicalFrustumVertices(ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, ref float3[] vertices, bool fitToBounds = false)
-        {
-            if (top.height > bottom.height) { var temp = top; top = bottom; bottom = temp; }
-
-            var rotate		= Quaternion.AngleAxis(rotation, Vector3.up);
-            var topAxisX	= rotate * Vector3.right	* top.diameterX * 0.5f;
-            var topAxisZ	= rotate * Vector3.forward	* top.diameterZ * 0.5f;
-            var bottomAxisX = rotate * Vector3.right	* bottom.diameterX * 0.5f;
-            var bottomAxisZ = rotate * Vector3.forward	* bottom.diameterZ * 0.5f;
-            var topY		= Vector3.up * top.height;
-            var bottomY		= Vector3.up * bottom.height;
-
-            // TODO: handle situation where diameterX & diameterZ are 0 (only create one vertex)
-
-            if (vertices == null ||
-                vertices.Length != segments * 2)
-                vertices = new float3[segments * 2];
-
-            float angleOffset = ((segments & 1) == 1) ? 0.0f : ((360.0f / segments) * 0.5f);
-
-            for (int v = 0; v < segments; v++)
-            {
-                var r = (((v * 360.0f) / (float)segments) + angleOffset) * Mathf.Deg2Rad;
-                var s = Mathf.Sin(r);
-                var c = Mathf.Cos(r);
-
-                var topVertex = (topAxisX * c) + (topAxisZ * s);
-                var bottomVertex = (bottomAxisX * c) + (bottomAxisZ * s);
-                topVertex += topY;
-                bottomVertex += bottomY;
-                vertices[v] = topVertex;
-                vertices[v + segments] = bottomVertex;
-            }
-
-            if (fitToBounds)
-            {
-                FitXZ(vertices, 0, segments, top.diameterX, top.diameterZ);
-                FitXZ(vertices, segments, segments, bottom.diameterX, bottom.diameterZ);
-            }
-        }
-
         public static Vector3[] GetConicalFrustumVertices(ChiselCircleDefinition  bottom, ChiselCircleDefinition  top, float rotation, int segments, ref Vector3[] vertices, bool fitToBounds = false)
         {
             if (top.height > bottom.height) { var temp = top; top = bottom; bottom = temp; }
@@ -350,111 +381,6 @@ namespace Chisel.Core
             }
 
             return vertices;
-        }
-
-
-        public static bool GenerateConicalFrustumSubMesh(ref BrushMesh brushMesh, ChiselCircleDefinition bottom, ChiselCircleDefinition  top, float rotation, int segments, bool fitToBounds, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            if (segments < 3 || (top.height - bottom.height) == 0 || (bottom.diameterX == 0 && top.diameterX == 0) || (bottom.diameterZ == 0 && top.diameterZ == 0))
-            {
-                brushMesh.Clear();
-                return false;
-            }
-            
-            if (surfaceDefinition == null ||
-                surfaceDefinition.surfaces == null ||
-                surfaceDefinition.surfaces.Length < segments + 2)
-            {
-                brushMesh.Clear();
-                return false;
-            }
-            // TODO: handle situation where diameterX & diameterZ are 0 (only create one vertex)
-
-            if (top.diameterX == 0)
-            {
-                GetConeFrustumVertices(bottom, top.height, rotation, segments, ref brushMesh.vertices, inverse: false, fitToBounds: fitToBounds);
-            
-                // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(ref brushMesh, segments, null, brushMesh.vertices, in surfaceDefinition);
-            } else
-            if (bottom.diameterX == 0)
-            {
-                GetConeFrustumVertices(top, bottom.height, rotation, segments, ref brushMesh.vertices, inverse: true, fitToBounds: fitToBounds);
-            
-                // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateConeSubMesh(ref brushMesh, segments, null, brushMesh.vertices, in surfaceDefinition);
-            } else
-            {
-                if (top.height > bottom.height)
-                { var temp = top; top = bottom; bottom = temp; }
-
-                GetConicalFrustumVertices(bottom, top, rotation, segments, ref brushMesh.vertices, fitToBounds: fitToBounds);
-            
-                // TODO: the polygon/half-edge part would be the same for any extruded shape and should be re-used
-                CreateExtrudedSubMesh(ref brushMesh, segments, null, 0, 1, brushMesh.vertices, in surfaceDefinition);
-            }
-
-            return true;
-        }
-
-        static void CreateConeSubMesh(ref BrushMesh brushMesh, int segments, int[] segmentDescriptionIndices, float3[] vertices, in ChiselSurfaceDefinition surfaceDefinition)
-        {
-            ref var chiselSurface0 = ref surfaceDefinition.surfaces[0];
-
-            var polygons = new BrushMesh.Polygon[segments + 1];
-            polygons[0] = new BrushMesh.Polygon { surfaceID = 0, firstEdge = 0, edgeCount = segments, surface = chiselSurface0 };
-
-            for (int s = 0, surfaceID = 1; s < segments; s++)
-            {
-                var descriptionIndex = (segmentDescriptionIndices == null) ? s + 2 : (segmentDescriptionIndices[s + 2]);
-                polygons[surfaceID] = new BrushMesh.Polygon { surfaceID = surfaceID, firstEdge = segments + (s * 3), edgeCount = 3, surface = surfaceDefinition.surfaces[descriptionIndex] };
-                surfaceID++;
-            }
-
-            var halfEdges = new BrushMesh.HalfEdge[4 * segments];
-            for (int n = 0, e = segments - 1; n < segments; e=n, n++)
-            {
-                var p = (n + 1) % segments; // TODO: optimize away
-                //			 	    v0	 
-                //	                 *             
-                //                ^ /^ \
-                //               / /  \ \
-                //			    / / e2 \ \   
-                //             / /      \ \  
-                //	       t2 / /e3 q2 e2\ \ t3
-                //           / /          \ \  
-                //			/ v     e1     \ v
-                //	 ------>   ----------->   ----->
-                //        v2 *              * v1
-                //	 <-----    <----------    <-----  
-                //			        e0    
-
-                var v0 = 0;
-                var v1 = n + 1;
-                var v2 = e + 1;
-                
-                var e0 = n;
-                var e1 = ((n * 3) + segments) + 0;
-                var e2 = ((n * 3) + segments) + 1;
-                var e3 = ((n * 3) + segments) + 2;
-
-                var t3 = ((e * 3) + segments) + 2;
-                var t2 = ((p * 3) + segments) + 1;
-
-                // bottom polygon
-                halfEdges[e0] = new BrushMesh.HalfEdge { vertexIndex = v1, twinIndex = e1 };
-
-                // triangle
-                halfEdges[e1] = new BrushMesh.HalfEdge { vertexIndex = v2, twinIndex = e0 };
-                halfEdges[e2] = new BrushMesh.HalfEdge { vertexIndex = v0, twinIndex = t3 };
-                halfEdges[e3] = new BrushMesh.HalfEdge { vertexIndex = v1, twinIndex = t2 };
-            }
-
-            brushMesh.polygons	= polygons;
-            brushMesh.halfEdges	= halfEdges;
-            brushMesh.vertices  = vertices;
-            if (!brushMesh.Validate(logErrors: true))
-                brushMesh.Clear();
         }
 
     }
