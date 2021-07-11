@@ -63,8 +63,8 @@ namespace Chisel.Core
             var brushIDValueToAncestorLegend = new NativeArray<int>(desiredBrushIDValueToBottomUpLength, Allocator.Temp);
             var brushIDValueToOrder = new NativeArray<int>(desiredBrushIDValueToBottomUpLength, Allocator.Temp);
 
-            using (var brushAncestorLegend = new NativeList<BrushAncestorLegend>(Allocator.Temp))
-            using (var brushAncestorsIDValues = new NativeList<int>(Allocator.Temp))
+            using (var brushAncestorLegend = new NativeList<BrushAncestorLegend>(brushes.Length, Allocator.Temp))
+            using (var brushAncestorsIDValues = new NativeList<int>(brushes.Length, Allocator.Temp))
             { 
                 // Bottom-up -> per brush list of all ancestors to root
                 for (int b = 0; b < brushes.Length; b++)
@@ -93,12 +93,11 @@ namespace Chisel.Core
                     });
                 }
 
-                var nodeQueue = new NativeList<CompactTopDownBuilderNode>(Allocator.Temp);
-                var hierarchyNodes = new NativeList<CompactHierarchyNode>(Allocator.Temp);
+                var nodeQueue = new NativeList<CompactTopDownBuilderNode>(brushes.Length, Allocator.Temp);
+                var hierarchyNodes = new NativeList<CompactHierarchyNode>(brushes.Length, Allocator.Temp);
                 using (brushIDValueToAncestorLegend)
                 using (brushIDValueToOrder)
                 { 
-
                     if (brushAncestorLegend.Length == 0)
                         return BlobAssetReference<CompactTree>.Null;
 

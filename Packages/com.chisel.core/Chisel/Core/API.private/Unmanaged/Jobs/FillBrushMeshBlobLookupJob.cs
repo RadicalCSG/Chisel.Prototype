@@ -26,24 +26,27 @@ namespace Chisel.Core
             for (int nodeOrder = 0; nodeOrder < allBrushMeshIDs.Length; nodeOrder++)
             {
                 int brushMeshHash = allBrushMeshIDs[nodeOrder];
-                if (brushMeshHash == 0)
-                {
-                    // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
-                    brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
-                } else
-                if (brushMeshBlobs.TryGetValue(brushMeshHash, out var item))
+                if (brushMeshHash != 0 &&
+                    brushMeshBlobs.TryGetValue(brushMeshHash, out var item))
                 {
                     surfaceCount += item.brushMeshBlob.Value.polygons.Length;
                     brushMeshLookup[nodeOrder] = item.brushMeshBlob;
                 } else
                 {
-                    // *should* never happen
-                    
-                    var indexOrder  = allTreeBrushIndexOrders[nodeOrder];
-                    var nodeID      = indexOrder.compactNodeID;
-                
-                    Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is not initialized.");
-                    brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                    if (brushMeshHash == 0)
+                    {
+                        // The brushMeshID is invalid: a Generator created/didn't update a TreeBrush correctly
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                    } else
+                    {
+                        // *should* never happen
+
+                        var indexOrder = allTreeBrushIndexOrders[nodeOrder];
+                        var nodeID = indexOrder.compactNodeID;
+
+                        Debug.LogError($"Brush with ID {nodeID} has its brushMeshID set to {brushMeshHash}, which is not initialized.");
+                        brushMeshLookup[nodeOrder] = BlobAssetReference<BrushMeshBlob>.Null;
+                    }
                 }
             }
             surfaceCountRef.Value = surfaceCount;

@@ -76,12 +76,6 @@ namespace Chisel.Components
             ChiselNodeHierarchyManager.OnTransformChildrenChanged(this);
         }
 
-        // TODO: find a better solution for this
-        protected void LateUpdate()
-        {
-            ChiselNodeHierarchyManager.OnCheckSiblingIndexChanged(this);
-        }
-
         public virtual void UpdateTransformation()
         {
             var node = TopTreeNode;

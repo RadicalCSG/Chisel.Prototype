@@ -31,6 +31,7 @@ namespace Chisel.Components
     {
         public static readonly Dictionary<int, ChiselSceneHierarchy> sceneHierarchies = new Dictionary<int, ChiselSceneHierarchy>();
 
+        static readonly HashSet<ChiselNode> nonNodeChildren = new HashSet<ChiselNode>();
         static readonly HashSet<ChiselNode> registeredNodes = new HashSet<ChiselNode>();
         static readonly Dictionary<int, ChiselNode> instanceIDToNodeLookup = new Dictionary<int, ChiselNode>();
         static readonly Dictionary<ChiselNode, int> nodeToinstanceIDLookup = new Dictionary<ChiselNode, int>();
@@ -147,6 +148,7 @@ namespace Chisel.Components
                 item.ResetTreeNodes();
 
             registeredNodes.Clear();
+            nonNodeChildren.Clear();
             instanceIDToNodeLookup.Clear();
             nodeToinstanceIDLookup.Clear();
 
@@ -292,7 +294,20 @@ namespace Chisel.Components
             if (!node ||
                 !node.hierarchyItem.Registered ||
                 !node.IsActive)
+            {
+                nonNodeChildren.Remove(node);
                 return;
+            }
+
+            if (!(node is ChiselModel) &&
+                // If our parent is not a ChiselNode, add it to the nonNodeChildren.
+                // Regulare ChiselNode parents capture an event that significies that the order
+                // of child nodes may have changed. But for parent gameobjects that are not 
+                // ChiselNodes we cannot do this. So we put all those in a different list to handle 
+                // them in a different (slower) way
+                (node.hierarchyItem.parentComponent == null ||
+                 node.hierarchyItem.Transform.parent != node.hierarchyItem.Parent.Transform))
+                nonNodeChildren.Add(node);
             hierarchyUpdateQueue.Add(node);
         }
 
@@ -315,16 +330,6 @@ namespace Chisel.Components
         static void UpdateGeneratedBrushes(ChiselNode node)
         {
             node.UpdateBrushMeshInstances();
-        }
-
-        public static void OnCheckSiblingIndexChanged(ChiselNode component)
-        {
-            if (component.hierarchyItem != null &&
-                component.hierarchyItem.SiblingIndices != null)
-            {
-                if (component.hierarchyItem.UpdateSiblingIndices(ignoreWhenParentIsChiselNode: true))
-                    hierarchyUpdateQueue.Add(component);
-            }
         }
 
         public static void OnTransformChildrenChanged(ChiselNode component)
@@ -565,6 +570,7 @@ namespace Chisel.Components
                         UpdateGeneratedBrushes(parentComponent);
                     }
                 }
+
                 parent = parent.parent;
                 if (parent == null)
                     break;
@@ -735,6 +741,23 @@ namespace Chisel.Components
             return 0;
         }
 
+        public static void CheckOrderOfChildNodesModifiedOfNonNodeGameObject()
+        {
+            Profiler.BeginSample("CheckNodeOrderModified");
+            // Check if order of nodes has changed
+            foreach (var node in nonNodeChildren)
+            {
+                var hierarchyItem = node.hierarchyItem;
+                if (hierarchyItem != null &&
+                    hierarchyItem.SiblingIndices != null)
+                {
+                    if (hierarchyItem.UpdateSiblingIndices(ignoreWhenParentIsChiselNode: true))
+                        hierarchyUpdateQueue.Add(node);
+                }
+            }
+            Profiler.EndSample();
+        }
+
         internal static bool prevPlaying = false;
         internal static void UpdateTrampoline()
         {
@@ -862,6 +885,10 @@ namespace Chisel.Components
             }
             Profiler.EndSample();
 
+#if !UNITY_EDITOR
+            // In the chisel editor package we call this on the UnityEditor.EditorApplication.hierarchyChanged event
+            CheckOrderOfChildNodesModifiedOfNonNodeGameObject();
+#endif
 
             if (registerQueue.Count == 0 &&
                 unregisterQueue.Count == 0 &&
@@ -1521,7 +1548,7 @@ namespace Chisel.Components
             __prevSceneHierarchy.Clear();
 
             // Used to redraw windows etc.
-            NodeHierarchyModified?.Invoke();
+            NodeHierarchyModified?.Invoke(); // TODO: Should only call this when necessary!!!
             Profiler.EndSample();
         }
 
