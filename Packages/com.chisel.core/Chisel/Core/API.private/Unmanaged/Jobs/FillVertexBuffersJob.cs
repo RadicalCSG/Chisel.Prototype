@@ -39,6 +39,28 @@ namespace Chisel.Core
     }
 
     [BurstCompile(CompileSynchronously = true)]
+    struct AllocateSubMeshesJob : IJob
+    {
+        // Read
+        [NoAlias, ReadOnly] public int                  meshQueryLength;
+        [NoAlias, ReadOnly] public NativeReference<int> surfaceCountRef;
+
+        // Write
+        [NoAlias] public NativeList<SubMeshCounts>      subMeshCounts;
+        [NoAlias] public NativeList<SubMeshSection>     subMeshSections;
+
+        public void Execute()
+        {
+            var subMeshCapacity = surfaceCountRef.Value * meshQueryLength;
+            if (subMeshCounts.Capacity < subMeshCapacity)
+                subMeshCounts.Capacity = subMeshCapacity;
+            
+            if (subMeshSections.Capacity < subMeshCapacity)
+                subMeshSections.Capacity = subMeshCapacity;
+        }
+    }
+
+    [BurstCompile(CompileSynchronously = true)]
     struct FindBrushRenderBuffersJob : IJob
     {
         // Read
@@ -47,13 +69,10 @@ namespace Chisel.Core
         [NoAlias, ReadOnly] public NativeArray<BlobAssetReference<ChiselBrushRenderBuffer>>  brushRenderBufferCache;
 
         // Write
-        [NativeDisableParallelForRestriction, NoAlias] public NativeList<BrushData>         brushRenderData;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeList<SubMeshCounts>     subMeshCounts;
-        [NativeDisableParallelForRestriction, NoAlias] public NativeList<SubMeshSection>    subMeshSections;
+        [NoAlias, WriteOnly] public NativeList<BrushData>.ParallelWriter brushRenderData;
 
         public void Execute()
         {
-            int surfaceCount = 0;
             for (int b = 0, count_b = allTreeBrushIndexOrders.Length; b < count_b; b++)
             {
                 var brushIndexOrder     = allTreeBrushIndexOrders[b];
@@ -75,16 +94,7 @@ namespace Chisel.Core
                     brushSurfaceCount   = brushSurfaceCount,
                     brushRenderBuffer   = brushRenderBuffer
                 });
-
-                surfaceCount += brushSurfaceCount;
             }
-            
-            var subMeshCapacity = surfaceCount * meshQueryLength;
-            if (subMeshCounts.Capacity < subMeshCapacity)
-                subMeshCounts.Capacity = subMeshCapacity;
-            
-            if (subMeshSections.Capacity < subMeshCapacity)
-                subMeshSections.Capacity = subMeshCapacity;
         }
     }
 
@@ -120,16 +130,7 @@ namespace Chisel.Core
                 return x.surfaceParameter.CompareTo(y.surfaceParameter);
             }
         }
-
         static readonly SubMeshSurfaceComparer subMeshSurfaceComparer = new SubMeshSurfaceComparer();
-
-        public void Execute()
-        {
-            for (int t = 0; t < meshQueries.Length; t++)
-            {
-                Execute(t);
-            }
-        }
 
         public void Execute(int t)
         {

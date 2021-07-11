@@ -1680,9 +1680,7 @@ namespace Chisel.Core
                         brushRenderBufferCache  = chiselLookupValues.brushRenderBufferCache .AsJobArray(runInParallel),
 
                         // Write
-                        brushRenderData         = Temporaries.brushRenderData,
-                        subMeshCounts           = Temporaries.subMeshCounts,
-                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
+                        brushRenderData         = Temporaries.brushRenderData.AsParallelWriter()
                     };
                     findBrushRenderBuffersJob.Schedule(runInParallel, 
                         new ReadJobHandles(
@@ -1690,12 +1688,35 @@ namespace Chisel.Core
                             JobHandles.allTreeBrushIndexOrdersJobHandle,
                             JobHandles.brushRenderBufferCacheJobHandle),
                         new WriteJobHandles(
-                            ref JobHandles.brushRenderDataJobHandle,
-                            ref JobHandles.subMeshSurfacesJobHandle,
+                            ref JobHandles.brushRenderDataJobHandle
+                            ));
+                }
+                finally { Profiler.EndSample(); }
+                
+                Profiler.BeginSample("Job_AllocateSubMeshes");
+                try
+                {
+                    const bool runInParallel = runInParallelDefault;
+                    var allocateSubMeshesJob = new AllocateSubMeshesJob
+                    {
+                        // Read
+                        meshQueryLength         = Temporaries.meshQueriesLength,
+                        surfaceCountRef         = Temporaries.surfaceCountRef,
+                        
+                        // Write
+                        subMeshCounts           = Temporaries.subMeshCounts,
+                        subMeshSections         = Temporaries.vertexBufferContents.subMeshSections,
+                    };
+                    allocateSubMeshesJob.Schedule(runInParallel, 
+                        new ReadJobHandles(
+                            JobHandles.meshQueriesJobHandle,
+                            JobHandles.surfaceCountRefJobHandle),
+                        new WriteJobHandles(
                             ref JobHandles.subMeshCountsJobHandle,
                             ref JobHandles.vertexBufferContents_subMeshSectionsJobHandle));
                 }
                 finally { Profiler.EndSample(); }
+
 
                 Profiler.BeginSample("Job_PrepareSubSections");
                 try
