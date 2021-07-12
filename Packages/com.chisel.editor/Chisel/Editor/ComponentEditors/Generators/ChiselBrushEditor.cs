@@ -17,6 +17,7 @@ namespace Chisel.Editors
 
         protected override void OnUndoRedoPerformed()
         {
+            base.OnUndoRedoPerformed();
             var activeGenerators = activeOutlines.Keys.ToArray();
             foreach (var generator in activeGenerators)
             {

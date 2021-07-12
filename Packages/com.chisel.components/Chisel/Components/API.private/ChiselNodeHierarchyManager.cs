@@ -1433,6 +1433,49 @@ namespace Chisel.Components
                 }
                 Profiler.EndSample();
 
+                // TODO: fix this hack and rewrite the whole update queue here
+                {
+                    for (int i = updateChildrenQueueList.Count - 1; i >= 0; i--)
+                    {
+                        var hierarchyItem = updateChildrenQueueList[i];
+
+                        var parentComponent = hierarchyItem.Component;
+                        if (!parentComponent)
+                            continue;
+
+                        var parentTreeNode = parentComponent.TopTreeNode;
+                        if (!parentTreeNode.Valid)
+                        {
+                            var node = hierarchyItem.Component;
+                            parentTreeNode = node.RebuildTreeNodes();
+
+                            if (parentTreeNode.Valid)
+                                treeNodeLookup[node] = parentTreeNode;
+                            else
+                                treeNodeLookup.Remove(node);
+                        }
+                    }
+
+                    for (int i = updateChildrenQueueList.Count - 1; i >= 0; i--)
+                    {
+                        var hierarchyItem = updateChildrenQueueList[i];
+
+                        var parentComponent = hierarchyItem.Component;
+                        if (!parentComponent)
+                            continue;
+
+                        var parentTreeNode = parentComponent.TopTreeNode;
+                        if (!parentTreeNode.Valid)
+                            continue;
+
+                        if (!parentComponent.IsContainer ||
+                            hierarchyItem.Children.Count == 0)
+                            continue;
+
+                        AddChildrenOfHierarchyItem(hierarchyItem, updateChildrenQueueList);
+                    }
+                }
+
                 Profiler.BeginSample("UpdateTrampoline.updateChildrenQueue2.sort");
                 updateChildrenQueueList.Sort(compareChiselHierarchyGlobalOrder);
                 Profiler.EndSample();
@@ -1441,7 +1484,6 @@ namespace Chisel.Components
                 for (int i = 0; i < updateChildrenQueueList.Count; i++)
                 {
                     var hierarchyItem = updateChildrenQueueList[i];
-                    //Debug.Log($"updateChildrenQueue2 {item.Component}", item.Component);
 
                     var parentComponent = hierarchyItem.Component;
                     if (!parentComponent)
@@ -1449,15 +1491,7 @@ namespace Chisel.Components
 
                     var parentTreeNode = parentComponent.TopTreeNode;
                     if (!parentTreeNode.Valid)
-                    {
-                        var node = hierarchyItem.Component;
-                        parentTreeNode = node.RebuildTreeNodes();
-                        //Debug.Log($"{hierarchyItem.SiblingIndices.Count} {hierarchyItem.siblingIndicesUntilNode}  {hierarchyItem.SiblingIndices[hierarchyItem.SiblingIndices.Count - 1]} {node.name} {node.TopTreeNode}", node);
-                        if (parentTreeNode.Valid)
-                            treeNodeLookup[node] = parentTreeNode;
-                        else
-                            treeNodeLookup.Remove(node);
-                    }
+                        continue;
 
                     if (!parentComponent.IsContainer ||
                         hierarchyItem.Children.Count == 0)
@@ -1555,6 +1589,32 @@ namespace Chisel.Components
             Profiler.EndSample();
         }
 
+        public static void AddChildrenOfHierarchyItem(ChiselHierarchyItem item, List<ChiselHierarchyItem> updateNodes)
+        {
+            if (item == null)
+                return;
+
+            for (int i = 0; i < item.Children.Count; i++)
+            {
+                var childHierarchyItem = item.Children[i];
+                var childComponent = childHierarchyItem.Component;
+                if (!childComponent && childComponent.IsActive)
+                    continue;
+
+                var topNode = childComponent.TopTreeNode;
+                if (!topNode.Valid)
+                {
+                    topNode = childComponent.RebuildTreeNodes();
+                    if (!topNode.Valid)
+                        continue;
+
+                    if (!updateNodes.Contains(childHierarchyItem))
+                        updateNodes.Add(childHierarchyItem);
+                }
+            }
+        }
+
+
         public static void GetChildrenOfHierarchyItem(List<CSGTreeNode> childNodes, ChiselHierarchyItem item)
         {
             if (item == null)
@@ -1569,12 +1629,7 @@ namespace Chisel.Components
 
                 var topNode = childComponent.TopTreeNode;
                 if (!topNode.Valid)
-                {
-                    topNode = childComponent.RebuildTreeNodes();
-                    //Debug.Log($"{childHierarchyItem.SiblingIndices.Count} {childHierarchyItem.siblingIndicesUntilNode}  {childHierarchyItem.SiblingIndices[childHierarchyItem.SiblingIndices.Count - 1]} {childComponent.name} {childComponent.TopTreeNode}", childComponent);
-                    if (!topNode.Valid)
-                        continue;
-                }
+                    continue;
 
                 childNodes.Add(topNode);
             }

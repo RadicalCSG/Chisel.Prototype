@@ -109,7 +109,10 @@ namespace Chisel.Components
             node.LocalTransformation = localTransformation;
         }
 
+        // TODO: remove need for this
+        public virtual void UpdateGeneratorNodes() { }
         internal abstract CSGTreeNode RebuildTreeNodes();
+
         public void ResetTreeNodes(bool doNotDestroy = false)
         {
             var topNode = TopTreeNode;
