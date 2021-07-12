@@ -445,6 +445,8 @@ namespace Chisel.Components
                 return;
 
             TopTreeNode.SetDirty();
+            var treeRoot = this.hierarchyItem.Model.Node;
+            UpdateGeneratorNodesInternal(in treeRoot, ref Node);
         }
 
 
