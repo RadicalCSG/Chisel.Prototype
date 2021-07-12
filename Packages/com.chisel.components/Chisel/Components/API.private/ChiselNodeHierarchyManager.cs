@@ -1060,7 +1060,10 @@ namespace Chisel.Components
                 // this is because the order of the registerQueue is essentially random
                 Profiler.BeginSample("UpdateTrampoline.registerQueue.C");
                 foreach (var node in registeredNodes)
-                    RegisterTransformLookup(node);
+                {
+                    if (node)
+                        RegisterTransformLookup(node);
+                }
                 for (int i = 0; i < registerQueue.Count; i++)
                 {
                     var node = registerQueue[i];
