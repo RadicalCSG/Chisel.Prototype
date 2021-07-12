@@ -371,6 +371,7 @@ namespace Chisel.Core
             builder.Construct(ref root.halfEdgePolygonIndices,  ref brushMesh.halfEdgePolygonIndices);
             builder.Construct(ref root.polygons,                ref brushMesh.polygons);
             builder.Construct(ref root.localPlanes,             ref brushMesh.localPlanes);
+            root.localPlaneCount = brushMesh.localPlaneCount;
 
             var result = builder.CreateBlobAssetReference<BrushMeshBlob>(allocator);
             builder.Dispose();

@@ -65,7 +65,9 @@ namespace Chisel.Core
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, kTotalHalfEdges);
                 var polygons                = builder.Allocate(ref root.polygons,               kTotalPolygons);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,            kTotalPolygons);
-                
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
+
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
                 const int vertIndex2 = 2;
@@ -250,7 +252,9 @@ namespace Chisel.Core
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, kTotalHalfEdges);
                 var polygons                = builder.Allocate(ref root.polygons,               kTotalPolygons);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,            kTotalPolygons);
-                
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
+
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
                 const int vertIndex2 = 2;
@@ -418,7 +422,9 @@ namespace Chisel.Core
                 var halfEdgePolygonIndices  = builder.Allocate(ref root.halfEdgePolygonIndices, kTotalHalfEdges);
                 var polygons                = builder.Allocate(ref root.polygons,               kTotalPolygons);
                 var localPlanes             = builder.Allocate(ref root.localPlanes,            kTotalPolygons);
-                
+                root.localPlaneCount = polygons.Length;
+                // TODO: calculate corner planes
+
                 const int vertIndex0 = 0;
                 const int vertIndex1 = 1;
                 const int vertIndex2 = 2;
