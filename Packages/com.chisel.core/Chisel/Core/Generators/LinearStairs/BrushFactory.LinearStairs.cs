@@ -160,6 +160,8 @@ namespace Chisel.Core
                         return BlobAssetReference<BrushMeshBlob>.Null;
 
                     var localPlanes = builder.Allocate(ref root.localPlanes, polygons.Length);
+                    root.localPlaneCount = polygons.Length;
+                    // TODO: calculate corner planes
                     var halfEdgePolygonIndices = builder.Allocate(ref root.halfEdgePolygonIndices, halfEdges.Length);
                     CalculatePlanes(ref localPlanes, in polygons, in halfEdges, in localVertices);
                     UpdateHalfEdgePolygonIndices(ref halfEdgePolygonIndices, in polygons);
