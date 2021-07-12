@@ -98,7 +98,7 @@ namespace Chisel.Editors
                             ChiselNodeHierarchyManager.UpdateAvailability(composite);
                         }
                     }
-                    OnShapeChanged();
+                    OnShapeChanged(target as ChiselComposite);
                 }
                 bool hasNoChildren = false;
                 foreach (var target in serializedObject.targetObjects)

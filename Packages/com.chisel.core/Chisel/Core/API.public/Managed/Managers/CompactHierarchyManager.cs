@@ -990,7 +990,7 @@ namespace Chisel.Core
                 // move children to default hierarchy
                 ref var defaultHierarchy = ref GetHierarchy(defaultHierarchyID, out int defaultHierarchyIndex);
 
-                Debug.Assert(hierarchyIndex != defaultHierarchyIndex);
+                Debug.Assert(hierarchyIndex != defaultHierarchyIndex, "hierarchyIndex != defaultHierarchyIndex");
                 for (int c = 0, childCount = currHierarchy.ChildCount(compactNodeID); c < childCount; c++)
                 {
                     var child = currHierarchy.GetChildCompactNodeIDAtInternal(compactNodeID, c);

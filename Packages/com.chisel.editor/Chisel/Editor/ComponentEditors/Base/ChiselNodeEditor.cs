@@ -216,8 +216,10 @@ namespace Chisel.Editors
             gridBoundsDirty = false;
         }
 
-        protected void OnShapeChanged()
+        protected void OnShapeChanged(T generator)
         {
+            if (generator != null)
+                generator.UpdateGeneratorNodes();
             ResetGridBounds();
         }
 
@@ -904,8 +906,12 @@ namespace Chisel.Editors
             ShowWarningMessages(warnings); 
         }
 
-        protected virtual void OnTargetModifiedInInspector() { OnShapeChanged(); }
-        protected virtual void OnTargetModifiedInScene() { OnShapeChanged(); }
+        protected virtual void OnTargetModifiedInInspector() 
+        {
+            foreach(var target in targets)
+                OnShapeChanged(target as T); 
+        }
+        protected virtual void OnTargetModifiedInScene(T generator) { OnShapeChanged(generator); }
         protected virtual bool OnGeneratorActive(T generator) { return generator.isActiveAndEnabled; }
         protected virtual void OnGeneratorSelected(T generator) { }
         protected virtual void OnGeneratorDeselected(T generator) { }
@@ -913,7 +919,16 @@ namespace Chisel.Editors
 
         SerializedProperty operationProp;
         void Reset() { operationProp = null; ResetInspector(); }
-        protected virtual void OnUndoRedoPerformed() { }
+        
+        protected virtual void OnUndoRedoPerformed()
+        {
+            foreach (var target in targets)
+            {
+                var node = target as T;
+                if (node != null)
+                    node.UpdateGeneratorNodes();
+            }
+        }
 
         private HashSet<UnityEngine.Object> knownTargets = new HashSet<UnityEngine.Object>();
         private HashSet<UnityEngine.Object> validTargets = new HashSet<UnityEngine.Object>();
@@ -1153,7 +1168,7 @@ namespace Chisel.Editors
                             if (EditorGUI.EndChangeCheck())
                             {
                                 generator.OnValidate();
-                                OnTargetModifiedInScene();
+                                OnTargetModifiedInScene(target as T);
                             }
                             handles.End();
                         }

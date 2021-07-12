@@ -27,6 +27,7 @@ namespace Chisel.Core
         public int              brushMeshHash;
     }
 
+    // TODO: move to core
     public class GeneratorJobPoolManager : System.IDisposable
     {
         System.Collections.Generic.HashSet<GeneratorJobPool> generatorPools = new System.Collections.Generic.HashSet<GeneratorJobPool>();
@@ -305,6 +306,7 @@ namespace Chisel.Core
         }
     }
 
+    // TODO: move to core
     public interface GeneratorJobPool : System.IDisposable
     {
         void AllocateOrClear();
@@ -317,6 +319,7 @@ namespace Chisel.Core
                                               JobHandle dependsOn);
     }
 
+    // TODO: move to core, call ScheduleUpdate when hash of definition changes (no more manual calls)
     public class GeneratorBrushJobPool<Generator> : GeneratorJobPool
         where Generator : unmanaged, IBrushGenerator
     {
